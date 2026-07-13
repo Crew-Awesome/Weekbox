@@ -1,0 +1,22 @@
+[
+    {
+        "name": "V-Slice",
+        "icon": "vslice.png",
+        "versions": "vslice"
+    },
+    {
+        "name": "P-Slice",
+        "icon": "p-slice.png",
+        "versions": "pslice"
+    },
+    {
+        "name": "Psych Engine",
+        "icon": "psych.ico",
+        "versions": "psych"
+    },
+    {
+        "name": "Kade Engine",
+        "icon": null,
+        "versions": "kade"
+    }
+]

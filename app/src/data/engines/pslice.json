@@ -1,0 +1,136 @@
+[
+    {
+        "win": "https://github.com/Psych-Slice/P-Slice/releases/download/1.0.1/p-slice-win-1.0.1.zip",
+        "lin": "https://github.com/Psych-Slice/P-Slice/releases/download/1.0.1/p-slice-linux-1.0.1.zip"
+    },
+    {
+        "win": "https://github.com/Psych-Slice/P-Slice/releases/download/1.0.2/P-slice-win-1.0.2.zip",
+        "lin": "https://github.com/Psych-Slice/P-Slice/releases/download/1.0.2/p-slice-linux-1.0.2.zip"
+    },
+    {
+        "win": "https://github.com/Psych-Slice/P-Slice/releases/download/1.1/p-slice-win-1.1.zip",
+        "lin": "https://github.com/Psych-Slice/P-Slice/releases/download/1.1/p-slice-linux-1.1.zip"
+    },
+    {
+        "win": "https://github.com/Psych-Slice/P-Slice/releases/download/1.2/p-slice-1.2-0.6.3-win.zip",
+        "lin": "https://github.com/Psych-Slice/P-Slice/releases/download/1.2/p-slice-1.2-0.6.3-linux.zip",
+        "mac": "https://github.com/Psych-Slice/P-Slice/releases/download/1.2/p-slice-1.2-0.6.3-mac.zip"
+    },
+    {
+        "win": "https://github.com/Psych-Slice/P-Slice/releases/download/2.0/P-Slice.0.6.3.windows.zip",
+        "lin": "https://github.com/Psych-Slice/P-Slice/releases/download/2.0/P-Slice.0.6.3.linux.zip"
+    },
+    {
+        "lin": "https://github.com/Psych-Slice/P-Slice/releases/download/2.0.1/P-Slice.0.6.3.linux.zip",
+        "win": "https://github.com/Psych-Slice/P-Slice/releases/download/2.0.1/P-Slice.0.6.3.windows.zip"
+    },
+    {
+        "android": "https://github.com/Psych-Slice/P-Slice/releases/download/2.1/P-Slice.1.0.android.zip",
+        "lin": "https://github.com/Psych-Slice/P-Slice/releases/download/2.1/P-Slice.1.0.linux.zip",
+        "win": "https://github.com/Psych-Slice/P-Slice/releases/download/2.1/P-Slice.1.0.windows.zip"
+    },
+    {
+        "android": "https://github.com/Psych-Slice/P-Slice/releases/download/2.2/P-Slice.1.0.android.apk",
+        "ios": "https://github.com/Psych-Slice/P-Slice/releases/download/2.2/P-Slice.1.0.ios.zip",
+        "lin": "https://github.com/Psych-Slice/P-Slice/releases/download/2.2/P-Slice.1.0.linux.zip",
+        "macARM64": "https://github.com/Psych-Slice/P-Slice/releases/download/2.2/P-Slice.1.0.macosarm64.zip",
+        "macX64": "https://github.com/Psych-Slice/P-Slice/releases/download/2.2/P-Slice.1.0.macosx64.zip",
+        "win": "https://github.com/Psych-Slice/P-Slice/releases/download/2.2/P-Slice.1.0.windows.zip"
+    },
+    {
+        "android": "https://github.com/Psych-Slice/P-Slice/releases/download/2.2.1/P-Slice.1.0.android.zip",
+        "lin": "https://github.com/Psych-Slice/P-Slice/releases/download/2.2.1/P-Slice.1.0.linux.zip",
+        "win": "https://github.com/Psych-Slice/P-Slice/releases/download/2.2.1/P-Slice.1.0.windows.zip"
+    },
+    {
+        "android": "https://github.com/Psych-Slice/P-Slice/releases/download/2.2.2/P-Slice.1.0.android.zip",
+        "lin": "https://github.com/Psych-Slice/P-Slice/releases/download/2.2.2/P-Slice.1.0.linux.zip",
+        "win": "https://github.com/Psych-Slice/P-Slice/releases/download/2.2.2/P-Slice.1.0.windows.zip"
+    },
+    {
+        "android": "https://github.com/Psych-Slice/P-Slice/releases/download/2.3/P-Slice.1.0.android.zip",
+        "lin": "https://github.com/Psych-Slice/P-Slice/releases/download/2.3/P-Slice.1.0.linux.zip",
+        "win": "https://github.com/Psych-Slice/P-Slice/releases/download/2.3/P-Slice.1.0.windows.zip"
+    },
+    {
+        "android": "https://github.com/Psych-Slice/P-Slice/releases/download/2.3.1/P-Slice.1.0.android-2.zip",
+        "lin": "https://github.com/Psych-Slice/P-Slice/releases/download/2.3.1/P-Slice.1.0.linux.zip",
+        "win": "https://github.com/Psych-Slice/P-Slice/releases/download/2.3.1/P-Slice.1.0.windows.zip"
+    },
+    {
+        "android": "https://github.com/Psych-Slice/P-Slice/releases/download/3.0/P-Slice.1.0.android.zip",
+        "lin": "https://github.com/Psych-Slice/P-Slice/releases/download/3.0/P-Slice.1.0.linux.zip",
+        "win": "https://github.com/Psych-Slice/P-Slice/releases/download/3.0/P-Slice.1.0.windows.zip"
+    },
+    {
+        "android": "https://github.com/Psych-Slice/P-Slice/releases/download/3.0.1/P-Slice.1.0.android.zip",
+        "lin": "https://github.com/Psych-Slice/P-Slice/releases/download/3.0.1/P-Slice.1.0.linux.zip",
+        "win": "https://github.com/Psych-Slice/P-Slice/releases/download/3.0.1/P-Slice.1.0.windows.zip"
+    },
+    {
+        "android": "https://github.com/Psych-Slice/P-Slice/releases/download/3.0.2/P-Slice.1.0.android.zip",
+        "lin": "https://github.com/Psych-Slice/P-Slice/releases/download/3.0.2/P-Slice.1.0.linux.zip",
+        "win": "https://github.com/Psych-Slice/P-Slice/releases/download/3.0.2/P-Slice.1.0.windows.zip"
+    },
+    {
+        "android": "https://github.com/Psych-Slice/P-Slice/releases/download/3.0.3/P-Slice.1.0.android.zip",
+        "lin": "https://github.com/Psych-Slice/P-Slice/releases/download/3.0.3/P-Slice.1.0.linux.zip",
+        "win": "https://github.com/Psych-Slice/P-Slice/releases/download/3.0.3/P-Slice.1.0.windows.zip"
+    },
+    {
+        "android": "https://github.com/Psych-Slice/P-Slice/releases/download/3.1/P-Slice.1.0.android.zip",
+        "ios": "https://github.com/Psych-Slice/P-Slice/releases/download/3.1/P-Slice.1.0.ios.zip",
+        "lin": "https://github.com/Psych-Slice/P-Slice/releases/download/3.1/P-Slice.1.0.linux.zip",
+        "win": "https://github.com/Psych-Slice/P-Slice/releases/download/3.1/P-Slice.1.0.windows.zip"
+    },
+    {
+        "android": "https://github.com/Psych-Slice/P-Slice/releases/download/3.1.1/P-Slice.1.0.android.zip",
+        "lin": "https://github.com/Psych-Slice/P-Slice/releases/download/3.1.1/P-Slice.1.0.linux.zip",
+        "win": "https://github.com/Psych-Slice/P-Slice/releases/download/3.1.1/P-Slice.1.0.windows.zip"
+    },
+    {
+        "android": "https://github.com/Psych-Slice/P-Slice/releases/download/3.2/P-Slice.1.0.android.zip",
+        "lin": "https://github.com/Psych-Slice/P-Slice/releases/download/3.2/P-Slice.1.0.linux.zip",
+        "win": "https://github.com/Psych-Slice/P-Slice/releases/download/3.2/P-Slice.1.0.windows.zip"
+    },
+    {
+        "android": "https://github.com/Psych-Slice/P-Slice/releases/download/3.2.1/P-Slice.1.0.android.zip",
+        "lin": "https://github.com/Psych-Slice/P-Slice/releases/download/3.2.1/P-Slice.1.0.linux.zip",
+        "win": "https://github.com/Psych-Slice/P-Slice/releases/download/3.2.1/P-Slice.1.0.windows.zip"
+    },
+    {
+        "android": "https://github.com/Psych-Slice/P-Slice/releases/download/3.3/p-slice10android.zip",
+        "ios": "https://github.com/Psych-Slice/P-Slice/releases/download/3.3/P-Slice.1.0.ios.zip",
+        "lin": "https://github.com/Psych-Slice/P-Slice/releases/download/3.3/P-Slice.1.0.linux.zip",
+        "mac": "https://github.com/Psych-Slice/P-Slice/releases/download/3.3/P-Slice.1.0.macos.zip",
+        "win": "https://github.com/Psych-Slice/P-Slice/releases/download/3.3/P-Slice.1.0.windows.zip"
+    },
+    {
+        "android": "https://github.com/Psych-Slice/P-Slice/releases/download/3.3.1/P-Slice.1.0.android.zip",
+        "ios": "https://github.com/Psych-Slice/P-Slice/releases/download/3.3.1/P-Slice.1.0.ios.zip",
+        "lin": "https://github.com/Psych-Slice/P-Slice/releases/download/3.3.1/P-Slice.1.0.linux.zip",
+        "mac": "https://github.com/Psych-Slice/P-Slice/releases/download/3.3.1/P-Slice.1.0.macos.zip",
+        "win": "https://github.com/Psych-Slice/P-Slice/releases/download/3.3.1/P-Slice.1.0.windows.zip"
+    },
+    {
+        "android": "https://github.com/Psych-Slice/P-Slice/releases/download/3.4/P-Slice.1.0.android.zip",
+        "ios": "https://github.com/Psych-Slice/P-Slice/releases/download/3.4/P-Slice.1.0.ios.zip",
+        "lin": "https://github.com/Psych-Slice/P-Slice/releases/download/3.4/P-Slice.1.0.linux.zip",
+        "mac": "https://github.com/Psych-Slice/P-Slice/releases/download/3.4/P-Slice.1.0.macos.zip",
+        "win": "https://github.com/Psych-Slice/P-Slice/releases/download/3.4/P-Slice.1.0.windows.zip"
+    },
+    {
+        "android": "https://github.com/Psych-Slice/P-Slice/releases/download/3.4.1/P-Slice.1.0.android.zip",
+        "ios": "https://github.com/Psych-Slice/P-Slice/releases/download/3.4.1/P-Slice.1.0.ios.zip",
+        "lin": "https://github.com/Psych-Slice/P-Slice/releases/download/3.4.1/P-Slice.1.0.linux.zip",
+        "mac": "https://github.com/Psych-Slice/P-Slice/releases/download/3.4.1/P-Slice.1.0.macos.zip",
+        "win": "https://github.com/Psych-Slice/P-Slice/releases/download/3.4.1/P-Slice.1.0.windows.zip"
+    },
+    {
+        "android": "https://github.com/Psych-Slice/P-Slice/releases/download/3.4.2/P-Slice.1.0.android.zip",
+        "ios": "https://github.com/Psych-Slice/P-Slice/releases/download/3.4.2/P-Slice.1.0.ios.zip",
+        "lin": "https://github.com/Psych-Slice/P-Slice/releases/download/3.4.2/P-Slice.1.0.linux.zip",
+        "mac": "https://github.com/Psych-Slice/P-Slice/releases/download/3.4.2/P-Slice.1.0.macos.zip",
+        "win": "https://github.com/Psych-Slice/P-Slice/releases/download/3.4.2/P-Slice.1.0.windows.zip"
+    }
+]

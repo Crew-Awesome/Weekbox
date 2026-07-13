@@ -1,0 +1,39 @@
+[
+  {
+    "win": "https://github.com/FunkinCrew/Funkin/releases/download/v0.6.4/funkin-windows-64bit.zip",
+    "lin": "https://github.com/FunkinCrew/Funkin/releases/download/v0.6.4/funkin-linux.zip",
+    "mac": "https://github.com/FunkinCrew/Funkin/releases/download/v0.6.4/funkin-osx.zip"
+  },
+  {
+    "win": "https://github.com/FunkinCrew/Funkin/releases/download/v0.7.3/funkin-windows-64bit.zip",
+    "lin": "https://github.com/FunkinCrew/Funkin/releases/download/v0.7.3/funkin-linux-64bit.zip",
+    "mac": "https://github.com/FunkinCrew/Funkin/releases/download/v0.7.3/funkin-osx-universal.dmg"
+  },
+  {
+    "win": "https://github.com/FunkinCrew/Funkin/releases/download/v0.7.4/funkin-windows-64bit.zip",
+    "lin": "https://github.com/FunkinCrew/Funkin/releases/download/v0.7.4/funkin-linux-64bit.zip",
+    "mac": "https://github.com/FunkinCrew/Funkin/releases/download/v0.7.4/Funkin-Installer.dmg"
+  },
+  {
+    "win": "https://github.com/FunkinCrew/Funkin/releases/download/v0.7.5/funkin-windows-64bit.zip",
+    "lin": "https://github.com/FunkinCrew/Funkin/releases/download/v0.7.5/funkin-linux-64bit.zip"
+  },
+  {
+    "win": "https://github.com/FunkinCrew/Funkin/releases/download/v0.8.1/funkin-windows-64bit.zip",
+    "lin": "https://github.com/FunkinCrew/Funkin/releases/download/v0.8.1/funkin-linux-64bit.zip",
+    "mac": "https://github.com/FunkinCrew/Funkin/releases/download/v0.8.1/Funkin-Installer-0.8.1.dmg"
+  },
+  {
+    "win": "https://github.com/FunkinCrew/Funkin/releases/download/v0.8.2/funkin-windows-64bit.zip",
+    "lin": "https://github.com/FunkinCrew/Funkin/releases/download/v0.8.2/funkin-linux-64bit.zip",
+    "mac": "https://github.com/FunkinCrew/Funkin/releases/download/v0.8.2/Funkin-Installer-0.8.2.zip"
+  },
+  {
+    "win": "https://github.com/FunkinCrew/Funkin/releases/download/v0.8.3/funkin-windows-64bit.zip"
+  },
+  {
+    "win": "https://github.com/FunkinCrew/Funkin/releases/download/v0.8.4/funkin-windows-64bit.zip",
+    "lin": "https://github.com/FunkinCrew/Funkin/releases/download/v0.8.4/funkin-linux-64bit.zip",
+    "mac": "https://github.com/FunkinCrew/Funkin/releases/download/v0.8.4/Funkin-Installer-0.8.4.zip"
+  }
+]

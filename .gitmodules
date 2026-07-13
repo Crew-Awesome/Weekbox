@@ -1,4 +1,0 @@
-[submodule "app/src/data"]
-	path = app/src/data
-	url = https://github.com/Crew-Awesome/weekbox.data.git
-	branch = main
