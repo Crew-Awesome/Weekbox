@@ -14,7 +14,7 @@ class FileSystemService extends EventTarget {
         if (this.isInitialized) return;
         try {
             const dataPath = await Neutralino.os.getPath('data');
-            this.basePath = await Neutralino.filesystem.getJoinedPath(dataPath, 'GenesisLauncher');
+            this.basePath = await Neutralino.filesystem.getJoinedPath(dataPath, 'WeekBox');
             this.enginesPath = await Neutralino.filesystem.getJoinedPath(this.basePath, 'engines');
             await this.ensureDir(this.basePath);
             await this.ensureDir(this.enginesPath);
@@ -229,4 +229,4 @@ class FileSystemService extends EventTarget {
 }
 
 export const FS = new FileSystemService();
-window.GenesisFS = FS;
+window.WeekBoxFS = FS;

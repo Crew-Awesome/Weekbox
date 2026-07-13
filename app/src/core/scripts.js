@@ -16,7 +16,7 @@ const ScriptLoader = {
             for (const scriptPath of scriptsList) {
                 await this.loadScript(scriptPath);
             }
-            console.log("Genesis Launcher: Módulos JS cargados.");
+            console.log("WeekBox: Módulos JS cargados.");
             
             if (window.Router) await window.Router.init();
             

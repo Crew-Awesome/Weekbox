@@ -13,7 +13,7 @@ window.StorageMonkeyPatch = {
                     console.warn(`Could not read key: ${key}`, err);
                 }
             }
-            console.log("Genesis Launcher: LocalStorage synced correctly.");
+            console.log("WeekBox: LocalStorage synced correctly.");
         } catch (err) {
             console.warn("Neutralino storage empty or unavailable.");
         }

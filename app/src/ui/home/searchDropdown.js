@@ -21,7 +21,7 @@ window.HomeSearchDropdown = {
     
     loadRecent() {
         try {
-            const saved = localStorage.getItem('genesis_recent_searches');
+            const saved = localStorage.getItem('weekbox_recent_searches');
             this.recentSearches = saved ? JSON.parse(saved) : [];
         } catch(e) { this.recentSearches = []; }
     },
@@ -31,7 +31,7 @@ window.HomeSearchDropdown = {
         this.recentSearches = this.recentSearches.filter(q => q.toLowerCase() !== query.toLowerCase());
         this.recentSearches.unshift(query);
         if(this.recentSearches.length > this.maxRecent) this.recentSearches.pop();
-        localStorage.setItem('genesis_recent_searches', JSON.stringify(this.recentSearches));
+        localStorage.setItem('weekbox_recent_searches', JSON.stringify(this.recentSearches));
     },
     
     showDropdown() {

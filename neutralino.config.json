@@ -1,5 +1,5 @@
 {
-  "applicationId": "com.genesis.js",
+  "applicationId": "com.weekbox.app",
   "version": "1.0.0",
   "defaultMode": "window",
   "port": 0,
@@ -22,7 +22,7 @@
   ],
   "modes": {
     "window": {
-      "title": "Genesis Launcher",
+      "title": "WeekBox",
       "width": 1280,
       "height": 720,
       "minWidth": 400,
@@ -36,7 +36,7 @@
     }
   },
   "cli": {
-    "binaryName": "Genesis Launcher",
+    "binaryName": "WeekBox",
     "resourcesPath": "/app/",
     "extensionsPath": "/extensions/",
     "clientLibrary": "/app/src/core/native/pc/neutralino.js",
