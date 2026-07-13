@@ -26,3 +26,65 @@
     color: var(--bg-color);
     border-color: var(--text-main);
 }
+
+.pill-dropdown {
+    position: relative;
+    display: flex;
+    align-items: center;
+    user-select: none;
+}
+
+.pill-dropdown .pill-btn {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding-left: 12px;
+}
+
+.pill-dropdown.open .pill-btn {
+    background-color: var(--bg-hover);
+    color: var(--text-main);
+    border-color: var(--text-main);
+}
+
+.pill-dropdown .custom-options-container {
+    position: absolute;
+    top: calc(100% + 8px);
+    left: 0;
+    min-width: 180px;
+    background-color: var(--bg-panel);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+    display: none;
+    flex-direction: column;
+    z-index: 100;
+    padding: 4px 0;
+    max-height: 250px;
+    overflow-y: auto;
+}
+
+.pill-dropdown.open .custom-options-container {
+    display: flex;
+}
+
+.pill-dropdown .custom-option {
+    padding: 10px 16px;
+    color: var(--text-muted);
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    transition: background-color 0.2s, color 0.2s;
+}
+
+.pill-dropdown .custom-option:hover {
+    background-color: var(--bg-hover);
+    color: var(--text-main);
+}
+
+.pill-dropdown .custom-option.selected {
+    color: var(--text-main);
+    background-color: rgba(255, 255, 255, 0.05);
+}
