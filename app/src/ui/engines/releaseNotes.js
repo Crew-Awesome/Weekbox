@@ -1,66 +1,101 @@
+const ALLOWED_TAGS = new Set([
+    "a", "b", "blockquote", "br", "code", "del", "details", "em", "h1", "h2", "h3", "h4",
+    "h5", "h6", "hr", "img", "li", "ol", "p", "pre", "strong", "summary", "table", "tt",
+    "tbody", "td", "th", "thead", "tr", "ul"
+]);
+
+const ALLOWED_ATTRIBUTES = {
+    a: new Set(["href", "title"]),
+    img: new Set(["alt", "height", "src", "title", "width"]),
+    ol: new Set(["start"])
+};
+
+function isSafeUrl(value) {
+    try {
+        const url = new URL(value, window.location.href);
+        return url.protocol === "https:" || url.protocol === "http:";
+    } catch {
+        return false;
+    }
+}
+
+function sanitizeReleaseHtml(html) {
+    const documentNode = new DOMParser().parseFromString(html, "text/html");
+
+    documentNode.body.querySelectorAll("*").forEach((element) => {
+        const tagName = element.tagName.toLowerCase();
+
+        if (!ALLOWED_TAGS.has(tagName)) {
+            if (["script", "style", "template"].includes(tagName)) {
+                element.remove();
+                return;
+            }
+
+            element.replaceWith(...element.childNodes);
+            return;
+        }
+
+        const allowedAttributes = ALLOWED_ATTRIBUTES[tagName] || new Set();
+        [...element.attributes].forEach((attribute) => {
+            if (!allowedAttributes.has(attribute.name.toLowerCase())) {
+                element.removeAttribute(attribute.name);
+            }
+        });
+
+        if ((tagName === "a" || tagName === "img") && !isSafeUrl(element.getAttribute(tagName === "a" ? "href" : "src"))) {
+            element.removeAttribute(tagName === "a" ? "href" : "src");
+        }
+
+        if (tagName === "a" && element.hasAttribute("href")) {
+            element.target = "_blank";
+            element.rel = "noopener noreferrer";
+        }
+    });
+
+    return documentNode.body.innerHTML;
+}
+
+function showPlainTextNotes(container, text) {
+    container.classList.add("release-notes-plain");
+    container.textContent = text;
+}
+
 export async function fetchAndRenderReleaseNotes(versionData, targetLink) {
-    const notesContainer = document.getElementById('engine-release-notes');
+    const notesContainer = document.getElementById("engine-release-notes");
     if (!notesContainer) return;
-    
+
+    notesContainer.classList.remove("release-notes-plain");
     notesContainer.innerHTML = '<p style="color: var(--text-muted);">Fetching release notes...</p>';
-    
+
     const link = targetLink || versionData.win || versionData.lin || versionData.mac || "";
-    const match = link.match(/github\.com\/([^\/]+)\/([^\/]+)\/releases\/download\/([^\/]+)\//);
-    
+    const match = link.match(/github\.com\/([^/]+)\/([^/]+)\/releases\/download\/([^/]+)\//);
+
     if (!match) {
-        notesContainer.innerHTML = '<p><em>No release notes available.</em></p>';
+        notesContainer.innerHTML = "<p><em>No release notes available.</em></p>";
         return;
     }
-    
+
+    const [owner, repository, tag] = match.slice(1);
+
     try {
-        const res = await fetch(`https://api.github.com/repos/${match[1]}/${match[2]}/releases/tags/${match[3]}`);
-        if (!res.ok) throw new Error();
-        const data = await res.json();
-        
-        let text = data.body || "No description.";
-        
-        // Keep release-note markup but strip scripts.
-        text = text.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, "");
-        
-        // Extract code before formatting Markdown.
-        let codeBlocks = [];
-        text = text.replace(/```([\s\S]*?)```/g, (match, code) => {
-            codeBlocks.push(code);
-            return `%%%CODE_BLOCK_${codeBlocks.length - 1}%%%`;
+        const response = await fetch(`https://api.github.com/repos/${owner}/${repository}/releases/tags/${encodeURIComponent(tag)}`, {
+            headers: {
+                Accept: "application/vnd.github.full+json",
+                "X-GitHub-Api-Version": "2026-03-10"
+            }
         });
 
-        // Keep inline code intact while formatting.
-        let inlineCodes = [];
-        text = text.replace(/`([^`]+)`/g, (match, code) => {
-            inlineCodes.push(code);
-            return `%%%INLINE_CODE_${inlineCodes.length - 1}%%%`;
-        });
+        if (!response.ok) throw new Error(`Release lookup failed: ${response.status}`);
+        const release = await response.json();
+        const text = release.body || "No description.";
 
-        // Format the supported Markdown syntax.
-        let html = text
-            .replace(/^### (.*$)/gim, '<h3>$1</h3>')
-            .replace(/^## (.*$)/gim, '<h2>$1</h2>')
-            .replace(/^# (.*$)/gim, '<h1>$1</h1>')
-            .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-            .replace(/(?<!\*)\*(?!\*)(.*?)(?<!\*)\*(?!\*)/g, '<em>$1</em>')
-            .replace(/!\[(.*?)\]\((.*?)\)/g, '<img alt="$1" src="$2" style="max-width: 100%; border-radius: 8px; margin: 8px 0;">')
-            .replace(/\[(.*?)\]\((.*?)\)/g, '<a href="$2" target="_blank">$1</a>')
-            .replace(/\r\n|\n/g, '<br>');
-
-        // Restore escaped inline code.
-        html = html.replace(/%%%INLINE_CODE_(\d+)%%%/g, (match, index) => {
-            const escapedCode = inlineCodes[index].replace(/</g, "&lt;").replace(/>/g, "&gt;");
-            return `<code>${escapedCode}</code>`;
-        });
-
-        // Restore escaped code blocks.
-        html = html.replace(/%%%CODE_BLOCK_(\d+)%%%/g, (match, index) => {
-            const escapedCode = codeBlocks[index].replace(/</g, "&lt;").replace(/>/g, "&gt;");
-            return `<pre style="background: rgba(255,255,255,0.05); padding: 12px; border-radius: 8px; overflow-x: auto; margin: 8px 0;"><code>${escapedCode}</code></pre>`;
-        });
-            
-        notesContainer.innerHTML = html;
-    } catch (error) {
-        notesContainer.innerHTML = '<p><em>Failed to fetch release notes.</em></p>';
+        const html = sanitizeReleaseHtml(release.body_html || "");
+        if (html) {
+            notesContainer.innerHTML = html;
+        } else {
+            showPlainTextNotes(notesContainer, text);
+        }
+    } catch {
+        notesContainer.innerHTML = "<p><em>Failed to fetch release notes.</em></p>";
     }
 }
