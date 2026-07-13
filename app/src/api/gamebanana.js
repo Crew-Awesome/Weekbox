@@ -1,6 +1,8 @@
 export const gameBananaApi = {
     baseUrl: "https://gamebanana.com/apiv11",
     gameId: 8694,
+    featuredUrl: "https://raw.githubusercontent.com/Crew-Awesome/weekbox.featured/main/public/featured.json",
+    featuredCacheKey: "weekbox.featured.v1",
 
     getImageUrl(mod) {
         if (mod._aPreviewMedia && mod._aPreviewMedia._aImages && mod._aPreviewMedia._aImages.length > 0) {
@@ -87,85 +89,46 @@ export const gameBananaApi = {
     },
 
     async getFeaturedCarousel() {
-        try {
-            const rssRes = await fetch(`https://api.gamebanana.com/Rss/Featured?gameid=${this.gameId}`);
-            let rssMods = [];
-            
-            if (rssRes.ok) {
-                const xmlText = await rssRes.text();
-                const parser = new DOMParser();
-                const xml = parser.parseFromString(xmlText, "text/xml");
-                const items = Array.from(xml.querySelectorAll("item"));
-                
-                rssMods = items.map((item, index) => {
-                    const title = item.querySelector("title")?.textContent || "Unknown Mod";
-                    const link = item.querySelector("link")?.textContent || "";
-                    const image = item.querySelector("image")?.textContent || "https://images.gamebanana.com/img/ss/mods/default.jpg";
-                    const id = link.split('/').pop() || index.toString();
-                    const pubDate = item.querySelector("pubDate")?.textContent;
-                    const ts = pubDate ? Math.floor(new Date(pubDate).getTime() / 1000) : 0;
-                    
-                    return { 
-                        id, 
-                        title, 
-                        author: "Featured Creator", 
-                        image, 
-                        likes: 0, 
-                        views: 0,
-                        timeAgo: this.getTimeAgo(ts)
-                    };
-                });
-            }
-
-            const popRes = await fetch(`${this.baseUrl}/Mod/Index?_aFilters%5BGeneric_Game%5D=${this.gameId}&_nPage=1&_nPerpage=40`);
-            let popMods = [];
-            
-            if (popRes.ok) {
-                const data = await popRes.json();
-                let records = this.getValidRecords(data);
-                
-                records.sort((a, b) => {
-                    const scoreA = (a._nLikeCount || 0) + (a._nViewCount || 0);
-                    const scoreB = (b._nLikeCount || 0) + (b._nViewCount || 0);
-                    return scoreB - scoreA;
-                });
-                
-                popMods = records.map(mod => ({
-                    id: mod._idRow,
-                    title: mod._sName,
-                    author: mod._aSubmitter?._sName || "Unknown",
-                    image: this.getImageUrl(mod),
-                    likes: mod._nLikeCount || 0,
-                    views: mod._nViewCount || 0,
-                    timeAgo: this.getTimeAgo(mod._tsDateAdded)
-                }));
-            }
-
-            let combined = [...rssMods, ...popMods];
-            let uniqueMods = [];
-            let seen = new Set();
-            
-            for (let m of combined) {
-                if (!seen.has(m.id)) {
-                    seen.add(m.id);
-                    uniqueMods.push(m);
-                }
-            }
-
-            const categories = [
-                "Best of Today", "Best of This Week", "Best of This Month",
-                "Best of 3 Months", "Best of 6 Months", "Best of This Year", "Best of All Time"
-            ];
-
-            return uniqueMods.slice(0, 21).map((mod, index) => {
-                const categoryIndex = Math.floor(index / 3);
-                mod.label = categories[categoryIndex] || "Featured";
-                return mod;
-            });
-        } catch (error) {
-            console.error("Error loading carousel mods:", error);
-            return [];
+        const cachedData = this.getCachedFeatured();
+        if (cachedData && Date.parse(cachedData.expiresAt) > Date.now()) {
+            return this.flattenFeatured(cachedData);
         }
+
+        try {
+            const response = await fetch(this.featuredUrl, { cache: "no-store" });
+            if (!response.ok) throw new Error(`Featured feed returned ${response.status}`);
+
+            const featuredData = await response.json();
+            const mods = this.flattenFeatured(featuredData);
+            if (mods.length === 0) throw new Error("Featured feed contains no mods");
+
+            localStorage.setItem(this.featuredCacheKey, JSON.stringify(featuredData));
+            return mods;
+        } catch (error) {
+            console.error("Error loading featured feed:", error);
+            return cachedData ? this.flattenFeatured(cachedData) : [];
+        }
+    },
+
+    getCachedFeatured() {
+        try {
+            const cached = localStorage.getItem(this.featuredCacheKey);
+            return cached ? JSON.parse(cached) : null;
+        } catch (error) {
+            return null;
+        }
+    },
+
+    flattenFeatured(featuredData) {
+        if (!Array.isArray(featuredData?.rankings)) return [];
+
+        return featuredData.rankings.flatMap(ranking =>
+            (ranking.mods || []).map(mod => ({
+                ...mod,
+                label: ranking.label,
+                timeAgo: this.getTimeAgo(mod.publishedAt)
+            }))
+        );
     },
 
     async getGridMods(filter = 'ripe', page = 1) {
