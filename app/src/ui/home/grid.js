@@ -6,12 +6,14 @@ export const homeGrid = {
     isLoading: false,
     isSearchMode: false,
     searchQuery: "",
-    currentFilter: "ripe", 
+    currentFilter: "popular",
+    hasMore: true,
     scrollHandler: null,
 
     async init() {
         this.currentPage = 1;
         this.isSearchMode = false;
+        this.hasMore = true;
         this.setupFilters();
         await this.renderGrid(true);
         this.setupInfiniteScroll();
@@ -25,6 +27,7 @@ export const homeGrid = {
                 pills.forEach(p => p.classList.remove('active'));
                 e.target.classList.add('active');
                 this.currentFilter = e.target.getAttribute('data-filter');
+                this.hasMore = true;
                 await this.renderGrid(true);
             });
         });
@@ -34,7 +37,7 @@ export const homeGrid = {
         if (this.isLoading) return;
         const grid = document.getElementById('popular-grid');
         if (!grid) return;
-        if (isInitial) { this.currentPage = 1; grid.innerHTML = ''; }
+        if (isInitial) { this.currentPage = 1; this.hasMore = true; grid.innerHTML = ''; }
 
         this.isLoading = true;
 
@@ -46,6 +49,10 @@ export const homeGrid = {
             if (mods.length === 0 && isInitial) {
                 grid.innerHTML = `<p style="color: var(--text-muted); padding: 16px;">No mods found.</p>`;
                 this.isLoading = false;
+                return;
+            }
+            if (mods.length === 0) {
+                this.hasMore = false;
                 return;
             }
 
@@ -73,6 +80,8 @@ export const homeGrid = {
 
                 grid.appendChild(card);
             });
+
+            if (mods.length < 12) this.hasMore = false;
         } catch (error) {
             console.error("Error loading grid items:", error);
             if (isInitial) grid.innerHTML = `<p style="color: red; padding: 16px;">Failed to load mods.</p>`;
@@ -85,7 +94,7 @@ export const homeGrid = {
         const mainContent = document.getElementById('main-content');
         this.scrollHandler = () => {
             if (mainContent.scrollTop + mainContent.clientHeight >= mainContent.scrollHeight - 300) {
-                if (!this.isLoading) {
+                if (!this.isLoading && this.hasMore) {
                     this.currentPage++;
                     this.renderGrid(false);
                 }

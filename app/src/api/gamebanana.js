@@ -3,7 +3,13 @@ export const gameBananaApi = {
     gameId: 8694,
     categoryRoots: [34764, 28367, 29202],
     featuredUrl: "https://raw.githubusercontent.com/Crew-Awesome/weekbox.featured/main/public/featured.json",
-    featuredCacheKey: "weekbox.featured.v1",
+    featuredCacheKey: "weekbox-featured-v1",
+    freshPopularRecords: [],
+    freshPopularNextPage: 1,
+    freshPopularExhausted: false,
+    freshPopularFeaturedIds: new Set(),
+    freshPopularPages: new Map(),
+    freshPopularSeenIds: new Set(),
 
     getImageUrl(mod) {
         if (mod._aPreviewMedia && mod._aPreviewMedia._aImages && mod._aPreviewMedia._aImages.length > 0) {
@@ -133,7 +139,7 @@ export const gameBananaApi = {
     },
 
     async getCategoryRecords({ page = 1, perPage = 20, sort } = {}) {
-        const responses = await Promise.all(this.categoryRoots.map(async categoryId => {
+        const responses = await Promise.allSettled(this.categoryRoots.map(async categoryId => {
             const params = new URLSearchParams({
                 _nPage: String(page),
                 _nPerpage: String(perPage)
@@ -147,7 +153,12 @@ export const gameBananaApi = {
             return this.getValidRecords(await response.json());
         }));
 
-        return [...new Map(responses.flat().map(mod => [mod._idRow, mod])).values()];
+        const records = responses
+            .filter(result => result.status === 'fulfilled')
+            .flatMap(result => result.value);
+        if (records.length === 0) throw new Error('GameBanana returned no category results');
+
+        return [...new Map(records.map(mod => [mod._idRow, mod])).values()];
     },
 
     toGridMod(mod) {
@@ -162,8 +173,71 @@ export const gameBananaApi = {
         };
     },
 
+    getPopularScore(mod, isFeatured = false) {
+        const likes = mod._nLikeCount || 0;
+        const views = mod._nViewCount || 0;
+        const ageDays = Math.max(0, (Date.now() / 1000 - (mod._tsDateAdded || 0)) / 86400);
+        const likeRate = likes / Math.max(views, 1);
+        const momentum = Math.log1p(likes / Math.max(ageDays, 1)) + 0.4 * Math.log1p(likes);
+        const qualityMultiplier = 0.7 + Math.min(0.5, likeRate * 30);
+        const freshnessMultiplier = Math.exp(-ageDays / 10);
+        const diversityMultiplier = isFeatured ? 0.88 : 1;
+
+        return momentum * qualityMultiplier * freshnessMultiplier * diversityMultiplier;
+    },
+
+    isFreshPopularMod(mod) {
+        const ageDays = (Date.now() / 1000 - (mod._tsDateAdded || 0)) / 86400;
+        const likes = mod._nLikeCount || 0;
+        const views = mod._nViewCount || 0;
+        const likeRate = likes / Math.max(views, 1);
+
+        return ageDays <= 21 && likes >= 4 && views >= 250 && likeRate >= 0.0125;
+    },
+
+    async getFreshPopularMods(page) {
+        if (page === 1) {
+            this.freshPopularRecords = [];
+            this.freshPopularNextPage = 1;
+            this.freshPopularExhausted = false;
+            this.freshPopularFeaturedIds = new Set((await this.getFeaturedCarousel()).map(mod => mod.id));
+            this.freshPopularPages = new Map();
+            this.freshPopularSeenIds = new Set();
+        }
+
+        if (this.freshPopularPages.has(page)) return this.freshPopularPages.get(page);
+
+        let available = [];
+        while (!this.freshPopularExhausted) {
+            available = [...this.freshPopularRecords]
+                .filter(mod => !this.freshPopularSeenIds.has(mod._idRow))
+                .sort((left, right) => this.getPopularScore(right, this.freshPopularFeaturedIds.has(right._idRow)) - this.getPopularScore(left, this.freshPopularFeaturedIds.has(left._idRow)));
+            if (available.length >= 12) break;
+
+            const records = await this.getCategoryRecords({
+                page: this.freshPopularNextPage++,
+                perPage: 50,
+                sort: 'Generic_Newest'
+            });
+            const freshRecords = records.filter(mod => this.isFreshPopularMod(mod));
+            const knownIds = new Set(this.freshPopularRecords.map(mod => mod._idRow));
+            this.freshPopularRecords.push(...freshRecords.filter(mod => !knownIds.has(mod._idRow)));
+
+            if (records.length === 0 || freshRecords.length === 0) {
+                this.freshPopularExhausted = true;
+            }
+        }
+
+        const mods = available.slice(0, 12).map(mod => this.toGridMod(mod));
+        mods.forEach(mod => this.freshPopularSeenIds.add(mod.id));
+        this.freshPopularPages.set(page, mods);
+        return mods;
+    },
+
     async getGridMods(filter = 'ripe', page = 1) {
         try {
+            if (filter === 'popular') return await this.getFreshPopularMods(page);
+
             const sort = {
                 new: 'Generic_Newest',
                 updated: 'Generic_LatestUpdated'
