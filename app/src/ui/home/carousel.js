@@ -80,8 +80,10 @@ export const homeCarousel = {
         if (dots.length === 0) return;
         dots.forEach(d => { d.classList.remove('active'); d.style.display = 'none'; });
 
-        for (let offset = 0; offset < Math.min(4, this.totalSlides); offset++) {
-            const dotIndex = (this.currentSlideIndex + offset) % this.totalSlides;
+        const groupStart = Math.floor(this.currentSlideIndex / 4) * 4;
+
+        for (let offset = 0; offset < Math.min(4, this.totalSlides - groupStart); offset++) {
+            const dotIndex = groupStart + offset;
             dots[dotIndex].style.display = 'block';
             dots[dotIndex].style.order = offset + 1;
         }
