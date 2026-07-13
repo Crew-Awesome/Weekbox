@@ -37,7 +37,7 @@ export const homeView = {
             this.mainContent.removeEventListener('scroll', this.scrollHandler);
         }
         homeCarousel.stopAutoSlide();
-        homeGrid.removeScroll();
+        homeGrid.destroy();
     }
 };
 

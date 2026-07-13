@@ -26,25 +26,28 @@
                 <h2 id="grid-section-title">Mods</h2>
                 <div class="filter-pills" id="grid-filters">
                     <div class="pill-dropdown" id="engine-filter-dropdown">
-                        <button class="pill-btn dropdown-trigger" id="engine-filter-trigger">
-                            <img id="engine-filter-icon" src="assets/icons/vslice.png" style="width: 14px; height: 14px; object-fit: contain;">
-                            <span id="engine-filter-selected">Base Game</span>
-                            <i class="fa-solid fa-chevron-down" style="font-size: 0.75rem; margin-left: 4px;"></i>
+                        <button class="pill-btn dropdown-trigger" id="engine-filter-trigger" type="button" aria-haspopup="listbox" aria-expanded="false">
+                            <span class="filter-engine-icon" id="engine-filter-icon" aria-hidden="true"><i class="fa-solid fa-layer-group"></i></span>
+                            <span id="engine-filter-selected">All engines</span>
+                            <i class="fa-solid fa-chevron-down filter-dropdown-chevron" aria-hidden="true"></i>
                         </button>
-                        <div class="custom-options-container" id="engine-filter-options">
-                            <div class="custom-option selected" data-id="29202">
-                                <img src="assets/icons/vslice.png" style="width: 14px; height: 14px; object-fit: contain; margin-right: 8px;"> Base Game
-                            </div>
-                            <div class="custom-option" data-id="28367">
-                                <img src="assets/icons/psych.ico" style="width: 14px; height: 14px; object-fit: contain; margin-right: 8px;"> Psych Engine
-                            </div>
-                            <div class="custom-option" data-id="34764">
-                                <img src="assets/icons/codename.png" style="width: 14px; height: 14px; object-fit: contain; margin-right: 8px;"> Codename
-                            </div>
+                        <div class="custom-options-container" id="engine-filter-options" role="listbox" aria-label="Engine filter">
+                            <button class="custom-option selected" type="button" data-category-id="" data-label="All engines" role="option" aria-selected="true">
+                                <span class="filter-engine-icon" aria-hidden="true"><i class="fa-solid fa-layer-group"></i></span><span>All engines</span>
+                            </button>
+                            <button class="custom-option" type="button" data-category-id="29202" data-label="Base Game" role="option" aria-selected="false">
+                                <span class="filter-engine-icon" aria-hidden="true"><img src="assets/icons/vslice.png" alt=""></span><span>Base Game</span>
+                            </button>
+                            <button class="custom-option" type="button" data-category-id="28367" data-label="Psych Engine" role="option" aria-selected="false">
+                                <span class="filter-engine-icon" aria-hidden="true"><img src="assets/icons/psych.ico" alt=""></span><span>Psych Engine</span>
+                            </button>
+                            <button class="custom-option" type="button" data-category-id="34764" data-label="Codename Engine" role="option" aria-selected="false">
+                                <span class="filter-engine-icon" aria-hidden="true"><img src="assets/icons/codename.png" alt=""></span><span>Codename Engine</span>
+                            </button>
                         </div>
                     </div>
                     
-                    <div style="width: 1px; height: 20px; background: var(--border-color); margin: 0 4px;"></div>
+                    <div class="filter-divider" aria-hidden="true"></div>
                     
                     <button class="pill-btn active filter-type" data-filter="popular">Discover</button>
                     <button class="pill-btn filter-type" data-filter="ripe">Ripe</button>

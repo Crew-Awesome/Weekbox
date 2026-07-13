@@ -7,6 +7,7 @@
 @import url('./home/searchDropdown.css'); 
 @import url('./home/carousel.css'); 
 @import url('./home/grid.css'); 
+@import url('./home/pill.css');
 
 @import url('./home/modal/layout.css');
 @import url('./home/modal/carousel.css');
