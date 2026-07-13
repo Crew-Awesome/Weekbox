@@ -49,6 +49,7 @@ export const homeGrid = {
         if (isInitial) { this.currentPage = 1; this.hasMore = true; grid.innerHTML = ''; }
 
         this.isLoading = true;
+        if (!isInitial) this.showLoadMoreIndicator(grid);
 
         try {
             let mods = this.isSearchMode
@@ -67,9 +68,10 @@ export const homeGrid = {
                 return;
             }
 
-            mods.forEach(mod => {
+            mods.forEach((mod, index) => {
                 const card = document.createElement('div');
-                card.className = 'mod-card';
+                card.className = 'mod-card mod-card-pending';
+                card.style.setProperty('--card-index', index);
                 card.innerHTML = `
                     <div class="mod-image-container">
                         <img src="${mod.image}" class="mod-image">
@@ -90,6 +92,13 @@ export const homeGrid = {
                 });
 
                 grid.appendChild(card);
+                requestAnimationFrame(() => requestAnimationFrame(() => {
+                    card.classList.remove('mod-card-pending');
+                    card.classList.add('mod-card-enter');
+                }));
+                card.addEventListener('animationend', event => {
+                    if (event.animationName === 'mod-card-fade-in') card.classList.remove('mod-card-enter');
+                });
             });
 
             if (mods.length < 12) this.hasMore = false;
@@ -97,12 +106,27 @@ export const homeGrid = {
             console.error("Error loading grid items:", error);
             if (isInitial) grid.innerHTML = `<p style="color: red; padding: 16px;">Failed to load mods.</p>`;
         } finally {
+            this.hideLoadMoreIndicator(grid);
             this.isLoading = false;
             if (this.pendingInitialRender) {
                 this.pendingInitialRender = false;
                 this.renderGrid(true);
             }
         }
+    },
+
+    showLoadMoreIndicator(grid) {
+        if (grid.querySelector('.chunk-loader')) return;
+        const loader = document.createElement('div');
+        loader.className = 'chunk-loader';
+        loader.setAttribute('role', 'status');
+        loader.setAttribute('aria-live', 'polite');
+        loader.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i><span>Loading more mods...</span>';
+        grid.appendChild(loader);
+    },
+
+    hideLoadMoreIndicator(grid) {
+        grid?.querySelector('.chunk-loader')?.remove();
     },
 
     setupInfiniteScroll() {
