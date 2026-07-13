@@ -1,4 +1,7 @@
-window.ModModal = {
+import { gameBananaApi } from '../../../api/gamebanana.js';
+import { modModalCarousel } from './carousel.js';
+
+export const modModal = {
     async init() {
         if (!document.getElementById('mod-modal')) {
             try {
@@ -34,7 +37,7 @@ window.ModModal = {
         document.getElementById('modal-title').textContent = "Loading info...";
         document.getElementById('modal-image-loader').style.display = 'block';
 
-        const data = await window.GameBananaAPI.getModDetails(modId);
+        const data = await gameBananaApi.getModDetails(modId);
         if (!data) {
             document.getElementById('modal-title').textContent = "Error loading mod";
             return;
@@ -49,9 +52,7 @@ window.ModModal = {
         
         modal.classList.remove('show');
         
-        if (window.ModModalCarousel) {
-            window.ModModalCarousel.stopAutoPlay();
-        }
+        modModalCarousel.stopAutoPlay();
         
         setTimeout(() => {
             modal.style.display = 'none';
@@ -100,8 +101,6 @@ window.ModModal = {
             };
         }
 
-        if (window.ModModalCarousel) {
-            window.ModModalCarousel.setup(data.images);
-        }
+        modModalCarousel.setup(data.images);
     }
 };

@@ -1,46 +1,25 @@
+import { storageBridge } from './storagePatch.js';
 import { router } from './router.js';
+import { registerHomeView } from '../ui/home/index.js';
 import { registerEnginesView } from '../ui/engines/index.js';
 
-const appLoader = {
-    async init() {
-        try {
-            Neutralino.init();
-            Neutralino.events.on("windowClose", () => {
-                Neutralino.app.exit();
-            });
-            
-            const response = await fetch('src/core/scripts.jsonc');
-            if (!response.ok) throw new Error(`Error al leer scripts.jsonc: HTTP ${response.status}`);
-            
-            const text = await response.text();
-            const cleanJsonString = text.replace(/\/\*[\s\S]*?\*\/|\/\/.*/g, '').trim();
-            const scriptsList = JSON.parse(cleanJsonString);
-            
-            for (const scriptPath of scriptsList) {
-                await this.loadScript(scriptPath);
-            }
-            console.log("WeekBox: Módulos JS cargados.");
-            
-            registerEnginesView();
-            await router.init();
-            
-        } catch (error) {
-            console.error("Error crítico:", error);
-            const main = document.getElementById('main-content');
-            if (main) {
-                main.innerHTML = `<div style="padding: 24px; color: #ff4a4a;"><h2>Error de carga</h2><p>${error.message}</p></div>`;
-            }
+async function startApp() {
+    try {
+        Neutralino.init();
+        Neutralino.events.on('windowClose', () => Neutralino.app.exit());
+
+        await storageBridge.init();
+        registerHomeView();
+        registerEnginesView();
+        await router.init();
+        console.log('WeekBox: modules loaded.');
+    } catch (error) {
+        console.error('Startup error:', error);
+        const mainContent = document.getElementById('main-content');
+        if (mainContent) {
+            mainContent.innerHTML = `<div style="padding: 24px; color: #ff4a4a;"><h2>Load error</h2><p>${error.message}</p></div>`;
         }
-    },
-    loadScript(src) {
-        return new Promise((resolve, reject) => {
-            const script = document.createElement('script');
-            script.src = src;
-            script.type = 'module';
-            script.onload = () => resolve();
-            script.onerror = () => reject(new Error(`No se encontró el archivo: ${src}`));
-            document.body.appendChild(script);
-        });
     }
-};
-appLoader.init();
+}
+
+startApp();

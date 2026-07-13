@@ -1,4 +1,4 @@
-window.StorageMonkeyPatch = {
+export const storageBridge = {
     async init() {
         const isNeutralino = typeof Neutralino !== 'undefined';
         if (!isNeutralino) return;

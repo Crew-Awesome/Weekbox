@@ -1,4 +1,7 @@
-window.HomeSearch = {
+import { homeGrid } from './grid.js';
+import { homeSearchDropdown } from './searchDropdown.js';
+
+export const homeSearch = {
     timeoutId: null,
 
     init() {
@@ -21,7 +24,7 @@ window.HomeSearch = {
             if (e.key === 'Enter') {
                 clearTimeout(this.timeoutId);
                 this.executeSearch(e.target.value.trim());
-                window.HomeSearchDropdown.hideDropdown();
+                homeSearchDropdown.hideDropdown();
                 newInput.blur();
             }
         });
@@ -32,12 +35,12 @@ window.HomeSearch = {
         const sectionTitle = document.getElementById('grid-section-title');
         const filters = document.getElementById('grid-filters');
 
-        window.HomeGrid.isSearchMode = query.length > 0;
-        window.HomeGrid.searchQuery = query;
-        window.HomeGrid.currentPage = 1;
+        homeGrid.isSearchMode = query.length > 0;
+        homeGrid.searchQuery = query;
+        homeGrid.currentPage = 1;
 
         if (query.length > 0) {
-            window.HomeSearchDropdown.saveRecent(query);
+            homeSearchDropdown.saveRecent(query);
             if (carousel) carousel.style.display = 'none';
             if (filters) filters.style.display = 'none';
             if (sectionTitle) sectionTitle.textContent = `Resultados para "${query}"`;
@@ -47,6 +50,6 @@ window.HomeSearch = {
             if (sectionTitle) sectionTitle.textContent = 'Mods';
         }
 
-        await window.HomeGrid.renderGrid(true);
+        await homeGrid.renderGrid(true);
     }
 };

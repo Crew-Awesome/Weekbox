@@ -1,14 +1,20 @@
-window.HomeApp = {
+import { appEvents } from '../../core/events.js';
+import { homeCarousel } from './carousel.js';
+import { homeGrid } from './grid.js';
+import { homeSearch } from './search.js';
+import { homeSearchDropdown } from './searchDropdown.js';
+
+export const homeView = {
     init() {
         this.mainContent = document.getElementById('main-content');
         this.container = document.querySelector('.home-container');
         
         this.mainContent.addEventListener('scroll', this.handleScroll.bind(this));
 
-        window.HomeCarousel.init();
-        window.HomeGrid.init();
-        window.HomeSearch.init();
-        window.HomeSearchDropdown.init();
+        homeCarousel.init();
+        homeGrid.init();
+        homeSearch.init();
+        homeSearchDropdown.init();
     },
 
     handleScroll() {
@@ -24,12 +30,14 @@ window.HomeApp = {
         if (this.mainContent) {
             this.mainContent.removeEventListener('scroll', this.handleScroll);
         }
-        window.HomeCarousel.stopAutoSlide();
-        window.HomeGrid.removeScroll();
+        homeCarousel.stopAutoSlide();
+        homeGrid.removeScroll();
     }
 };
 
-window.addEventListener('view:loaded', (e) => {
-    if (e.detail === 'home') window.HomeApp.init();
-    else window.HomeApp.destroy();
-});
+export function registerHomeView() {
+    appEvents.addEventListener('view:loaded', (event) => {
+        if (event.detail === 'home') homeView.init();
+        else homeView.destroy();
+    });
+}

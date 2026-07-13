@@ -1,4 +1,7 @@
-window.HomeGrid = {
+import { gameBananaApi } from '../../api/gamebanana.js';
+import { modModal } from './modal/index.js';
+
+export const homeGrid = {
     currentPage: 1,
     isLoading: false,
     isSearchMode: false,
@@ -37,8 +40,8 @@ window.HomeGrid = {
 
         try {
             let mods = this.isSearchMode
-                ? await window.GameBananaAPI.searchMods(this.searchQuery, this.currentPage)
-                : await window.GameBananaAPI.getGridMods(this.currentFilter, this.currentPage);
+                ? await gameBananaApi.searchMods(this.searchQuery, this.currentPage)
+                : await gameBananaApi.getGridMods(this.currentFilter, this.currentPage);
 
             if (mods.length === 0 && isInitial) {
                 grid.innerHTML = `<p style="color: var(--text-muted); padding: 16px;">No mods found.</p>`;
@@ -65,7 +68,7 @@ window.HomeGrid = {
                 `;
                 
                 card.addEventListener('click', () => {
-                    if(window.ModModal) window.ModModal.open(mod.id);
+                    modModal.open(mod.id);
                 });
 
                 grid.appendChild(card);

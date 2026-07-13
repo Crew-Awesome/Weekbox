@@ -1,4 +1,4 @@
-window.GameBananaAPI = {
+export const gameBananaApi = {
     baseUrl: "https://gamebanana.com/apiv11",
     gameId: 8694,
 

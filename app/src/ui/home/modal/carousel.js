@@ -1,4 +1,4 @@
-window.ModModalCarousel = {
+export const modModalCarousel = {
     slideInterval: null,
     images: [],
     currentIndex: 0,

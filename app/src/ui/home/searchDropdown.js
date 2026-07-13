@@ -1,4 +1,7 @@
-window.HomeSearchDropdown = {
+import { gameBananaApi } from '../../api/gamebanana.js';
+import { homeSearch } from './search.js';
+
+export const homeSearchDropdown = {
     recentSearches: [],
     maxRecent: 5,
     fetchTimeout: null,
@@ -75,7 +78,7 @@ window.HomeSearchDropdown = {
                         item.addEventListener('click', () => {
                             this.input.value = title;
                             this.hideDropdown();
-                            window.HomeSearch.executeSearch(title);
+                            homeSearch.executeSearch(title);
                         });
                         relatedSection.appendChild(item);
                     });
@@ -102,7 +105,7 @@ window.HomeSearchDropdown = {
             item.addEventListener('click', () => {
                 this.input.value = text;
                 this.hideDropdown();
-                window.HomeSearch.executeSearch(text);
+                homeSearch.executeSearch(text);
             });
             section.appendChild(item);
         });
@@ -112,7 +115,7 @@ window.HomeSearchDropdown = {
     
     async fetchRelated(query) {
         try {
-            const res = await window.GameBananaAPI.searchMods(query, 1, 3); 
+            const res = await gameBananaApi.searchMods(query, 1, 3);
             return res.map(m => m.title);
         } catch(e) { return []; }
     }

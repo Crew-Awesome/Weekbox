@@ -1,4 +1,7 @@
-window.HomeCarousel = {
+import { gameBananaApi } from '../../api/gamebanana.js';
+import { modModal } from './modal/index.js';
+
+export const homeCarousel = {
     currentSlideIndex: 0,
     slideInterval: null,
     totalSlides: 0,
@@ -9,7 +12,7 @@ window.HomeCarousel = {
         if (!track) return;
 
         try {
-            const mods = await window.GameBananaAPI.getFeaturedCarousel();
+            const mods = await gameBananaApi.getFeaturedCarousel();
             if (mods.length === 0) {
                 track.innerHTML = `<div style="padding: 24px; color: var(--text-muted);">No featured mods found.</div>`;
                 return;
@@ -38,9 +41,7 @@ window.HomeCarousel = {
                 
                 const downloadBtn = slide.querySelector('.download-mod-btn');
                 downloadBtn.addEventListener('click', () => {
-                    if (window.ModModal) {
-                        window.ModModal.open(mod.id);
-                    }
+                    modModal.open(mod.id);
                 });
                 
                 track.appendChild(slide);
