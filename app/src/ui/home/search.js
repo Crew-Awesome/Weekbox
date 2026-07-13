@@ -43,7 +43,7 @@ export const homeSearch = {
             homeSearchDropdown.saveRecent(query);
             if (carousel) carousel.style.display = 'none';
             if (filters) filters.style.display = 'none';
-            if (sectionTitle) sectionTitle.textContent = `Resultados para "${query}"`;
+            if (sectionTitle) sectionTitle.textContent = `Results for "${query}"`;
         } else {
             if (carousel) carousel.style.display = 'flex';
             if (filters) filters.style.display = 'flex';

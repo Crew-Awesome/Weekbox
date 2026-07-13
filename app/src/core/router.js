@@ -14,7 +14,7 @@ export const router = {
 
     async loadComponent(container, path) {
         const response = await fetch(path);
-        if (!response.ok) throw new Error(`No se pudo encontrar el archivo HTML: ${path}`);
+        if (!response.ok) throw new Error(`Could not find HTML file: ${path}`);
         container.innerHTML = await response.text();
     },
 
@@ -25,7 +25,7 @@ export const router = {
             emitViewChange(viewId);
             
         } catch (error) {
-            this.mainContent.innerHTML = `<p style="padding: 24px; color: #ff4a4a;">Error cargando la vista: ${viewId}.html</p>`;
+            this.mainContent.innerHTML = `<p style="padding: 24px; color: #ff4a4a;">Failed to load view: ${viewId}.html</p>`;
         }
     }
 };

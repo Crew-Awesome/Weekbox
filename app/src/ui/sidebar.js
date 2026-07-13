@@ -74,7 +74,7 @@ export const sidebar = {
         
         try {
             const response = await fetch('src/data/engines-router.json');
-            if (!response.ok) throw new Error("Error cargando engines-router.json");
+            if (!response.ok) throw new Error("Failed to load engines-router.json");
             
             const enginesRouter = await response.json();
             wrapper.innerHTML = '';
@@ -100,10 +100,10 @@ export const sidebar = {
                     
                     try {
                         const originalText = btn.querySelector('span').textContent;
-                        btn.querySelector('span').innerHTML = `<i class="fa-solid fa-spinner fa-spin" style="margin-right:4px;"></i> Cargando...`;
+                        btn.querySelector('span').innerHTML = `<i class="fa-solid fa-spinner fa-spin" style="margin-right:4px;"></i> Loading...`;
                         
                         const verResponse = await fetch(`src/data/${engineDef.versions}.json`);
-                        if (!verResponse.ok) throw new Error(`Error cargando ${engineDef.versions}.json`);
+                        if (!verResponse.ok) throw new Error(`Failed to load ${engineDef.versions}.json`);
                         
                         const rawVersionsData = await verResponse.json();
                         
@@ -135,7 +135,7 @@ export const sidebar = {
                     } catch (err) {
                         console.error(err);
                         btn.querySelector('span').textContent = displayName;
-                        alert(`No se pudo cargar la información de las versiones para ${displayName}`);
+                        alert(`Could not load version information for ${displayName}`);
                     }
                 });
                 
@@ -143,7 +143,7 @@ export const sidebar = {
             }
         } catch (error) {
             console.error(error);
-            wrapper.innerHTML = `<p style="color:red; padding:8px; font-size:12px;">Error cargando router de motores</p>`;
+            wrapper.innerHTML = `<p style="color:red; padding:8px; font-size:12px;">Failed to load engine router</p>`;
         }
     }
 };

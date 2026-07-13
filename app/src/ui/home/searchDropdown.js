@@ -58,7 +58,7 @@ export const homeSearchDropdown = {
         }
         
         if(filteredRecent.length > 0) {
-            this.renderSection('Búsquedas recientes', filteredRecent, 'fa-clock-rotate-left', true);
+            this.renderSection('Recent searches', filteredRecent, 'fa-clock-rotate-left', true);
         }
 
         if(query.length > 2) {
@@ -66,14 +66,14 @@ export const homeSearchDropdown = {
             
             const relatedSection = document.createElement('div');
             relatedSection.className = 'dropdown-section';
-            relatedSection.innerHTML = `<div class="dropdown-title">Relacionadas</div><div class="dropdown-item" style="cursor:default;"><i class="fa-solid fa-spinner fa-spin"></i> Cargando...</div>`;
+            relatedSection.innerHTML = `<div class="dropdown-title">Related</div><div class="dropdown-item" style="cursor:default;"><i class="fa-solid fa-spinner fa-spin"></i> Loading...</div>`;
             this.dropdown.appendChild(relatedSection);
 
             this.fetchTimeout = setTimeout(async () => {
                 const related = await this.fetchRelated(query);
                 if (suggestionVersion !== this.suggestionVersion) return;
                 if(related.length > 0) {
-                    relatedSection.innerHTML = `<div class="dropdown-title">Sugerencias relacionadas</div>`;
+                    relatedSection.innerHTML = `<div class="dropdown-title">Related suggestions</div>`;
                     related.forEach(title => {
                         const item = document.createElement('div');
                         item.className = 'dropdown-item';
@@ -92,7 +92,7 @@ export const homeSearchDropdown = {
         }
         
         if(this.dropdown.innerHTML === '') {
-            this.dropdown.innerHTML = `<div class="dropdown-item empty-state">No hay búsquedas recientes</div>`;
+            this.dropdown.innerHTML = `<div class="dropdown-item empty-state">No recent searches</div>`;
         }
     },
     
