@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "defaultMode": "window",
   "port": 0,
-  "documentRoot": "/public/launcher/",
+  "documentRoot": "/app/",
   "url": "/",
   "enableServer": true,
   "enableNativeAPI": true,
@@ -37,9 +37,9 @@
   },
   "cli": {
     "binaryName": "Genesis Launcher",
-    "resourcesPath": "/public/launcher/",
+    "resourcesPath": "/app/",
     "extensionsPath": "/extensions/",
-    "clientLibrary": "/public/launcher/src/core/native/pc/neutralino.js",
+    "clientLibrary": "/app/src/core/native/pc/neutralino.js",
     "binaryVersion": "6.5.0",
     "clientVersion": "6.5.0"
   }

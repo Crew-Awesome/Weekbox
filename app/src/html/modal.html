@@ -1,0 +1,40 @@
+<div class="modal-overlay" id="mod-modal" style="display: none;">
+    <div class="modal-content">
+        <main class="modal-main">
+            <div class="modal-main-image-wrapper">
+                <img id="modal-main-image" src="" alt="Mod Preview">
+                <div class="modal-loader" id="modal-image-loader"><i class="fa-solid fa-spinner fa-spin"></i></div>
+                <div class="main-progress-bar" id="modal-progress-bar"></div>
+            </div>
+            <div class="modal-thumbnails" id="modal-thumbnails">
+            </div>
+        </main>
+
+        <aside class="modal-aside">
+            <button class="modal-close-btn" id="modal-close-btn"><i class="fa-solid fa-xmark"></i></button>
+            
+            <div class="modal-header-info">
+                <h2 id="modal-title">Loading...</h2>
+                <p class="modal-author" id="modal-author">by ---</p>
+                
+                <div class="modal-stats">
+                    <span><i class="fa-regular fa-clock"></i> <span id="modal-time">--</span></span>
+                    <span><i class="fa-solid fa-heart"></i> <span id="modal-likes">--</span></span>
+                    <span><i class="fa-solid fa-eye"></i> <span id="modal-views">--</span></span>
+                </div>
+            </div>
+
+            <div class="modal-description" id="modal-description">
+            </div>
+
+            <div class="modal-footer-actions">
+                <div class="modal-file-info">
+                    <i class="fa-solid fa-file-zipper"></i> <span id="modal-filesize">-- MB</span>
+                </div>
+                <button class="modal-download-btn" id="modal-download-btn" disabled>
+                    <i class="fa-solid fa-download"></i> Download
+                </button>
+            </div>
+        </aside>
+    </div>
+</div>
