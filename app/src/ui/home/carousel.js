@@ -79,13 +79,14 @@ export const homeCarousel = {
         const dots = document.querySelectorAll('.dot');
         if (dots.length === 0) return;
         dots.forEach(d => { d.classList.remove('active'); d.style.display = 'none'; });
-        let prev = (this.currentSlideIndex - 1 + this.totalSlides) % this.totalSlides;
-        let curr = this.currentSlideIndex;
-        let next = (this.currentSlideIndex + 1) % this.totalSlides;
-        
-        dots[prev].style.display = 'block'; dots[prev].style.order = 1;
-        dots[curr].style.display = 'block'; dots[curr].style.order = 2; dots[curr].classList.add('active');
-        dots[next].style.display = 'block'; dots[next].style.order = 3;
+
+        for (let offset = 0; offset < Math.min(4, this.totalSlides); offset++) {
+            const dotIndex = (this.currentSlideIndex + offset) % this.totalSlides;
+            dots[dotIndex].style.display = 'block';
+            dots[dotIndex].style.order = offset + 1;
+        }
+
+        dots[this.currentSlideIndex].classList.add('active');
     },
 
     goToSlide(index) {
