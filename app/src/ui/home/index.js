@@ -3,14 +3,11 @@ import { homeCarousel } from './carousel.js';
 import { homeGrid } from './grid/index.js';
 import { homeSearch } from './search.js';
 import { homeSearchDropdown } from './searchDropdown.js';
+import { homeScroll } from './homeScroll.js';
 
 export const homeView = {
     init() {
-        this.mainContent = document.getElementById('main-content');
-        this.container = document.querySelector('.home-container');
-        this.scrollHandler ??= this.handleScroll.bind(this);
-        this.mainContent.removeEventListener('scroll', this.scrollHandler);
-        this.mainContent.addEventListener('scroll', this.scrollHandler);
+        homeScroll.init();
 
         homeCarousel.init();
         homeGrid.init();
@@ -18,24 +15,8 @@ export const homeView = {
         homeSearchDropdown.init();
     },
 
-    handleScroll() {
-        if (!this.container) return;
-        const isScrolled = this.container.classList.contains('scrolled');
-        const shouldCompact = isScrolled
-            ? this.mainContent.scrollTop > 30
-            : this.mainContent.scrollTop > 70;
-
-        if (shouldCompact) {
-            this.container.classList.add('scrolled');
-        } else {
-            this.container.classList.remove('scrolled');
-        }
-    },
-
     destroy() {
-        if (this.mainContent) {
-            this.mainContent.removeEventListener('scroll', this.scrollHandler);
-        }
+        homeScroll.destroy();
         homeCarousel.stopAutoSlide();
         homeGrid.destroy();
     }
