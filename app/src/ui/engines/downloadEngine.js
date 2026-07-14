@@ -1,3 +1,4 @@
+// ui/engines/downloadEngine.js
 import { FS } from '../../utils/filesystem.js';
 
 export const downloadEngine = {
@@ -22,13 +23,15 @@ export const downloadEngine = {
 
             const os = window.NL_OS;
             
+            // 1. Fase de Descarga (2% a 98% visual basado en el 100% de cURL)
             updateProgress('Connecting...', 2);
             await this.downloadWithProgress(downloadUrl, tempFilePath, updateProgress);
 
-            // Al inicio de la extracción la barra se asienta en el 98% 
+            // 2. Fase de Extracción (Fijo en 98%, solo mostramos los archivos reales)
             updateProgress('Preparing extraction...', 98);
             await this.extractWithProgress(tempFilePath, engineDir, os, updateProgress);
 
+            // 3. Limpieza final
             updateProgress('Cleaning temporary files...', 99);
             await FS.api.remove(tempFilePath);
 
@@ -62,7 +65,6 @@ export const downloadEngine = {
                                 
                                 if (!isNaN(percent) && percent >= maxPercent) {
                                     maxPercent = percent;
-                                    // La descarga pura escala del 2% al 98% del contenedor real
                                     const globalProgress = 2 + (percent * 0.96); 
                                     updateProgress(`Downloading...`, globalProgress);
                                 }
@@ -86,6 +88,7 @@ export const downloadEngine = {
         return new Promise(async (resolve, reject) => {
             let cmd = "";
             if (os === 'Windows') {
+                // tar es mucho más rápido que PowerShell y nos permite ver los archivos
                 cmd = `tar -xvf "${zipPath}" -C "${destPath}"`;
             } else {
                 cmd = `unzip -o "${zipPath}" -d "${destPath}"`;
@@ -100,24 +103,38 @@ export const downloadEngine = {
                         
                         if (action === 'stdOut' || action === 'stdErr') {
                             const output = event.detail.data.trim();
+                            
                             if (output) {
                                 const lines = output.split('\n');
                                 const lastLine = lines[lines.length - 1].trim();
                                 
-                                let fileName = lastLine.replace(/^x\s+/, '').replace(/^inflating:\s+/, '').trim();
-                                
+                                // Limpiamos la salida dependiendo de si es tar o unzip
+                                let fileName = lastLine
+                                    .replace(/^x\s+/, '') // de 'tar'
+                                    .replace(/^inflating:\s+/, '') // de 'unzip'
+                                    .replace(/^extracting:\s+/, '')
+                                    .replace(/^creating:\s+/, '')
+                                    .trim();
+                                    
                                 const pathParts = fileName.split(/[/\\]/);
                                 if (pathParts.length > 2) {
                                     fileName = `.../${pathParts.slice(-2).join('/')}`;
                                 }
 
-                                // El progreso se mantiene fijo en el 98%, solo se reporta el texto real
+                                // Mantenemos la barra en 98% sin falsear, pero reportando el archivo real
                                 updateProgress(`Extracting: ${fileName}`, 98);
                             }
                         } else if (action === 'exit') {
                             Neutralino.events.off('spawnedProcess', handler);
-                            if (event.detail.data === 0) resolve();
-                            else reject(new Error(`Extraction failed with exit code ${event.detail.data}`));
+                            
+                            const code = event.detail.data;
+                            // En Windows, tar suele arrojar 1 por advertencias de metadatos aunque extraiga todo bien.
+                            // Si es 0 (éxito total) o 1 en Windows, lo consideramos completado.
+                            if (code === 0 || (os === 'Windows' && code === 1)) {
+                                resolve();
+                            } else {
+                                reject(new Error(`Extraction failed with exit code ${code}`));
+                            }
                         }
                     }
                 };
