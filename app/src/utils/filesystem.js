@@ -88,6 +88,25 @@ class FileSystemService extends EventTarget {
         }
     }
 
+    async closeEngine(engineId, version, onStateChange) {
+        const engineKey = `${engineId}:${version}`;
+        const process = this.activeEngineProcesses.get(engineKey);
+        if (!process) return false;
+
+        if (onStateChange) onStateChange('closing');
+        try {
+            await Neutralino.os.updateSpawnedProcess(process.id, 'exit');
+            return true;
+        } catch (error) {
+            if (onStateChange) onStateChange('error');
+            return false;
+        }
+    }
+
+    isEngineRunning(engineId, version) {
+        return this.activeEngineProcesses.has(`${engineId}:${version}`);
+    }
+
     async getInstalledEngines() {
         if (!this.isInitialized) return [];
         try {

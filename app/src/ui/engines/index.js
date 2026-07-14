@@ -69,22 +69,38 @@ export const enginesView = {
             activeBtn.textContent = "Launch";
             activeBtn.disabled = false;
             if (dlUI) dlUI.style.display = 'none';
+            let isLaunched = FS.isEngineRunning(this.currentEngine.id, this.currentVersion);
+            const showLaunched = () => {
+                isLaunched = true;
+                activeBtn.disabled = false;
+                activeBtn.classList.add('engine-running');
+                activeBtn.innerHTML = '<span class="engine-launch-label">Launched</span><span class="engine-close-label">Close</span>';
+            };
+            if (isLaunched) showLaunched();
             
             activeBtn.addEventListener('click', async () => {
+                if (isLaunched) {
+                    activeBtn.disabled = true;
+                    activeBtn.classList.remove('engine-running');
+                    activeBtn.textContent = 'Closing...';
+                    await FS.closeEngine(this.currentEngine.id, this.currentVersion, state => {
+                        if (state === 'error') {
+                            showLaunched();
+                        }
+                    });
+                    return;
+                }
+
                 activeBtn.disabled = true;
-                this.activeInstall = {
-                    engineId: this.currentEngine.id,
-                    version: this.currentVersion
-                };
-                const installKey = `${this.activeInstall.engineId}:${this.activeInstall.version}`;
-                this.setupDownloadActions(activeBtn, downloadActions);
                 activeBtn.textContent = "Running...";
                 await FS.runEngine(this.currentEngine.id, this.currentVersion, (state) => {
                     if (state === 'launched') {
-                        activeBtn.textContent = 'Launched';
+                        showLaunched();
                     } else if (state === 'already_running') {
-                        activeBtn.textContent = 'Already running';
+                        showLaunched();
                     } else if (state === 'completed' || state === 'error' || state === 'not_found') {
+                        isLaunched = false;
+                        activeBtn.classList.remove('engine-running');
                         activeBtn.disabled = false;
                         activeBtn.textContent = "Launch";
                     }
@@ -106,6 +122,12 @@ export const enginesView = {
             
             activeBtn.addEventListener('click', async () => {
                 activeBtn.disabled = true;
+                this.activeInstall = {
+                    engineId: this.currentEngine.id,
+                    version: this.currentVersion
+                };
+                const installKey = `${this.activeInstall.engineId}:${this.activeInstall.version}`;
+                this.setupDownloadActions(activeBtn, downloadActions);
                 
                 if (dlUI) {
                     dlUI.style.display = 'block';
