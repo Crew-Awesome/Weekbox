@@ -4,16 +4,15 @@ import { engineDropdown } from "./dropdown.js";
 import { getTargetLink } from "./utils.js";
 import { FS } from "../../utils/filesystem.js";
 import { downloadEngine } from "./downloadEngine.js";
+import { modsMaster } from "./modsMasterClass.js";
 
 export const enginesView = {
   async init() {
     const engine = getSelectedEngine();
     if (!engine) return;
-
     this.currentEngine = engine;
     document.getElementById("engine-display-title").textContent =
       engine.meta.name;
-
     const bottomIcon = document.getElementById("engine-bottom-icon");
     if (engine.meta.icon) {
       bottomIcon.src = `assets/icons/${engine.meta.icon}`;
@@ -21,9 +20,7 @@ export const enginesView = {
     } else {
       bottomIcon.style.display = "none";
     }
-
     if (!FS.isInitialized) await FS.init();
-
     engineDropdown.setup(engine, (version) => {
       this.currentVersion = version;
       this.updateButtonState();
@@ -37,48 +34,48 @@ export const enginesView = {
   async updateButtonState() {
     const launchBtn = document.getElementById("launch-engine-btn");
     const dlUI = document.getElementById("download-ui");
-
     const dlText = document.getElementById("dl-text");
     const dlTextSizer = document.getElementById("dl-text-sizer");
     const dlActiveLayer = document.getElementById("dl-active-layer");
     const downloadActions = document.getElementById("engine-download-actions");
-
+    
     if (!launchBtn) return;
-
     if (this.activeInstall) {
       launchBtn.disabled = true;
       return;
     }
     if (downloadActions) downloadActions.hidden = true;
-
+    
     const versionData = this.currentEngine.versions.find(
       (v) => v.version === this.currentVersion,
     );
-
+    
     if (!versionData) {
       launchBtn.textContent = "Unavailable";
       launchBtn.disabled = true;
       if (dlUI) dlUI.style.display = "none";
       return;
     }
-
+    
     const isInstalled = await FS.isEngineInstalled(
       this.currentEngine.id,
       this.currentVersion,
     );
-
+    
     const newBtn = launchBtn.cloneNode(true);
     launchBtn.parentNode.replaceChild(newBtn, launchBtn);
     const activeBtn = document.getElementById("launch-engine-btn");
-
+    
     if (isInstalled) {
       activeBtn.textContent = "Launch";
       activeBtn.disabled = false;
       if (dlUI) dlUI.style.display = "none";
+      
       let isLaunched = FS.isEngineRunning(
         this.currentEngine.id,
         this.currentVersion,
       );
+      
       const showLaunched = () => {
         isLaunched = true;
         activeBtn.disabled = false;
@@ -86,8 +83,9 @@ export const enginesView = {
         activeBtn.innerHTML =
           '<span class="engine-launch-label">Launched</span><span class="engine-close-label">Close</span>';
       };
+      
       if (isLaunched) showLaunched();
-
+      
       activeBtn.addEventListener("click", async () => {
         if (isLaunched) {
           activeBtn.disabled = true;
@@ -104,9 +102,15 @@ export const enginesView = {
           );
           return;
         }
-
+        
         activeBtn.disabled = true;
         activeBtn.textContent = "Running...";
+
+        await modsMaster.injectBeforeLaunch(
+          this.currentEngine.id,
+          this.currentVersion
+        );
+
         await FS.runEngine(
           this.currentEngine.id,
           this.currentVersion,
@@ -130,17 +134,14 @@ export const enginesView = {
       });
     } else {
       const downloadUrl = getTargetLink(versionData);
-
       if (!downloadUrl) {
         activeBtn.textContent = "Unsupported OS";
         activeBtn.disabled = true;
         if (dlUI) dlUI.style.display = "none";
         return;
       }
-
       activeBtn.textContent = "Download";
       activeBtn.disabled = false;
-
       activeBtn.addEventListener("click", async () => {
         activeBtn.disabled = true;
         this.activeInstall = {
@@ -149,7 +150,6 @@ export const enginesView = {
         };
         const installKey = `${this.activeInstall.engineId}:${this.activeInstall.version}`;
         this.setupDownloadActions(activeBtn, downloadActions);
-
         if (dlUI) {
           dlUI.style.display = "block";
           const initialText = "0% - Starting download...";
@@ -157,7 +157,6 @@ export const enginesView = {
           if (dlTextSizer) dlTextSizer.textContent = initialText;
           if (dlActiveLayer) dlActiveLayer.style.clipPath = `inset(0 100% 0 0)`;
         }
-
         const success = await downloadEngine.install(
           this.currentEngine.id,
           this.currentVersion,
@@ -168,17 +167,14 @@ export const enginesView = {
             const progressText = progressInfo.status.startsWith("Extracting:")
               ? progressInfo.status
               : `${p}% - ${progressInfo.status}`;
-
             if (dlText) dlText.textContent = progressText;
             if (dlTextSizer) dlTextSizer.textContent = progressText;
-
             if (dlActiveLayer) {
               dlActiveLayer.style.clipPath = `inset(0 ${100 - progressInfo.progress}% 0 0)`;
             }
           },
           (state) => this.updateInstallState(state, activeBtn),
         );
-
         const wasCancelled = this.cancelledInstall === installKey;
         if (wasCancelled && this.rollbackPromise) await this.rollbackPromise;
         this.activeInstall = null;
@@ -218,7 +214,6 @@ export const enginesView = {
 
   updateInstallState(state, activeBtn) {
     const cancelBtn = document.getElementById("cancel-engine-download-btn");
-
     if (state === "downloading") {
       activeBtn.textContent = "Downloading...";
     } else if (state === "installing") {
@@ -234,7 +229,6 @@ export const enginesView = {
     const dlTextSizer = document.getElementById("dl-text-sizer");
     const dlActiveLayer = document.getElementById("dl-active-layer");
     let progress = Math.max(0, this.downloadProgress || 0);
-
     return new Promise((resolve) => {
       const rollback = () => {
         progress = Math.max(0, progress - Math.max(2, progress / 12));
@@ -243,7 +237,6 @@ export const enginesView = {
         if (dlTextSizer) dlTextSizer.textContent = message;
         if (dlActiveLayer)
           dlActiveLayer.style.clipPath = `inset(0 ${100 - progress}% 0 0)`;
-
         if (progress > 0) {
           setTimeout(rollback, 35);
         } else {
