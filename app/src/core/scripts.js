@@ -3,10 +3,12 @@ import { router } from './router.js';
 import { registerHomeView } from '../ui/home/index.js';
 import { registerEnginesView } from '../ui/engines/index.js';
 import { downloadEngine } from '../ui/engines/downloadEngine.js';
+import { disableProductionRefreshShortcuts } from './productionShortcuts.js';
 
 async function startApp() {
     try {
         Neutralino.init();
+        disableProductionRefreshShortcuts();
         Neutralino.events.on('windowClose', async () => {
             await downloadEngine.cleanupAll();
             await Neutralino.app.exit();
