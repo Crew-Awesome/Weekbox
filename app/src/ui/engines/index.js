@@ -189,10 +189,13 @@ export const enginesView = {
         const { engineId, version } = this.activeInstall;
 
         pauseBtn.onclick = async () => {
+            pauseBtn.disabled = true;
             if (pauseBtn.textContent === 'Pause') {
-                await downloadEngine.pause(engineId, version);
+                const paused = await downloadEngine.pause(engineId, version);
+                if (!paused) pauseBtn.disabled = false;
             } else {
-                await downloadEngine.resume(engineId, version);
+                const resumed = await downloadEngine.resume(engineId, version);
+                if (!resumed) pauseBtn.disabled = false;
             }
         };
         cancelBtn.onclick = async () => {
@@ -210,10 +213,21 @@ export const enginesView = {
 
         if (state === 'paused') {
             activeBtn.textContent = 'Paused';
-            if (pauseBtn) pauseBtn.textContent = 'Resume';
+            if (pauseBtn) {
+                pauseBtn.textContent = 'Resume';
+                pauseBtn.disabled = false;
+            }
         } else if (state === 'downloading') {
             activeBtn.textContent = 'Downloading...';
-            if (pauseBtn) pauseBtn.textContent = 'Pause';
+            if (pauseBtn) {
+                pauseBtn.textContent = 'Pause';
+                pauseBtn.disabled = false;
+            }
+        } else if (state === 'pausing') {
+            activeBtn.textContent = 'Pausing...';
+        } else if (state === 'pause_failed') {
+            activeBtn.textContent = 'Downloading...';
+            if (pauseBtn) pauseBtn.disabled = false;
         } else if (state === 'installing') {
             activeBtn.textContent = 'Installing...';
             if (pauseBtn) pauseBtn.disabled = true;

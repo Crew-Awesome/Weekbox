@@ -27,18 +27,53 @@ export const downloadEngine = {
         task.onStateChange?.(state);
     },
 
-    async pause(engineId, version) {
-        const task = this.activeTasks.get(this.getTaskKey(engineId, version));
-        if (!task?.pid || task.paused) return false;
+    async setTaskProcess(task, process) {
+        if (!task) return;
+        task.processId = process.id;
+        task.pid = process.pid;
+
+        if (task.pauseRequested) {
+            try {
+                await this.pauseTask(task);
+            } catch (error) {
+                task.pauseRequested = false;
+                this.notifyState(task, 'pause_failed');
+            }
+        }
+    },
+
+    async pauseTask(task) {
+        if (!task?.pid) return false;
 
         const command = window.NL_OS === 'Windows'
-            ? `powershell -NoProfile -Command "Suspend-Process -Id ${task.pid}"`
+            ? `powershell -NoProfile -NonInteractive -Command "$ErrorActionPreference='Stop'; Suspend-Process -Id ${task.pid}"`
             : `kill -STOP ${task.pid}`;
+        const result = await Neutralino.os.execCommand(command, { background: false });
+        if (result.exitCode !== 0) throw new Error(result.stdErr || 'Could not pause download');
 
-        await Neutralino.os.execCommand(command, { background: false });
         task.paused = true;
+        task.pauseRequested = false;
         this.notifyState(task, 'paused');
         return true;
+    },
+
+    async pause(engineId, version) {
+        const task = this.activeTasks.get(this.getTaskKey(engineId, version));
+        if (!task || task.paused || task.pauseRequested) return false;
+
+        task.pauseRequested = true;
+        if (!task.pid) {
+            this.notifyState(task, 'pausing');
+            return true;
+        }
+
+        try {
+            return await this.pauseTask(task);
+        } catch (error) {
+            task.pauseRequested = false;
+            this.notifyState(task, 'pause_failed');
+            return false;
+        }
     },
 
     async resume(engineId, version) {
@@ -46,11 +81,13 @@ export const downloadEngine = {
         if (!task?.pid || !task.paused) return false;
 
         const command = window.NL_OS === 'Windows'
-            ? `powershell -NoProfile -Command "Resume-Process -Id ${task.pid}"`
+            ? `powershell -NoProfile -NonInteractive -Command "$ErrorActionPreference='Stop'; Resume-Process -Id ${task.pid}"`
             : `kill -CONT ${task.pid}`;
 
-        await Neutralino.os.execCommand(command, { background: false });
+        const result = await Neutralino.os.execCommand(command, { background: false });
+        if (result.exitCode !== 0) return false;
         task.paused = false;
+        task.pauseRequested = false;
         this.notifyState(task, task.phase === 'extracting' ? 'installing' : 'downloading');
         return true;
     },
@@ -93,6 +130,7 @@ export const downloadEngine = {
         const task = {
             cancelled: false,
             paused: false,
+            pauseRequested: false,
             pid: null,
             tempFilePath,
             engineDir,
@@ -158,7 +196,7 @@ export const downloadEngine = {
                 let maxPercent = 0;
                 const process = await Neutralino.os.spawnProcess(`curl -# -L "${url}" -o "${outPath}"`);
                 const task = [...this.activeTasks.values()].find(activeTask => activeTask.tempFilePath === outPath);
-                if (task) task.pid = process.pid;
+                await this.setTaskProcess(task, process);
 
                 const handler = (event) => {
                     if (event.detail.id === process.id) {
@@ -211,7 +249,7 @@ export const downloadEngine = {
             try {
                 const process = await Neutralino.os.spawnProcess(cmd);
                 const task = [...this.activeTasks.values()].find(activeTask => activeTask.engineDir === destPath);
-                if (task) task.pid = process.pid;
+                await this.setTaskProcess(task, process);
 
                 const handler = (event) => {
                     if (event.detail.id === process.id) {
