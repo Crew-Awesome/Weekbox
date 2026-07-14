@@ -36,6 +36,7 @@
     display: flex;
     gap: var(--spacing-sm);
 }
+.engine-download-actions[hidden] { display: none; }
 .engine-action-btn {
     background: var(--bg-hover);
     border: 1px solid var(--border-color);
