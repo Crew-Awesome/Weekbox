@@ -1,0 +1,20 @@
+.launch-btn {
+    background-color: var(--text-main);
+    color: var(--bg-color);
+    border: none;
+    padding: 12px 32px;
+    border-radius: 8px;
+    font-size: 1.1rem;
+    font-weight: 800;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    transition: transform 0.1s, background-color 0.2s;
+}
+.launch-btn:hover {
+    background-color: var(--accent-hover);
+}
+.launch-btn:active {
+    transform: scale(0.97);
+}

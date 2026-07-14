@@ -1,0 +1,29 @@
+.engine-fixed-bottom {
+    position: sticky;
+    bottom: 0;
+    width: 100%;
+    background-color: rgba(10, 10, 10, 0.85);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border-top: 1px solid var(--border-color);
+    padding: var(--spacing-md) var(--spacing-xl);
+    z-index: 10;
+}
+.engine-bottom-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+.engine-status {
+    color: var(--text-muted);
+    font-size: 0.9rem;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+#engine-bottom-icon {
+    width: 28px;
+    height: 28px;
+    object-fit: contain;
+    border-radius: 4px;
+}
