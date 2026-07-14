@@ -1,5 +1,7 @@
 import { gameBananaApi } from '../../../api/gamebanana.js';
 import { modModalCarousel } from './carousel.js';
+import { downloadMod } from './downloadMod.js';
+import { FS } from '../../../utils/filesystem.js';
 
 export const modModal = {
     async init() {
@@ -11,54 +13,43 @@ export const modModal = {
                 div.innerHTML = html;
                 document.body.appendChild(div.firstElementChild);
             } catch (err) {
-                console.error("Error loading modal HTML", err);
                 return;
             }
         }
-
         const modal = document.getElementById('mod-modal');
         const closeBtn = document.getElementById('modal-close-btn');
-
         closeBtn.addEventListener('click', () => this.close());
         modal.addEventListener('click', (e) => {
             if (e.target === modal) this.close();
         });
     },
-
+    
     async open(modId) {
         if (!document.getElementById('mod-modal')) await this.init();
-        
         const modal = document.getElementById('mod-modal');
         modal.style.display = 'flex';
         setTimeout(() => modal.classList.add('show'), 10);
-
         this.resetUI();
-        
         document.getElementById('modal-title').textContent = "Loading info...";
         document.getElementById('modal-image-loader').style.display = 'block';
-
         const data = await gameBananaApi.getModDetails(modId);
         if (!data) {
             document.getElementById('modal-title').textContent = "Error loading mod";
             return;
         }
-
-        this.populateData(data);
+        await this.populateData(data);
     },
-
+    
     close() {
         const modal = document.getElementById('mod-modal');
         if (!modal) return;
-        
         modal.classList.remove('show');
-        
         modModalCarousel.stopAutoPlay();
-        
         setTimeout(() => {
             modal.style.display = 'none';
-        }, 300); 
+        }, 300);
     },
-
+    
     resetUI() {
         document.getElementById('modal-title').textContent = "";
         document.getElementById('modal-author').textContent = "";
@@ -70,19 +61,18 @@ export const modModal = {
         document.getElementById('modal-main-image').src = "";
         document.getElementById('modal-main-image').classList.remove('fade-anim');
         document.getElementById('modal-thumbnails').innerHTML = "";
-        
         const progressBar = document.getElementById('modal-progress-bar');
         if (progressBar) {
             progressBar.style.transition = 'none';
             progressBar.style.width = '0%';
         }
-        
         const btn = document.getElementById('modal-download-btn');
         btn.disabled = true;
+        btn.innerHTML = '<i class="fa-solid fa-download"></i> Download';
         btn.onclick = null;
     },
-
-    populateData(data) {
+    
+    async populateData(data) {
         document.getElementById('modal-title').textContent = data.title;
         document.getElementById('modal-author').textContent = `by ${data.author}`;
         document.getElementById('modal-time').textContent = data.timeAgo;
@@ -91,16 +81,22 @@ export const modModal = {
         document.getElementById('modal-description').innerHTML = data.description;
         document.getElementById('modal-filesize').textContent = data.fileSizeStr;
         document.getElementById('modal-image-loader').style.display = 'none';
-
+        
         const btn = document.getElementById('modal-download-btn');
-        if (data.downloadUrl) {
+        
+        const isInstalled = await FS.isModInstalled(data.id);
+        
+        if (isInstalled) {
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fa-solid fa-check"></i> Already Installed';
+        } else if (data.downloadUrl) {
             btn.disabled = false;
+            btn.innerHTML = '<i class="fa-solid fa-download"></i> Download';
             btn.onclick = () => {
-                console.log("Downloading from:", data.downloadUrl);
-                window.open(data.downloadUrl, "_blank");
+                downloadMod.install(data.id, data.title, data.downloadUrl);
             };
         }
-
+        
         modModalCarousel.setup(data.images);
     }
 };
