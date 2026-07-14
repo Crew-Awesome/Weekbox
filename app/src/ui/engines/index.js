@@ -40,8 +40,15 @@ export const enginesView = {
         const dlText = document.getElementById('dl-text');
         const dlTextSizer = document.getElementById('dl-text-sizer');
         const dlActiveLayer = document.getElementById('dl-active-layer');
+        const downloadActions = document.getElementById('engine-download-actions');
 
         if (!launchBtn) return;
+
+        if (this.activeInstall) {
+            launchBtn.disabled = true;
+            return;
+        }
+        if (downloadActions) downloadActions.hidden = true;
         
         const versionData = this.currentEngine.versions.find(v => v.version === this.currentVersion);
         
@@ -65,6 +72,11 @@ export const enginesView = {
             
             activeBtn.addEventListener('click', async () => {
                 activeBtn.disabled = true;
+                this.activeInstall = {
+                    engineId: this.currentEngine.id,
+                    version: this.currentVersion
+                };
+                this.setupDownloadActions(activeBtn, downloadActions);
                 activeBtn.textContent = "Running...";
                 await FS.runEngine(this.currentEngine.id, this.currentVersion, (state) => {
                     if (state === 'completed' || state === 'error' || state === 'not_found') {
@@ -112,9 +124,12 @@ export const enginesView = {
                         if (dlActiveLayer) {
                             dlActiveLayer.style.clipPath = `inset(0 ${100 - progressInfo.progress}% 0 0)`;
                         }
-                    }
+                    },
+                    state => this.updateInstallState(state, activeBtn)
                 );
 
+                this.activeInstall = null;
+                if (downloadActions) downloadActions.hidden = true;
                 if (success) {
                     if (dlUI) dlUI.style.display = 'none';
                     this.updateButtonState(); 
@@ -125,6 +140,47 @@ export const enginesView = {
                     activeBtn.textContent = "Retry Download";
                 }
             });
+        }
+    },
+
+    setupDownloadActions(activeBtn, downloadActions) {
+        if (!downloadActions || !this.activeInstall) return;
+        downloadActions.hidden = false;
+        const pauseBtn = document.getElementById('pause-engine-download-btn');
+        const cancelBtn = document.getElementById('cancel-engine-download-btn');
+        const { engineId, version } = this.activeInstall;
+
+        pauseBtn.onclick = async () => {
+            if (pauseBtn.textContent === 'Pause') {
+                await downloadEngine.pause(engineId, version);
+            } else {
+                await downloadEngine.resume(engineId, version);
+            }
+        };
+        cancelBtn.onclick = async () => {
+            cancelBtn.disabled = true;
+            await downloadEngine.cancel(engineId, version);
+        };
+        activeBtn.textContent = 'Downloading...';
+    },
+
+    updateInstallState(state, activeBtn) {
+        const pauseBtn = document.getElementById('pause-engine-download-btn');
+        const cancelBtn = document.getElementById('cancel-engine-download-btn');
+
+        if (state === 'paused') {
+            activeBtn.textContent = 'Paused';
+            if (pauseBtn) pauseBtn.textContent = 'Resume';
+        } else if (state === 'downloading') {
+            activeBtn.textContent = 'Downloading...';
+            if (pauseBtn) pauseBtn.textContent = 'Pause';
+        } else if (state === 'installing') {
+            activeBtn.textContent = 'Installing...';
+            if (pauseBtn) pauseBtn.disabled = true;
+        } else if (state === 'cancelled') {
+            activeBtn.textContent = 'Cancelled';
+            if (pauseBtn) pauseBtn.disabled = true;
+            if (cancelBtn) cancelBtn.disabled = true;
         }
     }
 };

@@ -22,6 +22,39 @@ export const downloadEngine = {
         }
     },
 
+    notifyState(task, state) {
+        task.state = state;
+        task.onStateChange?.(state);
+    },
+
+    async pause(engineId, version) {
+        const task = this.activeTasks.get(this.getTaskKey(engineId, version));
+        if (!task?.pid || task.paused) return false;
+
+        const command = window.NL_OS === 'Windows'
+            ? `powershell -NoProfile -Command "Suspend-Process -Id ${task.pid}"`
+            : `kill -STOP ${task.pid}`;
+
+        await Neutralino.os.execCommand(command, { background: false });
+        task.paused = true;
+        this.notifyState(task, 'paused');
+        return true;
+    },
+
+    async resume(engineId, version) {
+        const task = this.activeTasks.get(this.getTaskKey(engineId, version));
+        if (!task?.pid || !task.paused) return false;
+
+        const command = window.NL_OS === 'Windows'
+            ? `powershell -NoProfile -Command "Resume-Process -Id ${task.pid}"`
+            : `kill -CONT ${task.pid}`;
+
+        await Neutralino.os.execCommand(command, { background: false });
+        task.paused = false;
+        this.notifyState(task, task.phase === 'extracting' ? 'installing' : 'downloading');
+        return true;
+    },
+
     async cleanupTask(task) {
         await this.stopProcess(task);
         await Promise.allSettled([
@@ -36,19 +69,18 @@ export const downloadEngine = {
         if (!task) return;
 
         task.cancelled = true;
+        this.notifyState(task, 'cancelled');
         await this.cleanupTask(task);
-        this.activeTasks.delete(key);
     },
 
     async cleanupAll() {
         await Promise.all([...this.activeTasks.entries()].map(async ([key, task]) => {
             task.cancelled = true;
             await this.cleanupTask(task);
-            this.activeTasks.delete(key);
         }));
     },
 
-    async install(engineId, version, downloadUrl, onProgress) {
+    async install(engineId, version, downloadUrl, onProgress, onStateChange) {
         if (!FS.isInitialized) await FS.init();
         
         const enginesBasePath = FS.enginesPath;
@@ -60,9 +92,12 @@ export const downloadEngine = {
 
         const task = {
             cancelled: false,
+            paused: false,
             pid: null,
             tempFilePath,
-            engineDir
+            engineDir,
+            phase: 'downloading',
+            onStateChange
         };
         this.activeTasks.set(taskKey, task);
 
@@ -73,6 +108,7 @@ export const downloadEngine = {
         };
 
         try {
+            this.notifyState(task, 'downloading');
             updateProgress('Preparing environment...', 0);
             await FS.api.ensureDir(enginesBasePath);
             await FS.api.ensureDir(`${enginesBasePath}/${engineId}`);
@@ -85,7 +121,9 @@ export const downloadEngine = {
             await this.downloadWithProgress(downloadUrl, tempFilePath, updateProgress);
 
             // 2. Fase de Extracción (Fijo en 98%, solo mostramos los archivos reales)
-            updateProgress('Preparing extraction...', 98);
+            task.phase = 'extracting';
+            this.notifyState(task, 'installing');
+            updateProgress('Installing...', 98);
             await this.extractWithProgress(tempFilePath, engineDir, os, updateProgress);
 
             // 3. Limpieza final
@@ -93,14 +131,17 @@ export const downloadEngine = {
             await FS.api.remove(tempFilePath);
 
             updateProgress('Completed', 100);
+            this.notifyState(task, 'completed');
             this.activeTasks.delete(taskKey);
             return true;
 
         } catch (error) {
             console.error(`Error installing engine ${engineId}:`, error);
             await FS.api.remove(tempFilePath);
-            if (this.activeTasks.get(taskKey)?.cancelled) {
+            if (task.cancelled) {
                 await FS.api.remove(engineDir);
+            } else {
+                this.notifyState(task, 'error');
             }
             this.activeTasks.delete(taskKey);
             return false;
