@@ -31,6 +31,28 @@ export const gameBananaApi = {
     getEngineIdForCategory(categoryId) {
         return this.engineCategories[Number(categoryId)] || null;
     },
+
+    getEngineIdForCategories(...categories) {
+        const pending = categories.filter(Boolean);
+        const seen = new Set();
+
+        while (pending.length > 0) {
+            const category = pending.shift();
+            if (!category || typeof category !== 'object' || seen.has(category)) continue;
+            seen.add(category);
+
+            const engineId = this.getEngineIdForCategory(category._idRow || category._idCategory);
+            if (engineId) return engineId;
+
+            pending.push(
+                category._aCategory,
+                category._aSuperCategory,
+                category._aParentCategory
+            );
+        }
+
+        return this.getEngineIdForCategory(categories.find(category => typeof category === 'number'));
+    },
     
     getValidRecords(data) {
         if (data && Array.isArray(data._aRecords)) return data._aRecords;
@@ -98,7 +120,11 @@ export const gameBananaApi = {
                 images: images,
                 fileSizeStr: this.formatBytes(fileSize),
                 downloadUrl: downloadUrl,
-                engineId: this.getEngineIdForCategory(data._idCategory)
+                engineId: this.getEngineIdForCategories(
+                    data._aCategory,
+                    data._aSuperCategory,
+                    data._idCategory
+                )
             };
         } catch (error) {
             return null;

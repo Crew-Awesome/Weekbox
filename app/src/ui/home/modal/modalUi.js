@@ -43,6 +43,8 @@ export function resetModal() {
     button.disabled = true;
     button.innerHTML = '<i class="fa-solid fa-download"></i> Download';
     button.onclick = null;
+    document.getElementById('modal-engine-badge').hidden = true;
+    document.getElementById('modal-engine-name').textContent = '';
 }
 
 export function showModData(data, isInstalled, onDownload) {
@@ -55,6 +57,19 @@ export function showModData(data, isInstalled, onDownload) {
     document.getElementById('modal-filesize').textContent = data.fileSizeStr;
     document.getElementById('modal-image-loader').style.display = 'none';
 
+    const engine = engineDetails[data.engineId];
+    const engineBadge = document.getElementById('modal-engine-badge');
+    const engineIcon = document.getElementById('modal-engine-icon');
+    const engineName = document.getElementById('modal-engine-name');
+    if (engine) {
+        engineIcon.src = `assets/icons/${engine.icon}`;
+        engineIcon.alt = '';
+        engineName.textContent = engine.name;
+        engineBadge.hidden = false;
+    } else {
+        engineBadge.hidden = true;
+    }
+
     const button = document.getElementById('modal-download-btn');
     if (isInstalled) {
         button.disabled = true;
@@ -65,3 +80,8 @@ export function showModData(data, isInstalled, onDownload) {
         button.onclick = onDownload;
     }
 }
+const engineDetails = {
+    vslice: { name: 'Base Game', icon: 'vslice.png' },
+    psych: { name: 'Psych Engine', icon: 'psych.png' },
+    codename: { name: 'Codename Engine', icon: 'codename.png' }
+};

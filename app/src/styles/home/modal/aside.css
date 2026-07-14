@@ -42,6 +42,32 @@
     margin-bottom: var(--spacing-md);
 }
 
+.modal-engine-badge {
+    width: fit-content;
+    height: 28px;
+    padding: 0 9px 0 5px;
+    margin: calc(var(--spacing-sm) * -1) 0 var(--spacing-md);
+    border: 1px solid var(--border-color);
+    border-radius: 7px;
+    background: var(--bg-panel);
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    color: var(--text-muted);
+    font-size: 0.8rem;
+    font-weight: 600;
+}
+
+.modal-engine-badge[hidden] { display: none; }
+
+.modal-engine-badge img {
+    width: 20px;
+    height: 20px;
+    object-fit: contain;
+    border-radius: 4px;
+    display: block;
+}
+
 .modal-stats {
     display: flex;
     gap: var(--spacing-md);
