@@ -108,7 +108,7 @@ export const sidebar = {
                         const rawVersionsData = await verResponse.json();
                         
                         const processedVersionsData = rawVersionsData.map(item => {
-                            const sampleLink = item.win || item.lin || item.mac || "";
+                            const sampleLink = item.win || item.win64 || item.win32 || item.lin || item.mac || "";
                             return {
                                 ...item,
                                 version: item.version || this.extractVersionFromUrl(sampleLink)
