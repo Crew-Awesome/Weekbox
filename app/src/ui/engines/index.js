@@ -76,6 +76,7 @@ export const enginesView = {
                     engineId: this.currentEngine.id,
                     version: this.currentVersion
                 };
+                const installKey = `${this.activeInstall.engineId}:${this.activeInstall.version}`;
                 this.setupDownloadActions(activeBtn, downloadActions);
                 activeBtn.textContent = "Running...";
                 await FS.runEngine(this.currentEngine.id, this.currentVersion, (state) => {
@@ -115,6 +116,7 @@ export const enginesView = {
                     this.currentVersion, 
                     downloadUrl, 
                     (progressInfo) => {
+                        this.downloadProgress = progressInfo.progress;
                         const p = Math.floor(progressInfo.progress);
                         const progressText = progressInfo.status.startsWith('Extracting:')
                             ? progressInfo.status
@@ -130,8 +132,16 @@ export const enginesView = {
                     state => this.updateInstallState(state, activeBtn)
                 );
 
+                const wasCancelled = this.cancelledInstall === installKey;
+                if (wasCancelled && this.rollbackPromise) await this.rollbackPromise;
                 this.activeInstall = null;
                 if (downloadActions) downloadActions.hidden = true;
+                if (wasCancelled) {
+                    this.cancelledInstall = null;
+                    if (dlUI) dlUI.style.display = 'none';
+                    this.updateButtonState();
+                    return;
+                }
                 if (success) {
                     if (dlUI) dlUI.style.display = 'none';
                     this.updateButtonState(); 
@@ -161,6 +171,8 @@ export const enginesView = {
         };
         cancelBtn.onclick = async () => {
             cancelBtn.disabled = true;
+            this.cancelledInstall = `${engineId}:${version}`;
+            this.rollbackPromise = this.animateRollback();
             await downloadEngine.cancel(engineId, version);
         };
         activeBtn.textContent = 'Downloading...';
@@ -184,6 +196,30 @@ export const enginesView = {
             if (pauseBtn) pauseBtn.disabled = true;
             if (cancelBtn) cancelBtn.disabled = true;
         }
+    },
+
+    animateRollback() {
+        const dlText = document.getElementById('dl-text');
+        const dlTextSizer = document.getElementById('dl-text-sizer');
+        const dlActiveLayer = document.getElementById('dl-active-layer');
+        let progress = Math.max(0, this.downloadProgress || 0);
+
+        return new Promise(resolve => {
+            const rollback = () => {
+                progress = Math.max(0, progress - Math.max(2, progress / 12));
+                const message = `${Math.ceil(progress)}% - Rolling back...`;
+                if (dlText) dlText.textContent = message;
+                if (dlTextSizer) dlTextSizer.textContent = message;
+                if (dlActiveLayer) dlActiveLayer.style.clipPath = `inset(0 ${100 - progress}% 0 0)`;
+
+                if (progress > 0) {
+                    setTimeout(rollback, 35);
+                } else {
+                    resolve();
+                }
+            };
+            rollback();
+        });
     }
 };
 
