@@ -13,8 +13,8 @@ class FileSystemService extends EventTarget {
     async init() {
         if (this.isInitialized) return;
         try {
-            const dataPath = await Neutralino.os.getPath('data');
-            this.basePath = await Neutralino.filesystem.getJoinedPath(dataPath, 'WeekBox');
+            const documentsPath = await Neutralino.os.getPath('documents');
+            this.basePath = await Neutralino.filesystem.getJoinedPath(documentsPath, 'WeekBox');
             this.enginesPath = await Neutralino.filesystem.getJoinedPath(this.basePath, 'engines');
             await this.ensureDir(this.basePath);
             await this.ensureDir(this.enginesPath);
