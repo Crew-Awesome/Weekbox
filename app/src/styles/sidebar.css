@@ -10,50 +10,17 @@
   will-change: width;
   padding: 0;
 }
-
 .sidebar-top {
   display: flex;
   flex-direction: column;
   gap: var(--spacing-xl);
   padding: var(--spacing-lg) var(--spacing-md);
 }
-
-.user-profile {
-  display: flex;
-  align-items: center;
-  gap: var(--spacing-md);
-  padding: 0 var(--spacing-xs);
-  overflow: hidden;
-}
-
-.avatar {
-  width: 36px;
-  height: 36px;
-  background-color: var(--bg-hover);
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: var(--text-muted);
-  font-size: 1rem;
-  flex-shrink: 0;
-  border: 1px solid var(--border-color);
-}
-
-.user-name {
-  font-weight: 600;
-  color: var(--text-main);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
 .sidebar-nav {
   display: flex;
   flex-direction: column;
   gap: var(--spacing-sm);
 }
-
 .nav-btn {
   background: transparent;
   border: none;
@@ -74,44 +41,36 @@
   white-space: nowrap;
   overflow: hidden;
 }
-
-.nav-btn:hover,
-.nav-btn.active {
+.nav-btn:hover, .nav-btn.active {
   background: var(--bg-hover);
   color: var(--text-main);
 }
-
 .nav-btn i {
   width: 20px;
   font-size: 1.1rem;
   text-align: center;
   flex-shrink: 0;
 }
-
 .nav-divider {
   height: 1px;
   background-color: var(--border-color);
   margin: var(--spacing-xs) 0;
 }
-
 .play-btn {
   color: var(--play-color);
   background-color: var(--play-bg);
   border: 1px solid var(--border-color);
 }
-
 .play-btn:hover {
   background-color: var(--text-main);
   color: var(--bg-color);
 }
-
 .config-btn {
   border-radius: 0;
   border-top: 1px solid var(--border-color);
   padding: var(--spacing-md) var(--spacing-lg);
   background-color: var(--bg-panel);
 }
-
 .sidebar-resizer {
   position: absolute;
   top: 0;
@@ -123,19 +82,15 @@
   background-color: transparent;
   transition: background-color 0.2s ease;
 }
-
-.sidebar-resizer:hover,
-.sidebar-resizer.resizing {
+.sidebar-resizer:hover, .sidebar-resizer.resizing {
   background-color: var(--text-muted);
 }
-
 .engines-list {
   display: flex;
   flex-direction: column;
   gap: var(--spacing-sm);
   margin-top: var(--spacing-sm);
 }
-
 .section-title {
   font-size: 0.75rem;
   text-transform: uppercase;
@@ -144,22 +99,18 @@
   margin: 0 var(--spacing-sm);
   font-weight: 800;
 }
-
 .engines-wrapper {
   display: flex;
   flex-direction: column;
   gap: var(--spacing-sm);
 }
-
 .engine-btn {
   border: 1px solid transparent;
 }
-
 .engine-btn:hover {
   border: 1px solid var(--border-color);
   background-color: var(--bg-hover);
 }
-
 .engine-icon {
   width: 20px;
   height: 20px;

@@ -2,6 +2,7 @@ import { storageBridge } from "./storagePatch.js";
 import { router } from "./router.js";
 import { registerHomeView } from "../ui/home/index.js";
 import { registerEnginesView } from "../ui/engines/index.js";
+import { registerModManagerView } from "../ui/mod-manager/index.js";
 import { downloadEngine } from "../ui/engines/downloadEngine.js";
 import { disableProductionRefreshShortcuts } from "./productionShortcuts.js";
 import { FS } from "../utils/filesystem.js"; 
@@ -17,10 +18,12 @@ async function startApp() {
     });
 
     await FS.init();
-
     await storageBridge.init();
+    
     registerHomeView();
     registerEnginesView();
+    registerModManagerView();
+    
     await router.init();
     
     console.log("WeekBox: modules loaded.");
