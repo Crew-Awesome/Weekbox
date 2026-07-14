@@ -28,7 +28,7 @@ export const gridRender = {
         
         try {
             const mods = gridState.isSearchMode
-                ? await gameBananaApi.searchMods(gridState.searchQuery, gridState.currentPage)
+                ? await gameBananaApi.searchMods(gridState.searchQuery, gridState.currentPage, 12)
                 : await gameBananaApi.getGridMods(gridState.currentFilter, gridState.currentPage, gridState.currentCategoryId);
                 
             if (renderVersion !== gridState.renderVersion) return;

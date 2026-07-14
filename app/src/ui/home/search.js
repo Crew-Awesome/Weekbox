@@ -12,7 +12,7 @@ export const homeSearch = {
         input.parentNode.replaceChild(newInput, input);
 
         newInput.addEventListener('input', (e) => {
-            const query = e.target.value.trim();
+            const query = e.target.value.trim().replace(/\s+/g, ' ');
             clearTimeout(this.timeoutId);
             
             this.timeoutId = setTimeout(() => {
@@ -31,6 +31,7 @@ export const homeSearch = {
     },
 
     async executeSearch(query) {
+        query = query.trim().replace(/\s+/g, ' ');
         const carousel = document.getElementById('featured-carousel');
         const sectionTitle = document.getElementById('grid-section-title');
         const filters = document.getElementById('grid-filters');

@@ -18,6 +18,7 @@ export const gameBananaApi = {
     freshPopularExhausted: false,
     freshPopularPages: new Map(),
     freshPopularSeenIds: new Set(),
+    searchCache: new Map(),
     
     getImageUrl(mod) {
         if (mod._aPreviewMedia && mod._aPreviewMedia._aImages && mod._aPreviewMedia._aImages.length > 0) {
@@ -292,20 +293,42 @@ export const gameBananaApi = {
         }
     },
     
-    async searchMods(query, page = 1, perPage = 50) {
+    getSearchScore(mod, query) {
+        const title = String(mod._sName || '').toLocaleLowerCase();
+        const normalizedQuery = query.toLocaleLowerCase();
+        const words = normalizedQuery.split(/\s+/).filter(Boolean);
+        const exactTitle = title === normalizedQuery ? 1000000000 : 0;
+        const startsWithQuery = title.startsWith(normalizedQuery) ? 100000000 : 0;
+        const matchingWords = words.filter(word => title.includes(word)).length * 1000000;
+        const likes = Number(mod._nLikeCount || 0) * 10;
+        const views = Number(mod._nViewCount || 0);
+        return exactTitle + startsWithQuery + matchingWords + likes + views;
+    },
+
+    async searchMods(query, page = 1, perPage = 12) {
         try {
-            const searchQuery = encodeURIComponent(query + ' fnf');
-            const res = await fetch(`${this.baseUrl}/Util/Search/Results?_sModelName=Mod&_sSearchString=${searchQuery}&_nPage=${page}&_nPerpage=${perPage}`);
+            const normalizedQuery = query.trim().replace(/\s+/g, ' ');
+            if (!normalizedQuery) return [];
+
+            const cacheKey = `${normalizedQuery.toLocaleLowerCase()}:${page}:${perPage}`;
+            if (this.searchCache.has(cacheKey)) return this.searchCache.get(cacheKey);
+
+            const params = new URLSearchParams({
+                _sModelName: 'Mod',
+                _sSearchString: `${normalizedQuery} fnf`,
+                _nPage: String(page),
+                _nPerpage: String(perPage)
+            });
+            const res = await fetch(`${this.baseUrl}/Util/Search/Results?${params}`);
+            if (!res.ok) throw new Error('Mod search failed');
             const data = await res.json();
             const records = this.getValidRecords(data);
-            
-            let parsedMods = records.map(mod => this.toGridMod(mod));
-            parsedMods.sort((a, b) => {
-                const scoreA = (a.likes * 10) + a.views;
-                const scoreB = (b.likes * 10) + b.views;
-                return scoreB - scoreA;
-            });
-            
+            const parsedMods = [...new Map(records.map(mod => [mod._idRow, mod])).values()]
+                .sort((left, right) => this.getSearchScore(right, normalizedQuery) - this.getSearchScore(left, normalizedQuery))
+                .map(mod => this.toGridMod(mod));
+
+            this.searchCache.set(cacheKey, parsedMods);
+            if (this.searchCache.size > 40) this.searchCache.delete(this.searchCache.keys().next().value);
             return parsedMods;
         } catch (error) {
             return [];

@@ -137,7 +137,7 @@ export const homeSearchDropdown = {
     async fetchRelated(query) {
         try {
             const res = await gameBananaApi.searchMods(query, 1, 3);
-            return res.map(m => m.title);
+            return [...new Set(res.map(m => m.title))];
         } catch(e) { return []; }
     }
 };
