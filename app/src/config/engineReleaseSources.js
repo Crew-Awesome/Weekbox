@@ -24,6 +24,7 @@ export const ENGINE_RELEASE_SOURCES = {
         mac: { workflow: "mac.yml", artifact: "Codename Engine" },
       },
     },
+    updates: { channel: "nightly" },
   },
   psych: {
     repository: "ShadowMario/FNF-PsychEngine",
@@ -64,6 +65,7 @@ export const ENGINE_RELEASE_SOURCES = {
         mac64: { workflow: "builds.yaml", artifact: "MacOS x64 Build" },
       },
     },
+    updates: { channel: "nightly" },
   },
   fpsplus: {
     repository: "ThatRozebudDude/FPS-Plus-Public",
@@ -77,5 +79,6 @@ export const ENGINE_RELEASE_SOURCES = {
       lin: [/^linuxbuild\.zip$/i],
       mac: [/^macbuild\.zip$/i],
     },
+    updates: { channel: "release" },
   },
 };

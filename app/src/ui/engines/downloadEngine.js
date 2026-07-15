@@ -217,4 +217,39 @@ export const downloadEngine = {
       return false;
     }
   },
+
+  async update(engineId, version, downloadUrl, onProgress, onStateChange) {
+    const updateVersion = `.update-${Date.now()}`;
+    const engineRoot = `${FS.enginesPath}/${engineId}`;
+    const currentDir = `${engineRoot}/${version}`;
+    const backupDir = `${engineRoot}/.previous-${Date.now()}`;
+    const installed = await this.install(
+      engineId,
+      updateVersion,
+      downloadUrl,
+      onProgress,
+      onStateChange,
+    );
+    if (!installed) return false;
+    try {
+      if (!(await FS.findExecutable(`${engineRoot}/${updateVersion}`))) {
+        await FS.api.remove(`${engineRoot}/${updateVersion}`).catch(() => {});
+        return false;
+      }
+      await FS.api.remove(backupDir).catch(() => {});
+      if (await FS.api.exists(currentDir)) {
+        await Neutralino.filesystem.move(currentDir, backupDir);
+      }
+      await Neutralino.filesystem.move(`${engineRoot}/${updateVersion}`, currentDir);
+      await FS.api.remove(backupDir).catch(() => {});
+      return true;
+    } catch (error) {
+      await FS.api.remove(`${engineRoot}/${updateVersion}`).catch(() => {});
+      if (!(await FS.api.exists(currentDir)) && (await FS.api.exists(backupDir))) {
+        await Neutralino.filesystem.move(backupDir, currentDir).catch(() => {});
+      }
+      console.error("Could not replace engine update:", error);
+      return false;
+    }
+  },
 };

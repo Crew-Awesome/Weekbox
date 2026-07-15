@@ -68,6 +68,21 @@ function withNightlyVersion(versions, source) {
   return [nightly, ...versions.filter((version) => !version.isNightly)];
 }
 
+async function getLatestNightly(source) {
+  const response = await fetch(
+    `https://api.github.com/repos/${source.repository}/commits/${source.nightly.branch}`,
+    { headers: { Accept: "application/vnd.github+json" } },
+  );
+  if (!response.ok) throw new Error("GitHub nightly request failed");
+  const commit = await response.json();
+  const version = getNightlyVersion(source);
+  return {
+    ...version,
+    updateKey: `nightly:${commit.sha}`,
+    releasedAt: commit.commit?.committer?.date || null,
+  };
+}
+
 async function fetchAllReleases(source, etag) {
   let url = `https://api.github.com/repos/${source.repository}/releases?per_page=100`;
   const releases = [];
@@ -119,4 +134,19 @@ export async function getEngineReleaseVersions(engineId) {
       ? withNightlyVersion(cached.versions, source)
       : withNightlyVersion([], source);
   }
+}
+
+export async function getEngineUpdateCandidate(engineId) {
+  const source = ENGINE_RELEASE_SOURCES[engineId];
+  if (!source?.updates) return null;
+  if (source.updates.channel === "nightly") {
+    try {
+      return await getLatestNightly(source);
+    } catch {
+      return null;
+    }
+  }
+  const versions = await getEngineReleaseVersions(engineId);
+  const version = versions.find((item) => !item.isNightly);
+  return version ? { ...version, updateKey: `release:${version.version}` } : null;
 }
