@@ -1,5 +1,4 @@
 import { gameBananaApi } from "../../api/gamebanana.js";
-import { ENGINE_DETAILS } from "../../config/engines.js";
 import { modModal } from "./modal/index.js";
 
 export const homeCarousel = {
@@ -25,27 +24,12 @@ export const homeCarousel = {
       this.totalSlides = mods.length;
 
       mods.forEach((mod, index) => {
-        // Fallback por defecto (Unassigned)
-        let engineBadgeHtml = `
-          <div class="home-engine-badge">
-              <i class="fa-solid fa-question-circle"></i>
-              <span>Unassigned</span>
+        const engineBadgeHtml = `
+          <div class="home-engine-badge" title="${mod.category.name}">
+              <img src="assets/icons/${mod.engine.icon}" alt=""/>
+              <span>${mod.engine.name}</span>
           </div>
         `;
-
-        // Si conocemos el engine, usar su icono y nombre
-        const engine =
-          mod.categoryId === 3827
-            ? ENGINE_DETAILS.executable
-            : ENGINE_DETAILS[mod.engineId];
-        if (engine) {
-          engineBadgeHtml = `
-            <div class="home-engine-badge">
-                <img src="assets/icons/${engine.icon}" alt=""/>
-                <span>${engine.name}</span>
-            </div>
-          `;
-        }
 
         const slide = document.createElement("div");
         slide.className = "carousel-slide";

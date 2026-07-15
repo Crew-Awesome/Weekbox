@@ -1,37 +1,54 @@
 export class FeaturedService {
-  constructor({ url, cacheKey, getTimeAgo, getEngineIdForCategory }) {
+  constructor({ url, manifestUrl, cacheKey, getTimeAgo }) {
     this.url = url;
+    this.manifestUrl = manifestUrl;
     this.cacheKey = cacheKey;
     this.getTimeAgo = getTimeAgo;
-    this.getEngineIdForCategory = getEngineIdForCategory;
   }
 
   async getCarousel() {
     const cached = this.getCached();
-    if (cached && Date.parse(cached.expiresAt) > Date.now()) {
-      return this.flatten(cached);
-    }
-
     try {
+      const manifest = await this.fetchManifest();
+      if (cached?.revision === manifest.revision) return this.flatten(cached.featured);
       const response = await fetch(this.url, { cache: "no-store" });
       if (!response.ok) throw new Error("Featured request failed");
       const featured = await response.json();
       if (!this.isSupported(featured))
         throw new Error("Unsupported featured schema");
+      if (featured.revision !== manifest.revision)
+        throw new Error("Featured revision did not match manifest");
       const mods = this.flatten(featured);
       if (mods.length === 0) throw new Error("No featured mods");
-      localStorage.setItem(this.cacheKey, JSON.stringify(featured));
+      localStorage.setItem(
+        this.cacheKey,
+        JSON.stringify({ revision: manifest.revision, featured }),
+      );
       return mods;
     } catch (error) {
-      return cached ? this.flatten(cached) : [];
+      return cached ? this.flatten(cached.featured) : [];
     }
+  }
+
+  async fetchManifest() {
+    const response = await fetch(this.manifestUrl, { cache: "no-store" });
+    if (!response.ok) throw new Error("Featured manifest request failed");
+    const manifest = await response.json();
+    if (
+      manifest?.schemaVersion !== 1 ||
+      typeof manifest?.revision !== "string" ||
+      !manifest.revision
+    ) {
+      throw new Error("Unsupported featured manifest");
+    }
+    return manifest;
   }
 
   getCached() {
     try {
       const value = localStorage.getItem(this.cacheKey);
       const featured = value ? JSON.parse(value) : null;
-      return this.isSupported(featured) ? featured : null;
+      return this.isCachedFeatureSet(featured) ? featured : null;
     } catch (error) {
       return null;
     }
@@ -39,13 +56,33 @@ export class FeaturedService {
 
   isSupported(featured) {
     return (
-      featured?.schemaVersion === 2 &&
+      featured?.schemaVersion === 3 &&
+      typeof featured?.revision === "string" &&
       Array.isArray(featured.rankings) &&
       featured.rankings.every(
         (ranking) =>
           Array.isArray(ranking?.mods) &&
-          ranking.mods.every((mod) => Number.isFinite(Number(mod?.categoryId))),
+          ranking.mods.every(
+            (mod) =>
+              Number.isFinite(Number(mod?.id)) &&
+              typeof mod?.title === "string" &&
+              typeof mod?.author === "string" &&
+              typeof mod?.image === "string" &&
+              typeof mod?.engine?.id === "string" &&
+              typeof mod?.engine?.name === "string" &&
+              typeof mod?.engine?.icon === "string" &&
+              Number.isFinite(Number(mod?.category?.id)) &&
+              typeof mod?.category?.name === "string",
+          ),
       )
+    );
+  }
+
+  isCachedFeatureSet(value) {
+    return (
+      typeof value?.revision === "string" &&
+      value.revision === value.featured?.revision &&
+      this.isSupported(value.featured)
     );
   }
 
@@ -53,13 +90,12 @@ export class FeaturedService {
     if (!Array.isArray(featured?.rankings)) return [];
     return featured.rankings.flatMap((ranking) =>
       ranking.mods.map((mod) => {
-        const categoryId = Number(mod.categoryId) || null;
         return {
           ...mod,
           label: ranking.label,
           timeAgo: this.getTimeAgo(mod.publishedAt),
-          categoryId,
-          engineId: mod.engineId || this.getEngineIdForCategory(categoryId),
+          categoryId: Number(mod.category.id),
+          engineId: mod.engine.id,
         };
       }),
     );

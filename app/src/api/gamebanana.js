@@ -19,7 +19,9 @@ export const gameBananaApi = {
   },
   featuredUrl:
     "https://raw.githubusercontent.com/Crew-Awesome/weekbox.featured/main/public/featured.json",
-  featuredCacheKey: "weekbox-featured-v2",
+  featuredManifestUrl:
+    "https://raw.githubusercontent.com/Crew-Awesome/weekbox.featured/main/public/featured-manifest.json",
+  featuredCacheKey: "weekbox-featured-v3",
   searchCache: new Map(),
   modProfileCache: new Map(),
   modProfileRequests: new Map(),
@@ -273,9 +275,9 @@ export const gameBananaApi = {
     if (!this.featuredService) {
       this.featuredService = new FeaturedService({
         url: this.featuredUrl,
+        manifestUrl: this.featuredManifestUrl,
         cacheKey: this.featuredCacheKey,
         getTimeAgo: this.getTimeAgo.bind(this),
-        getEngineIdForCategory: this.getEngineIdForCategory.bind(this),
       });
     }
     return this.featuredService.getCarousel();
