@@ -29,13 +29,13 @@ export class ModRepository {
     await this.saveAll(mods);
   }
 
-  async assignEngine(modId, engineId) {
+  async setHidden(modId, hidden) {
     const mods = await this.getAll();
     const mod = mods.find((item) => item.id === modId);
-    if (!mod) return false;
-    mod.engineId = engineId || null;
+    if (!mod) return null;
+    mod.hidden = Boolean(hidden);
     await this.saveAll(mods);
-    return true;
+    return mod;
   }
 
   async remove(modId) {

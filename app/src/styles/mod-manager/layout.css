@@ -155,13 +155,13 @@
   transition: opacity 0.25s ease;
 }
 
-.mod-manager-card:hover .mod-manager-cover,
+.mod-manager-card:not(.is-hidden):hover .mod-manager-cover,
 .mod-manager-cover-wrap:focus-within .mod-manager-cover {
   filter: blur(4px) brightness(0.65);
   transform: scale(1.04);
 }
 
-.mod-manager-card:hover .mod-manager-launch-btn,
+.mod-manager-card:not(.is-hidden):hover .mod-manager-launch-btn,
 .mod-manager-cover-wrap:focus-within .mod-manager-launch-btn {
   opacity: 1;
 }

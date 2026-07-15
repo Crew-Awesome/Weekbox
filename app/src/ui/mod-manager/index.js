@@ -203,6 +203,7 @@ export const modManagerModal = {
 
       const card = document.createElement("div");
       card.className = "mod-manager-card";
+      card.classList.toggle("is-hidden", Boolean(mod.hidden));
       card.style = isHidden;
       const launchLabel =
         isExecutable || mod.engineId === "codename" ? "Launch Mod" : "Launch Engine";
@@ -210,7 +211,7 @@ export const modManagerModal = {
       card.innerHTML = `
         <div class="mod-manager-cover-wrap">
           <img class="mod-manager-cover" crossorigin="Anonymous" src="${imageUrl}" alt="Mod Cover" onerror="this.src='https://images.gamebanana.com/img/ss/mods/default.jpg'"/>
-          <button class="mod-manager-launch-btn" type="button" aria-label="${launchLabel} ${mod.name}">
+          <button class="mod-manager-launch-btn" type="button" aria-label="${launchLabel} ${mod.name}" ${mod.hidden ? "disabled" : ""}>
             <i class="fa-solid fa-play" aria-hidden="true"></i><span>${launchLabel}</span>
           </button>
         </div>
@@ -263,19 +264,22 @@ export const modManagerModal = {
       deleteBtn.addEventListener("click", async () => {
         deleteBtn.disabled = true;
         deleteBtn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i>`;
-
-        await FS.removeInstalledMod(mod.id);
-
-        card.style.transform = "scale(0.8) translateY(10px)";
-        card.style.opacity = "0";
-        setTimeout(() => {
-          card.remove();
-          if (gridContainer.children.length === 0) {
-            container.innerHTML = `<div class="empty-mods-state">No mods installed yet.</div>`;
-          }
-        }, 300);
-
-        document.dispatchEvent(new CustomEvent("mods-updated"));
+        try {
+          await FS.removeInstalledMod(mod.id);
+          card.style.transform = "scale(0.8) translateY(10px)";
+          card.style.opacity = "0";
+          setTimeout(() => {
+            card.remove();
+            if (gridContainer.children.length === 0) {
+              container.innerHTML = `<div class="empty-mods-state">No mods installed yet.</div>`;
+            }
+          }, 300);
+          document.dispatchEvent(new CustomEvent("mods-updated"));
+        } catch (error) {
+          console.error("Could not uninstall mod", error);
+          deleteBtn.disabled = false;
+          deleteBtn.innerHTML = `<i class="fa-solid fa-trash"></i>`;
+        }
       });
 
       const dirBtn = card.querySelector(".mod-manager-dir-btn");
@@ -290,20 +294,22 @@ export const modManagerModal = {
 
       const visBtn = card.querySelector(".mod-manager-vis-btn");
       visBtn.addEventListener("click", async () => {
-        const allMods = await FS.getInstalledMods();
-        const m = allMods.find((x) => x.id === mod.id);
-        if (m) {
-          m.hidden = !m.hidden;
-          const jsonPath = `${FS.dataPath}/installedmods.json`;
-          await FS.api.write(jsonPath, JSON.stringify(allMods, null, 2));
-
-          mod.hidden = m.hidden;
+        visBtn.disabled = true;
+        try {
+          const updatedMod = await FS.setModHidden(mod.id, !mod.hidden);
+          if (!updatedMod) return;
+          mod.hidden = updatedMod.hidden;
+          card.classList.toggle("is-hidden", mod.hidden);
+          launchBtn.disabled = mod.hidden;
           card.style.opacity = mod.hidden ? "0.5" : "1";
           visBtn.querySelector("i").className = mod.hidden
             ? "fa-solid fa-eye-slash"
             : "fa-solid fa-eye";
-
           document.dispatchEvent(new CustomEvent("mods-updated"));
+        } catch (error) {
+          console.error("Could not update mod visibility", error);
+        } finally {
+          visBtn.disabled = false;
         }
       });
 

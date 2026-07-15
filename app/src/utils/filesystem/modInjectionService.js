@@ -77,6 +77,28 @@ export class ModInjectionService {
     );
   }
 
+  async unlinkFromEngine(mod, engineId, version) {
+    const linkPath = `${this.getEnginesPath()}/${engineId}/${version}/mods/${getModFolderName(mod)}`;
+    if (!(await this.api.exists(linkPath))) return false;
+    const command =
+      window.NL_OS === "Windows"
+        ? `cmd /c rmdir "${linkPath.replace(/\//g, "\\")}"`
+        : `rm -f "${linkPath}"`;
+    const result = await Neutralino.os.execCommand(command, {
+      background: false,
+    });
+    if (result.exitCode !== 0) {
+      throw new Error(result.stdErr || `Could not remove mod link for ${mod.name}`);
+    }
+    return true;
+  }
+
+  async unlinkFromInstalledEngines(mod, engines) {
+    return Promise.allSettled(
+      engines.map((engine) => this.unlinkFromEngine(mod, engine.id, engine.version)),
+    );
+  }
+
   async cleanup(engineId, version) {
     const modsPath = `${this.getEnginesPath()}/${engineId}/${version}/mods`;
     if (!(await this.api.exists(modsPath))) return;

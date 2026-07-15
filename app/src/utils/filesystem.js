@@ -46,6 +46,18 @@ class FileSystemService {
       await this.cleanupIncompleteDownloads();
     }
     this.isInitialized = true;
+    await this.cleanupHiddenModLinks();
+  }
+
+  async cleanupHiddenModLinks() {
+    const hiddenMods = (await this.mods.getAll()).filter((mod) => mod.hidden);
+    if (hiddenMods.length === 0) return;
+    const engines = await this.getInstalledEngines();
+    await Promise.all(
+      hiddenMods.map((mod) =>
+        this.injection.unlinkFromInstalledEngines(mod, engines),
+      ),
+    );
   }
 
   async cleanupIncompleteDownloads() {
@@ -143,10 +155,6 @@ class FileSystemService {
     }
   }
 
-  async linkModToEngine(mod, engineId, version) {
-    return this.injection.link(mod, engineId, version);
-  }
-
   async injectModIntoEngine(modId, engineId, version) {
     return this.injection.injectOne(modId, engineId, version);
   }
@@ -208,12 +216,50 @@ class FileSystemService {
     if (this.isInitialized) await this.mods.add(modId, modName, metadata);
   }
 
-  async assignModEngine(modId, engineId) {
-    return this.isInitialized ? this.mods.assignEngine(modId, engineId) : false;
+  async setModHidden(modId, hidden) {
+    if (!this.isInitialized) return null;
+    const mod = await this.mods.setHidden(modId, hidden);
+    if (!mod) return null;
+    const engines = await this.getInstalledEngines();
+    if (mod.hidden) {
+      await this.injection.unlinkFromInstalledEngines(mod, engines);
+    } else {
+      await this.injection.injectIntoInstalledEngines(modId, engines);
+    }
+    return mod;
   }
 
   async removeInstalledMod(modId) {
-    if (this.isInitialized) await this.mods.remove(modId);
+    if (!this.isInitialized) return false;
+    const mod = (await this.mods.getAll()).find((item) => item.id === modId);
+    if (!mod) return false;
+    const unlinkResults = await this.injection.unlinkFromInstalledEngines(
+      mod,
+      await this.getInstalledEngines(),
+    );
+    const unlinkFailure = unlinkResults.find(
+      (result) => result.status === "rejected",
+    );
+    if (unlinkFailure) throw unlinkFailure.reason;
+    const folderName = getModFolderName(mod);
+    if (!folderName || /[\\/]/.test(folderName) || folderName === "." || folderName === "..") {
+      throw new Error(`Invalid mod folder for ${mod.name}`);
+    }
+    const modPath = `${this.modsPath}/${folderName}`;
+    if (await this.api.exists(modPath)) {
+      const command =
+        window.NL_OS === "Windows"
+          ? `cmd /c rmdir /S /Q "${modPath.replace(/\//g, "\\")}"`
+          : `rm -rf "${modPath}"`;
+      const result = await Neutralino.os.execCommand(command, {
+        background: false,
+      });
+      if (result.exitCode !== 0) {
+        throw new Error(result.stdErr || `Could not remove mod files for ${mod.name}`);
+      }
+    }
+    await this.mods.remove(modId);
+    return true;
   }
 
   async isModInstalled(modId) {
