@@ -209,6 +209,7 @@ export const downloadMod = {
         );
 
       if (this.activeTasks.get(modId)?.cancelled) throw new Error("Cancelled");
+      document.dispatchEvent(new CustomEvent("mods-updated"));
       toastDownloadMod.success(modId);
 
       const modalBtn = document.getElementById("modal-download-btn");
