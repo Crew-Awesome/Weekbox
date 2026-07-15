@@ -202,6 +202,32 @@
   background: #d95b5b;
   color: #fff;
 }
+.engine-update-toast.missing-engine {
+  border-color: rgb(217 91 91 / 72%);
+}
+.engine-update-toast.missing-engine .engine-update-toast-icon {
+  background: #242424;
+  color: #fff;
+}
+.engine-missing-icon {
+  position: relative;
+  display: grid;
+  place-items: center;
+}
+.engine-missing-icon i {
+  position: absolute;
+  inset: 0;
+  margin: auto;
+  display: grid;
+  width: 18px;
+  height: 18px;
+  place-items: center;
+  border: 2px solid rgb(36 36 36 / 92%);
+  border-radius: 999px;
+  background: rgb(217 91 91 / 94%);
+  color: #fff;
+  font-size: 9px;
+}
 
 @media (max-width: 480px) {
   .engine-update-modal {

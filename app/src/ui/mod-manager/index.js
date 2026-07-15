@@ -5,6 +5,7 @@ import {
   ENGINE_DETAILS,
   getEngineLaunchBehavior,
 } from "../../config/engines.js";
+import { engineUpdateToast } from "../engines/engineUpdateToast.js";
 
 function extractColor(img, card) {
   const processColor = () => {
@@ -602,7 +603,16 @@ export const modManagerModal = {
             refreshLaunchButtons,
           );
         } catch (error) {
-          console.error("Could not launch mod", error);
+          if (error?.message === "Assigned engine is not installed") {
+            const engineInfo = ENGINE_DETAILS[mod.engineId];
+            engineUpdateToast.missingEngine(
+              mod.engineId,
+              engineInfo?.name || "the assigned engine",
+              engineInfo?.icon,
+            );
+          } else {
+            console.error("Could not launch mod", error);
+          }
         } finally {
           launchBtn.disabled = false;
           refreshLaunchButtons();

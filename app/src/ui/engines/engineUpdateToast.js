@@ -95,6 +95,25 @@ export const engineUpdateToast = {
     setTimeout(() => this.hide(engineId), 5200);
   },
 
+  missingEngine(engineId, name, icon) {
+    const toastId = `missing-engine-${engineId || "unassigned"}`;
+    this.show(toastId, "Engine missing");
+    const toast = document.getElementById(getToastId(toastId));
+    if (!toast) return;
+    toast.classList.add("missing-engine");
+    toast.querySelector(".engine-update-toast-icon").innerHTML = `
+      <span class="engine-missing-icon">
+        <img src="assets/icons/${icon || "exe.png"}" alt="" />
+        <i class="fa-solid fa-xmark" aria-hidden="true"></i>
+      </span>`;
+    toast.querySelector("strong").textContent = "Engine missing";
+    toast.querySelector(".engine-update-toast-body span").textContent = engineId
+      ? `Install ${name} to launch this mod`
+      : "Assign an engine in Mod Manager";
+    toast.querySelector(".engine-update-toast-track").hidden = true;
+    setTimeout(() => this.hide(toastId), 4600);
+  },
+
   hide(engineId) {
     const toast = document.getElementById(getToastId(engineId));
     if (!toast) return;
