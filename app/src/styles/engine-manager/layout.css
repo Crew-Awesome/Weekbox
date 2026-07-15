@@ -1,0 +1,176 @@
+/* Contenedor principal del cuerpo del modal */
+.engine-manager-body {
+  padding: var(--spacing-xl);
+  overflow-x: auto;
+  overflow-y: hidden;
+  flex: 1;
+  display: flex;
+}
+
+/* Flexbox para acomodar las columnas lado a lado (Carrusel) */
+.engine-columns-container {
+  display: flex;
+  height: 100%;
+}
+
+/* Columna del Engine */
+.engine-column {
+  width: 260px;
+  background-color: transparent;
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+  height: 100%;
+  /* Línea divisora vertical entre columnas */
+  border-right: 1px solid var(--border-color);
+  /* Variable CSS por defecto en caso de fallo al extraer el color */
+  --engine-color: rgba(255, 255, 255, 0.1);
+}
+
+/* Quitar la línea divisora de la última columna */
+.engine-column:last-child {
+  border-right: none;
+}
+
+/* Cabecera de la columna (Fija y transparente) */
+.engine-column-header {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: var(--spacing-lg) var(--spacing-md);
+  background-color: transparent;
+  flex-shrink: 0;
+}
+
+.engine-col-icon {
+  width: 56px;
+  height: 56px;
+  object-fit: contain;
+  border-radius: 8px;
+}
+
+.engine-col-name {
+  font-weight: 800;
+  color: var(--text-main);
+  font-size: 1.1rem;
+  text-transform: capitalize;
+  text-align: center;
+}
+
+/* Lista de versiones (Con Scroll Y, transparente y líneas divisorias superior e inferior) */
+.engine-versions-list {
+  flex: 1;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  padding: 8px 16px;
+  gap: 4px;
+  background-color: transparent;
+  
+  /* Líneas divisorias arriba y abajo de la lista de versiones */
+  border-top: 1px solid var(--border-color);
+  border-bottom: 1px solid var(--border-color);
+  /* Espaciado inferior para que la línea de abajo sea visible y no quede contra el borde de la ventana */
+  margin-bottom: var(--spacing-md);
+}
+
+/* Scrollbar super delgado */
+.engine-versions-list::-webkit-scrollbar {
+  width: 2px;
+}
+.engine-versions-list::-webkit-scrollbar-track {
+  background: transparent;
+}
+.engine-versions-list::-webkit-scrollbar-thumb {
+  background-color: rgba(255, 255, 255, 0.15);
+  border-radius: 10px;
+}
+.engine-versions-list::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(255, 255, 255, 0.3);
+}
+
+/* Fila de versión individual (Transparente por defecto) */
+.version-item {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  /* flex-shrink asegura que las filas no se aplasten si hay muchas y el scroll actúe correctamente */
+  flex-shrink: 0;
+  height: 48px;
+  background-color: transparent;
+  border-radius: 8px;
+  transition: background-color 0.25s ease;
+  overflow: hidden;
+  margin-bottom: 4px;
+}
+
+/* Al hacer hover, usamos el color predominante del Engine calculado en el JS */
+.version-item:hover {
+  background-color: var(--engine-color);
+}
+
+/* Texto de la versión (Visible por defecto) */
+.version-text {
+  font-weight: 600;
+  color: var(--text-muted);
+  font-size: 0.95rem;
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+.version-item:hover .version-text {
+  opacity: 0;
+  transform: scale(0.9);
+}
+
+/* Botones de acción (Ocultos por defecto) */
+.version-actions {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  opacity: 0;
+  pointer-events: none;
+  transform: scale(1.1);
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+.version-item:hover .version-actions {
+  opacity: 1;
+  pointer-events: auto;
+  transform: scale(1);
+}
+
+/* Estilos de los botones de acción */
+.engine-action-btn {
+  background-color: var(--bg-panel);
+  color: var(--text-main);
+  border: 1px solid var(--border-color);
+  width: 32px;
+  height: 32px;
+  border-radius: 6px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+
+.engine-action-btn:hover {
+  background-color: var(--bg-hover);
+}
+
+.engine-delete-btn:hover {
+  color: #ff4a4a;
+  border-color: rgba(255, 74, 74, 0.3);
+  background-color: rgba(255, 74, 74, 0.1);
+}
+
+.engine-delete-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
