@@ -10,7 +10,6 @@ export const gameBananaApi = {
   featuredUrl:
     "https://raw.githubusercontent.com/Crew-Awesome/weekbox.featured/main/public/featured.json",
   featuredCacheKey: "weekbox-featured-v1",
-
   currentFreshCategoryId: undefined,
   freshPopularRecords: [],
   freshPopularNextPage: 1,
@@ -40,25 +39,21 @@ export const gameBananaApi = {
   getEngineIdForCategories(...categories) {
     const pending = categories.filter(Boolean);
     const seen = new Set();
-
     while (pending.length > 0) {
       const category = pending.shift();
       if (!category || typeof category !== "object" || seen.has(category))
         continue;
       seen.add(category);
-
       const engineId = this.getEngineIdForCategory(
         category._idRow || category._idCategory,
       );
       if (engineId) return engineId;
-
       pending.push(
         category._aCategory,
         category._aSuperCategory,
         category._aParentCategory,
       );
     }
-
     return this.getEngineIdForCategory(
       categories.find((category) => typeof category === "number"),
     );
@@ -73,22 +68,16 @@ export const gameBananaApi = {
   getTimeAgo(timestamp) {
     if (!timestamp) return "N/A";
     const seconds = Math.floor(Date.now() / 1000) - timestamp;
-
     let interval = seconds / 31536000;
     if (interval > 1) return Math.floor(interval) + "y";
-
     interval = seconds / 2592000;
     if (interval > 1) return Math.floor(interval) + "mo";
-
     interval = seconds / 86400;
     if (interval > 1) return Math.floor(interval) + "d";
-
     interval = seconds / 3600;
     if (interval > 1) return Math.floor(interval) + "h";
-
     interval = seconds / 60;
     if (interval > 1) return Math.floor(interval) + "m";
-
     return Math.floor(seconds) + "s";
   },
 
@@ -194,7 +183,6 @@ export const gameBananaApi = {
         mod._tsDateUpdated || mod._tsDateModified || mod._tsDateAdded || 0,
       );
     }
-
     if (sort === "Generic_MostLiked") return Number(mod._nLikeCount || 0);
     return Number(mod._tsDateAdded || 0);
   },
@@ -212,29 +200,23 @@ export const gameBananaApi = {
           _nPage: String(page),
           _nPerpage: String(perPage),
         });
-
         params.set("_aFilters[Generic_Game]", String(this.gameId));
         params.set("_aFilters[Generic_Category]", String(id));
-
         if (sort) params.set("_sSort", sort);
-
         const response = await fetch(`${this.baseUrl}/Mod/Index?${params}`);
         if (!response.ok) throw new Error();
         return this.getValidRecords(await response.json());
       }),
     );
-
     const records = responses
       .filter((result) => result.status === "fulfilled")
       .flatMap((result) => result.value);
-
     if (
       records.length === 0 &&
       responses.every((result) => result.status === "rejected")
     ) {
       throw new Error("GameBanana category requests failed");
     }
-
     return [...new Map(records.map((mod) => [mod._idRow, mod])).values()].sort(
       (left, right) =>
         this.getRecordSortValue(right, sort) -
@@ -296,10 +278,8 @@ export const gameBananaApi = {
       this.freshPopularPages = new Map();
       this.freshPopularSeenIds = new Set();
     }
-
     if (this.freshPopularPages.has(page))
       return this.freshPopularPages.get(page);
-
     let available = [];
     while (!this.freshPopularExhausted) {
       available = [...this.freshPopularRecords]
@@ -308,9 +288,7 @@ export const gameBananaApi = {
           (left, right) =>
             this.getPopularScore(right) - this.getPopularScore(left),
         );
-
       if (available.length >= 12) break;
-
       try {
         const isFallback = this.freshPopularUsingFallback;
         const records = await this.getCategoryRecords({
@@ -321,7 +299,6 @@ export const gameBananaApi = {
           sort: isFallback ? "Generic_MostLiked" : "Generic_Newest",
           categoryId: categoryId,
         });
-
         const eligibleRecords = records.filter((mod) =>
           isFallback
             ? this.isEstablishedPopularMod(mod)
@@ -333,7 +310,6 @@ export const gameBananaApi = {
         this.freshPopularRecords.push(
           ...eligibleRecords.filter((mod) => !knownIds.has(mod._idRow)),
         );
-
         if (records.length === 0 || eligibleRecords.length === 0) {
           if (isFallback) this.freshPopularExhausted = true;
           else this.freshPopularUsingFallback = true;
@@ -342,11 +318,9 @@ export const gameBananaApi = {
         this.freshPopularExhausted = true;
       }
     }
-
     const mods = available.slice(0, 12).map((mod) => this.toGridMod(mod));
     mods.forEach((mod) => this.freshPopularSeenIds.add(mod.id));
     this.freshPopularPages.set(page, mods);
-
     return mods;
   },
 
@@ -354,13 +328,11 @@ export const gameBananaApi = {
     try {
       if (filter === "popular")
         return await this.getFreshPopularMods(page, categoryId);
-
       const sort =
         {
           new: "Generic_Newest",
           updated: "Generic_LatestUpdated",
         }[filter] || "Generic_Newest";
-
       const records = await this.getCategoryRecords({ page, sort, categoryId });
       return records.slice(0, 12).map((mod) => this.toGridMod(mod));
     } catch (error) {
@@ -385,9 +357,28 @@ export const gameBananaApi = {
     try {
       const normalizedQuery = query.trim().replace(/\s+/g, " ");
       if (!normalizedQuery) return [];
-
+      
       const cacheKey = `${normalizedQuery.toLocaleLowerCase()}:${page}:${perPage}`;
       if (this.searchCache.has(cacheKey)) return this.searchCache.get(cacheKey);
+
+      let directMod = null;
+      // Comprueba si la búsqueda es un enlace directo o un ID puro
+      const idMatch = normalizedQuery.match(/^(?:https?:\/\/)?(?:gamebanana\.com\/mods\/)?(\d+)(?:\/.*)?$/i);
+      
+      if (page === 1 && idMatch && idMatch[1]) {
+        const specificMod = await this.getModDetails(idMatch[1]);
+        if (specificMod) {
+          directMod = {
+            id: specificMod.id,
+            title: specificMod.title,
+            author: specificMod.author,
+            image: specificMod.images[0],
+            likes: specificMod.likes,
+            views: specificMod.views,
+            timeAgo: specificMod.timeAgo,
+          };
+        }
+      }
 
       const params = new URLSearchParams({
         _sModelName: "Mod",
@@ -399,7 +390,8 @@ export const gameBananaApi = {
       if (!res.ok) throw new Error("Mod search failed");
       const data = await res.json();
       const records = this.getValidRecords(data);
-      const parsedMods = [
+      
+      let parsedMods = [
         ...new Map(records.map((mod) => [mod._idRow, mod])).values(),
       ]
         .sort(
@@ -409,9 +401,16 @@ export const gameBananaApi = {
         )
         .map((mod) => this.toGridMod(mod));
 
+      // Si detectamos un mod exacto, lo colocamos primero en los resultados
+      if (directMod) {
+        parsedMods = parsedMods.filter((m) => m.id !== directMod.id);
+        parsedMods.unshift(directMod);
+      }
+
       this.searchCache.set(cacheKey, parsedMods);
       if (this.searchCache.size > 40)
         this.searchCache.delete(this.searchCache.keys().next().value);
+        
       return parsedMods;
     } catch (error) {
       return [];
