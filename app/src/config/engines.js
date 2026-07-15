@@ -4,7 +4,7 @@ export const ENGINE_DETAILS = {
   pslice: { name: "P-Slice", icon: "pslice.png" },
   alepsych: { name: "ALE Psych", icon: "alepsych.png" },
   fpsplus: { name: "FPS Plus", icon: "fpsplus.png" },
-  psychonline: { name: "Funkin' Psych Online", icon: "psychonline.png" },
+  psychonline: { name: "Psych Online", icon: "psychonline.png" },
   codename: { name: "Codename Engine", icon: "codename.png" },
   executable: { name: "Executable", icon: "exe.png" },
 };

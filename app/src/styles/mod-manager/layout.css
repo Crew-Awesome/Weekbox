@@ -310,6 +310,7 @@
 
 .mod-manager-engine-pill span,
 .mod-manager-version-pill span {
+  min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;

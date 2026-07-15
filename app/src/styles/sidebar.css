@@ -164,10 +164,13 @@
 
 /* Efecto marquee */
 .marquee-container {
+  flex: 1 1 auto;
+  min-width: 0;
   overflow: hidden;
   white-space: nowrap;
   width: 100%;
   position: relative;
+  text-align: left;
   mask-image: linear-gradient(to right, black 85%, transparent 100%);
   -webkit-mask-image: linear-gradient(to right, black 85%, transparent 100%);
 }
@@ -176,19 +179,19 @@
   display: inline-block;
 }
 
-.nav-btn:hover .marquee-text {
-  animation: marquee 4s linear infinite;
+.nav-btn:hover .marquee-text.is-overflowing {
+  animation: marquee 1.8s ease-in-out 350ms alternate infinite;
 }
 
 @keyframes marquee {
-  0% {
-    transform: translateX(0);
+  to {
+    transform: translateX(calc(-1 * var(--marquee-distance, 0px)));
   }
-  50% {
-    transform: translateX(-50%);
-  }
-  100% {
-    transform: translateX(0);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .nav-btn:hover .marquee-text.is-overflowing {
+    animation: none;
   }
 }
 /* Scrollbar personalizado para la lista de Engines y Standalone Mods */
