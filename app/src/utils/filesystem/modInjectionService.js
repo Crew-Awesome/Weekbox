@@ -128,7 +128,7 @@ export class ModInjectionService {
             ? `cmd /c rmdir "${linkPath.replace(/\//g, "\\")}"`
             : `rm -rf "${linkPath}"`;
         await Neutralino.os
-          .execCommand(command, { background: true })
+          .execCommand(command, { background: false })
           .catch(() => {});
       }
     } catch (error) {

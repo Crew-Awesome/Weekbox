@@ -101,16 +101,17 @@ export const engineUpdateService = {
       return { status: "running" };
     }
     const name = ENGINE_DETAILS[engineId]?.name || engineId;
-    const shouldUpdate = await engineUpdateModal.confirm({
+    const choice = await engineUpdateModal.confirm({
       engineId,
       name,
       icon: ENGINE_DETAILS[engineId]?.icon,
       candidate: update.candidate,
     });
-    if (!shouldUpdate) {
+    if (choice === "skip") {
       setValue(`${SKIP_PREFIX}${engineId}`, update.key);
       return { status: "skipped" };
     }
+    if (choice !== "update") return { status: "dismissed" };
 
     engineUpdateToast.show(engineId, name);
     const updated = await downloadEngine.update(

@@ -91,7 +91,7 @@ export const engineUpdateToast = {
     toast.querySelector(".engine-update-toast-icon").innerHTML =
       '<i class="fa-solid fa-xmark"></i>';
     toast.querySelector("span").textContent =
-      "Update failed — existing engine kept";
+      "Update failed, existing engine kept";
     setTimeout(() => this.hide(engineId), 5200);
   },
 

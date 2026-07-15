@@ -52,14 +52,14 @@ export const engineUpdateModal = {
         resolve(result);
       };
       const onOverlayClick = (event) => {
-        if (event.target === overlay) finish(false);
+        if (event.target === overlay) finish("dismissed");
       };
       const onKeydown = (event) => {
-        if (event.key === "Escape") finish(false);
+        if (event.key === "Escape") finish("dismissed");
       };
 
-      confirm.onclick = () => finish(true);
-      later.onclick = () => finish(false);
+      confirm.onclick = () => finish("update");
+      later.onclick = () => finish("skip");
       overlay.hidden = false;
       requestAnimationFrame(() => overlay.classList.add("show"));
       overlay.addEventListener("click", onOverlayClick);

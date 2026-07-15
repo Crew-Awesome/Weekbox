@@ -68,6 +68,13 @@ export const downloadEngine = {
     );
   },
 
+  async copyEngineDirectory(source, destination) {
+    await Neutralino.filesystem.copy(source, destination, {
+      recursive: true,
+      overwrite: true,
+    });
+  },
+
   // Función inteligente para buscar el ejecutable y subir todo su contenido a la raíz de {version}
   async flattenEngineDir(engineDir) {
     const exePath = await FS.findExecutable(engineDir);
@@ -231,22 +238,38 @@ export const downloadEngine = {
       onStateChange,
     );
     if (!installed) return false;
+    let backupReady = false;
     try {
       if (!(await FS.findExecutable(`${engineRoot}/${updateVersion}`))) {
         await FS.api.remove(`${engineRoot}/${updateVersion}`).catch(() => {});
         return false;
       }
+      // Mod injection uses directory junctions on Windows. Neutralino cannot
+      // reliably rename an engine directory while those junctions are inside it.
+      await FS.cleanupEngineMods(engineId, version);
+      await FS.cleanupEngineMods(engineId, updateVersion);
       await FS.api.remove(backupDir).catch(() => {});
       if (await FS.api.exists(currentDir)) {
-        await Neutralino.filesystem.move(currentDir, backupDir);
+        await this.copyEngineDirectory(currentDir, backupDir);
+        backupReady = true;
+        await FS.api.remove(currentDir);
       }
-      await Neutralino.filesystem.move(`${engineRoot}/${updateVersion}`, currentDir);
+      await this.copyEngineDirectory(
+        `${engineRoot}/${updateVersion}`,
+        currentDir,
+      );
+      await FS.api.remove(`${engineRoot}/${updateVersion}`);
       await FS.api.remove(backupDir).catch(() => {});
+      await FS.injectModsIntoEngine(engineId, version);
       return true;
     } catch (error) {
       await FS.api.remove(`${engineRoot}/${updateVersion}`).catch(() => {});
-      if (!(await FS.api.exists(currentDir)) && (await FS.api.exists(backupDir))) {
-        await Neutralino.filesystem.move(backupDir, currentDir).catch(() => {});
+      if (backupReady && (await FS.api.exists(backupDir))) {
+        await FS.api.remove(currentDir).catch(() => {});
+        await this.copyEngineDirectory(backupDir, currentDir).catch(() => {});
+      }
+      if (await FS.api.exists(currentDir)) {
+        await FS.injectModsIntoEngine(engineId, version).catch(() => {});
       }
       console.error("Could not replace engine update:", error);
       return false;
