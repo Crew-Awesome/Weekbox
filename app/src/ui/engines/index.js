@@ -6,6 +6,7 @@ import { FS } from "../../utils/filesystem.js";
 import { downloadEngine } from "./downloadEngine.js";
 import { modsMaster } from "./modsMasterClass.js";
 import { rememberInstalledEngineBuild } from "./engineUpdateService.js";
+import { appSettings } from "../../core/settings.js";
 
 export const enginesView = {
   async init() {
@@ -37,44 +38,37 @@ export const enginesView = {
     const dlTextSizer = document.getElementById("dl-text-sizer");
     const dlActiveLayer = document.getElementById("dl-active-layer");
     const downloadActions = document.getElementById("engine-download-actions");
-
     if (!launchBtn) return;
     if (this.activeInstall) {
       launchBtn.disabled = true;
       return;
     }
     if (downloadActions) downloadActions.hidden = true;
-
     const versionData = this.currentEngine.versions.find(
       (v) => v.version === this.currentVersion,
     );
-
     if (!versionData) {
       launchBtn.textContent = "Unavailable";
       launchBtn.disabled = true;
       if (dlUI) dlUI.style.display = "none";
       return;
     }
-
     const isInstalled = await FS.isEngineInstalled(
       this.currentEngine.id,
       this.currentVersion,
     );
-
     const newBtn = launchBtn.cloneNode(true);
     launchBtn.parentNode.replaceChild(newBtn, launchBtn);
     const activeBtn = document.getElementById("launch-engine-btn");
-
+    
     if (isInstalled) {
       activeBtn.textContent = "Launch";
       activeBtn.disabled = false;
       if (dlUI) dlUI.style.display = "none";
-
       let isLaunched = FS.isEngineRunning(
         this.currentEngine.id,
         this.currentVersion,
       );
-
       const showLaunched = () => {
         isLaunched = true;
         activeBtn.disabled = false;
@@ -82,9 +76,7 @@ export const enginesView = {
         activeBtn.innerHTML =
           '<span class="engine-launch-label">Launched</span><span class="engine-close-label">Close</span>';
       };
-
       if (isLaunched) showLaunched();
-
       activeBtn.addEventListener("click", async () => {
         if (isLaunched) {
           activeBtn.disabled = true;
@@ -101,26 +93,36 @@ export const enginesView = {
           );
           return;
         }
-
+        
         activeBtn.disabled = true;
         activeBtn.textContent = "Running...";
         await modsMaster.injectBeforeLaunch(
           this.currentEngine.id,
           this.currentVersion,
         );
+        
+        // Settings: Hide on launch
+        if (appSettings.get("hideOnLaunch")) {
+            Neutralino.window.hide();
+        }
+
         await FS.runEngine(
           this.currentEngine.id,
           this.currentVersion,
           async (state) => {
-            if (state === "launched") {
-              showLaunched();
-            } else if (state === "already_running") {
+            if (state === "launched" || state === "already_running") {
               showLaunched();
             } else if (
               state === "completed" ||
               state === "error" ||
               state === "not_found"
             ) {
+              // Settings: Show back when closed
+              if (appSettings.get("hideOnLaunch")) {
+                  Neutralino.window.show();
+                  Neutralino.window.focus();
+              }
+              
               isLaunched = false;
               activeBtn.classList.remove("engine-running");
               activeBtn.disabled = false;
@@ -194,7 +196,17 @@ export const enginesView = {
         if (success) {
           rememberInstalledEngineBuild(this.currentEngine.id, versionData);
           if (dlUI) dlUI.style.display = "none";
-          this.updateButtonState();
+          await this.updateButtonState(); // Actualiza a "Launch"
+          
+          // Settings: Autostart Engine after download!
+          if (appSettings.get("autoStartAfterDownload")) {
+              setTimeout(() => {
+                  const freshBtn = document.getElementById("launch-engine-btn");
+                  if (freshBtn && !freshBtn.disabled && freshBtn.textContent === "Launch") {
+                      freshBtn.click();
+                  }
+              }, 500); // Pequeño retraso para evitar bugs de la UI
+          }
         } else {
           if (dlText) dlText.textContent = "0% - Download failed";
           if (dlTextSizer) dlTextSizer.textContent = "0% - Download failed";

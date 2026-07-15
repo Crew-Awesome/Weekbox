@@ -1,0 +1,298 @@
+.config-overlay {
+  position: fixed;
+  inset: 0;
+  background-color: rgba(0, 0, 0, 0.75);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  z-index: 2000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.config-overlay.show {
+  opacity: 1;
+}
+
+.config-content {
+  width: 65vw;
+  min-width: 600px;
+  max-width: 900px;
+  height: 70vh;
+  min-height: 450px;
+  max-height: 800px;
+  background-color: var(--bg-panel);
+  border-radius: 12px;
+  border: 1px solid var(--border-color);
+  display: flex;
+  flex-direction: row;
+  transform: scale(0.95) translateY(20px);
+  transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+  overflow: hidden;
+}
+
+.config-overlay.show .config-content {
+  transform: scale(1) translateY(0);
+}
+
+/* ASIDE (Sidebar del Config) */
+.config-aside {
+  width: 220px;
+  background-color: var(--bg-color);
+  border-right: 1px solid var(--border-color);
+  display: flex;
+  flex-direction: column;
+  padding: var(--spacing-md);
+}
+
+.config-aside-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: var(--spacing-sm) var(--spacing-xs);
+  margin-bottom: var(--spacing-lg);
+  color: var(--text-main);
+}
+
+.config-aside-header h2 {
+  margin: 0;
+  font-size: 1.2rem;
+  font-weight: 800;
+}
+
+.config-aside-header i {
+  font-size: 1.2rem;
+}
+
+.config-nav {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+}
+
+.config-tab-btn {
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  padding: 12px var(--spacing-md);
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-family: inherit;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  text-align: left;
+  transition: background-color 0.2s, color 0.2s;
+}
+
+.config-tab-btn i {
+  width: 20px;
+  text-align: center;
+  font-size: 1.1rem;
+}
+
+.config-tab-btn:hover,
+.config-tab-btn.active {
+  background: var(--bg-hover);
+  color: var(--text-main);
+}
+
+/* MAIN CONTENT */
+.config-main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  background-color: var(--bg-panel);
+}
+
+.config-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--spacing-md) var(--spacing-xl);
+  border-bottom: 1px solid var(--border-color);
+}
+
+.config-header h3 {
+  margin: 0;
+  font-size: 1.15rem;
+  color: var(--text-main);
+  font-weight: 700;
+}
+
+.config-close-btn {
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  font-size: 1.25rem;
+  padding: 8px;
+  border-radius: 6px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.2s, background-color 0.2s, transform 0.2s;
+}
+
+.config-close-btn:hover {
+  color: #ff4a4a;
+  background-color: rgba(255, 74, 74, 0.1);
+  transform: scale(1.1);
+}
+
+.config-body {
+  padding: var(--spacing-xl);
+  overflow-y: auto;
+  flex: 1;
+}
+
+.config-tab-content {
+  animation: fade-in 0.3s ease;
+}
+
+@keyframes fade-in {
+  from { opacity: 0; transform: translateY(5px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* SETTINGS LIST (SWITCHES) */
+.settings-list {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.setting-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-bottom: 16px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.setting-item:last-child {
+  border-bottom: none;
+}
+
+.setting-info h4 {
+  color: var(--text-main);
+  font-size: 1rem;
+  margin-bottom: 4px;
+  font-weight: 600;
+}
+
+.setting-info p {
+  color: var(--text-muted);
+  font-size: 0.85rem;
+  margin: 0;
+}
+
+/* Animaciones del Switch tipo iOS */
+.switch {
+  position: relative;
+  display: inline-block;
+  width: 50px;
+  height: 28px;
+  flex-shrink: 0;
+}
+
+.switch input { 
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(255, 255, 255, 0.1);
+  border: 1px solid var(--border-color);
+  transition: .3s cubic-bezier(0.4, 0.0, 0.2, 1);
+}
+
+.slider:before {
+  position: absolute;
+  content: "";
+  height: 20px;
+  width: 20px;
+  left: 3px;
+  bottom: 3px;
+  background-color: var(--text-muted);
+  transition: .3s cubic-bezier(0.4, 0.0, 0.2, 1);
+}
+
+input:checked + .slider {
+  background-color: var(--text-main);
+  border-color: var(--text-main);
+}
+
+input:checked + .slider:before {
+  transform: translateX(22px);
+  background-color: var(--bg-color);
+}
+
+.slider.round {
+  border-radius: 28px;
+}
+
+.slider.round:before {
+  border-radius: 50%;
+}
+
+/* CREDITS TAB */
+.credits-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: var(--spacing-xl);
+}
+
+.credit-item .credit-logo {
+  width: 64px;
+  height: 64px;
+  margin-bottom: var(--spacing-sm);
+}
+
+.credit-item h4 {
+  font-size: 1.5rem;
+  color: var(--text-main);
+  margin-bottom: 4px;
+}
+
+.credit-item p {
+  color: var(--text-muted);
+}
+
+.credit-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-lg);
+  width: 100%;
+  max-width: 400px;
+  background: var(--bg-color);
+  padding: var(--spacing-lg);
+  border-radius: 12px;
+  border: 1px solid var(--border-color);
+}
+
+.credit-entry h5 {
+  color: var(--text-main);
+  font-size: 1rem;
+  margin-bottom: 6px;
+}
+
+.credit-entry p {
+  color: var(--text-muted);
+  font-size: 0.9rem;
+  margin: 0;
+}

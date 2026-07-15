@@ -1,0 +1,105 @@
+<div class="config-overlay" id="config-modal" style="display: none">
+  <div class="config-content">
+    
+    <aside class="config-aside">
+      <div class="config-aside-header">
+        <i class="fa-solid fa-gear"></i>
+        <h2>Settings</h2>
+      </div>
+      <nav class="config-nav">
+        <button class="config-tab-btn active" data-tab-target="preferences">
+          <i class="fa-solid fa-sliders"></i> Preferences
+        </button>
+        <button class="config-tab-btn" data-tab-target="credits">
+          <i class="fa-solid fa-heart"></i> Credits
+        </button>
+      </nav>
+    </aside>
+    
+    <main class="config-main">
+      <header class="config-header">
+        <h3 id="config-section-title">Preferences</h3>
+        <button class="config-close-btn" id="config-close-btn" title="Close">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </header>
+      
+      <div class="config-body">
+        
+        <!-- PREFERENCES TAB -->
+        <div id="config-preferences" class="config-tab-content active">
+          <div class="settings-list">
+            
+            <div class="setting-item">
+              <div class="setting-info">
+                <h4>Launch on startup</h4>
+                <p>Start the launcher automatically when your PC boots.</p>
+              </div>
+              <label class="switch">
+                <input type="checkbox" id="setting-launchOnStartup">
+                <span class="slider round"></span>
+              </label>
+            </div>
+
+            <div class="setting-item">
+              <div class="setting-info">
+                <h4>Blur out of focus</h4>
+                <p>Apply a blur effect to the background when the window loses focus.</p>
+              </div>
+              <label class="switch">
+                <input type="checkbox" id="setting-blurOutOfFocus">
+                <span class="slider round"></span>
+              </label>
+            </div>
+
+            <div class="setting-item">
+              <div class="setting-info">
+                <h4>Hide window when launching</h4>
+                <p>Minimize or hide the launcher while an engine is running.</p>
+              </div>
+              <label class="switch">
+                <input type="checkbox" id="setting-hideOnLaunch">
+                <span class="slider round"></span>
+              </label>
+            </div>
+
+            <div class="setting-item">
+              <div class="setting-info">
+                <h4>Auto-start engines</h4>
+                <p>Automatically launch the engine when its download finishes.</p>
+              </div>
+              <label class="switch">
+                <input type="checkbox" id="setting-autoStartAfterDownload">
+                <span class="slider round"></span>
+              </label>
+            </div>
+            
+          </div>
+        </div>
+
+        <!-- CREDITS TAB -->
+        <div id="config-credits" class="config-tab-content" style="display: none;">
+          <div class="credits-container">
+            <div class="credit-item">
+              <img src="assets/icons/exe.png" alt="WeekBox Logo" class="credit-logo">
+              <h4>WeekBox</h4>
+              <p>Developed by Crew Awesome & Community Contributors</p>
+            </div>
+            <div class="credit-list">
+              <div class="credit-entry">
+                <h5>Powered By</h5>
+                <p>Neutralinojs, GameBanana API</p>
+              </div>
+              <div class="credit-entry">
+                <h5>Special Thanks</h5>
+                <p>To all engine developers and mod creators keeping the community alive.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+      </div>
+    </main>
+    
+  </div>
+</div>
