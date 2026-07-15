@@ -104,10 +104,11 @@ export const homeCarousel = {
       d.classList.remove("active");
       d.style.display = "none";
     });
-    const groupStart = Math.floor(this.currentSlideIndex / 4) * 4;
+    const visibleDots = 5;
+    const groupStart = Math.floor(this.currentSlideIndex / visibleDots) * visibleDots;
     for (
       let offset = 0;
-      offset < Math.min(4, this.totalSlides - groupStart);
+      offset < Math.min(visibleDots, this.totalSlides - groupStart);
       offset++
     ) {
       const dotIndex = groupStart + offset;
