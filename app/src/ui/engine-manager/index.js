@@ -1,5 +1,7 @@
 import { FS } from "../../utils/filesystem.js";
 import { ENGINE_DETAILS } from "../../config/engines.js";
+import { engineUpdateService } from "../engines/engineUpdateService.js";
+import { engineUpdateToast } from "../engines/engineUpdateToast.js";
 
 // Función para extraer el color predominante del icono
 function extractColor(img, targetElement) {
@@ -11,31 +13,48 @@ function extractColor(img, targetElement) {
       canvas.height = img.naturalHeight || 64;
       ctx.drawImage(img, 0, 0);
       const data = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
-      
-      let r = 0, g = 0, b = 0, count = 0;
-      
+
+      let r = 0,
+        g = 0,
+        b = 0,
+        count = 0;
+
       for (let i = 0; i < data.length; i += 16) {
-        const pr = data[i], pg = data[i + 1], pb = data[i + 2];
+        const pr = data[i],
+          pg = data[i + 1],
+          pb = data[i + 2];
         if (pr > 20 && pr < 240 && pg > 20 && pg < 240 && pb > 20 && pb < 240) {
-          r += pr; g += pg; b += pb; count++;
+          r += pr;
+          g += pg;
+          b += pb;
+          count++;
         }
       }
       if (count === 0) {
         for (let i = 0; i < data.length; i += 16) {
-          r += data[i]; g += data[i + 1]; b += data[i + 2]; count++;
+          r += data[i];
+          g += data[i + 1];
+          b += data[i + 2];
+          count++;
         }
       }
       if (count > 0) {
         r = Math.floor(r / count);
         g = Math.floor(g / count);
         b = Math.floor(b / count);
-        targetElement.style.setProperty("--engine-color", `rgba(${r}, ${g}, ${b}, 0.25)`);
+        targetElement.style.setProperty(
+          "--engine-color",
+          `rgba(${r}, ${g}, ${b}, 0.25)`,
+        );
       }
     } catch (e) {
-      targetElement.style.setProperty("--engine-color", "rgba(255, 255, 255, 0.1)");
+      targetElement.style.setProperty(
+        "--engine-color",
+        "rgba(255, 255, 255, 0.1)",
+      );
     }
   };
-  
+
   if (img.complete) processColor();
   else img.addEventListener("load", processColor);
 }
@@ -69,7 +88,7 @@ export const engineManagerModal = {
     if (!FS.isInitialized) await FS.init();
     const modal = document.getElementById("engine-manager-modal");
     if (!modal) return;
-    
+
     modal.style.display = "flex";
     requestAnimationFrame(() => modal.classList.add("show"));
     await this.loadInstalledEngines();
@@ -79,7 +98,7 @@ export const engineManagerModal = {
     const modal = document.getElementById("engine-manager-modal");
     if (!modal) return;
     modal.classList.remove("show");
-    
+
     setTimeout(() => {
       modal.style.display = "none";
       if (this.resizeObserver) {
@@ -97,7 +116,7 @@ export const engineManagerModal = {
   render(engines) {
     const container = document.getElementById("engine-manager-modal-body");
     if (!container) return;
-    
+
     // Limpieza de renderizado previo
     if (this.resizeObserver) {
       this.resizeObserver.disconnect();
@@ -112,7 +131,7 @@ export const engineManagerModal = {
 
     // 1. Agrupar los engines por ID
     const groupedEngines = {};
-    engines.forEach(engine => {
+    engines.forEach((engine) => {
       if (!groupedEngines[engine.id]) {
         groupedEngines[engine.id] = [];
       }
@@ -120,7 +139,16 @@ export const engineManagerModal = {
     });
 
     // 2. Ordenar basándonos en el orden exacto del aside
-    const ENGINE_ORDER = ["vslice", "codename", "psych", "pslice", "alepsych", "fpsplus", "psychonline", "executable"];
+    const ENGINE_ORDER = [
+      "vslice",
+      "codename",
+      "psych",
+      "pslice",
+      "alepsych",
+      "fpsplus",
+      "psychonline",
+      "executable",
+    ];
     const sortedEngineEntries = Object.entries(groupedEngines).sort((a, b) => {
       const indexA = ENGINE_ORDER.indexOf(a[0]);
       const indexB = ENGINE_ORDER.indexOf(b[0]);
@@ -155,18 +183,21 @@ export const engineManagerModal = {
     viewport.appendChild(track);
     viewport.appendChild(btnPrev);
     viewport.appendChild(btnNext);
-    
+
     container.appendChild(viewport);
     container.appendChild(indexContainer);
 
     // 4. Generar las tarjetas (Cards) y los iconos del índice
     sortedEngineEntries.forEach(([engineId, versions], idx) => {
-      const details = ENGINE_DETAILS[engineId] || { name: engineId, icon: "exe.png" };
-      
+      const details = ENGINE_DETAILS[engineId] || {
+        name: engineId,
+        icon: "exe.png",
+      };
+
       // -- Tarjeta del Carrusel --
       const card = document.createElement("div");
       card.className = "engine-column";
-      
+
       // Evento de clic para activar la tarjeta si no lo está
       card.addEventListener("click", () => {
         if (this.currentIndex !== idx) {
@@ -196,6 +227,16 @@ export const engineManagerModal = {
         item.innerHTML = `
           <span class="version-text">${version}</span>
           <div class="version-actions">
+            ${
+              ((engineId === "codename" || engineId === "alepsych") &&
+                version === "Nightly") ||
+              (engineId === "psychonline" && version === "Latest")
+                ? `
+              <button class="engine-action-btn engine-update-btn" title="Check for updates" aria-label="Check ${details.name} for updates">
+                <i class="fa-solid fa-rotate"></i>
+              </button>`
+                : ""
+            }
             <button class="engine-action-btn engine-dir-btn" title="Open Directory">
               <i class="fa-solid fa-folder-open"></i>
             </button>
@@ -205,28 +246,82 @@ export const engineManagerModal = {
           </div>
         `;
 
-        item.querySelector(".engine-dir-btn").addEventListener("click", async (e) => {
-          e.stopPropagation(); // Evita que se dispare el evento click de la tarjeta
-          const targetPath = `${FS.enginesPath}/${engineId}/${version}`;
-          try { await Neutralino.os.open(targetPath); } catch (e) {}
+        const updateBtn = item.querySelector(".engine-update-btn");
+        updateBtn?.addEventListener("click", async (e) => {
+          e.stopPropagation();
+          updateBtn.disabled = true;
+          updateBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
+          const result = await engineUpdateService.checkEngineUpdate(
+            engineId,
+            version,
+          );
+          if (result.status === "current") {
+            engineUpdateToast.info(
+              engineId,
+              details.name,
+              "Already up to date",
+            );
+          } else if (result.status === "skipped") {
+            engineUpdateToast.info(
+              engineId,
+              details.name,
+              "This update is skipped",
+            );
+          } else if (result.status === "unavailable") {
+            engineUpdateToast.info(
+              engineId,
+              details.name,
+              "Could not check for updates",
+            );
+          } else if (result.status === "running") {
+            engineUpdateToast.info(
+              engineId,
+              details.name,
+              "Close the engine before updating",
+            );
+          }
+          updateBtn.disabled = false;
+          updateBtn.innerHTML = '<i class="fa-solid fa-rotate"></i>';
         });
+
+        item
+          .querySelector(".engine-dir-btn")
+          .addEventListener("click", async (e) => {
+            e.stopPropagation(); // Evita que se dispare el evento click de la tarjeta
+            const targetPath = `${FS.enginesPath}/${engineId}/${version}`;
+            try {
+              await Neutralino.os.open(targetPath);
+            } catch (e) {}
+          });
 
         const deleteBtn = item.querySelector(".engine-delete-btn");
         deleteBtn.addEventListener("click", async (e) => {
           e.stopPropagation(); // Evita que se dispare el evento click de la tarjeta
-          if (!confirm(`Are you sure you want to uninstall ${details.name} (Version: ${version})?`)) return;
+          if (
+            !confirm(
+              `Are you sure you want to uninstall ${details.name} (Version: ${version})?`,
+            )
+          )
+            return;
           deleteBtn.disabled = true;
           deleteBtn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i>`;
           const targetPath = `${FS.enginesPath}/${engineId}/${version}`;
-          
+
           try {
             if (window.NL_OS === "Windows") {
-              await Neutralino.os.execCommand(`rmdir /S /Q "${targetPath.replace(/\//g, "\\")}"`, { background: true }).catch(() => {});
+              await Neutralino.os
+                .execCommand(
+                  `rmdir /S /Q "${targetPath.replace(/\//g, "\\")}"`,
+                  { background: true },
+                )
+                .catch(() => {});
             } else {
-              await Neutralino.os.execCommand(`rm -rf "${targetPath}"`, { background: true }).catch(() => {});
+              await Neutralino.os
+                .execCommand(`rm -rf "${targetPath}"`, { background: true })
+                .catch(() => {});
             }
           } catch (e) {}
-          
+
           await this.loadInstalledEngines(); // Recarga automática
         });
 
@@ -240,26 +335,27 @@ export const engineManagerModal = {
       const indexIcon = document.createElement("img");
       indexIcon.className = "em-index-icon";
       indexIcon.src = `assets/icons/${details.icon}`;
-      indexIcon.onerror = () => indexIcon.src = 'assets/icons/exe.png';
+      indexIcon.onerror = () => (indexIcon.src = "assets/icons/exe.png");
       indexIcon.title = details.name;
-      
+
       indexIcon.addEventListener("click", () => {
         this.currentIndex = idx;
         updateCarousel();
       });
-      
+
       indexContainer.appendChild(indexIcon);
     });
 
     // 5. Lógica de cálculo y actualización del Carrusel
     const updateCarousel = () => {
       const vw = viewport.clientWidth;
-      if (vw === 0) return; 
-      
-      const cardWidth = 300; 
-      const gap = 30; 
-      
-      const offset = (vw / 2) - (cardWidth / 2) - (this.currentIndex * (cardWidth + gap));
+      if (vw === 0) return;
+
+      const cardWidth = 300;
+      const gap = 30;
+
+      const offset =
+        vw / 2 - cardWidth / 2 - this.currentIndex * (cardWidth + gap);
       track.style.transform = `translateX(${offset}px)`;
 
       // Actualizar clases activas en Tarjetas
@@ -274,7 +370,8 @@ export const engineManagerModal = {
 
       // Visibilidad de flechas
       btnPrev.style.display = this.currentIndex === 0 ? "none" : "flex";
-      btnNext.style.display = this.currentIndex === sortedEngineEntries.length - 1 ? "none" : "flex";
+      btnNext.style.display =
+        this.currentIndex === sortedEngineEntries.length - 1 ? "none" : "flex";
     };
 
     btnPrev.addEventListener("click", () => {

@@ -5,6 +5,7 @@ import { getTargetLink } from "./utils.js";
 import { FS } from "../../utils/filesystem.js";
 import { downloadEngine } from "./downloadEngine.js";
 import { modsMaster } from "./modsMasterClass.js";
+import { rememberInstalledEngineBuild } from "./engineUpdateService.js";
 
 export const enginesView = {
   async init() {
@@ -191,6 +192,7 @@ export const enginesView = {
           return;
         }
         if (success) {
+          rememberInstalledEngineBuild(this.currentEngine.id, versionData);
           if (dlUI) dlUI.style.display = "none";
           this.updateButtonState();
         } else {

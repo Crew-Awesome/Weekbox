@@ -1,0 +1,204 @@
+.engine-update-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: rgb(0 0 0 / 68%);
+  backdrop-filter: blur(7px);
+  opacity: 0;
+  transition: opacity 180ms ease;
+}
+
+.engine-update-overlay[hidden] {
+  display: none;
+}
+
+.engine-update-overlay.show {
+  opacity: 1;
+}
+
+.engine-update-modal {
+  width: min(100%, 425px);
+  padding: 30px;
+  border: 1px solid #3a3a3a;
+  border-radius: 14px;
+  background: #151515;
+  box-shadow: 0 24px 80px rgb(0 0 0 / 55%);
+  transform: translateY(14px) scale(0.98);
+  transition: transform 180ms ease;
+}
+
+.engine-update-overlay.show .engine-update-modal {
+  transform: translateY(0) scale(1);
+}
+.engine-update-heading {
+  display: flex;
+  align-items: center;
+  gap: 13px;
+}
+.engine-update-mark {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  object-fit: contain;
+}
+.engine-update-modal h2 {
+  margin: 0;
+  color: #fff;
+  font-size: 1.5rem;
+  letter-spacing: -0.03em;
+}
+.engine-update-copy {
+  margin: 16px 0 0;
+  color: #b7b7b7;
+  line-height: 1.5;
+}
+.engine-update-build {
+  display: inline-flex;
+  margin-top: 22px;
+  padding: 7px 10px;
+  border: 1px solid #333;
+  border-radius: 6px;
+  color: #e5e5e5;
+  background: #0d0d0d;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.75rem;
+}
+.engine-update-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 28px;
+}
+.engine-update-actions button {
+  min-height: 38px;
+  border-radius: 7px;
+  padding: 0 14px;
+  font: inherit;
+  font-weight: 750;
+  cursor: pointer;
+}
+.engine-update-later {
+  border: 1px solid #393939;
+  background: transparent;
+  color: #c5c5c5;
+}
+.engine-update-confirm {
+  border: 1px solid #fff;
+  background: #fff;
+  color: #111;
+}
+.engine-update-actions button:hover {
+  transform: translateY(-1px);
+}
+.engine-update-actions button:focus-visible {
+  outline: 2px solid #fff;
+  outline-offset: 3px;
+}
+
+.engine-update-toast {
+  position: fixed;
+  top: 30px;
+  right: 30px;
+  z-index: 9999;
+  display: flex;
+  width: min(330px, calc(100vw - 32px));
+  gap: 12px;
+  padding: 14px;
+  border: 1px solid rgb(255 255 255 / 14%);
+  border-radius: 12px;
+  background: rgb(16 16 16 / 88%);
+  box-shadow: 0 12px 38px rgb(0 0 0 / 38%);
+  backdrop-filter: blur(16px);
+  color: #fff;
+  opacity: 0;
+  transform: translateX(calc(100% + 36px));
+  transition:
+    opacity 220ms ease,
+    transform 260ms cubic-bezier(0.22, 1, 0.36, 1),
+    border-color 180ms ease;
+}
+
+.engine-update-toast.show {
+  opacity: 1;
+  transform: translateX(0);
+}
+.engine-update-toast-icon {
+  display: grid;
+  flex: 0 0 auto;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 9px;
+  background: #fff;
+  color: #121212;
+}
+.engine-update-toast-body {
+  min-width: 0;
+  flex: 1;
+}
+.engine-update-toast strong,
+.engine-update-toast span {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.engine-update-toast strong {
+  font-size: 0.82rem;
+}
+.engine-update-toast span {
+  margin-top: 3px;
+  color: #a9a9a9;
+  font-size: 0.77rem;
+}
+.engine-update-toast-track {
+  height: 3px;
+  margin-top: 10px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: #393939;
+}
+.engine-update-toast-track i {
+  display: block;
+  width: 0;
+  height: 100%;
+  border-radius: inherit;
+  background: #fff;
+  transition: width 180ms ease;
+}
+.engine-update-toast.complete {
+  border-color: rgb(98 190 125 / 72%);
+}
+.engine-update-toast.complete .engine-update-toast-icon,
+.engine-update-toast.complete .engine-update-toast-track i {
+  background: #62be7d;
+}
+.engine-update-toast.error {
+  border-color: rgb(217 91 91 / 72%);
+}
+.engine-update-toast.error .engine-update-toast-icon,
+.engine-update-toast.error .engine-update-toast-track i {
+  background: #d95b5b;
+  color: #fff;
+}
+
+@media (max-width: 480px) {
+  .engine-update-modal {
+    padding: 24px;
+  }
+  .engine-update-actions {
+    flex-direction: column-reverse;
+  }
+  .engine-update-actions button {
+    width: 100%;
+  }
+  .engine-update-toast {
+    top: 16px;
+    right: 16px;
+  }
+}

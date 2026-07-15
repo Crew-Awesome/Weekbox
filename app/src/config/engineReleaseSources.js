@@ -21,7 +21,7 @@ export const ENGINE_RELEASE_SOURCES = {
       assets: {
         win: { workflow: "windows.yml", artifact: "Codename Engine" },
         lin: { workflow: "linux.yml", artifact: "Codename Engine" },
-        mac: { workflow: "mac.yml", artifact: "Codename Engine" },
+        mac: { workflow: "macos.yml", artifact: "Codename Engine" },
       },
     },
     updates: { channel: "nightly" },

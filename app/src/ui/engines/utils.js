@@ -1,21 +1,34 @@
-export function getTargetLink(versionData) {
+export function getTargetPlatform(versionData) {
   const os = window.NL_OS;
   const arch = window.NL_ARCH;
 
   if (os === "Windows") {
     if (arch === "x64") {
-      return versionData.win64 || versionData.win || null;
+      return versionData.win64 ? "win64" : versionData.win ? "win" : null;
     } else {
-      return versionData.win32 || versionData.win || null;
+      return versionData.win32 ? "win32" : versionData.win ? "win" : null;
     }
   } else if (os === "Linux") {
-    return versionData.lin || null;
+    return versionData.lin ? "lin" : null;
   } else if (os === "Darwin") {
-    if (arch === "x64") return versionData.mac64 || versionData.mac || null;
-    if (arch === "arm64") return versionData.macarm || versionData.mac || null;
-    return versionData.mac || versionData.mac64 || versionData.macarm || null;
+    if (arch === "x64")
+      return versionData.mac64 ? "mac64" : versionData.mac ? "mac" : null;
+    if (arch === "arm64")
+      return versionData.macarm ? "macarm" : versionData.mac ? "mac" : null;
+    return versionData.mac
+      ? "mac"
+      : versionData.mac64
+        ? "mac64"
+        : versionData.macarm
+          ? "macarm"
+          : null;
   }
   return null;
+}
+
+export function getTargetLink(versionData) {
+  const platform = getTargetPlatform(versionData);
+  return platform ? versionData[platform] || null : null;
 }
 
 export function extractVersionFallback(url) {

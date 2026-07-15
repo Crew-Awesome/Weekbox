@@ -1,0 +1,73 @@
+function getToastId(engineId) {
+  return `engine-update-toast-${engineId}`;
+}
+
+export const engineUpdateToast = {
+  show(engineId, name) {
+    const id = getToastId(engineId);
+    document.getElementById(id)?.remove();
+    const toast = document.createElement("aside");
+    toast.id = id;
+    toast.className = "engine-update-toast";
+    toast.setAttribute("role", "status");
+    toast.innerHTML = `
+      <div class="engine-update-toast-icon"><i class="fa-solid fa-download"></i></div>
+      <div class="engine-update-toast-body">
+        <strong>${name}</strong>
+        <span>Preparing update…</span>
+        <div class="engine-update-toast-track"><i></i></div>
+      </div>
+    `;
+    document.body.appendChild(toast);
+    requestAnimationFrame(() => toast.classList.add("show"));
+  },
+
+  update(engineId, { progress, status }) {
+    const toast = document.getElementById(getToastId(engineId));
+    if (!toast) return;
+    toast.querySelector("span").textContent =
+      `${Math.floor(progress)}% · ${status}`;
+    toast.querySelector(".engine-update-toast-track i").style.width =
+      `${Math.max(0, Math.min(100, progress))}%`;
+  },
+
+  complete(engineId) {
+    const toast = document.getElementById(getToastId(engineId));
+    if (!toast) return;
+    toast.classList.add("complete");
+    toast.querySelector(".engine-update-toast-icon").innerHTML =
+      '<i class="fa-solid fa-check"></i>';
+    toast.querySelector("span").textContent = "Updated";
+    toast.querySelector(".engine-update-toast-track i").style.width = "100%";
+    setTimeout(() => this.hide(engineId), 4200);
+  },
+
+  info(engineId, name, message) {
+    this.show(engineId, name);
+    const toast = document.getElementById(getToastId(engineId));
+    if (!toast) return;
+    toast.querySelector(".engine-update-toast-icon").innerHTML =
+      '<i class="fa-solid fa-check"></i>';
+    toast.querySelector("span").textContent = message;
+    toast.querySelector(".engine-update-toast-track i").style.width = "100%";
+    setTimeout(() => this.hide(engineId), 2600);
+  },
+
+  error(engineId) {
+    const toast = document.getElementById(getToastId(engineId));
+    if (!toast) return;
+    toast.classList.add("error");
+    toast.querySelector(".engine-update-toast-icon").innerHTML =
+      '<i class="fa-solid fa-xmark"></i>';
+    toast.querySelector("span").textContent =
+      "Update failed — existing engine kept";
+    setTimeout(() => this.hide(engineId), 5200);
+  },
+
+  hide(engineId) {
+    const toast = document.getElementById(getToastId(engineId));
+    if (!toast) return;
+    toast.classList.remove("show");
+    setTimeout(() => toast.remove(), 220);
+  },
+};

@@ -5,7 +5,7 @@
   display: flex;
   flex-direction: column;
   position: relative;
-  overflow: hidden; 
+  overflow: hidden;
   background: transparent;
 }
 
@@ -17,14 +17,18 @@
   overflow: hidden;
   display: flex;
   align-items: center;
-  background: radial-gradient(circle at center, rgba(255, 255, 255, 0.03) 0%, transparent 70%);
+  background: radial-gradient(
+    circle at center,
+    rgba(255, 255, 255, 0.03) 0%,
+    transparent 70%
+  );
 }
 
 /* La pista animada (Namespaced para evitar conflicto con el Home) */
 .em-carousel-track {
   display: flex;
   align-items: center;
-  gap: 30px; 
+  gap: 30px;
   transition: transform 0.5s cubic-bezier(0.25, 1, 0.5, 1);
   will-change: transform;
   height: 100%;
@@ -38,14 +42,17 @@
   background-color: transparent;
   display: flex;
   flex-direction: column;
-  flex-shrink: 0; 
-  
+  flex-shrink: 0;
+
   /* Animaciones de estado inactivo a activo */
-  transition: transform 0.5s cubic-bezier(0.25, 1, 0.5, 1), opacity 0.5s ease, filter 0.5s ease;
+  transition:
+    transform 0.5s cubic-bezier(0.25, 1, 0.5, 1),
+    opacity 0.5s ease,
+    filter 0.5s ease;
   opacity: 0.35;
   transform: scale(0.8);
   filter: grayscale(80%);
-  
+
   border-radius: 12px;
   border: 1px solid rgba(255, 255, 255, 0.05);
   padding: 16px 0;
@@ -85,7 +92,10 @@
   font-size: 1.2rem;
   cursor: pointer;
   z-index: 10;
-  transition: background-color 0.2s, color 0.2s, transform 0.2s;
+  transition:
+    background-color 0.2s,
+    color 0.2s,
+    transform 0.2s;
 }
 
 .em-nav-btn:hover {
@@ -97,8 +107,12 @@
   transform: translateY(-50%) scale(0.9);
 }
 
-.em-nav-btn.left { left: 24px; }
-.em-nav-btn.right { right: 24px; }
+.em-nav-btn.left {
+  left: 24px;
+}
+.em-nav-btn.right {
+  right: 24px;
+}
 
 /* === ÍNDICE INFERIOR (TIPO PILL/PASTILLA) === */
 .em-carousel-index {
@@ -127,7 +141,10 @@
   border-radius: 6px;
   opacity: 0.3;
   cursor: pointer;
-  transition: opacity 0.3s ease, transform 0.3s ease, box-shadow 0.3s ease;
+  transition:
+    opacity 0.3s ease,
+    transform 0.3s ease,
+    box-shadow 0.3s ease;
 }
 
 .em-index-icon:hover {
@@ -181,8 +198,12 @@
   margin-bottom: var(--spacing-md);
 }
 
-.engine-versions-list::-webkit-scrollbar { width: 2px; }
-.engine-versions-list::-webkit-scrollbar-track { background: transparent; }
+.engine-versions-list::-webkit-scrollbar {
+  width: 2px;
+}
+.engine-versions-list::-webkit-scrollbar-track {
+  background: transparent;
+}
 .engine-versions-list::-webkit-scrollbar-thumb {
   background-color: rgba(255, 255, 255, 0.15);
   border-radius: 10px;
@@ -214,7 +235,9 @@
   font-weight: 600;
   color: var(--text-muted);
   font-size: 0.95rem;
-  transition: opacity 0.2s ease, transform 0.2s ease;
+  transition:
+    opacity 0.2s ease,
+    transform 0.2s ease;
 }
 
 .engine-column.active .version-item:hover .version-text {
@@ -232,7 +255,9 @@
   opacity: 0;
   pointer-events: none;
   transform: scale(1.1);
-  transition: opacity 0.2s ease, transform 0.2s ease;
+  transition:
+    opacity 0.2s ease,
+    transform 0.2s ease;
 }
 
 .engine-column.active .version-item:hover .version-actions {
@@ -268,4 +293,10 @@
 .engine-delete-btn:disabled {
   opacity: 0.5;
   cursor: not-allowed;
+}
+
+.engine-update-btn:hover {
+  color: #8fc8ff;
+  border-color: rgb(143 200 255 / 35%);
+  background-color: rgb(143 200 255 / 10%);
 }

@@ -4,7 +4,6 @@ import { getEngineReleaseVersions } from "../api/githubReleaseProvider.js";
 import { modManagerModal } from "./mod-manager/index.js";
 import { engineManagerModal } from "./engine-manager/index.js";
 import { FS } from "../utils/filesystem.js";
-import { engineUpdateService } from "./engines/engineUpdateService.js";
 
 export const sidebar = {
   async init() {
@@ -22,10 +21,6 @@ export const sidebar = {
     this.setupNavigation();
     await this.loadEngines();
     await this.loadStandaloneMods();
-
-    engineUpdateService.check().catch((error) =>
-      console.warn("Could not check engine updates:", error),
-    );
 
     // Escuchar cambios en los mods para recargar el panel en tiempo real
     document.addEventListener("mods-updated", () => {
@@ -191,7 +186,9 @@ export const sidebar = {
     if (!FS.isInitialized) await FS.init();
 
     // Limpiar el nuevo contenedor si existe
-    const existingContainer = document.getElementById("standalone-mods-container");
+    const existingContainer = document.getElementById(
+      "standalone-mods-container",
+    );
     if (existingContainer) existingContainer.remove();
 
     // Limpiar elementos huérfanos anteriores por si acaso

@@ -2,6 +2,9 @@ import { ENGINE_RELEASE_SOURCES } from "../config/engineReleaseSources.js";
 
 const CACHE_PREFIX = "weekbox-engine-releases-";
 const CACHE_FRESH_MS = 24 * 60 * 60 * 1000;
+const NIGHTLY_CACHE_PREFIX = "weekbox-engine-nightly-";
+const NIGHTLY_CACHE_MS = 6 * 60 * 60 * 1000;
+const nightlyCache = new Map();
 
 function getCacheKey(engineId) {
   return `${CACHE_PREFIX}${engineId}`;
@@ -21,10 +24,27 @@ function writeCache(engineId, cache) {
   } catch {}
 }
 
+function readNightlyCache(cacheKey) {
+  try {
+    return JSON.parse(
+      localStorage.getItem(`${NIGHTLY_CACHE_PREFIX}${cacheKey}`) || "null",
+    );
+  } catch {
+    return null;
+  }
+}
+
+function writeNightlyCache(cacheKey, cache) {
+  try {
+    localStorage.setItem(
+      `${NIGHTLY_CACHE_PREFIX}${cacheKey}`,
+      JSON.stringify(cache),
+    );
+  } catch {}
+}
+
 function getNextPage(linkHeader) {
-  const next = linkHeader
-    ?.split(",")
-    .find((link) => /rel="next"/.test(link));
+  const next = linkHeader?.split(",").find((link) => /rel="next"/.test(link));
   return next?.match(/<([^>]+)>/)?.[1] || null;
 }
 
@@ -44,43 +64,118 @@ function normalizeRelease(release, source) {
   const result = { version, releasedAt: release.published_at || null };
   for (const [platform, patterns] of Object.entries(source.assets)) {
     const asset = selectAsset(release.assets || [], patterns, source.exclude);
-    if (asset?.browser_download_url) result[platform] = asset.browser_download_url;
+    if (asset?.browser_download_url)
+      result[platform] = asset.browser_download_url;
   }
-  return Object.keys(result).some((key) => key !== "version" && key !== "releasedAt")
+  return Object.keys(result).some(
+    (key) => key !== "version" && key !== "releasedAt",
+  )
     ? result
     : null;
 }
 
-function getNightlyVersion(source) {
-  if (!source.nightly) return null;
-  const version = { version: "Nightly", isNightly: true };
-  for (const [platform, artifact] of Object.entries(source.nightly.assets)) {
-    const workflow = encodeURIComponent(artifact.workflow);
-    const name = encodeURIComponent(artifact.artifact);
-    version[platform] = `https://nightly.link/${source.repository}/workflows/${workflow}/${source.nightly.branch}/${name}.zip`;
-  }
-  return version;
+function withLatestReleaseOption(versions, engineId) {
+  if (engineId !== "psychonline" || !versions.length) return versions;
+  if (versions.some((version) => version.version === "Latest")) return versions;
+  const [latest, ...olderVersions] = versions;
+  return [
+    {
+      ...latest,
+      version: "Latest",
+      releaseVersion: latest.version,
+      updateKey: `release:${latest.version}`,
+    },
+    ...olderVersions,
+  ];
 }
 
-function withNightlyVersion(versions, source) {
-  const nightly = getNightlyVersion(source);
-  if (!nightly) return versions;
-  return [nightly, ...versions.filter((version) => !version.isNightly)];
+async function getLatestSuccessfulRun(source, artifact) {
+  const workflow = encodeURIComponent(artifact.workflow);
+  const branch = encodeURIComponent(source.nightly.branch);
+  const response = await fetch(
+    `https://api.github.com/repos/${source.repository}/actions/workflows/${workflow}/runs?branch=${branch}&status=success&per_page=1`,
+    { headers: { Accept: "application/vnd.github+json" } },
+  );
+  if (!response.ok) throw new Error("GitHub workflow runs request failed");
+  return (await response.json()).workflow_runs?.[0] || null;
+}
+
+function getCurrentNightlyPlatform(source) {
+  const assets = source.nightly.assets;
+  const os = window.NL_OS;
+  const arch = window.NL_ARCH;
+
+  if (os === "Windows") return arch === "x64" && assets.win64 ? "win64" : "win";
+  if (os === "Linux") return "lin";
+  if (os === "Darwin") {
+    if (arch === "x64" && assets.mac64) return "mac64";
+    if (arch === "arm64" && assets.macarm) return "macarm";
+    return "mac";
+  }
+  return null;
 }
 
 async function getLatestNightly(source) {
-  const response = await fetch(
-    `https://api.github.com/repos/${source.repository}/commits/${source.nightly.branch}`,
-    { headers: { Accept: "application/vnd.github+json" } },
+  if (!source.nightly) return null;
+  const platform = getCurrentNightlyPlatform(source);
+  const cacheKey = `${source.repository}:${platform || "all"}`;
+  const cached = nightlyCache.get(cacheKey);
+  if (cached && Date.now() - cached.savedAt < NIGHTLY_CACHE_MS) {
+    return cached.version;
+  }
+  const persisted = readNightlyCache(cacheKey);
+  if (persisted && Date.now() - persisted.savedAt < NIGHTLY_CACHE_MS) {
+    nightlyCache.set(cacheKey, persisted);
+    return persisted.version;
+  }
+  const version = { version: "Nightly", isNightly: true, updateKeys: {} };
+  const nightlyAssets = platform
+    ? [[platform, source.nightly.assets[platform]]]
+    : Object.entries(source.nightly.assets);
+  const results = await Promise.allSettled(
+    nightlyAssets.map(async ([platform, artifact]) => {
+      const run = await getLatestSuccessfulRun(source, artifact);
+      if (!run?.id || !run.head_sha) return null;
+      return { platform, artifact, run };
+    }),
   );
-  if (!response.ok) throw new Error("GitHub nightly request failed");
-  const commit = await response.json();
-  const version = getNightlyVersion(source);
-  return {
-    ...version,
-    updateKey: `nightly:${commit.sha}`,
-    releasedAt: commit.commit?.committer?.date || null,
-  };
+
+  for (const result of results) {
+    if (result.status !== "fulfilled" || !result.value) continue;
+    const { platform, artifact, run } = result.value;
+    const name = encodeURIComponent(artifact.artifact);
+    // A run URL is immutable, unlike nightly.link's branch URL, which moves
+    // whenever a later workflow succeeds.
+    version[platform] =
+      `https://nightly.link/${source.repository}/actions/runs/${run.id}/${name}.zip`;
+    version.updateKeys[platform] = `nightly:${run.head_sha}`;
+    if (!version.releasedAt || run.updated_at > version.releasedAt) {
+      version.releasedAt = run.updated_at || run.created_at || null;
+    }
+  }
+
+  if (!Object.keys(version.updateKeys).length) {
+    const unavailable = { version: null, savedAt: Date.now() };
+    nightlyCache.set(cacheKey, unavailable);
+    writeNightlyCache(cacheKey, unavailable);
+    return null;
+  }
+  const saved = { version, savedAt: Date.now() };
+  nightlyCache.set(cacheKey, saved);
+  writeNightlyCache(cacheKey, saved);
+  return version;
+}
+
+async function withNightlyVersion(versions, source) {
+  if (!source.nightly) return versions.filter((version) => !version.isNightly);
+  try {
+    const nightly = await getLatestNightly(source);
+    return nightly
+      ? [nightly, ...versions.filter((version) => !version.isNightly)]
+      : versions.filter((version) => !version.isNightly);
+  } catch {
+    return versions.filter((version) => !version.isNightly);
+  }
 }
 
 async function fetchAllReleases(source, etag) {
@@ -94,7 +189,8 @@ async function fetchAllReleases(source, etag) {
     if (firstResponse && etag) headers["If-None-Match"] = etag;
     const response = await fetch(url, { headers });
     if (response.status === 304) return { notModified: true };
-    if (!response.ok) throw new Error(`GitHub releases request failed: ${response.status}`);
+    if (!response.ok)
+      throw new Error(`GitHub releases request failed: ${response.status}`);
     if (firstResponse) responseEtag = response.headers.get("etag");
     releases.push(...(await response.json()));
     url = getNextPage(response.headers.get("link"));
@@ -108,30 +204,44 @@ export async function getEngineReleaseVersions(engineId) {
   const source = ENGINE_RELEASE_SOURCES[engineId];
   if (!source) return [];
   const cached = readCache(engineId);
-  if (cached?.versions?.length && Date.now() - cached.savedAt < CACHE_FRESH_MS) {
-    return withNightlyVersion(cached.versions, source);
+  if (
+    cached?.versions?.length &&
+    Date.now() - cached.savedAt < CACHE_FRESH_MS
+  ) {
+    return withNightlyVersion(
+      withLatestReleaseOption(cached.versions, engineId),
+      source,
+    );
   }
 
   try {
     const result = await fetchAllReleases(source, cached?.etag);
     if (result.notModified && cached?.versions?.length) {
       writeCache(engineId, { ...cached, savedAt: Date.now() });
-      return withNightlyVersion(cached.versions, source);
+      return withNightlyVersion(
+        withLatestReleaseOption(cached.versions, engineId),
+        source,
+      );
     }
-    const versions = result.releases
-      .map((release) => normalizeRelease(release, source))
-      .filter(Boolean);
-    const versionsWithNightly = withNightlyVersion(versions, source);
-    if (versionsWithNightly.length === 0) return [];
+    const versions = withLatestReleaseOption(
+      result.releases
+        .map((release) => normalizeRelease(release, source))
+        .filter(Boolean),
+      engineId,
+    );
+    if (versions.length === 0 && !source.nightly) return [];
     writeCache(engineId, {
-      versions: versionsWithNightly,
+      versions,
       etag: result.etag,
       savedAt: Date.now(),
     });
-    return versionsWithNightly;
+    return withNightlyVersion(versions, source);
   } catch (error) {
     return cached?.versions?.length
-      ? withNightlyVersion(cached.versions, source)
+      ? withNightlyVersion(
+          withLatestReleaseOption(cached.versions, engineId),
+          source,
+        )
       : withNightlyVersion([], source);
   }
 }
@@ -140,13 +250,13 @@ export async function getEngineUpdateCandidate(engineId) {
   const source = ENGINE_RELEASE_SOURCES[engineId];
   if (!source?.updates) return null;
   if (source.updates.channel === "nightly") {
-    try {
-      return await getLatestNightly(source);
-    } catch {
-      return null;
-    }
+    return getLatestNightly(source).catch(() => null);
   }
   const versions = await getEngineReleaseVersions(engineId);
-  const version = versions.find((item) => !item.isNightly);
-  return version ? { ...version, updateKey: `release:${version.version}` } : null;
+  const version = versions.find(
+    (item) => !item.isNightly && item.version !== "Latest",
+  );
+  return version
+    ? { ...version, updateKey: `release:${version.version}` }
+    : null;
 }
