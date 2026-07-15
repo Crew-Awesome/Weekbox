@@ -56,6 +56,7 @@ function extractColor(img, card) {
 
 export const modManagerModal = {
   versionPickerOutsideHandler: null,
+  engineFilter: "all",
 
   async init() {
     if (!document.getElementById("mod-manager-modal")) {
@@ -87,6 +88,36 @@ export const modManagerModal = {
         toggleBtn.querySelector("i").className = isListView
           ? "fa-solid fa-table-cells-large"
           : "fa-solid fa-list";
+      });
+
+      const engineFilter = document.getElementById("mod-manager-engine-filter");
+      const engineFilterTrigger = engineFilter.querySelector(
+        ".mod-manager-filter-trigger",
+      );
+      const engineFilterMenu = engineFilter.querySelector(
+        ".mod-manager-filter-menu",
+      );
+      engineFilterTrigger.addEventListener("click", (event) => {
+        event.stopPropagation();
+        const isOpen = engineFilterMenu.hidden;
+        engineFilterMenu.hidden = !isOpen;
+        engineFilterTrigger.setAttribute("aria-expanded", String(isOpen));
+        engineFilter.classList.toggle("open", isOpen);
+      });
+      engineFilterMenu.addEventListener("click", (event) => {
+        const option = event.target.closest("button[data-engine-filter]");
+        if (!option) return;
+        this.engineFilter = option.dataset.engineFilter;
+        engineFilterMenu.hidden = true;
+        engineFilterTrigger.setAttribute("aria-expanded", "false");
+        engineFilter.classList.remove("open");
+        this.loadInstalledMods();
+      });
+      document.addEventListener("click", (event) => {
+        if (engineFilter.contains(event.target)) return;
+        engineFilterMenu.hidden = true;
+        engineFilterTrigger.setAttribute("aria-expanded", "false");
+        engineFilter.classList.remove("open");
       });
     }
   },
@@ -132,15 +163,109 @@ export const modManagerModal = {
     await this.render(mods, standaloneMods);
   },
 
+  syncEngineFilterOptions(mods, standaloneMods) {
+    const filter = document.getElementById("mod-manager-engine-filter");
+    if (!filter) return;
+    const triggerLabel = filter.querySelector(".mod-manager-filter-label");
+    const triggerIcon = filter.querySelector(".mod-manager-filter-icon");
+    const menu = filter.querySelector(".mod-manager-filter-menu");
+    const standaloneIds = new Set(standaloneMods.map((mod) => mod.id));
+    const engineIds = [
+      ...new Set(
+        mods
+          .filter((mod) => !standaloneIds.has(mod.id) && mod.engineId)
+          .map((mod) => mod.engineId),
+      ),
+    ];
+    const supportedFilters = new Set([
+      "all",
+      "executable",
+      ...engineIds,
+    ]);
+    if (!supportedFilters.has(this.engineFilter)) this.engineFilter = "all";
+
+    const options = [
+      { value: "all", label: "All mods", iconClass: "fa-layer-group" },
+      ...(standaloneIds.size
+        ? [
+            {
+              value: "executable",
+              label: "Executables",
+              iconPath: "assets/icons/exe.png",
+            },
+          ]
+        : []),
+      ...engineIds.map((engineId) => ({
+        value: engineId,
+        label: ENGINE_DETAILS[engineId]?.name || engineId,
+        iconPath: ENGINE_DETAILS[engineId]
+          ? `assets/icons/${ENGINE_DETAILS[engineId].icon}`
+          : null,
+        iconClass: "fa-microchip",
+      })),
+    ];
+    const selected = options.find((option) => option.value === this.engineFilter);
+    if (triggerLabel) triggerLabel.textContent = selected?.label || "All mods";
+    if (triggerIcon) {
+      triggerIcon.replaceChildren();
+      const icon = selected?.iconPath
+        ? Object.assign(document.createElement("img"), {
+            src: selected.iconPath,
+            alt: "",
+          })
+        : document.createElement("i");
+      if (!selected?.iconPath) {
+        icon.className = `fa-solid ${selected?.iconClass || "fa-layer-group"}`;
+      }
+      triggerIcon.append(icon);
+    }
+    menu.replaceChildren(
+      ...options.map((option) => {
+        const button = document.createElement("button");
+        button.type = "button";
+        button.dataset.engineFilter = option.value;
+        button.setAttribute("role", "menuitem");
+        button.classList.toggle("selected", option.value === this.engineFilter);
+        const icon = option.iconPath
+          ? Object.assign(document.createElement("img"), {
+              src: option.iconPath,
+              alt: "",
+            })
+          : document.createElement("i");
+        if (!option.iconPath) {
+          icon.className = `fa-solid ${option.iconClass || "fa-microchip"}`;
+          icon.setAttribute("aria-hidden", "true");
+        }
+        const label = document.createElement("span");
+        label.textContent = option.label;
+        button.append(icon, label);
+        return button;
+      }),
+    );
+  },
+
   async render(mods, standaloneMods) {
     const container = document.getElementById("mod-manager-modal-body");
     if (!container) return;
 
     document.removeEventListener("click", this.versionPickerOutsideHandler);
     this.versionPickerOutsideHandler = null;
+    this.syncEngineFilterOptions(mods, standaloneMods);
+    const standaloneModIds = new Set(standaloneMods.map((m) => m.id));
+    const filteredMods = mods.filter((mod) => {
+      if (this.engineFilter === "all") return true;
+      if (this.engineFilter === "executable")
+        return standaloneModIds.has(mod.id);
+      return !standaloneModIds.has(mod.id) && mod.engineId === this.engineFilter;
+    });
+
     container.innerHTML = "";
-    if (mods.length === 0) {
-      container.innerHTML = `<div class="empty-mods-state">No mods installed yet.</div>`;
+    if (filteredMods.length === 0) {
+      const message =
+        mods.length === 0
+          ? "No mods installed yet."
+          : "No mods match this engine filter.";
+      container.innerHTML = `<div class="empty-mods-state">${message}</div>`;
       return;
     }
 
@@ -206,7 +331,6 @@ export const modManagerModal = {
     document.addEventListener("click", this.versionPickerOutsideHandler);
 
     let needsJsonUpdate = false;
-    const standaloneModIds = new Set(standaloneMods.map((m) => m.id));
     const installedEngines = await FS.getInstalledEngines();
 
     const refreshLaunchButtons = () => {
@@ -242,7 +366,7 @@ export const modManagerModal = {
         });
     };
 
-    for (const mod of mods) {
+    for (const mod of filteredMods) {
       let imageUrl = "assets/icons/default-mod.png";
 
       if (mod.imageBase64) {

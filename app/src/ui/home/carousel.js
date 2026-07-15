@@ -6,6 +6,7 @@ export const homeCarousel = {
   currentSlideIndex: 0,
   slideInterval: null,
   totalSlides: 0,
+  featuredGroupSize: 5,
 
   async init() {
     const track = document.getElementById("carousel-track");
@@ -88,12 +89,18 @@ export const homeCarousel = {
     if (btnPrev) {
       const newPrev = btnPrev.cloneNode(true);
       btnPrev.parentNode.replaceChild(newPrev, btnPrev);
-      newPrev.addEventListener("click", () => this.prevSlide());
+      newPrev.title = "Previous featured mod - Shift-click for previous group";
+      newPrev.addEventListener("click", (event) =>
+        event.shiftKey ? this.prevGroup() : this.prevSlide(),
+      );
     }
     if (btnNext) {
       const newNext = btnNext.cloneNode(true);
       btnNext.parentNode.replaceChild(newNext, btnNext);
-      newNext.addEventListener("click", () => this.nextSlide());
+      newNext.title = "Next featured mod - Shift-click for next group";
+      newNext.addEventListener("click", (event) =>
+        event.shiftKey ? this.nextGroup() : this.nextSlide(),
+      );
     }
   },
 
@@ -104,7 +111,7 @@ export const homeCarousel = {
       d.classList.remove("active");
       d.style.display = "none";
     });
-    const visibleDots = 5;
+    const visibleDots = this.featuredGroupSize;
     const groupStart = Math.floor(this.currentSlideIndex / visibleDots) * visibleDots;
     for (
       let offset = 0;
@@ -136,6 +143,21 @@ export const homeCarousel = {
     if (this.totalSlides > 0)
       this.goToSlide(
         (this.currentSlideIndex - 1 + this.totalSlides) % this.totalSlides,
+      );
+  },
+
+  nextGroup() {
+    if (this.totalSlides > 0)
+      this.goToSlide(
+        (this.currentSlideIndex + this.featuredGroupSize) % this.totalSlides,
+      );
+  },
+
+  prevGroup() {
+    if (this.totalSlides > 0)
+      this.goToSlide(
+        (this.currentSlideIndex - this.featuredGroupSize + this.totalSlides) %
+          this.totalSlides,
       );
   },
 

@@ -17,10 +17,10 @@
 }
 
 .mod-manager-content {
-  width: 70vw;
-  height: 75vh;
-  max-width: 1200px;
-  max-height: 850px;
+  width: 75vw;
+  height: 80vh;
+  max-width: 1280px;
+  max-height: 900px;
   background-color: var(--bg-panel);
   border-radius: 12px;
   border: 1px solid var(--border-color);
@@ -55,6 +55,114 @@
   display: flex;
   align-items: center;
   gap: var(--spacing-sm);
+}
+
+.mod-manager-filter {
+  position: relative;
+}
+
+.mod-manager-filter-trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 34px;
+  max-width: 180px;
+  padding: 0 10px;
+  border: 1px solid var(--border-color);
+  border-radius: 7px;
+  background: var(--bg-color);
+  color: var(--text-muted);
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.8rem;
+  font-weight: 650;
+  transition: border-color 0.16s ease, color 0.16s ease, background 0.16s ease;
+}
+
+.mod-manager-filter-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mod-manager-filter-icon {
+  display: inline-grid;
+  width: 16px;
+  height: 16px;
+  flex: 0 0 16px;
+  place-items: center;
+}
+
+.mod-manager-filter-icon img,
+.mod-manager-filter-menu button img {
+  width: 16px;
+  height: 16px;
+  object-fit: contain;
+}
+
+.mod-manager-filter-trigger > .fa-chevron-down {
+  margin-left: auto;
+  font-size: 0.65rem;
+  transition: transform 0.16s ease;
+}
+
+.mod-manager-filter.open .mod-manager-filter-trigger {
+  border-color: var(--text-muted);
+  background: var(--bg-hover);
+  color: var(--text-main);
+}
+
+.mod-manager-filter.open .mod-manager-filter-trigger > .fa-chevron-down {
+  transform: rotate(180deg);
+}
+
+.mod-manager-filter-trigger:focus-visible {
+  outline: 2px solid var(--text-main);
+  outline-offset: 2px;
+}
+
+.mod-manager-filter-menu {
+  position: absolute;
+  top: calc(100% + 7px);
+  right: 0;
+  z-index: 20;
+  min-width: 190px;
+  max-height: 220px;
+  overflow-y: auto;
+  padding: 4px;
+  border: 1px solid #3a3a3a;
+  border-radius: 8px;
+  background: #1a1a1a;
+  box-shadow: 0 12px 28px rgb(0 0 0 / 42%);
+}
+
+.mod-manager-filter-menu button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  min-width: 0;
+  padding: 8px;
+  border: 0;
+  border-radius: 5px;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.78rem;
+  font-weight: 600;
+  text-align: left;
+}
+
+.mod-manager-filter-menu button i {
+  width: 15px;
+  text-align: center;
+}
+
+.mod-manager-filter-menu button:hover,
+.mod-manager-filter-menu button.selected {
+  background: var(--bg-hover);
+  color: var(--text-main);
 }
 
 .mod-manager-action-btn {

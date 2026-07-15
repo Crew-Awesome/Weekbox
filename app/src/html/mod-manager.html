@@ -3,6 +3,14 @@
     <header class="mod-manager-header">
       <h2>Mod Manager</h2>
       <div class="mod-manager-header-actions">
+        <div class="mod-manager-filter" id="mod-manager-engine-filter">
+          <button class="mod-manager-filter-trigger" type="button" aria-expanded="false">
+            <span class="mod-manager-filter-icon" aria-hidden="true"><i class="fa-solid fa-layer-group"></i></span>
+            <span class="mod-manager-filter-label">All mods</span>
+            <i class="fa-solid fa-chevron-down" aria-hidden="true"></i>
+          </button>
+          <div class="mod-manager-filter-menu" role="menu" hidden></div>
+        </div>
         <button
           class="mod-manager-action-btn"
           id="mod-manager-view-toggle"
