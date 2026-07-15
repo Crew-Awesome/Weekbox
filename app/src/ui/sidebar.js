@@ -3,6 +3,7 @@ import { setSelectedEngine } from "../core/state.js";
 import { getEngineReleaseVersions } from "../api/githubReleaseProvider.js";
 import { modManagerModal } from "./mod-manager/index.js";
 import { engineManagerModal } from "./engine-manager/index.js";
+import { engineUpdateService } from "./engines/engineUpdateService.js";
 import { FS } from "../utils/filesystem.js";
 
 export const sidebar = {
@@ -21,6 +22,7 @@ export const sidebar = {
     this.setupNavigation();
     await this.loadEngines();
     await this.loadStandaloneMods();
+    engineUpdateService.startScheduledChecks();
 
     // Escuchar cambios en los mods para recargar el panel en tiempo real
     document.addEventListener("mods-updated", () => {

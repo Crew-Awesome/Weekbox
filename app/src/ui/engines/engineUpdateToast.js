@@ -53,6 +53,37 @@ export const engineUpdateToast = {
     setTimeout(() => this.hide(engineId), 2600);
   },
 
+  offer(engineId, name, icon, onSelect) {
+    this.show(engineId, name);
+    const toast = document.getElementById(getToastId(engineId));
+    if (!toast) return;
+    toast.classList.add("offer");
+    toast.setAttribute("role", "button");
+    toast.tabIndex = 0;
+    toast.querySelector(".engine-update-toast-icon").innerHTML =
+      `<img src="assets/icons/${icon}" alt="" />`;
+    toast.querySelector("span").textContent =
+      "Update available · Click to review";
+    toast.querySelector(".engine-update-toast-track i").style.width = "100%";
+    toast.querySelector("strong").textContent = `${name} Update Available!`;
+    toast.querySelector("span").textContent = "Click to review";
+    toast.querySelector(".engine-update-toast-track").hidden = true;
+    let selected = false;
+    const select = () => {
+      if (selected) return;
+      selected = true;
+      this.hide(engineId);
+      onSelect();
+    };
+    toast.addEventListener("click", select, { once: true });
+    toast.addEventListener("keydown", (event) => {
+      if (event.key === "Enter" || event.key === " ") {
+        event.preventDefault();
+        select();
+      }
+    });
+  },
+
   error(engineId) {
     const toast = document.getElementById(getToastId(engineId));
     if (!toast) return;

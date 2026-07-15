@@ -1,9 +1,9 @@
 import { ENGINE_RELEASE_SOURCES } from "../config/engineReleaseSources.js";
 
 const CACHE_PREFIX = "weekbox-engine-releases-";
-const CACHE_FRESH_MS = 24 * 60 * 60 * 1000;
+const CACHE_FRESH_MS = 3 * 60 * 60 * 1000;
 const NIGHTLY_CACHE_PREFIX = "weekbox-engine-nightly-";
-const NIGHTLY_CACHE_MS = 6 * 60 * 60 * 1000;
+const NIGHTLY_CACHE_MS = 3 * 60 * 60 * 1000;
 const nightlyCache = new Map();
 
 function getCacheKey(engineId) {

@@ -127,6 +127,17 @@
   opacity: 1;
   transform: translateX(0);
 }
+.engine-update-toast.offer {
+  cursor: pointer;
+}
+.engine-update-toast.offer .engine-update-toast-icon {
+  border: 1px solid #3a3a3a;
+  background: #242424;
+}
+.engine-update-toast.offer:focus-visible {
+  outline: 2px solid #fff;
+  outline-offset: 3px;
+}
 .engine-update-toast-icon {
   display: grid;
   flex: 0 0 auto;
@@ -136,6 +147,11 @@
   border-radius: 9px;
   background: #fff;
   color: #121212;
+}
+.engine-update-toast-icon img {
+  width: 24px;
+  height: 24px;
+  object-fit: contain;
 }
 .engine-update-toast-body {
   min-width: 0;
