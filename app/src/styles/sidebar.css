@@ -41,7 +41,8 @@
   white-space: nowrap;
   overflow: hidden;
 }
-.nav-btn:hover, .nav-btn.active {
+.nav-btn:hover,
+.nav-btn.active {
   background: var(--bg-hover);
   color: var(--text-main);
 }
@@ -82,7 +83,8 @@
   background-color: transparent;
   transition: background-color 0.2s ease;
 }
-.sidebar-resizer:hover, .sidebar-resizer.resizing {
+.sidebar-resizer:hover,
+.sidebar-resizer.resizing {
   background-color: var(--text-muted);
 }
 .engines-list {
@@ -139,7 +141,13 @@
 }
 
 @keyframes marquee {
-  0% { transform: translateX(0); }
-  50% { transform: translateX(-50%); } /* Ajustable dependiendo de longitud media */
-  100% { transform: translateX(0); }
+  0% {
+    transform: translateX(0);
+  }
+  50% {
+    transform: translateX(-50%);
+  } /* Ajustable dependiendo de longitud media */
+  100% {
+    transform: translateX(0);
+  }
 }

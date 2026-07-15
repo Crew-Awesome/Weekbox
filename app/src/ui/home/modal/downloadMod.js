@@ -100,48 +100,56 @@ export const downloadMod = {
       let hasNestedArchive = true;
       while (hasNestedArchive) {
         hasNestedArchive = false;
-        const files = await Neutralino.filesystem.readDirectory(targetModFolder);
-        const realFiles = files.filter((f) => f.entry !== "." && f.entry !== "..");
-        
+        const files =
+          await Neutralino.filesystem.readDirectory(targetModFolder);
+        const realFiles = files.filter(
+          (f) => f.entry !== "." && f.entry !== "..",
+        );
+
         if (realFiles.length === 1 && realFiles[0].type === "FILE") {
           const entryName = realFiles[0].entry.toLowerCase();
           if (
-            entryName.endsWith(".zip") || 
-            entryName.endsWith(".rar") || 
-            entryName.endsWith(".7z") || 
-            entryName.endsWith(".tar") || 
+            entryName.endsWith(".zip") ||
+            entryName.endsWith(".rar") ||
+            entryName.endsWith(".7z") ||
+            entryName.endsWith(".tar") ||
             entryName.endsWith(".gz")
           ) {
             hasNestedArchive = true;
             const innerZipPath = `${targetModFolder}/${realFiles[0].entry}`;
             toastDownloadMod.update(modId, 98, "Extracting nested archive...");
-            
+
             const innerTempPath = `${modsBasePath}/temp_inner_${modId}`;
             await FS.api.ensureDir(innerTempPath);
-            
+
             await this.extractArchive(
               modId,
               innerZipPath,
               innerTempPath,
               os,
               (file) => {
-                toastDownloadMod.update(modId, 98, `Extracting nested - ${file}`);
+                toastDownloadMod.update(
+                  modId,
+                  98,
+                  `Extracting nested - ${file}`,
+                );
               },
             );
-            
+
             if (this.activeTasks.get(modId)?.cancelled) {
               await FS.api.remove(innerTempPath).catch(() => {});
               throw new Error("Cancelled");
             }
-            
+
             await FS.api.remove(innerZipPath).catch(() => {});
-            
-            const extractedFiles = await Neutralino.filesystem.readDirectory(innerTempPath);
+
+            const extractedFiles =
+              await Neutralino.filesystem.readDirectory(innerTempPath);
             for (const ef of extractedFiles) {
               if (ef.entry !== "." && ef.entry !== "..") {
                 await Neutralino.filesystem.move(
                   `${innerTempPath}/${ef.entry}`,
-                  `${targetModFolder}/${ef.entry}`
+                  `${targetModFolder}/${ef.entry}`,
                 );
               }
             }
@@ -156,21 +164,27 @@ export const downloadMod = {
       let flattened = true;
       while (flattened) {
         flattened = false;
-        const currentFiles = await Neutralino.filesystem.readDirectory(targetModFolder);
-        const currentReal = currentFiles.filter((f) => f.entry !== "." && f.entry !== "..");
-        
+        const currentFiles =
+          await Neutralino.filesystem.readDirectory(targetModFolder);
+        const currentReal = currentFiles.filter(
+          (f) => f.entry !== "." && f.entry !== "..",
+        );
+
         if (currentReal.length === 1 && currentReal[0].type === "DIRECTORY") {
           flattened = true;
           const subDirName = currentReal[0].entry;
           const subDirPath = `${targetModFolder}/${subDirName}`;
-          
-          const subFiles = await Neutralino.filesystem.readDirectory(subDirPath);
-          const realSubFiles = subFiles.filter((f) => f.entry !== "." && f.entry !== "..");
-          
+
+          const subFiles =
+            await Neutralino.filesystem.readDirectory(subDirPath);
+          const realSubFiles = subFiles.filter(
+            (f) => f.entry !== "." && f.entry !== "..",
+          );
+
           for (const sf of realSubFiles) {
             await Neutralino.filesystem.move(
               `${subDirPath}/${sf.entry}`,
-              `${targetModFolder}/${sf.entry}`
+              `${targetModFolder}/${sf.entry}`,
             );
           }
           await Neutralino.filesystem.remove(subDirPath).catch(() => {});

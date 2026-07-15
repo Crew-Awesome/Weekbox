@@ -27,15 +27,21 @@ export const downloadEngine = {
 
   async cleanupTask(task) {
     await this.stopProcess(task);
-    
+
     await FS.api.remove(task.tempFilePath).catch(() => {});
-    
+
     const vPath = task.engineDir;
     try {
-      if (window.NL_OS === 'Windows') {
-        await Neutralino.os.execCommand(`rmdir /S /Q "${vPath.replace(/\//g, '\\')}"`, { background: true }).catch(() => {});
+      if (window.NL_OS === "Windows") {
+        await Neutralino.os
+          .execCommand(`rmdir /S /Q "${vPath.replace(/\//g, "\\")}"`, {
+            background: true,
+          })
+          .catch(() => {});
       } else {
-        await Neutralino.os.execCommand(`rm -rf "${vPath}"`, { background: true }).catch(() => {});
+        await Neutralino.os
+          .execCommand(`rm -rf "${vPath}"`, { background: true })
+          .catch(() => {});
       }
     } catch (e) {}
   },
@@ -63,35 +69,45 @@ export const downloadEngine = {
     const exePath = await FS.findExecutable(engineDir);
     if (!exePath) return; // Si no hay ejecutable, la estructura se queda como está
 
-    const executableDir = exePath.slice(
-      0,
-      Math.max(exePath.lastIndexOf("/"), exePath.lastIndexOf("\\"))
-    ).replace(/\\/g, "/");
-    
+    const executableDir = exePath
+      .slice(0, Math.max(exePath.lastIndexOf("/"), exePath.lastIndexOf("\\")))
+      .replace(/\\/g, "/");
+
     const normalizedEngineDir = engineDir.replace(/\\/g, "/");
 
     // Si el ejecutable está en una subcarpeta y no en la raíz
-    if (executableDir !== normalizedEngineDir && executableDir.startsWith(normalizedEngineDir)) {
+    if (
+      executableDir !== normalizedEngineDir &&
+      executableDir.startsWith(normalizedEngineDir)
+    ) {
       try {
         const files = await Neutralino.filesystem.readDirectory(executableDir);
         for (const file of files) {
           if (file.entry === "." || file.entry === "..") continue;
-          
+
           const fromPath = `${executableDir}/${file.entry}`;
           const toPath = `${normalizedEngineDir}/${file.entry}`;
-          
+
           await Neutralino.filesystem.move(fromPath, toPath);
         }
 
         // Limpiar las subcarpetas vacías que quedaron después de mover los archivos
-        const relativePart = executableDir.substring(normalizedEngineDir.length + 1);
+        const relativePart = executableDir.substring(
+          normalizedEngineDir.length + 1,
+        );
         const topSubDir = relativePart.split("/")[0];
         const dirToRemove = `${normalizedEngineDir}/${topSubDir}`;
-        
+
         if (window.NL_OS === "Windows") {
-          await Neutralino.os.execCommand(`rmdir /S /Q "${dirToRemove.replace(/\//g, "\\")}"`, { background: true }).catch(() => {});
+          await Neutralino.os
+            .execCommand(`rmdir /S /Q "${dirToRemove.replace(/\//g, "\\")}"`, {
+              background: true,
+            })
+            .catch(() => {});
         } else {
-          await Neutralino.os.execCommand(`rm -rf "${dirToRemove}"`, { background: true }).catch(() => {});
+          await Neutralino.os
+            .execCommand(`rm -rf "${dirToRemove}"`, { background: true })
+            .catch(() => {});
         }
       } catch (error) {
         console.warn("Could not organize engine folder:", error);
@@ -106,9 +122,9 @@ export const downloadEngine = {
     const engineDir = `${enginesBasePath}/${engineId}/${version}`;
     const tempFilePath = `${enginesBasePath}/temp_${engineId}_${version}.zip`;
     const taskKey = this.getTaskKey(engineId, version);
-    
+
     if (this.activeTasks.has(taskKey)) return false;
-    
+
     const task = {
       cancelled: false,
       pid: null,
@@ -118,30 +134,30 @@ export const downloadEngine = {
       onStateChange,
     };
     this.activeTasks.set(taskKey, task);
-    
+
     const updateProgress = (status, progress) => {
       if (typeof onProgress === "function") {
         onProgress({ status, progress });
       }
     };
-    
+
     try {
       this.notifyState(task, "downloading");
       updateProgress("Preparing environment...", 0);
       await FS.api.ensureDir(enginesBasePath);
       await FS.api.ensureDir(`${enginesBasePath}/${engineId}`);
       await FS.api.ensureDir(engineDir);
-      
+
       await FS.api.write(`${engineDir}/.downloading`, "1");
       const os = window.NL_OS;
-      
+
       updateProgress("Connecting...", 2);
       await this.downloadWithProgress(
         downloadUrl,
         tempFilePath,
         updateProgress,
       );
-      
+
       task.phase = "extracting";
       this.notifyState(task, "installing");
       updateProgress("Installing...", 98);
@@ -154,7 +170,7 @@ export const downloadEngine = {
 
       updateProgress("Organizing files...", 99);
       await this.flattenEngineDir(engineDir); // Usamos el nuevo método en lugar de flattenModFolder
-      
+
       updateProgress("Cleaning temporary files...", 99);
       await FS.api.remove(tempFilePath).catch(() => {});
       await FS.api.remove(`${engineDir}/.downloading`).catch(() => {});
@@ -165,30 +181,35 @@ export const downloadEngine = {
         .forEach((result) =>
           console.warn("Could not inject installed mod:", result.reason),
         );
-        
+
       updateProgress("Completed", 100);
       this.notifyState(task, "completed");
       this.activeTasks.delete(taskKey);
-      
+
       return true;
     } catch (error) {
       if (!task.cancelled)
         console.error(`Error installing engine ${engineId}:`, error);
-        
+
       await FS.api.remove(tempFilePath).catch(() => {});
-      
+
       try {
-        if (window.NL_OS === 'Windows') {
-          await Neutralino.os.execCommand(`rmdir /S /Q "${engineDir.replace(/\//g, '\\')}"`, { background: true });
+        if (window.NL_OS === "Windows") {
+          await Neutralino.os.execCommand(
+            `rmdir /S /Q "${engineDir.replace(/\//g, "\\")}"`,
+            { background: true },
+          );
         } else {
-          await Neutralino.os.execCommand(`rm -rf "${engineDir}"`, { background: true });
+          await Neutralino.os.execCommand(`rm -rf "${engineDir}"`, {
+            background: true,
+          });
         }
       } catch (e) {}
 
       if (!task.cancelled) {
         this.notifyState(task, "error");
       }
-      
+
       this.activeTasks.delete(taskKey);
       return false;
     }

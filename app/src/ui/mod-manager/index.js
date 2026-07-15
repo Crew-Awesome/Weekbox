@@ -16,17 +16,28 @@ function extractColor(img, card) {
       canvas.height = img.naturalHeight || 64;
       ctx.drawImage(img, 0, 0);
       const data = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
-      
-      let r = 0, g = 0, b = 0, count = 0;
+
+      let r = 0,
+        g = 0,
+        b = 0,
+        count = 0;
       for (let i = 0; i < data.length; i += 16) {
-        const pr = data[i], pg = data[i+1], pb = data[i+2];
+        const pr = data[i],
+          pg = data[i + 1],
+          pb = data[i + 2];
         if (pr > 20 && pr < 240 && pg > 20 && pg < 240 && pb > 20 && pb < 240) {
-          r += pr; g += pg; b += pb; count++;
+          r += pr;
+          g += pg;
+          b += pb;
+          count++;
         }
       }
       if (count === 0) {
         for (let i = 0; i < data.length; i += 16) {
-           r += data[i]; g += data[i+1]; b += data[i+2]; count++;
+          r += data[i];
+          g += data[i + 1];
+          b += data[i + 2];
+          count++;
         }
       }
       if (count > 0) {
@@ -53,19 +64,28 @@ export const modManagerModal = {
       const wrapper = document.createElement("div");
       wrapper.innerHTML = html;
       document.body.appendChild(wrapper.firstElementChild);
-      
-      document.getElementById("mod-manager-close-btn").addEventListener("click", () => this.close());
-      document.getElementById("mod-manager-modal").addEventListener("click", (e) => {
-        if (e.target.id === "mod-manager-modal") this.close();
-      });
+
+      document
+        .getElementById("mod-manager-close-btn")
+        .addEventListener("click", () => this.close());
+      document
+        .getElementById("mod-manager-modal")
+        .addEventListener("click", (e) => {
+          if (e.target.id === "mod-manager-modal") this.close();
+        });
 
       const toggleBtn = document.getElementById("mod-manager-view-toggle");
       toggleBtn.addEventListener("click", () => {
         const grid = document.getElementById("mod-manager-grid-container");
         if (!grid) return;
         const isListView = grid.classList.toggle("list-view");
-        localStorage.setItem("weekbox_mod_manager_view", isListView ? "list" : "grid");
-        toggleBtn.querySelector("i").className = isListView ? "fa-solid fa-table-cells-large" : "fa-solid fa-list";
+        localStorage.setItem(
+          "weekbox_mod_manager_view",
+          isListView ? "list" : "grid",
+        );
+        toggleBtn.querySelector("i").className = isListView
+          ? "fa-solid fa-table-cells-large"
+          : "fa-solid fa-list";
       });
     }
   },
@@ -122,11 +142,15 @@ export const modManagerModal = {
     const gridContainer = document.createElement("div");
     gridContainer.id = "mod-manager-grid-container";
     gridContainer.className = "mod-manager-grid";
-    
-    const isListView = localStorage.getItem("weekbox_mod_manager_view") === "list";
+
+    const isListView =
+      localStorage.getItem("weekbox_mod_manager_view") === "list";
     if (isListView) gridContainer.classList.add("list-view");
     const toggleIcon = document.querySelector("#mod-manager-view-toggle i");
-    if (toggleIcon) toggleIcon.className = isListView ? "fa-solid fa-table-cells-large" : "fa-solid fa-list";
+    if (toggleIcon)
+      toggleIcon.className = isListView
+        ? "fa-solid fa-table-cells-large"
+        : "fa-solid fa-list";
 
     container.appendChild(gridContainer);
 
@@ -139,19 +163,19 @@ export const modManagerModal = {
       if (mod.imageBase64) {
         imageUrl = mod.imageBase64;
       } else {
-        let remoteUrl = mod.image; 
+        let remoteUrl = mod.image;
         if (!remoteUrl) {
           const details = await gameBananaApi.getModDetails(mod.id);
           if (details && details.images && details.images.length > 0) {
             remoteUrl = details.images[0];
           }
         }
-        
+
         if (remoteUrl) {
           const b64 = await this.getBase64FromUrl(remoteUrl);
           if (b64) {
             imageUrl = b64;
-            mod.imageBase64 = b64; 
+            mod.imageBase64 = b64;
             needsJsonUpdate = true;
           }
         }
@@ -159,7 +183,7 @@ export const modManagerModal = {
 
       const isExecutable = standaloneModIds.has(mod.id);
       let engineBadgeHtml = `<div class="mod-manager-engine-badge"><i class="fa-solid fa-question-circle"></i><span>Unassigned</span></div>`;
-      
+
       if (isExecutable) {
         engineBadgeHtml = `
           <div class="mod-manager-engine-badge">
@@ -211,9 +235,9 @@ export const modManagerModal = {
       deleteBtn.addEventListener("click", async () => {
         deleteBtn.disabled = true;
         deleteBtn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i>`;
-        
+
         await FS.removeInstalledMod(mod.id);
-        
+
         card.style.transform = "scale(0.8) translateY(10px)";
         card.style.opacity = "0";
         setTimeout(() => {
@@ -244,10 +268,12 @@ export const modManagerModal = {
           m.hidden = !m.hidden;
           const jsonPath = `${FS.dataPath}/installedmods.json`;
           await FS.api.write(jsonPath, JSON.stringify(allMods, null, 2));
-          
+
           mod.hidden = m.hidden;
           card.style.opacity = mod.hidden ? "0.5" : "1";
-          visBtn.querySelector("i").className = mod.hidden ? "fa-solid fa-eye-slash" : "fa-solid fa-eye";
+          visBtn.querySelector("i").className = mod.hidden
+            ? "fa-solid fa-eye-slash"
+            : "fa-solid fa-eye";
 
           document.dispatchEvent(new CustomEvent("mods-updated"));
         }
@@ -260,5 +286,5 @@ export const modManagerModal = {
       const jsonPath = `${FS.dataPath}/installedmods.json`;
       await FS.api.write(jsonPath, JSON.stringify(mods, null, 2));
     }
-  }
+  },
 };

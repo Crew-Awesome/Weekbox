@@ -68,7 +68,10 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: color 0.2s, background-color 0.2s, transform 0.2s;
+  transition:
+    color 0.2s,
+    background-color 0.2s,
+    transform 0.2s;
 }
 
 .mod-manager-action-btn:hover {
@@ -104,9 +107,9 @@
   overflow: hidden;
   width: calc(33.333% - (var(--spacing-lg) * 2 / 3));
   min-width: 240px;
-  
+
   --card-color: rgba(255, 255, 255, 0.3);
-  transition: 
+  transition:
     transform 0.35s cubic-bezier(0.25, 1, 0.5, 1),
     border-color 0.3s ease,
     box-shadow 0.3s ease;
@@ -143,7 +146,7 @@
   flex-direction: column;
   gap: 8px;
   overflow: hidden;
-  min-width: 0; 
+  min-width: 0;
 }
 
 .mod-manager-info h3 {
@@ -152,7 +155,7 @@
   margin: 0;
   white-space: nowrap;
   overflow: hidden;
-  text-overflow: ellipsis; 
+  text-overflow: ellipsis;
 }
 
 .mod-manager-engine-badge {
@@ -224,7 +227,7 @@
 .mod-manager-grid.list-view .mod-manager-card {
   width: 100%;
   flex-direction: row;
-  height: 110px; 
+  height: 110px;
 }
 
 .mod-manager-grid.list-view .mod-manager-cover {
@@ -241,15 +244,15 @@
 
 .mod-manager-grid.list-view .mod-manager-info {
   justify-content: center;
-  flex: 1 1 auto; 
-  min-width: 0;   
+  flex: 1 1 auto;
+  min-width: 0;
 }
 
 .mod-manager-grid.list-view .mod-manager-actions {
   flex-direction: row;
   margin-top: 0;
-  width: 180px; 
-  flex-shrink: 0; 
+  width: 180px;
+  flex-shrink: 0;
 }
 
 .empty-mods-state {

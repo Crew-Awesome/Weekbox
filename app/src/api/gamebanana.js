@@ -40,32 +40,32 @@ export const gameBananaApi = {
   getEngineIdForCategories(...categories) {
     const pending = categories.filter((c) => c !== null && c !== undefined);
     const seen = new Set();
-    
+
     while (pending.length > 0) {
       const category = pending.shift();
-      
+
       // Si recibimos directamente un número de categoría (ID directo)
       if (typeof category === "number" || typeof category === "string") {
         const engineId = this.getEngineIdForCategory(Number(category));
         if (engineId) return engineId;
         continue;
       }
-      
+
       // Si ya analizamos este objeto o no es un objeto, pasamos
       if (typeof category !== "object" || seen.has(category)) {
         continue;
       }
       seen.add(category);
-      
+
       const engineId = this.getEngineIdForCategory(
-        category._idRow || category._idCategory
+        category._idRow || category._idCategory,
       );
       if (engineId) return engineId;
-      
+
       pending.push(
         category._aCategory,
         category._aSuperCategory,
-        category._aParentCategory
+        category._aParentCategory,
       );
     }
     return null;
@@ -155,7 +155,7 @@ export const gameBananaApi = {
       const response = await fetch(this.featuredUrl, { cache: "no-store" });
       if (!response.ok) throw new Error();
       const featuredData = await response.json();
-      
+
       // Auto-completar los engineId si el JSON no los trae
       if (Array.isArray(featuredData.rankings)) {
         for (const ranking of featuredData.rankings) {
@@ -170,7 +170,7 @@ export const gameBananaApi = {
                     }
                   } catch (e) {}
                 }
-              })
+              }),
             );
           }
         }
@@ -202,7 +202,8 @@ export const gameBananaApi = {
         ...mod,
         label: ranking.label,
         timeAgo: this.getTimeAgo(mod.publishedAt),
-        engineId: mod.engineId || this.getEngineIdForCategory(mod.categoryId) || null
+        engineId:
+          mod.engineId || this.getEngineIdForCategory(mod.categoryId) || null,
       })),
     );
   },
@@ -242,10 +243,13 @@ export const gameBananaApi = {
         if (sort) params.set("_sSort", sort);
         const response = await fetch(`${this.baseUrl}/Mod/Index?${params}`);
         if (!response.ok) throw new Error();
-        
+
         const records = this.getValidRecords(await response.json());
         // Inyectamos el ID explícitamente porque GB API aveces lo omite de la respuesta en Index
-        return records.map((record) => ({ ...record, __injectedCategoryId: id }));
+        return records.map((record) => ({
+          ...record,
+          __injectedCategoryId: id,
+        }));
       }),
     );
     const records = responses
@@ -277,8 +281,8 @@ export const gameBananaApi = {
         mod.__injectedCategoryId, // Pasamos el ID inyectado primero para prioridad
         mod._aCategory,
         mod._aSuperCategory,
-        mod._idCategory
-      )
+        mod._idCategory,
+      ),
     };
   },
 
@@ -403,13 +407,15 @@ export const gameBananaApi = {
     try {
       const normalizedQuery = query.trim().replace(/\s+/g, " ");
       if (!normalizedQuery) return [];
-      
+
       const cacheKey = `${normalizedQuery.toLocaleLowerCase()}:${page}:${perPage}`;
       if (this.searchCache.has(cacheKey)) return this.searchCache.get(cacheKey);
-      
+
       let directMod = null;
-      const idMatch = normalizedQuery.match(/^(?:https?:\/\/)?(?:gamebanana\.com\/mods\/)?(\d+)(?:\/.*)?$/i);
-      
+      const idMatch = normalizedQuery.match(
+        /^(?:https?:\/\/)?(?:gamebanana\.com\/mods\/)?(\d+)(?:\/.*)?$/i,
+      );
+
       if (page === 1 && idMatch && idMatch[1]) {
         const specificMod = await this.getModDetails(idMatch[1]);
         if (specificMod) {
@@ -425,7 +431,7 @@ export const gameBananaApi = {
           };
         }
       }
-      
+
       const params = new URLSearchParams({
         _sModelName: "Mod",
         _sSearchString: `${normalizedQuery} fnf`,
@@ -436,7 +442,7 @@ export const gameBananaApi = {
       if (!res.ok) throw new Error("Mod search failed");
       const data = await res.json();
       const records = this.getValidRecords(data);
-      
+
       let parsedMods = [
         ...new Map(records.map((mod) => [mod._idRow, mod])).values(),
       ]
@@ -446,7 +452,7 @@ export const gameBananaApi = {
             this.getSearchScore(left, normalizedQuery),
         )
         .map((mod) => this.toGridMod(mod));
-      
+
       if (directMod) {
         parsedMods = parsedMods.filter((m) => m.id !== directMod.id);
         parsedMods.unshift(directMod);

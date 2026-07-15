@@ -10,10 +10,14 @@ export const engineManagerModal = {
       wrapper.innerHTML = html;
       document.body.appendChild(wrapper.firstElementChild);
 
-      document.getElementById("engine-manager-close-btn").addEventListener("click", () => this.close());
-      document.getElementById("engine-manager-modal").addEventListener("click", (e) => {
-        if (e.target.id === "engine-manager-modal") this.close();
-      });
+      document
+        .getElementById("engine-manager-close-btn")
+        .addEventListener("click", () => this.close());
+      document
+        .getElementById("engine-manager-modal")
+        .addEventListener("click", (e) => {
+          if (e.target.id === "engine-manager-modal") this.close();
+        });
     }
   },
 
@@ -44,7 +48,7 @@ export const engineManagerModal = {
   render(engines) {
     const container = document.getElementById("engine-manager-modal-body");
     if (!container) return;
-    
+
     container.innerHTML = "";
 
     if (engines.length === 0) {
@@ -55,7 +59,7 @@ export const engineManagerModal = {
     const gridContainer = document.createElement("div");
     gridContainer.className = "mod-manager-grid";
 
-    engines.forEach(engine => {
+    engines.forEach((engine) => {
       const card = document.createElement("div");
       card.className = "mod-manager-card";
       card.innerHTML = `
@@ -72,22 +76,28 @@ export const engineManagerModal = {
       deleteBtn.addEventListener("click", async () => {
         deleteBtn.disabled = true;
         deleteBtn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i>`;
-        
+
         const targetPath = `${FS.enginesPath}/${engine.id}/${engine.version}`;
         try {
-          if (window.NL_OS === 'Windows') {
-            await Neutralino.os.execCommand(`rmdir /S /Q "${targetPath.replace(/\//g, '\\')}"`, { background: true }).catch(() => {});
+          if (window.NL_OS === "Windows") {
+            await Neutralino.os
+              .execCommand(`rmdir /S /Q "${targetPath.replace(/\//g, "\\")}"`, {
+                background: true,
+              })
+              .catch(() => {});
           } else {
-            await Neutralino.os.execCommand(`rm -rf "${targetPath}"`, { background: true }).catch(() => {});
+            await Neutralino.os
+              .execCommand(`rm -rf "${targetPath}"`, { background: true })
+              .catch(() => {});
           }
         } catch (e) {}
-        
+
         await this.loadInstalledEngines();
       });
 
       gridContainer.appendChild(card);
     });
-    
+
     container.appendChild(gridContainer);
-  }
+  },
 };

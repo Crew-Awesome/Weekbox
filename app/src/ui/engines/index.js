@@ -36,44 +36,44 @@ export const enginesView = {
     const dlTextSizer = document.getElementById("dl-text-sizer");
     const dlActiveLayer = document.getElementById("dl-active-layer");
     const downloadActions = document.getElementById("engine-download-actions");
-    
+
     if (!launchBtn) return;
     if (this.activeInstall) {
       launchBtn.disabled = true;
       return;
     }
     if (downloadActions) downloadActions.hidden = true;
-    
+
     const versionData = this.currentEngine.versions.find(
       (v) => v.version === this.currentVersion,
     );
-    
+
     if (!versionData) {
       launchBtn.textContent = "Unavailable";
       launchBtn.disabled = true;
       if (dlUI) dlUI.style.display = "none";
       return;
     }
-    
+
     const isInstalled = await FS.isEngineInstalled(
       this.currentEngine.id,
       this.currentVersion,
     );
-    
+
     const newBtn = launchBtn.cloneNode(true);
     launchBtn.parentNode.replaceChild(newBtn, launchBtn);
     const activeBtn = document.getElementById("launch-engine-btn");
-    
+
     if (isInstalled) {
       activeBtn.textContent = "Launch";
       activeBtn.disabled = false;
       if (dlUI) dlUI.style.display = "none";
-      
+
       let isLaunched = FS.isEngineRunning(
         this.currentEngine.id,
         this.currentVersion,
       );
-      
+
       const showLaunched = () => {
         isLaunched = true;
         activeBtn.disabled = false;
@@ -81,9 +81,9 @@ export const enginesView = {
         activeBtn.innerHTML =
           '<span class="engine-launch-label">Launched</span><span class="engine-close-label">Close</span>';
       };
-      
+
       if (isLaunched) showLaunched();
-      
+
       activeBtn.addEventListener("click", async () => {
         if (isLaunched) {
           activeBtn.disabled = true;
@@ -100,12 +100,12 @@ export const enginesView = {
           );
           return;
         }
-        
+
         activeBtn.disabled = true;
         activeBtn.textContent = "Running...";
         await modsMaster.injectBeforeLaunch(
           this.currentEngine.id,
-          this.currentVersion
+          this.currentVersion,
         );
         await FS.runEngine(
           this.currentEngine.id,
@@ -124,7 +124,10 @@ export const enginesView = {
               activeBtn.classList.remove("engine-running");
               activeBtn.disabled = false;
               activeBtn.textContent = "Launch";
-              await modsMaster.cleanupAfterExit(this.currentEngine.id, this.currentVersion);
+              await modsMaster.cleanupAfterExit(
+                this.currentEngine.id,
+                this.currentVersion,
+              );
             }
           },
         );

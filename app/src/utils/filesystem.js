@@ -32,20 +32,45 @@ class FileSystemService {
 
   async cleanupIncompleteDownloads() {
     try {
-      const engines = await Neutralino.filesystem.readDirectory(this.enginesPath);
+      const engines = await Neutralino.filesystem.readDirectory(
+        this.enginesPath,
+      );
       for (const engine of engines) {
-        if (engine.type === 'FILE' && engine.entry.startsWith('temp_') && engine.entry.endsWith('.zip')) {
-          await this.api.remove(`${this.enginesPath}/${engine.entry}`).catch(() => {});
-        } else if (engine.type === 'DIRECTORY' && engine.entry !== '.' && engine.entry !== '..') {
-          const versions = await Neutralino.filesystem.readDirectory(`${this.enginesPath}/${engine.entry}`);
+        if (
+          engine.type === "FILE" &&
+          engine.entry.startsWith("temp_") &&
+          engine.entry.endsWith(".zip")
+        ) {
+          await this.api
+            .remove(`${this.enginesPath}/${engine.entry}`)
+            .catch(() => {});
+        } else if (
+          engine.type === "DIRECTORY" &&
+          engine.entry !== "." &&
+          engine.entry !== ".."
+        ) {
+          const versions = await Neutralino.filesystem.readDirectory(
+            `${this.enginesPath}/${engine.entry}`,
+          );
           for (const version of versions) {
-            if (version.type === 'DIRECTORY' && version.entry !== '.' && version.entry !== '..') {
+            if (
+              version.type === "DIRECTORY" &&
+              version.entry !== "." &&
+              version.entry !== ".."
+            ) {
               const vPath = `${this.enginesPath}/${engine.entry}/${version.entry}`;
               if (await this.api.exists(`${vPath}/.downloading`)) {
-                if (window.NL_OS === 'Windows') {
-                  await Neutralino.os.execCommand(`rmdir /S /Q "${vPath.replace(/\//g, '\\')}"`, { background: true }).catch(() => {});
+                if (window.NL_OS === "Windows") {
+                  await Neutralino.os
+                    .execCommand(
+                      `rmdir /S /Q "${vPath.replace(/\//g, "\\")}"`,
+                      { background: true },
+                    )
+                    .catch(() => {});
                 } else {
-                  await Neutralino.os.execCommand(`rm -rf "${vPath}"`, { background: true }).catch(() => {});
+                  await Neutralino.os
+                    .execCommand(`rm -rf "${vPath}"`, { background: true })
+                    .catch(() => {});
                 }
               }
             }
@@ -72,7 +97,7 @@ class FileSystemService {
         const currentDir = stack.pop();
         const files = await Neutralino.filesystem.readDirectory(currentDir);
         for (const file of files) {
-          if (file.entry === '.' || file.entry === '..') continue;
+          if (file.entry === "." || file.entry === "..") continue;
           const fullPath = `${currentDir}/${file.entry}`;
           if (file.type === "FILE") {
             if (isWindows && file.entry.toLowerCase().endsWith(".exe")) {
@@ -97,16 +122,22 @@ class FileSystemService {
     }
     const targetPath = `${this.enginesPath}/${engineId}/${version}`;
     const exePath = await this.findExecutable(targetPath);
-    
+
     if (exePath) {
       if (onStateChange) onStateChange("running");
       try {
-        const executableDir = exePath.slice(0, Math.max(exePath.lastIndexOf("/"), exePath.lastIndexOf("\\")));
-        const process = await Neutralino.os.spawnProcess(`"${exePath}"`, { cwd: executableDir });
+        const executableDir = exePath.slice(
+          0,
+          Math.max(exePath.lastIndexOf("/"), exePath.lastIndexOf("\\")),
+        );
+        const process = await Neutralino.os.spawnProcess(`"${exePath}"`, {
+          cwd: executableDir,
+        });
         this.activeEngineProcesses.set(engineKey, process);
 
         const handler = (event) => {
-          if (event.detail.id !== process.id || event.detail.action !== "exit") return;
+          if (event.detail.id !== process.id || event.detail.action !== "exit")
+            return;
           Neutralino.events.off("spawnedProcess", handler);
           this.activeEngineProcesses.delete(engineKey);
           if (onStateChange) onStateChange("completed");
@@ -128,7 +159,7 @@ class FileSystemService {
     const engineKey = `${engineId}:${version}`;
     const process = this.activeEngineProcesses.get(engineKey);
     if (!process) return false;
-    
+
     if (onStateChange) onStateChange("closing");
     try {
       await Neutralino.os.updateSpawnedProcess(process.id, "exit");
@@ -146,13 +177,16 @@ class FileSystemService {
   async getInstalledEngines() {
     if (!this.isInitialized) return [];
     try {
-      const engineEntries = await Neutralino.filesystem.readDirectory(this.enginesPath);
+      const engineEntries = await Neutralino.filesystem.readDirectory(
+        this.enginesPath,
+      );
       const engines = await Promise.all(
         engineEntries
           .filter((entry) => entry.type === "DIRECTORY")
           .map(async (entry) => {
             const enginePath = `${this.enginesPath}/${entry.entry}`;
-            const versions = await Neutralino.filesystem.readDirectory(enginePath);
+            const versions =
+              await Neutralino.filesystem.readDirectory(enginePath);
             return versions
               .filter((version) => version.type === "DIRECTORY")
               .map((version) => ({ id: entry.entry, version: version.entry }));
@@ -165,31 +199,39 @@ class FileSystemService {
   }
 
   async linkModToEngine(mod, engineId, version) {
-    const folderName = mod.folderName || mod.name.replace(/[<>:"/\\|?*]+/g, "").trim();
+    const folderName =
+      mod.folderName || mod.name.replace(/[<>:"/\\|?*]+/g, "").trim();
     const sourcePath = `${this.modsPath}/${folderName}`;
     const modsPath = `${this.enginesPath}/${engineId}/${version}/mods`;
     const linkPath = `${modsPath}/${folderName}`;
-    
+
     if (!(await this.api.exists(sourcePath))) {
       throw new Error(`Mod files not found for ${mod.name}`);
     }
-    
+
     await this.api.ensureDir(modsPath);
-    if (await this.api.exists(linkPath)) return { linked: false, path: linkPath };
-      
-    const command = window.NL_OS === "Windows"
-      ? `cmd /c mklink /J "${linkPath}" "${sourcePath}"`
-      : `ln -s "${sourcePath}" "${linkPath}"`;
-        
-    const result = await Neutralino.os.execCommand(command, { background: false });
-    
-    if (result.exitCode !== 0) throw new Error(result.stdErr || `Could not inject ${mod.name}`);
-      
+    if (await this.api.exists(linkPath))
+      return { linked: false, path: linkPath };
+
+    const command =
+      window.NL_OS === "Windows"
+        ? `cmd /c mklink /J "${linkPath}" "${sourcePath}"`
+        : `ln -s "${sourcePath}" "${linkPath}"`;
+
+    const result = await Neutralino.os.execCommand(command, {
+      background: false,
+    });
+
+    if (result.exitCode !== 0)
+      throw new Error(result.stdErr || `Could not inject ${mod.name}`);
+
     return { linked: true, path: linkPath };
   }
 
   async injectModIntoEngine(modId, engineId, version) {
-    const mod = (await this.getInstalledMods()).find((item) => item.id === modId);
+    const mod = (await this.getInstalledMods()).find(
+      (item) => item.id === modId,
+    );
     if (!mod || mod.hidden) return; // Ignore si no existe o está oculto
     return this.linkModToEngine(mod, engineId, version);
   }
@@ -197,11 +239,14 @@ class FileSystemService {
   async injectModsIntoEngine(engineId, version) {
     const mods = await this.getInstalledMods();
     // AQUI ES DONDE SE FILTRA: Solo mods que coincidan con el engineId Y que NO estén ocultos
-    const matchingMods = mods.filter((mod) => mod.engineId === engineId && !mod.hidden);
-    
+    const matchingMods = mods.filter(
+      (mod) => mod.engineId === engineId && !mod.hidden,
+    );
+
     const nonExeMods = [];
     for (const mod of matchingMods) {
-      const folderName = mod.folderName || mod.name.replace(/[<>:"/\\|?*]+/g, "").trim();
+      const folderName =
+        mod.folderName || mod.name.replace(/[<>:"/\\|?*]+/g, "").trim();
       const modPath = `${this.modsPath}/${folderName}`;
       if (!(await this.findExecutable(modPath))) {
         nonExeMods.push(mod);
@@ -213,10 +258,13 @@ class FileSystemService {
   }
 
   async injectModIntoInstalledEngines(modId) {
-    const mod = (await this.getInstalledMods()).find((item) => item.id === modId);
+    const mod = (await this.getInstalledMods()).find(
+      (item) => item.id === modId,
+    );
     if (!mod?.engineId || mod.hidden) return [];
-    
-    const folderName = mod.folderName || mod.name.replace(/[<>:"/\\|?*]+/g, "").trim();
+
+    const folderName =
+      mod.folderName || mod.name.replace(/[<>:"/\\|?*]+/g, "").trim();
     const modPath = `${this.modsPath}/${folderName}`;
     if (await this.findExecutable(modPath)) return [];
 
@@ -234,12 +282,18 @@ class FileSystemService {
     try {
       const files = await Neutralino.filesystem.readDirectory(modsPath);
       for (const file of files) {
-        if (file.entry !== '.' && file.entry !== '..') {
+        if (file.entry !== "." && file.entry !== "..") {
           const linkPath = `${modsPath}/${file.entry}`;
           if (window.NL_OS === "Windows") {
-            await Neutralino.os.execCommand(`cmd /c rmdir "${linkPath.replace(/\//g, '\\')}"`, { background: true }).catch(() => {});
+            await Neutralino.os
+              .execCommand(`cmd /c rmdir "${linkPath.replace(/\//g, "\\")}"`, {
+                background: true,
+              })
+              .catch(() => {});
           } else {
-            await Neutralino.os.execCommand(`rm -rf "${linkPath}"`, { background: true }).catch(() => {});
+            await Neutralino.os
+              .execCommand(`rm -rf "${linkPath}"`, { background: true })
+              .catch(() => {});
           }
         }
       }
@@ -266,20 +320,28 @@ class FileSystemService {
     const mods = await this.getInstalledMods();
     const standalone = [];
     for (const mod of mods) {
-      const folderName = mod.folderName || mod.name.replace(/[<>:"/\\|?*]+/g, "").trim();
+      const folderName =
+        mod.folderName || mod.name.replace(/[<>:"/\\|?*]+/g, "").trim();
       const modPath = `${this.modsPath}/${folderName}`;
       const exePath = await this.findExecutable(modPath);
-      
+
       if (exePath) {
-        const exeDir = exePath.slice(0, Math.max(exePath.lastIndexOf("/"), exePath.lastIndexOf("\\")));
+        const exeDir = exePath.slice(
+          0,
+          Math.max(exePath.lastIndexOf("/"), exePath.lastIndexOf("\\")),
+        );
         let icoPath = "";
-        
+
         try {
           const files = await Neutralino.filesystem.readDirectory(exeDir);
-          const icoFile = files.find(f => f.type === 'FILE' && f.entry.toLowerCase().endsWith('.ico'));
+          const icoFile = files.find(
+            (f) => f.type === "FILE" && f.entry.toLowerCase().endsWith(".ico"),
+          );
           if (icoFile) {
-            const data = await Neutralino.filesystem.readBinaryFile(`${exeDir}/${icoFile.entry}`);
-            let binary = '';
+            const data = await Neutralino.filesystem.readBinaryFile(
+              `${exeDir}/${icoFile.entry}`,
+            );
+            let binary = "";
             const bytes = new Uint8Array(data);
             const len = bytes.byteLength;
             for (let i = 0; i < len; i++) {
@@ -297,28 +359,34 @@ class FileSystemService {
 
   async runStandaloneMod(modId, onExit) {
     const mods = await this.getStandaloneMods();
-    const mod = mods.find(m => m.id === modId);
+    const mod = mods.find((m) => m.id === modId);
     if (!mod) {
       if (onExit) onExit();
       return false;
     }
-    
+
     const processKey = `standalone:${mod.id}`;
     if (this.activeEngineProcesses.has(processKey)) return false;
 
     try {
-      const executableDir = mod.exePath.slice(0, Math.max(mod.exePath.lastIndexOf("/"), mod.exePath.lastIndexOf("\\")));
-      const process = await Neutralino.os.spawnProcess(`"${mod.exePath}"`, { cwd: executableDir });
-      
+      const executableDir = mod.exePath.slice(
+        0,
+        Math.max(mod.exePath.lastIndexOf("/"), mod.exePath.lastIndexOf("\\")),
+      );
+      const process = await Neutralino.os.spawnProcess(`"${mod.exePath}"`, {
+        cwd: executableDir,
+      });
+
       this.activeEngineProcesses.set(processKey, process);
-      
+
       const handler = (event) => {
-        if (event.detail.id !== process.id || event.detail.action !== "exit") return;
+        if (event.detail.id !== process.id || event.detail.action !== "exit")
+          return;
         Neutralino.events.off("spawnedProcess", handler);
         this.activeEngineProcesses.delete(processKey);
         if (onExit) onExit();
       };
-      
+
       await Neutralino.events.on("spawnedProcess", handler);
       return true;
     } catch (error) {
@@ -332,9 +400,14 @@ class FileSystemService {
     const jsonPath = `${this.dataPath}/installedmods.json`;
     const installedMods = await this.getInstalledMods();
     const exists = installedMods.find((m) => m.id === modId);
-    
+
     if (!exists) {
-      installedMods.push({ name: modName, id: modId, hidden: false, ...metadata });
+      installedMods.push({
+        name: modName,
+        id: modId,
+        hidden: false,
+        ...metadata,
+      });
       await this.api.write(jsonPath, JSON.stringify(installedMods, null, 2));
     }
   }
@@ -345,7 +418,7 @@ class FileSystemService {
     const installedMods = await this.getInstalledMods();
     const mod = installedMods.find((item) => item.id === modId);
     if (!mod) return false;
-    
+
     mod.engineId = engineId || null;
     await this.api.write(jsonPath, JSON.stringify(installedMods, null, 2));
     return true;
@@ -359,9 +432,12 @@ class FileSystemService {
         let installedMods = await this.getInstalledMods();
         const initialLength = installedMods.length;
         installedMods = installedMods.filter((m) => m.id !== modId);
-        
+
         if (installedMods.length !== initialLength) {
-          await this.api.write(jsonPath, JSON.stringify(installedMods, null, 2));
+          await this.api.write(
+            jsonPath,
+            JSON.stringify(installedMods, null, 2),
+          );
         }
       } catch (error) {}
     }
@@ -383,14 +459,18 @@ class FileSystemService {
     if (!this.isInitialized) return;
     try {
       const files = await Neutralino.filesystem.readDirectory(targetDir);
-      const realFiles = files.filter((f) => f.entry !== "." && f.entry !== "..");
-      
+      const realFiles = files.filter(
+        (f) => f.entry !== "." && f.entry !== "..",
+      );
+
       if (realFiles.length === 1 && realFiles[0].type === "DIRECTORY") {
         const subDirName = realFiles[0].entry;
         const subDirPath = `${targetDir}/${subDirName}`;
         const subFiles = await Neutralino.filesystem.readDirectory(subDirPath);
-        const realSubFiles = subFiles.filter((f) => f.entry !== "." && f.entry !== "..");
-        
+        const realSubFiles = subFiles.filter(
+          (f) => f.entry !== "." && f.entry !== "..",
+        );
+
         for (const sf of realSubFiles) {
           const from = `${subDirPath}/${sf.entry}`;
           const to = `${targetDir}/${sf.entry}`;
