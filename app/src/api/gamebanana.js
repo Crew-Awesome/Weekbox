@@ -53,6 +53,8 @@ export const gameBananaApi = {
     const names = categories
       .filter((category) => category && typeof category === "object")
       .map((category) => String(category._sName || "").toLocaleLowerCase());
+    if (names.some((name) => /\bpsych(?:[\s-]+)?online\b/.test(name)))
+      return "psychonline";
     if (names.some((name) => /\bpsych\b/.test(name))) return "psych";
     if (names.some((name) => /\bcodename\b/.test(name))) return "codename";
     if (names.some((name) => /\bexecutable\b/.test(name))) return "executable";
@@ -123,6 +125,7 @@ export const gameBananaApi = {
   getEngineIdForCategories(...categories) {
     const pending = categories.filter((c) => c !== null && c !== undefined);
     const seen = new Set();
+    const detectedEngines = [];
 
     while (pending.length > 0) {
       const category = pending.shift();
@@ -130,7 +133,7 @@ export const gameBananaApi = {
       // Si recibimos directamente un número de categoría (ID directo)
       if (typeof category === "number" || typeof category === "string") {
         const engineId = this.getEngineIdForCategory(Number(category));
-        if (engineId) return engineId;
+        if (engineId) detectedEngines.push(engineId);
         continue;
       }
 
@@ -143,15 +146,19 @@ export const gameBananaApi = {
       const engineId = this.getEngineIdForCategory(
         this.getCategoryId(category),
       );
-      if (engineId) return engineId;
+      if (engineId) detectedEngines.push(engineId);
 
       pending.push(
         category._aCategory,
         category._aSuperCategory,
         category._aParentCategory,
+        category._aRootCategory,
+        category._aSubCategory,
       );
     }
-    return null;
+    return detectedEngines.includes("psychonline")
+      ? "psychonline"
+      : detectedEngines[0] || null;
   },
 
   getValidRecords(data) {
