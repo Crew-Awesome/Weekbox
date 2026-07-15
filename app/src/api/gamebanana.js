@@ -287,6 +287,7 @@ export const gameBananaApi = {
         images: images,
         fileSizeStr: this.formatBytes(fileSize),
         downloadUrl: downloadUrl,
+        gameBananaUrl: `https://gamebanana.com/mods/${data._idRow}`,
         gameId: Number(data._aGame?._idRow || data._idGame || 0),
         isDeleted: this.isDeletedMod(data),
         categoryId: this.getCategoryId(data._aCategory),
