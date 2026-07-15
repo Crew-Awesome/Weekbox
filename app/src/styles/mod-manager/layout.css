@@ -118,7 +118,6 @@
 /* Keep the lift on hover without a colored glow. */
 .mod-manager-card:hover {
   transform: translateY(-4px);
-  border-color: var(--card-color);
 }
 
 .mod-manager-cover-wrap {
