@@ -36,27 +36,39 @@ export const gameBananaApi = {
     return this.engineCategories[Number(categoryId)] || null;
   },
 
+  // 1. Detección Inteligente y recursiva de categorías y motores
   getEngineIdForCategories(...categories) {
-    const pending = categories.filter(Boolean);
+    const pending = categories.filter((c) => c !== null && c !== undefined);
     const seen = new Set();
+    
     while (pending.length > 0) {
       const category = pending.shift();
-      if (!category || typeof category !== "object" || seen.has(category))
+      
+      // Si recibimos directamente un número de categoría (ID directo)
+      if (typeof category === "number" || typeof category === "string") {
+        const engineId = this.getEngineIdForCategory(Number(category));
+        if (engineId) return engineId;
         continue;
+      }
+      
+      // Si ya analizamos este objeto o no es un objeto, pasamos
+      if (typeof category !== "object" || seen.has(category)) {
+        continue;
+      }
       seen.add(category);
+      
       const engineId = this.getEngineIdForCategory(
-        category._idRow || category._idCategory,
+        category._idRow || category._idCategory
       );
       if (engineId) return engineId;
+      
       pending.push(
         category._aCategory,
         category._aSuperCategory,
-        category._aParentCategory,
+        category._aParentCategory
       );
     }
-    return this.getEngineIdForCategory(
-      categories.find((category) => typeof category === "number"),
-    );
+    return null;
   },
 
   getValidRecords(data) {
@@ -133,6 +145,7 @@ export const gameBananaApi = {
     }
   },
 
+  // 2. Carrusel Destacados con Fetch de IDs de Motor faltantes
   async getFeaturedCarousel() {
     const cachedData = this.getCachedFeatured();
     if (cachedData && Date.parse(cachedData.expiresAt) > Date.now()) {
@@ -142,6 +155,28 @@ export const gameBananaApi = {
       const response = await fetch(this.featuredUrl, { cache: "no-store" });
       if (!response.ok) throw new Error();
       const featuredData = await response.json();
+      
+      // Auto-completar los engineId si el JSON no los trae
+      if (Array.isArray(featuredData.rankings)) {
+        for (const ranking of featuredData.rankings) {
+          if (Array.isArray(ranking.mods)) {
+            await Promise.all(
+              ranking.mods.map(async (mod) => {
+                if (!mod.engineId && !mod.categoryId) {
+                  try {
+                    const details = await this.getModDetails(mod.id);
+                    if (details && details.engineId) {
+                      mod.engineId = details.engineId;
+                    }
+                  } catch (e) {}
+                }
+              })
+            );
+          }
+        }
+      }
+
+      featuredData.expiresAt = new Date(Date.now() + 3600 * 1000).toISOString();
       const mods = this.flattenFeatured(featuredData);
       if (mods.length === 0) throw new Error();
       localStorage.setItem(this.featuredCacheKey, JSON.stringify(featuredData));
@@ -167,6 +202,7 @@ export const gameBananaApi = {
         ...mod,
         label: ranking.label,
         timeAgo: this.getTimeAgo(mod.publishedAt),
+        engineId: mod.engineId || this.getEngineIdForCategory(mod.categoryId) || null
       })),
     );
   },
@@ -187,6 +223,7 @@ export const gameBananaApi = {
     return Number(mod._tsDateAdded || 0);
   },
 
+  // 3. Inyección artificial de categoryId a los resultados del grid
   async getCategoryRecords({
     page = 1,
     perPage = 20,
@@ -205,7 +242,10 @@ export const gameBananaApi = {
         if (sort) params.set("_sSort", sort);
         const response = await fetch(`${this.baseUrl}/Mod/Index?${params}`);
         if (!response.ok) throw new Error();
-        return this.getValidRecords(await response.json());
+        
+        const records = this.getValidRecords(await response.json());
+        // Inyectamos el ID explícitamente porque GB API aveces lo omite de la respuesta en Index
+        return records.map((record) => ({ ...record, __injectedCategoryId: id }));
       }),
     );
     const records = responses
@@ -233,6 +273,12 @@ export const gameBananaApi = {
       likes: mod._nLikeCount || 0,
       views: mod._nViewCount || 0,
       timeAgo: this.getTimeAgo(mod._tsDateAdded),
+      engineId: this.getEngineIdForCategories(
+        mod.__injectedCategoryId, // Pasamos el ID inyectado primero para prioridad
+        mod._aCategory,
+        mod._aSuperCategory,
+        mod._idCategory
+      )
     };
   },
 
@@ -324,7 +370,7 @@ export const gameBananaApi = {
     return mods;
   },
 
-  async getGridMods(filter = "ripe", page = 1, categoryId = null) {
+  async getGridMods(filter = "popular", page = 1, categoryId = null) {
     try {
       if (filter === "popular")
         return await this.getFreshPopularMods(page, categoryId);
@@ -360,9 +406,8 @@ export const gameBananaApi = {
       
       const cacheKey = `${normalizedQuery.toLocaleLowerCase()}:${page}:${perPage}`;
       if (this.searchCache.has(cacheKey)) return this.searchCache.get(cacheKey);
-
+      
       let directMod = null;
-      // Comprueba si la búsqueda es un enlace directo o un ID puro
       const idMatch = normalizedQuery.match(/^(?:https?:\/\/)?(?:gamebanana\.com\/mods\/)?(\d+)(?:\/.*)?$/i);
       
       if (page === 1 && idMatch && idMatch[1]) {
@@ -376,10 +421,11 @@ export const gameBananaApi = {
             likes: specificMod.likes,
             views: specificMod.views,
             timeAgo: specificMod.timeAgo,
+            engineId: specificMod.engineId,
           };
         }
       }
-
+      
       const params = new URLSearchParams({
         _sModelName: "Mod",
         _sSearchString: `${normalizedQuery} fnf`,
@@ -400,17 +446,14 @@ export const gameBananaApi = {
             this.getSearchScore(left, normalizedQuery),
         )
         .map((mod) => this.toGridMod(mod));
-
-      // Si detectamos un mod exacto, lo colocamos primero en los resultados
+      
       if (directMod) {
         parsedMods = parsedMods.filter((m) => m.id !== directMod.id);
         parsedMods.unshift(directMod);
       }
-
       this.searchCache.set(cacheKey, parsedMods);
       if (this.searchCache.size > 40)
         this.searchCache.delete(this.searchCache.keys().next().value);
-        
       return parsedMods;
     } catch (error) {
       return [];

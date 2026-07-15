@@ -40,41 +40,58 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: var(--spacing-lg) var(--spacing-xl);
+  padding: var(--spacing-sm) var(--spacing-xl);
   border-bottom: 1px solid var(--border-color);
   background-color: rgba(0, 0, 0, 0.2);
 }
 
 .mod-manager-header h2 {
   margin: 0;
-  font-size: 1.5rem;
+  font-size: 1.35rem;
   color: var(--text-main);
 }
 
-.mod-manager-close-btn {
+.mod-manager-header-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+}
+
+.mod-manager-action-btn {
   background: transparent;
   border: none;
   color: var(--text-muted);
-  font-size: 1.5rem;
+  font-size: 1.25rem;
+  padding: 8px;
+  border-radius: 6px;
   cursor: pointer;
-  transition: color 0.2s, transform 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.2s, background-color 0.2s, transform 0.2s;
+}
+
+.mod-manager-action-btn:hover {
+  color: var(--text-main);
+  background-color: rgba(255, 255, 255, 0.05);
 }
 
 .mod-manager-close-btn:hover {
-  color: var(--text-main);
+  color: #ff4a4a;
   transform: scale(1.1);
 }
 
 .mod-manager-body {
   padding: var(--spacing-xl);
   overflow-y: auto;
+  overflow-x: hidden;
   flex: 1;
 }
 
 .mod-manager-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-  gap: var(--spacing-md);
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-lg);
   width: 100%;
 }
 
@@ -82,56 +99,116 @@
   background-color: var(--bg-color);
   border: 1px solid var(--border-color);
   border-radius: var(--border-radius);
-  padding: var(--spacing-lg);
   display: flex;
-  justify-content: space-between;
-  align-items: center;
-  transition: transform 0.2s ease, border-color 0.2s ease;
+  flex-direction: column;
+  overflow: hidden;
+  width: calc(33.333% - (var(--spacing-lg) * 2 / 3));
+  min-width: 240px;
+  
+  --card-color: rgba(255, 255, 255, 0.3);
+  transition: 
+    transform 0.35s cubic-bezier(0.25, 1, 0.5, 1),
+    border-color 0.3s ease,
+    box-shadow 0.3s ease;
 }
 
+/* Efecto hover aplicando el color predominante y la sombra (resplandor) */
 .mod-manager-card:hover {
   transform: translateY(-4px);
-  border-color: var(--text-muted);
+  border-color: var(--card-color);
+  box-shadow: 0 10px 40px -10px var(--card-color);
+}
+
+.mod-manager-cover {
+  width: 100%;
+  height: 140px;
+  object-fit: cover;
+  background-color: #000;
+  border-bottom: 1px solid var(--border-color);
+  transition: all 0.35s cubic-bezier(0.25, 1, 0.5, 1);
+}
+
+.mod-manager-card-body {
+  padding: var(--spacing-md);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  flex: 1;
+  gap: var(--spacing-md);
+  transition: all 0.35s cubic-bezier(0.25, 1, 0.5, 1);
 }
 
 .mod-manager-info {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 8px;
   overflow: hidden;
+  min-width: 0; 
 }
 
 .mod-manager-info h3 {
-  font-size: 1.15rem;
+  font-size: 1.05rem;
   color: var(--text-main);
   margin: 0;
   white-space: nowrap;
   overflow: hidden;
-  text-overflow: ellipsis;
+  text-overflow: ellipsis; 
 }
 
-.mod-manager-info p {
-  font-size: 0.85rem;
+.mod-manager-engine-badge {
+  width: fit-content;
+  height: 24px;
+  padding: 0 9px 0 5px;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  background: var(--bg-panel);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   color: var(--text-muted);
-  margin: 0;
-  text-transform: capitalize;
+  font-size: 0.75rem;
+  font-weight: 600;
+  margin: 2px 0; /* Margen estricto de 2px arriba y abajo */
 }
 
-.mod-manager-delete-btn {
+.mod-manager-engine-badge img {
+  width: 16px;
+  height: 16px;
+  object-fit: contain;
+  border-radius: 4px;
+  display: block;
+}
+
+.mod-manager-actions {
+  display: flex;
+  justify-content: space-between;
+  gap: 6px;
+  margin-top: auto;
+}
+
+.mod-action-btn {
   background-color: transparent;
-  color: #ff4a4a;
-  border: 1px solid transparent;
-  padding: 10px;
-  border-radius: 8px;
+  color: var(--text-muted);
+  border: 1px solid var(--border-color);
+  padding: 8px 12px;
+  border-radius: 6px;
   cursor: pointer;
   display: flex;
+  flex: 1;
   align-items: center;
   justify-content: center;
-  font-size: 1.1rem;
-  transition: background-color 0.2s ease, border-color 0.2s ease;
+  font-size: 1rem;
+  transition: all 0.2s ease;
+}
+
+.mod-action-btn:hover {
+  color: var(--text-main);
+  background-color: rgba(255, 255, 255, 0.05);
+  border-color: var(--text-muted);
 }
 
 .mod-manager-delete-btn:hover:not(:disabled) {
+  color: #ff4a4a;
   background-color: rgba(255, 74, 74, 0.1);
   border-color: rgba(255, 74, 74, 0.3);
 }
@@ -139,6 +216,40 @@
 .mod-manager-delete-btn:disabled {
   color: var(--text-muted);
   cursor: not-allowed;
+}
+
+/* ======================================================== */
+/* MODO LISTA (.list-view) */
+/* ======================================================== */
+.mod-manager-grid.list-view .mod-manager-card {
+  width: 100%;
+  flex-direction: row;
+  height: 110px; 
+}
+
+.mod-manager-grid.list-view .mod-manager-cover {
+  width: 160px;
+  height: 100%;
+  border-bottom: none;
+  border-right: 1px solid var(--border-color);
+}
+
+.mod-manager-grid.list-view .mod-manager-card-body {
+  flex-direction: row;
+  align-items: center;
+}
+
+.mod-manager-grid.list-view .mod-manager-info {
+  justify-content: center;
+  flex: 1 1 auto; 
+  min-width: 0;   
+}
+
+.mod-manager-grid.list-view .mod-manager-actions {
+  flex-direction: row;
+  margin-top: 0;
+  width: 180px; 
+  flex-shrink: 0; 
 }
 
 .empty-mods-state {

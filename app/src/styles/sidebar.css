@@ -118,3 +118,28 @@
   border-radius: 4px;
   flex-shrink: 0;
 }
+/* Agregado para el efecto marquee */
+.marquee-container {
+  overflow: hidden;
+  white-space: nowrap;
+  width: 100%;
+  position: relative;
+  mask-image: linear-gradient(to right, black 85%, transparent 100%);
+  -webkit-mask-image: linear-gradient(to right, black 85%, transparent 100%);
+}
+
+.marquee-text {
+  display: inline-block;
+}
+
+/* Solo se anima si la caja en hover tiene un nombre lo suficientemente largo, 
+   o podemos animar por defecto para revelar texto escondido */
+.nav-btn:hover .marquee-text {
+  animation: marquee 4s linear infinite;
+}
+
+@keyframes marquee {
+  0% { transform: translateX(0); }
+  50% { transform: translateX(-50%); } /* Ajustable dependiendo de longitud media */
+  100% { transform: translateX(0); }
+}
