@@ -52,17 +52,24 @@ export const configModal = {
       "launchOnStartup", 
       "blurOutOfFocus", 
       "hideOnLaunch", 
-      "autoStartAfterDownload"
+      "autoStartAfterDownload",
+      "checkUpdatesOnStartup",
+      "checkUpdatesInBackground",
     ];
 
     toggleIds.forEach(settingKey => {
       const checkbox = document.getElementById(`setting-${settingKey}`);
       if (checkbox) {
-        checkbox.addEventListener("change", (e) => {
-          appSettings.set(settingKey, e.target.checked);
+        checkbox.addEventListener("change", async (e) => {
+          const enabled = e.target.checked;
           if (settingKey === "launchOnStartup") {
-            this.handleStartupToggle(e.target.checked);
+            const updated = await this.handleStartupToggle(enabled);
+            if (!updated) {
+              checkbox.checked = appSettings.get(settingKey);
+              return;
+            }
           }
+          appSettings.set(settingKey, enabled);
         });
       }
     });
@@ -73,7 +80,9 @@ export const configModal = {
       "launchOnStartup", 
       "blurOutOfFocus", 
       "hideOnLaunch", 
-      "autoStartAfterDownload"
+      "autoStartAfterDownload",
+      "checkUpdatesOnStartup",
+      "checkUpdatesInBackground",
     ];
 
     toggleIds.forEach(settingKey => {
@@ -85,17 +94,23 @@ export const configModal = {
   },
 
   async handleStartupToggle(enabled) {
-    if (window.NL_OS === 'Windows') {
-      try {
-        const exePath = `${window.NL_CWD}\\WeekBox.exe`; 
-        const command = enabled 
-            ? `cmd /c reg add "HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Run" /v "WeekBox" /t REG_SZ /d "\\"${exePath}\\"" /f`
-            : `cmd /c reg delete "HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Run" /v "WeekBox" /f`;
-        
-        await Neutralino.os.execCommand(command, { background: true });
-      } catch (e) {
-        console.error("No se pudo configurar el registro de inicio de Windows", e);
+    if (window.NL_OS !== "Windows") return false;
+    try {
+      const exePath = `${window.NL_PATH}\\WeekBox.exe`;
+      if (enabled) await Neutralino.filesystem.getStats(exePath);
+      const command = enabled
+        ? `cmd /c reg add "HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Run" /v "WeekBox" /t REG_SZ /d "\\"${exePath}\\"" /f`
+        : `cmd /c reg delete "HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Run" /v "WeekBox" /f`;
+      const result = await Neutralino.os.execCommand(command, {
+        background: false,
+      });
+      if (result.exitCode !== 0) {
+        throw new Error(result.stdErr || "Windows Registry command failed");
       }
+      return true;
+    } catch (error) {
+      console.error("Could not configure Windows startup", error);
+      return false;
     }
   },
 

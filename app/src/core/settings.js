@@ -3,7 +3,9 @@ export const appSettings = {
     launchOnStartup: false,
     blurOutOfFocus: true,
     hideOnLaunch: false,
-    autoStartAfterDownload: false
+    autoStartAfterDownload: false,
+    checkUpdatesOnStartup: true,
+    checkUpdatesInBackground: true,
   },
   get(key) {
     try {

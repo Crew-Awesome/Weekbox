@@ -200,6 +200,15 @@ async function fetchAllReleases(source, etag) {
   return { releases, etag: responseEtag };
 }
 
+async function getLatestRelease(source) {
+  const response = await fetch(
+    `https://api.github.com/repos/${source.repository}/releases/latest`,
+    { headers: { Accept: "application/vnd.github+json" } },
+  );
+  if (!response.ok) throw new Error("GitHub latest release request failed");
+  return normalizeRelease(await response.json(), source);
+}
+
 export async function getEngineReleaseVersions(engineId) {
   const source = ENGINE_RELEASE_SOURCES[engineId];
   if (!source) return [];
@@ -252,6 +261,10 @@ export async function getEngineUpdateCandidate(engineId) {
   if (source.updates.channel === "nightly") {
     return getLatestNightly(source).catch(() => null);
   }
+  try {
+    const latest = await getLatestRelease(source);
+    if (latest) return { ...latest, updateKey: `release:${latest.version}` };
+  } catch {}
   const versions = await getEngineReleaseVersions(engineId);
   const version = versions.find(
     (item) => !item.isNightly && item.version !== "Latest",

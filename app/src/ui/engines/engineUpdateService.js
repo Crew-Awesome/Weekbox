@@ -5,11 +5,16 @@ import { getTargetLink, getTargetPlatform } from "./utils.js";
 import { downloadEngine } from "./downloadEngine.js";
 import { engineUpdateModal } from "./engineUpdateModal.js";
 import { engineUpdateToast } from "./engineUpdateToast.js";
+import { appSettings } from "../../core/settings.js";
 
 const SKIP_PREFIX = "weekbox-engine-update-skip-";
 const INSTALLED_PREFIX = "weekbox-engine-update-installed-";
 const AUTO_CHECK_INTERVAL_MS = 3 * 60 * 60 * 1000;
 let scheduledCheck = null;
+
+function getInstalledBuildKey(engineId, installedVersion) {
+  return `${INSTALLED_PREFIX}${engineId}-${installedVersion}`;
+}
 
 function getValue(key) {
   try {
@@ -25,7 +30,11 @@ function setValue(key, value) {
   } catch {}
 }
 
-export function rememberInstalledEngineBuild(engineId, versionData) {
+export function rememberInstalledEngineBuild(
+  engineId,
+  versionData,
+  installedVersion = versionData.version,
+) {
   const platform = getTargetPlatform(versionData);
   const key =
     versionData.updateKeys?.[platform] ||
@@ -33,10 +42,15 @@ export function rememberInstalledEngineBuild(engineId, versionData) {
     (versionData.isNightly
       ? null
       : `release:${versionData.releaseVersion || versionData.version}`);
-  if (key) setValue(`${INSTALLED_PREFIX}${engineId}`, key);
+  if (key) setValue(getInstalledBuildKey(engineId, installedVersion), key);
 }
 
 async function findAvailableUpdate(engineId, installedVersion) {
+  // A numbered Psych Online install is deliberately pinned. Only its moving
+  // Latest entry follows new releases.
+  if (engineId === "psychonline" && installedVersion !== "Latest") {
+    return { status: "pinned" };
+  }
   const candidate = await getEngineUpdateCandidate(engineId);
   if (!candidate) return { status: "unavailable" };
 
@@ -45,14 +59,27 @@ async function findAvailableUpdate(engineId, installedVersion) {
   if (!key) return { status: "unavailable" };
   if (getValue(`${SKIP_PREFIX}${engineId}`) === key)
     return { status: "skipped" };
-  if (getValue(`${INSTALLED_PREFIX}${engineId}`) === key)
+  const installedBuildKey = getInstalledBuildKey(engineId, installedVersion);
+  const savedBuild =
+    getValue(installedBuildKey) ||
+    (engineId === "psychonline"
+      ? null
+      : getValue(`${INSTALLED_PREFIX}${engineId}`));
+  if (savedBuild === key)
     return { status: "current" };
+
+  // Older installs did not record which release the moving Latest folder
+  // contained. Establish a baseline once instead of offering a false update.
+  if (engineId === "psychonline" && installedVersion === "Latest") {
+    setValue(installedBuildKey, key);
+    return { status: "current" };
+  }
 
   if (candidate.isNightly && installedVersion !== "Nightly") {
     return { status: "current" };
   }
   if (!candidate.isNightly && installedVersion === candidate.version) {
-    rememberInstalledEngineBuild(engineId, candidate);
+      rememberInstalledEngineBuild(engineId, candidate, installedVersion);
     return { status: "current" };
   }
 
@@ -65,8 +92,15 @@ async function findAvailableUpdate(engineId, installedVersion) {
 export const engineUpdateService = {
   startScheduledChecks() {
     if (scheduledCheck) return;
+    if (appSettings.get("checkUpdatesOnStartup")) {
+      void this.checkForUpdatesInBackground();
+    }
     scheduledCheck = setInterval(
-      () => this.checkForUpdatesInBackground(),
+      () => {
+        if (appSettings.get("checkUpdatesInBackground")) {
+          void this.checkForUpdatesInBackground();
+        }
+      },
       AUTO_CHECK_INTERVAL_MS,
     );
   },
@@ -121,7 +155,7 @@ export const engineUpdateService = {
       (progress) => engineUpdateToast.update(engineId, progress),
     );
     if (updated) {
-      rememberInstalledEngineBuild(engineId, update.candidate);
+      rememberInstalledEngineBuild(engineId, update.candidate, installedVersion);
       engineUpdateToast.complete(engineId);
       return { status: "updated" };
     }

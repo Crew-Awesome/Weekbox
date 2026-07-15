@@ -267,6 +267,12 @@ export const engineManagerModal = {
               details.name,
               "This update is skipped",
             );
+          } else if (result.status === "pinned") {
+            engineUpdateToast.info(
+              engineId,
+              details.name,
+              "This version is pinned",
+            );
           } else if (result.status === "unavailable") {
             engineUpdateToast.info(
               engineId,
