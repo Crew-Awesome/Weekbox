@@ -21,9 +21,11 @@ export const storageBridge = {
     const originalSet = Storage.prototype.setItem;
     const originalRemove = Storage.prototype.removeItem;
     const originalClear = Storage.prototype.clear;
+    const isNativeStorageKey = (key) => /^[a-zA-Z-_0-9]{1,50}$/.test(key);
 
     window.localStorage.setItem = function (key, value) {
       originalSet.call(window.localStorage, key, value);
+      if (!isNativeStorageKey(key)) return;
       Neutralino.storage
         .setData(key, String(value))
         .catch((e) => console.warn(e));
@@ -31,6 +33,7 @@ export const storageBridge = {
 
     window.localStorage.removeItem = function (key) {
       originalRemove.call(window.localStorage, key);
+      if (!isNativeStorageKey(key)) return;
       Neutralino.storage.removeData(key).catch((e) => console.warn(e));
     };
 

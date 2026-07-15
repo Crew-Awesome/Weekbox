@@ -1,7 +1,10 @@
 import { FS } from "../../utils/filesystem.js";
 import { sanitizePathSegment } from "../../utils/filesystem/pathUtils.js";
 import { gameBananaApi } from "../../api/gamebanana.js";
-import { ENGINE_DETAILS } from "../../config/engines.js";
+import {
+  ENGINE_DETAILS,
+  getEngineLaunchBehavior,
+} from "../../config/engines.js";
 
 function extractColor(img, card) {
   const processColor = () => {
@@ -238,7 +241,10 @@ export const modManagerModal = {
       card.classList.toggle("is-hidden", Boolean(mod.hidden));
       card.style = isHidden;
       const launchLabel =
-        isExecutable || mod.engineId === "codename" ? "Launch Mod" : "Launch Engine";
+        isExecutable ||
+        getEngineLaunchBehavior(mod.engineId).scope === "exclusive-mod"
+          ? "Launch Mod"
+          : "Launch Engine";
       // Aplicamos crossOrigin para poder leer el color
       card.innerHTML = `
         <div class="mod-manager-cover-wrap">

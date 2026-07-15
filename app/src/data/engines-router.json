@@ -13,5 +13,25 @@
     "name": "Psych Engine",
     "icon": "psych.png",
     "versions": "psych"
+  },
+  {
+    "name": "P-Slice",
+    "icon": "pslice.png",
+    "versions": "pslice"
+  },
+  {
+    "name": "ALE Psych",
+    "icon": "alepsych.png",
+    "versions": "alepsych"
+  },
+  {
+    "name": "FPS Plus",
+    "icon": "fpsplus.png",
+    "versions": "fpsplus"
+  },
+  {
+    "name": "Funkin' Psych Online",
+    "icon": "psychonline.png",
+    "versions": "psychonline"
   }
 ]

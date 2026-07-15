@@ -11,7 +11,9 @@ export function getTargetLink(versionData) {
   } else if (os === "Linux") {
     return versionData.lin || null;
   } else if (os === "Darwin") {
-    return versionData.mac || null;
+    if (arch === "x64") return versionData.mac64 || versionData.mac || null;
+    if (arch === "arm64") return versionData.macarm || versionData.mac || null;
+    return versionData.mac || versionData.mac64 || versionData.macarm || null;
   }
   return null;
 }

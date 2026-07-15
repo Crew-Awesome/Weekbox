@@ -1,6 +1,6 @@
 import { ENGINE_RELEASE_SOURCES } from "../config/engineReleaseSources.js";
 
-const CACHE_PREFIX = "weekbox:engine-releases:";
+const CACHE_PREFIX = "weekbox-engine-releases-";
 const CACHE_FRESH_MS = 24 * 60 * 60 * 1000;
 
 function getCacheKey(engineId) {
@@ -51,6 +51,23 @@ function normalizeRelease(release, source) {
     : null;
 }
 
+function getNightlyVersion(source) {
+  if (!source.nightly) return null;
+  const version = { version: "Nightly", isNightly: true };
+  for (const [platform, artifact] of Object.entries(source.nightly.assets)) {
+    const workflow = encodeURIComponent(artifact.workflow);
+    const name = encodeURIComponent(artifact.artifact);
+    version[platform] = `https://nightly.link/${source.repository}/workflows/${workflow}/${source.nightly.branch}/${name}.zip`;
+  }
+  return version;
+}
+
+function withNightlyVersion(versions, source) {
+  const nightly = getNightlyVersion(source);
+  if (!nightly) return versions;
+  return [nightly, ...versions.filter((version) => !version.isNightly)];
+}
+
 async function fetchAllReleases(source, etag) {
   let url = `https://api.github.com/repos/${source.repository}/releases?per_page=100`;
   const releases = [];
@@ -77,26 +94,29 @@ export async function getEngineReleaseVersions(engineId) {
   if (!source) return [];
   const cached = readCache(engineId);
   if (cached?.versions?.length && Date.now() - cached.savedAt < CACHE_FRESH_MS) {
-    return cached.versions;
+    return withNightlyVersion(cached.versions, source);
   }
 
   try {
     const result = await fetchAllReleases(source, cached?.etag);
     if (result.notModified && cached?.versions?.length) {
       writeCache(engineId, { ...cached, savedAt: Date.now() });
-      return cached.versions;
+      return withNightlyVersion(cached.versions, source);
     }
     const versions = result.releases
       .map((release) => normalizeRelease(release, source))
       .filter(Boolean);
-    if (versions.length === 0) return [];
+    const versionsWithNightly = withNightlyVersion(versions, source);
+    if (versionsWithNightly.length === 0) return [];
     writeCache(engineId, {
-      versions,
+      versions: versionsWithNightly,
       etag: result.etag,
       savedAt: Date.now(),
     });
-    return versions;
+    return versionsWithNightly;
   } catch (error) {
-    return cached?.versions?.length || [];
+    return cached?.versions?.length
+      ? withNightlyVersion(cached.versions, source)
+      : withNightlyVersion([], source);
   }
 }

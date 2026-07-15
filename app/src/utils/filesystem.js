@@ -1,5 +1,8 @@
 import { APIneuFileSystem } from "./filesystem/APIneuFileSystem.js";
-import { getEngineLaunchBehavior } from "../config/engines.js";
+import {
+  getEngineLaunchBehavior,
+  getEngineModLaunchArgs,
+} from "../config/engines.js";
 import { ExecutableService } from "./filesystem/executableService.js";
 import { ModInjectionService } from "./filesystem/modInjectionService.js";
 import { ModRepository } from "./filesystem/modRepository.js";
@@ -177,9 +180,10 @@ class FileSystemService {
     const behavior = getEngineLaunchBehavior(engine.id);
     const launch = async () => {
       await this.injectModIntoEngine(mod.id, engine.id, engine.version);
-      const args = behavior.usesModArgument
-        ? ["-mod", getModFolderName(mod)]
-        : [];
+      const args = getEngineModLaunchArgs(
+        engine.id,
+        getModFolderName(mod),
+      );
       return this.runEngine(
         engine.id,
         engine.version,

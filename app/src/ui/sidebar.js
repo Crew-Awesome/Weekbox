@@ -130,6 +130,8 @@ export const sidebar = {
                 item.win32 ||
                 item.lin ||
                 item.mac ||
+                item.mac64 ||
+                item.macarm ||
                 "";
               return {
                 ...item,
@@ -137,6 +139,8 @@ export const sidebar = {
               };
             });
             processedVersionsData.sort((a, b) => {
+              if (a.isNightly) return -1;
+              if (b.isNightly) return 1;
               return b.version.localeCompare(a.version, undefined, {
                 numeric: true,
                 sensitivity: "base",
