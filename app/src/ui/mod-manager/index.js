@@ -159,7 +159,8 @@ export const modManagerModal = {
 
     container.appendChild(gridContainer);
 
-    const closeVersionPickers = () => {
+    const closeVersionPickers = async () => {
+      const changes = [];
       gridContainer
         .querySelectorAll(".mod-manager-version-picker")
         .forEach((picker) => {
@@ -170,11 +171,26 @@ export const modManagerModal = {
           picker
             .closest(".mod-manager-card")
             .classList.remove("version-menu-open");
+          if (picker.dataset.pendingVersion !== picker.dataset.savedVersion) {
+            changes.push({
+              modId: picker.dataset.modId,
+              engineVersion: picker.dataset.pendingVersion || null,
+            });
+          }
         });
+      if (!changes.length) return;
+      await Promise.all(
+        changes.map(({ modId, engineVersion }) =>
+          FS.setModEngineVersion(modId, engineVersion),
+        ),
+      );
+      await this.loadInstalledMods();
     };
     this.versionPickerOutsideHandler = (event) => {
       if (!event.target.closest(".mod-manager-version-picker")) {
-        closeVersionPickers();
+        closeVersionPickers().catch((error) =>
+          console.error("Could not save mod engine version", error),
+        );
       }
     };
     document.addEventListener("click", this.versionPickerOutsideHandler);
@@ -271,7 +287,7 @@ export const modManagerModal = {
               <img src="assets/icons/${engineInfo.icon}" alt=""/>
               <span>${engineInfo.name}</span>
             </div>
-            <div class="mod-manager-version-picker">
+            <div class="mod-manager-version-picker" data-mod-id="${mod.id}" data-saved-version="${mod.engineVersion || ""}" data-pending-version="${mod.engineVersion || ""}">
               <button class="mod-manager-version-pill" type="button" aria-expanded="false">
                 <span>${selectedVersion}</span><i class="fa-solid fa-chevron-down" aria-hidden="true"></i>
               </button>
@@ -337,24 +353,34 @@ export const modManagerModal = {
       versionPill?.addEventListener("click", (event) => {
         event.stopPropagation();
         const open = versionMenu.hidden;
-        closeVersionPickers();
+        if (!open) {
+          closeVersionPickers().catch((error) =>
+            console.error("Could not save mod engine version", error),
+          );
+          return;
+        }
         versionMenu.hidden = !open;
         versionPill.setAttribute("aria-expanded", String(open));
         card.classList.toggle("version-menu-open", open);
       });
-      versionMenu?.addEventListener("click", async (event) => {
+      versionMenu?.addEventListener("click", (event) => {
         const option = event.target.closest("button[data-version]");
         if (!option) return;
         event.stopPropagation();
-        card.classList.remove("version-menu-open");
-        versionPill.disabled = true;
-        try {
-          await FS.setModEngineVersion(mod.id, option.dataset.version || null);
-          await this.loadInstalledMods();
-        } catch (error) {
-          console.error("Could not set mod engine version", error);
-          versionPill.disabled = false;
-        }
+        const selectedVersion = option.dataset.version;
+        versionMenu.closest(
+          ".mod-manager-version-picker",
+        ).dataset.pendingVersion = selectedVersion;
+        versionPill.querySelector("span").textContent =
+          selectedVersion || "Any version";
+        versionMenu
+          .querySelectorAll("button[data-version]")
+          .forEach((button) =>
+            button.classList.toggle(
+              "selected",
+              button.dataset.version === selectedVersion,
+            ),
+          );
       });
       launchBtn.addEventListener("click", async () => {
         launchBtn.disabled = true;
