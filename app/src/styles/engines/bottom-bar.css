@@ -53,3 +53,9 @@
 .engine-action-btn-danger {
   color: #ff9b9b;
 }
+
+/* Keep the download cancel action out of Engine Manager's 32px icon-button rule. */
+.engine-fixed-bottom .engine-download-actions .engine-action-btn {
+  width: auto;
+  height: auto;
+}
