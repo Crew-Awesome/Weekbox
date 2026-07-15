@@ -170,7 +170,8 @@ class FileSystemService {
 
   async toggleModLaunch(mod, engine, isStandalone, onStateChange) {
     const state = this.getModLaunchState(mod, engine, isStandalone);
-    if (state === "unavailable") throw new Error("Assigned engine is not installed");
+    if (state === "unavailable")
+      throw new Error("Assigned engine is not installed");
     if (isStandalone) {
       return state === "running"
         ? this.closeStandaloneMod(mod.id)
@@ -180,10 +181,7 @@ class FileSystemService {
     const behavior = getEngineLaunchBehavior(engine.id);
     const launch = async () => {
       await this.injectModIntoEngine(mod.id, engine.id, engine.version);
-      const args = getEngineModLaunchArgs(
-        engine.id,
-        getModFolderName(mod),
-      );
+      const args = getEngineModLaunchArgs(engine.id, getModFolderName(mod));
       return this.runEngine(
         engine.id,
         engine.version,
@@ -195,7 +193,8 @@ class FileSystemService {
 
     if (state === "launch") return launch();
     if (state === "running") return this.closeEngine(engine.id, engine.version);
-    if (await this.closeEngineAndWait(engine.id, engine.version)) return launch();
+    if (await this.closeEngineAndWait(engine.id, engine.version))
+      return launch();
     return false;
   }
 
@@ -305,6 +304,17 @@ class FileSystemService {
     return mod;
   }
 
+  async setModEngineVersion(modId, engineVersion) {
+    const mod = await this.mods.setEngineVersion(modId, engineVersion);
+    if (!mod) return null;
+    const engines = await this.getInstalledEngines();
+    await this.injection.unlinkFromInstalledEngines(mod, engines);
+    if (!mod.hidden && mod.engineId) {
+      await this.injection.injectIntoInstalledEngines(modId, engines);
+    }
+    return mod;
+  }
+
   async removeInstalledMod(modId) {
     if (!this.isInitialized) return false;
     const mod = (await this.mods.getAll()).find((item) => item.id === modId);
@@ -318,7 +328,12 @@ class FileSystemService {
     );
     if (unlinkFailure) throw unlinkFailure.reason;
     const folderName = getModFolderName(mod);
-    if (!folderName || /[\\/]/.test(folderName) || folderName === "." || folderName === "..") {
+    if (
+      !folderName ||
+      /[\\/]/.test(folderName) ||
+      folderName === "." ||
+      folderName === ".."
+    ) {
       throw new Error(`Invalid mod folder for ${mod.name}`);
     }
     const modPath = `${this.modsPath}/${folderName}`;
@@ -331,7 +346,9 @@ class FileSystemService {
         background: false,
       });
       if (result.exitCode !== 0) {
-        throw new Error(result.stdErr || `Could not remove mod files for ${mod.name}`);
+        throw new Error(
+          result.stdErr || `Could not remove mod files for ${mod.name}`,
+        );
       }
     }
     await this.mods.remove(modId);

@@ -21,13 +21,7 @@ export const sidebar = {
     this.setupResizer();
     this.setupNavigation();
     await this.loadEngines();
-    await this.loadStandaloneMods();
     engineUpdateService.startScheduledChecks();
-
-    // Escuchar cambios en los mods para recargar el panel en tiempo real
-    document.addEventListener("mods-updated", () => {
-      this.loadStandaloneMods();
-    });
   },
 
   setupResizer() {

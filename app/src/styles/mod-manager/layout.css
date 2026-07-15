@@ -104,7 +104,8 @@
   border-radius: var(--border-radius);
   display: flex;
   flex-direction: column;
-  overflow: hidden;
+  overflow: visible;
+  position: relative;
   width: calc(33.333% - (var(--spacing-lg) * 2 / 3));
   min-width: 240px;
 
@@ -133,7 +134,9 @@
   width: 100%;
   height: 100%;
   object-fit: cover;
-  transition: filter 0.25s ease, transform 0.35s cubic-bezier(0.25, 1, 0.5, 1);
+  transition:
+    filter 0.25s ease,
+    transform 0.35s cubic-bezier(0.25, 1, 0.5, 1);
 }
 
 .mod-manager-launch-btn {
@@ -216,7 +219,7 @@
   display: flex;
   flex-direction: column;
   gap: 8px;
-  overflow: hidden;
+  overflow: visible;
   min-width: 0;
 }
 
@@ -251,6 +254,95 @@
   object-fit: contain;
   border-radius: 4px;
   display: block;
+}
+
+.mod-manager-engine-compatibility {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+.mod-manager-version-picker {
+  position: relative;
+}
+
+.mod-manager-version-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  max-width: 118px;
+  height: 24px;
+  padding: 0 8px;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.72rem;
+  font-weight: 650;
+}
+
+.mod-manager-version-pill span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mod-manager-version-pill i {
+  font-size: 0.62rem;
+  transition: transform 0.16s ease;
+}
+.mod-manager-version-pill[aria-expanded="true"] i {
+  transform: rotate(180deg);
+}
+.mod-manager-version-pill:hover {
+  border-color: #555;
+  color: var(--text-main);
+}
+.mod-manager-version-pill:focus-visible {
+  outline: 2px solid var(--text-main);
+  outline-offset: 2px;
+}
+
+.mod-manager-version-menu {
+  position: absolute;
+  z-index: 10;
+  top: calc(100% + 6px);
+  bottom: auto;
+  left: 0;
+  min-width: 140px;
+  max-height: 150px;
+  overflow-y: auto;
+  padding: 4px;
+  border: 1px solid #3a3a3a;
+  border-radius: 7px;
+  background: #1a1a1a;
+  box-shadow: 0 10px 25px rgb(0 0 0 / 35%);
+}
+
+.mod-manager-card.version-menu-open {
+  z-index: 2;
+}
+
+.mod-manager-version-menu button {
+  width: 100%;
+  padding: 7px 8px;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.76rem;
+  text-align: left;
+}
+
+.mod-manager-version-menu button:hover,
+.mod-manager-version-menu button.selected {
+  background: var(--bg-hover);
+  color: var(--text-main);
 }
 
 .mod-manager-actions {

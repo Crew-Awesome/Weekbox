@@ -85,9 +85,29 @@ function sanitizeReleaseHtml(html) {
   return documentNode.body.innerHTML;
 }
 
+function renderMarkdownLinks(text) {
+  const documentNode = new DOMParser().parseFromString("", "text/html");
+  const pattern = /\[([^\]]+)]\((https?:\/\/[^\s)]+)\)/g;
+  let cursor = 0;
+  let match;
+
+  while ((match = pattern.exec(text))) {
+    documentNode.body.append(
+      documentNode.createTextNode(text.slice(cursor, match.index)),
+    );
+    const link = documentNode.createElement("a");
+    link.href = match[2];
+    link.textContent = match[1];
+    documentNode.body.append(link);
+    cursor = match.index + match[0].length;
+  }
+  documentNode.body.append(documentNode.createTextNode(text.slice(cursor)));
+  return sanitizeReleaseHtml(documentNode.body.innerHTML);
+}
+
 function showPlainTextNotes(container, text) {
   container.classList.add("release-notes-plain");
-  container.textContent = text;
+  container.innerHTML = renderMarkdownLinks(text);
 }
 
 export async function fetchAndRenderReleaseNotes(versionData, targetLink) {

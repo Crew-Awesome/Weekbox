@@ -1,5 +1,9 @@
 import { getModFolderName } from "./pathUtils.js";
 
+function supportsEngineVersion(mod, version) {
+  return !mod.engineVersion || mod.engineVersion === version;
+}
+
 export class ModInjectionService {
   constructor({
     api,
@@ -45,13 +49,16 @@ export class ModInjectionService {
     const mod = (await this.modRepository.getAll()).find(
       (item) => item.id === modId,
     );
-    if (!mod || mod.hidden) return;
+    if (!mod || mod.hidden || !supportsEngineVersion(mod, version)) return;
     return this.link(mod, engineId, version);
   }
 
   async injectForEngine(engineId, version) {
     const mods = (await this.modRepository.getAll()).filter(
-      (mod) => mod.engineId === engineId && !mod.hidden,
+      (mod) =>
+        mod.engineId === engineId &&
+        !mod.hidden &&
+        supportsEngineVersion(mod, version),
     );
     const injectableMods = [];
     for (const mod of mods) {
@@ -72,7 +79,11 @@ export class ModInjectionService {
     if (await this.executables.find(modPath)) return [];
     return Promise.allSettled(
       engines
-        .filter((engine) => engine.id === mod.engineId)
+        .filter(
+          (engine) =>
+            engine.id === mod.engineId &&
+            supportsEngineVersion(mod, engine.version),
+        )
         .map((engine) => this.link(mod, engine.id, engine.version)),
     );
   }
@@ -88,14 +99,18 @@ export class ModInjectionService {
       background: false,
     });
     if (result.exitCode !== 0) {
-      throw new Error(result.stdErr || `Could not remove mod link for ${mod.name}`);
+      throw new Error(
+        result.stdErr || `Could not remove mod link for ${mod.name}`,
+      );
     }
     return true;
   }
 
   async unlinkFromInstalledEngines(mod, engines) {
     return Promise.allSettled(
-      engines.map((engine) => this.unlinkFromEngine(mod, engine.id, engine.version)),
+      engines.map((engine) =>
+        this.unlinkFromEngine(mod, engine.id, engine.version),
+      ),
     );
   }
 

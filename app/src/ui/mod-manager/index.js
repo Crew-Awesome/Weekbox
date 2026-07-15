@@ -55,6 +55,8 @@ function extractColor(img, card) {
 }
 
 export const modManagerModal = {
+  versionPickerOutsideHandler: null,
+
   async init() {
     if (!document.getElementById("mod-manager-modal")) {
       const response = await fetch("src/html/mod-manager.html");
@@ -103,6 +105,8 @@ export const modManagerModal = {
     const modal = document.getElementById("mod-manager-modal");
     if (!modal) return;
     modal.classList.remove("show");
+    document.removeEventListener("click", this.versionPickerOutsideHandler);
+    this.versionPickerOutsideHandler = null;
     setTimeout(() => {
       modal.style.display = "none";
     }, 300);
@@ -132,6 +136,8 @@ export const modManagerModal = {
     const container = document.getElementById("mod-manager-modal-body");
     if (!container) return;
 
+    document.removeEventListener("click", this.versionPickerOutsideHandler);
+    this.versionPickerOutsideHandler = null;
     container.innerHTML = "";
     if (mods.length === 0) {
       container.innerHTML = `<div class="empty-mods-state">No mods installed yet.</div>`;
@@ -153,39 +159,61 @@ export const modManagerModal = {
 
     container.appendChild(gridContainer);
 
+    const closeVersionPickers = () => {
+      gridContainer
+        .querySelectorAll(".mod-manager-version-picker")
+        .forEach((picker) => {
+          picker.querySelector(".mod-manager-version-menu").hidden = true;
+          picker
+            .querySelector(".mod-manager-version-pill")
+            .setAttribute("aria-expanded", "false");
+          picker
+            .closest(".mod-manager-card")
+            .classList.remove("version-menu-open");
+        });
+    };
+    this.versionPickerOutsideHandler = (event) => {
+      if (!event.target.closest(".mod-manager-version-picker")) {
+        closeVersionPickers();
+      }
+    };
+    document.addEventListener("click", this.versionPickerOutsideHandler);
+
     let needsJsonUpdate = false;
     const standaloneModIds = new Set(standaloneMods.map((m) => m.id));
     const installedEngines = await FS.getInstalledEngines();
 
     const refreshLaunchButtons = () => {
-      gridContainer.querySelectorAll(".mod-manager-launch-btn").forEach((button) => {
-        if (button.disabled) return;
-        const isStandalone = button.dataset.launchKind === "standalone";
-        const engine = isStandalone
-          ? null
-          : {
-              id: button.dataset.engineId,
-              version: button.dataset.engineVersion,
-            };
-        const state = FS.getModLaunchState(
-          { id: button.dataset.modId },
-          engine,
-          isStandalone,
-        );
-        const isRunning = state === "running";
-        const canSwitchMod = state === "switch";
-        button.classList.toggle("is-running", isRunning);
-        button.classList.toggle("is-switchable", canSwitchMod);
-        button.setAttribute(
-          "aria-label",
-          `${isRunning ? "Close" : canSwitchMod ? "Switch Mod" : button.dataset.launchLabel} ${button.dataset.modName}`,
-        );
-        button.innerHTML = isRunning
-          ? `<i class="fa-solid fa-play mod-manager-running-icon" aria-hidden="true"></i><span class="mod-manager-running-label">Running</span><span class="mod-manager-close-label"><i class="fa-solid fa-xmark" aria-hidden="true"></i><span>Click to Close</span></span>`
-          : canSwitchMod
-            ? `<i class="fa-solid fa-right-left" aria-hidden="true"></i><span>Switch Mod</span>`
-            : `<i class="fa-solid fa-play" aria-hidden="true"></i><span>${button.dataset.launchLabel}</span>`;
-      });
+      gridContainer
+        .querySelectorAll(".mod-manager-launch-btn")
+        .forEach((button) => {
+          if (button.disabled) return;
+          const isStandalone = button.dataset.launchKind === "standalone";
+          const engine = isStandalone
+            ? null
+            : {
+                id: button.dataset.engineId,
+                version: button.dataset.engineVersion,
+              };
+          const state = FS.getModLaunchState(
+            { id: button.dataset.modId },
+            engine,
+            isStandalone,
+          );
+          const isRunning = state === "running";
+          const canSwitchMod = state === "switch";
+          button.classList.toggle("is-running", isRunning);
+          button.classList.toggle("is-switchable", canSwitchMod);
+          button.setAttribute(
+            "aria-label",
+            `${isRunning ? "Close" : canSwitchMod ? "Switch Mod" : button.dataset.launchLabel} ${button.dataset.modName}`,
+          );
+          button.innerHTML = isRunning
+            ? `<i class="fa-solid fa-play mod-manager-running-icon" aria-hidden="true"></i><span class="mod-manager-running-label">Running</span><span class="mod-manager-close-label"><i class="fa-solid fa-xmark" aria-hidden="true"></i><span>Click to Close</span></span>`
+            : canSwitchMod
+              ? `<i class="fa-solid fa-right-left" aria-hidden="true"></i><span>Switch Mod</span>`
+              : `<i class="fa-solid fa-play" aria-hidden="true"></i><span>${button.dataset.launchLabel}</span>`;
+        });
     };
 
     for (const mod of mods) {
@@ -215,7 +243,11 @@ export const modManagerModal = {
       const isExecutable = standaloneModIds.has(mod.id);
       const engine = isExecutable
         ? null
-        : installedEngines.find((item) => item.id === mod.engineId);
+        : installedEngines.find(
+            (item) =>
+              item.id === mod.engineId &&
+              (!mod.engineVersion || item.version === mod.engineVersion),
+          );
       let engineBadgeHtml = `<div class="mod-manager-engine-badge"><i class="fa-solid fa-question-circle"></i><span>Unassigned</span></div>`;
 
       if (isExecutable) {
@@ -226,10 +258,32 @@ export const modManagerModal = {
           </div>`;
       } else if (ENGINE_DETAILS[mod.engineId]) {
         const engineInfo = ENGINE_DETAILS[mod.engineId];
+        const versionOptions = [
+          "Any version",
+          ...installedEngines
+            .filter((item) => item.id === mod.engineId)
+            .map((item) => item.version),
+        ];
+        const selectedVersion = mod.engineVersion || "Any version";
         engineBadgeHtml = `
-          <div class="mod-manager-engine-badge">
-            <img src="assets/icons/${engineInfo.icon}" alt=""/>
-            <span>${engineInfo.name}</span>
+          <div class="mod-manager-engine-compatibility">
+            <div class="mod-manager-engine-badge">
+              <img src="assets/icons/${engineInfo.icon}" alt=""/>
+              <span>${engineInfo.name}</span>
+            </div>
+            <div class="mod-manager-version-picker">
+              <button class="mod-manager-version-pill" type="button" aria-expanded="false">
+                <span>${selectedVersion}</span><i class="fa-solid fa-chevron-down" aria-hidden="true"></i>
+              </button>
+              <div class="mod-manager-version-menu" hidden>
+                ${versionOptions
+                  .map(
+                    (version) =>
+                      `<button type="button" data-version="${version === "Any version" ? "" : version}" class="${version === selectedVersion ? "selected" : ""}">${version}</button>`,
+                  )
+                  .join("")}
+              </div>
+            </div>
           </div>`;
       }
 
@@ -278,6 +332,30 @@ export const modManagerModal = {
 
       const deleteBtn = card.querySelector(".mod-manager-delete-btn");
       const launchBtn = card.querySelector(".mod-manager-launch-btn");
+      const versionPill = card.querySelector(".mod-manager-version-pill");
+      const versionMenu = card.querySelector(".mod-manager-version-menu");
+      versionPill?.addEventListener("click", (event) => {
+        event.stopPropagation();
+        const open = versionMenu.hidden;
+        closeVersionPickers();
+        versionMenu.hidden = !open;
+        versionPill.setAttribute("aria-expanded", String(open));
+        card.classList.toggle("version-menu-open", open);
+      });
+      versionMenu?.addEventListener("click", async (event) => {
+        const option = event.target.closest("button[data-version]");
+        if (!option) return;
+        event.stopPropagation();
+        card.classList.remove("version-menu-open");
+        versionPill.disabled = true;
+        try {
+          await FS.setModEngineVersion(mod.id, option.dataset.version || null);
+          await this.loadInstalledMods();
+        } catch (error) {
+          console.error("Could not set mod engine version", error);
+          versionPill.disabled = false;
+        }
+      });
       launchBtn.addEventListener("click", async () => {
         launchBtn.disabled = true;
         try {
