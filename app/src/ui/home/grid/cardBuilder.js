@@ -91,7 +91,7 @@ export function createCard(mod, index) {
   let engineBadgeHtml = `
     <div class="home-engine-badge grid-engine-badge">
       <i class="fa-solid fa-question-circle"></i>
-      <span>Unassigned</span>
+      <span>${mod.gameId === 8694 ? "FNF Mod" : "Unassigned"}</span>
     </div>
   `;
   const engine = ENGINE_DETAILS[mod.engineId];

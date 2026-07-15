@@ -10,6 +10,9 @@ export const gameBananaApi = {
   gameId: 8694,
   categoryRoots: ENGINE_CATEGORY_ROOTS,
   engineCategories: ENGINE_CATEGORY_IDS,
+  legacyEngineCategories: {
+    43774: "vslice", // Originals / Full Mods (Base)
+  },
   featuredUrl:
     "https://raw.githubusercontent.com/Crew-Awesome/weekbox.featured/main/public/featured.json",
   featuredCacheKey: "weekbox-featured-v2",
@@ -38,7 +41,17 @@ export const gameBananaApi = {
   },
 
   getEngineIdForCategory(categoryId) {
-    return this.engineCategories[Number(categoryId)] || null;
+    const id = Number(categoryId);
+    return this.engineCategories[id] || this.legacyEngineCategories[id] || null;
+  },
+
+  getCategoryId(category) {
+    if (!category || typeof category !== "object") return null;
+    const id =
+      category._idRow ||
+      category._idCategory ||
+      category._sProfileUrl?.match(/\/mods\/cats\/(\d+)/)?.[1];
+    return Number.isFinite(Number(id)) ? Number(id) : null;
   },
 
   // 1. Detección Inteligente y recursiva de categorías y motores
@@ -63,7 +76,7 @@ export const gameBananaApi = {
       seen.add(category);
 
       const engineId = this.getEngineIdForCategory(
-        category._idRow || category._idCategory,
+        this.getCategoryId(category),
       );
       if (engineId) return engineId;
 
@@ -139,9 +152,12 @@ export const gameBananaApi = {
         images: images,
         fileSizeStr: this.formatBytes(fileSize),
         downloadUrl: downloadUrl,
+        gameId: Number(data._aGame?._idRow || data._idGame || 0),
         engineId: this.getEngineIdForCategories(
           data._aCategory,
           data._aSuperCategory,
+          data._aRootCategory,
+          data._aSubCategory,
           data._idCategory,
         ),
       };
@@ -219,6 +235,7 @@ export const gameBananaApi = {
       id: mod._idRow,
       title: mod._sName,
       author: mod._aSubmitter?._sName || "Unknown",
+      gameId: Number(mod._aGame?._idRow || mod._idGame || 0),
       image: this.getImageUrl(mod),
       likes: mod._nLikeCount || 0,
       views: mod._nViewCount || 0,
@@ -227,6 +244,8 @@ export const gameBananaApi = {
         mod.__injectedCategoryId, // Pasamos el ID inyectado primero para prioridad
         mod._aCategory,
         mod._aSuperCategory,
+        mod._aRootCategory,
+        mod._aSubCategory,
         mod._idCategory,
       ),
     };
@@ -365,11 +384,12 @@ export const gameBananaApi = {
 
       if (page === 1 && idMatch && idMatch[1]) {
         const specificMod = await this.getModDetails(idMatch[1]);
-        if (specificMod) {
+        if (specificMod?.gameId === this.gameId) {
           directMod = {
             id: specificMod.id,
             title: specificMod.title,
             author: specificMod.author,
+            gameId: specificMod.gameId,
             image: specificMod.images[0],
             likes: specificMod.likes,
             views: specificMod.views,
@@ -385,10 +405,15 @@ export const gameBananaApi = {
         _nPage: String(page),
         _nPerpage: String(perPage),
       });
+      params.set("_aFilters[Generic_Game]", String(this.gameId));
       const res = await fetch(`${this.baseUrl}/Util/Search/Results?${params}`);
       if (!res.ok) throw new Error("Mod search failed");
       const data = await res.json();
-      const records = this.getValidRecords(data);
+      const records = this.getValidRecords(data).filter(
+        (mod) =>
+          mod._sModelName === "Mod" &&
+          Number(mod._aGame?._idRow || mod._idGame) === this.gameId,
+      );
 
       let parsedMods = [
         ...new Map(records.map((mod) => [mod._idRow, mod])).values(),
