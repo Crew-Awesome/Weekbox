@@ -1,5 +1,6 @@
 import { router } from "../core/router.js";
 import { setSelectedEngine } from "../core/state.js";
+import { getEngineReleaseVersions } from "../api/githubReleaseProvider.js";
 import { modManagerModal } from "./mod-manager/index.js";
 import { engineManagerModal } from "./engine-manager/index.js";
 import { FS } from "../utils/filesystem.js";
@@ -117,13 +118,12 @@ export const sidebar = {
             const originalText = btn.querySelector("span").textContent;
             btn.querySelector("span").innerHTML =
               `<i class="fa-solid fa-spinner fa-spin" style="margin-right:4px;"></i> Loading...`;
-            const verResponse = await fetch(
-              `src/data/${engineDef.versions}.json`,
+            const releaseVersions = await getEngineReleaseVersions(
+              engineDef.versions,
             );
-            if (!verResponse.ok)
-              throw new Error(`Failed to load ${engineDef.versions}.json`);
-            const rawVersionsData = await verResponse.json();
-            const processedVersionsData = rawVersionsData.map((item) => {
+            if (releaseVersions.length === 0)
+              throw new Error("No compatible releases available");
+            const processedVersionsData = releaseVersions.map((item) => {
               const sampleLink =
                 item.win ||
                 item.win64 ||
