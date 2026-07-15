@@ -1,5 +1,7 @@
 import { FeaturedService } from "./gamebanana/featuredService.js";
 import { CategoryFeedService } from "./gamebanana/categoryFeedService.js";
+import { GameBananaTransport } from "./gamebanana/transport.js";
+import { DISCOVERY_CONFIG } from "../config/discovery.js";
 import {
   ENGINE_CATEGORY_IDS,
   ENGINE_CATEGORY_ROOTS,
@@ -16,17 +18,11 @@ export const gameBananaApi = {
   featuredUrl:
     "https://raw.githubusercontent.com/Crew-Awesome/weekbox.featured/main/public/featured.json",
   featuredCacheKey: "weekbox-featured-v2",
-  currentFreshCategoryId: undefined,
-  freshPopularRecords: [],
-  freshPopularNextPage: 1,
-  freshPopularFallbackPage: 1,
-  freshPopularUsingFallback: false,
-  freshPopularExhausted: false,
-  freshPopularPages: new Map(),
-  freshPopularSeenIds: new Set(),
   searchCache: new Map(),
   featuredService: null,
   categoryFeedService: null,
+  categoryTransport: null,
+  discoveryConfig: DISCOVERY_CONFIG,
 
   getImageUrl(mod) {
     if (
@@ -178,58 +174,6 @@ export const gameBananaApi = {
     return this.featuredService.getCarousel();
   },
 
-  getCategories(categoryId = null) {
-    return this.getCategoryFeed().getCategories(categoryId);
-  },
-
-  getRecordSortValue(mod, sort) {
-    return this.getCategoryFeed().getSortValue(mod, sort);
-  },
-
-  // 3. Inyección artificial de categoryId a los resultados del grid
-  async getCategoryRecords({
-    page = 1,
-    perPage = 20,
-    sort,
-    categoryId = null,
-  } = {}) {
-    const categoriesToFetch = this.getCategories(categoryId);
-    const responses = await Promise.allSettled(
-      categoriesToFetch.map(async (id) => {
-        const params = new URLSearchParams({
-          _nPage: String(page),
-          _nPerpage: String(perPage),
-        });
-        params.set("_aFilters[Generic_Game]", String(this.gameId));
-        params.set("_aFilters[Generic_Category]", String(id));
-        if (sort) params.set("_sSort", sort);
-        const response = await fetch(`${this.baseUrl}/Mod/Index?${params}`);
-        if (!response.ok) throw new Error();
-
-        const records = this.getValidRecords(await response.json());
-        // Inyectamos el ID explícitamente porque GB API aveces lo omite de la respuesta en Index
-        return records.map((record) => ({
-          ...record,
-          __injectedCategoryId: id,
-        }));
-      }),
-    );
-    const records = responses
-      .filter((result) => result.status === "fulfilled")
-      .flatMap((result) => result.value);
-    if (
-      records.length === 0 &&
-      responses.every((result) => result.status === "rejected")
-    ) {
-      throw new Error("GameBanana category requests failed");
-    }
-    return [...new Map(records.map((mod) => [mod._idRow, mod])).values()].sort(
-      (left, right) =>
-        this.getRecordSortValue(right, sort) -
-        this.getRecordSortValue(left, sort),
-    );
-  },
-
   toGridMod(mod) {
     return {
       id: mod._idRow,
@@ -251,106 +195,23 @@ export const gameBananaApi = {
     };
   },
 
-  getPopularScore(mod) {
-    const likes = mod._nLikeCount || 0;
-    const views = mod._nViewCount || 0;
-    const ageDays = Math.max(
-      0,
-      (Date.now() / 1000 - (mod._tsDateAdded || 0)) / 86400,
-    );
-    const likeRate = likes / Math.max(views, 1);
-    const momentum =
-      Math.log1p(likes / Math.sqrt(Math.max(ageDays, 1))) +
-      0.4 * Math.log1p(likes);
-    const qualityMultiplier = 0.7 + Math.min(0.5, likeRate * 30);
-    const freshnessMultiplier = Math.exp(-ageDays / 45);
-    return momentum * qualityMultiplier * freshnessMultiplier;
-  },
-
-  isFreshPopularMod(mod) {
-    const ageDays = (Date.now() / 1000 - (mod._tsDateAdded || 0)) / 86400;
-    const likes = mod._nLikeCount || 0;
-    const views = mod._nViewCount || 0;
-    const likeRate = likes / Math.max(views, 1);
-    return ageDays <= 90 && likes >= 4 && views >= 250 && likeRate >= 0.0125;
-  },
-
-  isEstablishedPopularMod(mod) {
-    const likes = mod._nLikeCount || 0;
-    const views = mod._nViewCount || 0;
-    const likeRate = likes / Math.max(views, 1);
-    return likes >= 8 && views >= 500 && likeRate >= 0.01;
-  },
-
-  async getFreshPopularMods(page, categoryId) {
-    if (page === 1 || this.currentFreshCategoryId !== categoryId) {
-      this.currentFreshCategoryId = categoryId;
-      this.freshPopularRecords = [];
-      this.freshPopularNextPage = 1;
-      this.freshPopularFallbackPage = 1;
-      this.freshPopularUsingFallback = false;
-      this.freshPopularExhausted = false;
-      this.freshPopularPages = new Map();
-      this.freshPopularSeenIds = new Set();
-    }
-    if (this.freshPopularPages.has(page))
-      return this.freshPopularPages.get(page);
-    let available = [];
-    while (!this.freshPopularExhausted) {
-      available = [...this.freshPopularRecords]
-        .filter((mod) => !this.freshPopularSeenIds.has(mod._idRow))
-        .sort(
-          (left, right) =>
-            this.getPopularScore(right) - this.getPopularScore(left),
-        );
-      if (available.length >= 12) break;
-      try {
-        const isFallback = this.freshPopularUsingFallback;
-        const records = await this.getCategoryRecords({
-          page: isFallback
-            ? this.freshPopularFallbackPage++
-            : this.freshPopularNextPage++,
-          perPage: 50,
-          sort: isFallback ? "Generic_MostLiked" : "Generic_Newest",
-          categoryId: categoryId,
-        });
-        const eligibleRecords = records.filter((mod) =>
-          isFallback
-            ? this.isEstablishedPopularMod(mod)
-            : this.isFreshPopularMod(mod),
-        );
-        const knownIds = new Set(
-          this.freshPopularRecords.map((mod) => mod._idRow),
-        );
-        this.freshPopularRecords.push(
-          ...eligibleRecords.filter((mod) => !knownIds.has(mod._idRow)),
-        );
-        if (records.length === 0 || eligibleRecords.length === 0) {
-          if (isFallback) this.freshPopularExhausted = true;
-          else this.freshPopularUsingFallback = true;
-        }
-      } catch (err) {
-        this.freshPopularExhausted = true;
-      }
-    }
-    const mods = available.slice(0, 12).map((mod) => this.toGridMod(mod));
-    mods.forEach((mod) => this.freshPopularSeenIds.add(mod.id));
-    this.freshPopularPages.set(page, mods);
-    return mods;
-  },
-
-  async getGridMods(filter = "popular", page = 1, categoryId = null) {
-    return this.getCategoryFeed().getGridMods(filter, page, categoryId);
+  async getGridMods(filter = "popular", page = 1, categoryId = null, options = {}) {
+    return this.getCategoryFeed().getGridMods(filter, page, categoryId, options);
   },
 
   getCategoryFeed() {
     if (!this.categoryFeedService) {
-      this.categoryFeedService = new CategoryFeedService({
+      this.categoryTransport = new GameBananaTransport({
         baseUrl: this.baseUrl,
+        config: this.discoveryConfig,
+      });
+      this.categoryFeedService = new CategoryFeedService({
+        transport: this.categoryTransport,
         gameId: this.gameId,
         categoryRoots: this.categoryRoots,
         getRecords: this.getValidRecords.bind(this),
         toGridMod: this.toGridMod.bind(this),
+        getEngineId: (mod, categoryId) => this.getEngineIdForCategories(categoryId, mod._aCategory, mod._aSuperCategory, mod._aRootCategory, mod._aSubCategory, mod._idCategory),
       });
     }
     return this.categoryFeedService;

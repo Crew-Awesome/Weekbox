@@ -6,6 +6,7 @@ export const gridRender = {
   async renderGrid(isInitial = false) {
     if (gridState.isLoading) {
       if (isInitial) {
+        gridState.discoveryController?.abort();
         gridState.renderVersion++;
         gridState.pendingInitialRender = true;
       }
@@ -15,8 +16,12 @@ export const gridRender = {
     const grid = document.getElementById("popular-grid");
     if (!grid) return;
     const renderVersion = ++gridState.renderVersion;
+    const requestedPage = isInitial ? 1 : gridState.currentPage + 1;
 
     if (isInitial) {
+      gridState.discoveryController?.abort();
+      gridState.discoveryController = new AbortController();
+      gridState.discoverySnapshotId = null;
       gridState.currentPage = 1;
       gridState.hasMore = true;
       grid.replaceChildren();
@@ -27,23 +32,32 @@ export const gridRender = {
     if (!isInitial) this.showLoadMoreIndicator(grid);
 
     try {
-      const mods = gridState.isSearchMode
+      const response = gridState.isSearchMode
         ? await gameBananaApi.searchMods(
             gridState.searchQuery,
-            gridState.currentPage,
+            requestedPage,
             12,
           )
         : await gameBananaApi.getGridMods(
             gridState.currentFilter,
-            gridState.currentPage,
+            requestedPage,
             gridState.currentCategoryId,
+            { snapshotId: gridState.discoverySnapshotId, signal: gridState.discoveryController?.signal },
           );
+      const result = Array.isArray(response) ? { mods: response, exhausted: response.length < 12 } : response;
+      const mods = result.mods;
 
       if (renderVersion !== gridState.renderVersion) return;
 
       if (mods.length === 0 && isInitial) {
-        grid.textContent = "No mods found.";
-        grid.classList.add("grid-empty");
+        if (result.sourceErrors?.length) {
+          grid.textContent = "Discovery is temporarily unavailable.";
+          grid.classList.add("grid-error");
+          gridState.status = "error";
+        } else {
+          grid.textContent = "No mods found.";
+          grid.classList.add("grid-empty");
+        }
         return;
       }
 
@@ -54,12 +68,18 @@ export const gridRender = {
       }
 
       mods.forEach((mod, index) => grid.appendChild(createCard(mod, index)));
-      if (mods.length < 12) gridState.hasMore = false;
-    } catch {
+      if (result.snapshotId) gridState.discoverySnapshotId = result.snapshotId;
+      gridState.currentPage = requestedPage;
+      gridState.hasMore = !result.exhausted && mods.length === 12;
+      gridState.status = result.stale ? "stale" : result.partial ? "partial" : result.exhausted ? "exhausted" : "ready";
+      return true;
+    } catch (error) {
+      if (error?.kind === "aborted") return false;
       if (isInitial && renderVersion === gridState.renderVersion) {
         grid.textContent = "Failed to load mods.";
         grid.classList.add("grid-error");
       }
+      return false;
     } finally {
       this.hideLoadMoreIndicator(grid);
       gridState.isLoading = false;

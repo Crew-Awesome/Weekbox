@@ -8,4 +8,7 @@ export const gridState = {
   hasMore: true,
   renderVersion: 0,
   pendingInitialRender: false,
+  discoverySnapshotId: null,
+  discoveryController: null,
+  status: "ready",
 };

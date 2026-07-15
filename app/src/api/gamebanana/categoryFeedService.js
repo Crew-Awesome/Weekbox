@@ -1,11 +1,25 @@
+import { DISCOVERY_CONFIG } from "../../config/discovery.js";
+import { CandidateCollector } from "./candidateCollector.js";
+import { createDiscoveryResult, normalizeDiscoveryCandidate } from "./discoveryShapes.js";
+import { applyDiversity, rankCandidates } from "./discoveryRanker.js";
+import { MetricHistoryStore } from "./metricHistoryStore.js";
+import { DiscoverySnapshotStore } from "./discoverySnapshotStore.js";
+
 export class CategoryFeedService {
-  constructor({ baseUrl, gameId, categoryRoots, getRecords, toGridMod }) {
-    this.baseUrl = baseUrl;
+  constructor({ transport, gameId, categoryRoots, getRecords, toGridMod, getEngineId, config }) {
+    this.transport = transport;
     this.gameId = gameId;
     this.categoryRoots = categoryRoots;
     this.getRecords = getRecords;
     this.toGridMod = toGridMod;
-    this.resetDiscovery();
+    this.config = config || DISCOVERY_CONFIG;
+    this.getEngineId = getEngineId || (() => null);
+    this.history = new MetricHistoryStore();
+    this.snapshots = new DiscoverySnapshotStore({ config: this.config });
+    this.collector = new CandidateCollector({ transport, gameId, categoryRoots, getRecords,
+      normalizeCandidate: (raw, context) => normalizeDiscoveryCandidate(raw, {
+        ...context, engineId: this.getEngineId(raw, context.categoryId),
+      }), config: this.config });
   }
 
   getCategories(categoryId) {
@@ -27,16 +41,14 @@ export class CategoryFeedService {
   async getCategoryRecords({ page = 1, perPage = 20, sort, categoryId } = {}) {
     const responses = await Promise.allSettled(
       this.getCategories(categoryId).map(async (id) => {
-        const params = new URLSearchParams({
-          _nPage: String(page),
-          _nPerpage: String(perPage),
+        const data = await this.transport.getModIndex({
+          gameId: this.gameId,
+          categoryId: id,
+          page,
+          perPage,
+          sort,
         });
-        params.set("_aFilters[Generic_Game]", String(this.gameId));
-        params.set("_aFilters[Generic_Category]", String(id));
-        if (sort) params.set("_sSort", sort);
-        const response = await fetch(`${this.baseUrl}/Mod/Index?${params}`);
-        if (!response.ok) throw new Error("Category request failed");
-        return this.getRecords(await response.json()).map((record) => ({
+        return this.getRecords(data).map((record) => ({
           ...record,
           __injectedCategoryId: id,
         }));
@@ -57,105 +69,43 @@ export class CategoryFeedService {
     );
   }
 
-  resetDiscovery(categoryId) {
-    this.discoveryCategoryId = categoryId;
-    this.discoveryRecords = [];
-    this.discoveryNextPage = 1;
-    this.discoveryFallbackPage = 1;
-    this.discoveryUsingFallback = false;
-    this.discoveryExhausted = false;
-    this.discoveryPages = new Map();
-    this.discoverySeenIds = new Set();
-  }
-
-  getPopularScore(mod) {
-    const likes = mod._nLikeCount || 0;
-    const views = mod._nViewCount || 0;
-    const ageDays = Math.max(
-      0,
-      (Date.now() / 1000 - (mod._tsDateAdded || 0)) / 86400,
-    );
-    const likeRate = likes / Math.max(views, 1);
-    return (
-      (Math.log1p(likes / Math.sqrt(Math.max(ageDays, 1))) +
-        0.4 * Math.log1p(likes)) *
-      (0.7 + Math.min(0.5, likeRate * 30)) *
-      Math.exp(-ageDays / 45)
-    );
-  }
-
-  isFreshPopular(mod) {
-    const ageDays = (Date.now() / 1000 - (mod._tsDateAdded || 0)) / 86400;
-    const likes = mod._nLikeCount || 0;
-    const views = mod._nViewCount || 0;
-    return (
-      ageDays <= 90 &&
-      likes >= 4 &&
-      views >= 250 &&
-      likes / Math.max(views, 1) >= 0.0125
-    );
-  }
-
-  isEstablishedPopular(mod) {
-    const likes = mod._nLikeCount || 0;
-    const views = mod._nViewCount || 0;
-    return likes >= 8 && views >= 500 && likes / Math.max(views, 1) >= 0.01;
-  }
-
-  async getDiscovery(page, categoryId) {
-    if (page === 1 || this.discoveryCategoryId !== categoryId)
-      this.resetDiscovery(categoryId);
-    if (this.discoveryPages.has(page)) return this.discoveryPages.get(page);
-    let available = [];
-    while (!this.discoveryExhausted) {
-      available = this.discoveryRecords
-        .filter((mod) => !this.discoverySeenIds.has(mod._idRow))
-        .sort(
-          (left, right) =>
-            this.getPopularScore(right) - this.getPopularScore(left),
-        );
-      if (available.length >= 12) break;
-      try {
-        const isFallback = this.discoveryUsingFallback;
-        const records = await this.getCategoryRecords({
-          page: isFallback
-            ? this.discoveryFallbackPage++
-            : this.discoveryNextPage++,
-          perPage: 50,
-          sort: isFallback ? "Generic_MostLiked" : "Generic_Newest",
-          categoryId,
-        });
-        const eligible = records.filter((mod) =>
-          isFallback
-            ? this.isEstablishedPopular(mod)
-            : this.isFreshPopular(mod),
-        );
-        const known = new Set(this.discoveryRecords.map((mod) => mod._idRow));
-        this.discoveryRecords.push(
-          ...eligible.filter((mod) => !known.has(mod._idRow)),
-        );
-        if (!records.length || !eligible.length) {
-          if (isFallback) this.discoveryExhausted = true;
-          else this.discoveryUsingFallback = true;
-        }
-      } catch (error) {
-        this.discoveryExhausted = true;
+  async getDiscovery(page, categoryId, { snapshotId, signal } = {}) {
+    const queryKey = `popular:${categoryId || "all"}`;
+    const now = Date.now();
+    let snapshot = snapshotId && this.snapshots.byId(snapshotId);
+    const staleCandidate = !snapshot && this.snapshots.getStale(queryKey, now);
+    if (!snapshot || snapshot.queryKey !== queryKey) snapshot = this.snapshots.get(queryKey, now) || this.snapshots.create(queryKey, now);
+    if (!snapshot.orderedIds.length || (page - 1) * this.config.pageSize >= snapshot.orderedIds.length) {
+      const collection = await this.collector.collect(snapshot, { categoryId, signal });
+      if (!snapshot.candidatesById.size && collection.errors.length && staleCandidate) {
+        const ids = staleCandidate.orderedIds.slice((page - 1) * this.config.pageSize, page * this.config.pageSize);
+        return createDiscoveryResult({ mods: ids.map((id) => this.toGridMod(staleCandidate.candidatesById.get(id).raw)), page, pageSize: this.config.pageSize,
+          snapshotId: staleCandidate.id, stale: true, exhausted: page * this.config.pageSize >= staleCandidate.orderedIds.length,
+          sourceErrors: collection.errors, diagnostics: { candidateCount: staleCandidate.candidatesById.size } });
       }
+      const candidates = [...snapshot.candidatesById.values()];
+      const ranked = applyDiversity(rankCandidates(candidates, { snapshotCreatedAt: snapshot.createdAt / 1000, config: this.config,
+        history: this.history.getMany(candidates.map((item) => item.id)) }), { config: this.config, singleEngine: Boolean(categoryId) });
+      const known = new Set(snapshot.orderedIds);
+      snapshot.orderedIds.push(...ranked.map((item) => item.id).filter((id) => !known.has(id)));
+      this.history.observe(candidates, snapshot.createdAt / 1000);
+      snapshot.generatedPageCount = Math.max(snapshot.generatedPageCount, page);
+      snapshot.partial = collection.partial;
     }
-    const mods = available.slice(0, 12).map(this.toGridMod);
-    mods.forEach((mod) => this.discoverySeenIds.add(mod.id));
-    this.discoveryPages.set(page, mods);
-    return mods;
+    const ids = snapshot.orderedIds.slice((page - 1) * this.config.pageSize, page * this.config.pageSize);
+    return createDiscoveryResult({ mods: ids.map((id) => this.toGridMod(snapshot.candidatesById.get(id).raw)), page,
+      pageSize: this.config.pageSize, snapshotId: snapshot.id, exhausted: snapshot.exhausted && page * this.config.pageSize >= snapshot.orderedIds.length,
+      partial: Boolean(snapshot.partial), sourceErrors: snapshot.errors, diagnostics: { candidateCount: snapshot.candidatesById.size } });
   }
 
-  async getGridMods(filter = "popular", page = 1, categoryId = null) {
+  async getGridMods(filter = "popular", page = 1, categoryId = null, options = {}) {
+    if (filter === "popular") return this.getDiscovery(page, categoryId, options);
     try {
-      if (filter === "popular") return this.getDiscovery(page, categoryId);
       const sort =
         { new: "Generic_Newest", updated: "Generic_LatestUpdated" }[filter] ||
         "Generic_Newest";
       return (await this.getCategoryRecords({ page, sort, categoryId }))
-        .slice(0, 12)
+        .slice(0, this.config.pageSize)
         .map(this.toGridMod);
     } catch (error) {
       return [];
