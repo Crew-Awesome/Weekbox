@@ -1,64 +1,116 @@
 export class CandidateCollector {
-  constructor({ transport, gameId, categoryRoots, getRecords, normalizeCandidate, config }) {
-    Object.assign(this, { transport, gameId, categoryRoots, getRecords, normalizeCandidate, config });
+  constructor({
+    transport,
+    gameId,
+    categoryRoots,
+    getRecords,
+    normalizeCandidate,
+    config,
+  }) {
+    Object.assign(this, {
+      transport,
+      gameId,
+      categoryRoots,
+      getRecords,
+      normalizeCandidate,
+      config,
+    });
   }
 
   async collect(snapshot, { categoryId, signal }) {
-    const categories = this.categoryRoots.includes(categoryId) ? [categoryId] : this.categoryRoots;
+    const categories = this.categoryRoots.includes(categoryId)
+      ? [categoryId]
+      : this.categoryRoots;
+    const sources = [
+      {
+        name: "newest",
+        sort: "Generic_Newest",
+        pages: this.config.newestMaxPagesPerCategory,
+      },
+      {
+        name: "mostLiked",
+        sort: "Generic_MostLiked",
+        pages: this.config.mostLikedMaxPagesPerCategory,
+      },
+    ];
     const errors = [];
-    const seenSignatures = new Set();
+    const seen = new Set();
     let requests = 0;
-    for (let page = 1; page <= this.config.newestMaxPagesPerCategory && requests < this.config.maxRequestsPerSnapshot; page++) {
-      const batch = [];
-      for (const id of categories) {
-        if (requests + batch.length >= this.config.maxRequestsPerSnapshot) break;
-        batch.push({ id, page });
-      }
-      const outcomes = [];
-      for (let index = 0; index < batch.length; index += this.config.maxConcurrentRequests) {
-        outcomes.push(...await Promise.allSettled(batch.slice(index, index + this.config.maxConcurrentRequests)
-          .map(({ id, page: sourcePage }) => this.fetchSource(id, sourcePage, "Generic_Newest", signal))));
-      }
-      const aborted = outcomes.find((outcome) => outcome.status === "rejected" && outcome.reason?.kind === "aborted");
-      if (aborted) throw aborted.reason;
-      requests += outcomes.length;
-      batch.forEach((source) => {
-        snapshot.sourceCursors[`${source.id}:newest`] = source.page;
-      });
-      outcomes.forEach((outcome, index) => {
-        const source = batch[index];
-        if (outcome.status === "rejected") { if (outcome.reason?.kind !== "aborted") errors.push({ categoryId: source.id, kind: outcome.reason?.kind || "network" }); return; }
-        const signature = outcome.value.map((item) => item._idRow).join(",");
-        if (!outcome.value.length || seenSignatures.has(`${source.id}:${signature}`)) return;
-        seenSignatures.add(`${source.id}:${signature}`);
-        outcome.value.forEach((raw) => {
-          const candidate = this.normalizeCandidate(raw, { categoryId: source.id });
-          if (candidate.id) snapshot.candidatesById.set(candidate.id, candidate);
-        });
-      });
-      if (snapshot.candidatesById.size >= this.config.initialCandidateTarget) break;
-    }
-    if (snapshot.candidatesById.size < this.config.initialCandidateTarget && requests < this.config.maxRequestsPerSnapshot) {
-      for (let page = 1; page <= this.config.mostLikedMaxPagesPerCategory && requests < this.config.maxRequestsPerSnapshot; page++) {
-        for (const id of categories) {
-          if (requests++ >= this.config.maxRequestsPerSnapshot) break;
-          try { (await this.fetchSource(id, page, "Generic_MostLiked", signal)).forEach((raw) => {
-            const candidate = this.normalizeCandidate(raw, { categoryId: id }); if (candidate.id) snapshot.candidatesById.set(candidate.id, candidate);
-          }); snapshot.sourceCursors[`${id}:mostLiked`] = page; } catch (error) { if (error?.kind === "aborted") throw error; errors.push({ categoryId: id, kind: error?.kind || "network" }); }
+
+    for (let page = 1; requests < this.config.maxRequestsPerSnapshot; page++) {
+      let requestedThisRound = false;
+      for (const source of sources) {
+        if (
+          page > source.pages ||
+          requests >= this.config.maxRequestsPerSnapshot
+        )
+          continue;
+        requestedThisRound = true;
+        const batch = categories
+          .slice(0, this.config.maxRequestsPerSnapshot - requests)
+          .map((id) => ({ id, page, source }));
+        for (
+          let index = 0;
+          index < batch.length;
+          index += this.config.maxConcurrentRequests
+        ) {
+          const group = batch.slice(
+            index,
+            index + this.config.maxConcurrentRequests,
+          );
+          const outcomes = await Promise.allSettled(
+            group.map(({ id, page: sourcePage, source: itemSource }) =>
+              this.fetchSource(id, sourcePage, itemSource.sort, signal),
+            ),
+          );
+          requests += outcomes.length;
+          outcomes.forEach((outcome, outcomeIndex) => {
+            const request = group[outcomeIndex];
+            snapshot.sourceCursors[`${request.id}:${request.source.name}`] =
+              request.page;
+            if (outcome.status === "rejected") {
+              if (outcome.reason?.kind === "aborted") throw outcome.reason;
+              errors.push({
+                categoryId: request.id,
+                kind: outcome.reason?.kind || "network",
+              });
+              return;
+            }
+            for (const raw of outcome.value) {
+              if (seen.has(raw._idRow)) continue;
+              seen.add(raw._idRow);
+              const candidate = this.normalizeCandidate(raw, {
+                categoryId: request.id,
+              });
+              if (candidate.id)
+                snapshot.candidatesById.set(candidate.id, candidate);
+            }
+          });
         }
       }
+      if (!requestedThisRound) break;
     }
-    snapshot.errors.push(...errors); snapshot.exhausted = requests >= this.config.maxRequestsPerSnapshot || snapshot.candidatesById.size < this.config.initialCandidateTarget;
+
+    snapshot.errors.push(...errors);
+    snapshot.exhausted = requests >= this.config.maxRequestsPerSnapshot;
     return { errors, partial: errors.length > 0 };
   }
 
   async fetchSource(categoryId, page, sort, signal) {
-    const data = await this.transport.getModIndex({ gameId: this.gameId, categoryId, page, perPage: this.config.sourcePerPage, sort, signal });
-    if (!Array.isArray(data) && !Array.isArray(data?._aRecords)) {
-      const error = new Error("Category response schema was invalid"); error.kind = "schema"; throw error;
-    }
+    const data = await this.transport.getModIndex({
+      gameId: this.gameId,
+      categoryId,
+      page,
+      perPage: this.config.sourcePerPage,
+      sort,
+      signal,
+    });
     const records = this.getRecords(data);
-    if (!Array.isArray(records)) { const error = new Error("Category response schema was invalid"); error.kind = "schema"; throw error; }
+    if (!Array.isArray(records)) {
+      const error = new Error("Category response schema was invalid");
+      error.kind = "schema";
+      throw error;
+    }
     return records;
   }
 }

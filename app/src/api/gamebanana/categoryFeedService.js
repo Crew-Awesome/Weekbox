@@ -1,12 +1,22 @@
 import { DISCOVERY_CONFIG } from "../../config/discovery.js";
 import { CandidateCollector } from "./candidateCollector.js";
-import { createDiscoveryResult, normalizeDiscoveryCandidate } from "./discoveryShapes.js";
+import {
+  createDiscoveryResult,
+  normalizeDiscoveryCandidate,
+} from "./discoveryShapes.js";
 import { applyDiversity, rankCandidates } from "./discoveryRanker.js";
-import { MetricHistoryStore } from "./metricHistoryStore.js";
 import { DiscoverySnapshotStore } from "./discoverySnapshotStore.js";
 
 export class CategoryFeedService {
-  constructor({ transport, gameId, categoryRoots, getRecords, toGridMod, getEngineId, config }) {
+  constructor({
+    transport,
+    gameId,
+    categoryRoots,
+    getRecords,
+    toGridMod,
+    getEngineId,
+    config,
+  }) {
     this.transport = transport;
     this.gameId = gameId;
     this.categoryRoots = categoryRoots;
@@ -14,12 +24,19 @@ export class CategoryFeedService {
     this.toGridMod = toGridMod;
     this.config = config || DISCOVERY_CONFIG;
     this.getEngineId = getEngineId || (() => null);
-    this.history = new MetricHistoryStore();
     this.snapshots = new DiscoverySnapshotStore({ config: this.config });
-    this.collector = new CandidateCollector({ transport, gameId, categoryRoots, getRecords,
-      normalizeCandidate: (raw, context) => normalizeDiscoveryCandidate(raw, {
-        ...context, engineId: this.getEngineId(raw, context.categoryId),
-      }), config: this.config });
+    this.collector = new CandidateCollector({
+      transport,
+      gameId,
+      categoryRoots,
+      getRecords,
+      normalizeCandidate: (raw, context) =>
+        normalizeDiscoveryCandidate(raw, {
+          ...context,
+          engineId: this.getEngineId(raw, context.categoryId),
+        }),
+      config: this.config,
+    });
   }
 
   getCategories(categoryId) {
@@ -74,32 +91,84 @@ export class CategoryFeedService {
     const now = Date.now();
     let snapshot = snapshotId && this.snapshots.byId(snapshotId);
     const staleCandidate = !snapshot && this.snapshots.getStale(queryKey, now);
-    if (!snapshot || snapshot.queryKey !== queryKey) snapshot = this.snapshots.get(queryKey, now) || this.snapshots.create(queryKey, now);
-    if (!snapshot.orderedIds.length || (page - 1) * this.config.pageSize >= snapshot.orderedIds.length) {
-      const collection = await this.collector.collect(snapshot, { categoryId, signal });
-      if (!snapshot.candidatesById.size && collection.errors.length && staleCandidate) {
-        const ids = staleCandidate.orderedIds.slice((page - 1) * this.config.pageSize, page * this.config.pageSize);
-        return createDiscoveryResult({ mods: ids.map((id) => this.toGridMod(staleCandidate.candidatesById.get(id).raw)), page, pageSize: this.config.pageSize,
-          snapshotId: staleCandidate.id, stale: true, exhausted: page * this.config.pageSize >= staleCandidate.orderedIds.length,
-          sourceErrors: collection.errors, diagnostics: { candidateCount: staleCandidate.candidatesById.size } });
+    if (!snapshot || snapshot.queryKey !== queryKey)
+      snapshot =
+        this.snapshots.get(queryKey, now) ||
+        this.snapshots.create(queryKey, now);
+    if (
+      !snapshot.orderedIds.length ||
+      (page - 1) * this.config.pageSize >= snapshot.orderedIds.length
+    ) {
+      const collection = await this.collector.collect(snapshot, {
+        categoryId,
+        signal,
+      });
+      if (
+        !snapshot.candidatesById.size &&
+        collection.errors.length &&
+        staleCandidate
+      ) {
+        const ids = staleCandidate.orderedIds.slice(
+          (page - 1) * this.config.pageSize,
+          page * this.config.pageSize,
+        );
+        return createDiscoveryResult({
+          mods: ids.map((id) =>
+            this.toGridMod(staleCandidate.candidatesById.get(id).raw),
+          ),
+          page,
+          pageSize: this.config.pageSize,
+          snapshotId: staleCandidate.id,
+          stale: true,
+          exhausted:
+            page * this.config.pageSize >= staleCandidate.orderedIds.length,
+          sourceErrors: collection.errors,
+          diagnostics: { candidateCount: staleCandidate.candidatesById.size },
+        });
       }
       const candidates = [...snapshot.candidatesById.values()];
-      const ranked = applyDiversity(rankCandidates(candidates, { snapshotCreatedAt: snapshot.createdAt / 1000, config: this.config,
-        history: this.history.getMany(candidates.map((item) => item.id)) }), { config: this.config, singleEngine: Boolean(categoryId) });
+      const ranked = applyDiversity(
+        rankCandidates(candidates, {
+          snapshotCreatedAt: snapshot.createdAt / 1000,
+          config: this.config,
+        }),
+        { config: this.config },
+      );
       const known = new Set(snapshot.orderedIds);
-      snapshot.orderedIds.push(...ranked.map((item) => item.id).filter((id) => !known.has(id)));
-      this.history.observe(candidates, snapshot.createdAt / 1000);
+      snapshot.orderedIds.push(
+        ...ranked.map((item) => item.id).filter((id) => !known.has(id)),
+      );
       snapshot.generatedPageCount = Math.max(snapshot.generatedPageCount, page);
       snapshot.partial = collection.partial;
     }
-    const ids = snapshot.orderedIds.slice((page - 1) * this.config.pageSize, page * this.config.pageSize);
-    return createDiscoveryResult({ mods: ids.map((id) => this.toGridMod(snapshot.candidatesById.get(id).raw)), page,
-      pageSize: this.config.pageSize, snapshotId: snapshot.id, exhausted: snapshot.exhausted && page * this.config.pageSize >= snapshot.orderedIds.length,
-      partial: Boolean(snapshot.partial), sourceErrors: snapshot.errors, diagnostics: { candidateCount: snapshot.candidatesById.size } });
+    const ids = snapshot.orderedIds.slice(
+      (page - 1) * this.config.pageSize,
+      page * this.config.pageSize,
+    );
+    return createDiscoveryResult({
+      mods: ids.map((id) =>
+        this.toGridMod(snapshot.candidatesById.get(id).raw),
+      ),
+      page,
+      pageSize: this.config.pageSize,
+      snapshotId: snapshot.id,
+      exhausted:
+        snapshot.exhausted &&
+        page * this.config.pageSize >= snapshot.orderedIds.length,
+      partial: Boolean(snapshot.partial),
+      sourceErrors: snapshot.errors,
+      diagnostics: { candidateCount: snapshot.candidatesById.size },
+    });
   }
 
-  async getGridMods(filter = "popular", page = 1, categoryId = null, options = {}) {
-    if (filter === "popular") return this.getDiscovery(page, categoryId, options);
+  async getGridMods(
+    filter = "popular",
+    page = 1,
+    categoryId = null,
+    options = {},
+  ) {
+    if (filter === "popular")
+      return this.getDiscovery(page, categoryId, options);
     try {
       const sort =
         { new: "Generic_Newest", updated: "Generic_LatestUpdated" }[filter] ||
