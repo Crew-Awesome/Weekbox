@@ -377,6 +377,10 @@ export const gameBananaApi = {
           };
         }
       }
+      if (directMod) {
+        this.searchCache.set(cacheKey, [directMod]);
+        return [directMod];
+      }
 
       const searchWindowSize = 50;
       const resultOffset = (page - 1) * perPage;
@@ -417,16 +421,18 @@ export const gameBananaApi = {
               this.getSearchRelevance(left, normalizedQuery) ||
             Number(right._idRow || 0) - Number(left._idRow || 0),
         );
-      for (let index = 0; index < sortedRecords.length; index += 2) {
+      const visibleRecords = sortedRecords.slice(
+        sourceOffset,
+        sourceOffset + perPage,
+      );
+      for (let index = 0; index < visibleRecords.length; index += 2) {
         await Promise.all(
-          sortedRecords.slice(index, index + 2).map(async (mod) => {
+          visibleRecords.slice(index, index + 2).map(async (mod) => {
             mod.__resolvedEngineId = await this.resolveEngineIdForMod(mod);
           }),
         );
       }
-      let parsedMods = sortedRecords
-        .slice(sourceOffset, sourceOffset + perPage)
-        .map((mod) => this.toGridMod(mod));
+      let parsedMods = visibleRecords.map((mod) => this.toGridMod(mod));
 
       if (directMod) {
         parsedMods = parsedMods.filter((m) => m.id !== directMod.id);
