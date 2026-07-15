@@ -155,6 +155,47 @@ export const modManagerModal = {
 
     let needsJsonUpdate = false;
     const standaloneModIds = new Set(standaloneMods.map((m) => m.id));
+    const installedEngines = await FS.getInstalledEngines();
+
+    const refreshLaunchButtons = () => {
+      gridContainer.querySelectorAll(".mod-manager-launch-btn").forEach((button) => {
+        if (button.disabled) return;
+        const engineIsRunning =
+          button.dataset.launchKind === "standalone"
+            ? FS.isStandaloneModRunning(button.dataset.modId)
+            : FS.isEngineRunning(
+                button.dataset.engineId,
+                button.dataset.engineVersion,
+              );
+        const runningModId =
+          button.dataset.engineId === "codename"
+            ? FS.getRunningEngineMod(
+                button.dataset.engineId,
+                button.dataset.engineVersion,
+              )
+            : null;
+        const isRunning =
+          engineIsRunning &&
+          (button.dataset.engineId !== "codename" ||
+            String(runningModId) === button.dataset.modId);
+        const canSwitchMod =
+          engineIsRunning &&
+          button.dataset.engineId === "codename" &&
+          runningModId !== null &&
+          String(runningModId) !== button.dataset.modId;
+        button.classList.toggle("is-running", isRunning);
+        button.classList.toggle("is-switchable", canSwitchMod);
+        button.setAttribute(
+          "aria-label",
+          `${isRunning ? "Close" : canSwitchMod ? "Switch Mod" : button.dataset.launchLabel} ${button.dataset.modName}`,
+        );
+        button.innerHTML = isRunning
+          ? `<i class="fa-solid fa-play" aria-hidden="true"></i><span class="mod-manager-running-label">Running</span><span class="mod-manager-close-label">Close</span>`
+          : canSwitchMod
+            ? `<i class="fa-solid fa-right-left" aria-hidden="true"></i><span>Switch Mod</span>`
+            : `<i class="fa-solid fa-play" aria-hidden="true"></i><span>${button.dataset.launchLabel}</span>`;
+      });
+    };
 
     for (const mod of mods) {
       let imageUrl = "assets/icons/default-mod.png";
@@ -181,6 +222,9 @@ export const modManagerModal = {
       }
 
       const isExecutable = standaloneModIds.has(mod.id);
+      const engine = isExecutable
+        ? null
+        : installedEngines.find((item) => item.id === mod.engineId);
       let engineBadgeHtml = `<div class="mod-manager-engine-badge"><i class="fa-solid fa-question-circle"></i><span>Unassigned</span></div>`;
 
       if (isExecutable) {
@@ -211,7 +255,7 @@ export const modManagerModal = {
       card.innerHTML = `
         <div class="mod-manager-cover-wrap">
           <img class="mod-manager-cover" crossorigin="Anonymous" src="${imageUrl}" alt="Mod Cover" onerror="this.src='https://images.gamebanana.com/img/ss/mods/default.jpg'"/>
-          <button class="mod-manager-launch-btn" type="button" aria-label="${launchLabel} ${mod.name}" ${mod.hidden ? "disabled" : ""}>
+          <button class="mod-manager-launch-btn" type="button" data-launch-kind="${isExecutable ? "standalone" : "engine"}" data-mod-id="${mod.id}" data-engine-id="${engine?.id || ""}" data-engine-version="${engine?.version || ""}" data-launch-label="${launchLabel}" data-mod-name="${mod.name}" aria-label="${launchLabel} ${mod.name}" ${mod.hidden ? "disabled" : ""}>
             <i class="fa-solid fa-play" aria-hidden="true"></i><span>${launchLabel}</span>
           </button>
         </div>
@@ -244,21 +288,45 @@ export const modManagerModal = {
         launchBtn.disabled = true;
         try {
           if (isExecutable) {
-            await FS.runStandaloneMod(mod.id);
+            if (FS.isStandaloneModRunning(mod.id)) {
+              await FS.closeStandaloneMod(mod.id);
+            } else {
+              await FS.runStandaloneMod(mod.id, refreshLaunchButtons);
+            }
           } else {
-            const engine = (await FS.getInstalledEngines()).find(
-              (item) => item.id === mod.engineId,
-            );
             if (!engine) throw new Error("Assigned engine is not installed");
-            await FS.injectModIntoEngine(mod.id, engine.id, engine.version);
-            const args =
-              engine.id === "codename" ? ["-mod", getModFolderName(mod)] : [];
-            await FS.runEngine(engine.id, engine.version, undefined, args);
+            const launchEngine = async () => {
+              await FS.injectModIntoEngine(mod.id, engine.id, engine.version);
+              const args =
+                engine.id === "codename"
+                  ? ["-mod", getModFolderName(mod)]
+                  : [];
+              await FS.runEngine(
+                engine.id,
+                engine.version,
+                refreshLaunchButtons,
+                args,
+                engine.id === "codename" ? mod.id : null,
+              );
+            };
+            if (!FS.isEngineRunning(engine.id, engine.version)) {
+              await launchEngine();
+            } else if (
+              engine.id === "codename" &&
+              FS.getRunningEngineMod(engine.id, engine.version) !== mod.id
+            ) {
+              if (await FS.closeEngineAndWait(engine.id, engine.version)) {
+                await launchEngine();
+              }
+            } else {
+              await FS.closeEngine(engine.id, engine.version);
+            }
           }
         } catch (error) {
           console.error("Could not launch mod", error);
         } finally {
           launchBtn.disabled = false;
+          refreshLaunchButtons();
         }
       });
       deleteBtn.addEventListener("click", async () => {
@@ -315,6 +383,8 @@ export const modManagerModal = {
 
       gridContainer.appendChild(card);
     }
+
+    refreshLaunchButtons();
 
     if (needsJsonUpdate) {
       const jsonPath = `${FS.dataPath}/installedmods.json`;

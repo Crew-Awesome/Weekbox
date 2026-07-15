@@ -19,6 +19,7 @@ class FileSystemService {
     this.executables = new ExecutableService();
     this.processes = new ProcessService(this.executables);
     this.activeEngineProcesses = this.processes.activeProcesses;
+    this.activeEngineMods = new Map();
     this.mods = new ModRepository({
       api: this.api,
       getDataPath: () => this.dataPath,
@@ -107,7 +108,7 @@ class FileSystemService {
     return this.executables.find(directory);
   }
 
-  async runEngine(engineId, version, onStateChange, args = []) {
+  async runEngine(engineId, version, onStateChange, args = [], modId = null) {
     const executable = await this.findExecutable(
       `${this.enginesPath}/${engineId}/${version}`,
     );
@@ -115,20 +116,39 @@ class FileSystemService {
       onStateChange?.("not_found");
       return false;
     }
-    return this.processes.launch(
-      `${engineId}:${version}`,
+    const key = `${engineId}:${version}`;
+    const launched = await this.processes.launch(
+      key,
       executable,
-      onStateChange,
+      (state) => {
+        if (state === "completed" || state === "error") {
+          this.activeEngineMods.delete(key);
+        }
+        onStateChange?.(state);
+      },
       args,
     );
+    if (launched) this.activeEngineMods.set(key, modId);
+    return launched;
   }
 
   async closeEngine(engineId, version, onStateChange) {
     return this.processes.close(`${engineId}:${version}`, onStateChange);
   }
 
+  async closeEngineAndWait(engineId, version, onStateChange) {
+    const key = `${engineId}:${version}`;
+    const closed = await this.processes.closeAndWait(key, onStateChange);
+    if (closed) this.activeEngineMods.delete(key);
+    return closed;
+  }
+
   isEngineRunning(engineId, version) {
     return this.processes.isRunning(`${engineId}:${version}`);
+  }
+
+  getRunningEngineMod(engineId, version) {
+    return this.activeEngineMods.get(`${engineId}:${version}`) || null;
   }
 
   async getInstalledEngines() {
@@ -210,6 +230,14 @@ class FileSystemService {
         if (state === "completed" || state === "error") onExit?.();
       },
     );
+  }
+
+  async closeStandaloneMod(modId, onStateChange) {
+    return this.processes.close(`standalone:${modId}`, onStateChange);
+  }
+
+  isStandaloneModRunning(modId) {
+    return this.processes.isRunning(`standalone:${modId}`);
   }
 
   async saveInstalledMod(modId, modName, metadata = {}) {

@@ -165,6 +165,10 @@
   opacity: 1;
 }
 
+.mod-manager-launch-btn.is-running {
+  opacity: 1;
+}
+
 .mod-manager-launch-btn:focus-visible {
   opacity: 1;
   outline: 2px solid #fff;
@@ -173,6 +177,18 @@
 
 .mod-manager-launch-btn:disabled {
   cursor: wait;
+}
+
+.mod-manager-launch-btn .mod-manager-close-label {
+  display: none;
+}
+
+.mod-manager-launch-btn.is-running:hover .mod-manager-running-label {
+  display: none;
+}
+
+.mod-manager-launch-btn.is-running:hover .mod-manager-close-label {
+  display: block;
 }
 
 .mod-manager-card-body {

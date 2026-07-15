@@ -2,6 +2,7 @@ export class ProcessService {
   constructor(executables) {
     this.executables = executables;
     this.activeProcesses = new Map();
+    this.exitWaiters = new Map();
   }
 
   async launch(key, executablePath, onStateChange, args = []) {
@@ -25,6 +26,9 @@ export class ProcessService {
           return;
         Neutralino.events.off("spawnedProcess", handler);
         this.activeProcesses.delete(key);
+        const waiters = this.exitWaiters.get(key) || [];
+        this.exitWaiters.delete(key);
+        waiters.forEach((resolve) => resolve());
         onStateChange?.("completed");
       };
       await Neutralino.events.on("spawnedProcess", handler);
@@ -44,6 +48,32 @@ export class ProcessService {
       await Neutralino.os.updateSpawnedProcess(process.id, "exit");
       return true;
     } catch (error) {
+      onStateChange?.("error");
+      return false;
+    }
+  }
+
+  async closeAndWait(key, onStateChange) {
+    const process = this.activeProcesses.get(key);
+    if (!process) return false;
+    onStateChange?.("closing");
+    let resolveExit;
+    const exited = new Promise((resolve) => {
+      resolveExit = resolve;
+      const waiters = this.exitWaiters.get(key) || [];
+      waiters.push(resolve);
+      this.exitWaiters.set(key, waiters);
+    });
+    try {
+      await Neutralino.os.updateSpawnedProcess(process.id, "exit");
+      await exited;
+      return true;
+    } catch (error) {
+      const waiters = this.exitWaiters.get(key) || [];
+      this.exitWaiters.set(
+        key,
+        waiters.filter((resolve) => resolve !== resolveExit),
+      );
       onStateChange?.("error");
       return false;
     }
