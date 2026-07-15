@@ -1,6 +1,6 @@
 import { ENGINE_RELEASE_SOURCES } from "../config/engineReleaseSources.js";
 
-const CACHE_PREFIX = "weekbox-engine-releases-";
+const CACHE_PREFIX = "weekbox-engine-releases-v2-";
 const CACHE_FRESH_MS = 3 * 60 * 60 * 1000;
 const NIGHTLY_CACHE_PREFIX = "weekbox-engine-nightly-";
 const NIGHTLY_CACHE_MS = 3 * 60 * 60 * 1000;
@@ -48,11 +48,24 @@ function getNextPage(linkHeader) {
   return next?.match(/<([^>]+)>/)?.[1] || null;
 }
 
-function selectAsset(assets, patterns, exclude = []) {
+const PLATFORM_MISMATCH_PATTERNS = {
+  win: [/mac(?:os|osx)?|darwin/i, /linux/i],
+  win32: [/mac(?:os|osx)?|darwin/i, /linux/i],
+  win64: [/mac(?:os|osx)?|darwin/i, /linux/i],
+  lin: [/mac(?:os|osx)?|darwin/i, /windows|win32|win64/i],
+  mac: [/windows|win32|win64/i, /linux/i],
+  mac64: [/windows|win32|win64/i, /linux/i],
+  macarm: [/windows|win32|win64/i, /linux/i],
+};
+
+function selectAsset(assets, patterns, exclude = [], platform) {
   return assets.find((asset) => {
     const name = asset.name || "";
     return (
       !exclude.some((pattern) => pattern.test(name)) &&
+      !(PLATFORM_MISMATCH_PATTERNS[platform] || []).some((pattern) =>
+        pattern.test(name),
+      ) &&
       patterns.some((pattern) => pattern.test(name))
     );
   });
@@ -63,7 +76,12 @@ function normalizeRelease(release, source) {
   const version = release.tag_name.replace(/^v/i, "");
   const result = { version, releasedAt: release.published_at || null };
   for (const [platform, patterns] of Object.entries(source.assets)) {
-    const asset = selectAsset(release.assets || [], patterns, source.exclude);
+    const asset = selectAsset(
+      release.assets || [],
+      patterns,
+      source.exclude,
+      platform,
+    );
     if (asset?.browser_download_url)
       result[platform] = asset.browser_download_url;
   }

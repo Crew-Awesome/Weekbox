@@ -36,6 +36,7 @@ export const enginesView = {
     const dlUI = document.getElementById("download-ui");
     const dlText = document.getElementById("dl-text");
     const dlTextSizer = document.getElementById("dl-text-sizer");
+    const dlTrackTextSizer = document.getElementById("dl-track-text-sizer");
     const dlActiveLayer = document.getElementById("dl-active-layer");
     const downloadActions = document.getElementById("engine-download-actions");
     if (!launchBtn) return;
@@ -158,6 +159,7 @@ export const enginesView = {
           const initialText = "0% - Starting download...";
           if (dlText) dlText.textContent = initialText;
           if (dlTextSizer) dlTextSizer.textContent = initialText;
+          if (dlTrackTextSizer) dlTrackTextSizer.textContent = initialText;
           if (dlActiveLayer) dlActiveLayer.style.clipPath = `inset(0 100% 0 0)`;
         }
         const success = await downloadEngine.install(
@@ -177,6 +179,7 @@ export const enginesView = {
               : `${p}% - ${status}`;
             if (dlText) dlText.textContent = progressText;
             if (dlTextSizer) dlTextSizer.textContent = progressText;
+            if (dlTrackTextSizer) dlTrackTextSizer.textContent = progressText;
             if (dlActiveLayer) {
               dlActiveLayer.style.clipPath = `inset(0 ${100 - progress}% 0 0)`;
             }
@@ -210,6 +213,8 @@ export const enginesView = {
         } else {
           if (dlText) dlText.textContent = "0% - Download failed";
           if (dlTextSizer) dlTextSizer.textContent = "0% - Download failed";
+          if (dlTrackTextSizer)
+            dlTrackTextSizer.textContent = "0% - Download failed";
           activeBtn.disabled = false;
           activeBtn.textContent = "Retry Download";
         }
@@ -243,6 +248,7 @@ export const enginesView = {
   animateRollback() {
     const dlText = document.getElementById("dl-text");
     const dlTextSizer = document.getElementById("dl-text-sizer");
+    const dlTrackTextSizer = document.getElementById("dl-track-text-sizer");
     const dlActiveLayer = document.getElementById("dl-active-layer");
     let progress = Math.max(0, this.downloadProgress || 0);
     return new Promise((resolve) => {
@@ -251,6 +257,7 @@ export const enginesView = {
         const message = `${Math.ceil(progress)}% - Rolling back...`;
         if (dlText) dlText.textContent = message;
         if (dlTextSizer) dlTextSizer.textContent = message;
+        if (dlTrackTextSizer) dlTrackTextSizer.textContent = message;
         if (dlActiveLayer)
           dlActiveLayer.style.clipPath = `inset(0 ${100 - progress}% 0 0)`;
         if (progress > 0) {

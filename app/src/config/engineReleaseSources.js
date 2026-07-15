@@ -2,7 +2,7 @@ export const ENGINE_RELEASE_SOURCES = {
   vslice: {
     repository: "FunkinCrew/Funkin",
     assets: {
-      win: [/windows/i, /installer.*\.zip$/i],
+      win: [/^funkin-windows-(?:64bit|x64)\.zip$/i],
       lin: [/linux/i],
       mac: [/macos|osx|\.dmg$/i],
     },
@@ -38,7 +38,7 @@ export const ENGINE_RELEASE_SOURCES = {
   pslice: {
     repository: "Psych-Slice/P-Slice",
     assets: {
-      win: [/windows|win/i],
+      win: [/(?:^|[^a-z])win(?:dows)?(?:[^a-z]|$)/i],
       lin: [/linux/i],
       mac: [/(?:\.mac|\.macos)\.zip$/i],
       mac64: [/macosx64/i],

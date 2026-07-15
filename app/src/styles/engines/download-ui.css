@@ -4,30 +4,49 @@
 
 .download-ui-container {
   width: 100%;
+  height: 0;
   background-color: transparent;
   z-index: 9;
   position: relative;
+  overflow: visible;
+  pointer-events: none;
 }
 
 .progress-bar-container {
-  position: relative;
+  position: absolute;
   width: 100%;
   height: 28px;
+  bottom: 0;
+  left: 0;
   display: flex;
   align-items: center;
   justify-content: center;
   background-color: transparent;
+  overflow: hidden;
+  isolation: isolate;
 }
 
 /* ========================================= */
 /* GOOEY EFFECT & SHAPES                     */
 /* ========================================= */
 
+.progress-track {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+}
+
+.progress-track .progress-line,
+.progress-track .progress-pill-bg {
+  background-color: var(--bg-color);
+}
+
 .progress-fill-mask {
   position: absolute;
   inset: 0;
   width: 100%;
   height: 100%;
+  z-index: 1;
   transition: clip-path 0.1s linear;
 }
 

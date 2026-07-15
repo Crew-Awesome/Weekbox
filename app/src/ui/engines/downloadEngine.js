@@ -29,6 +29,10 @@ export const downloadEngine = {
     task.onStateChange?.(state);
   },
 
+  throwIfCancelled(task) {
+    if (task?.cancelled) throw new Error("Cancelled");
+  },
+
   async cleanupTask(task) {
     await this.stopProcess(task);
 
@@ -76,8 +80,10 @@ export const downloadEngine = {
   },
 
   // Función inteligente para buscar el ejecutable y subir todo su contenido a la raíz de {version}
-  async flattenEngineDir(engineDir) {
+  async flattenEngineDir(engineDir, isCancelled = () => false) {
+    if (isCancelled()) throw new Error("Cancelled");
     const exePath = await FS.findExecutable(engineDir);
+    if (isCancelled()) throw new Error("Cancelled");
     if (!exePath) return; // Si no hay ejecutable, la estructura se queda como está
 
     const executableDir = exePath
@@ -94,6 +100,7 @@ export const downloadEngine = {
       try {
         const files = await Neutralino.filesystem.readDirectory(executableDir);
         for (const file of files) {
+          if (isCancelled()) throw new Error("Cancelled");
           if (file.entry === "." || file.entry === "..") continue;
 
           const fromPath = `${executableDir}/${file.entry}`;
@@ -101,6 +108,8 @@ export const downloadEngine = {
 
           await Neutralino.filesystem.move(fromPath, toPath);
         }
+
+        if (isCancelled()) throw new Error("Cancelled");
 
         // Limpiar las subcarpetas vacías que quedaron después de mover los archivos
         const relativePart = executableDir.substring(
@@ -160,6 +169,7 @@ export const downloadEngine = {
       await FS.api.ensureDir(engineDir);
 
       await FS.api.write(`${engineDir}/.downloading`, "1");
+      this.throwIfCancelled(task);
       updateProgress("Connecting...", 2);
       await downloadArchive({
         url: downloadUrl,
@@ -167,6 +177,7 @@ export const downloadEngine = {
         getTask: () => this.activeTasks.get(taskKey),
         onProgress: updateProgress,
       });
+      this.throwIfCancelled(task);
 
       task.phase = "extracting";
       this.notifyState(task, "installing");
@@ -177,15 +188,24 @@ export const downloadEngine = {
         getTask: () => this.activeTasks.get(taskKey),
         onEntry: (file) => updateProgress(`Extracting: ${file}`, 98),
       });
+      this.throwIfCancelled(task);
 
       updateProgress("Organizing files...", 99);
-      await this.flattenEngineDir(engineDir); // Usamos el nuevo método en lugar de flattenModFolder
+      await this.flattenEngineDir(engineDir, () => task.cancelled);
+      this.throwIfCancelled(task);
+
+      if (!(await FS.findExecutable(engineDir))) {
+        throw new Error("The downloaded archive does not contain a runnable engine");
+      }
+      this.throwIfCancelled(task);
 
       updateProgress("Cleaning temporary files...", 99);
       await FS.api.remove(tempFilePath).catch(() => {});
       await FS.api.remove(`${engineDir}/.downloading`).catch(() => {});
+      this.throwIfCancelled(task);
 
       const injectionResults = await FS.injectModsIntoEngine(engineId, version);
+      this.throwIfCancelled(task);
       injectionResults
         .filter((result) => result.status === "rejected")
         .forEach((result) =>

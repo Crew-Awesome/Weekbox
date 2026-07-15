@@ -20,7 +20,7 @@ export class ExecutableService {
           }
           if (
             entry.type === "FILE" &&
-            ((isWindows && entry.entry.toLowerCase().endsWith(".exe")) ||
+            (entry.entry.toLowerCase().endsWith(".exe") ||
               (!isWindows && !entry.entry.includes(".")))
           ) {
             return fullPath;
