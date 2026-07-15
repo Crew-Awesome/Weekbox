@@ -91,6 +91,7 @@
 }
 
 .pill-dropdown .custom-options-container {
+  box-sizing: border-box;
   position: absolute;
   top: calc(100% + 8px);
   bottom: auto;
@@ -105,7 +106,8 @@
   z-index: 100;
   padding: 4px;
   max-height: 250px;
-  overflow: hidden auto;
+  overflow-x: hidden;
+  overflow-y: auto;
 }
 
 .pill-dropdown.open .custom-options-container {
@@ -113,7 +115,9 @@
 }
 
 .pill-dropdown .custom-option {
+  box-sizing: border-box;
   width: 100%;
+  min-width: 0;
   border: 0;
   background: transparent;
   text-align: left;

@@ -337,6 +337,7 @@
 
 .mod-manager-engine-menu,
 .mod-manager-version-menu {
+  box-sizing: border-box;
   position: absolute;
   z-index: 10;
   top: calc(100% + 6px);
@@ -350,6 +351,7 @@
   border-radius: 7px;
   background: #1a1a1a;
   box-shadow: 0 10px 25px rgb(0 0 0 / 35%);
+  overflow-x: hidden;
 }
 
 .mod-manager-card.version-menu-open {
@@ -358,7 +360,9 @@
 
 .mod-manager-engine-menu button,
 .mod-manager-version-menu button {
+  box-sizing: border-box;
   width: 100%;
+  min-width: 0;
   padding: 7px 8px;
   border: 0;
   border-radius: 4px;
