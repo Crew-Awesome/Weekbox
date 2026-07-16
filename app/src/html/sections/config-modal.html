@@ -6,8 +6,17 @@
         <h2>Settings</h2>
       </div>
       <nav class="config-nav">
-        <button class="config-tab-btn active" data-tab-target="preferences">
-          <i class="fa-solid fa-sliders"></i> Preferences
+        <button class="config-tab-btn active" data-tab-target="general">
+          <i class="fa-solid fa-sliders"></i> General
+        </button>
+        <button class="config-tab-btn" data-tab-target="downloads">
+          <i class="fa-solid fa-download"></i> Downloads
+        </button>
+        <button class="config-tab-btn" data-tab-target="library">
+          <i class="fa-solid fa-folder-tree"></i> Library &amp; Storage
+        </button>
+        <button class="config-tab-btn" data-tab-target="updates">
+          <i class="fa-solid fa-arrows-rotate"></i> Updates
         </button>
         <button class="config-tab-btn" data-tab-target="credits">
           <i class="fa-solid fa-heart"></i> Credits
@@ -17,30 +26,16 @@
 
     <main class="config-main">
       <header class="config-header">
-        <h3 id="config-section-title">Preferences</h3>
+        <h3 id="config-section-title">General</h3>
         <button class="config-close-btn" id="config-close-btn" title="Close">
           <i class="fa-solid fa-xmark"></i>
         </button>
       </header>
 
       <div class="config-body">
-        <!-- PREFERENCES TAB -->
-        <div id="config-preferences" class="config-tab-content active">
+        <!-- GENERAL TAB -->
+        <div id="config-general" class="config-tab-content active">
           <div class="settings-list">
-            <div class="setting-item setting-item-storage">
-              <div class="setting-info">
-                <h4>WeekBox storage location</h4>
-                <p id="storage-location-path">Loading current location…</p>
-              </div>
-              <button
-                type="button"
-                class="storage-location-button"
-                id="choose-storage-location"
-              >
-                <i class="fa-solid fa-folder-open"></i> Choose folder
-              </button>
-            </div>
-
             <div class="setting-item">
               <div class="setting-info">
                 <h4>Launch on startup</h4>
@@ -89,7 +84,16 @@
                 <span class="slider round"></span>
               </label>
             </div>
+          </div>
+        </div>
 
+        <!-- DOWNLOADS TAB -->
+        <div
+          id="config-downloads"
+          class="config-tab-content"
+          style="display: none"
+        >
+          <div class="settings-list">
             <div class="setting-item">
               <div class="setting-info">
                 <h4>Multithread downloads</h4>
@@ -100,7 +104,39 @@
                 <span class="slider round"></span>
               </label>
             </div>
+          </div>
+        </div>
 
+        <!-- LIBRARY TAB -->
+        <div
+          id="config-library"
+          class="config-tab-content"
+          style="display: none"
+        >
+          <div class="settings-list">
+            <div class="setting-item setting-item-storage">
+              <div class="setting-info">
+                <h4>WeekBox storage location</h4>
+                <p id="storage-location-path">Loading current location…</p>
+              </div>
+              <button
+                type="button"
+                class="storage-location-button"
+                id="choose-storage-location"
+              >
+                <i class="fa-solid fa-folder-open"></i> Choose folder
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- UPDATES TAB -->
+        <div
+          id="config-updates"
+          class="config-tab-content"
+          style="display: none"
+        >
+          <div class="settings-list">
             <div class="setting-item">
               <div class="setting-info">
                 <h4>Check engine updates on startup</h4>

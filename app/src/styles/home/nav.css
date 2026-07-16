@@ -81,18 +81,34 @@
     transform 0.25s ease !important;
 }
 
-#mod-search-input.search-input::placeholder {
-  color: rgba(255, 255, 255, 0.3) !important;
+.search-hint {
+  position: absolute;
+  top: 50%;
+  left: 48px;
+  z-index: 3;
+  max-width: calc(100% - 72px);
+  overflow: hidden;
+  color: rgba(255, 255, 255, 0.3);
+  font-size: 0.95rem;
   font-weight: 400;
-  transition: color 0.18s ease;
+  pointer-events: none;
+  text-overflow: ellipsis;
+  transform: translateY(-50%);
+  transition:
+    opacity 240ms ease,
+    transform 240ms ease;
+  will-change: opacity, transform;
+  white-space: nowrap;
 }
 
-#mod-search-input.search-input.search-hint-fading::placeholder {
-  color: transparent !important;
+.search-hint.is-hidden,
+.search-container:focus-within .search-hint {
+  opacity: 0;
+  transform: translateY(calc(-50% - 3px));
 }
 
 @media (prefers-reduced-motion: reduce) {
-  #mod-search-input.search-input::placeholder {
+  .search-hint {
     transition: none;
   }
 }

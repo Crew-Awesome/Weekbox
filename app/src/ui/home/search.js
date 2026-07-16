@@ -5,6 +5,7 @@ export const homeSearch = {
   timeoutId: null,
   hintIntervalId: null,
   hintTransitionId: null,
+  isHintAnimating: false,
   hintIndex: 0,
   hints: [
     "Search mods (e.g. Sonic, Tricky, Indie...)",
@@ -22,6 +23,9 @@ export const homeSearch = {
 
     newInput.addEventListener("input", (e) => {
       const query = e.target.value.trim().replace(/\s+/g, " ");
+      document
+        .getElementById("mod-search-hint")
+        ?.classList.toggle("is-hidden", Boolean(e.target.value));
       clearTimeout(this.timeoutId);
 
       this.timeoutId = setTimeout(() => {
@@ -42,16 +46,43 @@ export const homeSearch = {
   },
 
   startHintRotation(input) {
-    input.placeholder = this.hints[this.hintIndex];
+    const hint = document.getElementById("mod-search-hint");
+    if (!hint) return;
+    input.placeholder = "";
+    hint.textContent = this.hints[this.hintIndex];
     this.hintIntervalId = setInterval(() => {
-      if (input.value || document.activeElement === input) return;
-      input.classList.add("search-hint-fading");
-      this.hintTransitionId = setTimeout(() => {
-        this.hintIndex = (this.hintIndex + 1) % this.hints.length;
-        input.placeholder = this.hints[this.hintIndex];
-        input.classList.remove("search-hint-fading");
-      }, 180);
+      this.rotateHint(input, hint);
     }, 3600);
+  },
+
+  async rotateHint(input, hint) {
+    if (input.value || document.activeElement === input || this.isHintAnimating)
+      return;
+    this.isHintAnimating = true;
+    try {
+      const fadeOut = hint.animate(
+        [
+          { opacity: 1, transform: "translateY(-50%)" },
+          { opacity: 0, transform: "translateY(calc(-50% - 3px))" },
+        ],
+        { duration: 260, easing: "ease-out", fill: "forwards" },
+      );
+      await fadeOut.finished;
+      this.hintIndex = (this.hintIndex + 1) % this.hints.length;
+      hint.textContent = this.hints[this.hintIndex];
+      const fadeIn = hint.animate(
+        [
+          { opacity: 0, transform: "translateY(calc(-50% + 3px))" },
+          { opacity: 1, transform: "translateY(-50%)" },
+        ],
+        { duration: 320, easing: "ease-out", fill: "forwards" },
+      );
+      await fadeIn.finished;
+      fadeOut.cancel();
+      fadeIn.cancel();
+    } finally {
+      this.isHintAnimating = false;
+    }
   },
 
   destroy() {
@@ -61,6 +92,7 @@ export const homeSearch = {
     this.timeoutId = null;
     this.hintTransitionId = null;
     this.hintIntervalId = null;
+    this.isHintAnimating = false;
   },
 
   async executeSearch(query) {
