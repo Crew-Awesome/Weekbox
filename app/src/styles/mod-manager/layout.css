@@ -11,11 +11,9 @@
   opacity: 0;
   transition: opacity 0.3s ease;
 }
-
 .mod-manager-overlay.show {
   opacity: 1;
 }
-
 .mod-manager-content {
   width: 75vw;
   height: 80vh;
@@ -31,11 +29,9 @@
   box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
   overflow: hidden;
 }
-
 .mod-manager-overlay.show .mod-manager-content {
   transform: scale(1) translateY(0);
 }
-
 .mod-manager-header {
   display: flex;
   justify-content: space-between;
@@ -44,20 +40,17 @@
   border-bottom: 1px solid var(--border-color);
   background-color: rgba(0, 0, 0, 0.2);
 }
-
 .mod-manager-header h2 {
   margin: 0;
   font-size: 1.35rem;
   color: var(--text-main);
 }
-
 .mod-manager-title-group {
   display: flex;
   align-items: center;
   gap: var(--spacing-md);
   min-width: 0;
 }
-
 .mod-manager-view-tabs {
   display: inline-flex;
   align-items: center;
@@ -66,7 +59,6 @@
   border-radius: 8px;
   background: var(--bg-color);
 }
-
 .mod-manager-view-tab {
   min-height: 28px;
   padding: 0 10px;
@@ -82,36 +74,29 @@
     background 0.16s ease,
     color 0.16s ease;
 }
-
 .mod-manager-view-tab:hover,
 .mod-manager-view-tab:focus-visible {
   color: var(--text-main);
 }
-
 .mod-manager-view-tab:focus-visible {
   outline: 2px solid var(--text-main);
   outline-offset: 1px;
 }
-
 .mod-manager-view-tab.active {
   background: var(--accent-color);
   color: var(--bg-color);
 }
-
 .mod-manager-header-actions {
   display: flex;
   align-items: center;
   gap: var(--spacing-sm);
 }
-
 .mod-manager-header-actions.dependencies-view > :not(.mod-manager-close-btn) {
   display: none;
 }
-
 .mod-manager-filter {
   position: relative;
 }
-
 .mod-manager-filter-trigger {
   display: inline-flex;
   align-items: center;
@@ -132,13 +117,11 @@
     color 0.16s ease,
     background 0.16s ease;
 }
-
 .mod-manager-filter-label {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-
 .mod-manager-filter-icon {
   display: inline-grid;
   width: 16px;
@@ -146,35 +129,29 @@
   flex: 0 0 16px;
   place-items: center;
 }
-
 .mod-manager-filter-icon img,
 .mod-manager-filter-menu button img {
   width: 16px;
   height: 16px;
   object-fit: contain;
 }
-
 .mod-manager-filter-trigger > .fa-chevron-down {
   margin-left: auto;
   font-size: 0.65rem;
   transition: transform 0.16s ease;
 }
-
 .mod-manager-filter.open .mod-manager-filter-trigger {
   border-color: var(--text-muted);
   background: var(--bg-hover);
   color: var(--text-main);
 }
-
 .mod-manager-filter.open .mod-manager-filter-trigger > .fa-chevron-down {
   transform: rotate(180deg);
 }
-
 .mod-manager-filter-trigger:focus-visible {
   outline: 2px solid var(--text-main);
   outline-offset: 2px;
 }
-
 .mod-manager-filter-menu {
   position: absolute;
   top: calc(100% + 7px);
@@ -189,7 +166,6 @@
   background: #1a1a1a;
   box-shadow: 0 12px 28px rgb(0 0 0 / 42%);
 }
-
 .mod-manager-filter-menu button {
   display: flex;
   align-items: center;
@@ -207,18 +183,15 @@
   font-weight: 600;
   text-align: left;
 }
-
 .mod-manager-filter-menu button i {
   width: 15px;
   text-align: center;
 }
-
 .mod-manager-filter-menu button:hover,
 .mod-manager-filter-menu button.selected {
   background: var(--bg-hover);
   color: var(--text-main);
 }
-
 .mod-manager-action-btn {
   background: transparent;
   border: none;
@@ -235,31 +208,26 @@
     background-color 0.2s,
     transform 0.2s;
 }
-
 .mod-manager-action-btn:hover {
   color: var(--text-main);
   background-color: rgba(255, 255, 255, 0.05);
 }
-
 .mod-manager-close-btn:hover {
   color: #ff4a4a;
   transform: scale(1.1);
 }
-
 .mod-manager-body {
   padding: var(--spacing-xl);
   overflow-y: auto;
   overflow-x: hidden;
   flex: 1;
 }
-
 .mod-manager-grid {
   display: flex;
   flex-wrap: wrap;
   gap: var(--spacing-lg);
   width: 100%;
 }
-
 .mod-manager-card {
   background-color: var(--bg-color);
   border: 1px solid var(--border-color);
@@ -273,24 +241,20 @@
   --card-color: rgba(255, 255, 255, 0.3);
   transition:
     transform 0.35s cubic-bezier(0.25, 1, 0.5, 1),
-    border-color 0.3s ease,
-    box-shadow 0.3s ease;
+    border-color 0.3s ease;
 }
-
-/* Efecto hover aplicando el color predominante y la sombra (resplandor) */
+/* Efecto hover aplicando el color predominante SIN resplandor (glow) */
 .mod-manager-card:not(.is-hidden):hover {
   transform: translateY(-4px);
   border-color: rgb(255 255 255 / 38%);
-  box-shadow: 0 10px 40px -10px rgb(255 255 255 / 18%);
+  box-shadow: none;
 }
-
 .mod-manager-card:not(.is-hidden):focus-visible {
   outline: 2px solid var(--text-main);
   outline-offset: 2px;
   border-color: rgb(255 255 255 / 38%);
-  box-shadow: 0 10px 40px -10px rgb(255 255 255 / 18%);
+  box-shadow: none;
 }
-
 .mod-manager-cover-wrap {
   position: relative;
   width: 100%;
@@ -299,7 +263,6 @@
   background-color: #000;
   border-bottom: 1px solid var(--border-color);
 }
-
 .mod-manager-cover {
   width: 100%;
   height: 100%;
@@ -308,7 +271,6 @@
     filter 0.25s ease,
     transform 0.35s cubic-bezier(0.25, 1, 0.5, 1);
 }
-
 .mod-manager-launch-btn {
   position: absolute;
   inset: 0;
@@ -326,55 +288,44 @@
   opacity: 0;
   transition: opacity 0.25s ease;
 }
-
 .mod-manager-card:not(.is-hidden):hover .mod-manager-cover,
 .mod-manager-cover-wrap:focus-within .mod-manager-cover {
   filter: blur(4px) brightness(0.65);
   transform: scale(1.04);
 }
-
 .mod-manager-card:not(.is-hidden):hover .mod-manager-launch-btn,
 .mod-manager-cover-wrap:focus-within .mod-manager-launch-btn {
   opacity: 1;
 }
-
 .mod-manager-launch-btn.is-running {
   opacity: 1;
 }
-
 .mod-manager-launch-btn:focus-visible {
   opacity: 1;
   outline: 2px solid #fff;
   outline-offset: -4px;
 }
-
 .mod-manager-launch-btn:disabled {
   cursor: wait;
 }
-
 .mod-manager-card.is-hidden .mod-manager-launch-btn:disabled {
   cursor: not-allowed;
 }
-
 .mod-manager-launch-btn .mod-manager-close-label {
   display: none;
 }
-
 .mod-manager-launch-btn.is-running:hover .mod-manager-running-label {
   display: none;
 }
-
 .mod-manager-launch-btn.is-running:hover .mod-manager-running-icon {
   display: none;
 }
-
 .mod-manager-launch-btn.is-running:hover .mod-manager-close-label {
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 6px;
 }
-
 .mod-manager-card-body {
   padding: var(--spacing-md);
   display: flex;
@@ -384,7 +335,6 @@
   gap: var(--spacing-md);
   transition: all 0.35s cubic-bezier(0.25, 1, 0.5, 1);
 }
-
 .mod-manager-info {
   display: flex;
   flex-direction: column;
@@ -392,7 +342,6 @@
   overflow: visible;
   min-width: 0;
 }
-
 .mod-manager-info h3 {
   font-size: 1.05rem;
   color: var(--text-main);
@@ -401,7 +350,6 @@
   overflow: hidden;
   text-overflow: ellipsis;
 }
-
 .mod-manager-engine-badge {
   width: fit-content;
   height: 24px;
@@ -417,7 +365,6 @@
   font-weight: 600;
   margin: 2px 0;
 }
-
 .mod-manager-engine-badge img {
   width: 16px;
   height: 16px;
@@ -425,19 +372,16 @@
   border-radius: 4px;
   display: block;
 }
-
 .mod-manager-engine-compatibility-picker {
   display: flex;
   align-items: center;
   gap: 6px;
   min-width: 0;
 }
-
 .mod-manager-engine-picker,
 .mod-manager-version-picker {
   position: relative;
 }
-
 .mod-manager-engine-pill,
 .mod-manager-version-pill {
   display: inline-flex;
@@ -455,12 +399,10 @@
   font-size: 0.72rem;
   font-weight: 650;
 }
-
 .mod-manager-engine-pill {
   max-width: 150px;
   padding-left: 5px;
 }
-
 .mod-manager-engine-pill img,
 .mod-manager-engine-pill > .fa-question-circle {
   width: 16px;
@@ -468,16 +410,13 @@
   object-fit: contain;
   flex: 0 0 auto;
 }
-
 .mod-manager-engine-pill > .fa-question-circle {
   display: grid;
   place-items: center;
 }
-
 .mod-manager-engine-pill > .fa-chevron-down {
   margin-left: auto;
 }
-
 .mod-manager-engine-pill span,
 .mod-manager-version-pill span {
   min-width: 0;
@@ -485,30 +424,25 @@
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-
 .mod-manager-engine-pill i,
 .mod-manager-version-pill i {
   font-size: 0.62rem;
   transition: transform 0.16s ease;
 }
-
 .mod-manager-engine-pill[aria-expanded="true"] .fa-chevron-down,
 .mod-manager-version-pill[aria-expanded="true"] .fa-chevron-down {
   transform: rotate(180deg);
 }
-
 .mod-manager-engine-pill:hover,
 .mod-manager-version-pill:hover {
   border-color: #555;
   color: var(--text-main);
 }
-
 .mod-manager-engine-pill:focus-visible,
 .mod-manager-version-pill:focus-visible {
   outline: 2px solid var(--text-main);
   outline-offset: 2px;
 }
-
 .mod-manager-engine-menu,
 .mod-manager-version-menu {
   box-sizing: border-box;
@@ -527,11 +461,9 @@
   box-shadow: 0 10px 25px rgb(0 0 0 / 35%);
   overflow-x: hidden;
 }
-
 .mod-manager-card.version-menu-open {
   z-index: 2;
 }
-
 .mod-manager-engine-menu button,
 .mod-manager-version-menu button {
   box-sizing: border-box;
@@ -547,24 +479,20 @@
   font-size: 0.76rem;
   text-align: left;
 }
-
 .mod-manager-engine-menu button {
   display: flex;
   align-items: center;
   gap: 7px;
 }
-
 .mod-manager-engine-menu img {
   width: 16px;
   height: 16px;
   object-fit: contain;
 }
-
 .mod-manager-engine-menu .fa-question-circle {
   width: 16px;
   text-align: center;
 }
-
 .mod-manager-engine-menu button:hover,
 .mod-manager-engine-menu button.selected,
 .mod-manager-version-menu button:hover,
@@ -572,14 +500,12 @@
   background: var(--bg-hover);
   color: var(--text-main);
 }
-
 .mod-manager-actions {
   display: flex;
   justify-content: space-between;
   gap: 6px;
   margin-top: auto;
 }
-
 .mod-action-btn {
   background-color: transparent;
   color: var(--text-muted);
@@ -594,19 +520,16 @@
   font-size: 1rem;
   transition: all 0.2s ease;
 }
-
 .mod-action-btn:hover {
   color: var(--text-main);
   background-color: rgba(255, 255, 255, 0.05);
   border-color: var(--text-muted);
 }
-
 .mod-manager-delete-btn:hover:not(:disabled) {
   color: #ff4a4a;
   background-color: rgba(255, 74, 74, 0.1);
   border-color: rgba(255, 74, 74, 0.3);
 }
-
 .mod-manager-delete-btn:disabled {
   color: var(--text-muted);
   cursor: not-allowed;
@@ -620,32 +543,27 @@
   flex-direction: row;
   height: 110px;
 }
-
 .mod-manager-grid.list-view .mod-manager-cover-wrap {
   width: 160px;
   height: 100%;
   border-right: 1px solid var(--border-color);
   flex-shrink: 0;
 }
-
 .mod-manager-grid.list-view .mod-manager-card-body {
   flex-direction: row;
   align-items: center;
 }
-
 .mod-manager-grid.list-view .mod-manager-info {
   justify-content: center;
   flex: 1 1 auto;
   min-width: 0;
 }
-
 .mod-manager-grid.list-view .mod-manager-actions {
   flex-direction: row;
   margin-top: 0;
   width: 180px;
   flex-shrink: 0;
 }
-
 .empty-mods-state {
   padding: var(--spacing-xl);
   text-align: center;
@@ -656,11 +574,9 @@
   border: 2px dashed var(--border-color);
   width: 100%;
 }
-
 .mod-manager-dependencies {
   margin-bottom: var(--spacing-xl);
 }
-
 .mod-manager-dependencies h3 {
   display: flex;
   align-items: center;
@@ -669,7 +585,6 @@
   color: var(--text-main);
   font-size: 1rem;
 }
-
 .mod-manager-dependencies h3 i {
   color: var(--text-muted);
 }
