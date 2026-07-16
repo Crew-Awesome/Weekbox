@@ -8,10 +8,12 @@ import { ModInjectionService } from "./filesystem/modInjectionService.js";
 import { ModRepository } from "./filesystem/modRepository.js";
 import { getModFolderName, getRealEntries } from "./filesystem/pathUtils.js";
 import { ProcessService } from "./filesystem/processService.js";
+import { appSettings } from "../core/settings.js";
 
 class FileSystemService {
   constructor() {
     this.basePath = "";
+    this.weekboxPath = "";
     this.enginesPath = "";
     this.modsPath = "";
     this.dataPath = "";
@@ -39,20 +41,98 @@ class FileSystemService {
 
   async init() {
     if (typeof Neutralino !== "undefined") {
-      this.basePath = await Neutralino.os.getPath("documents");
-      const weekboxPath = `${this.basePath}/WeekBox`;
-      this.enginesPath = `${weekboxPath}/engines`;
-      this.modsPath = `${weekboxPath}/mods`;
-      this.dataPath = `${weekboxPath}/data`;
-      await this.api.ensureDir(weekboxPath);
-      await this.api.ensureDir(this.enginesPath);
-      await this.api.ensureDir(this.modsPath);
-      await this.api.ensureDir(this.dataPath);
+      const documentsPath = await Neutralino.os.getPath("documents");
+      const savedPath = appSettings.get("storageParentPath");
+      this.setStoragePaths(savedPath || documentsPath);
+      try {
+        await this.ensureStorageDirectories();
+      } catch (error) {
+        if (!savedPath) throw error;
+        console.warn("Could not access saved WeekBox storage location", error);
+        appSettings.set("storageParentPath", null);
+        this.setStoragePaths(documentsPath);
+        await this.ensureStorageDirectories();
+      }
       await this.cleanupIncompleteDownloads();
       await this.cleanupInvalidInstalledMods();
     }
     this.isInitialized = true;
     await this.cleanupHiddenModLinks();
+  }
+
+  setStoragePaths(basePath) {
+    this.basePath = String(basePath).replace(/[\\/]+$/, "");
+    this.weekboxPath = `${this.basePath}/WeekBox`;
+    this.enginesPath = `${this.weekboxPath}/engines`;
+    this.modsPath = `${this.weekboxPath}/mods`;
+    this.dataPath = `${this.weekboxPath}/data`;
+  }
+
+  async ensureStorageDirectories() {
+    await this.api.ensureDir(this.basePath);
+    if (!(await this.api.exists(this.basePath))) {
+      throw new Error("Selected storage folder is unavailable");
+    }
+    await this.api.ensureDir(this.weekboxPath);
+    await this.api.ensureDir(this.enginesPath);
+    await this.api.ensureDir(this.modsPath);
+    await this.api.ensureDir(this.dataPath);
+  }
+
+  hasRunningProcesses() {
+    return this.activeEngineProcesses.size > 0;
+  }
+
+  async moveStorageTo(basePath) {
+    const destinationBasePath = String(basePath || "").replace(/[\\/]+$/, "");
+    if (!destinationBasePath) throw new Error("Choose a storage folder first");
+    if (destinationBasePath.toLowerCase() === this.basePath.toLowerCase()) {
+      return this.weekboxPath;
+    }
+    if (this.hasRunningProcesses()) {
+      throw new Error("Close running engines before moving WeekBox files");
+    }
+    if (!(await this.api.exists(destinationBasePath))) {
+      throw new Error("Selected storage folder is unavailable");
+    }
+
+    const destinationWeekboxPath = `${destinationBasePath}/WeekBox`;
+    if (await this.api.exists(destinationWeekboxPath)) {
+      throw new Error("The selected folder already contains a WeekBox folder");
+    }
+
+    const mods = await this.mods.getAll();
+    const engines = await this.getInstalledEngines();
+    await Promise.all(
+      mods.map((mod) => this.injection.unlinkFromInstalledEngines(mod, engines)),
+    );
+
+    try {
+      await Neutralino.filesystem.copy(
+        this.weekboxPath,
+        destinationWeekboxPath,
+        {
+          recursive: true,
+          overwrite: false,
+          skip: false,
+        },
+      );
+      await Neutralino.filesystem.remove(this.weekboxPath);
+    } catch (error) {
+      await Promise.all(
+        mods.map((mod) =>
+          this.injection.injectIntoInstalledEngines(mod.id, engines),
+        ),
+      ).catch(() => {});
+      throw new Error(
+        "Could not move WeekBox files. The original location was kept.",
+      );
+    }
+
+    this.setStoragePaths(destinationBasePath);
+    appSettings.set("storageParentPath", destinationBasePath);
+    await this.injectModsIntoInstalledEngines();
+    return this.weekboxPath;
   }
 
   async cleanupHiddenModLinks() {

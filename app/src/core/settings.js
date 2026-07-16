@@ -5,6 +5,7 @@ export const appSettings = {
     hideOnLaunch: false,
     autoStartAfterDownload: false,
     multithreadDownloads: true,
+    storageParentPath: null,
     checkUpdatesOnStartup: true,
     checkUpdatesInBackground: true,
   },

@@ -203,6 +203,41 @@
   margin: 0;
 }
 
+.setting-item-storage {
+  gap: 16px;
+}
+
+.setting-item-storage .setting-info p {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.storage-location-button {
+  flex-shrink: 0;
+  border: 1px solid var(--border-color);
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--text-main);
+  border-radius: 7px;
+  padding: 9px 12px;
+  font: inherit;
+  font-size: 0.82rem;
+  cursor: pointer;
+  transition: background-color 160ms ease, border-color 160ms ease;
+}
+
+.storage-location-button:hover,
+.storage-location-button:focus-visible {
+  background: rgba(255, 255, 255, 0.12);
+  border-color: var(--text-muted);
+  outline: none;
+}
+
+.storage-location-button:disabled {
+  cursor: wait;
+  opacity: 0.6;
+}
+
 /* Animaciones del Switch tipo iOS */
 .switch {
   position: relative;

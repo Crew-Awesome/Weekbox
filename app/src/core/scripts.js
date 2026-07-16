@@ -88,8 +88,8 @@ async function startApp() {
       await downloadEngine.cleanupAll();
       await Neutralino.app.exit();
     });
-    await FS.init();
     await storageBridge.init();
+    await FS.init();
     registerHomeView();
     registerEnginesView();
     await router.init();

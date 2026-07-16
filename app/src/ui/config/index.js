@@ -1,4 +1,7 @@
 import { appSettings } from "../../core/settings.js";
+import { FS } from "../../utils/filesystem.js";
+import { downloadEngine } from "../engines/downloadEngine.js";
+import { downloadMod } from "../home/modal/downloadMod.js";
 
 export const configModal = {
   async init() {
@@ -40,6 +43,10 @@ export const configModal = {
           )
           .catch(() => {});
       });
+
+    document
+      .getElementById("choose-storage-location")
+      ?.addEventListener("click", () => this.chooseStorageLocation());
 
     // Cambiar Tabs (Pestañas)
     const tabBtns = document.querySelectorAll(".config-tab-btn");
@@ -114,6 +121,75 @@ export const configModal = {
         checkbox.checked = appSettings.get(settingKey);
       }
     });
+    this.updateStorageLocationLabel();
+  },
+
+  updateStorageLocationLabel() {
+    const label = document.getElementById("storage-location-path");
+    if (label) label.textContent = FS.weekboxPath || "Documents/WeekBox";
+  },
+
+  hasActiveDownloads() {
+    return downloadEngine.activeTasks.size > 0 || downloadMod.activeTasks.size > 0;
+  },
+
+  async chooseStorageLocation() {
+    if (FS.hasRunningProcesses() || this.hasActiveDownloads()) {
+      await Neutralino.os.showMessageBox(
+        "Cannot move WeekBox files",
+        "Close all running engines and wait for downloads to finish before changing the storage location.",
+        "OK",
+        "WARNING",
+      );
+      return;
+    }
+
+    const button = document.getElementById("choose-storage-location");
+    try {
+      const selectedPath = await Neutralino.os.showFolderDialog(
+        "Choose the folder that will contain WeekBox",
+        { defaultPath: FS.basePath },
+      );
+      if (!selectedPath) return;
+      const newWeekboxPath = `${selectedPath.replace(/[\\/]+$/, "")}/WeekBox`;
+      const choice = await Neutralino.os.showMessageBox(
+        "Move WeekBox files?",
+        `WeekBox will move all mods, engines, and data to:\n${newWeekboxPath}\n\nThis can take a while for large libraries.`,
+        "YES_NO",
+        "QUESTION",
+      );
+      if (choice !== "YES") return;
+
+      if (FS.hasRunningProcesses() || this.hasActiveDownloads()) {
+        throw new Error(
+          "Close all running engines and wait for downloads to finish before moving WeekBox files.",
+        );
+      }
+
+      button.disabled = true;
+      button.textContent = "Moving files…";
+      await FS.moveStorageTo(selectedPath);
+      this.updateStorageLocationLabel();
+      await Neutralino.os.showMessageBox(
+        "Storage location updated",
+        "WeekBox files were moved successfully.",
+        "OK",
+        "INFO",
+      );
+    } catch (error) {
+      console.error("Could not move WeekBox storage", error);
+      await Neutralino.os.showMessageBox(
+        "Could not move WeekBox files",
+        error.message || "An unexpected error occurred while moving files.",
+        "OK",
+        "ERROR",
+      );
+    } finally {
+      if (button) {
+        button.disabled = false;
+        button.innerHTML = '<i class="fa-solid fa-folder-open"></i> Choose folder';
+      }
+    }
   },
 
   async handleStartupToggle(enabled) {
