@@ -4,7 +4,6 @@ import { homeSearchDropdown } from "./searchDropdown.js";
 export const homeSearch = {
   timeoutId: null,
   hintIntervalId: null,
-  hintTransitionId: null,
   isHintAnimating: false,
   hintIndex: 0,
   hints: [
@@ -87,10 +86,8 @@ export const homeSearch = {
 
   destroy() {
     clearTimeout(this.timeoutId);
-    clearTimeout(this.hintTransitionId);
     clearInterval(this.hintIntervalId);
     this.timeoutId = null;
-    this.hintTransitionId = null;
     this.hintIntervalId = null;
     this.isHintAnimating = false;
   },
