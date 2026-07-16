@@ -39,6 +39,42 @@ function quoteCommandArgument(value) {
   return `"${String(value).replaceAll('"', '\\"')}"`;
 }
 
+function getGoogleDriveFileId(url) {
+  const parsed = new URL(url);
+  return (
+    parsed.searchParams.get("id") ||
+    parsed.pathname.match(/\/file\/d\/([^/]+)/)?.[1] ||
+    null
+  );
+}
+
+async function resolveExternalDownloadUrl(url) {
+  const parsed = new URL(url);
+  const hostname = parsed.hostname.toLowerCase();
+  if (hostname === "drive.google.com" || hostname === "docs.google.com") {
+    const fileId = getGoogleDriveFileId(url);
+    if (!fileId) throw new Error("Could not find the Google Drive file ID");
+    return `https://drive.usercontent.google.com/download?id=${encodeURIComponent(fileId)}&export=download&confirm=t`;
+  }
+  if (hostname === "mediafire.com" || hostname === "www.mediafire.com") {
+    const result = await Neutralino.os.execCommand(
+      `curl -fsSL --connect-timeout 10 --max-time 30 ${quoteCommandArgument(url)}`,
+      { background: false },
+    );
+    if (result.exitCode !== 0)
+      throw new Error(
+        result.stdErr || "Could not open the MediaFire download page",
+      );
+    const directUrl = (result.stdOut || "")
+      .replaceAll("&amp;", "&")
+      .match(/https?:\/\/download[^"'\s<>]+\.mediafire\.com[^"'\s<>]*/i)?.[0];
+    if (!directUrl)
+      throw new Error("Could not find the MediaFire download link");
+    return directUrl;
+  }
+  return url;
+}
+
 async function getRangeSupportedFileSize(url) {
   const result = await Neutralino.os.execCommand(
     `curl -sS -L -I --connect-timeout 3 --max-time 3 --range 0-0 ${quoteCommandArgument(url)}`,
@@ -217,7 +253,17 @@ async function downloadSegmentedArchive({
   }
 }
 
-export async function downloadArchive({ url, outPath, getTask, onProgress }) {
+export async function downloadArchive({
+  url,
+  outPath,
+  getTask,
+  onProgress,
+  sourceType,
+}) {
+  if (sourceType === "external") {
+    onProgress?.("Preparing external download...", 2);
+    url = await resolveExternalDownloadUrl(url);
+  }
   let remoteFileSize = 0;
   try {
     onProgress?.("Checking download server...", 2);

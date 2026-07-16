@@ -13,15 +13,13 @@
 }
 .mod-card {
   background-color: var(--bg-panel);
-  border: 1px solid var(--border-color);
+  border: 0;
   border-radius: var(--border-radius);
   overflow: hidden;
   cursor: pointer;
   /* Fallback color si falla el script */
   --card-color: rgba(255, 255, 255, 0.3);
-  transition:
-    transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275),
-    border-color 0.3s ease;
+  transition: transform 160ms ease;
   display: flex;
   flex-direction: column;
   padding: 0;
@@ -29,51 +27,14 @@
   font: inherit;
   text-align: left;
 }
-.mod-card.mod-card-enter {
-  animation:
-    mod-card-fade-in 0.32s ease both,
-    mod-card-rise 0.18s ease-out both;
-  animation-delay: calc(var(--card-index, 0) * 35ms);
-}
-.mod-card.mod-card-pending {
-  opacity: 0;
-  transform: translateY(12px);
-}
-/* Efecto hover aplicando el color predominante SIN resplandor (glow) */
 .mod-card:hover {
-  transform: translateY(-4px);
-  border-color: rgb(255 255 255 / 38%);
-  box-shadow: none;
+  background-color: var(--card-color);
+  transform: scale(1.025);
 }
 .mod-card:focus-visible {
   outline: 2px solid var(--text-main);
   outline-offset: 2px;
   box-shadow: none;
-}
-@keyframes mod-card-fade-in {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
-}
-@keyframes mod-card-rise {
-  from {
-    transform: translateY(12px);
-  }
-  to {
-    transform: translateY(0);
-  }
-}
-@media (prefers-reduced-motion: reduce) {
-  .mod-card {
-    animation: none;
-  }
-  .mod-card.mod-card-pending {
-    opacity: 1;
-    transform: none;
-  }
 }
 .mod-image-container {
   width: 100%;
@@ -91,6 +52,9 @@
   display: flex;
   flex-direction: column;
   flex: 1;
+  border: 1px solid rgb(255 255 255 / 12%);
+  border-top: 0;
+  border-radius: 0 0 var(--border-radius) var(--border-radius);
 }
 .mod-title {
   font-size: 1rem;

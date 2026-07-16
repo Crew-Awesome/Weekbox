@@ -3,9 +3,9 @@ import { appSettings } from "../../core/settings.js";
 export const configModal = {
   async init() {
     if (!document.getElementById("config-modal")) {
-      const response = await fetch("src/html/config-modal.html");
+      const response = await fetch("src/html/sections/config-modal.html");
       if (!response.ok) return;
-      
+
       const html = await response.text();
       const wrapper = document.createElement("div");
       wrapper.innerHTML = html;
@@ -16,48 +16,57 @@ export const configModal = {
   },
 
   bindEvents() {
-    document.getElementById("config-close-btn").addEventListener("click", () => this.close());
+    document
+      .getElementById("config-close-btn")
+      .addEventListener("click", () => this.close());
     document.getElementById("config-modal").addEventListener("click", (e) => {
       if (e.target.id === "config-modal") this.close();
+    });
+    document.querySelectorAll("#config-modal a[href]").forEach((link) => {
+      link.addEventListener("click", (event) => {
+        event.preventDefault();
+        Neutralino.os.open(link.href).catch(() => {});
+      });
     });
 
     // Cambiar Tabs (Pestañas)
     const tabBtns = document.querySelectorAll(".config-tab-btn");
-    tabBtns.forEach(btn => {
+    tabBtns.forEach((btn) => {
       btn.addEventListener("click", () => {
-        tabBtns.forEach(b => b.classList.remove("active"));
+        tabBtns.forEach((b) => b.classList.remove("active"));
         btn.classList.add("active");
-        
+
         const targetId = btn.getAttribute("data-tab-target");
-        document.querySelectorAll(".config-tab-content").forEach(content => {
+        document.querySelectorAll(".config-tab-content").forEach((content) => {
           content.style.display = "none";
           content.classList.remove("active");
         });
-        
+
         const targetContent = document.getElementById(`config-${targetId}`);
         if (targetContent) {
           targetContent.style.display = "block";
           targetContent.classList.add("active");
         }
-        
+
         const titleElement = document.getElementById("config-section-title");
         if (titleElement) {
-          titleElement.textContent = targetId.charAt(0).toUpperCase() + targetId.slice(1);
+          titleElement.textContent =
+            targetId.charAt(0).toUpperCase() + targetId.slice(1);
         }
       });
     });
 
     // Detectar cambios en los Toggles/Switches
     const toggleIds = [
-      "launchOnStartup", 
-      "blurOutOfFocus", 
-      "hideOnLaunch", 
+      "launchOnStartup",
+      "blurOutOfFocus",
+      "hideOnLaunch",
       "autoStartAfterDownload",
       "checkUpdatesOnStartup",
       "checkUpdatesInBackground",
     ];
 
-    toggleIds.forEach(settingKey => {
+    toggleIds.forEach((settingKey) => {
       const checkbox = document.getElementById(`setting-${settingKey}`);
       if (checkbox) {
         checkbox.addEventListener("change", async (e) => {
@@ -77,15 +86,15 @@ export const configModal = {
 
   loadSettingsToUI() {
     const toggleIds = [
-      "launchOnStartup", 
-      "blurOutOfFocus", 
-      "hideOnLaunch", 
+      "launchOnStartup",
+      "blurOutOfFocus",
+      "hideOnLaunch",
       "autoStartAfterDownload",
       "checkUpdatesOnStartup",
       "checkUpdatesInBackground",
     ];
 
-    toggleIds.forEach(settingKey => {
+    toggleIds.forEach((settingKey) => {
       const checkbox = document.getElementById(`setting-${settingKey}`);
       if (checkbox) {
         checkbox.checked = appSettings.get(settingKey);
@@ -118,7 +127,7 @@ export const configModal = {
     await this.init();
     const modal = document.getElementById("config-modal");
     if (!modal) return;
-    
+
     // Carga los valores actuales visualmente
     this.loadSettingsToUI();
 
@@ -129,10 +138,10 @@ export const configModal = {
   close() {
     const modal = document.getElementById("config-modal");
     if (!modal) return;
-    
+
     modal.classList.remove("show");
     setTimeout(() => {
       modal.style.display = "none";
     }, 300);
-  }
+  },
 };

@@ -5,8 +5,7 @@ import { applyDominantColor } from "../../../utils/extractColor.js";
 export function createCard(mod, index) {
   const card = document.createElement("button");
   card.type = "button";
-  card.className = "mod-card mod-card-pending";
-  card.style.setProperty("--card-index", index);
+  card.className = "mod-card";
   const imageContainer = document.createElement("div");
   imageContainer.className = "mod-image-container";
   const image = document.createElement("img");
@@ -16,9 +15,12 @@ export function createCard(mod, index) {
   image.alt = "";
   image.loading = "lazy";
   imageContainer.appendChild(image);
-  
+
   // Extraer el color cuando la imagen se cargue usando la nueva utilidad
-  applyDominantColor(image, card);
+  applyDominantColor(image, card, {
+    alpha: 0.3,
+    fallback: "rgba(255, 255, 255, 0.08)",
+  });
 
   const info = document.createElement("div");
   info.className = "mod-info";
@@ -64,15 +66,5 @@ export function createCard(mod, index) {
   info.append(stats);
   card.append(imageContainer, info);
   card.addEventListener("click", () => modModal.open(mod.id));
-  requestAnimationFrame(() =>
-    requestAnimationFrame(() => {
-      card.classList.remove("mod-card-pending");
-      card.classList.add("mod-card-enter");
-    }),
-  );
-  card.addEventListener("animationend", (event) => {
-    if (event.animationName === "mod-card-fade-in")
-      card.classList.remove("mod-card-enter");
-  });
   return card;
 }

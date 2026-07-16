@@ -9,7 +9,7 @@ export const engineManagerModal = {
   resizeObserver: null,
   async init() {
     if (!document.getElementById("engine-manager-modal")) {
-      const response = await fetch("src/html/engine-manager.html");
+      const response = await fetch("src/html/sections/engine-manager.html");
       if (!response.ok) return;
       const html = await response.text();
       const wrapper = document.createElement("div");
@@ -133,10 +133,14 @@ export const engineManagerModal = {
         <span class="engine-col-name">${details.name}</span>
       `;
       card.appendChild(header);
-      
+
       // Aplicar color extraído con la nueva utilidad y opciones personalizadas
       const imgEl = header.querySelector(".engine-col-icon");
-      applyDominantColor(imgEl, card, { cssVar: "--engine-color", alpha: 0.25, fallback: "rgba(255, 255, 255, 0.1)" });
+      applyDominantColor(imgEl, card, {
+        cssVar: "--engine-color",
+        alpha: 0.25,
+        fallback: "rgba(255, 255, 255, 0.1)",
+      });
 
       const versionsList = document.createElement("div");
       versionsList.className = "engine-versions-list";
@@ -210,7 +214,7 @@ export const engineManagerModal = {
         item
           .querySelector(".engine-dir-btn")
           .addEventListener("click", async (e) => {
-            e.stopPropagation(); 
+            e.stopPropagation();
             const targetPath = `${FS.enginesPath}/${engineId}/${version}`;
             try {
               await Neutralino.os.open(targetPath);
@@ -218,7 +222,7 @@ export const engineManagerModal = {
           });
         const deleteBtn = item.querySelector(".engine-delete-btn");
         deleteBtn.addEventListener("click", async (e) => {
-          e.stopPropagation(); 
+          e.stopPropagation();
           deleteBtn.disabled = true;
           deleteBtn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i>`;
           const targetPath = `${FS.enginesPath}/${engineId}/${version}`;

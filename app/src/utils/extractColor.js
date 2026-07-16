@@ -15,8 +15,11 @@ export function applyDominantColor(img, targetElement, options = {}) {
     try {
       const canvas = document.createElement("canvas");
       const ctx = canvas.getContext("2d");
-      canvas.width = img.naturalWidth || 64;
-      canvas.height = img.naturalHeight || 64;
+      const sourceWidth = img.naturalWidth || 64;
+      const sourceHeight = img.naturalHeight || 64;
+      const scale = Math.min(1, 64 / Math.max(sourceWidth, sourceHeight));
+      canvas.width = Math.max(1, Math.round(sourceWidth * scale));
+      canvas.height = Math.max(1, Math.round(sourceHeight * scale));
       ctx.drawImage(img, 0, 0);
       const data = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
       let r = 0,
@@ -51,7 +54,10 @@ export function applyDominantColor(img, targetElement, options = {}) {
         r = Math.floor(r / count);
         g = Math.floor(g / count);
         b = Math.floor(b / count);
-        targetElement.style.setProperty(cssVar, `rgba(${r}, ${g}, ${b}, ${alpha})`);
+        targetElement.style.setProperty(
+          cssVar,
+          `rgba(${r}, ${g}, ${b}, ${alpha})`,
+        );
       }
     } catch (e) {
       // Fallback si la imagen no permite lectura por CORS u otro error

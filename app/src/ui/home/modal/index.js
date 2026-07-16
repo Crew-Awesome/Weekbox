@@ -2,6 +2,7 @@ import { gameBananaApi } from "../../../api/gamebanana.js";
 import { modModalCarousel } from "./carousel.js";
 import { downloadMod } from "./downloadMod.js";
 import { dependencyReviewModal } from "./dependencyReviewModal.js";
+import { downloadChoiceModal } from "./downloadChoiceModal.js";
 import { FS } from "../../../utils/filesystem.js";
 import {
   ensureModal,
@@ -46,6 +47,11 @@ export const modModal = {
   },
 
   async installWithDependencies(data) {
+    const selectedDownload = await downloadChoiceModal.choose(
+      data.downloadOptions || [],
+    );
+    if (!selectedDownload) return;
+
     const requirements = data.requirements || [];
     const selected = requirements.length
       ? await dependencyReviewModal.review(requirements)
@@ -72,11 +78,12 @@ export const modModal = {
     const installedMod = await downloadMod.install(
       data.id,
       data.title,
-      data.downloadUrl,
+      selectedDownload.downloadUrl,
       data.engineId,
       {
         dependencies: selected.map((dependency) => dependency.dependencyId),
         toastThumbnail: data.images?.[0],
+        sourceType: selectedDownload.type,
       },
     );
     if (!installedMod) return;

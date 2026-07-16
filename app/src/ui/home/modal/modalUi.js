@@ -99,9 +99,12 @@ export function showModData(data, isInstalled, onDownload) {
   if (isInstalled) {
     button.disabled = true;
     button.innerHTML = '<i class="fa-solid fa-check"></i> Already Installed';
-  } else if (data.downloadUrl) {
+  } else if (data.downloadOptions?.length) {
     button.disabled = false;
-    button.innerHTML = '<i class="fa-solid fa-download"></i> Download';
+    button.innerHTML =
+      data.downloadOptions.length > 1
+        ? '<i class="fa-solid fa-list"></i> Choose Download'
+        : '<i class="fa-solid fa-download"></i> Download';
     button.onclick = onDownload;
   }
 }

@@ -229,6 +229,10 @@
 .dependency-review-copy small {
   color: var(--text-muted);
 }
+.download-choice-icon {
+  color: var(--text-muted);
+  font-size: 0.9rem;
+}
 .dependency-review-open,
 .dependency-review-cancel,
 .dependency-review-confirm {

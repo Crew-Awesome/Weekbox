@@ -17,6 +17,20 @@ const EXCLUDED_ENGINE_SUBMISSIONS = new Map([
 ]);
 
 const NON_DEPENDENCY_REQUIREMENTS = new Set(EXCLUDED_ENGINE_SUBMISSIONS.keys());
+const MIN_INSTALLABLE_FILE_SIZE = 1024;
+
+function quoteCommandArgument(value) {
+  return `"${String(value).replaceAll('"', '\\"')}"`;
+}
+
+function getGoogleDriveFileId(url) {
+  const parsed = new URL(url);
+  return (
+    parsed.searchParams.get("id") ||
+    parsed.pathname.match(/\/file\/d\/([^/]+)/)?.[1] ||
+    null
+  );
+}
 
 export const gameBananaApi = {
   baseUrl: "https://gamebanana.com/apiv11",
@@ -220,12 +234,138 @@ export const gameBananaApi = {
   },
 
   getPrimaryDownloadFile(data) {
-    const files = Array.isArray(data?._aFiles)
-      ? data._aFiles
-      : Object.values(data?._aFiles || {});
-    return (
-      files.find((file) => !file._bIsArchived && file._sDownloadUrl) || null
+    const files = this.getDownloadFiles(data);
+    return files.find((file) => this.isInstallableDownloadFile(file)) || null;
+  },
+
+  getDownloadFiles(data) {
+    const files = data?._aFiles;
+    if (Array.isArray(files)) return files;
+    if (!files || typeof files !== "object") return [];
+    if (files._sDownloadUrl) return [files];
+    return Object.values(files).filter(
+      (file) => file && typeof file === "object",
     );
+  },
+
+  isInstallableDownloadFile(file) {
+    return (
+      !file?._bIsArchived &&
+      file?._bHasContents !== false &&
+      Boolean(file?._sDownloadUrl) &&
+      Number(file?._nFilesize || 0) >= MIN_INSTALLABLE_FILE_SIZE
+    );
+  },
+
+  getExternalDownloadFiles(data) {
+    const supportedHosts = new Set([
+      "drive.google.com",
+      "docs.google.com",
+      "mediafire.com",
+      "www.mediafire.com",
+    ]);
+    const files = new Map();
+    const addExternal = (value, name = "") => {
+      try {
+        const url = new URL(value);
+        if (!supportedHosts.has(url.hostname.toLowerCase())) return;
+        if (!files.has(url.href)) {
+          files.set(url.href, {
+            id: `external:${url.href}`,
+            type: "external",
+            name: name || url.hostname,
+            fileSize: 0,
+            fileSizeStr: "External download",
+            downloadUrl: url.href,
+          });
+        }
+      } catch (error) {
+        // Ignore non-URL text found in submission metadata.
+      }
+    };
+
+    const rawAlternateSources = data?._aAlternateFileSources;
+    const alternateSources = Array.isArray(rawAlternateSources)
+      ? rawAlternateSources
+      : rawAlternateSources?.url || rawAlternateSources?._sUrl
+        ? [rawAlternateSources]
+        : Object.values(rawAlternateSources || {});
+    alternateSources.forEach((source) => {
+      if (source && typeof source === "object") {
+        addExternal(
+          source.url || source._sUrl,
+          source.description || source._sDescription,
+        );
+      }
+    });
+    return [...files.values()];
+  },
+
+  async getExternalFileName(url) {
+    try {
+      const parsed = new URL(url);
+      const hostname = parsed.hostname.toLowerCase();
+      let downloadUrl = url;
+      if (["drive.google.com", "docs.google.com"].includes(hostname)) {
+        const fileId = getGoogleDriveFileId(url);
+        if (!fileId) return null;
+        downloadUrl = `https://drive.usercontent.google.com/download?id=${encodeURIComponent(fileId)}&export=download&confirm=t`;
+      } else if (["mediafire.com", "www.mediafire.com"].includes(hostname)) {
+        const page = await Neutralino.os.execCommand(
+          `curl -fsSL --connect-timeout 5 --max-time 12 ${quoteCommandArgument(url)}`,
+          { background: false },
+        );
+        if (page.exitCode !== 0) return null;
+        downloadUrl = (page.stdOut || "")
+          .replaceAll("&amp;", "&")
+          .match(
+            /https?:\/\/download[^"'\s<>]+\.mediafire\.com[^"'\s<>]*/i,
+          )?.[0];
+        if (!downloadUrl) return null;
+      } else {
+        return null;
+      }
+      const result = await Neutralino.os.execCommand(
+        `curl -sSIL --connect-timeout 5 --max-time 12 ${quoteCommandArgument(downloadUrl)}`,
+        { background: false },
+      );
+      const header = `${result.stdOut || ""}\n${result.stdErr || ""}`;
+      const filename = header.match(
+        /content-disposition:[^\r\n]*filename\*?=(?:UTF-8''|"?)([^";\r\n]+)/i,
+      )?.[1];
+      return filename ? decodeURIComponent(filename.trim()) : null;
+    } catch (error) {
+      return null;
+    }
+  },
+
+  async getDownloadOptions(data) {
+    const options = [
+      ...this.getDownloadFiles(data)
+        .filter((file) => this.isInstallableDownloadFile(file))
+        .map((file, index) => ({
+          id: `file:${file._idRow || index}`,
+          type: "gamebanana",
+          name:
+            file._sFile ||
+            file._sDescription ||
+            file._sVersion ||
+            `File ${index + 1}`,
+          fileSize: Number(file._nFilesize || 0),
+          fileSizeStr: this.formatBytes(file._nFilesize || 0),
+          downloadUrl: file._sDownloadUrl,
+        })),
+      ...this.getExternalDownloadFiles(data),
+    ];
+    await Promise.all(
+      options
+        .filter((option) => option.type === "external")
+        .map(async (option) => {
+          const filename = await this.getExternalFileName(option.downloadUrl);
+          if (filename) option.name = filename;
+        }),
+    );
+    return options;
   },
 
   async getToolDetails(toolId) {
@@ -372,6 +512,7 @@ export const gameBananaApi = {
       const file = this.getPrimaryDownloadFile(data);
       const fileSize = file?._nFilesize || 0;
       const downloadUrl = file?._sDownloadUrl || "";
+      const downloadOptions = await this.getDownloadOptions(data);
       const requirements = includeRequirements
         ? await this.getRequirements(data)
         : [];
@@ -386,6 +527,7 @@ export const gameBananaApi = {
         images: images,
         fileSizeStr: this.formatBytes(fileSize),
         downloadUrl: downloadUrl,
+        downloadOptions,
         requirements,
         gameBananaUrl: `https://gamebanana.com/mods/${data._idRow}`,
         gameId: Number(data._aGame?._idRow || data._idGame || 0),

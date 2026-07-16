@@ -230,7 +230,7 @@
 }
 .mod-manager-card {
   background-color: var(--bg-color);
-  border: 1px solid var(--border-color);
+  border: 0;
   border-radius: var(--border-radius);
   display: flex;
   flex-direction: column;
@@ -239,20 +239,15 @@
   width: calc(33.333% - (var(--spacing-lg) * 2 / 3));
   min-width: 240px;
   --card-color: rgba(255, 255, 255, 0.3);
-  transition:
-    transform 0.35s cubic-bezier(0.25, 1, 0.5, 1),
-    border-color 0.3s ease;
+  transition: transform 0.35s cubic-bezier(0.25, 1, 0.5, 1);
 }
-/* Efecto hover aplicando el color predominante SIN resplandor (glow) */
 .mod-manager-card:not(.is-hidden):hover {
   transform: translateY(-4px);
-  border-color: rgb(255 255 255 / 38%);
   box-shadow: none;
 }
 .mod-manager-card:not(.is-hidden):focus-visible {
   outline: 2px solid var(--text-main);
   outline-offset: 2px;
-  border-color: rgb(255 255 255 / 38%);
   box-shadow: none;
 }
 .mod-manager-cover-wrap {
@@ -261,7 +256,7 @@
   height: 140px;
   overflow: hidden;
   background-color: #000;
-  border-bottom: 1px solid var(--border-color);
+  border-bottom: 0;
 }
 .mod-manager-cover {
   width: 100%;
@@ -333,6 +328,9 @@
   justify-content: space-between;
   flex: 1;
   gap: var(--spacing-md);
+  border: 1px solid var(--border-color);
+  border-top: 0;
+  border-radius: 0 0 var(--border-radius) var(--border-radius);
   transition: all 0.35s cubic-bezier(0.25, 1, 0.5, 1);
 }
 .mod-manager-info {

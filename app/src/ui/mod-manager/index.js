@@ -15,7 +15,7 @@ export const modManagerModal = {
   activeView: "mods",
   async init() {
     if (!document.getElementById("mod-manager-modal")) {
-      const response = await fetch("src/html/mod-manager.html");
+      const response = await fetch("src/html/sections/mod-manager.html");
       if (!response.ok) return;
       const html = await response.text();
       const wrapper = document.createElement("div");

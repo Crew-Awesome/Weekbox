@@ -87,7 +87,9 @@
   font-weight: 600;
   cursor: pointer;
   text-align: left;
-  transition: background-color 0.2s, color 0.2s;
+  transition:
+    background-color 0.2s,
+    color 0.2s;
 }
 
 .config-tab-btn i {
@@ -136,7 +138,10 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: color 0.2s, background-color 0.2s, transform 0.2s;
+  transition:
+    color 0.2s,
+    background-color 0.2s,
+    transform 0.2s;
 }
 
 .config-close-btn:hover {
@@ -156,8 +161,14 @@
 }
 
 @keyframes fade-in {
-  from { opacity: 0; transform: translateY(5px); }
-  to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(5px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 /* SETTINGS LIST (SWITCHES) */
@@ -201,7 +212,7 @@
   flex-shrink: 0;
 }
 
-.switch input { 
+.switch input {
   opacity: 0;
   width: 0;
   height: 0;
@@ -216,7 +227,7 @@
   bottom: 0;
   background-color: rgba(255, 255, 255, 0.1);
   border: 1px solid var(--border-color);
-  transition: .3s cubic-bezier(0.4, 0.0, 0.2, 1);
+  transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .slider:before {
@@ -227,7 +238,7 @@
   left: 3px;
   bottom: 3px;
   background-color: var(--text-muted);
-  transition: .3s cubic-bezier(0.4, 0.0, 0.2, 1);
+  transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 input:checked + .slider {
@@ -295,4 +306,10 @@ input:checked + .slider:before {
   color: var(--text-muted);
   font-size: 0.9rem;
   margin: 0;
+}
+
+.credits-container a {
+  color: var(--text-main);
+  text-decoration: underline;
+  text-underline-offset: 2px;
 }

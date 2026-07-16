@@ -69,7 +69,7 @@ export const downloadMod = {
       targetModFolder,
     });
 
-    const { toastThumbnail, ...installMetadata } = metadata;
+    const { toastThumbnail, sourceType, ...installMetadata } = metadata;
     toastDownloadMod.show(modId, modName, () => this.cancel(modId), {
       iconHtml: toastThumbnail
         ? `<img class="toast-system-thumbnail" src="${toastThumbnail}" alt="" />`
@@ -84,6 +84,7 @@ export const downloadMod = {
 
       await downloadArchive({
         url: downloadUrl,
+        sourceType,
         outPath: tempFilePath,
         getTask: () => this.activeTasks.get(modId),
         onProgress: (status, progress) => {
