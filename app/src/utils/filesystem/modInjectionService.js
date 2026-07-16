@@ -1,5 +1,9 @@
 import { getModFolderName } from "./pathUtils.js";
 
+function sameId(left, right) {
+  return String(left) === String(right);
+}
+
 function supportsEngineVersion(mod, version) {
   return !mod.engineVersion || mod.engineVersion === version;
 }
@@ -46,8 +50,8 @@ export class ModInjectionService {
   }
 
   async injectOne(modId, engineId, version) {
-    const mod = (await this.modRepository.getAll()).find(
-      (item) => item.id === modId,
+    const mod = (await this.modRepository.getAll()).find((item) =>
+      sameId(item.id, modId),
     );
     if (!mod || mod.hidden || !supportsEngineVersion(mod, version)) return;
     return this.link(mod, engineId, version);
@@ -71,8 +75,8 @@ export class ModInjectionService {
   }
 
   async injectIntoInstalledEngines(modId, engines) {
-    const mod = (await this.modRepository.getAll()).find(
-      (item) => item.id === modId,
+    const mod = (await this.modRepository.getAll()).find((item) =>
+      sameId(item.id, modId),
     );
     if (!mod?.engineId || mod.hidden) return [];
     const modPath = `${this.getModsPath()}/${getModFolderName(mod)}`;

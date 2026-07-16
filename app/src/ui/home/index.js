@@ -19,6 +19,7 @@ export const homeView = {
     homeScroll.destroy();
     homeCarousel.stopAutoSlide();
     homeGrid.destroy();
+    homeSearch.destroy();
   },
 };
 

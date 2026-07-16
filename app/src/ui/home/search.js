@@ -3,8 +3,17 @@ import { homeSearchDropdown } from "./searchDropdown.js";
 
 export const homeSearch = {
   timeoutId: null,
+  hintIntervalId: null,
+  hintTransitionId: null,
+  hintIndex: 0,
+  hints: [
+    "Search mods (e.g. Sonic, Tricky, Indie...)",
+    "Paste a GameBanana mod link",
+    "Enter a GameBanana mod ID",
+  ],
 
   init() {
+    this.destroy();
     const input = document.getElementById("mod-search-input");
     if (!input) return;
 
@@ -28,6 +37,30 @@ export const homeSearch = {
         newInput.blur();
       }
     });
+
+    this.startHintRotation(newInput);
+  },
+
+  startHintRotation(input) {
+    input.placeholder = this.hints[this.hintIndex];
+    this.hintIntervalId = setInterval(() => {
+      if (input.value || document.activeElement === input) return;
+      input.classList.add("search-hint-fading");
+      this.hintTransitionId = setTimeout(() => {
+        this.hintIndex = (this.hintIndex + 1) % this.hints.length;
+        input.placeholder = this.hints[this.hintIndex];
+        input.classList.remove("search-hint-fading");
+      }, 180);
+    }, 3600);
+  },
+
+  destroy() {
+    clearTimeout(this.timeoutId);
+    clearTimeout(this.hintTransitionId);
+    clearInterval(this.hintIntervalId);
+    this.timeoutId = null;
+    this.hintTransitionId = null;
+    this.hintIntervalId = null;
   },
 
   async executeSearch(query) {

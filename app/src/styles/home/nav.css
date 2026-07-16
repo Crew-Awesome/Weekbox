@@ -84,7 +84,17 @@
 #mod-search-input.search-input::placeholder {
   color: rgba(255, 255, 255, 0.3) !important;
   font-weight: 400;
-  transition: color 0.3s ease;
+  transition: color 0.18s ease;
+}
+
+#mod-search-input.search-input.search-hint-fading::placeholder {
+  color: transparent !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #mod-search-input.search-input::placeholder {
+    transition: none;
+  }
 }
 
 #mod-search-input.search-input:hover {

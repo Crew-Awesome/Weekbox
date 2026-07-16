@@ -10,6 +10,10 @@ import { getModFolderName, getRealEntries } from "./filesystem/pathUtils.js";
 import { ProcessService } from "./filesystem/processService.js";
 import { appSettings } from "../core/settings.js";
 
+function sameId(left, right) {
+  return String(left) === String(right);
+}
+
 class FileSystemService {
   constructor() {
     this.basePath = "";
@@ -391,8 +395,8 @@ class FileSystemService {
   }
 
   async runStandaloneMod(modId, onExit) {
-    const mod = (await this.getStandaloneMods()).find(
-      (item) => item.id === modId,
+    const mod = (await this.getStandaloneMods()).find((item) =>
+      sameId(item.id, modId),
     );
     if (!mod) {
       onExit?.();
@@ -445,8 +449,8 @@ class FileSystemService {
 
   async setModEngineCompatibility(modId, engineId, engineVersion) {
     if (!this.isInitialized) return null;
-    const currentMod = (await this.mods.getAll()).find(
-      (item) => item.id === modId,
+    const currentMod = (await this.mods.getAll()).find((item) =>
+      sameId(item.id, modId),
     );
     if (!currentMod) return null;
     const engines = await this.getInstalledEngines();
@@ -474,7 +478,9 @@ class FileSystemService {
 
   async removeInstalledMod(modId) {
     if (!this.isInitialized) return false;
-    const mod = (await this.mods.getAll()).find((item) => item.id === modId);
+    const mod = (await this.mods.getAll()).find((item) =>
+      sameId(item.id, modId),
+    );
     if (!mod) return false;
     if (mod.kind === "dependency") {
       const consumers = (await this.mods.getAll()).filter(
@@ -532,7 +538,9 @@ class FileSystemService {
 
   async isModInstalled(modId) {
     if (!this.isInitialized) return false;
-    const mod = (await this.mods.getAll()).find((item) => item.id === modId);
+    const mod = (await this.mods.getAll()).find((item) =>
+      sameId(item.id, modId),
+    );
     return Boolean(mod && (await this.hasModFiles(mod)));
   }
 

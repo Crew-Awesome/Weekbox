@@ -539,7 +539,6 @@ export const modManagerModal = {
             menuElement: engineMenu,
             onToggle: (isOpen) => {
               if (isOpen) versionDropdownCtrl?.close();
-              else savePendingCompatibilities();
               card.classList.toggle("version-menu-open", isOpen);
             },
           },
@@ -554,14 +553,13 @@ export const modManagerModal = {
             menuElement: versionMenu,
             onToggle: (isOpen) => {
               if (isOpen) engineDropdownCtrl?.close();
-              else savePendingCompatibilities();
               card.classList.toggle("version-menu-open", isOpen);
             },
           },
         );
       }
 
-      engineMenu?.addEventListener("click", (event) => {
+      engineMenu?.addEventListener("click", async (event) => {
         const option = event.target.closest("button[data-engine-id]");
         if (!option) return;
         event.stopPropagation();
@@ -598,9 +596,10 @@ export const modManagerModal = {
           );
 
         engineDropdownCtrl?.close();
+        await savePendingCompatibilities();
       });
 
-      versionMenu?.addEventListener("click", (event) => {
+      versionMenu?.addEventListener("click", async (event) => {
         const option = event.target.closest("button[data-version]");
         if (!option) return;
         event.stopPropagation();
@@ -618,6 +617,7 @@ export const modManagerModal = {
           );
 
         versionDropdownCtrl?.close();
+        await savePendingCompatibilities();
       });
 
       launchBtn.addEventListener("click", async () => {
