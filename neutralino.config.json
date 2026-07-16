@@ -1,5 +1,6 @@
 {
   "applicationId": "com.weekbox.app",
+  "applicationIcon": "app/assets/icons/launcher-icon.png",
   "version": "1.0.0",
   "defaultMode": "window",
   "port": 0,
@@ -23,6 +24,7 @@
   "modes": {
     "window": {
       "title": "WeekBox",
+      "icon": "/app/assets/icons/launcher-icon.png",
       "width": 1280,
       "height": 720,
       "minWidth": 800,
