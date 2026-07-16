@@ -313,3 +313,15 @@ input:checked + .slider:before {
   text-decoration: underline;
   text-underline-offset: 2px;
 }
+
+.credit-message-link {
+  margin-top: 8px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--text-main);
+  cursor: pointer;
+  font: inherit;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}

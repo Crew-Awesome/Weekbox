@@ -28,6 +28,18 @@ export const configModal = {
         Neutralino.os.open(link.href).catch(() => {});
       });
     });
+    document
+      .querySelector('[data-credit-message="Oyachi"]')
+      ?.addEventListener("click", () => {
+        Neutralino.os
+          .showMessageBox(
+            "To Oyachi",
+            "Sorry for not using your logo and art. I really loved it, and I do love you a lot. I always will.\n\n— Malloy",
+            "OK",
+            "INFO",
+          )
+          .catch(() => {});
+      });
 
     // Cambiar Tabs (Pestañas)
     const tabBtns = document.querySelectorAll(".config-tab-btn");
