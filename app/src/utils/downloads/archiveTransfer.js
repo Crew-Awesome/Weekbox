@@ -239,11 +239,11 @@ async function downloadSegmentedArchive({
     const requests = parts
       .map(
         (part) =>
-          `--range ${part.start}-${part.end} -o ${quoteCommandArgument(part.path)} ${quoteCommandArgument(url)}`,
+          `-L --range ${part.start}-${part.end} -o ${quoteCommandArgument(part.path)} ${quoteCommandArgument(url)}`,
       )
-      .join(" ");
+      .join(" --next ");
     await runCurlDownload(
-      `curl -# -L --parallel --parallel-max ${parts.length} ${requests}`,
+      `curl -# --parallel --parallel-max ${parts.length} ${requests}`,
       getTask,
       onProgress,
       async () => {
