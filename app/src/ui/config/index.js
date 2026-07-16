@@ -74,6 +74,7 @@ export const configModal = {
       "blurOutOfFocus",
       "hideOnLaunch",
       "autoStartAfterDownload",
+      "multithreadDownloads",
       "checkUpdatesOnStartup",
       "checkUpdatesInBackground",
     ];
@@ -102,6 +103,7 @@ export const configModal = {
       "blurOutOfFocus",
       "hideOnLaunch",
       "autoStartAfterDownload",
+      "multithreadDownloads",
       "checkUpdatesOnStartup",
       "checkUpdatesInBackground",
     ];

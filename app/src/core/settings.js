@@ -4,6 +4,7 @@ export const appSettings = {
     blurOutOfFocus: true,
     hideOnLaunch: false,
     autoStartAfterDownload: false,
+    multithreadDownloads: true,
     checkUpdatesOnStartup: true,
     checkUpdatesInBackground: true,
   },

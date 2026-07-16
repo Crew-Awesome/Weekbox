@@ -1,3 +1,5 @@
+import { appSettings } from "../../core/settings.js";
+
 function formatArchiveEntry(output) {
   const lines = output.trim().split("\n");
   let name = lines[lines.length - 1]
@@ -291,7 +293,10 @@ export async function downloadArchive({
     if (getTask()?.cancelled) throw error;
   }
 
-  if (remoteFileSize >= MIN_SEGMENTED_DOWNLOAD_BYTES) {
+  if (
+    appSettings.get("multithreadDownloads") &&
+    remoteFileSize >= MIN_SEGMENTED_DOWNLOAD_BYTES
+  ) {
     try {
       await downloadSegmentedArchive({
         url,
