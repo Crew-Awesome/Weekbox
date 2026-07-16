@@ -39,36 +39,19 @@ function quoteCommandArgument(value) {
   return `"${String(value).replaceAll('"', '\\"')}"`;
 }
 
-function getNullDevice() {
-  return window.NL_OS === "Windows" ? "NUL" : "/dev/null";
-}
-
-async function getRangeSupportedFileSize(url, getTask) {
-  const process = await Neutralino.os.spawnProcess(
-    `curl -sS -L --range 0-0 --dump-header - --output ${getNullDevice()} ${quoteCommandArgument(url)}`,
+async function getRangeSupportedFileSize(url) {
+  const result = await Neutralino.os.execCommand(
+    `curl -sS -L -I --connect-timeout 3 --max-time 3 --range 0-0 ${quoteCommandArgument(url)}`,
+    { background: false },
   );
-  const task = getTask();
-  if (task) task.pid = process.id ?? process.pid;
-
-  let headers = "";
-  return listenForProcess(
-    process,
-    getTask,
-    (event, handler, resolve, reject) => {
-      if (event.action === "stdErr" || event.action === "stdOut") {
-        headers += event.data;
-        return;
-      }
-      if (event.action !== "exit") return;
-      Neutralino.events.off("spawnedProcess", handler);
-      if (event.data !== 0) {
-        reject(new Error(`Range check failed with exit code ${event.data}`));
-        return;
-      }
-      const match = headers.match(/content-range:\s*bytes\s+0-0\/(\d+)/i);
-      resolve(match ? Number(match[1]) : 0);
-    },
-  );
+  if (result.exitCode !== 0) {
+    throw new Error(
+      result.stdErr || `Range check failed with exit code ${result.exitCode}`,
+    );
+  }
+  const headers = `${result.stdOut || ""}\n${result.stdErr || ""}`;
+  const match = headers.match(/content-range:\s*bytes\s+0-0\/(\d+)/i);
+  return match ? Number(match[1]) : 0;
 }
 
 function getDownloadSegments(totalBytes, outPath) {
@@ -97,11 +80,10 @@ async function removeParts(parts) {
 }
 
 async function mergeParts(parts, outPath) {
-  const partPaths = parts.map((part) => quoteCommandArgument(part.path));
   const command =
     window.NL_OS === "Windows"
-      ? `cmd /c copy /b ${partPaths.join("+")} ${quoteCommandArgument(outPath)} > NUL`
-      : `cat ${partPaths.join(" ")} > ${quoteCommandArgument(outPath)}`;
+      ? getWindowsMergeCommand(parts, outPath)
+      : `cat ${parts.map((part) => quoteCommandArgument(part.path)).join(" ")} > ${quoteCommandArgument(outPath)}`;
   const result = await Neutralino.os.execCommand(command, {
     background: false,
   });
@@ -110,31 +92,78 @@ async function mergeParts(parts, outPath) {
   }
 }
 
-async function runCurlDownload(command, getTask, onProgress) {
+function quotePowerShellString(value) {
+  return `'${String(value).replaceAll("'", "''")}'`;
+}
+
+function encodePowerShellScript(script) {
+  const bytes = new Uint8Array(script.length * 2);
+  for (let index = 0; index < script.length; index += 1) {
+    const code = script.charCodeAt(index);
+    bytes[index * 2] = code & 0xff;
+    bytes[index * 2 + 1] = code >> 8;
+  }
+  return btoa(String.fromCharCode(...bytes));
+}
+
+function getWindowsMergeCommand(parts, outPath) {
+  const copyParts = parts
+    .map(
+      (part) =>
+        `$source=[System.IO.File]::OpenRead(${quotePowerShellString(part.path)});try{$source.CopyTo($destination)}finally{$source.Dispose()}`,
+    )
+    .join(";");
+  const script = `$destination=[System.IO.File]::Open(${quotePowerShellString(outPath)},[System.IO.FileMode]::Create,[System.IO.FileAccess]::Write,[System.IO.FileShare]::None);try{${copyParts}}finally{$destination.Dispose()}`;
+  return `powershell -NoProfile -NonInteractive -EncodedCommand ${encodePowerShellScript(script)}`;
+}
+
+async function runCurlDownload(command, getTask, onProgress, getProgress) {
   const process = await Neutralino.os.spawnProcess(command);
   const task = getTask();
   if (task) task.pid = process.id ?? process.pid;
 
   let maxPercent = 0;
-  return listenForProcess(
-    process,
-    getTask,
-    (event, handler, resolve, reject) => {
-      if (event.action === "stdErr" || event.action === "stdOut") {
-        const matches = event.data.match(/(\d+\.?\d*)%/g);
-        if (!matches?.length) return;
-        const percent = Number.parseFloat(matches[matches.length - 1]);
-        if (Number.isNaN(percent) || percent < maxPercent) return;
-        maxPercent = percent;
-        onProgress?.("Downloading...", 2 + percent * 0.96);
-        return;
-      }
-      if (event.action !== "exit") return;
-      Neutralino.events.off("spawnedProcess", handler);
-      if (event.data === 0) resolve();
-      else reject(new Error(`Download failed with exit code ${event.data}`));
-    },
-  );
+  const reportProgress = (percent) => {
+    if (Number.isNaN(percent) || percent < maxPercent) return;
+    maxPercent = percent;
+    onProgress?.("Downloading...", 2 + percent * 0.96);
+  };
+  let isCheckingProgress = false;
+  const progressTimer = getProgress
+    ? setInterval(async () => {
+        if (isCheckingProgress) return;
+        isCheckingProgress = true;
+        try {
+          reportProgress(await getProgress());
+        } catch (error) {
+          // A part may not exist yet while curl is opening connections.
+        } finally {
+          isCheckingProgress = false;
+        }
+      }, 180)
+    : null;
+
+  try {
+    await listenForProcess(
+      process,
+      getTask,
+      (event, handler, resolve, reject) => {
+        if (event.action === "stdErr" || event.action === "stdOut") {
+          if (getProgress) return;
+          const matches = event.data.match(/(\d+\.?\d*)%/g);
+          if (!matches?.length) return;
+          reportProgress(Number.parseFloat(matches[matches.length - 1]));
+          return;
+        }
+        if (event.action !== "exit") return;
+        Neutralino.events.off("spawnedProcess", handler);
+        if (event.data === 0) resolve();
+        else reject(new Error(`Download failed with exit code ${event.data}`));
+      },
+    );
+  } finally {
+    if (progressTimer) clearInterval(progressTimer);
+  }
 }
 
 async function downloadSingleArchive({ url, outPath, getTask, onProgress }) {
@@ -155,6 +184,7 @@ async function downloadSegmentedArchive({
   const parts = getDownloadSegments(totalBytes, outPath);
   try {
     await removeParts(parts);
+    onProgress?.("Opening parallel download connections...", 2);
     const requests = parts
       .map(
         (part) =>
@@ -165,6 +195,20 @@ async function downloadSegmentedArchive({
       `curl -# -L --parallel --parallel-max ${parts.length} ${requests}`,
       getTask,
       onProgress,
+      async () => {
+        const sizes = await Promise.all(
+          parts.map(async (part) => {
+            try {
+              return (await Neutralino.filesystem.getStats(part.path)).size;
+            } catch (error) {
+              return 0;
+            }
+          }),
+        );
+        return (
+          (sizes.reduce((total, size) => total + size, 0) / totalBytes) * 100
+        );
+      },
     );
     if (getTask()?.cancelled) throw new Error("Cancelled");
     await mergeParts(parts, outPath);
@@ -176,7 +220,8 @@ async function downloadSegmentedArchive({
 export async function downloadArchive({ url, outPath, getTask, onProgress }) {
   let remoteFileSize = 0;
   try {
-    remoteFileSize = await getRangeSupportedFileSize(url, getTask);
+    onProgress?.("Checking download server...", 2);
+    remoteFileSize = await getRangeSupportedFileSize(url);
   } catch (error) {
     if (getTask()?.cancelled) throw error;
   }
