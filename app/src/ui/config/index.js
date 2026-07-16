@@ -130,7 +130,9 @@ export const configModal = {
   },
 
   hasActiveDownloads() {
-    return downloadEngine.activeTasks.size > 0 || downloadMod.activeTasks.size > 0;
+    return (
+      downloadEngine.activeTasks.size > 0 || downloadMod.activeTasks.size > 0
+    );
   },
 
   async chooseStorageLocation() {
@@ -187,7 +189,8 @@ export const configModal = {
     } finally {
       if (button) {
         button.disabled = false;
-        button.innerHTML = '<i class="fa-solid fa-folder-open"></i> Choose folder';
+        button.innerHTML =
+          '<i class="fa-solid fa-folder-open"></i> Choose folder';
       }
     }
   },

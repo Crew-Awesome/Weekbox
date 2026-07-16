@@ -104,7 +104,9 @@ class FileSystemService {
     const mods = await this.mods.getAll();
     const engines = await this.getInstalledEngines();
     await Promise.all(
-      mods.map((mod) => this.injection.unlinkFromInstalledEngines(mod, engines)),
+      mods.map((mod) =>
+        this.injection.unlinkFromInstalledEngines(mod, engines),
+      ),
     );
 
     try {

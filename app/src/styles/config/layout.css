@@ -223,7 +223,9 @@
   font: inherit;
   font-size: 0.82rem;
   cursor: pointer;
-  transition: background-color 160ms ease, border-color 160ms ease;
+  transition:
+    background-color 160ms ease,
+    border-color 160ms ease;
 }
 
 .storage-location-button:hover,

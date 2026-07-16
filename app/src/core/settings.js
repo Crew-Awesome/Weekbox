@@ -19,6 +19,8 @@ export const appSettings = {
   },
   set(key, value) {
     localStorage.setItem(`weekbox_setting_${key}`, JSON.stringify(value));
-    document.dispatchEvent(new CustomEvent("settings-changed", { detail: { key, value } }));
-  }
+    document.dispatchEvent(
+      new CustomEvent("settings-changed", { detail: { key, value } }),
+    );
+  },
 };
