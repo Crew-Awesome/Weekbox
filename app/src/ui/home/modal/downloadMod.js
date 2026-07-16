@@ -9,6 +9,27 @@ import { toastDownloadMod } from "./toastDownloadMod.js";
 export const downloadMod = {
   activeTasks: new Map(),
 
+  async hasExtractedFiles(path) {
+    const entries = await Neutralino.filesystem.readDirectory(path);
+    for (const entry of entries) {
+      if (
+        entry.entry === "." ||
+        entry.entry === ".." ||
+        entry.entry === ".downloading"
+      ) {
+        continue;
+      }
+      if (entry.type === "FILE") return true;
+      if (
+        entry.type === "DIRECTORY" &&
+        (await this.hasExtractedFiles(`${path}/${entry.entry}`))
+      ) {
+        return true;
+      }
+    }
+    return false;
+  },
+
   cancel(modId) {
     const task = this.activeTasks.get(modId);
     if (task) {
@@ -61,6 +82,16 @@ export const downloadMod = {
     const targetModFolder = `${modsBasePath}/${sanitizedModName}`;
     const taskKey = String(modId).replace(/[^a-z0-9_-]/gi, "_");
     const tempFilePath = `${modsBasePath}/temp_${taskKey}.zip`;
+    const downloadMarkerPath = `${targetModFolder}/.downloading`;
+
+    console.debug("[WeekBox install] started", {
+      modId,
+      modName,
+      downloadUrl,
+      engineId,
+      sourceType: metadata.sourceType,
+      targetModFolder,
+    });
 
     this.activeTasks.set(modId, {
       cancelled: false,
@@ -79,6 +110,7 @@ export const downloadMod = {
     try {
       await FS.api.ensureDir(modsBasePath);
       await FS.api.ensureDir(targetModFolder);
+      await FS.api.write(downloadMarkerPath, "");
       if (this.activeTasks.get(modId)?.cancelled) throw new Error("Cancelled");
       toastDownloadMod.update(modId, 2, "Connecting...");
 
@@ -91,6 +123,14 @@ export const downloadMod = {
           toastDownloadMod.update(modId, progress, status);
         },
       });
+
+      const archiveStats = await Neutralino.filesystem.getStats(tempFilePath);
+      console.debug("[WeekBox install] archive downloaded", {
+        modId,
+        tempFilePath,
+        bytes: archiveStats.size,
+      });
+      if (!archiveStats.size) throw new Error("Downloaded archive is empty");
 
       if (this.activeTasks.get(modId)?.cancelled) throw new Error("Cancelled");
       toastDownloadMod.update(modId, 98, "Extracting...");
@@ -112,7 +152,8 @@ export const downloadMod = {
         const files =
           await Neutralino.filesystem.readDirectory(targetModFolder);
         const realFiles = files.filter(
-          (f) => f.entry !== "." && f.entry !== "..",
+          (f) =>
+            f.entry !== "." && f.entry !== ".." && f.entry !== ".downloading",
         );
 
         if (realFiles.length === 1 && realFiles[0].type === "FILE") {
@@ -175,7 +216,8 @@ export const downloadMod = {
         const currentFiles =
           await Neutralino.filesystem.readDirectory(targetModFolder);
         const currentReal = currentFiles.filter(
-          (f) => f.entry !== "." && f.entry !== "..",
+          (f) =>
+            f.entry !== "." && f.entry !== ".." && f.entry !== ".downloading",
         );
 
         if (currentReal.length === 1 && currentReal[0].type === "DIRECTORY") {
@@ -202,6 +244,17 @@ export const downloadMod = {
       if (this.activeTasks.get(modId)?.cancelled) throw new Error("Cancelled");
       toastDownloadMod.update(modId, 99, "Deleting temp Zip...");
       await FS.api.remove(tempFilePath);
+
+      const hasExtractedFiles = await this.hasExtractedFiles(targetModFolder);
+      console.debug("[WeekBox install] extraction verification", {
+        modId,
+        targetModFolder,
+        hasExtractedFiles,
+      });
+      if (!hasExtractedFiles) {
+        throw new Error("Downloaded archive did not contain any files");
+      }
+      await FS.api.remove(downloadMarkerPath);
 
       await FS.saveInstalledMod(modId, modName, {
         engineId,
@@ -232,6 +285,13 @@ export const downloadMod = {
       this.activeTasks.delete(modId);
       return true;
     } catch (error) {
+      console.error("[WeekBox install] failed", {
+        modId,
+        modName,
+        downloadUrl,
+        sourceType,
+        error: error.message || String(error),
+      });
       if (error.message !== "Cancelled") {
         await this.cleanupData(modId, tempFilePath, targetModFolder);
         toastDownloadMod.error(modId, error.message || "Installation failed");

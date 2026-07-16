@@ -49,6 +49,7 @@ class FileSystemService {
       await this.api.ensureDir(this.modsPath);
       await this.api.ensureDir(this.dataPath);
       await this.cleanupIncompleteDownloads();
+      await this.cleanupInvalidInstalledMods();
     }
     this.isInitialized = true;
     await this.cleanupHiddenModLinks();
@@ -96,6 +97,46 @@ class FileSystemService {
       }
     } catch (error) {
       console.warn("Could not clean up incomplete downloads", error);
+    }
+  }
+
+  async hasModFiles(mod) {
+    const folderName = getModFolderName(mod);
+    if (!folderName || /[\\/]/.test(folderName)) return false;
+
+    const hasFilesIn = async (path) => {
+      const entries = getRealEntries(
+        await Neutralino.filesystem.readDirectory(path),
+      );
+      for (const entry of entries) {
+        if (entry.entry === ".downloading") continue;
+        if (entry.type === "FILE") return true;
+        if (
+          entry.type === "DIRECTORY" &&
+          (await hasFilesIn(`${path}/${entry.entry}`))
+        ) {
+          return true;
+        }
+      }
+      return false;
+    };
+
+    try {
+      return await hasFilesIn(`${this.modsPath}/${folderName}`);
+    } catch (error) {
+      return false;
+    }
+  }
+
+  async cleanupInvalidInstalledMods() {
+    for (const mod of await this.mods.getAll()) {
+      if (await this.hasModFiles(mod)) continue;
+
+      const folderName = getModFolderName(mod);
+      if (folderName && !/[\\/]/.test(folderName)) {
+        await this.api.remove(`${this.modsPath}/${folderName}`).catch(() => {});
+      }
+      await this.mods.remove(mod.id);
     }
   }
 
@@ -242,7 +283,12 @@ class FileSystemService {
   }
 
   async getInstalledMods() {
-    return this.isInitialized ? this.mods.getAll() : [];
+    if (!this.isInitialized) return [];
+    const mods = await this.mods.getAll();
+    const available = await Promise.all(
+      mods.map(async (mod) => ((await this.hasModFiles(mod)) ? mod : null)),
+    );
+    return available.filter(Boolean);
   }
 
   async getStandaloneMods() {
@@ -403,7 +449,9 @@ class FileSystemService {
   }
 
   async isModInstalled(modId) {
-    return this.isInitialized ? this.mods.has(modId) : false;
+    if (!this.isInitialized) return false;
+    const mod = (await this.mods.getAll()).find((item) => item.id === modId);
+    return Boolean(mod && (await this.hasModFiles(mod)));
   }
 
   async flattenModFolder(targetDir) {
