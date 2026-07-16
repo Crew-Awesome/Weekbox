@@ -67,6 +67,25 @@ window.weekboxDebug = {
   openLink: openWeekboxLink,
 };
 
+function installGlobalErrorReporter() {
+  if (window.__weekboxErrorReporterInstalled) return;
+  window.__weekboxErrorReporterInstalled = true;
+
+  window.addEventListener("error", (event) => {
+    console.error("[WeekBox] Unhandled error", event.error || event.message, {
+      filename: event.filename,
+      line: event.lineno,
+      column: event.colno,
+    });
+  });
+
+  window.addEventListener("unhandledrejection", (event) => {
+    console.error("[WeekBox] Unhandled promise rejection", event.reason);
+  });
+}
+
+installGlobalErrorReporter();
+
 async function startApp() {
   try {
     Neutralino.init();
