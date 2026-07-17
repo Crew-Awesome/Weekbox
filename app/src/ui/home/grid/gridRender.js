@@ -42,9 +42,14 @@ export const gridRender = {
             gridState.currentFilter,
             requestedPage,
             gridState.currentCategoryId,
-            { snapshotId: gridState.discoverySnapshotId, signal: gridState.discoveryController?.signal },
+            {
+              snapshotId: gridState.discoverySnapshotId,
+              signal: gridState.discoveryController?.signal,
+            },
           );
-      const result = Array.isArray(response) ? { mods: response, exhausted: response.length < 12 } : response;
+      const result = Array.isArray(response)
+        ? { mods: response, exhausted: response.length < 12 }
+        : response;
       const mods = result.mods;
 
       if (renderVersion !== gridState.renderVersion) return;
@@ -67,11 +72,19 @@ export const gridRender = {
         return;
       }
 
-      mods.forEach((mod, index) => grid.appendChild(createCard(mod, index)));
+      const cards = document.createDocumentFragment();
+      mods.forEach((mod, index) => cards.appendChild(createCard(mod, index)));
+      grid.appendChild(cards);
       if (result.snapshotId) gridState.discoverySnapshotId = result.snapshotId;
       gridState.currentPage = requestedPage;
       gridState.hasMore = !result.exhausted && mods.length === 12;
-      gridState.status = result.stale ? "stale" : result.partial ? "partial" : result.exhausted ? "exhausted" : "ready";
+      gridState.status = result.stale
+        ? "stale"
+        : result.partial
+          ? "partial"
+          : result.exhausted
+            ? "exhausted"
+            : "ready";
       return true;
     } catch (error) {
       if (error?.kind === "aborted") return false;

@@ -47,6 +47,12 @@ export function resetModal() {
   gameBananaLink.href = "";
   gameBananaLink.onclick = null;
   gameBananaLink.hidden = true;
+  gameBananaLink.querySelector("img").src =
+    "https://images.gamebanana.com/static/img/banana.png";
+  gameBananaLink.setAttribute("aria-label", "Open this mod on GameBanana");
+  gameBananaLink.title = "Open this mod on GameBanana";
+  document.getElementById("modal-author").hidden = false;
+  document.getElementById("modal-views-icon").className = "fa-solid fa-eye";
   document.getElementById("modal-thumbnails").replaceChildren();
   const progressBar = document.getElementById("modal-progress-bar");
   if (progressBar) {
@@ -63,23 +69,34 @@ export function resetModal() {
 
 export function showModData(data, isInstalled, onDownload) {
   document.getElementById("modal-title").textContent = data.title;
-  document.getElementById("modal-author").textContent = `by ${data.author}`;
+  const author = document.getElementById("modal-author");
+  author.textContent = data.author ? `by ${data.author}` : "";
+  author.hidden = Boolean(data.hideAuthor);
   document.getElementById("modal-time").textContent = data.timeAgo;
   document.getElementById("modal-likes").textContent =
     data.likes.toLocaleString();
-  document.getElementById("modal-views").textContent =
-    data.views.toLocaleString();
+  document.getElementById("modal-views").textContent = (
+    data.downloads ?? data.views
+  ).toLocaleString();
+  document.getElementById("modal-views-icon").className =
+    data.source === "sniro" ? "fa-solid fa-download" : "fa-solid fa-eye";
   document.getElementById("modal-description").innerHTML = data.description;
   document.getElementById("modal-filesize").textContent = data.fileSizeStr;
   document.getElementById("modal-image-loader").style.display = "none";
 
   const gameBananaLink = document.getElementById("modal-gamebanana-link");
-  gameBananaLink.href = data.gameBananaUrl;
-  gameBananaLink.hidden = !data.gameBananaUrl;
+  const sourceUrl =
+    data.source === "sniro" ? data.sourceUrl : data.gameBananaUrl;
+  gameBananaLink.href = sourceUrl;
+  gameBananaLink.hidden = !sourceUrl;
+  if (data.source === "sniro") {
+    gameBananaLink.querySelector("img").src = "assets/icons/psychonline.png";
+    gameBananaLink.setAttribute("aria-label", "Open Psych Online mods");
+    gameBananaLink.title = "Open Psych Online mods";
+  }
   gameBananaLink.onclick = (event) => {
     event.preventDefault();
-    if (data.gameBananaUrl)
-      Neutralino.os.open(data.gameBananaUrl).catch(() => {});
+    if (sourceUrl) Neutralino.os.open(sourceUrl).catch(() => {});
   };
 
   const engine = ENGINE_DETAILS[data.engineId];

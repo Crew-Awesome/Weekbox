@@ -628,6 +628,9 @@ class FileSystemService {
       sameId(item.id, modId),
     );
     if (!currentMod) return null;
+    if (currentMod.engineLocked && engineId !== "psychonline") {
+      throw new Error("This mod is locked to Psych Online");
+    }
     const engines = await this.getInstalledEngines();
     await this.injection.unlinkFromInstalledEngines(currentMod, engines);
     const mod = await this.mods.setEngineCompatibility(

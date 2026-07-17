@@ -6,6 +6,7 @@ export function createCard(mod, index) {
   const card = document.createElement("button");
   card.type = "button";
   card.className = "mod-card";
+  if (mod.source === "sniro") card.classList.add("mod-card--no-author");
 
   const imageContainer = document.createElement("div");
   imageContainer.className = "mod-image-container";
@@ -33,7 +34,8 @@ export function createCard(mod, index) {
   const author = document.createElement("p");
   author.className = "mod-author";
   author.textContent = `by ${mod.author}`;
-  info.append(title, author);
+  info.appendChild(title);
+  if (mod.source !== "sniro") info.appendChild(author);
 
   let engineBadgeHtml = `
     <div class="home-engine-badge grid-engine-badge">
@@ -62,7 +64,12 @@ export function createCard(mod, index) {
   [
     ["fa-regular fa-clock", mod.timeAgo],
     ["fa-solid fa-heart", Number(mod.likes).toLocaleString()],
-    ["fa-solid fa-eye", Number(mod.views).toLocaleString()],
+    [
+      mod.source === "sniro" ? "fa-solid fa-download" : "fa-solid fa-eye",
+      Number(
+        mod.source === "sniro" ? mod.downloads : mod.views,
+      ).toLocaleString(),
+    ],
   ].forEach(([icon, value]) => {
     const stat = document.createElement("span");
     const iconElement = document.createElement("i");
@@ -75,6 +82,6 @@ export function createCard(mod, index) {
   info.append(stats);
   card.append(imageContainer, info);
   card.addEventListener("click", () => modModal.open(mod.id));
-  
+
   return card;
-}
+}

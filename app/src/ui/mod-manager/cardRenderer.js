@@ -1,7 +1,10 @@
 import { FS } from "../../utils/filesystem.js";
 import { sanitizePathSegment } from "../../utils/filesystem/pathUtils.js";
 import { gameBananaApi } from "../../api/gamebanana.js";
-import { ENGINE_DETAILS, getEngineLaunchBehavior } from "../../config/engines.js";
+import {
+  ENGINE_DETAILS,
+  getEngineLaunchBehavior,
+} from "../../config/engines.js";
 import { applyDominantColor } from "../../utils/extractColor.js";
 import { setupDropdown } from "../../utils/dropdown.js";
 import { engineUpdateToast } from "../engines/engineUpdateToast.js";
@@ -9,10 +12,18 @@ import { getBase64FromUrl } from "../../utils/base64Transformer.js";
 import { modManagerTemplates } from "../../html/components/mod-manager.js";
 
 export const cardRenderer = {
-  async renderCards(gridContainer, modsToRender, allMods, standaloneMods, installedEngines, onModDeleted, onCompatibilitiesChanged) {
+  async renderCards(
+    gridContainer,
+    modsToRender,
+    allMods,
+    standaloneMods,
+    installedEngines,
+    onModDeleted,
+    onCompatibilitiesChanged,
+  ) {
     const standaloneModIds = new Set(standaloneMods.map((m) => String(m.id)));
     const fragment = document.createDocumentFragment();
-    
+
     const savePendingCompatibilities = async () => {
       const changes = [];
       gridContainer
@@ -67,7 +78,9 @@ export const cardRenderer = {
             ? modManagerTemplates.launchButtonRunning()
             : canSwitchMod
               ? modManagerTemplates.launchButtonSwitch()
-              : modManagerTemplates.launchButtonDefault(button.dataset.launchLabel);
+              : modManagerTemplates.launchButtonDefault(
+                  button.dataset.launchLabel,
+                );
         });
     };
 
@@ -78,10 +91,11 @@ export const cardRenderer = {
     }));
 
     for (const mod of modsToRender) {
-      let imageUrl = mod.imageBase64 || mod.image || "assets/icons/default-mod.png";
-      
+      let imageUrl =
+        mod.imageBase64 || mod.image || "assets/icons/default-mod.png";
+
       const isExecutable = standaloneModIds.has(String(mod.id));
-      
+
       const engine = isExecutable
         ? null
         : installedEngines.find(
@@ -89,12 +103,15 @@ export const cardRenderer = {
               item.id === mod.engineId &&
               (!mod.engineVersion || item.version === mod.engineVersion),
           );
-          
+
       let engineBadgeHtml = modManagerTemplates.unassignedBadge();
-      
+
       if (isExecutable) {
         // FIX: Si es ejecutable, se omite por completo la renderización del dropdown
         engineBadgeHtml = modManagerTemplates.executableBadge();
+      } else if (mod.engineLocked) {
+        const engineInfo = ENGINE_DETAILS.psychonline;
+        engineBadgeHtml = `<div class="mod-manager-engine-badge"><img src="assets/icons/${engineInfo.icon}" alt=""/><span>${engineInfo.name}</span></div>`;
       } else {
         const engineInfo = ENGINE_DETAILS[mod.engineId];
         const versionOptions = [
@@ -103,21 +120,41 @@ export const cardRenderer = {
             .filter((item) => item.id === mod.engineId)
             .map((item) => item.version),
         ];
-        
+
         const selectedVersion = mod.engineVersion || "Any version";
         const selectedEngineName = engineInfo?.name || "Unassigned";
         const selectedEngineIcon = engineInfo?.icon;
-        
+
         const engineOptionsHtml = [
           `<button type="button" data-engine-id="" class="${!mod.engineId ? "selected" : ""}">${modManagerTemplates.unassignedQuestionIcon()}Unassigned</button>`,
-          ...engineOptions.map(opt => modManagerTemplates.engineOption(opt.id, opt.name, opt.icon, opt.id === mod.engineId))
+          ...engineOptions.map((opt) =>
+            modManagerTemplates.engineOption(
+              opt.id,
+              opt.name,
+              opt.icon,
+              opt.id === mod.engineId,
+            ),
+          ),
         ].join("");
-        
-        const versionOptionsHtml = versionOptions.map(ver => modManagerTemplates.versionOption(ver, ver === selectedVersion)).join("");
-        
-        engineBadgeHtml = modManagerTemplates.engineCompatibilityPicker(mod.id, mod.engineId || "", mod.engineVersion || "", selectedEngineIcon, selectedEngineName, engineOptionsHtml, selectedVersion, versionOptionsHtml);
+
+        const versionOptionsHtml = versionOptions
+          .map((ver) =>
+            modManagerTemplates.versionOption(ver, ver === selectedVersion),
+          )
+          .join("");
+
+        engineBadgeHtml = modManagerTemplates.engineCompatibilityPicker(
+          mod.id,
+          mod.engineId || "",
+          mod.engineVersion || "",
+          selectedEngineIcon,
+          selectedEngineName,
+          engineOptionsHtml,
+          selectedVersion,
+          versionOptionsHtml,
+        );
       }
-      
+
       const isHidden = mod.hidden;
       const eyeIcon = mod.hidden ? "fa-eye-slash" : "fa-eye";
       const card = document.createElement("div");
@@ -126,20 +163,47 @@ export const cardRenderer = {
       if (mod.hidden) {
         card.style.opacity = "0.5";
       }
-      
+
       const launchLabel =
         isExecutable ||
         getEngineLaunchBehavior(mod.engineId)?.scope === "exclusive-mod"
           ? "Launch Mod"
           : "Launch Engine";
-          
-      card.innerHTML = modManagerTemplates.cardContent(imageUrl, isExecutable ? "standalone" : "engine", mod.id, engine?.id || "", engine?.version || "", launchLabel, mod.name, mod.hidden, eyeIcon, engineBadgeHtml);
+
+      card.innerHTML = modManagerTemplates.cardContent(
+        imageUrl,
+        isExecutable ? "standalone" : "engine",
+        mod.id,
+        engine?.id || "",
+        engine?.version || "",
+        launchLabel,
+        mod.name,
+        mod.hidden,
+        eyeIcon,
+        engineBadgeHtml,
+      );
       applyDominantColor(card.querySelector(".mod-manager-cover"), card);
-      
+
       if (!mod.imageBase64 && !mod.image) {
-        gameBananaApi.getModDetails(mod.id).then(async details => {
-          if (details?.images?.length) {
-            const b64 = await getBase64FromUrl(details.images[0]);
+        gameBananaApi
+          .getModDetails(mod.id)
+          .then(async (details) => {
+            if (details?.images?.length) {
+              const b64 = await getBase64FromUrl(details.images[0]);
+              if (b64) {
+                mod.imageBase64 = b64;
+                const img = card.querySelector(".mod-manager-cover");
+                if (img) {
+                  img.src = b64;
+                  applyDominantColor(img, card);
+                }
+              }
+            }
+          })
+          .catch(() => {});
+      } else if (mod.image && !mod.imageBase64) {
+        getBase64FromUrl(mod.image)
+          .then((b64) => {
             if (b64) {
               mod.imageBase64 = b64;
               const img = card.querySelector(".mod-manager-cover");
@@ -148,21 +212,10 @@ export const cardRenderer = {
                 applyDominantColor(img, card);
               }
             }
-          }
-        }).catch(()=>{});
-      } else if (mod.image && !mod.imageBase64) {
-        getBase64FromUrl(mod.image).then(b64 => {
-          if (b64) {
-            mod.imageBase64 = b64;
-            const img = card.querySelector(".mod-manager-cover");
-            if (img) {
-              img.src = b64;
-              applyDominantColor(img, card);
-            }
-          }
-        }).catch(()=>{});
+          })
+          .catch(() => {});
       }
-      
+
       const deleteBtn = card.querySelector(".mod-manager-delete-btn");
       const launchBtn = card.querySelector(".mod-manager-launch-btn");
       const enginePill = card.querySelector(".mod-manager-engine-pill");
@@ -172,7 +225,7 @@ export const cardRenderer = {
       const compatibilityPicker = card.querySelector(
         ".mod-manager-engine-compatibility-picker",
       );
-      
+
       let engineDropdownCtrl, versionDropdownCtrl;
       if (enginePill && engineMenu) {
         engineDropdownCtrl = setupDropdown(
@@ -200,7 +253,7 @@ export const cardRenderer = {
           },
         );
       }
-      
+
       engineMenu?.addEventListener("click", async (event) => {
         const option = event.target.closest("button[data-engine-id]");
         if (!option) return;
@@ -208,7 +261,7 @@ export const cardRenderer = {
         const engineId = option.dataset.engineId;
         compatibilityPicker.dataset.pendingEngineId = engineId;
         compatibilityPicker.dataset.pendingVersion = "";
-        
+
         enginePill.querySelector("span").textContent =
           option.dataset.engineName || "Unassigned";
         enginePill.querySelector("img, .fa-question-circle")?.remove();
@@ -218,15 +271,17 @@ export const cardRenderer = {
             ? `<img src="assets/icons/${option.dataset.engineIcon}" alt=""/>`
             : modManagerTemplates.unassignedQuestionIcon(),
         );
-        
+
         versionPill.querySelector("span").textContent = "Any version";
         versionMenu.innerHTML = [
           modManagerTemplates.versionOption("Any version", true),
           ...installedEngines
             .filter((item) => item.id === engineId)
-            .map((item) => modManagerTemplates.versionOption(item.version, false)),
+            .map((item) =>
+              modManagerTemplates.versionOption(item.version, false),
+            ),
         ].join("");
-        
+
         engineMenu
           .querySelectorAll("button[data-engine-id]")
           .forEach((button) =>
@@ -238,7 +293,7 @@ export const cardRenderer = {
         engineDropdownCtrl?.close();
         await savePendingCompatibilities();
       });
-      
+
       versionMenu?.addEventListener("click", async (event) => {
         const option = event.target.closest("button[data-version]");
         if (!option) return;
@@ -258,7 +313,7 @@ export const cardRenderer = {
         versionDropdownCtrl?.close();
         await savePendingCompatibilities();
       });
-      
+
       launchBtn.addEventListener("click", async () => {
         launchBtn.disabled = true;
         try {
@@ -286,7 +341,7 @@ export const cardRenderer = {
           refreshLaunchButtons();
         }
       });
-      
+
       deleteBtn.addEventListener("click", async () => {
         deleteBtn.disabled = true;
         deleteBtn.innerHTML = modManagerTemplates.deleteSpinner();
@@ -298,7 +353,9 @@ export const cardRenderer = {
           setTimeout(() => {
             card.remove();
             if (gridContainer.children.length === 0) {
-              gridContainer.outerHTML = modManagerTemplates.emptyState("No mods installed yet.");
+              gridContainer.outerHTML = modManagerTemplates.emptyState(
+                "No mods installed yet.",
+              );
             }
           }, 300);
           document.dispatchEvent(new CustomEvent("mods-updated"));
@@ -307,16 +364,15 @@ export const cardRenderer = {
           deleteBtn.innerHTML = modManagerTemplates.deleteIcon();
         }
       });
-      
+
       const dirBtn = card.querySelector(".mod-manager-dir-btn");
       dirBtn.addEventListener("click", async () => {
         try {
           const modPath = `${FS.modsPath}/${mod.folderName || sanitizePathSegment(mod.name)}`;
           await Neutralino.os.open(modPath);
-        } catch (e) {
-        }
+        } catch (e) {}
       });
-      
+
       const visBtn = card.querySelector(".mod-manager-vis-btn");
       visBtn.addEventListener("click", async () => {
         visBtn.disabled = true;
@@ -343,11 +399,11 @@ export const cardRenderer = {
           visBtn.disabled = false;
         }
       });
-      
+
       fragment.appendChild(card);
     }
-    
+
     gridContainer.appendChild(fragment);
     refreshLaunchButtons();
-  }
+  },
 };

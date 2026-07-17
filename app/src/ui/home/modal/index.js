@@ -90,6 +90,10 @@ export const modModal = {
         dependencies: selected.map((dependency) => dependency.dependencyId),
         toastThumbnail: data.images?.[0],
         sourceType: selectedDownload.type,
+        source: data.source || "gamebanana",
+        image: data.images?.[0] || null,
+        sourceUrl: data.sourceUrl || data.gameBananaUrl || null,
+        engineLocked: Boolean(data.engineLocked),
       },
     );
     if (!installedMod) return;

@@ -2,6 +2,7 @@ import { FeaturedService } from "./gamebanana/featuredService.js";
 import { CategoryFeedService } from "./gamebanana/categoryFeedService.js";
 import { GameBananaTransport } from "./gamebanana/transport.js";
 import { DISCOVERY_CONFIG } from "../config/discovery.js";
+import { sniroApi } from "./sniro.js";
 import {
   ENGINE_CATEGORY_IDS,
   ENGINE_CATEGORY_ROOTS,
@@ -55,6 +56,7 @@ export const gameBananaApi = {
   featuredService: null,
   categoryFeedService: null,
   categoryTransport: null,
+  psychOnlineFeedCache: new Map(),
 
   getEngineIdForSubmission(type, id) {
     return EXCLUDED_ENGINE_SUBMISSIONS.get(`${type}:${id}`) || null;
@@ -543,6 +545,11 @@ export const gameBananaApi = {
   },
 
   async getModDetails(modId, { includeRequirements = true } = {}) {
+    if (String(modId).startsWith("sniro:")) {
+      return sniroApi
+        .getModDetails(String(modId).slice("sniro:".length))
+        .catch(() => null);
+    }
     try {
       const data = await this.getModProfile(modId);
       if (!data) return null;
@@ -621,6 +628,7 @@ export const gameBananaApi = {
       image: this.getImageUrl(mod),
       likes: mod._nLikeCount || 0,
       views: mod._nViewCount || 0,
+      submittedAt: Number(mod._tsDateAdded || 0) * 1000,
       timeAgo: this.getTimeAgo(mod._tsDateAdded),
       engineId:
         mod.__resolvedEngineId ||
@@ -723,6 +731,9 @@ export const gameBananaApi = {
     categoryId = null,
     options = {},
   ) {
+    if (Number(categoryId) === 43788) {
+      return this.getPsychOnlineGridMods(filter, page, options);
+    }
     if (filter === "ripe") return this.getRipeMods(page, categoryId, options);
     return this.getCategoryFeed().getGridMods(
       filter,
@@ -730,6 +741,61 @@ export const gameBananaApi = {
       categoryId,
       options,
     );
+  },
+
+  async getPsychOnlineGridMods(filter, page, options = {}) {
+    const cacheKey = filter;
+    const state = this.psychOnlineFeedCache.get(cacheKey) || {
+      gameBananaMods: [],
+      gameBananaPage: 1,
+      exhausted: false,
+      snapshotId: null,
+      sniroMods: null,
+    };
+    this.psychOnlineFeedCache.set(cacheKey, state);
+    if (!state.sniroMods) {
+      state.sniroMods = await sniroApi
+        .listAll("", "submitted:desc")
+        .catch(() => []);
+    }
+
+    const pageSize = 12;
+    const required = Math.max(1, Number(page) || 1) * pageSize;
+    while (!state.exhausted && state.gameBananaMods.length < required) {
+      const result = await this.getCategoryFeed().getGridMods(
+        filter,
+        state.gameBananaPage,
+        43788,
+        { ...options, snapshotId: state.snapshotId },
+      );
+      const batch = Array.isArray(result) ? result : result.mods || [];
+      state.snapshotId = Array.isArray(result)
+        ? null
+        : result.snapshotId || state.snapshotId;
+      state.gameBananaMods.push(...batch);
+      state.gameBananaPage += 1;
+      state.exhausted = Array.isArray(result)
+        ? batch.length < pageSize
+        : Boolean(result.exhausted);
+      if (!batch.length) state.exhausted = true;
+    }
+
+    const sortByNewest = (left, right) => {
+      const leftTime = Number(left.submittedAt || 0) || 0;
+      const rightTime = Number(right.submittedAt || 0) || 0;
+      return (
+        rightTime - leftTime || String(left.id).localeCompare(String(right.id))
+      );
+    };
+    const combined = [...state.gameBananaMods, ...state.sniroMods].sort(
+      sortByNewest,
+    );
+    const start = (Math.max(1, Number(page) || 1) - 1) * pageSize;
+    return {
+      mods: combined.slice(start, start + pageSize),
+      exhausted: state.exhausted && start + pageSize >= combined.length,
+      snapshotId: state.snapshotId,
+    };
   },
 
   getCategoryFeed() {
@@ -867,6 +933,19 @@ export const gameBananaApi = {
         );
       }
       let parsedMods = visibleRecords.map((mod) => this.toGridMod(mod));
+
+      if (page === 1) {
+        const sniroMods = await sniroApi
+          .listAll(normalizedQuery, "submitted:desc")
+          .catch(() => []);
+        parsedMods = [...parsedMods, ...sniroMods]
+          .sort(
+            (left, right) =>
+              Number(right.views || 0) - Number(left.views || 0) ||
+              Number(right.likes || 0) - Number(left.likes || 0),
+          )
+          .slice(0, perPage);
+      }
 
       if (directMod) {
         parsedMods = parsedMods.filter((m) => m.id !== directMod.id);
