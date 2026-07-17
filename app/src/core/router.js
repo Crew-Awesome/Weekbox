@@ -24,4 +24,4 @@ export const router = {
       this.mainContent.innerHTML = `<p style="padding: 24px; color: #ff4a4a;">Failed to load view: ${viewId}.html</p>`;
     }
   },
-};
+};

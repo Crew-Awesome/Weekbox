@@ -12,6 +12,8 @@ import { openLaunchDeepLink, openWeekboxLink } from "./deepLinks.js";
 import { errorHandler } from "../ui/errors/errorHandler.js";
 import { appUpdater } from "./appUpdater.js";
 import { appUpdateModal } from "../ui/updates/appUpdateModal.js";
+import { toastSystem } from "../ui/toasts/toastSystem.js";
+import { storageRecommendationModal } from "../ui/storageRecommendationModal.js";
 
 function clearTestToasts() {
   document
@@ -68,6 +70,10 @@ window.weekboxDebug = {
   clearToasts: clearTestToasts,
   testToasts,
   openLink: openWeekboxLink,
+  resetStorageRecommendation() {
+    appSettings.set("storageMoveRecommendationDismissed", false);
+    location.reload();
+  },
 };
 
 function installGlobalErrorReporter() {
@@ -101,6 +107,57 @@ function installGlobalErrorReporter() {
 
 installGlobalErrorReporter();
 
+async function recommendSaferStorageLocation() {
+  if (!(await FS.shouldRecommendDefaultStorage())) return;
+
+  const defaultPath = await FS.getDefaultStorageParentPath();
+  const choice = await storageRecommendationModal.show({
+    currentPath: FS.weekboxPath,
+    defaultPath,
+  });
+  if (choice === "dismiss") {
+    appSettings.set("storageMoveRecommendationDismissed", true);
+    return;
+  }
+  if (choice !== "move") return;
+
+  const toastId = "weekbox-storage-recommendation";
+  toastSystem.show(toastId, {
+    title: "Moving WeekBox files",
+    message: "Preparing files…",
+    mediaHtml: '<i class="fa-solid fa-folder-open" aria-hidden="true"></i>',
+    showPercent: true,
+  });
+  try {
+    await FS.moveStorageTo(
+      defaultPath,
+      ({ progress, copiedFiles, totalFiles }) => {
+        toastSystem.update(toastId, {
+          message: `Moving files (${copiedFiles} of ${totalFiles})`,
+          progress,
+        });
+      },
+    );
+    appSettings.set("storageParentPath", null);
+    toastSystem.setState(toastId, "complete", {
+      badgeHtml: '<i class="fa-solid fa-check" aria-hidden="true"></i>',
+    });
+    toastSystem.update(toastId, {
+      message: "WeekBox files moved",
+      progress: 100,
+    });
+    setTimeout(() => toastSystem.hide(toastId), 3600);
+  } catch (error) {
+    toastSystem.setState(toastId, "error", {
+      badgeHtml: '<i class="fa-solid fa-xmark" aria-hidden="true"></i>',
+    });
+    toastSystem.update(toastId, {
+      message: error.message || "Could not move WeekBox files.",
+      progress: 100,
+    });
+  }
+}
+
 async function startApp() {
   try {
     Neutralino.init();
@@ -128,6 +185,7 @@ async function startApp() {
     registerEnginesView();
     await router.init();
     await openLaunchDeepLink();
+    await recommendSaferStorageLocation();
     if (appSettings.get("checkAppUpdatesOnStartup")) {
       appUpdater
         .check()

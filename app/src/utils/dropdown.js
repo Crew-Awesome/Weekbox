@@ -50,4 +50,4 @@ export function setupDropdown(trigger, container, options = {}) {
       document.removeEventListener("click", handleOutsideClick);
     }
   };
-}
+}

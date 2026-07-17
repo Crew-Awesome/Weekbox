@@ -111,4 +111,4 @@ export const filterManager = {
     this.filterContainer = null;
     this.filterClickHandler = null;
   }
-};
+};

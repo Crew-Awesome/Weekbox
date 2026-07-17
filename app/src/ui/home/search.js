@@ -146,4 +146,4 @@ export const homeSearch = {
     }
     await homeGrid.renderGrid(true);
   },
-};
+};

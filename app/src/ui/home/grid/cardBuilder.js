@@ -77,4 +77,4 @@ export function createCard(mod, index) {
   card.addEventListener("click", () => modModal.open(mod.id));
   
   return card;
-}
+}

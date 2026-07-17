@@ -49,20 +49,20 @@ class FileSystemService {
 
   async init() {
     if (typeof Neutralino !== "undefined") {
-      const documentsPath = await Neutralino.os.getPath("documents");
-      let defaultStoragePath = documentsPath;
-      if (window.NL_OS === "Windows" && isOneDrivePath(documentsPath)) {
-        try {
-          defaultStoragePath = await Neutralino.os.getPath("appData");
-        } catch (error) {
-          console.warn(
-            "Could not use the local application-data folder for WeekBox storage",
-            error,
-          );
+      const defaultStoragePath = await this.getDefaultStorageParentPath();
+      const savedPath = appSettings.get("storageParentPath");
+      let storagePath = savedPath || defaultStoragePath;
+
+      // Keep the old default exactly where it is. Existing libraries only move
+      // when the user explicitly chooses a new location in Settings.
+      if (!savedPath) {
+        const legacyBasePath = await Neutralino.os.getPath("documents");
+        if (await this.api.exists(`${legacyBasePath}/WeekBox`)) {
+          storagePath = legacyBasePath;
         }
       }
-      const savedPath = appSettings.get("storageParentPath");
-      this.setStoragePaths(savedPath || defaultStoragePath);
+
+      this.setStoragePaths(storagePath);
       try {
         await this.ensureStorageDirectories();
       } catch (error) {
@@ -77,6 +77,14 @@ class FileSystemService {
     }
     this.isInitialized = true;
     await this.cleanupHiddenModLinks();
+  }
+
+  async getDefaultStorageParentPath() {
+    if (window.NL_OS === "Windows") {
+      const localAppDataPath = await Neutralino.os.getEnv("LOCALAPPDATA");
+      if (localAppDataPath) return localAppDataPath;
+    }
+    return Neutralino.os.getPath("documents");
   }
 
   setStoragePaths(basePath) {
@@ -102,7 +110,7 @@ class FileSystemService {
     return this.activeEngineProcesses.size > 0;
   }
 
-  async moveStorageTo(basePath) {
+  async moveStorageTo(basePath, onProgress = () => {}) {
     const destinationBasePath = String(basePath || "").replace(/[\\/]+$/, "");
     if (!destinationBasePath) throw new Error("Choose a storage folder first");
     if (destinationBasePath.toLowerCase() === this.basePath.toLowerCase()) {
@@ -117,7 +125,15 @@ class FileSystemService {
 
     const destinationWeekboxPath = `${destinationBasePath}/WeekBox`;
     if (await this.api.exists(destinationWeekboxPath)) {
-      throw new Error("The selected folder already contains a WeekBox folder");
+      const entries = getRealEntries(
+        await Neutralino.filesystem.readDirectory(destinationWeekboxPath),
+      );
+      if (entries.length > 0) {
+        throw new Error(
+          "The selected folder already contains a non-empty WeekBox folder",
+        );
+      }
+      await Neutralino.filesystem.remove(destinationWeekboxPath);
     }
 
     const mods = await this.mods.getAll();
@@ -129,14 +145,10 @@ class FileSystemService {
     );
 
     try {
-      await Neutralino.filesystem.copy(
+      await this.copyDirectoryWithProgress(
         this.weekboxPath,
         destinationWeekboxPath,
-        {
-          recursive: true,
-          overwrite: false,
-          skip: false,
-        },
+        onProgress,
       );
       await Neutralino.filesystem.remove(this.weekboxPath);
     } catch (error) {
@@ -162,6 +174,80 @@ class FileSystemService {
       ),
     );
     return this.weekboxPath;
+  }
+
+  async copyDirectoryWithProgress(sourcePath, destinationPath, onProgress) {
+    const files = [];
+    const directories = [];
+    const collectFiles = async (directoryPath) => {
+      directories.push(directoryPath);
+      const entries = getRealEntries(
+        await Neutralino.filesystem.readDirectory(directoryPath),
+      );
+      for (const entry of entries) {
+        const entryPath = `${directoryPath}/${entry.entry}`;
+        if (entry.type === "DIRECTORY") {
+          await collectFiles(entryPath);
+        } else if (entry.type === "FILE") {
+          const stats = await Neutralino.filesystem.getStats(entryPath);
+          files.push({ path: entryPath, size: Number(stats.size) || 0 });
+        }
+      }
+    };
+    await collectFiles(sourcePath);
+
+    const totalBytes = files.reduce((total, file) => total + file.size, 0);
+    const fileSizes = new Map(files.map((file) => [file.path, file.size]));
+    let copiedBytes = 0;
+    let copiedFiles = 0;
+    const reportProgress = () => {
+      const progress = totalBytes
+        ? (copiedBytes / totalBytes) * 100
+        : files.length
+          ? (copiedFiles / files.length) * 100
+          : 100;
+      onProgress({ progress, copiedFiles, totalFiles: files.length });
+    };
+
+    reportProgress();
+    for (const sourceDirectory of directories) {
+      const relativePath = sourceDirectory.slice(sourcePath.length);
+      await this.api.ensureDir(`${destinationPath}${relativePath}`);
+    }
+
+    const concurrency = appSettings.get("multithreadStorageMoves") ? 4 : 1;
+    let nextFileIndex = 0;
+    const copyNextFile = async () => {
+      while (nextFileIndex < files.length) {
+        const file = files[nextFileIndex++];
+        const relativePath = file.path.slice(sourcePath.length);
+        await Neutralino.filesystem.copy(
+          file.path,
+          `${destinationPath}${relativePath}`,
+          { recursive: false, overwrite: false, skip: false },
+        );
+        copiedBytes += fileSizes.get(file.path) || 0;
+        copiedFiles += 1;
+        reportProgress();
+      }
+    };
+    await Promise.all(
+      Array.from({ length: Math.min(concurrency, files.length) }, copyNextFile),
+    );
+  }
+
+  async shouldRecommendDefaultStorage() {
+    if (window.NL_OS !== "Windows") return false;
+    if (appSettings.get("storageMoveRecommendationDismissed")) return false;
+    const defaultPath = await this.getDefaultStorageParentPath();
+    const usingDefault =
+      this.basePath.toLowerCase() === String(defaultPath).toLowerCase();
+    if (usingDefault) return false;
+    const documentsPath = await Neutralino.os.getPath("documents");
+    return (
+      this.basePath.toLowerCase() === documentsPath.toLowerCase() ||
+      this.isOneDriveStorage()
+    );
   }
 
   isOneDriveStorage() {

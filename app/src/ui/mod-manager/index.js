@@ -151,4 +151,4 @@ export const modManagerModal = {
       }
     );
   }
-};
+};

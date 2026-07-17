@@ -92,4 +92,4 @@ export const filterManager = {
     );
     return currentFilter;
   }
-};
+};

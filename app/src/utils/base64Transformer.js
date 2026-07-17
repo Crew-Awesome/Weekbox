@@ -10,4 +10,4 @@ export async function getBase64FromUrl(url) {
   } catch (e) {
     return null;
   }
-}
+}

@@ -207,6 +207,12 @@
   gap: 16px;
 }
 
+.storage-location-actions {
+  display: flex;
+  flex-shrink: 0;
+  gap: 8px;
+}
+
 .setting-item-storage .setting-info p {
   overflow: hidden;
   text-overflow: ellipsis;

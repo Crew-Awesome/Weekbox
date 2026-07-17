@@ -119,13 +119,35 @@
                 <h4>WeekBox storage location</h4>
                 <p id="storage-location-path">Loading current location…</p>
               </div>
-              <button
-                type="button"
-                class="storage-location-button"
-                id="choose-storage-location"
-              >
-                <i class="fa-solid fa-folder-open"></i> Choose folder
-              </button>
+              <div class="storage-location-actions">
+                <button
+                  type="button"
+                  class="storage-location-button"
+                  id="choose-storage-location"
+                >
+                  <i class="fa-solid fa-folder-open"></i> Choose folder
+                </button>
+                <button
+                  type="button"
+                  class="storage-location-button"
+                  id="use-default-storage-location"
+                >
+                  Use default
+                </button>
+              </div>
+            </div>
+            <div class="setting-item">
+              <div class="setting-info">
+                <h4>Move files faster</h4>
+                <p>
+                  Copy up to four files at once when changing the WeekBox
+                  storage location.
+                </p>
+              </div>
+              <label class="switch">
+                <input type="checkbox" id="setting-multithreadStorageMoves" />
+                <span class="slider round"></span>
+              </label>
             </div>
           </div>
         </div>

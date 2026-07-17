@@ -55,4 +55,4 @@ export function applyDominantColor(img, targetElement, options = {}) {
 
   if (img.complete) processColor();
   else img.addEventListener("load", processColor);
-}
+}

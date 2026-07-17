@@ -144,6 +144,25 @@
   border-color: rgba(255, 178, 87, 0.45);
   background: rgba(255, 178, 87, 0.12);
 }
+.storage-recommendation-path {
+  margin: 0;
+  padding: 11px 12px;
+  overflow-wrap: anywhere;
+  border: 1px solid var(--border-color);
+  border-radius: 7px;
+  background: var(--bg-color);
+  color: var(--text-muted);
+  font:
+    0.8rem/1.45 ui-monospace,
+    SFMono-Regular,
+    Consolas,
+    monospace;
+}
+.storage-recommendation-overlay {
+  background: rgba(0, 0, 0, 0.38);
+  backdrop-filter: blur(3px);
+  -webkit-backdrop-filter: blur(3px);
+}
 
 @media (max-width: 560px) {
   .error-overlay {

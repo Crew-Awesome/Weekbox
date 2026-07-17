@@ -87,4 +87,4 @@ export const modManagerTemplates = {
   deleteIcon: () => `<i class="fa-solid fa-trash"></i>`,
   unassignedQuestionIcon: () => `<i class="fa-solid fa-question-circle" aria-hidden="true"></i>`,
   openDirectoryIcon: () => `<i class="fa-solid fa-folder-open" aria-hidden="true"></i>`
-};
+};

@@ -338,4 +338,4 @@ export const cardRenderer = {
     gridContainer.appendChild(fragment);
     refreshLaunchButtons();
   }
-};
+};

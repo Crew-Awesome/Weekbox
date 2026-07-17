@@ -66,4 +66,4 @@ export const dependenciesRenderer = {
     fragment.append(section);
     container.append(fragment);
   }
-};
+};

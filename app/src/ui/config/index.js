@@ -3,6 +3,7 @@ import { FS } from "../../utils/filesystem.js";
 import { downloadEngine } from "../engines/downloadEngine.js";
 import { downloadMod } from "../home/modal/downloadMod.js";
 import { appUpdater } from "../../core/appUpdater.js";
+import { toastSystem } from "../toasts/toastSystem.js";
 
 export const configModal = {
   async init() {
@@ -50,6 +51,10 @@ export const configModal = {
       ?.addEventListener("click", () => this.chooseStorageLocation());
 
     document
+      .getElementById("use-default-storage-location")
+      ?.addEventListener("click", () => this.useDefaultStorageLocation());
+
+    document
       .getElementById("check-app-update")
       ?.addEventListener("click", () => {
         if (this.pendingAppUpdate) return this.installAppUpdate();
@@ -94,6 +99,7 @@ export const configModal = {
       "hideOnLaunch",
       "autoStartAfterDownload",
       "multithreadDownloads",
+      "multithreadStorageMoves",
       "checkUpdatesOnStartup",
       "checkUpdatesInBackground",
       "checkAppUpdatesOnStartup",
@@ -124,6 +130,7 @@ export const configModal = {
       "hideOnLaunch",
       "autoStartAfterDownload",
       "multithreadDownloads",
+      "multithreadStorageMoves",
       "checkUpdatesOnStartup",
       "checkUpdatesInBackground",
       "checkAppUpdatesOnStartup",
@@ -146,7 +153,7 @@ export const configModal = {
 
   updateStorageLocationLabel() {
     const label = document.getElementById("storage-location-path");
-    if (label) label.textContent = FS.weekboxPath || "Documents/WeekBox";
+    if (label) label.textContent = FS.weekboxPath || "AppData/WeekBox";
   },
 
   showAvailableAppUpdate(update) {
@@ -211,6 +218,40 @@ export const configModal = {
     );
   },
 
+  showStorageMoveToast() {
+    toastSystem.show("weekbox-storage-move", {
+      title: "Moving WeekBox files",
+      message: "Preparing files…",
+      mediaHtml: '<i class="fa-solid fa-folder-open" aria-hidden="true"></i>',
+      showPercent: true,
+    });
+  },
+
+  updateStorageMoveToast({ progress, copiedFiles, totalFiles }) {
+    toastSystem.update("weekbox-storage-move", {
+      message: `Moving files (${copiedFiles} of ${totalFiles})`,
+      progress,
+    });
+  },
+
+  completeStorageMoveToast() {
+    toastSystem.setState("weekbox-storage-move", "complete", {
+      badgeHtml: '<i class="fa-solid fa-check" aria-hidden="true"></i>',
+    });
+    toastSystem.update("weekbox-storage-move", {
+      message: "WeekBox files moved",
+      progress: 100,
+    });
+    setTimeout(() => toastSystem.hide("weekbox-storage-move"), 3600);
+  },
+
+  failStorageMoveToast(message) {
+    toastSystem.setState("weekbox-storage-move", "error", {
+      badgeHtml: '<i class="fa-solid fa-xmark" aria-hidden="true"></i>',
+    });
+    toastSystem.update("weekbox-storage-move", { message, progress: 100 });
+  },
+
   async chooseStorageLocation() {
     if (FS.hasRunningProcesses() || this.hasActiveDownloads()) {
       await Neutralino.os.showMessageBox(
@@ -246,16 +287,19 @@ export const configModal = {
 
       button.disabled = true;
       button.textContent = "Moving files…";
-      await FS.moveStorageTo(selectedPath);
-      this.updateStorageLocationLabel();
-      await Neutralino.os.showMessageBox(
-        "Storage location updated",
-        "WeekBox files were moved successfully.",
-        "OK",
-        "INFO",
+      button.innerHTML =
+        '<i class="fa-solid fa-folder-open"></i> Choose folder';
+      this.showStorageMoveToast();
+      await FS.moveStorageTo(selectedPath, (progress) =>
+        this.updateStorageMoveToast(progress),
       );
+      this.updateStorageLocationLabel();
+      this.completeStorageMoveToast();
     } catch (error) {
       console.error("Could not move WeekBox storage", error);
+      this.failStorageMoveToast(
+        error.message || "Could not move WeekBox files.",
+      );
       await Neutralino.os.showMessageBox(
         "Could not move WeekBox files",
         error.message || "An unexpected error occurred while moving files.",
@@ -268,6 +312,61 @@ export const configModal = {
         button.innerHTML =
           '<i class="fa-solid fa-folder-open"></i> Choose folder';
       }
+    }
+  },
+
+  async useDefaultStorageLocation() {
+    if (FS.hasRunningProcesses() || this.hasActiveDownloads()) {
+      await Neutralino.os.showMessageBox(
+        "Cannot move WeekBox files",
+        "Close all running engines and wait for downloads to finish before changing the storage location.",
+        "OK",
+        "WARNING",
+      );
+      return;
+    }
+
+    const button = document.getElementById("use-default-storage-location");
+    const chooseButton = document.getElementById("choose-storage-location");
+    try {
+      const defaultPath = await FS.getDefaultStorageParentPath();
+      const defaultWeekboxPath = `${defaultPath.replace(/[\\/]+$/, "")}/WeekBox`;
+      const choice = await Neutralino.os.showMessageBox(
+        "Use the default location?",
+        `WeekBox will move all mods, engines, and data to:\n${defaultWeekboxPath}\n\nThis can take a while for large libraries.`,
+        "YES_NO",
+        "QUESTION",
+      );
+      if (choice !== "YES") return;
+
+      button.disabled = true;
+      chooseButton.disabled = true;
+      button.textContent = "Moving filesâ€¦";
+      button.textContent = "Use default";
+      this.showStorageMoveToast();
+      await FS.moveStorageTo(defaultPath, (progress) =>
+        this.updateStorageMoveToast(progress),
+      );
+      appSettings.set("storageParentPath", null);
+      this.updateStorageLocationLabel();
+      this.completeStorageMoveToast();
+    } catch (error) {
+      console.error("Could not use the default WeekBox storage", error);
+      this.failStorageMoveToast(
+        error.message || "Could not move WeekBox files.",
+      );
+      await Neutralino.os.showMessageBox(
+        "Could not move WeekBox files",
+        error.message || "An unexpected error occurred while moving files.",
+        "OK",
+        "ERROR",
+      );
+    } finally {
+      if (button) {
+        button.disabled = false;
+        button.textContent = "Use default";
+      }
+      if (chooseButton) chooseButton.disabled = false;
     }
   },
 

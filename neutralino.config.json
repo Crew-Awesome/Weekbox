@@ -1,5 +1,6 @@
 {
   "applicationId": "com.weekbox.app",
+  "storageLocation": "system",
   "applicationIcon": "app/assets/icons/launcher-icon.png",
   "version": "1.2.3",
   "defaultMode": "window",
