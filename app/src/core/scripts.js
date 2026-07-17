@@ -165,6 +165,54 @@ async function recommendSaferStorageLocation() {
   }
 }
 
+async function offerNestedStorageRepair() {
+  const targetParentPath = await FS.getNestedStorageRepairTarget();
+  if (!targetParentPath) return;
+
+  const choice = await Neutralino.os.showMessageBox(
+    "Repair WeekBox folder location?",
+    `WeekBox found an accidental nested folder:\n${FS.weekboxPath}\n\nIt can safely move the inner files to:\n${FS.basePath}\n\nNo files will be merged because the outer folder contains only this inner WeekBox folder.`,
+    "YES_NO",
+    "QUESTION",
+  );
+  if (choice !== "YES") return;
+
+  const toastId = "weekbox-nested-storage-repair";
+  toastSystem.show(toastId, {
+    title: "Repairing WeekBox folder",
+    message: "Preparing files…",
+    mediaHtml: '<i class="fa-solid fa-folder-open" aria-hidden="true"></i>',
+    showPercent: true,
+  });
+  try {
+    await FS.moveStorageTo(
+      targetParentPath,
+      ({ progress, copiedFiles, totalFiles }) => {
+        toastSystem.update(toastId, {
+          message: `Moving files (${copiedFiles} of ${totalFiles})`,
+          progress,
+        });
+      },
+    );
+    toastSystem.setState(toastId, "complete", {
+      badgeHtml: '<i class="fa-solid fa-check" aria-hidden="true"></i>',
+    });
+    toastSystem.update(toastId, {
+      message: "WeekBox folder repaired",
+      progress: 100,
+    });
+    setTimeout(() => toastSystem.hide(toastId), 3600);
+  } catch (error) {
+    toastSystem.setState(toastId, "error", {
+      badgeHtml: '<i class="fa-solid fa-xmark" aria-hidden="true"></i>',
+    });
+    toastSystem.update(toastId, {
+      message: error.message || "Could not repair WeekBox files.",
+      progress: 100,
+    });
+  }
+}
+
 async function startApp() {
   try {
     Neutralino.init();
@@ -195,6 +243,7 @@ async function startApp() {
     registerHomeView();
     registerEnginesView();
     await router.init();
+    await offerNestedStorageRepair();
     await openLaunchDeepLink();
     await recommendSaferStorageLocation();
     if (appSettings.get("checkAppUpdatesOnStartup")) {

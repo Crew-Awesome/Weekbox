@@ -7,6 +7,7 @@ import { ExecutableService } from "./filesystem/executableService.js";
 import { ModInjectionService } from "./filesystem/modInjectionService.js";
 import { ModRepository } from "./filesystem/modRepository.js";
 import {
+  getParentPath,
   getModFolderName,
   getRealEntries,
   sanitizePathSegment,
@@ -155,6 +156,27 @@ class FileSystemService {
 
   hasRunningProcesses() {
     return this.activeEngineProcesses.size > 0;
+  }
+
+  async getNestedStorageRepairTarget() {
+    // An older picker flow allowed users to choose `D:/WeekBox` as the
+    // parent. That produced `D:/WeekBox/WeekBox`. Only repair this exact,
+    // otherwise-empty outer-folder layout so unrelated files are never merged.
+    if (!isWeekBoxFolder(this.basePath)) return null;
+    const parentPath = getParentPath(this.basePath);
+    if (!parentPath) return null;
+    try {
+      const entries = getRealEntries(
+        await Neutralino.filesystem.readDirectory(this.basePath),
+      );
+      const hasOnlyNestedWeekBox =
+        entries.length === 1 &&
+        entries[0].type === "DIRECTORY" &&
+        entries[0].entry.toLowerCase() === "weekbox";
+      return hasOnlyNestedWeekBox ? parentPath : null;
+    } catch {
+      return null;
+    }
   }
 
   assertStorageUnlocked() {
