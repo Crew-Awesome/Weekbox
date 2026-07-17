@@ -59,6 +59,10 @@ export const gameBananaApi = {
   getEngineIdForSubmission(type, id) {
     return EXCLUDED_ENGINE_SUBMISSIONS.get(`${type}:${id}`) || null;
   },
+
+  isExcludedEngineSubmission(mod) {
+    return Boolean(this.getEngineIdForSubmission("mods", mod?._idRow));
+  },
   discoveryConfig: DISCOVERY_CONFIG,
 
   getImageUrl(mod) {
@@ -664,6 +668,7 @@ export const gameBananaApi = {
           if (
             mod?._sModelName !== "Mod" ||
             this.isDeletedMod(mod) ||
+            this.isExcludedEngineSubmission(mod) ||
             this.isExcludedCategory(
               mod._aCategory,
               mod._aSuperCategory,
@@ -739,6 +744,7 @@ export const gameBananaApi = {
         categoryRoots: this.categoryRoots,
         getRecords: this.getValidRecords.bind(this),
         toGridMod: this.toGridMod.bind(this),
+        isExcluded: this.isExcludedEngineSubmission.bind(this),
         getEngineId: (mod, categoryId) =>
           this.getEngineIdForCategories(
             categoryId,

@@ -14,6 +14,7 @@ export class CategoryFeedService {
     categoryRoots,
     getRecords,
     toGridMod,
+    isExcluded,
     getEngineId,
     config,
   }) {
@@ -22,6 +23,7 @@ export class CategoryFeedService {
     this.categoryRoots = categoryRoots;
     this.getRecords = getRecords;
     this.toGridMod = toGridMod;
+    this.isExcluded = isExcluded || (() => false);
     this.config = config || DISCOVERY_CONFIG;
     this.getEngineId = getEngineId || (() => null);
     this.snapshots = new DiscoverySnapshotStore({ config: this.config });
@@ -30,6 +32,7 @@ export class CategoryFeedService {
       gameId,
       categoryRoots,
       getRecords,
+      isExcluded: this.isExcluded,
       normalizeCandidate: (raw, context) =>
         normalizeDiscoveryCandidate(raw, {
           ...context,
@@ -80,10 +83,12 @@ export class CategoryFeedService {
     ) {
       throw new Error("GameBanana category requests failed");
     }
-    return [...new Map(records.map((mod) => [mod._idRow, mod])).values()].sort(
-      (left, right) =>
-        this.getSortValue(right, sort) - this.getSortValue(left, sort),
-    );
+    return [...new Map(records.map((mod) => [mod._idRow, mod])).values()]
+      .filter((mod) => !this.isExcluded(mod))
+      .sort(
+        (left, right) =>
+          this.getSortValue(right, sort) - this.getSortValue(left, sort),
+      );
   }
 
   async getDiscovery(page, categoryId, { snapshotId, signal } = {}) {

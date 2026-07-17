@@ -4,6 +4,7 @@ export class CandidateCollector {
     gameId,
     categoryRoots,
     getRecords,
+    isExcluded,
     normalizeCandidate,
     config,
   }) {
@@ -12,6 +13,7 @@ export class CandidateCollector {
       gameId,
       categoryRoots,
       getRecords,
+      isExcluded: isExcluded || (() => false),
       normalizeCandidate,
       config,
     });
@@ -77,6 +79,7 @@ export class CandidateCollector {
               return;
             }
             for (const raw of outcome.value) {
+              if (this.isExcluded(raw)) continue;
               if (seen.has(raw._idRow)) continue;
               seen.add(raw._idRow);
               const candidate = this.normalizeCandidate(raw, {

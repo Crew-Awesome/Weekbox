@@ -1,4 +1,5 @@
 import { gameBananaApi } from "../../../api/gamebanana.js";
+import { sidebar } from "../../sidebar.js";
 import { modModalCarousel } from "./carousel.js";
 import { downloadMod } from "./downloadMod.js";
 import { dependencyReviewModal } from "./dependencyReviewModal.js";
@@ -20,6 +21,11 @@ export const modModal = {
   },
 
   async open(modId) {
+    const engineId = gameBananaApi.getEngineIdForSubmission("mods", modId);
+    if (engineId) {
+      sidebar.openEngine(engineId);
+      return;
+    }
     if (!document.getElementById("mod-modal")) await this.init();
     if (!document.getElementById("mod-modal")) return;
     showModal();
