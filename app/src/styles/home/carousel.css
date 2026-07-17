@@ -87,7 +87,8 @@
   color: var(--text-main);
   font-size: 0.75rem;
   font-weight: 600;
-  margin: 2px 0; /* Aplicado margen estricto a 2px top/bottom */
+  margin: 2px 0;
+  position: static; /* Fuerzo posicionamiento estático por defecto */
 }
 
 .home-engine-badge img {
@@ -109,6 +110,7 @@
   right: var(--spacing-lg);
   margin: 0;
 }
+
 /* ------------------------------------ */
 
 .action-btn {
@@ -171,9 +173,7 @@
   border-radius: 50%;
   background: var(--text-muted);
   cursor: pointer;
-  transition:
-    background 0.3s,
-    transform 0.3s;
+  transition: background 0.3s, transform 0.3s;
 }
 
 .dot.active {
