@@ -322,7 +322,7 @@ class FileSystemService {
 
   async toggleModLaunch(mod, engine, isStandalone, onStateChange) {
     const state = this.getModLaunchState(mod, engine, isStandalone);
-    if (state === "unavailable")
+    if (state === "unavailable" && !isStandalone)
       throw new Error("Assigned engine is not installed");
     if (isStandalone) {
       return state === "running"
@@ -395,7 +395,6 @@ class FileSystemService {
     if (!this.isInitialized) return [];
     const mods = await this.mods.getAll();
     
-    // OPTIMIZACIÓN: Leer el directorio entero en lugar de archivo por archivo (evita bloqueos/lentitud)
     let validFolders = new Set();
     try {
       const entries = await Neutralino.filesystem.readDirectory(this.modsPath);
@@ -416,13 +415,22 @@ class FileSystemService {
     if (!this.isInitialized) return [];
     const standaloneMods = [];
     for (const mod of await this.mods.getAll()) {
-      // OPTIMIZACIÓN: Si el mod ya está asignado a un engine o es una dependencia, nos saltamos la pesada búsqueda del archivo ejecutable.
-      if (mod.engineId || mod.kind === "dependency") continue;
+      if (mod.kind === "dependency") continue;
 
+      // FIX: Siempre verificar si tiene un ejecutable. Si lo tiene, se vuelve independiente (executable).
       const executable = await this.findExecutable(
         `${this.modsPath}/${getModFolderName(mod)}`,
       );
       if (!executable) continue;
+
+      // AUTO-CORRECCIÓN: Si el mod tiene ejecutable pero se le asignó un engine por error, 
+      // limpiamos su motor en la base de datos automáticamente.
+      if (mod.engineId) {
+        this.setModEngineCompatibility(mod.id, null, null).catch(()=>{});
+        mod.engineId = null;
+        mod.engineVersion = null;
+      }
+
       standaloneMods.push({
         ...mod,
         exePath: executable,
@@ -458,7 +466,18 @@ class FileSystemService {
   }
 
   async saveInstalledMod(modId, modName, metadata = {}) {
-    if (this.isInitialized) await this.mods.add(modId, modName, metadata);
+    if (!this.isInitialized) return;
+    
+    // FIX: Antes de guardarlo por primera vez, escaneamos su carpeta. 
+    // Si tiene un '.exe', quitamos cualquier asignación de motor que venga de la metadata (Gamebanana)
+    const tempMod = { name: modName, id: modId, ...metadata };
+    const executable = await this.findExecutable(`${this.modsPath}/${getModFolderName(tempMod)}`);
+    if (executable) {
+       metadata.engineId = null;
+       metadata.engineVersion = null;
+    }
+    
+    await this.mods.add(modId, modName, metadata);
   }
 
   async setModHidden(modId, hidden) {

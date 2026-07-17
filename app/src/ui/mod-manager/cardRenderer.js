@@ -10,7 +10,7 @@ import { modManagerTemplates } from "../../html/components/mod-manager.js";
 
 export const cardRenderer = {
   async renderCards(gridContainer, modsToRender, allMods, standaloneMods, installedEngines, onModDeleted, onCompatibilitiesChanged) {
-    const standaloneModIds = new Set(standaloneMods.map((m) => m.id));
+    const standaloneModIds = new Set(standaloneMods.map((m) => String(m.id)));
     const fragment = document.createDocumentFragment();
     
     const savePendingCompatibilities = async () => {
@@ -71,9 +71,17 @@ export const cardRenderer = {
         });
     };
 
+    // FIX: Extraer todos los motores compatibles de forma global, no solo los instalados.
+    const engineOptions = Object.entries(ENGINE_DETAILS).map(([id, info]) => ({
+      id,
+      ...info,
+    }));
+
     for (const mod of modsToRender) {
       let imageUrl = mod.imageBase64 || mod.image || "assets/icons/default-mod.png";
-      const isExecutable = standaloneModIds.has(mod.id);
+      
+      const isExecutable = standaloneModIds.has(String(mod.id));
+      
       const engine = isExecutable
         ? null
         : installedEngines.find(
@@ -81,17 +89,13 @@ export const cardRenderer = {
               item.id === mod.engineId &&
               (!mod.engineVersion || item.version === mod.engineVersion),
           );
+          
       let engineBadgeHtml = modManagerTemplates.unassignedBadge();
+      
       if (isExecutable) {
+        // FIX: Si es ejecutable, se omite por completo la renderización del dropdown
         engineBadgeHtml = modManagerTemplates.executableBadge();
       } else {
-        const engineOptions = [
-          ...new Map(
-            installedEngines
-              .filter((item) => ENGINE_DETAILS[item.id])
-              .map((item) => [item.id, ENGINE_DETAILS[item.id]]),
-          ).entries(),
-        ].map(([id, info]) => ({ id, ...info }));
         const engineInfo = ENGINE_DETAILS[mod.engineId];
         const versionOptions = [
           "Any version",
@@ -99,14 +103,18 @@ export const cardRenderer = {
             .filter((item) => item.id === mod.engineId)
             .map((item) => item.version),
         ];
+        
         const selectedVersion = mod.engineVersion || "Any version";
         const selectedEngineName = engineInfo?.name || "Unassigned";
         const selectedEngineIcon = engineInfo?.icon;
+        
         const engineOptionsHtml = [
           `<button type="button" data-engine-id="" class="${!mod.engineId ? "selected" : ""}">${modManagerTemplates.unassignedQuestionIcon()}Unassigned</button>`,
           ...engineOptions.map(opt => modManagerTemplates.engineOption(opt.id, opt.name, opt.icon, opt.id === mod.engineId))
         ].join("");
+        
         const versionOptionsHtml = versionOptions.map(ver => modManagerTemplates.versionOption(ver, ver === selectedVersion)).join("");
+        
         engineBadgeHtml = modManagerTemplates.engineCompatibilityPicker(mod.id, mod.engineId || "", mod.engineVersion || "", selectedEngineIcon, selectedEngineName, engineOptionsHtml, selectedVersion, versionOptionsHtml);
       }
       
@@ -121,7 +129,7 @@ export const cardRenderer = {
       
       const launchLabel =
         isExecutable ||
-        getEngineLaunchBehavior(mod.engineId).scope === "exclusive-mod"
+        getEngineLaunchBehavior(mod.engineId)?.scope === "exclusive-mod"
           ? "Launch Mod"
           : "Launch Engine";
           
@@ -154,7 +162,7 @@ export const cardRenderer = {
           }
         }).catch(()=>{});
       }
-
+      
       const deleteBtn = card.querySelector(".mod-manager-delete-btn");
       const launchBtn = card.querySelector(".mod-manager-launch-btn");
       const enginePill = card.querySelector(".mod-manager-engine-pill");
@@ -192,7 +200,7 @@ export const cardRenderer = {
           },
         );
       }
-
+      
       engineMenu?.addEventListener("click", async (event) => {
         const option = event.target.closest("button[data-engine-id]");
         if (!option) return;
@@ -200,6 +208,7 @@ export const cardRenderer = {
         const engineId = option.dataset.engineId;
         compatibilityPicker.dataset.pendingEngineId = engineId;
         compatibilityPicker.dataset.pendingVersion = "";
+        
         enginePill.querySelector("span").textContent =
           option.dataset.engineName || "Unassigned";
         enginePill.querySelector("img, .fa-question-circle")?.remove();
@@ -209,6 +218,7 @@ export const cardRenderer = {
             ? `<img src="assets/icons/${option.dataset.engineIcon}" alt=""/>`
             : modManagerTemplates.unassignedQuestionIcon(),
         );
+        
         versionPill.querySelector("span").textContent = "Any version";
         versionMenu.innerHTML = [
           modManagerTemplates.versionOption("Any version", true),
@@ -216,6 +226,7 @@ export const cardRenderer = {
             .filter((item) => item.id === engineId)
             .map((item) => modManagerTemplates.versionOption(item.version, false)),
         ].join("");
+        
         engineMenu
           .querySelectorAll("button[data-engine-id]")
           .forEach((button) =>
@@ -227,7 +238,7 @@ export const cardRenderer = {
         engineDropdownCtrl?.close();
         await savePendingCompatibilities();
       });
-
+      
       versionMenu?.addEventListener("click", async (event) => {
         const option = event.target.closest("button[data-version]");
         if (!option) return;
@@ -247,7 +258,7 @@ export const cardRenderer = {
         versionDropdownCtrl?.close();
         await savePendingCompatibilities();
       });
-
+      
       launchBtn.addEventListener("click", async () => {
         launchBtn.disabled = true;
         try {
@@ -269,12 +280,13 @@ export const cardRenderer = {
             refreshLaunchButtons,
           );
         } catch (error) {
+          console.error(error);
         } finally {
           launchBtn.disabled = false;
           refreshLaunchButtons();
         }
       });
-
+      
       deleteBtn.addEventListener("click", async () => {
         deleteBtn.disabled = true;
         deleteBtn.innerHTML = modManagerTemplates.deleteSpinner();
@@ -295,7 +307,7 @@ export const cardRenderer = {
           deleteBtn.innerHTML = modManagerTemplates.deleteIcon();
         }
       });
-
+      
       const dirBtn = card.querySelector(".mod-manager-dir-btn");
       dirBtn.addEventListener("click", async () => {
         try {
@@ -304,7 +316,7 @@ export const cardRenderer = {
         } catch (e) {
         }
       });
-
+      
       const visBtn = card.querySelector(".mod-manager-vis-btn");
       visBtn.addEventListener("click", async () => {
         visBtn.disabled = true;
