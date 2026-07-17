@@ -342,8 +342,10 @@ export async function extractArchive({
   onEntry,
 }) {
   const isWindows = window.NL_OS === "Windows";
+  const windowsArchivePath = archivePath.replace(/\//g, "\\");
+  const windowsDestinationPath = destinationPath.replace(/\//g, "\\");
   const command = isWindows
-    ? `tar -xvf "${archivePath}" -C "${destinationPath}"`
+    ? `tar -xvf "${windowsArchivePath}" -C "${windowsDestinationPath}"`
     : `unzip -o "${archivePath}" -d "${destinationPath}"`;
   const process = await Neutralino.os.spawnProcess(command);
   const task = getTask();
