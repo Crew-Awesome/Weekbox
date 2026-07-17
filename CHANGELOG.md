@@ -5,6 +5,30 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.3.0] - 2026-07-17
+
+### Added
+
+- Psych Online mods from [Sniro](https://funkin.sniro.boo/mods) are now shown alongside GameBanana results, with source-aware details, downloads, and sorting.
+- MediaFire and Google Drive download links supplied by GameBanana are available as install choices, with their resolved filename and size when available.
+- Settings now use a typed, versioned JSON file beside WeekBox's installed-mod and engine-update state. Existing settings are migrated from LocalStorage once and then removed from it.
+- A storage-location recommendation flow helps avoid cloud-synced folders that can interfere with downloads.
+- Sniro is listed in the in-app Powered by credits.
+
+### Changed
+
+- Reworked Mod Manager card rendering, filters, and caching to make installed mods load and refresh faster.
+- Updated mod cards, search hints, carousel sizing, and engine-manager styling.
+- Search results now keep engine submissions and Psych Online entries out of the normal mod/dependency flows where they do not apply.
+
+### Fixed
+
+- Launcher updates no longer restart the app before the update is installed, and relaunch from the correct installed location.
+- Storage moves preserve active files and handle the default location correctly across Windows, macOS, and Linux.
+- Fixed loading stalls when Mod Manager cards contain base64 images and improved consecutive card rendering.
+- Fixed the search placeholder overlapping entered text and card labels overflowing their layouts.
+- Fixed opening engine downloads from mod details.
+
 ## [1.2.3] - 2026-07-16
 
 ### Fixed
