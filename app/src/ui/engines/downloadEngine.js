@@ -245,6 +245,7 @@ export const downloadEngine = {
         destinationPath: engineDir,
         getTask: () => this.activeTasks.get(taskKey),
         onEntry: (file) => updateProgress(`Extracting: ${file}`, 98),
+        extractNested: true,
       });
       this.throwIfCancelled(task);
 

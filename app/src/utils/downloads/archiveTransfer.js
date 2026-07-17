@@ -186,6 +186,97 @@ function getWindowsExtractionCommand(archivePath, destinationPath) {
   return `tar -xvf "${archive}" -C "${destination}"`;
 }
 
+const NESTED_ARCHIVE_PATTERNS = [
+  /\.zip$/i,
+  /\.tar\.gz$/i,
+  /\.tgz$/i,
+  /\.tar$/i,
+];
+
+async function collectArchiveFiles(dir) {
+  const found = [];
+  const stack = [dir];
+  while (stack.length) {
+    const current = stack.pop();
+    let entries;
+    try {
+      entries = await Neutralino.filesystem.readDirectory(current);
+    } catch (error) {
+      continue;
+    }
+    for (const entry of entries) {
+      if (entry.entry === "." || entry.entry === "..") continue;
+      const fullPath = `${current}/${entry.entry}`;
+      if (String(entry.type).toUpperCase() === "DIRECTORY") {
+        stack.push(fullPath);
+      } else if (
+        NESTED_ARCHIVE_PATTERNS.some((pattern) => pattern.test(entry.entry))
+      ) {
+        found.push(fullPath);
+      }
+    }
+  }
+  return found;
+}
+
+function getNestedExtractionCommand(archivePath, destinationPath) {
+  const isWindows = window.NL_OS === "Windows";
+  const lower = String(archivePath).toLowerCase();
+  if (lower.endsWith(".zip")) {
+    if (isWindows)
+      return getWindowsExtractionCommand(archivePath, destinationPath);
+    return `unzip -o "${archivePath}" -d "${destinationPath}"`;
+  }
+  const archive = isWindows ? archivePath.replace(/\//g, "\\") : archivePath;
+  const dest = isWindows
+    ? destinationPath.replace(/\//g, "\\")
+    : destinationPath;
+  const flags =
+    lower.endsWith(".gz") || lower.endsWith(".tgz") ? "-xzf" : "-xf";
+  return `tar ${flags} "${archive}" -C "${dest}"`;
+}
+
+async function extractNestedArchives(destinationPath, getTask, onEntry) {
+  const MAX_PASSES = 10;
+  for (let pass = 0; pass < MAX_PASSES; pass += 1) {
+    const task = getTask?.();
+    if (task?.cancelled) throw new Error("Cancelled");
+
+    const archives = await collectArchiveFiles(destinationPath);
+    if (!archives.length) break;
+
+    for (const archivePath of archives) {
+      if (getTask?.()?.cancelled) throw new Error("Cancelled");
+      const parentDir = archivePath.slice(0, archivePath.lastIndexOf("/"));
+      const command = getNestedExtractionCommand(archivePath, parentDir);
+      const process = await Neutralino.os.spawnProcess(command);
+      const activeTask = getTask?.();
+      if (activeTask) activeTask.pid = process.id ?? process.pid;
+      try {
+        await listenForProcess(
+          process,
+          getTask,
+          (event, handler, resolve, reject) => {
+            if (event.action === "stdOut" || event.action === "stdErr") {
+              const output = String(event.data || "").trim();
+              if (output) onEntry?.(formatArchiveEntry(output));
+              return;
+            }
+            if (event.action !== "exit") return;
+            Neutralino.events.off("spawnedProcess", handler);
+            if (event.data === 0) resolve();
+            else
+              reject(createProcessError("Nested extraction", event.data, ""));
+          },
+        );
+        await Neutralino.filesystem.remove(archivePath).catch(() => {});
+      } catch (error) {
+        console.warn("Could not extract nested archive:", archivePath, error);
+      }
+    }
+  }
+}
+
 async function runCurlDownload(command, getTask, onProgress, getProgress) {
   const process = await Neutralino.os.spawnProcess(command);
   const task = getTask();
@@ -358,6 +449,7 @@ export async function extractArchive({
   destinationPath,
   getTask,
   onEntry,
+  extractNested = false,
 }) {
   const isDiskImage =
     window.NL_OS === "Darwin" && /\.dmg$/i.test(String(archivePath));
@@ -437,7 +529,7 @@ export async function extractArchive({
 
   let processOutput = "";
 
-  return listenForProcess(
+  await listenForProcess(
     process,
     getTask,
     (event, handler, resolve, reject) => {
@@ -456,4 +548,8 @@ export async function extractArchive({
       else reject(createProcessError("Extraction", event.data, processOutput));
     },
   );
+
+  if (extractNested) {
+    await extractNestedArchives(destinationPath, getTask, onEntry);
+  }
 }
