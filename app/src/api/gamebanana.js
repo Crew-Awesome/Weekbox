@@ -731,8 +731,8 @@ export const gameBananaApi = {
     categoryId = null,
     options = {},
   ) {
-    if (Number(categoryId) === 43788) {
-      return this.getPsychOnlineGridMods(filter, page, options);
+    if (categoryId === null || Number(categoryId) === 43788) {
+      return this.getPsychOnlineGridMods(filter, page, categoryId, options);
     }
     if (filter === "ripe") return this.getRipeMods(page, categoryId, options);
     return this.getCategoryFeed().getGridMods(
@@ -743,8 +743,8 @@ export const gameBananaApi = {
     );
   },
 
-  async getPsychOnlineGridMods(filter, page, options = {}) {
-    const cacheKey = filter;
+  async getPsychOnlineGridMods(filter, page, categoryId = null, options = {}) {
+    const cacheKey = `${categoryId || "all"}:${filter}`;
     const state = this.psychOnlineFeedCache.get(cacheKey) || {
       gameBananaMods: [],
       gameBananaPage: 1,
@@ -754,20 +754,28 @@ export const gameBananaApi = {
     };
     this.psychOnlineFeedCache.set(cacheKey, state);
     if (!state.sniroMods) {
-      state.sniroMods = await sniroApi
-        .listAll("", "submitted:desc")
-        .catch(() => []);
+      const sniroSort =
+        {
+          popular: "favoritedCount:desc",
+          ripe: "downloadHits:desc",
+          new: "submitted:desc",
+          updated: "submitted:desc",
+        }[filter] || "submitted:desc";
+      state.sniroMods = await sniroApi.listAll("", sniroSort).catch(() => []);
     }
 
     const pageSize = 12;
     const required = Math.max(1, Number(page) || 1) * pageSize;
     while (!state.exhausted && state.gameBananaMods.length < required) {
-      const result = await this.getCategoryFeed().getGridMods(
-        filter,
-        state.gameBananaPage,
-        43788,
-        { ...options, snapshotId: state.snapshotId },
-      );
+      const result =
+        filter === "ripe"
+          ? await this.getRipeMods(state.gameBananaPage, categoryId, options)
+          : await this.getCategoryFeed().getGridMods(
+              filter,
+              state.gameBananaPage,
+              categoryId,
+              { ...options, snapshotId: state.snapshotId },
+            );
       const batch = Array.isArray(result) ? result : result.mods || [];
       state.snapshotId = Array.isArray(result)
         ? null
@@ -780,22 +788,49 @@ export const gameBananaApi = {
       if (!batch.length) state.exhausted = true;
     }
 
-    const sortByNewest = (left, right) => {
+    const sortCombinedMods = (left, right) => {
+      if (filter === "ripe") {
+        return (
+          Number(right.views || 0) - Number(left.views || 0) ||
+          Number(right.likes || 0) - Number(left.likes || 0)
+        );
+      }
       const leftTime = Number(left.submittedAt || 0) || 0;
       const rightTime = Number(right.submittedAt || 0) || 0;
       return (
         rightTime - leftTime || String(left.id).localeCompare(String(right.id))
       );
     };
-    const combined = [...state.gameBananaMods, ...state.sniroMods].sort(
-      sortByNewest,
-    );
+    const combined =
+      filter === "popular"
+        ? this.mergePsychOnlineDiscoveryMods(
+            state.gameBananaMods,
+            state.sniroMods,
+          )
+        : [...state.gameBananaMods, ...state.sniroMods].sort(sortCombinedMods);
     const start = (Math.max(1, Number(page) || 1) - 1) * pageSize;
     return {
       mods: combined.slice(start, start + pageSize),
       exhausted: state.exhausted && start + pageSize >= combined.length,
       snapshotId: state.snapshotId,
     };
+  },
+
+  mergePsychOnlineDiscoveryMods(gameBananaMods, sniroMods) {
+    const merged = [];
+    let gameBananaIndex = 0;
+    let sniroIndex = 0;
+    while (
+      gameBananaIndex < gameBananaMods.length ||
+      sniroIndex < sniroMods.length
+    ) {
+      merged.push(
+        ...gameBananaMods.slice(gameBananaIndex, gameBananaIndex + 4),
+      );
+      gameBananaIndex += 4;
+      if (sniroIndex < sniroMods.length) merged.push(sniroMods[sniroIndex++]);
+    }
+    return merged;
   },
 
   getCategoryFeed() {

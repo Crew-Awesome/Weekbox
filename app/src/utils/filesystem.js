@@ -6,7 +6,11 @@ import {
 import { ExecutableService } from "./filesystem/executableService.js";
 import { ModInjectionService } from "./filesystem/modInjectionService.js";
 import { ModRepository } from "./filesystem/modRepository.js";
-import { getModFolderName, getRealEntries } from "./filesystem/pathUtils.js";
+import {
+  getModFolderName,
+  getRealEntries,
+  sanitizePathSegment,
+} from "./filesystem/pathUtils.js";
 import { ProcessService } from "./filesystem/processService.js";
 import { appSettings } from "../core/settings.js";
 
@@ -22,6 +26,32 @@ function isICloudPath(path) {
   return /(?:^|\/)Library\/Mobile Documents\/com~apple~CloudDocs(?:\/|$)/i.test(
     String(path),
   );
+}
+
+function getStableUrlId(url) {
+  let hash = 5381;
+  for (const char of String(url)) hash = (hash * 33) ^ char.charCodeAt(0);
+  return (hash >>> 0).toString(36);
+}
+
+function getImportedPsychOnlineMetadata(folderName, downloadUrl) {
+  const parsed = new URL(downloadUrl);
+  const isSniro = parsed.hostname.toLowerCase() === "funkin.sniro.boo";
+  const sourceId = isSniro
+    ? parsed.pathname.match(/^\/mod\/([^/]+)\/dl\//)?.[1]
+    : null;
+  return {
+    id: sourceId
+      ? `sniro:${sourceId}`
+      : `psychonline:${getStableUrlId(downloadUrl)}`,
+    name: folderName,
+    engineId: "psychonline",
+    engineLocked: true,
+    source: isSniro ? "sniro" : "gamebanana",
+    sourceUrl: isSniro ? "https://funkin.sniro.boo/mods" : downloadUrl,
+    downloadUrl,
+    folderName,
+  };
 }
 
 class FileSystemService {
@@ -83,6 +113,7 @@ class FileSystemService {
       await this.cleanupInvalidInstalledMods();
     }
     this.isInitialized = true;
+    await this.importPsychOnlineEngineMods();
     await this.cleanupHiddenModLinks();
   }
 
@@ -292,6 +323,53 @@ class FileSystemService {
     );
   }
 
+  async importPsychOnlineEngineMods() {
+    const engines = await this.getInstalledEngines();
+    const installedMods = await this.mods.getAll();
+    for (const engine of engines.filter((item) => item.id === "psychonline")) {
+      if (this.isEngineRunning(engine.id, engine.version)) continue;
+      const engineModsPath = `${this.enginesPath}/${engine.id}/${engine.version}/mods`;
+      let entries = [];
+      try {
+        entries = getRealEntries(
+          await Neutralino.filesystem.readDirectory(engineModsPath),
+        );
+      } catch {
+        continue;
+      }
+      for (const entry of entries.filter((item) => item.type === "DIRECTORY")) {
+        const folderName = sanitizePathSegment(entry.entry);
+        if (!folderName) continue;
+        const existingMod = installedMods.find(
+          (mod) => getModFolderName(mod) === folderName,
+        );
+        if (existingMod) {
+          if (!existingMod.hidden)
+            await this.injection.link(existingMod, engine.id, engine.version);
+          continue;
+        }
+        const sourcePath = `${engineModsPath}/${entry.entry}`;
+        const urlPath = `${sourcePath}/mod_url.txt`;
+        if (!(await this.api.exists(urlPath))) continue;
+        const downloadUrl = (await this.api.read(urlPath)).trim();
+        if (!/^https?:\/\//i.test(downloadUrl)) continue;
+        const destinationPath = `${this.modsPath}/${folderName}`;
+        if (await this.api.exists(destinationPath)) continue;
+        let metadata;
+        try {
+          metadata = getImportedPsychOnlineMetadata(folderName, downloadUrl);
+        } catch {
+          continue;
+        }
+        if (installedMods.some((mod) => sameId(mod.id, metadata.id))) continue;
+        await Neutralino.filesystem.move(sourcePath, destinationPath);
+        await this.mods.add(metadata.id, metadata.name, metadata);
+        installedMods.push({ ...metadata, hidden: false });
+        await this.injection.link(metadata, engine.id, engine.version);
+      }
+    }
+  }
+
   async cleanupIncompleteDownloads() {
     try {
       const engines = await Neutralino.filesystem.readDirectory(
@@ -396,6 +474,9 @@ class FileSystemService {
       (state) => {
         if (state === "completed" || state === "error") {
           this.activeEngineMods.delete(key);
+          this.importPsychOnlineEngineMods()
+            .then(() => this.injectModsIntoEngine(engineId, version))
+            .catch(() => {});
         }
         onStateChange?.(state);
       },
@@ -498,10 +579,10 @@ class FileSystemService {
   }
 
   async injectModIntoInstalledEngines(modId) {
-    return this.injection.injectIntoInstalledEngines(
-      modId,
-      await this.getInstalledEngines(),
+    const engines = (await this.getInstalledEngines()).filter(
+      (engine) => !this.isEngineRunning(engine.id, engine.version),
     );
+    return this.injection.injectIntoInstalledEngines(modId, engines);
   }
 
   async cleanupEngineMods(engineId, version) {
@@ -541,10 +622,10 @@ class FileSystemService {
       );
       if (!executable) continue;
 
-      // AUTO-CORRECCIÓN: Si el mod tiene ejecutable pero se le asignó un engine por error, 
+      // AUTO-CORRECCIÓN: Si el mod tiene ejecutable pero se le asignó un engine por error,
       // limpiamos su motor en la base de datos automáticamente.
       if (mod.engineId) {
-        this.setModEngineCompatibility(mod.id, null, null).catch(()=>{});
+        this.setModEngineCompatibility(mod.id, null, null).catch(() => {});
         mod.engineId = null;
         mod.engineVersion = null;
       }
@@ -585,16 +666,18 @@ class FileSystemService {
 
   async saveInstalledMod(modId, modName, metadata = {}) {
     if (!this.isInitialized) return;
-    
-    // FIX: Antes de guardarlo por primera vez, escaneamos su carpeta. 
+
+    // FIX: Antes de guardarlo por primera vez, escaneamos su carpeta.
     // Si tiene un '.exe', quitamos cualquier asignación de motor que venga de la metadata (Gamebanana)
     const tempMod = { name: modName, id: modId, ...metadata };
-    const executable = await this.findExecutable(`${this.modsPath}/${getModFolderName(tempMod)}`);
+    const executable = await this.findExecutable(
+      `${this.modsPath}/${getModFolderName(tempMod)}`,
+    );
     if (executable) {
-       metadata.engineId = null;
-       metadata.engineVersion = null;
+      metadata.engineId = null;
+      metadata.engineVersion = null;
     }
-    
+
     await this.mods.add(modId, modName, metadata);
   }
 

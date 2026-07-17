@@ -255,6 +255,7 @@ export const downloadMod = {
         throw new Error("Downloaded archive did not contain any files");
       }
       await FS.api.remove(downloadMarkerPath);
+      await FS.api.write(`${targetModFolder}/mod_url.txt`, downloadUrl);
 
       await FS.saveInstalledMod(modId, modName, {
         engineId,

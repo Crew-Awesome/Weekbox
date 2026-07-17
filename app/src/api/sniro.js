@@ -52,6 +52,7 @@ export const sniroApi = {
       source: "sniro",
       title: mod.title || "Untitled mod",
       author: "",
+      keywords: Array.isArray(mod.keywords) ? mod.keywords : [],
       image: mod.images?.[0] || "assets/icons/psychonline.png",
       likes: Number(mod.favoritedCount) || 0,
       views: Number(mod.downloadHits) || 0,
