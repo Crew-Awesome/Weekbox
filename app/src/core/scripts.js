@@ -187,6 +187,7 @@ async function startApp() {
       await Neutralino.app.exit();
     });
     await storageBridge.init();
+    await appSettings.init();
     await FS.init();
     registerHomeView();
     registerEnginesView();
