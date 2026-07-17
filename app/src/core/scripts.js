@@ -187,8 +187,11 @@ async function startApp() {
       await Neutralino.app.exit();
     });
     await storageBridge.init();
-    await appSettings.init();
+    const defaultStoragePath = await FS.getDefaultStorageParentPath();
+    const defaultDataPath = `${defaultStoragePath}/WeekBox/data`;
+    await appSettings.init(await appSettings.resolveDataPath(defaultDataPath));
     await FS.init();
+    await appSettings.setDataPath(FS.dataPath);
     registerHomeView();
     registerEnginesView();
     await router.init();

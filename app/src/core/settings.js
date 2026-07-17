@@ -1,7 +1,7 @@
 const SETTINGS_FILE_NAME = "settings.json";
-const SETTINGS_DIRECTORY_NAME = "data";
 const SETTINGS_SCHEMA_VERSION = 1;
 const LEGACY_PREFIX = "weekbox_setting_";
+const SETTINGS_PATH_KEY = "weekbox-settings-data-path";
 
 /**
  * Add new settings here. The type is stored alongside each value in the JSON
@@ -78,21 +78,28 @@ export const appSettings = {
   initialized: false,
   writeQueue: Promise.resolve(),
 
-  async init() {
-    if (this.initialized || typeof Neutralino === "undefined") return;
+  async resolveDataPath(defaultDataPath) {
+    try {
+      return (
+        (await Neutralino.storage.getData(SETTINGS_PATH_KEY)) || defaultDataPath
+      );
+    } catch {
+      return defaultDataPath;
+    }
+  },
 
-    const dataPath = window.NL_DATAPATH;
+  async init(dataPath) {
+    if (this.initialized || typeof Neutralino === "undefined") return;
     if (!dataPath) {
-      console.warn("WeekBox settings: Neutralino data path is unavailable.");
+      console.warn("WeekBox settings: data path is unavailable.");
       return;
     }
 
-    const directory = `${dataPath}/${SETTINGS_DIRECTORY_NAME}`;
-    this.path = `${directory}/${SETTINGS_FILE_NAME}`;
+    this.path = `${dataPath}/${SETTINGS_FILE_NAME}`;
 
     try {
-      await Neutralino.filesystem.createDirectory(directory).catch(async () => {
-        await Neutralino.filesystem.getStats(directory);
+      await Neutralino.filesystem.createDirectory(dataPath).catch(async () => {
+        await Neutralino.filesystem.getStats(dataPath);
       });
 
       let fileExists = true;
@@ -115,10 +122,18 @@ export const appSettings = {
       if (!fileExists) this.migrateLegacySettings(legacyKeys);
       await this.write();
       this.removeLegacySettings(legacyKeys);
+      await Neutralino.storage.setData(SETTINGS_PATH_KEY, dataPath);
       this.initialized = true;
     } catch (error) {
       console.warn("WeekBox settings: file storage is unavailable.", error);
     }
+  },
+
+  async setDataPath(dataPath) {
+    if (!dataPath || this.path === `${dataPath}/${SETTINGS_FILE_NAME}`) return;
+    this.path = `${dataPath}/${SETTINGS_FILE_NAME}`;
+    await this.write();
+    await Neutralino.storage.setData(SETTINGS_PATH_KEY, dataPath);
   },
 
   getLegacyKeys() {

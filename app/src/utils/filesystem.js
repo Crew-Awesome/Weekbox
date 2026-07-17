@@ -211,6 +211,7 @@ class FileSystemService {
         );
       }
       this.setStoragePaths(destinationBasePath);
+      await appSettings.setDataPath(this.dataPath);
       appSettings.set("storageParentPath", destinationBasePath);
       const [movedMods, movedEngines] = await Promise.all([
         this.mods.getAll(),
