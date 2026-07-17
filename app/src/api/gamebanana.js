@@ -612,7 +612,6 @@ export const gameBananaApi = {
       this.featuredService = new FeaturedService({
         url: this.featuredUrl,
         manifestUrl: this.featuredManifestUrl,
-        cacheKey: this.featuredCacheKey,
         getTimeAgo: this.getTimeAgo.bind(this),
       });
     }

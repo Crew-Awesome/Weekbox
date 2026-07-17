@@ -1,17 +1,15 @@
 export class FeaturedService {
-  constructor({ url, manifestUrl, cacheKey, getTimeAgo }) {
+  constructor({ url, manifestUrl, getTimeAgo }) {
     this.url = url;
     this.manifestUrl = manifestUrl;
-    this.cacheKey = cacheKey;
     this.getTimeAgo = getTimeAgo;
   }
 
   async getCarousel() {
-    const cached = this.getCached();
     try {
       const manifest = await this.fetchManifest();
-      if (cached?.revision === manifest.revision) return this.flatten(cached.featured);
-      const response = await fetch(this.url, { cache: "no-store" });
+      const featuredUrl = new URL(manifest.featuredUrl, this.url).href;
+      const response = await fetch(featuredUrl, { cache: "no-store" });
       if (!response.ok) throw new Error("Featured request failed");
       const featured = await response.json();
       if (!this.isSupported(featured))
@@ -20,13 +18,9 @@ export class FeaturedService {
         throw new Error("Featured revision did not match manifest");
       const mods = this.flatten(featured);
       if (mods.length === 0) throw new Error("No featured mods");
-      localStorage.setItem(
-        this.cacheKey,
-        JSON.stringify({ revision: manifest.revision, featured }),
-      );
       return mods;
     } catch (error) {
-      return cached ? this.flatten(cached.featured) : [];
+      return [];
     }
   }
 
@@ -42,16 +36,6 @@ export class FeaturedService {
       throw new Error("Unsupported featured manifest");
     }
     return manifest;
-  }
-
-  getCached() {
-    try {
-      const value = localStorage.getItem(this.cacheKey);
-      const featured = value ? JSON.parse(value) : null;
-      return this.isCachedFeatureSet(featured) ? featured : null;
-    } catch (error) {
-      return null;
-    }
   }
 
   isSupported(featured) {
@@ -75,14 +59,6 @@ export class FeaturedService {
               typeof mod?.category?.name === "string",
           ),
       )
-    );
-  }
-
-  isCachedFeatureSet(value) {
-    return (
-      typeof value?.revision === "string" &&
-      value.revision === value.featured?.revision &&
-      this.isSupported(value.featured)
     );
   }
 
