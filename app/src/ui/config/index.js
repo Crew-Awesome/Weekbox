@@ -143,6 +143,7 @@ export const configModal = {
       }
     });
     this.updateStorageLocationLabel();
+    this.updateAppVersionLabel();
     try {
       const update = JSON.parse(
         sessionStorage.getItem("weekbox_available_app_update") || "null",
@@ -154,6 +155,16 @@ export const configModal = {
   updateStorageLocationLabel() {
     const label = document.getElementById("storage-location-path");
     if (label) label.textContent = FS.weekboxPath || "AppData/WeekBox";
+  },
+
+  async updateAppVersionLabel() {
+    const label = document.getElementById("weekbox-app-version");
+    if (!label) return;
+    try {
+      label.textContent = `WeekBox ${await appUpdater.getCurrentVersion()}`;
+    } catch {
+      label.textContent = "WeekBox version unavailable";
+    }
   },
 
   showAvailableAppUpdate(update) {

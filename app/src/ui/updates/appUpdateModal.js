@@ -23,7 +23,7 @@ export const appUpdateModal = {
         <div class="app-update-main">
           <p class="app-update-label">New version available</p>
           <h2 id="app-update-title">Update WeekBox</h2>
-          <p class="app-update-copy">WeekBox <strong data-update-version></strong> is ready. The app will close to finish the update; reopen it when complete.</p>
+          <p class="app-update-copy">WeekBox <strong data-update-version></strong> is ready. The app will close, apply the update, and reopen automatically.</p>
           <p class="app-update-progress" aria-live="polite"></p>
           <div class="app-update-actions">
             <button class="app-update-later" type="button">Later</button>
@@ -47,9 +47,16 @@ export const appUpdateModal = {
         button.disabled = true;
         modal.querySelector(".app-update-later").disabled = true;
         try {
-          await appUpdater.install(update, (message) => {
-            progress.textContent = message;
-          });
+          await appUpdater.install(
+            update,
+            (message) => {
+              progress.textContent = message;
+            },
+            () => {
+              this.close();
+              document.body.classList.remove("window-unfocused");
+            },
+          );
         } catch (error) {
           progress.textContent =
             error?.message || "Could not install the update.";

@@ -228,6 +228,13 @@ async function startApp() {
 
     Neutralino.events.on("windowBlur", () => setWindowFocus(false));
     Neutralino.events.on("windowFocus", () => setWindowFocus(true));
+    // Some Windows focus changes (notably after handing work to the updater)
+    // do not emit Neutralino's native focus event. The browser events keep the
+    // visual focus state from getting stuck in its blurred appearance.
+    window.addEventListener("focus", () => setWindowFocus(true));
+    document.addEventListener("visibilitychange", () => {
+      if (!document.hidden) setWindowFocus(true);
+    });
 
     disableProductionRefreshShortcuts();
     Neutralino.events.on("windowClose", async () => {
