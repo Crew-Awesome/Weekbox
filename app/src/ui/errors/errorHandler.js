@@ -6,6 +6,17 @@ function describeIssue(error) {
   const message = getMessage(error);
   const lower = message.toLowerCase();
 
+  if (
+    lower.includes("crypt_e_no_revocation_check") ||
+    (lower.includes("schannel") && lower.includes("exit code 35"))
+  ) {
+    return {
+      title: "Windows could not verify the download certificate",
+      summary:
+        "WeekBox did not download anything. Check your Windows date and time, then try a different network or temporarily disable HTTPS scanning in antivirus software. A proxy, VPN, or blocked certificate-revocation service can cause this error.",
+      tag: "Windows certificate check",
+    };
+  }
   if (lower.includes("onedrive") || lower.includes("exit code 23")) {
     return {
       title: "Choose a local storage folder",
@@ -48,15 +59,36 @@ function describeIssue(error) {
     };
   }
   if (
-    lower.includes("extraction failed") ||
-    lower.includes("invalid archive") ||
-    lower.includes("archive file")
+    !lower.includes("end-of-central-directory signature not found") &&
+    !lower.includes("cannot find zipfile directory") &&
+    (lower.includes("extraction failed") ||
+      lower.includes("invalid archive") ||
+      lower.includes("archive file"))
   ) {
     return {
       title: "WeekBox could not unpack the download",
       summary:
         "The downloaded file may be incomplete or invalid. Retry the download with a local storage folder.",
       tag: "Archive problem",
+    };
+  }
+  if (lower.includes("downloaded archive did not contain any files")) {
+    return {
+      title: "The download was empty",
+      summary:
+        "The archive opened, but it did not contain installable files. This is usually an empty or incorrectly packaged upload from the download source. Try again later or choose another download option.",
+      tag: "Empty download",
+    };
+  }
+  if (
+    lower.includes("end-of-central-directory signature not found") ||
+    lower.includes("cannot find zipfile directory")
+  ) {
+    return {
+      title: "The download was not a ZIP file",
+      summary:
+        "The download source returned something other than the expected archive, often an expired link or a server error page. WeekBox kept it from being installed. Try again later or choose another version.",
+      tag: "Invalid download file",
     };
   }
   if (lower.includes("does not contain a runnable engine")) {

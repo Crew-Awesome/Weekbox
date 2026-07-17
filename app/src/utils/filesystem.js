@@ -28,6 +28,10 @@ function isICloudPath(path) {
   );
 }
 
+function isWeekBoxFolder(path) {
+  return /(?:^|[\\/])weekbox$/i.test(String(path).replace(/[\\/]+$/, ""));
+}
+
 function getStableUrlId(url) {
   let hash = 5381;
   for (const char of String(url)) hash = (hash * 33) ^ char.charCodeAt(0);
@@ -163,6 +167,11 @@ class FileSystemService {
     this.assertStorageUnlocked();
     const destinationBasePath = String(basePath || "").replace(/[\\/]+$/, "");
     if (!destinationBasePath) throw new Error("Choose a storage folder first");
+    if (isWeekBoxFolder(destinationBasePath)) {
+      throw new Error(
+        "Choose the folder that will contain WeekBox, not the WeekBox folder itself. For example, choose C:\\Users\\you\\AppData\\Local instead of C:\\Users\\you\\AppData\\Local\\WeekBox.",
+      );
+    }
     if (destinationBasePath.toLowerCase() === this.basePath.toLowerCase()) {
       return this.weekboxPath;
     }
@@ -173,16 +182,25 @@ class FileSystemService {
       throw new Error("Selected storage folder is unavailable");
     }
     const destinationWeekboxPath = `${destinationBasePath}/WeekBox`;
+    const repairingNestedStorage =
+      destinationWeekboxPath.toLowerCase() === this.basePath.toLowerCase();
     if (await this.api.exists(destinationWeekboxPath)) {
       const entries = getRealEntries(
         await Neutralino.filesystem.readDirectory(destinationWeekboxPath),
       );
-      if (entries.length > 0) {
+      const canRepairNestedStorage =
+        repairingNestedStorage &&
+        entries.length === 1 &&
+        entries[0].type === "DIRECTORY" &&
+        entries[0].entry.toLowerCase() === "weekbox";
+      if (entries.length > 0 && !canRepairNestedStorage) {
         throw new Error(
-          "The selected folder already contains a non-empty WeekBox folder",
+          "The selected parent already contains a non-empty WeekBox folder. Choose a different parent folder so WeekBox does not merge two libraries.",
         );
       }
-      await Neutralino.filesystem.remove(destinationWeekboxPath);
+      if (!canRepairNestedStorage) {
+        await Neutralino.filesystem.remove(destinationWeekboxPath);
+      }
     }
     this.isStorageMoveInProgress = true;
     try {

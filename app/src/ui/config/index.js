@@ -275,10 +275,19 @@ export const configModal = {
     const button = document.getElementById("choose-storage-location");
     try {
       const selectedPath = await Neutralino.os.showFolderDialog(
-        "Choose the folder that will contain WeekBox",
+        "Choose WeekBox's parent folder (not a folder named WeekBox)",
         { defaultPath: FS.basePath },
       );
       if (!selectedPath) return;
+      if (/(?:^|[\\/])weekbox[\\/]*$/i.test(selectedPath)) {
+        await Neutralino.os.showMessageBox(
+          "Choose the parent folder",
+          "WeekBox creates its own WeekBox folder inside the location you choose. Select the parent folder instead (for example, AppData\\Local, not AppData\\Local\\WeekBox).",
+          "OK",
+          "WARNING",
+        );
+        return;
+      }
       const newWeekboxPath = `${selectedPath.replace(/[\\/]+$/, "")}/WeekBox`;
       const choice = await Neutralino.os.showMessageBox(
         "Move WeekBox files?",
