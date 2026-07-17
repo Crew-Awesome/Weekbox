@@ -93,11 +93,13 @@
 .mod-author {
   font-size: 0.8rem;
   color: var(--text-muted);
-  margin-bottom: 2px;
+  margin-bottom: 6px;
 }
 
 .grid-engine-badge {
   margin: 2px 0;
+  position: static !important;
+  align-self: flex-start;
 }
 
 .mod-stats {
@@ -107,7 +109,7 @@
   font-size: 0.75rem;
   color: var(--text-muted);
   flex-wrap: wrap;
-  padding-top: 8px;
+  padding-top: 12px;
 }
 
 .mod-stats span {
