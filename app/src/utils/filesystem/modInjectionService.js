@@ -28,10 +28,10 @@ export class ModInjectionService {
     const sourcePath = `${this.getModsPath()}/${folderName}`;
     const modsPath = `${this.getEnginesPath()}/${engineId}/${version}/mods`;
     const linkPath = `${modsPath}/${folderName}`;
+
     if (!(await this.api.exists(sourcePath))) {
       throw new Error(`Mod files not found for ${mod.name}`);
     }
-
     await this.api.ensureDir(modsPath);
     if (await this.api.exists(linkPath))
       return { linked: false, path: linkPath };
@@ -40,9 +40,11 @@ export class ModInjectionService {
       window.NL_OS === "Windows"
         ? `cmd /c mklink /J "${linkPath}" "${sourcePath}"`
         : `ln -s "${sourcePath}" "${linkPath}"`;
+
     const result = await Neutralino.os.execCommand(command, {
       background: false,
     });
+
     if (result.exitCode !== 0) {
       throw new Error(result.stdErr || `Could not inject ${mod.name}`);
     }
@@ -64,13 +66,10 @@ export class ModInjectionService {
         !mod.hidden &&
         supportsEngineVersion(mod, version),
     );
-    const injectableMods = [];
-    for (const mod of mods) {
-      const modPath = `${this.getModsPath()}/${getModFolderName(mod)}`;
-      if (!(await this.executables.find(modPath))) injectableMods.push(mod);
-    }
+
+    // OPTIMIZACIÓN: Se removió el pesado escaneo de archivos .exe aquí
     return Promise.allSettled(
-      injectableMods.map((mod) => this.link(mod, engineId, version)),
+      mods.map((mod) => this.link(mod, engineId, version)),
     );
   }
 
@@ -79,8 +78,8 @@ export class ModInjectionService {
       sameId(item.id, modId),
     );
     if (!mod?.engineId || mod.hidden) return [];
-    const modPath = `${this.getModsPath()}/${getModFolderName(mod)}`;
-    if (await this.executables.find(modPath)) return [];
+
+    // OPTIMIZACIÓN: Se removió el pesado escaneo de archivos .exe aquí (multiplicaba el tiempo de instalación)
     return Promise.allSettled(
       engines
         .filter(
@@ -95,13 +94,16 @@ export class ModInjectionService {
   async unlinkFromEngine(mod, engineId, version) {
     const linkPath = `${this.getEnginesPath()}/${engineId}/${version}/mods/${getModFolderName(mod)}`;
     if (!(await this.api.exists(linkPath))) return false;
+
     const command =
       window.NL_OS === "Windows"
         ? `cmd /c rmdir "${linkPath.replace(/\//g, "\\")}"`
         : `rm -f "${linkPath}"`;
+
     const result = await Neutralino.os.execCommand(command, {
       background: false,
     });
+
     if (result.exitCode !== 0) {
       throw new Error(
         result.stdErr || `Could not remove mod link for ${mod.name}`,
