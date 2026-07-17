@@ -38,7 +38,7 @@ export const configModal = {
         Neutralino.os
           .showMessageBox(
             "To Oyachi",
-            "Sorry for not using your logo and art. I really loved it, and I do love you a lot. I always will.\n\n— Malloy",
+            "Sorry for not using your logo and art. I really loved it, and I do love you a lot. I always will.\n\n- Malloy",
             "OK",
             "INFO",
           )
