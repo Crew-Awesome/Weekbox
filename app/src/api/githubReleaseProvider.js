@@ -273,7 +273,7 @@ export async function getEngineReleaseVersions(engineId) {
     Date.now() - cached.savedAt < CACHE_FRESH_MS
   ) {
     return filterVersionsForCurrentPlatform(
-      withNightlyVersion(
+      await withNightlyVersion(
         withLatestReleaseOption(cached.versions, engineId),
         source,
       ),
@@ -285,7 +285,7 @@ export async function getEngineReleaseVersions(engineId) {
     if (result.notModified && cached?.versions?.length) {
       writeCache(engineId, { ...cached, savedAt: Date.now() });
       return filterVersionsForCurrentPlatform(
-        withNightlyVersion(
+        await withNightlyVersion(
           withLatestReleaseOption(cached.versions, engineId),
           source,
         ),
@@ -304,12 +304,12 @@ export async function getEngineReleaseVersions(engineId) {
       savedAt: Date.now(),
     });
     return filterVersionsForCurrentPlatform(
-      withNightlyVersion(versions, source),
+      await withNightlyVersion(versions, source),
     );
   } catch (error) {
     return cached?.versions?.length
       ? filterVersionsForCurrentPlatform(
-          withNightlyVersion(
+          await withNightlyVersion(
             withLatestReleaseOption(cached.versions, engineId),
             source,
           ),
