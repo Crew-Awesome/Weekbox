@@ -5,6 +5,31 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.0] - 2026-07-16
+
+### Added
+
+- A built-in launcher updater that checks GitHub Releases, verifies the release SHA-256 digest, installs the matching package, and restarts WeekBox.
+- Launcher updates for Windows, Linux, macOS Intel, and Apple Silicon release packages.
+- A launcher-update section in Settings → Updates, including a manual check button and a startup-check preference.
+- An in-app update modal with Later and Install and restart actions when a newer WeekBox release is detected.
+- Friendly, copyable error reports for engine and mod installation failures.
+
+### Changed
+
+- Engine installs now show the real archive filename being extracted and clear live status for extraction, organization, validation, and mod setup.
+- Engine release lists now show only versions that support the current operating system.
+- macOS engine app bundles are preserved instead of moving their internal executable out of the bundle.
+- macOS and Linux updater installs restore executable permission after replacing the launcher.
+
+### Fixed
+
+- Windows archive extraction now handles drive-letter paths correctly.
+- WeekBox avoids downloading engines into OneDrive-backed storage, which can lock or invalidate active downloads.
+- Missing engine folders no longer generate misleading executable-scanner warnings.
+- Storage moves now reapply installed mods without calling a missing method.
+- Engine installation reports the extracted file list when a download does not contain a runnable engine.
+
 ## [1.1.0] - 2026-07-16
 
 ### Added
