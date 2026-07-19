@@ -1188,7 +1188,8 @@ export const gameBananaApi = {
         }
       }
 
-      const visibleRecords = records.slice(0, perPage);
+      const primaryRecords = records.slice(0, perPage);
+      const visibleRecords = primaryRecords;
       for (let index = 0; index < visibleRecords.length; index += 2) {
         await Promise.all(
           visibleRecords.slice(index, index + 2).map(async (mod) => {
@@ -1220,7 +1221,12 @@ export const gameBananaApi = {
             );
           }
         }
-        parsedMods = [...parsedMods, ...matchingSniroMods].slice(0, perPage);
+        const insertAt = Math.min(2, primaryRecords.length);
+        parsedMods = [
+          ...parsedMods.slice(0, insertAt),
+          ...matchingSniroMods,
+          ...parsedMods.slice(insertAt),
+        ].slice(0, perPage);
       }
 
       if (directMod) {
