@@ -1,6 +1,11 @@
 import { FeaturedService } from "./gamebanana/featuredService.js";
 import { CategoryFeedService } from "./gamebanana/categoryFeedService.js";
 import { GameBananaTransport } from "./gamebanana/transport.js";
+import {
+  getSearchTitleRelevance as rankSearchTitle,
+  getSearchTypoRelevance as rankSearchTypo,
+  getTypoSearchVariants as buildTypoSearchVariants,
+} from "./gamebanana/searchRanking.js";
 import { DISCOVERY_CONFIG } from "../config/discovery.js";
 import { sniroApi } from "./sniro.js";
 import {
@@ -929,6 +934,7 @@ export const gameBananaApi = {
   },
 
   getSearchTitleRelevance(mod, query) {
+    return rankSearchTitle(mod, query);
     const normalize = (value) =>
       String(value || "")
         .toLocaleLowerCase()
@@ -976,6 +982,7 @@ export const gameBananaApi = {
   },
 
   getTypoSearchVariants(query) {
+    return buildTypoSearchVariants(query);
     const normalizedQuery = String(query || "").trim();
     const variants = new Set();
     if (/\d+$/.test(normalizedQuery)) {
@@ -992,6 +999,7 @@ export const gameBananaApi = {
   },
 
   getSearchTypoRelevance(mod, query) {
+    return rankSearchTypo(mod, query);
     const normalize = (value) =>
       String(value || "")
         .toLocaleLowerCase()
