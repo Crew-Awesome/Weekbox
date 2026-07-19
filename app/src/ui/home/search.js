@@ -2,7 +2,6 @@ import { homeGrid } from "./grid/index.js";
 import { homeSearchDropdown } from "./searchDropdown.js";
 
 export const homeSearch = {
-  timeoutId: null,
   hintTimeoutId: null,
   currentHintAnimation: null,
   abortController: null,
@@ -44,13 +43,9 @@ export const homeSearch = {
 
     input.addEventListener(
       "input",
-      (event) => {
-        const query = event.target.value.trim().replace(/\s+/g, " ");
+      () => {
         this.cancelHintRotation();
         this.updateHintVisibility(input, hint);
-
-        clearTimeout(this.timeoutId);
-        this.timeoutId = setTimeout(() => this.executeSearch(query), 300);
       },
       { signal },
     );
@@ -59,7 +54,7 @@ export const homeSearch = {
       "keydown",
       (event) => {
         if (event.key !== "Enter") return;
-        clearTimeout(this.timeoutId);
+        event.preventDefault();
         this.executeSearch(input.value.trim());
         homeSearchDropdown.hideDropdown();
         input.blur();
@@ -131,10 +126,8 @@ export const homeSearch = {
   },
 
   destroy() {
-    clearTimeout(this.timeoutId);
     this.cancelHintRotation();
     this.abortController?.abort();
-    this.timeoutId = null;
     this.abortController = null;
   },
 
