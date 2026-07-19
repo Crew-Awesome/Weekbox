@@ -1,6 +1,7 @@
 import { FeaturedService } from "./gamebanana/featuredService.js";
 import { CategoryFeedService } from "./gamebanana/categoryFeedService.js";
 import { GameBananaTransport } from "./gamebanana/transport.js";
+import { GameBananaSearchService } from "./gamebanana/searchService.js";
 import {
   getSearchTitleRelevance as rankSearchTitle,
   getSearchTypoRelevance as rankSearchTypo,
@@ -61,6 +62,7 @@ export const gameBananaApi = {
   featuredService: null,
   categoryFeedService: null,
   categoryTransport: null,
+  searchService: null,
   psychOnlineFeedCache: new Map(),
 
   getEngineIdForSubmission(type, id) {
@@ -905,348 +907,32 @@ export const gameBananaApi = {
   },
 
   async getSearchSuggestions(query, limit = 8) {
-    const normalizedQuery = String(query || "")
-      .trim()
-      .replace(/\s+/g, " ");
-    if (!normalizedQuery) return [];
-    try {
-      const params = new URLSearchParams({
-        _idGameRow: String(this.gameId),
-        _sSearchString: normalizedQuery,
-      });
-      const response = await fetch(
-        `https://gamebanana.com/apiv13/Util/Search/Suggestions?${params}`,
-      );
-      if (!response.ok) throw new Error("Search suggestions failed");
-      const suggestions = await response.json();
-      if (!Array.isArray(suggestions)) return [];
-      return [
-        ...new Set(
-          suggestions
-            .filter((suggestion) => typeof suggestion === "string")
-            .map((suggestion) => suggestion.trim())
-            .filter(Boolean),
-        ),
-      ].slice(0, limit);
-    } catch {
-      return [];
-    }
+    return this.getSearchService().getSuggestions(query, limit);
   },
 
   getSearchTitleRelevance(mod, query) {
     return rankSearchTitle(mod, query);
-    const normalize = (value) =>
-      String(value || "")
-        .toLocaleLowerCase()
-        .replace(/[^a-z0-9]+/g, " ")
-        .replace(/([a-z])(\d)/g, "$1 $2")
-        .replace(/(\d)([a-z])/g, "$1 $2")
-        .trim();
-    const title = normalize(mod?._sName || mod?.title).replace(
-      /^(?:fnf|friday night funkin)(?:\s+the)?\s*/,
-      "",
-    );
-    const normalizedQuery = normalize(query);
-    if (!title || !normalizedQuery) return 0;
-    const words = [
-      ...new Set(
-        normalizedQuery
-          .split(" ")
-          .filter(
-            (word) =>
-              (word.length > 1 || /^\d+$/.test(word)) &&
-              !["an", "the", "fnf", "mod", "vs"].includes(word),
-          ),
-      ),
-    ];
-    if (words.length === 0) return 0;
-    const matchingWords = words.filter((word) => title.includes(word)).length;
-    const minimumMatches = words.length;
-    if (matchingWords < minimumMatches && !title.includes(normalizedQuery)) {
-      return 0;
-    }
-    const derivativePenalty =
-      /\b(?:port|mod folder|chart|rechart|remix|cover|fanmade|reskin|restyle|lyrics|optimized|hotfix|fix|playable|template|oneshot)\b/.test(
-        title,
-      )
-        ? 50000
-        : 0;
-    return Math.max(
-      1,
-      (title === normalizedQuery ? 1000000 : 0) +
-        (title.startsWith(normalizedQuery) ? 300000 : 0) +
-        (title.includes(normalizedQuery) ? 200000 : 0) +
-        matchingWords * 1000 -
-        derivativePenalty,
-    );
   },
 
   getTypoSearchVariants(query) {
     return buildTypoSearchVariants(query);
-    const normalizedQuery = String(query || "").trim();
-    const variants = new Set();
-    if (/\d+$/.test(normalizedQuery)) {
-      const withoutNumber = normalizedQuery.replace(/\d+$/, "").trim();
-      if (withoutNumber.length >= 3) variants.add(withoutNumber);
-    }
-    const words = normalizedQuery.split(/\s+/);
-    const lastWord = words.at(-1);
-    if (lastWord?.length >= 5) {
-      words[words.length - 1] = lastWord.slice(0, -1);
-      variants.add(words.join(" "));
-    }
-    return [...variants].filter((variant) => variant !== normalizedQuery);
   },
 
   getSearchTypoRelevance(mod, query) {
     return rankSearchTypo(mod, query);
-    const normalize = (value) =>
-      String(value || "")
-        .toLocaleLowerCase()
-        .replace(/[^a-z0-9]+/g, " ")
-        .replace(/([a-z])(\d)/g, "$1 $2")
-        .replace(/(\d)([a-z])/g, "$1 $2")
-        .trim();
-    const queryWords = normalize(query)
-      .split(" ")
-      .filter(
-        (word) =>
-          (word.length > 1 || /^\d+$/.test(word)) &&
-          !["an", "the", "fnf", "mod", "vs"].includes(word),
-      );
-    const titleWords = normalize(mod?._sName || mod?.title).split(" ");
-    if (!queryWords.length || !titleWords.length) return 0;
-    const candidates = [
-      ...titleWords,
-      ...titleWords
-        .slice(0, -1)
-        .map((word, index) => word + titleWords[index + 1]),
-    ];
-    const fullQuery = normalize(query).replaceAll(" ", "");
-    if (
-      queryWords.some((word) => /^\d+$/.test(word)) &&
-      !candidates.some((candidate) => candidate.startsWith(fullQuery))
-    ) {
-      return 0;
+  },
+
+  getSearchService() {
+    if (!this.searchService) {
+      this.searchService = new GameBananaSearchService({
+        api: this,
+        sniroApi,
+      });
     }
-    const distance = (left, right) => {
-      const row = Array.from({ length: right.length + 1 }, (_, index) => index);
-      for (let leftIndex = 1; leftIndex <= left.length; leftIndex += 1) {
-        let previous = row[0];
-        row[0] = leftIndex;
-        for (let rightIndex = 1; rightIndex <= right.length; rightIndex += 1) {
-          const current = row[rightIndex];
-          row[rightIndex] = Math.min(
-            row[rightIndex] + 1,
-            row[rightIndex - 1] + 1,
-            previous + (left[leftIndex - 1] === right[rightIndex - 1] ? 0 : 1),
-          );
-          previous = current;
-        }
-      }
-      return row[right.length];
-    };
-    const distances = queryWords.map((word) =>
-      Math.min(...candidates.map((candidate) => distance(word, candidate))),
-    );
-    if (
-      distances.some(
-        (value, index) =>
-          value >
-          (/^\d+$/.test(queryWords[index]) || queryWords[index].length >= 5
-            ? 1
-            : 0),
-      )
-    ) {
-      return 0;
-    }
-    const hasNearFullTitleMatch = candidates.some(
-      (candidate) => distance(fullQuery, candidate) <= 1,
-    );
-    return (
-      10000 -
-      distances.reduce((total, value) => total + value, 0) * 100 +
-      (hasNearFullTitleMatch ? 1000 : 0)
-    );
+    return this.searchService;
   },
 
   async searchMods(query, page = 1, perPage = 12) {
-    try {
-      const normalizedQuery = query.trim().replace(/\s+/g, " ");
-      if (!normalizedQuery) return [];
-
-      const cacheKey = `${normalizedQuery.toLocaleLowerCase()}:${page}:${perPage}`;
-      if (this.searchCache.has(cacheKey)) return this.searchCache.get(cacheKey);
-
-      let directMod = null;
-      const idMatch = normalizedQuery.match(
-        /^(?:https?:\/\/)?(?:gamebanana\.com\/mods\/)?(\d+)(?:\/.*)?$/i,
-      );
-
-      if (page === 1 && idMatch && idMatch[1]) {
-        const specificMod = await this.getModDetails(idMatch[1]);
-        if (
-          specificMod?.gameId === this.gameId &&
-          !specificMod.isDeleted &&
-          !this.isExcludedCategory(specificMod.categoryId)
-        ) {
-          directMod = {
-            id: specificMod.id,
-            title: specificMod.title,
-            author: specificMod.author,
-            gameId: specificMod.gameId,
-            image: specificMod.images[0],
-            likes: specificMod.likes,
-            views: specificMod.views,
-            timeAgo: specificMod.timeAgo,
-            engineId: specificMod.engineId,
-          };
-        }
-      }
-      if (directMod) {
-        this.searchCache.set(cacheKey, [directMod]);
-        return [directMod];
-      }
-
-      const params = new URLSearchParams({
-        _sModelName: "Mod",
-        _sOrder: "best_match",
-        _idGameRow: String(this.gameId),
-        _sSearchString: normalizedQuery,
-        _nPage: String(page),
-        _nPerpage: String(perPage),
-      });
-      const queryVariants = new Set([normalizedQuery]);
-      const withoutVsPrefix = normalizedQuery.replace(
-        /^(?:vs\.?|versus)\s+/i,
-        "",
-      );
-      if (withoutVsPrefix !== normalizedQuery) {
-        queryVariants.add(withoutVsPrefix);
-      }
-      const withLetterNumberSpacing = normalizedQuery
-        .replace(/([a-z])(\d)/gi, "$1 $2")
-        .replace(/(\d)([a-z])/gi, "$1 $2");
-      if (withLetterNumberSpacing !== normalizedQuery) {
-        queryVariants.add(withLetterNumberSpacing);
-      }
-      const fetchRecords = async (order, searchQuery = normalizedQuery) => {
-        const searchParams = new URLSearchParams(params);
-        searchParams.set("_sOrder", order);
-        searchParams.set("_sSearchString", searchQuery);
-        const res = await fetch(
-          `https://gamebanana.com/apiv13/Util/Search/Results?${searchParams}`,
-        );
-        if (!res.ok) throw new Error("Mod search failed");
-        return this.getValidRecords(await res.json());
-      };
-      const sniroResults =
-        page === 1
-          ? sniroApi.listAll(normalizedQuery, "submitted:desc").catch(() => [])
-          : Promise.resolve([]);
-      const [bestMatchRecords, popularityRecords] = await Promise.all([
-        Promise.all(
-          [...queryVariants].map((searchQuery) =>
-            fetchRecords("best_match", searchQuery),
-          ),
-        ).then((recordSets) => recordSets.flat()),
-        page === 1
-          ? Promise.all(
-              [...queryVariants].map((searchQuery) =>
-                fetchRecords("popularity", searchQuery).catch(() => []),
-              ),
-            ).then((recordSets) => recordSets.flat())
-          : [],
-      ]);
-      const getUsableRecords = (source, relevance) =>
-        [...new Map(source.map((mod) => [mod._idRow, mod])).values()]
-          .filter(
-            (mod) =>
-              mod._sModelName === "Mod" &&
-              Number(mod._aGame?._idRow || mod._idGame) === this.gameId &&
-              !this.isDeletedMod(mod) &&
-              !this.isExcludedCategory(
-                mod._aCategory,
-                mod._aRootCategory,
-                mod._aSubCategory,
-              ) &&
-              relevance(mod) > 0,
-          )
-          .sort(
-            (left, right) =>
-              relevance(right) - relevance(left) ||
-              Number(right._nViewCount || 0) - Number(left._nViewCount || 0),
-          );
-      let records = getUsableRecords(
-        [...bestMatchRecords, ...popularityRecords],
-        (mod) => this.getSearchTitleRelevance(mod, normalizedQuery),
-      );
-      if (records.length === 0 && page === 1) {
-        const typoVariants = this.getTypoSearchVariants(normalizedQuery);
-        if (typoVariants.length) {
-          const typoRecordSets = await Promise.all(
-            typoVariants.flatMap((searchQuery) => [
-              fetchRecords("best_match", searchQuery).catch(() => []),
-              fetchRecords("popularity", searchQuery).catch(() => []),
-            ]),
-          );
-          records = getUsableRecords(typoRecordSets.flat(), (mod) =>
-            this.getSearchTypoRelevance(mod, normalizedQuery),
-          );
-        }
-      }
-
-      const primaryRecords = records.slice(0, perPage);
-      const visibleRecords = primaryRecords;
-      for (let index = 0; index < visibleRecords.length; index += 2) {
-        await Promise.all(
-          visibleRecords.slice(index, index + 2).map(async (mod) => {
-            mod.__resolvedEngineId = await this.resolveEngineIdForMod(mod);
-          }),
-        );
-      }
-      let parsedMods = visibleRecords.map((mod) => this.toGridMod(mod));
-
-      if (page === 1) {
-        let sniroMods = await sniroResults;
-        let matchingSniroMods = sniroMods.filter(
-          (mod) => this.getSearchTitleRelevance(mod, normalizedQuery) > 0,
-        );
-        if (matchingSniroMods.length === 0) {
-          const fallbackTerm = normalizedQuery
-            .split(/\s+/)
-            .find(
-              (word) =>
-                word.length > 2 &&
-                !["fnf", "mod", "vs", "the"].includes(word.toLocaleLowerCase()),
-            );
-          if (fallbackTerm) {
-            sniroMods = await sniroApi
-              .listAll(fallbackTerm, "submitted:desc")
-              .catch(() => []);
-            matchingSniroMods = sniroMods.filter(
-              (mod) => this.getSearchTitleRelevance(mod, normalizedQuery) > 0,
-            );
-          }
-        }
-        const insertAt = Math.min(2, primaryRecords.length);
-        parsedMods = [
-          ...parsedMods.slice(0, insertAt),
-          ...matchingSniroMods,
-          ...parsedMods.slice(insertAt),
-        ].slice(0, perPage);
-      }
-
-      if (directMod) {
-        parsedMods = parsedMods.filter((m) => m.id !== directMod.id);
-        parsedMods.unshift(directMod);
-      }
-      this.searchCache.set(cacheKey, parsedMods);
-      if (this.searchCache.size > 40)
-        this.searchCache.delete(this.searchCache.keys().next().value);
-      return parsedMods;
-    } catch (error) {
-      return [];
-    }
+    return this.getSearchService().search(query, page, perPage);
   },
 };
