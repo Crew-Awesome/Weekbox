@@ -1,0 +1,174 @@
+.m3-carousel {
+    position: relative;
+    width: 100%;
+    aspect-ratio: var(--m3-carousel-ratio, 16 / 9);
+    max-height: 80vh; /* Límite razonable para pantallas ultra-anchas */
+    --gap: 8px;
+    /* Usamos container queries para que cqw funcione perfecto incluso si hay margins externos */
+    container-type: inline-size;
+}
+
+@media (min-width: 768px) {
+    .m3-carousel {
+        --gap: 12px;
+    }
+}
+
+.m3-carousel > .m3-carousel-scroller {
+    display: flex;
+    overflow-x: auto;
+    scroll-snap-type: none; /* Removed native snap for smoother JS snap */
+    scroll-behavior: auto;
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+    width: 100%;
+    height: 100%;
+    position: relative;
+    box-sizing: border-box;
+    cursor: grab;
+    user-select: none;
+    -webkit-user-select: none;
+}
+
+.m3-carousel > .m3-carousel-scroller:active {
+    cursor: grabbing;
+}
+
+.m3-carousel > .m3-carousel-scroller::-webkit-scrollbar {
+    display: none;
+}
+
+.m3-carousel-visual-layer {
+    position: sticky;
+    left: 0;
+    width: 0;
+    height: 100%;
+    z-index: 1;
+    overflow: visible;
+}
+
+.m3-carousel-dummy {
+    min-width: 100%;
+    flex-shrink: 0;
+    height: 100%;
+    scroll-snap-align: start;
+}
+
+.m3-carousel .m3-carousel-item {
+    position: absolute;
+    top: 0;
+    height: 100%;
+    padding-right: var(--gap);
+    box-sizing: border-box;
+    pointer-events: auto;
+    will-change: transform;
+}
+
+.m3-carousel .m3-card {
+    width: 100%;
+    height: 100%;
+    background-color: var(--m3-component-surface-variant, #333);
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    overflow: hidden;
+    cursor: default;
+    border-radius: 28px;
+}
+
+.m3-carousel .m3-card-img {
+    position: absolute;
+    top: 0; 
+    left: 50%;
+    transform: translateX(-50%);
+    width: 100cqw; 
+    height: 100%;
+    object-fit: cover;
+    z-index: 0;
+    pointer-events: none;
+    will-change: transform;
+}
+
+.m3-carousel .m3-card::after {
+    content: '';
+    position: absolute;
+    bottom: 0; 
+    left: 50%;
+    transform: translateX(-50%);
+    width: 100cqw;
+    height: 60%;
+    background: linear-gradient(to top, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0) 100%);
+    z-index: 1;
+}
+
+.m3-carousel .m3-card-badge {
+    position: absolute;
+    top: 24px;
+    left: 24px;
+    background: rgba(0, 0, 0, 0.4);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    color: #fff;
+    padding: 6px 16px;
+    border-radius: 16px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    z-index: 2;
+    pointer-events: none;
+    white-space: nowrap;
+    opacity: calc(var(--ease, 0) * 1.5 - 0.5);
+}
+
+.m3-carousel .m3-card-content {
+    position: relative;
+    z-index: 2;
+    padding: 24px;
+    color: #fff;
+    pointer-events: none;
+    white-space: normal; 
+    opacity: calc(var(--ease, 0) * 1.5 - 0.5);
+    width: calc(80cqw - var(--gap));
+    box-sizing: border-box;
+}
+
+.m3-carousel .m3-card-content h3 {
+    margin: 0 0 4px 0;
+    font-size: 1.5rem;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.m3-carousel .m3-card-content p {
+    margin: 0;
+    font-size: 1rem;
+    color: rgba(255, 255, 255, 0.8);
+    display: -webkit-box;
+    -webkit-line-clamp: 1;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.m3-carousel .m3-carousel-ripple {
+    position: absolute;
+    border-radius: 50%;
+    background-color: rgba(255, 255, 255, 0.3);
+    transform: scale(0);
+    pointer-events: none;
+    z-index: 3;
+    transition: transform 0.4s cubic-bezier(0.2, 0, 0, 1);
+}
+
+.m3-carousel .m3-carousel-ripple.is-active {
+    transform: scale(1);
+}
+
+.m3-carousel .m3-carousel-ripple.is-fading {
+    transform: scale(1);
+    opacity: 0;
+    transition: opacity 0.6s linear;
+}

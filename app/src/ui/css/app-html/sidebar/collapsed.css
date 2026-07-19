@@ -1,0 +1,50 @@
+.app-sidebar.is-collapsed {
+    min-width: 0;
+}
+
+.app-sidebar.is-collapsed .app-sidebar-inner {
+    padding: 20px 8px 0 8px;
+}
+
+.app-sidebar.is-collapsed .app-sidebar-title span,
+.app-sidebar.is-collapsed .app-sidebar-button span,
+.app-sidebar.is-collapsed .app-sidebar-config-button span {
+    display: none;
+}
+
+.app-sidebar.is-collapsed .app-sidebar-title {
+    justify-content: center;
+}
+
+.app-sidebar.is-collapsed .app-sidebar-button {
+    justify-content: center;
+    padding: 12px 0;
+    background-color: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    border-radius: 8px;
+    margin-bottom: 4px;
+    width: 100%;
+}
+
+.app-sidebar.is-collapsed .app-sidebar-button:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+    border-color: rgba(255, 255, 255, 0.15);
+    transform: translateY(-2px);
+}
+
+.app-sidebar.is-collapsed .app-sidebar-config-button {
+    justify-content: center;
+    padding: 16px 0;
+    border-top: none;
+    background-color: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    border-radius: 8px;
+    margin: 0 8px 20px 8px;
+    width: calc(100% - 16px);
+}
+
+.app-sidebar.is-collapsed .app-sidebar-config-button:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+    border-color: rgba(255, 255, 255, 0.15);
+    transform: translateY(-2px);
+}

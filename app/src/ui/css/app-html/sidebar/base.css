@@ -1,0 +1,50 @@
+.app-layout-container {
+    background-color: var(--md-sys-color-surface-bg, #1e1c1f);
+}
+
+.app-sidebar {
+    background-color: #2a282b;
+    color: #fff;
+    user-select: none;
+    -webkit-user-select: none;
+}
+
+.app-sidebar img {
+    -webkit-user-drag: none;
+    pointer-events: none;
+}
+
+.app-sidebar-title {
+    font-family: 'Inter', sans-serif;
+    font-size: 1.2rem;
+    font-weight: bold;
+}
+
+.app-sidebar-logo img {
+    width: 32px;
+    height: 32px;
+    object-fit: contain;
+    flex-shrink: 0;
+}
+
+.app-sidebar-divisor {
+    height: 1px;
+    background-color: #3f3c40;
+    margin: 16px 0;
+    flex-shrink: 0;
+}
+
+.app-sidebar-resizer {
+    background-color: #3f3c40;
+    cursor: col-resize;
+    transition: background-color 0.2s;
+}
+
+.app-sidebar-resizer:hover,
+.app-sidebar-resizer.is-resizing {
+    background-color: #6750A4;
+}
+
+#app-main-bakground {
+    background-color: black;
+}

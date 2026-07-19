@@ -3,7 +3,6 @@
 /dist
 neutralino.js
 .storage
-/data
 *.log
 .tmp/
 node_modules/

@@ -1,0 +1,27 @@
+.md3-component-circle-load {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+}
+
+.md3-component-circle-load-wave-svg {
+    transform: rotate(-90deg);
+}
+
+.md3-component-circle-load-track {
+    fill: none;
+    stroke-width: 4px;
+    stroke-linecap: round; 
+    transition: stroke-dasharray 0s, stroke-dashoffset 0s;
+}
+
+.md3-component-circle-load--stop-indicator {
+    transition: opacity 0.2s;
+}
+
+.md3-component-circle-load--active-indicator {
+    fill: none;
+    stroke-width: 4px;
+    stroke-linecap: round; 
+}

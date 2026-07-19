@@ -1,0 +1,131 @@
+.md3-component-card {
+    display: flex;
+    flex-direction: column;
+    border-radius: 12px;
+    padding: 16px;
+    position: relative;
+    overflow: hidden;
+    box-sizing: border-box;
+    transition: box-shadow 0.2s ease, transform 0.2s ease, border-color 0.2s ease;
+    outline: none;
+    -webkit-user-select: none;
+    user-select: none;
+    font-family: 'Inter', sans-serif;
+    isolation: isolate;
+    transform: translateZ(0);
+}
+
+.md3-component-card--clickable {
+    cursor: pointer;
+    will-change: transform;
+}
+
+.md3-component-card::before {
+    content: "";
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background-color: currentColor;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+    pointer-events: none;
+    z-index: 0;
+}
+
+.md3-component-card > * {
+    z-index: 1;
+    position: relative;
+    pointer-events: none;
+}
+
+.md3-component-card .md3-component-card-ripple {
+    position: absolute;
+    border-radius: 50%;
+    background-color: currentColor;
+    opacity: var(--m3-state-pressed, 0.12);
+    transform: scale(0);
+    pointer-events: none;
+    z-index: 0;
+    transition: transform 0.4s cubic-bezier(0.2, 0, 0, 1);
+    box-sizing: border-box;
+}
+
+.md3-component-card .md3-component-card-ripple.is-active {
+    transform: scale(1);
+}
+
+.md3-component-card .md3-component-card-ripple.is-fading {
+    transform: scale(1);
+    opacity: 0;
+    transition: opacity 0.6s linear;
+}
+
+.md3-component-card--elevated {
+    background-color: var(--card-bg, var(--m3-component-surface-variant));
+    color: var(--card-color, #cac4d0);
+    box-shadow: 0px 1px 2px 0px rgba(0,0,0,0.3), 0px 1px 3px 1px rgba(0,0,0,0.15);
+    border: 1px solid transparent;
+}
+
+.md3-component-card--filled {
+    background-color: var(--card-bg, var(--m3-component-secondary-container));
+    color: var(--card-color, var(--m3-component-on-secondary-container));
+    border: 1px solid transparent;
+}
+
+.md3-component-card--outlined {
+    background-color: var(--card-bg, var(--m3-component-surface));
+    color: var(--card-color, #cac4d0);
+    border: 1px solid var(--m3-component-outline);
+}
+
+.md3-component-card--clickable:hover::before {
+    opacity: var(--m3-state-hover);
+}
+
+.md3-component-card--clickable:focus-visible::before {
+    opacity: var(--m3-state-focus);
+}
+
+.md3-component-card--clickable:focus-visible {
+    border-color: currentColor;
+}
+
+.md3-component-card--clickable.is-dragged::before {
+    opacity: var(--m3-state-dragged);
+}
+
+.md3-component-card--elevated.md3-component-card--clickable:hover {
+    box-shadow: 0px 1px 3px 0px rgba(0,0,0,0.3), 0px 4px 8px 3px rgba(0,0,0,0.15);
+}
+
+.md3-component-card--elevated.is-dragged {
+    box-shadow: 0px 2px 3px 0px rgba(0,0,0,0.3), 0px 8px 12px 6px rgba(0,0,0,0.15);
+}
+
+.md3-component-card[disabled], .md3-component-card[aria-disabled="true"] {
+    opacity: 0.38;
+    cursor: not-allowed;
+    pointer-events: none;
+    box-shadow: none;
+}
+
+.md3-component-card.has-bg-image {
+    background-color: transparent !important; /* El fondo lo pone la imagen */
+}
+
+.md3-component-card-bg {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    /* Le damos margen extra a los lados para tener espacio y hacer el parallax sin que se corte */
+    left: -100px;
+    right: -100px; 
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    z-index: 0;
+    pointer-events: none;
+    /* Animación de Parallax atada a la variable del scroll */
+    transform: translate3d(var(--parallax-x, 0px), 0, 0);
+    will-change: transform;
+}

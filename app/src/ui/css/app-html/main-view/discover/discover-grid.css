@@ -1,0 +1,118 @@
+.discover-grid-container {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 20px;
+    padding: 24px;
+}
+
+/* Modificamos la base de la tarjeta para diseño en columna */
+.discover-grid-container .md3-component-card {
+    display: flex;
+    flex-direction: column;
+    padding: 0;
+    align-items: stretch;
+    justify-content: flex-start;
+    aspect-ratio: auto; 
+    border-radius: 12px;
+    overflow: hidden;
+    position: relative; /* Para el badge */
+}
+
+/* La imagen ahora es la miniatura 16:9 en la parte superior */
+.discover-grid-container .md3-component-card img {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 16 / 9;
+    object-fit: cover;
+    z-index: 1;
+    border-radius: 12px 12px 0 0;
+    transition: opacity 0.4s ease, transform 0.4s ease;
+}
+
+/* Efecto de imagen al hacer hover en la tarjeta */
+.discover-grid-container .md3-component-card:hover img {
+    opacity: 0.9;
+}
+
+/* Engine Badge sobre la imagen */
+.discover-grid-container .card-badge-engine {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    background-color: rgba(0, 0, 0, 0.6);
+    color: #fff;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: 500;
+    z-index: 2;
+    backdrop-filter: blur(4px);
+    pointer-events: none;
+    text-transform: capitalize;
+}
+
+/* Área de contenido de texto debajo de la miniatura */
+.discover-grid-container .card-content {
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    z-index: 1;
+    text-align: left;
+    flex-grow: 1;
+}
+
+.discover-grid-container .card-content h3 {
+    margin: 0;
+    font-size: 16px;
+    font-weight: 500;
+    line-height: 1.4;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.discover-grid-container .card-content p {
+    margin: 0;
+    font-size: 13px;
+    opacity: 0.7;
+}
+
+/* Botón de descarga en la tarjeta */
+.discover-grid-container .mod-actions {
+    margin-top: auto; /* Empuja el botón al fondo si la tarjeta es alta */
+    padding-top: 12px;
+    display: flex;
+    justify-content: flex-end;
+}
+
+.discover-grid-container .download-btn {
+    background-color: var(--m3-component-primary-container);
+    color: var(--m3-component-on-primary-container);
+    border: none;
+    padding: 6px 16px;
+    border-radius: 16px;
+    font-family: inherit;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background-color 0.2s ease, opacity 0.2s ease;
+}
+
+.discover-grid-container .download-btn:hover {
+    opacity: 0.85;
+}
+
+/* Lógica de color dinámico */
+.discover-dynamic-card {
+    background-color: transparent;
+    color: var(--m3-component-on-surface);
+    border: 1px solid transparent;
+    transition: background-color 0.4s ease, color 0.4s ease, transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.discover-dynamic-card:hover {
+    background-color: rgba(var(--card-bg-rgb), 0.6);
+    color: var(--card-color, inherit);
+}

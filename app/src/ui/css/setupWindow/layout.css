@@ -1,0 +1,39 @@
+.setup-loader {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    width: 100%;
+    position: relative;
+    overflow: hidden;
+    font-family: 'Inter', sans-serif;
+    gap: 24px;
+    /* Movemos el color de fondo aquí */
+    background-color: var(--md-sys-color-surface);
+}
+
+.setup-background {
+    position: absolute;
+    inset: -20px;
+    background-image: url('../../../../../assets/bg/bg-setup-window.webp');
+    background-size: 800px;
+    filter: blur(2px) brightness(0.4);
+    z-index: -1;
+    animation: moveBackground 20s linear infinite;
+    opacity: 1;
+}
+
+@keyframes moveBackground {
+    from { background-position: 0 0; }
+    to { background-position: 200px 200px; }
+}
+
+#setup-window-progress-text {
+    color: #fff;
+    font-size: 16px;
+    font-weight: 500;
+    letter-spacing: 0.5px;
+    text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+    z-index: 1;
+}

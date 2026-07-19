@@ -1,0 +1,42 @@
+@import './variables.css';
+@import './utils/circleLoad.css';
+@import './utils/cards.css';
+@import './utils/carousel.css';
+
+@import './setupWindow/layout.css';
+
+@import './app-html/layout.css';
+
+@import './app-html/sidebar/layout.css';
+@import './app-html/sidebar/sidebar.css';
+
+@import './app-html/main-view/discover/layout.css';
+@import './app-html/main-view/discover/discover-grid.css';
+
+/* 
+    aqui unica y exclusivamente estaran los aspectos 
+    para html y body al igual quue imports
+    a otros archivos para mayor modularidad
+*/
+
+html, body {
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    height: 100%;
+    background-color: transparent !important;
+}
+
+::-webkit-scrollbar {
+    width: 2px;
+    height: 2px;
+}
+
+::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+    background: #3f3c40;
+    border-radius: 4px;
+}
