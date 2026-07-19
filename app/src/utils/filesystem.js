@@ -603,9 +603,19 @@ class FileSystemService {
             const versions = await Neutralino.filesystem.readDirectory(
               `${this.enginesPath}/${engine.entry}`,
             );
-            return versions
-              .filter((version) => version.type === "DIRECTORY")
-              .map((version) => ({ id: engine.entry, version: version.entry }));
+            const installedVersions = await Promise.all(
+              versions
+                .filter((version) => version.type === "DIRECTORY")
+                .map(async (version) => {
+                  const versionPath = `${this.enginesPath}/${engine.entry}/${version.entry}`;
+                  if (await this.api.exists(`${versionPath}/.downloading`)) {
+                    return null;
+                  }
+                  if (!(await this.findExecutable(versionPath))) return null;
+                  return { id: engine.entry, version: version.entry };
+                }),
+            );
+            return installedVersions.filter(Boolean);
           }),
       );
       return engines.flat();
