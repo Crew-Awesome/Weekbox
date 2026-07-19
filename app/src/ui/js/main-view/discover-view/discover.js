@@ -2,6 +2,7 @@ import { initCards } from '../../../utils/components/cards/cards.js';
 import { initCarousels } from '../../../utils/components/carousel/carousel.js';
 import { loadFeaturedCarousel } from './discover-carousel-featured.js';
 import { loadDiscoverMods } from './discover-cards-mods.js';
+import { initSearchBar } from './discover-search.js';
 
 export async function init() {
     const container = document.querySelector('.discover-container');
@@ -24,6 +25,9 @@ export async function init() {
     initCards(container);
     await loadFeaturedCarousel(container);
     initCarousels(container);
+    
+    // Inject search bar and initialize
+    await initSearchBar(container);
     
     // Fetch API mods and inject them into the grid
     await loadDiscoverMods(container);
