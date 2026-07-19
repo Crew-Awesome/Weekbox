@@ -112,7 +112,7 @@ export const cardRenderer = {
         engineBadgeHtml = modManagerTemplates.executableBadge();
       } else if (mod.engineLocked) {
         const engineInfo = ENGINE_DETAILS.psychonline;
-        engineBadgeHtml = `<div class="mod-manager-engine-badge"><img src="assets/icons/${engineInfo.icon}" alt=""/><span>${engineInfo.name}</span></div>`;
+        engineBadgeHtml = `<div class="mod-manager-engine-badge mod-manager-engine-badge--engine"><img src="assets/icons/${engineInfo.icon}" alt=""/><span>${engineInfo.name}</span></div>`;
       } else {
         const engineInfo = ENGINE_DETAILS[mod.engineId];
         const versionOptions = [

@@ -2,6 +2,7 @@ import { APIneuFileSystem } from "./filesystem/APIneuFileSystem.js";
 import {
   getEngineLaunchBehavior,
   getEngineModLaunchArgs,
+  ENGINE_DETAILS,
 } from "../config/engines.js";
 import { ExecutableService } from "./filesystem/executableService.js";
 import { ModInjectionService } from "./filesystem/modInjectionService.js";
@@ -470,7 +471,11 @@ class FileSystemService {
       );
       const engines = await Promise.all(
         entries
-          .filter((entry) => entry.type === "DIRECTORY")
+          .filter(
+            (entry) =>
+              entry.type === "DIRECTORY" &&
+              Object.prototype.hasOwnProperty.call(ENGINE_DETAILS, entry.entry),
+          )
           .map(async (engine) => {
             const versions = await Neutralino.filesystem.readDirectory(
               `${this.enginesPath}/${engine.entry}`,

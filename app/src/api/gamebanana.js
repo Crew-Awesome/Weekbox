@@ -661,7 +661,7 @@ export const gameBananaApi = {
     categoryId = null,
     options = {},
   ) {
-    if (categoryId === null || Number(categoryId) === 43788) {
+    if (Number(categoryId) === 43788) {
       return this.getPsychOnlineGridMods(filter, page, categoryId, options);
     }
     if (filter === "ripe") return this.getRipeMods(page, categoryId, options);

@@ -5,6 +5,8 @@
  * @param {Object} options - Configuración adicional (clase css, elemento a ocultar, callbacks).
  * @returns {Object} Un objeto con los métodos { close, destroy }.
  */
+const openDropdowns = new Set();
+
 export function setupDropdown(trigger, container, options = {}) {
   const {
     openClass = "open",
@@ -15,18 +17,28 @@ export function setupDropdown(trigger, container, options = {}) {
   if (!trigger || !container) return { close: () => {}, destroy: () => {} };
 
   const close = () => {
+    openDropdowns.delete(close);
     container.classList.remove(openClass);
     if (menuElement) menuElement.hidden = true;
     trigger.setAttribute("aria-expanded", "false");
     if (onToggle) onToggle(false);
   };
 
+  const open = () => {
+    [...openDropdowns].forEach((otherDropdown) => {
+      if (otherDropdown !== close) otherDropdown();
+    });
+    openDropdowns.add(close);
+    container.classList.add(openClass);
+    if (menuElement) menuElement.hidden = false;
+    trigger.setAttribute("aria-expanded", "true");
+    if (onToggle) onToggle(true);
+  };
+
   const toggle = () => {
     const isOpen = !container.classList.contains(openClass);
-    container.classList.toggle(openClass, isOpen);
-    if (menuElement) menuElement.hidden = !isOpen;
-    trigger.setAttribute("aria-expanded", String(isOpen));
-    if (onToggle) onToggle(isOpen);
+    if (isOpen) open();
+    else close();
   };
 
   const handleTriggerClick = (e) => {
@@ -35,7 +47,10 @@ export function setupDropdown(trigger, container, options = {}) {
   };
 
   const handleOutsideClick = (e) => {
-    if (!container.contains(e.target) && container.classList.contains(openClass)) {
+    if (
+      !container.contains(e.target) &&
+      container.classList.contains(openClass)
+    ) {
       close();
     }
   };
@@ -46,8 +61,9 @@ export function setupDropdown(trigger, container, options = {}) {
   return {
     close,
     destroy: () => {
+      close();
       trigger.removeEventListener("click", handleTriggerClick);
       document.removeEventListener("click", handleOutsideClick);
-    }
+    },
   };
-}
+}
