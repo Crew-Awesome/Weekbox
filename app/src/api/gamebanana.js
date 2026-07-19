@@ -362,9 +362,10 @@ export const gameBananaApi = {
         return null;
       }
       const result = await Neutralino.os.execCommand(
-        `curl -sSIL --connect-timeout 5 --max-time 12 ${quoteCommandArgument(downloadUrl)}`,
+        `curl -fsSIL --connect-timeout 5 --max-time 12 ${quoteCommandArgument(downloadUrl)}`,
         { background: false },
       );
+      if (result.exitCode !== 0) return null;
       const header = `${result.stdOut || ""}\n${result.stdErr || ""}`;
       const filename = header.match(
         /content-disposition:[^\r\n]*filename\*?=(?:UTF-8''|"?)([^";\r\n]+)/i,
@@ -376,6 +377,26 @@ export const gameBananaApi = {
         size: Number.isFinite(size) ? size : 0,
       };
     } catch (error) {
+      return null;
+    }
+  },
+
+  async isDownloadAvailable(url) {
+    try {
+      const result = await Neutralino.os.execCommand(
+        `curl -sSIL --connect-timeout 5 --max-time 12 ${quoteCommandArgument(url)}`,
+        { background: false },
+      );
+      if (result.exitCode !== 0) return null;
+      const statuses = [
+        ...`${result.stdOut || ""}`.matchAll(/HTTP\/\S+\s+(\d{3})/gi),
+      ];
+      const status = Number(statuses.at(-1)?.[1]);
+      if (!Number.isFinite(status)) return null;
+      return status < 400;
+    } catch {
+      // A blocked or unsupported HEAD request does not prove the download is
+      // broken, so leave the option available in that case.
       return null;
     }
   },
@@ -403,7 +424,10 @@ export const gameBananaApi = {
         .filter((option) => option.type === "external")
         .map(async (option) => {
           const details = await this.getExternalFileDetails(option.downloadUrl);
-          if (!details) return;
+          if (!details) {
+            option.unavailable = true;
+            return;
+          }
           if (details.filename) option.name = details.filename;
           if (details.size > 0) {
             option.fileSize = details.size;
@@ -411,7 +435,18 @@ export const gameBananaApi = {
           }
         }),
     );
-    return options;
+    const availability = await Promise.all(
+      options
+        .filter((option) => option.type === "gamebanana")
+        .map(async (option) => ({
+          option,
+          available: await this.isDownloadAvailable(option.downloadUrl),
+        })),
+    );
+    availability.forEach(({ option, available }) => {
+      if (available === false) option.unavailable = true;
+    });
+    return options.filter((option) => !option.unavailable);
   },
 
   async getToolDetails(toolId) {
