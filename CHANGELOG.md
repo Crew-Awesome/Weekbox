@@ -5,6 +5,27 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.3.2] - 2026-07-19
+
+### Added
+
+- Search suggestions and typo matching are better.
+- WeekBox hides downloads that do not work and supports more external download links.
+- Engine install errors now show the files found in a bad download.
+
+### Changed
+
+- Search shows GameBanana and Psych Online mods together more accurately.
+- Some app code was split into smaller files to make future work easier.
+- Updates support both the old `resources.neu` format and future one-file builds.
+
+### Fixed
+
+- Fake or broken engine folders no longer show as installed engines.
+- Engine downloads work better when files are inside extra folders.
+- Mod covers use a fallback image if the normal image fails.
+- Opening one dropdown now closes the others.
+
 ## [1.3.1] - 2026-07-17
 
 ### Added
