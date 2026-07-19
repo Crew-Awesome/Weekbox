@@ -38,7 +38,7 @@ neu run
 ```
 
 ```bash
-neu build --release --embed-resources
+neu build
 ```
 
 The launcher icon, window icon, and Credits icon all come from the same source asset in `app/assets/icons/launcher-icon.png`.
