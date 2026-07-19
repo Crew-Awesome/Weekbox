@@ -914,6 +914,35 @@ export const gameBananaApi = {
       .filter((word) => title.includes(word)).length;
   },
 
+  async getSearchSuggestions(query, limit = 8) {
+    const normalizedQuery = String(query || "")
+      .trim()
+      .replace(/\s+/g, " ");
+    if (!normalizedQuery) return [];
+    try {
+      const params = new URLSearchParams({
+        _idGameRow: String(this.gameId),
+        _sSearchString: normalizedQuery,
+      });
+      const response = await fetch(
+        `https://gamebanana.com/apiv13/Util/Search/Suggestions?${params}`,
+      );
+      if (!response.ok) throw new Error("Search suggestions failed");
+      const suggestions = await response.json();
+      if (!Array.isArray(suggestions)) return [];
+      return [
+        ...new Set(
+          suggestions
+            .filter((suggestion) => typeof suggestion === "string")
+            .map((suggestion) => suggestion.trim())
+            .filter(Boolean),
+        ),
+      ].slice(0, limit);
+    } catch {
+      return [];
+    }
+  },
+
   async searchMods(query, page = 1, perPage = 12) {
     try {
       const normalizedQuery = query.trim().replace(/\s+/g, " ");
