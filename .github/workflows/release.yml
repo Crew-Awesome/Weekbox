@@ -1,0 +1,62 @@
+name: Build release assets
+
+on:
+  release:
+    types: [published]
+
+permissions:
+  contents: write
+
+jobs:
+  build-and-upload:
+    runs-on: windows-latest
+
+    steps:
+      - name: Check out the release tag
+        uses: actions/checkout@v5
+        with:
+          ref: ${{ github.event.release.tag_name }}
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build embedded executables
+        run: npm run build
+
+      - name: Package platform archives
+        shell: pwsh
+        run: |
+          $version = (Get-Content neutralino.config.json -Raw | ConvertFrom-Json).version
+          if ($env:GITHUB_EVENT_RELEASE_TAG_NAME -ne "v$version") {
+            throw "Release tag $env:GITHUB_EVENT_RELEASE_TAG_NAME does not match app version $version."
+          }
+
+          $assets = @{
+            'WeekBox-linux_arm64' = "WeekBox-$version-linux-arm64.zip"
+            'WeekBox-linux_armhf' = "WeekBox-$version-linux-armhf.zip"
+            'WeekBox-linux_x64' = "WeekBox-$version-linux-x64.zip"
+            'WeekBox-mac_arm64' = "WeekBox-$version-macos-arm64.zip"
+            'WeekBox-mac_universal' = "WeekBox-$version-macos-universal.zip"
+            'WeekBox-mac_x64' = "WeekBox-$version-macos-x64.zip"
+            'WeekBox-win_x64.exe' = "WeekBox-$version-windows-x64.zip"
+          }
+
+          New-Item -ItemType Directory -Path dist/release-assets -Force | Out-Null
+          foreach ($binary in $assets.Keys) {
+            Compress-Archive -LiteralPath "dist/WeekBox/$binary" -DestinationPath "dist/release-assets/$($assets[$binary])" -Force
+          }
+
+      - name: Upload release assets
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          Get-ChildItem dist/release-assets -Filter '*.zip' | ForEach-Object {
+            gh release upload $env:GITHUB_EVENT_RELEASE_TAG_NAME $_.FullName --clobber
+          }
