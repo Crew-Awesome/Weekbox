@@ -29,76 +29,9 @@ function toHex(buffer) {
     .join("");
 }
 
-function quotePowerShellString(value) {
-  return `'${String(value).replaceAll("'", "''")}'`;
-}
-
 function quoteShellString(value) {
   const escaped = String(value).replaceAll("'", "'\"'\"'");
   return `'${escaped}'`;
-}
-
-function quoteCommandArgument(value) {
-  return `"${String(value).replaceAll('"', '\\"')}"`;
-}
-
-function createWindowsApplyScript({ appPath, archivePath, expectedDigest }) {
-  return `$ErrorActionPreference='Stop'
-$target=${quotePowerShellString(appPath)}
-$archive=${quotePowerShellString(archivePath)}
-$updateDirectory=Split-Path -Parent $archive
-$expectedHash=${quotePowerShellString(expectedDigest)}
-$processId=${Number(window.NL_PID)}
-$exitDeadline=(Get-Date).AddSeconds(20)
-while (Get-Process -Id $processId -ErrorAction SilentlyContinue) {
-  if ((Get-Date) -ge $exitDeadline) {
-    Stop-Process -Id $processId -Force -ErrorAction SilentlyContinue
-    break
-  }
-  Start-Sleep -Milliseconds 250
-}
-$actualHash=(Get-FileHash -Algorithm SHA256 -LiteralPath $archive).Hash.ToLowerInvariant()
-if ($actualHash -ne $expectedHash) { throw 'Downloaded update failed its integrity check.' }
-$staging=Join-Path $target '.weekbox-update-staging'
-$backup=Join-Path $target '.weekbox-update-backup'
-Remove-Item -LiteralPath $staging -Force -Recurse -ErrorAction SilentlyContinue
-Remove-Item -LiteralPath $backup -Force -Recurse -ErrorAction SilentlyContinue
-Expand-Archive -LiteralPath $archive -DestinationPath $staging -Force
-$sourceBinary=Join-Path $staging 'WeekBox-win_x64.exe'
-$sourceResources=Join-Path $staging 'resources.neu'
-if (!(Test-Path -LiteralPath $sourceBinary)) { throw 'The update package is missing the WeekBox executable.' }
-$hasSourceResources=Test-Path -LiteralPath $sourceResources
-$targetBinary=$null
-foreach ($binaryName in @('WeekBox-win_x64.exe','WeekBox.exe')) {
-  $candidate=Join-Path $target $binaryName
-  if (Test-Path -LiteralPath $candidate) {
-    $targetBinary=$candidate
-    break
-  }
-}
-if (!$targetBinary) { $targetBinary=Join-Path $target 'WeekBox-win_x64.exe' }
-New-Item -ItemType Directory -Path $backup -Force | Out-Null
-if (Test-Path -LiteralPath $targetBinary) { Copy-Item -LiteralPath $targetBinary -Destination (Join-Path $backup 'app.exe') -Force }
-if (Test-Path -LiteralPath (Join-Path $target 'resources.neu')) { Copy-Item -LiteralPath (Join-Path $target 'resources.neu') -Destination (Join-Path $backup 'resources.neu') -Force }
-try {
-  Copy-Item -LiteralPath $sourceBinary -Destination $targetBinary -Force
-  if ($hasSourceResources) {
-    Copy-Item -LiteralPath $sourceResources -Destination (Join-Path $target 'resources.neu') -Force
-  } else {
-    Remove-Item -LiteralPath (Join-Path $target 'resources.neu') -Force -ErrorAction SilentlyContinue
-  }
-} catch {
-  if (Test-Path -LiteralPath (Join-Path $backup 'resources.neu')) { Copy-Item -LiteralPath (Join-Path $backup 'resources.neu') -Destination (Join-Path $target 'resources.neu') -Force }
-  if (Test-Path -LiteralPath (Join-Path $backup 'app.exe')) { Copy-Item -LiteralPath (Join-Path $backup 'app.exe') -Destination $targetBinary -Force }
-  throw
-} finally {
-  Remove-Item -LiteralPath $archive -Force -ErrorAction SilentlyContinue
-  Remove-Item -LiteralPath $updateDirectory -Force -Recurse -ErrorAction SilentlyContinue
-  Remove-Item -LiteralPath $staging -Force -Recurse -ErrorAction SilentlyContinue
-  Remove-Item -LiteralPath $backup -Force -Recurse -ErrorAction SilentlyContinue
-}
-Start-Process -FilePath $targetBinary -WorkingDirectory $target
-`;
 }
 
 function createUnixApplyScript({
@@ -192,7 +125,7 @@ async function getCurrentVersion() {
 
 function getPlatformPackage() {
   if (window.NL_OS === "Windows") {
-    return { asset: "windows-x64", binary: "WeekBox-win_x64.exe" };
+    return null;
   }
   if (window.NL_OS === "Linux") {
     const architecture =
@@ -240,7 +173,10 @@ export const appUpdater = {
     if (!platform) {
       return {
         status: "unsupported",
-        message: "Automatic updates are not available for this platform.",
+        message:
+          window.NL_OS === "Windows"
+            ? "Automatic updates are temporarily unavailable on Windows. Download the latest release manually."
+            : "Automatic updates are not available for this platform.",
       };
     }
 
@@ -294,7 +230,7 @@ export const appUpdater = {
 
     const updatePath = `${window.NL_PATH}/${UPDATE_DIRECTORY}`;
     const archivePath = `${updatePath}/${update.asset.name}`;
-    const scriptPath = `${updatePath}/apply-update.${window.NL_OS === "Windows" ? "ps1" : "sh"}`;
+    const scriptPath = `${updatePath}/apply-update.sh`;
     const expectedDigest = update.asset.digest
       .slice("sha256:".length)
       .toLowerCase();
@@ -315,27 +251,17 @@ export const appUpdater = {
       throw new Error("Downloaded update failed its integrity check.");
     }
     onProgress("Closing WeekBox to apply update…");
-    const applyScript =
-      window.NL_OS === "Windows"
-        ? createWindowsApplyScript({
-            appPath: window.NL_PATH,
-            archivePath,
-            expectedDigest,
-          })
-        : createUnixApplyScript({
-            appPath: window.NL_PATH,
-            archivePath,
-            expectedDigest,
-            binaryName: platform.binary,
-            scriptPath,
-          });
+    const applyScript = createUnixApplyScript({
+      appPath: window.NL_PATH,
+      archivePath,
+      expectedDigest,
+      binaryName: platform.binary,
+      scriptPath,
+    });
     await Neutralino.filesystem.writeFile(scriptPath, applyScript);
-    const command =
-      window.NL_OS === "Windows"
-        ? `cmd /c start "" /b powershell -NoProfile -NonInteractive -WindowStyle Hidden -ExecutionPolicy Bypass -File ${quoteCommandArgument(scriptPath)}`
-        : `/bin/sh ${quoteShellString(scriptPath)} >/dev/null 2>&1 &`;
+    const command = `/bin/sh ${quoteShellString(scriptPath)} >/dev/null 2>&1 &`;
     await Neutralino.os.execCommand(command, {
-      background: window.NL_OS !== "Windows",
+      background: true,
     });
     onHandoff();
     await Neutralino.app.exit();

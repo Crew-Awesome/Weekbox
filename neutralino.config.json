@@ -31,12 +31,11 @@
       "minWidth": 800,
       "minHeight": 500,
       "center": true,
-      "enableInspector": true,
+      "enableInspector": false,
       "openInspectorOnStartup": false,
       "resizable": true,
       "exitProcessOnClose": true,
-      "processArgs": "--disable-web-security",
-      "webviewArgs": "--autoplay-policy=no-user-gesture-required --disable-features=PreloadMediaEngagementData,MediaEngagementBypassAutoplayPolicies --disable-web-security"
+      "webviewArgs": "--autoplay-policy=no-user-gesture-required --disable-features=PreloadMediaEngagementData,MediaEngagementBypassAutoplayPolicies"
     }
   },
   "cli": {

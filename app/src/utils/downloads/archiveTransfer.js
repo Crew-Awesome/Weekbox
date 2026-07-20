@@ -96,59 +96,17 @@ async function removeParts(parts) {
 }
 
 async function mergeParts(parts, outPath) {
-  const command =
-    window.NL_OS === "Windows"
-      ? getWindowsMergeCommand(parts, outPath)
-      : `cat ${parts.map((part) => quoteCommandArgument(part.path)).join(" ")} > ${quoteCommandArgument(outPath)}`;
-  const result = await Neutralino.os.execCommand(command, {
-    background: false,
-  });
-  if (result.exitCode !== 0) {
-    throw new Error(result.stdErr || "Could not merge download parts");
+  await Neutralino.filesystem.writeBinaryFile(outPath, new ArrayBuffer(0));
+  for (const part of parts) {
+    const data = await Neutralino.filesystem.readBinaryFile(part.path);
+    await Neutralino.filesystem.appendBinaryFile(outPath, data);
   }
-}
-
-function quotePowerShellString(value) {
-  return `'${String(value).replaceAll("'", "''")}'`;
-}
-
-function encodePowerShellScript(script) {
-  const bytes = new Uint8Array(script.length * 2);
-  for (let index = 0; index < script.length; index += 1) {
-    const code = script.charCodeAt(index);
-    bytes[index * 2] = code & 0xff;
-    bytes[index * 2 + 1] = code >> 8;
-  }
-  return btoa(String.fromCharCode(...bytes));
-}
-
-function getWindowsMergeCommand(parts, outPath) {
-  const copyParts = parts
-    .map(
-      (part) =>
-        `$source=[System.IO.File]::OpenRead(${quotePowerShellString(part.path)});try{$source.CopyTo($destination)}finally{$source.Dispose()}`,
-    )
-    .join(";");
-  const script = `$destination=[System.IO.File]::Open(${quotePowerShellString(outPath)},[System.IO.FileMode]::Create,[System.IO.FileAccess]::Write,[System.IO.FileShare]::None);try{${copyParts}}finally{$destination.Dispose()}`;
-  return `powershell -NoProfile -NonInteractive -EncodedCommand ${encodePowerShellScript(script)}`;
 }
 
 function getWindowsExtractionCommand(archivePath, destinationPath) {
   const archive = archivePath.replace(/\//g, "\\");
   const destination = destinationPath.replace(/\//g, "\\");
-  const archiveMatch = archive.match(/^([A-Za-z]):\\(.+)$/);
-  const destinationMatch = destination.match(/^([A-Za-z]):\\(.+)$/);
-
-  if (
-    archiveMatch &&
-    destinationMatch &&
-    archiveMatch[1].toLowerCase() === destinationMatch[1].toLowerCase()
-  ) {
-    const script = `Set-Location ${quotePowerShellString(`${archiveMatch[1]}:\\`)};& tar.exe -xf ${quotePowerShellString(archiveMatch[2])} -C ${quotePowerShellString(destinationMatch[2])}`;
-    return `powershell -NoProfile -NonInteractive -EncodedCommand ${encodePowerShellScript(script)}`;
-  }
-
-  return `tar -xf "${archive}" -C "${destination}"`;
+  return `tar.exe -xf ${quoteCommandArgument(archive)} -C ${quoteCommandArgument(destination)}`;
 }
 
 const NESTED_ARCHIVE_PATTERNS = [
