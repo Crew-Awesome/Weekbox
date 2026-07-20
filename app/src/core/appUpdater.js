@@ -225,7 +225,9 @@ function getReleaseAsset(release, platform) {
     (asset) =>
       expression.test(asset.name || "") &&
       asset.state === "uploaded" &&
-      asset.content_type === "application/zip" &&
+      ["application/zip", "application/x-zip-compressed"].includes(
+        asset.content_type,
+      ) &&
       Number(asset.size) > 0,
   );
 }
