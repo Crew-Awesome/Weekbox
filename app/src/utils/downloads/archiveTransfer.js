@@ -95,11 +95,29 @@ async function removeParts(parts) {
   );
 }
 
+function buildWindowsMergeCommand(parts, outPath) {
+  const list = parts
+    .map((part) => quoteCommandArgument(part.path.replace(/\//g, "\\")))
+    .join("+");
+  const target = quoteCommandArgument(outPath.replace(/\//g, "\\"));
+  return `cmd /c copy /b /y ${list} ${target}`;
+}
+
+function buildUnixMergeCommand(parts, outPath) {
+  const list = parts.map((part) => quoteCommandArgument(part.path)).join(" ");
+  return `cat ${list} > ${quoteCommandArgument(outPath)}`;
+}
+
 async function mergeParts(parts, outPath) {
-  await Neutralino.filesystem.writeBinaryFile(outPath, new ArrayBuffer(0));
-  for (const part of parts) {
-    const data = await Neutralino.filesystem.readBinaryFile(part.path);
-    await Neutralino.filesystem.appendBinaryFile(outPath, data);
+  const command =
+    window.NL_OS === "Windows"
+      ? buildWindowsMergeCommand(parts, outPath)
+      : buildUnixMergeCommand(parts, outPath);
+  const result = await Neutralino.os.execCommand(command, { background: false });
+  if (result.exitCode !== 0) {
+    throw new Error(
+      `Could not merge download parts: ${result.stdErr || result.stdOut || "unknown error"}`,
+    );
   }
 }
 

@@ -5,7 +5,9 @@
   "main": "index.js",
   "scripts": {
     "build": "npx @neutralinojs/neu build",
+    "build:win": "npx @neutralinojs/neu build --target win_x64 && node scripts/set-binary-metadata.js",
     "release": "npx @neutralinojs/neu build --release",
+    "release:win": "npx @neutralinojs/neu build --release --target win_x64 && node scripts/set-binary-metadata.js",
     "format": "node scripts/formatter.js"
   },
   "repository": {
@@ -21,6 +23,7 @@
   },
   "homepage": "https://github.com/Crew-Awesome/Weekbox#readme",
   "devDependencies": {
-    "prettier": "^3.9.5"
+    "prettier": "^3.9.5",
+    "rcedit": "^5.0.0"
   }
 }
