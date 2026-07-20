@@ -262,9 +262,7 @@ async function startApp() {
     registerEnginesView();
     await router.init();
     startupLoader.setPhase("Preparing Mod Manager", 70);
-    const modManagerReady = modManagerModal
-      .init()
-      .then(() => modManagerModal.loadInstalledMods(true));
+    const modManagerReady = modManagerModal.preload();
     startupLoader.setPhase("Loading Home content", 72);
     const maintenance = FS.startBackgroundMaintenance({
       onProgress: (message, progress) =>

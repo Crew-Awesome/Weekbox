@@ -14,6 +14,8 @@ export const modManagerModal = {
   filterDropdownCtrl: null,
   eventBound: false,
   loadRequestId: 0,
+  preloadPromise: null,
+  preloaded: false,
 
   async init() {
     if (!document.getElementById("mod-manager-modal")) {
@@ -93,16 +95,30 @@ export const modManagerModal = {
     modal.style.display = "flex";
     requestAnimationFrame(() => modal.classList.add("show"));
 
-    const container = document.getElementById("mod-manager-modal-body");
-    if (container && (!this.cachedMods || this.cachedMods.length === 0)) {
-      container.innerHTML = modManagerTemplates.emptyState(
-        '<i class="fa-solid fa-spinner fa-spin" style="margin-right: 8px;"></i> Loading mods...',
-      );
+    if (!this.preloaded) {
+      const container = document.getElementById("mod-manager-modal-body");
+      if (container && !container.children.length) {
+        container.innerHTML = modManagerTemplates.emptyState(
+          '<i class="fa-solid fa-spinner fa-spin" style="margin-right: 8px;"></i> Loading mods...',
+        );
+      }
+      await this.preload();
     }
+  },
 
-    setTimeout(async () => {
+  async preload() {
+    if (this.preloadPromise) return this.preloadPromise;
+
+    this.preloadPromise = (async () => {
+      await this.init();
       await this.loadInstalledMods(true);
-    }, 50);
+      this.preloaded = true;
+    })().catch((error) => {
+      this.preloadPromise = null;
+      throw error;
+    });
+
+    return this.preloadPromise;
   },
 
   close() {
