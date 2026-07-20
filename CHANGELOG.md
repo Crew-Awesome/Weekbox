@@ -5,6 +5,12 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.5.1] - 2026-07-20
+
+### Fixed
+
+- WeekBox no longer runs out of memory when downloading or installing large engines like v-slice 0.8.4. Big downloads used to eat up over a gigabyte of RAM at the end; now they merge on disk and use almost no extra memory.
+
 ## [1.5.0] - 2026-07-20
 
 ### Added
