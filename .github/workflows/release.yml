@@ -68,7 +68,11 @@ jobs:
       - name: Install Inno Setup 7
         shell: pwsh
         run: |
-          Invoke-WebRequest -Uri "https://jrsoftware.org/download.php/is.exe" -OutFile "$env:TEMP\innosetup.exe"
+          $url = "https://files.jrsoftware.org/is/7/innosetup-7.0.2-x86.exe"
+          Invoke-WebRequest -Uri $url -OutFile "$env:TEMP\innosetup.exe"
+          if ((Get-Item "$env:TEMP\innosetup.exe").Length -lt 5MB) {
+            throw "Inno Setup download was too small and may be corrupted."
+          }
           Start-Process "$env:TEMP\innosetup.exe" -ArgumentList "/VERYSILENT", "/SUPPRESSMSGBOXES", "/NORESTART" -Wait
 
       - name: Build Windows installer
