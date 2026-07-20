@@ -11,7 +11,7 @@ WeekBox is a community project made by Crew Awesome. Treat contributors and user
 
 ## Unacceptable behavior
 
-Bringing unrelated drama into the project, Harassment, threats, discrimination, personal attacks, deliberate disruption, or sharing another person's private information without permission are not acceptable.
+Harassment, threats, discrimination, personal attacks, deliberate disruption, bringing unrelated drama into the project, or sharing another person's private information without permission are not acceptable.
 
 ## Enforcement
 
