@@ -124,10 +124,11 @@ class FileSystemService {
     if (!deferMaintenance) await this.runStartupMaintenance();
   }
 
-  async runStartupMaintenance() {
+  async runStartupMaintenance({ onProgress } = {}) {
     if (this.startupMaintenancePromise) return this.startupMaintenancePromise;
 
-    const runPhase = async (label, task) => {
+    const runPhase = async (label, progress, task) => {
+      onProgress?.(label, progress);
       const startedAt = performance.now();
       await task();
       console.info(
@@ -136,40 +137,38 @@ class FileSystemService {
     };
 
     this.startupMaintenancePromise = (async () => {
-      await runPhase("cleaning incomplete downloads", () =>
+      await runPhase("Cleaning incomplete downloads", 90, () =>
         this.cleanupIncompleteDownloads(),
       );
-      await runPhase("validating engine installs", () =>
+      await runPhase("Validating engine installs", 92, () =>
         this.cleanupInvalidEngineInstallations(),
       );
-      await runPhase("validating installed mods", () =>
+      await runPhase("Validating installed mods", 94, () =>
         this.cleanupInvalidInstalledMods(),
       );
-      await runPhase("migrating legacy mod covers", () =>
+      await runPhase("Migrating library data", 96, () =>
         this.migrateLegacyModCovers(),
       );
       let installedEngines = [];
-      await runPhase("finding installed engines", async () => {
+      await runPhase("Finding installed engines", 97, async () => {
         installedEngines = await this.getInstalledEngines();
       });
-      await runPhase("migrating engine mods", async () => {
+      await runPhase("Migrating engine mods", 98, async () => {
         await this.injection.migrateLegacyEngineModsFor(installedEngines);
       });
-      await runPhase("importing Psych Online mods", () =>
+      await runPhase("Importing Psych Online mods", 99, () =>
         this.importPsychOnlineEngineMods(installedEngines),
       );
-      await runPhase("cleaning hidden mod links", () =>
+      await runPhase("Cleaning hidden mod links", 99, () =>
         this.cleanupHiddenModLinks(installedEngines),
       );
-    })().catch((error) => {
-      console.warn("Could not complete startup maintenance", error);
-    });
+    })();
 
     return this.startupMaintenancePromise;
   }
 
-  async startBackgroundMaintenance() {
-    return this.runStartupMaintenance();
+  async startBackgroundMaintenance(options) {
+    return this.runStartupMaintenance(options);
   }
 
   async getDefaultStorageParentPath() {

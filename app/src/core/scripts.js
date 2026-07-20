@@ -1,6 +1,6 @@
 import { storageBridge } from "./storagePatch.js";
 import { router } from "./router.js";
-import { registerHomeView } from "../ui/home/index.js";
+import { homeView, registerHomeView } from "../ui/home/index.js";
 import { registerEnginesView } from "../ui/engines/index.js";
 import { downloadEngine } from "../ui/engines/downloadEngine.js";
 import { engineUpdateToast } from "../ui/engines/engineUpdateToast.js";
@@ -258,12 +258,15 @@ async function startApp() {
     registerHomeView();
     registerEnginesView();
     await router.init();
-    startupLoader.setPhase("Opening Home", 88);
+    startupLoader.setPhase("Loading Home content", 68);
+    const maintenance = FS.startBackgroundMaintenance({
+      onProgress: (message, progress) =>
+        startupLoader.setPhase(message, progress),
+    });
+    await homeView.ready;
+    startupLoader.setPhase("Finishing library setup", 89);
+    await maintenance;
     await startupLoader.complete();
-
-    window.setTimeout(() => {
-      void FS.startBackgroundMaintenance();
-    }, 280);
 
     await offerNestedStorageRepair();
     await openLaunchDeepLink();
@@ -288,7 +291,7 @@ async function startApp() {
     }
     console.log("WeekBox: modules loaded.");
   } catch (error) {
-    startupLoader.setPhase("Could not start WeekBox", 100);
+    startupLoader.fail("Could not start WeekBox");
     console.error("Startup error:", error);
     try {
       errorHandler.show({

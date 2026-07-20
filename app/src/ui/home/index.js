@@ -6,13 +6,19 @@ import { homeSearchDropdown } from "./searchDropdown.js";
 import { homeScroll } from "./homeScroll.js";
 
 export const homeView = {
-  init() {
+  hasVisited: false,
+  ready: Promise.resolve(),
+
+  async init() {
     homeScroll.init();
 
-    homeCarousel.init();
-    homeGrid.init();
     homeSearch.init();
     homeSearchDropdown.init();
+    await Promise.all([
+      homeCarousel.init(),
+      homeGrid.init({ prefetchNextPage: !this.hasVisited }),
+    ]);
+    this.hasVisited = true;
   },
 
   destroy() {
@@ -25,7 +31,10 @@ export const homeView = {
 
 export function registerHomeView() {
   appEvents.addEventListener("view:loaded", (event) => {
-    if (event.detail === "home") homeView.init();
-    else homeView.destroy();
+    if (event.detail === "home") homeView.ready = homeView.init();
+    else {
+      homeView.destroy();
+      homeView.ready = Promise.resolve();
+    }
   });
 }

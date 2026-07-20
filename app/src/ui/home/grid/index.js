@@ -26,7 +26,7 @@ export const homeGrid = {
     gridState.searchQuery = val;
   },
 
-  async init() {
+  async init({ prefetchNextPage = false } = {}) {
     gridState.currentPage = 1;
     gridState.isSearchMode = false;
     gridState.hasMore = true;
@@ -34,6 +34,9 @@ export const homeGrid = {
 
     filterManager.setup();
     await gridRender.renderGrid(true);
+    if (prefetchNextPage && gridState.hasMore) {
+      await gridRender.renderGrid(false);
+    }
     scrollManager.setup();
   },
 

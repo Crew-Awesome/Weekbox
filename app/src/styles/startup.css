@@ -1,7 +1,7 @@
 .startup-loading-screen {
   position: fixed;
   inset: 0;
-  z-index: 10000;
+  z-index: 2000;
   display: grid;
   place-items: center;
   padding: 24px;
@@ -17,6 +17,11 @@
 
 .startup-loading-card {
   width: min(100%, 340px);
+  padding: 28px;
+  border: 1px solid var(--border-color);
+  border-radius: 14px;
+  background: var(--bg-panel);
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.28);
   text-align: center;
 }
 
@@ -48,4 +53,17 @@
   margin: 12px 0 0;
   color: var(--text-muted);
   font-size: 0.9rem;
+}
+
+.startup-loading-screen--failed .startup-loading-card {
+  border-color: rgba(255, 74, 74, 0.55);
+}
+
+.startup-loading-screen--failed .startup-loading-title,
+.startup-loading-screen--failed .startup-loading-label {
+  color: #ff8585;
+}
+
+.startup-loading-screen--failed .startup-loading-progress-bar {
+  background: #ff4a4a;
 }
