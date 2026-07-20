@@ -69,7 +69,7 @@ jobs:
         shell: pwsh
         run: |
           $url = "https://github.com/jrsoftware/issrc/releases/download/is-7_0_2/innosetup-7.0.2-x86.exe"
-          Invoke-WebRequest -Uri $url -OutFile "$env:TEMP\innosetup.exe"
+          curl.exe -L -o "$env:TEMP\innosetup.exe" $url
           if ((Get-Item "$env:TEMP\innosetup.exe").Length -lt 5MB) {
             throw "Inno Setup download was too small and may be corrupted."
           }
@@ -79,8 +79,8 @@ jobs:
         shell: pwsh
         run: |
           $version = (Get-Content neutralino.config.json -Raw | ConvertFrom-Json).version
-          $iscc = Get-ChildItem "C:\Program Files*\Inno Setup *\ISCC.exe" | Select-Object -First 1
-          if (-not $iscc) { throw "Inno Setup (ISCC.exe) was not found after install." }
+          $iscc = Get-ChildItem "C:\Program Files*\Inno Setup 7\ISCC.exe" | Select-Object -First 1
+          if (-not $iscc) { throw "Inno Setup 7 (ISCC.exe) was not found after install." }
           & $iscc.FullName /DMyAppVersion=$version installer\weekbox.iss
           Copy-Item "dist/installer/WeekBox-$version-windows-x64-setup.exe" "dist/release-assets/" -Force
 
