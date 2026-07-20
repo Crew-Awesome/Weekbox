@@ -2,7 +2,7 @@ import { FS } from "../../utils/filesystem.js";
 import { sanitizePathSegment } from "../../utils/filesystem/pathUtils.js";
 import { gameBananaApi } from "../../api/gamebanana.js";
 import { modSettingsModal } from "./modSettingsModal.js";
-import { getGameBananaId } from "./modSettingsTemplates.js";
+import { getGameBananaSource } from "./modSettingsTemplates.js";
 import { modManagerTemplates } from "../../html/components/mod-manager.js";
 
 function getDependencyUsers(dependency, allMods) {
@@ -27,15 +27,30 @@ function getDependencyDetails(dependency, users) {
 function loadDependencyCover(dependency, image) {
   Promise.resolve()
     .then(async () => {
-      const gameBananaId = getGameBananaId(dependency);
-      return FS.ensureModCover(dependency.id, async () => {
-        if (!gameBananaId) return null;
-        const details = await gameBananaApi.getModDetails(gameBananaId, {
-          includeRequirements: false,
+      const source = getGameBananaSource(dependency);
+      if (!source) return FS.ensureModCover(dependency.id, async () => null);
+
+      const details =
+        source.type === "tool"
+          ? await gameBananaApi.getToolDetails(source.id)
+          : await gameBananaApi.getModDetails(source.id, {
+              includeRequirements: false,
+            });
+      const imageUrl =
+        source.type === "tool" ? details?.thumbnail : details?.images?.[0];
+      if (!imageUrl || imageUrl === "assets/icons/launcher-icon.png") {
+        return FS.ensureModCover(dependency.id, async () => null);
+      }
+
+      const coverSource = `${source.type}:${source.id}`;
+      if (dependency.coverSource !== coverSource) {
+        await FS.updateModAppearance(dependency.id, {
+          coverUrl: imageUrl,
+          coverSource,
         });
-        const imageUrl = details?.images?.[0];
-        return imageUrl === "assets/icons/launcher-icon.png" ? null : imageUrl;
-      });
+        dependency.coverSource = coverSource;
+      }
+      return FS.getModCover(dependency.id);
     })
     .then((localCover) => {
       if (localCover) image.src = localCover;

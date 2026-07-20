@@ -1,5 +1,26 @@
 import { FS } from "../../utils/filesystem.js";
 
+const modCoverCache = new Map();
+
+export function primeModCover(modId, coverUrl) {
+  if (coverUrl) modCoverCache.set(String(modId), coverUrl);
+}
+
+export async function getModCover(modId, fetchDetails) {
+  const cacheKey = String(modId);
+  if (modCoverCache.has(cacheKey)) return modCoverCache.get(cacheKey);
+
+  const localCover = await FS.ensureModCover(modId, async () => {
+    const details = await fetchDetails(modId, {
+      includeRequirements: false,
+    });
+    const imageUrl = details?.images?.[0];
+    return imageUrl === "assets/icons/launcher-icon.png" ? null : imageUrl;
+  });
+  primeModCover(modId, localCover);
+  return localCover;
+}
+
 export function loadModCardImage({
   mod,
   card,
@@ -14,16 +35,7 @@ export function loadModCardImage({
     card.classList.toggle("has-no-cover", !hasCover);
   };
   Promise.resolve()
-    .then(async () => {
-      const localCover = await FS.ensureModCover(mod.id, async () => {
-        const details = await fetchDetails(mod.id, {
-          includeRequirements: false,
-        });
-        const imageUrl = details?.images?.[0];
-        return imageUrl === "assets/icons/launcher-icon.png" ? null : imageUrl;
-      });
-      return localCover;
-    })
+    .then(() => getModCover(mod.id, fetchDetails))
     .then((localCover) => {
       if (!localCover || !image) {
         finishLoading(false);

@@ -3,7 +3,7 @@ import { FS } from "../../utils/filesystem.js";
 import { sanitizePathSegment } from "../../utils/filesystem/pathUtils.js";
 import { setupModSettingsDropdowns } from "./modSettingsDropdowns.js";
 import {
-  getGameBananaId,
+  getGameBananaSource,
   loadingContent,
   settingsContent,
 } from "./modSettingsTemplates.js";
@@ -42,7 +42,7 @@ export const modSettingsModal = {
       mod,
       localCover,
       controlsDisabled,
-      canReset: Boolean(getGameBananaId(mod)) && networkStatus.online,
+      canReset: Boolean(getGameBananaSource(mod)) && networkStatus.online,
       resetTitle: networkStatus.online
         ? "Defaults are only available for GameBanana mods"
         : "Connect to the internet to reset GameBanana mod information",
@@ -98,17 +98,23 @@ export const modSettingsModal = {
     overlay
       .querySelector(".mod-settings-reset")
       .addEventListener("click", async () => {
-        const modId = getGameBananaId(mod);
-        if (!modId) return;
+        const source = getGameBananaSource(mod);
+        if (!source) return;
         status.textContent = "Loading defaults…";
         try {
-          const details = await gameBananaApi.getModDetails(modId, {
-            includeRequirements: false,
-          });
+          const details =
+            source.type === "tool"
+              ? await gameBananaApi.getToolDetails(source.id)
+              : await gameBananaApi.getModDetails(source.id, {
+                  includeRequirements: false,
+                });
           if (!details?.title)
             throw new Error("GameBanana defaults are unavailable");
           nameInput.value = details.title;
-          pendingCoverUrl = details.images?.[0] || null;
+          pendingCoverUrl =
+            source.type === "tool"
+              ? details?.thumbnail || null
+              : details.images?.[0] || null;
           pendingCoverDataUrl = null;
           cover.src = pendingCoverUrl || "assets/icons/launcher-icon.png";
           status.textContent = "Defaults loaded. Save to apply them.";

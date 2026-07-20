@@ -102,6 +102,10 @@
   margin: 2px 0;
   position: static !important;
   align-self: flex-start;
+  /* Keep the original translucent look without the separately composited
+     backdrop blur that makes badges lag behind while the grid scrolls. */
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
 }
 
 .mod-stats {

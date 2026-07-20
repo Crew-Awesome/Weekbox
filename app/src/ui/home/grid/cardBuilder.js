@@ -22,7 +22,15 @@ export function createCard(mod, index) {
   };
   imageContainer.appendChild(image);
 
-  applyDominantColor(image, card, {
+  // Keep the displayed image on its normal request path. A separate CORS-safe
+  // image lets the canvas read the cover pixels for the hover color.
+  const colorProbe = new Image();
+  colorProbe.crossOrigin = "anonymous";
+  colorProbe.src = mod.image;
+  colorProbe.addEventListener("error", () => {
+    card.style.setProperty("--card-color", "rgba(255, 255, 255, 0.2)");
+  });
+  applyDominantColor(colorProbe, card, {
     alpha: 0.5,
     fallback: "rgba(255, 255, 255, 0.08)",
   });

@@ -16,6 +16,7 @@ export const modManagerModal = {
   loadRequestId: 0,
   preloadPromise: null,
   preloaded: false,
+  pendingInstalls: new Map(),
 
   async init() {
     if (!document.getElementById("mod-manager-modal")) {
@@ -78,7 +79,27 @@ export const modManagerModal = {
               ?.classList.contains("show")
           ) {
             this.loadInstalledMods(true);
+          } else {
+            this.cachedMods = null;
+            this.cachedStandaloneMods = null;
+            this.preloaded = false;
+            this.preloadPromise = null;
           }
+        });
+        document.addEventListener("mod-install-progress", (event) => {
+          const install = event.detail;
+          if (!install?.modId) return;
+          if (install.status === "complete" || install.status === "cancelled") {
+            this.pendingInstalls.delete(String(install.modId));
+            document
+              .querySelectorAll(".mod-manager-installing-card")
+              .forEach((card) => {
+                if (card.dataset.modId === String(install.modId)) card.remove();
+              });
+            return;
+          }
+          this.pendingInstalls.set(String(install.modId), install);
+          this.updatePendingInstallCard(install);
         });
         this.eventBound = true;
       }
@@ -94,6 +115,7 @@ export const modManagerModal = {
 
     modal.style.display = "flex";
     requestAnimationFrame(() => modal.classList.add("show"));
+    this.renderPendingInstallCards();
 
     if (!this.preloaded) {
       const container = document.getElementById("mod-manager-modal-body");
@@ -170,6 +192,66 @@ export const modManagerModal = {
     document
       .querySelector(".mod-manager-header-actions")
       ?.classList.toggle("dependencies-view", !isModsView);
+  },
+
+  updatePendingInstallCard(install) {
+    const modal = document.getElementById("mod-manager-modal");
+    const grid = document.getElementById("mod-manager-grid-container");
+    if (
+      !modal?.classList.contains("show") ||
+      !grid ||
+      this.activeView !== "mods"
+    ) {
+      return;
+    }
+
+    let card = Array.from(
+      grid.querySelectorAll(".mod-manager-installing-card"),
+    ).find((item) => item.dataset.modId === String(install.modId));
+    if (!card) {
+      card = document.createElement("article");
+      card.className = "mod-manager-card mod-manager-installing-card";
+      card.dataset.modId = install.modId;
+      card.setAttribute("aria-live", "polite");
+      card.innerHTML = `
+        <div class="mod-manager-cover-wrap">
+          <div class="mod-manager-installing-cover">
+            <img class="mod-manager-installing-image" alt="" hidden>
+            <div class="mod-manager-installing-overlay"><i class="fa-solid fa-download" aria-hidden="true"></i></div>
+          </div>
+        </div>
+        <div class="mod-manager-card-body mod-info">
+          <div class="mod-manager-info">
+            <h3 class="mod-title"></h3>
+            <p class="mod-manager-installing-status"></p>
+          </div>
+        </div>`;
+      const addLocalCard = grid.querySelector(".mod-manager-add-local-card");
+      grid.insertBefore(card, addLocalCard || null);
+    }
+
+    card.querySelector(".mod-title").textContent = install.modName;
+    card.querySelector(".mod-manager-installing-status").textContent =
+      `${install.status} ${Math.round(install.progress || 0)}%`;
+
+    const image = card.querySelector(".mod-manager-installing-image");
+    if (install.coverUrl && card.dataset.coverUrl !== install.coverUrl) {
+      card.dataset.coverUrl = install.coverUrl;
+      const preload = new Image();
+      preload.addEventListener("load", () => {
+        if (!card.isConnected) return;
+        image.src = install.coverUrl;
+        image.hidden = false;
+        requestAnimationFrame(() => card.classList.add("has-install-cover"));
+      });
+      preload.src = install.coverUrl;
+    }
+  },
+
+  renderPendingInstallCards() {
+    this.pendingInstalls.forEach((install) =>
+      this.updatePendingInstallCard(install),
+    );
   },
 
   async render(mods, standaloneMods) {
@@ -266,6 +348,7 @@ export const modManagerModal = {
           this.loadInstalledMods(true);
         },
       );
+      this.renderPendingInstallCards();
       const addLocalCard = document.createElement("div");
       addLocalCard.innerHTML = modManagerTemplates.addLocalModCard();
       const addLocalButton = addLocalCard.firstElementChild;

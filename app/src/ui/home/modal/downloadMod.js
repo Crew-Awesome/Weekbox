@@ -1,5 +1,7 @@
 import { FS } from "../../../utils/filesystem.js";
 import { sanitizePathSegment } from "../../../utils/filesystem/pathUtils.js";
+import { gameBananaApi } from "../../../api/gamebanana.js";
+import { primeModCover } from "../../mod-manager/modImageLoader.js";
 import {
   downloadArchive,
   extractArchive,
@@ -9,6 +11,39 @@ import { errorHandler } from "../../errors/errorHandler.js";
 
 export const downloadMod = {
   activeTasks: new Map(),
+
+  reportInstallProgress(modId, modName, status, progress, coverUrl = null) {
+    document.dispatchEvent(
+      new CustomEvent("mod-install-progress", {
+        detail: { modId, modName, status, progress, coverUrl },
+      }),
+    );
+  },
+
+  async fetchModCoverUrl(modId, sourceType, fallbackCoverUrl = null) {
+    const source = String(modId).match(/^(mod|tool):(\d+)$/);
+    const type =
+      sourceType === "tool" || source?.[1] === "tool" ? "tool" : "mod";
+    const sourceId = source?.[2] || modId;
+    const details =
+      type === "tool"
+        ? await gameBananaApi.getToolDetails(sourceId).catch(() => null)
+        : await gameBananaApi
+            .getModDetails(sourceId, { includeRequirements: false })
+            .catch(() => null);
+    const imageUrl =
+      (type === "tool" ? details?.thumbnail : details?.images?.[0]) ||
+      fallbackCoverUrl;
+    if (!imageUrl || imageUrl === "assets/icons/launcher-icon.png") return null;
+
+    const preload = new Image();
+    preload.src = imageUrl;
+    return imageUrl;
+  },
+
+  async cacheModCover(modId, coverUrl) {
+    return FS.ensureModCover(modId, async () => coverUrl);
+  },
 
   async moveEntries(entries, sourceDir, destinationDir, concurrency = 8) {
     const queue = entries.filter(
@@ -56,6 +91,7 @@ export const downloadMod = {
     const task = this.activeTasks.get(modId);
     if (task) {
       task.cancelled = true;
+      this.reportInstallProgress(modId, task.modName, "cancelled", 0);
       if (task.pid) {
         const os = window.NL_OS;
         if (os === "Windows") {
@@ -110,11 +146,18 @@ export const downloadMod = {
     this.activeTasks.set(modId, {
       cancelled: false,
       pid: null,
+      modName,
       tempFilePath,
       targetModFolder,
     });
 
     const { toastThumbnail, sourceType, ...installMetadata } = metadata;
+    const coverUrlPromise = this.fetchModCoverUrl(
+      modId,
+      sourceType,
+      toastThumbnail,
+    );
+    this.reportInstallProgress(modId, modName, "Downloading...", 2);
     toastDownloadMod.show(modId, modName, () => this.cancel(modId), {
       iconHtml: toastThumbnail
         ? `<img class="toast-system-thumbnail" src="${toastThumbnail}" alt="" />`
@@ -135,6 +178,7 @@ export const downloadMod = {
         getTask: () => this.activeTasks.get(modId),
         onProgress: (status, progress) => {
           toastDownloadMod.update(modId, progress, status);
+          this.reportInstallProgress(modId, modName, status, progress);
         },
       });
 
@@ -143,12 +187,14 @@ export const downloadMod = {
 
       if (this.activeTasks.get(modId)?.cancelled) throw new Error("Cancelled");
       toastDownloadMod.update(modId, 98, "Extracting...");
+      this.reportInstallProgress(modId, modName, "Installing...", 98);
       const extractionStartedAt = performance.now();
       const extractionStatusTimer = setInterval(() => {
         const elapsedSeconds = Math.floor(
           (performance.now() - extractionStartedAt) / 1000,
         );
         toastDownloadMod.update(modId, 98, `Extracting... ${elapsedSeconds}s`);
+        this.reportInstallProgress(modId, modName, "Installing...", 98);
       }, 2000);
 
       try {
@@ -277,6 +323,14 @@ export const downloadMod = {
         ...installMetadata,
       });
 
+      this.reportInstallProgress(modId, modName, "Preparing cover...", 99);
+      const coverUrl = await coverUrlPromise.catch(() => null);
+      const localCover = await this.cacheModCover(modId, coverUrl).catch(
+        () => null,
+      );
+      primeModCover(modId, localCover);
+      if (this.activeTasks.get(modId)?.cancelled) throw new Error("Cancelled");
+
       const injectionResults = await FS.injectModIntoInstalledEngines(modId);
       injectionResults
         .filter((result) => result.status === "rejected")
@@ -285,6 +339,9 @@ export const downloadMod = {
         );
 
       if (this.activeTasks.get(modId)?.cancelled) throw new Error("Cancelled");
+      this.reportInstallProgress(modId, modName, "Installed", 100, localCover);
+      await new Promise((resolve) => setTimeout(resolve, 320));
+      this.reportInstallProgress(modId, modName, "complete", 100);
       document.dispatchEvent(new CustomEvent("mods-updated"));
       toastDownloadMod.success(modId);
 
@@ -300,6 +357,7 @@ export const downloadMod = {
       this.activeTasks.delete(modId);
       return true;
     } catch (error) {
+      this.reportInstallProgress(modId, modName, "cancelled", 0);
       if (error.message !== "Cancelled") {
         await this.cleanupData(modId, tempFilePath, targetModFolder);
         toastDownloadMod.error(modId, error.message || "Installation failed");

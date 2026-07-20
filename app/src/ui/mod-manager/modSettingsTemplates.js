@@ -7,7 +7,13 @@ export function escapeHtml(value) {
 }
 
 export function getGameBananaId(mod) {
-  return String(mod?.id || "").match(/^(?:mod:)?(\d+)$/)?.[1] || null;
+  return getGameBananaSource(mod)?.id || null;
+}
+
+export function getGameBananaSource(mod) {
+  const match = String(mod?.id || "").match(/^(?:(mod|tool):)?(\d+)$/);
+  if (!match) return null;
+  return { type: match[1] || "mod", id: match[2] };
 }
 
 export function loadingContent() {
