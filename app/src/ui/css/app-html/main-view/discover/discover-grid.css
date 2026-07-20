@@ -104,15 +104,46 @@
     opacity: 0.85;
 }
 
-/* Lógica de color dinámico */
+/* Lógica de color dinámico y animación de expansión de fondo en hover */
 .discover-dynamic-card {
-    background-color: transparent;
-    color: var(--m3-component-on-surface);
+    background-color: transparent !important;
+    /* Aseguramos que el texto principal nunca cambie de color */
+    color: var(--m3-component-on-surface) !important;
     border: 1px solid transparent;
-    transition: background-color 0.4s ease, color 0.4s ease, transform 0.2s ease, box-shadow 0.2s ease;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    position: relative;
+    z-index: 1;
 }
 
-.discover-dynamic-card:hover {
-    background-color: rgba(var(--card-bg-rgb), 0.6);
-    color: var(--card-color, inherit);
+/* Forzamos a los textos internos a heredar el color y no cambiar */
+.discover-dynamic-card .card-content h3, 
+.discover-dynamic-card .card-content p,
+.discover-dynamic-card .mod-author-stats {
+    color: var(--m3-component-on-surface) !important;
+}
+
+/* Usamos ::after para que no choque con el ::before que ya usa cards.css para el ripple */
+.discover-dynamic-card::after {
+    content: '';
+    position: absolute;
+    /* Inicia más pequeño hacia el centro */
+    top: 5px;
+    left: 5px;
+    right: 5px;
+    bottom: 5px;
+    background-color: rgba(var(--card-bg-rgb), 0); /* Transparente al inicio */
+    border-radius: inherit;
+    z-index: -1; /* Detrás del contenido pero por encima del fondo real */
+    /* Transición un poco más lenta para que se note el efecto de crecimiento */
+    transition: all 0.5s cubic-bezier(0.2, 0.8, 0.2, 1);
+    pointer-events: none;
+}
+
+.discover-dynamic-card:hover::after {
+    /* Crece hasta su tamaño completo original */
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(var(--card-bg-rgb), 0.75); /* Aparece el color extraído */
 }

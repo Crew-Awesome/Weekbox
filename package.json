@@ -4,7 +4,9 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "format": "node scripts/formatter.js"
+    "format": "node scripts/formatter.js",
+    "build": "npx @neutralinojs/neu build --embed-resources",
+    "release": "npx @neutralinojs/neu build --release --embed-resources"
   },
   "repository": {
     "type": "git",

@@ -156,9 +156,26 @@ export class ModCard extends HTMLElement {
 
         const extractColor = () => {
             extractImageColor(img.src).then(colorData => {
-                card.style.setProperty('--card-bg', colorData.hex);
-                card.style.setProperty('--card-color', colorData.isDark ? '#FFFFFF' : '#000000');
-                card.style.setProperty('--card-bg-rgb', `${colorData.r}, ${colorData.g}, ${colorData.b}`);
+                let { r, g, b } = colorData;
+                
+                // Calculamos la luminancia real percibida
+                const luminance = 0.2126 * r + 0.7152 * g + 0.0722 * b;
+                
+                // Si el color es muy claro, lo forzamos a oscurecerse drásticamente
+                if (luminance > 90) {
+                    const factor = 90 / luminance; 
+                    r = Math.floor(r * factor);
+                    g = Math.floor(g * factor);
+                    b = Math.floor(b * factor);
+                }
+
+                // Tope máximo absoluto por canal para asegurar que NUNCA sea blanco/gris claro
+                r = Math.min(r, 130);
+                g = Math.min(g, 130);
+                b = Math.min(b, 130);
+
+                // Solo aplicamos el fondo, no tocamos --card-color
+                card.style.setProperty('--card-bg-rgb', `${r}, ${g}, ${b}`);
                 card.classList.add('discover-dynamic-card');
             }).catch(err => {
                 console.warn('Could not extract color for card', err);
