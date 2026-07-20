@@ -49,9 +49,13 @@ WeekBox is made by [ImMalloy](https://github.com/ImMalloy) and [Britex](https://
 
 It is built with [Neutralinojs](https://neutralino.js.org/) and uses [GameBanana](https://gamebanana.com/) and Sniro (Psych Online Site) as APIs
 
-## Privacy
+## Project policies
 
-See the [WeekBox Privacy Policy](./PRIVACY.md) for information about local data and the third-party services WeekBox contacts.
+- [WeekBox Privacy Policy](./PRIVACY.md)
+- [Code Signing Policy](./CODE_SIGNING_POLICY.md)
+- [Security Policy](./SECURITY.md)
+- [Contributing](./CONTRIBUTING.md)
+- [Code of Conduct](./CODE_OF_CONDUCT.md)
 
 ## License
 
