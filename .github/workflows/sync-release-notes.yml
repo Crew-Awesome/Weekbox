@@ -24,7 +24,7 @@ jobs:
       - name: Check out repository
         uses: actions/checkout@v5
         with:
-          ref: ${{ github.event.release.tag_name || inputs.tag }}
+          ref: main
 
       - name: Sync title and notes from CHANGELOG.md
         env:
