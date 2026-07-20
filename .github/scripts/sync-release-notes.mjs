@@ -1,5 +1,6 @@
 import { readFileSync, writeFileSync } from "node:fs";
 import { execSync } from "node:child_process";
+import { tmpdir } from "node:os";
 
 const tag = process.argv[2];
 if (!tag) {
@@ -32,10 +33,10 @@ if (!notes) {
 }
 
 const title = `WeekBox v${version}`;
-const notesPath = `${process.env.RUNNER_TEMP || "/tmp"}/release-notes.md`;
+const notesPath = `${process.env.RUNNER_TEMP || tmpdir()}/release-notes.md`;
 writeFileSync(notesPath, notes, "utf8");
 
-const repo = process.env.GITHUB_REPOSITORY;
+const repo = process.env.GITHUB_REPOSITORY || "Crew-Awesome/Weekbox";
 execSync(
   `gh release edit "${tag}" --title "${title}" --notes-file "${notesPath}" --repo "${repo}"`,
   { stdio: "inherit" },
