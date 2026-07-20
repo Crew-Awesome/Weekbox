@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Mod Manager now prepares in the background when WeekBox starts.
 - Mod covers are prepared while a mod installs.
 - Mod Manager shows mods while they download and install.
+- Home cards now use a stronger cover color when you hover them.
 
 ### Fixed
 
@@ -20,6 +21,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Mod cover images stay ready when you reopen Mod Manager.
 - Mods without a cover now show a clear message instead of a grey image.
 - Tool dependencies can now load their cover image and use Reset.
+- Home card colors stay dark enough for text to be easy to read.
+- Home engine tags stay in sync while you scroll.
 
 ## [1.4.1] - 2026-07-20
 
