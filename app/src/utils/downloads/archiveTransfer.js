@@ -122,9 +122,7 @@ async function mergeParts(parts, outPath) {
 }
 
 function getWindowsExtractionCommand(archivePath, destinationPath) {
-  const archive = archivePath.replace(/\//g, "\\");
-  const destination = destinationPath.replace(/\//g, "\\");
-  return `tar.exe -xf ${quoteCommandArgument(archive)} -C ${quoteCommandArgument(destination)}`;
+  return `tar.exe -xf ${quoteCommandArgument(archivePath)} -C ${quoteCommandArgument(destinationPath)}`;
 }
 
 const NESTED_ARCHIVE_PATTERNS = [
@@ -168,10 +166,8 @@ function getNestedExtractionCommand(archivePath, destinationPath) {
       return getWindowsExtractionCommand(archivePath, destinationPath);
     return `unzip -oq "${archivePath}" -d "${destinationPath}"`;
   }
-  const archive = isWindows ? archivePath.replace(/\//g, "\\") : archivePath;
-  const dest = isWindows
-    ? destinationPath.replace(/\//g, "\\")
-    : destinationPath;
+  const archive = archivePath;
+  const dest = destinationPath;
   const flags =
     lower.endsWith(".gz") || lower.endsWith(".tgz") ? "-xzf" : "-xf";
   return `tar ${flags} "${archive}" -C "${dest}"`;
