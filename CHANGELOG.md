@@ -5,6 +5,12 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.5.5] - 2026-07-20
+
+### Fixed
+
+- Fixed the update-check button in Settings > Updates keeping the loading cursor after it finishes. The button now returns to normal (and can check again) once the check is done.
+
 ## [1.5.4] - 2026-07-20
 
 ### Fixed
