@@ -63,11 +63,26 @@ jobs:
             Compress-Archive -LiteralPath "dist/WeekBox/$binary" -DestinationPath "dist/release-assets/$($assets[$binary])" -Force
           }
 
+          Copy-Item "dist/WeekBox/resources.neu" "dist/release-assets/WeekBox-$version-resources.neu" -Force
+
+      - name: Install Inno Setup 7
+        shell: pwsh
+        run: |
+          Invoke-WebRequest -Uri "https://jrsoftware.org/download.php/is.exe" -OutFile "$env:TEMP\innosetup.exe"
+          Start-Process "$env:TEMP\innosetup.exe" -ArgumentList "/VERYSILENT", "/SUPPRESSMSGBOXES", "/NORESTART" -Wait
+
+      - name: Build Windows installer
+        shell: pwsh
+        run: |
+          $version = (Get-Content neutralino.config.json -Raw | ConvertFrom-Json).version
+          & "C:\Program Files (x86)\Inno Setup 7\ISCC.exe" /DMyAppVersion=$version installer\weekbox.iss
+          Copy-Item "dist/installer/WeekBox-$version-windows-x64-setup.exe" "dist/release-assets/" -Force
+
       - name: Upload release assets
         shell: pwsh
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          Get-ChildItem dist/release-assets -Filter '*.zip' | ForEach-Object {
+          Get-ChildItem dist/release-assets | ForEach-Object {
             gh release upload $env:RELEASE_TAG $_.FullName --clobber
           }

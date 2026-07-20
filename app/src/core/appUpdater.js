@@ -165,40 +165,71 @@ function getReleaseAsset(release, platform) {
   );
 }
 
+function getResourcesAsset(release) {
+  return (release.assets || []).find((asset) => {
+    if (asset.state !== "uploaded" || Number(asset.size) <= 0) return false;
+    const name = asset.name || "";
+    return (
+      /^WeekBox-.*-resources\.neu$/i.test(name) || /^resources\.neu$/i.test(name)
+    );
+  });
+}
+
+async function fetchLatestRelease() {
+  const response = await fetch(RELEASES_API, {
+    headers: {
+      Accept: "application/vnd.github+json",
+      "X-GitHub-Api-Version": "2026-03-10",
+    },
+  });
+  if (!response.ok)
+    throw new Error(`Update check failed: GitHub returned ${response.status}`);
+  return response.json();
+}
+
 export const appUpdater = {
   getCurrentVersion,
 
   async check() {
+    const release = await fetchLatestRelease();
+    const latestVersion = normalizeVersion(release.tag_name);
+    const currentVersion = await getCurrentVersion();
+    if (!latestVersion) {
+      throw new Error("Could not determine the latest WeekBox version.");
+    }
+
+    if (window.NL_OS === "Windows") {
+      const asset = getResourcesAsset(release);
+      if (!asset) {
+        return {
+          status: "unsupported",
+          message:
+            "Automatic updates are not available for this release yet. Download the latest version manually.",
+        };
+      }
+      if (compareVersions(latestVersion, currentVersion) <= 0) {
+        return { status: "current", currentVersion, latestVersion };
+      }
+      return {
+        status: "available",
+        currentVersion,
+        latestVersion,
+        asset,
+        windowsResources: true,
+        releaseUrl: release.html_url || RELEASES_PAGE,
+      };
+    }
+
     const platform = getPlatformPackage();
     if (!platform) {
       return {
         status: "unsupported",
-        message:
-          window.NL_OS === "Windows"
-            ? "Automatic updates are temporarily unavailable on Windows. Download the latest release manually."
-            : "Automatic updates are not available for this platform.",
+        message: "Automatic updates are not available for this platform.",
       };
     }
 
-    const [release, currentVersion] = await Promise.all([
-      fetch(RELEASES_API, {
-        headers: {
-          Accept: "application/vnd.github+json",
-          "X-GitHub-Api-Version": "2026-03-10",
-        },
-      }).then(async (response) => {
-        if (!response.ok)
-          throw new Error(
-            `Update check failed: GitHub returned ${response.status}`,
-          );
-        return response.json();
-      }),
-      getCurrentVersion(),
-    ]);
     const asset = getReleaseAsset(release, platform);
-    const latestVersion = normalizeVersion(release.tag_name);
-
-    if (!asset || !latestVersion) {
+    if (!asset) {
       throw new Error(
         `The latest WeekBox release has no update package for ${window.NL_OS}.`,
       );
@@ -222,6 +253,10 @@ export const appUpdater = {
   },
 
   async install(update, onProgress = () => {}, onHandoff = () => {}) {
+    if (update?.windowsResources) {
+      return this.installWindowsResources(update, onProgress, onHandoff);
+    }
+
     const platform = getPlatformPackage();
     if (!platform)
       throw new Error("Automatic updates are not available for this platform.");
@@ -263,6 +298,38 @@ export const appUpdater = {
     await Neutralino.os.execCommand(command, {
       background: true,
     });
+    onHandoff();
+    await Neutralino.app.exit();
+  },
+
+  async installWindowsResources(update, onProgress, onHandoff) {
+    if (!update?.asset)
+      throw new Error("No WeekBox update is ready to install.");
+
+    const target = `${window.NL_PATH}/resources.neu`;
+    const staging = `${window.NL_PATH}/${UPDATE_DIRECTORY}/resources.neu`;
+    await Neutralino.filesystem
+      .createDirectory(`${window.NL_PATH}/${UPDATE_DIRECTORY}`)
+      .catch(() => {});
+
+    onProgress("Downloading update…");
+    const response = await fetch(update.asset.browser_download_url);
+    if (!response.ok)
+      throw new Error(`Update download failed: GitHub returned ${response.status}`);
+    const bytes = new Uint8Array(await response.arrayBuffer());
+
+    onProgress("Verifying update…");
+    if (bytes.length < 64 || bytes[0] !== 0x50 || bytes[1] !== 0x4b) {
+      throw new Error("Downloaded update is not a valid app bundle.");
+    }
+
+    onProgress("Installing update…");
+    await Neutralino.filesystem.writeBinaryFile(staging, bytes);
+    await Neutralino.filesystem.writeBinaryFile(target, bytes);
+
+    onProgress("Restarting WeekBox…");
+    const exe = `${window.NL_PATH}/WeekBox-win_x64.exe`;
+    await Neutralino.os.execCommand(`"${exe}"`, { background: true });
     onHandoff();
     await Neutralino.app.exit();
   },
