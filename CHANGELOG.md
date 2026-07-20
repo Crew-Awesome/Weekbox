@@ -5,6 +5,25 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.4.1] - 2026-07-20
+
+### Added
+
+- You can use an existing WeekBox folder from another drive.
+- You can replace an old WeekBox folder when moving your library. The old folder is kept as a backup.
+
+### Changed
+
+- Storage settings are easier to use. You can open the current folder from its path.
+- WeekBox releases now build automatically after they are published.
+
+### Fixed
+
+- WeekBox accepts both ZIP file types used by GitHub releases.
+- Startup errors now show useful details.
+- WeekBox does not try to move files when you choose the folder it already uses.
+- A missing old Documents folder no longer stops WeekBox from starting.
+
 ## [1.4.0] - 2026-07-19
 
 ### Added
