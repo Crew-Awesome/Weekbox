@@ -6,6 +6,7 @@ import { engineManagerModal } from "./engine-manager/index.js";
 import { engineUpdateService } from "./engines/engineUpdateService.js";
 import { FS } from "../utils/filesystem.js";
 import { configModal } from "./config/index.js";
+import { networkStatus } from "../core/networkStatus.js";
 
 export const sidebar = {
   updateEngineMarquee(button) {
@@ -37,8 +38,11 @@ export const sidebar = {
     this.setupResizer();
     this.setupNavigation();
     this.setupBrandButton();
-    await this.loadEngines();
-    engineUpdateService.startScheduledChecks();
+    this.networkStatusListener = () => {
+      void this.refreshNetworkFeatures();
+    };
+    networkStatus.addEventListener("change", this.networkStatusListener);
+    await this.refreshNetworkFeatures();
   },
   setupResizer() {
     if (!this.resizer) return;
@@ -110,6 +114,30 @@ export const sidebar = {
       );
     });
   },
+  async refreshNetworkFeatures() {
+    const enginesContainer = document.getElementById("engines-container");
+    enginesContainer?.classList.toggle("is-offline", !networkStatus.online);
+    enginesContainer?.setAttribute(
+      "aria-disabled",
+      String(!networkStatus.online),
+    );
+    const networkIndicator = document.getElementById("sidebar-network-status");
+    networkIndicator?.classList.toggle("is-online", networkStatus.online);
+    networkIndicator?.classList.toggle("is-offline", !networkStatus.online);
+    networkIndicator?.setAttribute(
+      "aria-label",
+      networkStatus.online ? "Online" : "Offline",
+    );
+    networkIndicator?.setAttribute(
+      "title",
+      networkStatus.online ? "Online" : "Offline",
+    );
+    await this.loadEngines();
+    if (networkStatus.online) engineUpdateService.startScheduledChecks();
+    if (!networkStatus.online && router.currentViewId === "engines") {
+      await router.navigate("home");
+    }
+  },
   openEngine(engineId) {
     const button = document.querySelector(
       `.engine-btn[data-engine-id="${engineId}"]`,
@@ -140,6 +168,10 @@ export const sidebar = {
         const btn = document.createElement("button");
         btn.className = "nav-btn engine-btn";
         btn.dataset.engineId = engineDef.versions;
+        btn.disabled = !networkStatus.online;
+        btn.title = networkStatus.online
+          ? ""
+          : "Connect to the internet to browse engine releases";
         btn.innerHTML = `
           <img src="${iconSrc}" class="engine-icon" onerror="this.onerror=null; this.src='data:image/svg+xml;utf8,<svg xmlns=\\'http://www.w3.org/2000/svg\\' viewBox=\\'0 0 512 512\\'><path fill=\\'%23888\\' d=\\'M448 32H64C28.65 32 0 60.65 0 96v320c0 35.35 28.65 64 64 64h384c35.35 0 64-28.65 64-64V96C512 60.65 483.3 32 448 32zM212.7 222.7L132.7 302.7C126.4 308.9 118.2 312 110.1 312s-16.38-3.125-22.62-9.375c-12.5-12.5-12.5-32.75 0-45.25L155.3 189.3l-67.88-67.88c-12.5-12.5-12.5-32.75 0-45.25s32.75-12.5 45.25 0l102.6 102.6C247.7 191.3 247.7 210.2 212.7 222.7zM384 320c-17.67 0-32-14.33-32-32s14.33-32 32-32h32c17.67 0 32 14.33 32 32s-14.33 32-32 32H384z\\'/></svg>'">
           <div class="marquee-container"><span class="marquee-text">${displayName}</span></div>

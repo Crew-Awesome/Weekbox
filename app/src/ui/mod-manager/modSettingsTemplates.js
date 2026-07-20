@@ -23,6 +23,7 @@ export function settingsContent({
   localCover,
   controlsDisabled,
   canReset,
+  resetTitle,
   canMoveToDependencies,
   isDependency,
   isExecutable,
@@ -80,7 +81,7 @@ export function settingsContent({
         ${mod.engineLocked ? '<p class="mod-settings-note">This mod is locked to Psych Online.</p>' : ""}
       </div>
       <footer class="mod-settings-footer">
-        <button type="button" class="mod-settings-reset" ${canReset ? "" : 'disabled title="Defaults are only available for GameBanana mods"'}>Reset</button>
+        <button type="button" class="mod-settings-reset" ${canReset ? "" : `disabled title="${escapeHtml(resetTitle)}"`}>Reset</button>
         ${isDependency ? '<button type="button" class="mod-settings-move-to-mods">Move to Mods</button>' : canMoveToDependencies ? '<button type="button" class="mod-settings-move-to-dependencies">Move to Dependencies</button>' : ""}
         <span class="mod-settings-status" role="status"></span>
         <button type="button" class="mod-settings-cancel">Cancel</button>

@@ -6,6 +6,7 @@ import { downloadEngine } from "./downloadEngine.js";
 import { engineUpdateModal } from "./engineUpdateModal.js";
 import { engineUpdateToast } from "./engineUpdateToast.js";
 import { appSettings } from "../../core/settings.js";
+import { networkStatus } from "../../core/networkStatus.js";
 
 const SKIP_PREFIX = "weekbox-engine-update-skip-";
 const UPDATE_STATE_FILE = "engineupdatestate.json";
@@ -113,6 +114,7 @@ async function findAvailableUpdate(engineId, installedVersion) {
 export const engineUpdateService = {
   startScheduledChecks() {
     if (scheduledCheck) return;
+    if (!networkStatus.online) return;
     if (appSettings.get("checkUpdatesOnStartup")) {
       void this.checkForUpdatesInBackground();
     }
@@ -124,6 +126,7 @@ export const engineUpdateService = {
   },
 
   async checkForUpdatesInBackground() {
+    if (!networkStatus.online) return;
     if (!FS.isInitialized) await FS.init();
     const installed = await FS.getInstalledEngines();
     for (const engineId of ["codename", "alepsych", "psychonline"]) {
@@ -186,6 +189,7 @@ export const engineUpdateService = {
   },
 
   async checkEngineUpdate(engineId, installedVersion) {
+    if (!networkStatus.online) return { status: "offline" };
     const update = await findAvailableUpdate(engineId, installedVersion);
     if (update.status !== "available") return update;
     return this.promptAndUpdate(engineId, installedVersion, update);

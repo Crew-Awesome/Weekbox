@@ -7,6 +7,7 @@ import {
   loadingContent,
   settingsContent,
 } from "./modSettingsTemplates.js";
+import { networkStatus } from "../../core/networkStatus.js";
 
 export const modSettingsModal = {
   isOpening: false,
@@ -41,7 +42,10 @@ export const modSettingsModal = {
       mod,
       localCover,
       controlsDisabled,
-      canReset: Boolean(getGameBananaId(mod)),
+      canReset: Boolean(getGameBananaId(mod)) && networkStatus.online,
+      resetTitle: networkStatus.online
+        ? "Defaults are only available for GameBanana mods"
+        : "Connect to the internet to reset GameBanana mod information",
       canMoveToDependencies: !isExecutable && mod.kind !== "dependency",
       isDependency,
       isExecutable,

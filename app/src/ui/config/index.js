@@ -7,6 +7,7 @@ import { toastSystem } from "../toasts/toastSystem.js";
 import { AppUpdateController } from "./appUpdateController.js";
 import { StorageMoveFeedback } from "./storageMoveFeedback.js";
 import { existingStorageModal } from "../existingStorageModal.js";
+import { networkStatus } from "../../core/networkStatus.js";
 
 const appUpdates = new AppUpdateController(appUpdater);
 const storageMoveFeedback = new StorageMoveFeedback(toastSystem);
@@ -51,6 +52,10 @@ export const configModal = {
       document.body.appendChild(wrapper.firstElementChild);
 
       this.bindEvents();
+      this.updateNetworkAvailability();
+      networkStatus.addEventListener("change", () =>
+        this.updateNetworkAvailability(),
+      );
     }
   },
 
@@ -182,6 +187,7 @@ export const configModal = {
     });
     this.updateStorageLocationLabel();
     this.updateAppVersionLabel();
+    this.updateNetworkAvailability();
     try {
       const update = JSON.parse(
         sessionStorage.getItem("weekbox_available_app_update") || "null",
@@ -214,7 +220,21 @@ export const configModal = {
   },
 
   async checkForAppUpdate() {
+    if (!networkStatus.online) return;
     return appUpdates.check();
+  },
+
+  updateNetworkAvailability() {
+    const button = document.getElementById("check-app-update");
+    const status = document.getElementById("app-update-status");
+    if (!button) return;
+    button.disabled = !networkStatus.online;
+    button.title = networkStatus.online
+      ? ""
+      : "Connect to the internet to check for WeekBox updates";
+    if (!networkStatus.online && status) {
+      status.textContent = "Connect to the internet to check for updates.";
+    }
   },
 
   async installAppUpdate() {

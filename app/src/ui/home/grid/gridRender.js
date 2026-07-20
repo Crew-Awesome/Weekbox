@@ -1,6 +1,7 @@
 import { gameBananaApi } from "../../../api/gamebanana.js";
 import { gridState } from "./gridState.js";
 import { createCard } from "./cardBuilder.js";
+import { networkStatus } from "../../../core/networkStatus.js";
 
 export const gridRender = {
   async renderGrid(isInitial = false) {
@@ -88,6 +89,7 @@ export const gridRender = {
       return true;
     } catch (error) {
       if (error?.kind === "aborted") return false;
+      networkStatus.setOnline(false);
       if (isInitial && renderVersion === gridState.renderVersion) {
         grid.textContent = "Failed to load mods.";
         grid.classList.add("grid-error");

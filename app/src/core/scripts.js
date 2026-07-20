@@ -15,6 +15,8 @@ import { appUpdateModal } from "../ui/updates/appUpdateModal.js";
 import { toastSystem } from "../ui/toasts/toastSystem.js";
 import { storageRecommendationModal } from "../ui/storageRecommendationModal.js";
 import { startupLoader } from "./startupLoader.js";
+import { networkStatus } from "./networkStatus.js";
+import { modManagerModal } from "../ui/mod-manager/index.js";
 
 function clearTestToasts() {
   document
@@ -218,6 +220,7 @@ async function startApp() {
   try {
     startupLoader.setPhase("Starting native services", 8);
     Neutralino.init();
+    networkStatus.init();
     // Updater relaunches originate from a background helper process. Bring
     // the new WeekBox window to the foreground as soon as native APIs are up.
     await Neutralino.window.focus().catch(() => {});
@@ -258,12 +261,16 @@ async function startApp() {
     registerHomeView();
     registerEnginesView();
     await router.init();
-    startupLoader.setPhase("Loading Home content", 68);
+    startupLoader.setPhase("Preparing Mod Manager", 70);
+    const modManagerReady = modManagerModal
+      .init()
+      .then(() => modManagerModal.loadInstalledMods(true));
+    startupLoader.setPhase("Loading Home content", 72);
     const maintenance = FS.startBackgroundMaintenance({
       onProgress: (message, progress) =>
         startupLoader.setPhase(message, progress),
     });
-    await homeView.ready;
+    await Promise.all([homeView.ready, modManagerReady]);
     startupLoader.setPhase("Finishing library setup", 89);
     await maintenance;
     await startupLoader.complete();
@@ -271,7 +278,7 @@ async function startApp() {
     await offerNestedStorageRepair();
     await openLaunchDeepLink();
     await recommendSaferStorageLocation();
-    if (appSettings.get("checkAppUpdatesOnStartup")) {
+    if (networkStatus.online && appSettings.get("checkAppUpdatesOnStartup")) {
       appUpdater
         .check()
         .then((update) => {

@@ -1,5 +1,6 @@
 import { gameBananaApi } from "../../api/gamebanana.js";
 import { modModal } from "./modal/index.js";
+import { networkStatus } from "../../core/networkStatus.js";
 
 export const homeCarousel = {
   currentSlideIndex: 0,
@@ -63,6 +64,7 @@ export const homeCarousel = {
       this.updateDots();
       this.startAutoSlide();
     } catch (error) {
+      networkStatus.setOnline(false);
       track.innerHTML = `<div style="padding: 24px; color: red;">Carousel error</div>`;
     }
   },
@@ -96,7 +98,8 @@ export const homeCarousel = {
       d.style.display = "none";
     });
     const visibleDots = this.featuredGroupSize;
-    const groupStart = Math.floor(this.currentSlideIndex / visibleDots) * visibleDots;
+    const groupStart =
+      Math.floor(this.currentSlideIndex / visibleDots) * visibleDots;
     for (
       let offset = 0;
       offset < Math.min(visibleDots, this.totalSlides - groupStart);

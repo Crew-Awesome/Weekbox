@@ -10,3 +10,31 @@
   flex-direction: column;
   gap: var(--spacing-xl);
 }
+
+.home-offline-panel {
+  display: grid;
+  place-items: center;
+  align-content: center;
+  gap: 12px;
+  min-height: 100%;
+  padding: 48px 24px;
+  text-align: center;
+}
+
+.home-offline-panel > i {
+  color: var(--text-muted);
+  font-size: 2rem;
+}
+
+.home-offline-panel h2 {
+  margin: 0;
+  color: var(--text-main);
+  font-size: 1.35rem;
+}
+
+.home-offline-panel p {
+  max-width: 480px;
+  margin: 0;
+  color: var(--text-muted);
+  line-height: 1.55;
+}

@@ -18,10 +18,14 @@ export const router = {
   async navigate(viewId) {
     try {
       // Las secciones del router ahora apuntan a la carpeta sections
-      await this.loadComponent(this.mainContent, `src/html/sections/${viewId}.html`);
+      await this.loadComponent(
+        this.mainContent,
+        `src/html/sections/${viewId}.html`,
+      );
+      this.currentViewId = viewId;
       emitViewChange(viewId);
     } catch (error) {
       this.mainContent.innerHTML = `<p style="padding: 24px; color: #ff4a4a;">Failed to load view: ${viewId}.html</p>`;
     }
   },
-};
+};

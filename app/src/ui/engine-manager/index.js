@@ -3,6 +3,7 @@ import { ENGINE_DETAILS } from "../../config/engines.js";
 import { engineUpdateService } from "../engines/engineUpdateService.js";
 import { engineUpdateToast } from "../engines/engineUpdateToast.js";
 import { applyDominantColor } from "../../utils/extractColor.js";
+import { networkStatus } from "../../core/networkStatus.js";
 
 export const engineManagerModal = {
   currentIndex: 0,
@@ -23,6 +24,15 @@ export const engineManagerModal = {
         .addEventListener("click", (e) => {
           if (e.target.id === "engine-manager-modal") this.close();
         });
+      networkStatus.addEventListener("change", () => {
+        if (
+          document
+            .getElementById("engine-manager-modal")
+            ?.classList.contains("show")
+        ) {
+          void this.loadInstalledEngines();
+        }
+      });
     }
   },
   async open() {
@@ -147,6 +157,7 @@ export const engineManagerModal = {
       versions.forEach((version) => {
         const item = document.createElement("div");
         item.className = "version-item";
+        const updateDisabled = !networkStatus.online;
         item.innerHTML = `
           <span class="version-text">${version}</span>
           <div class="version-actions">
@@ -155,7 +166,7 @@ export const engineManagerModal = {
                 version === "Nightly") ||
               (engineId === "psychonline" && version === "Latest")
                 ? `
-              <button class="engine-action-btn engine-update-btn" title="Check for updates" aria-label="Check ${details.name} for updates">
+              <button class="engine-action-btn engine-update-btn" title="${updateDisabled ? "Connect to the internet to check for updates" : "Check for updates"}" aria-label="Check ${details.name} for updates" ${updateDisabled ? "disabled" : ""}>
                 <i class="fa-solid fa-rotate"></i>
               </button>`
                 : ""
@@ -206,6 +217,12 @@ export const engineManagerModal = {
               engineId,
               details.name,
               "Close the engine before updating",
+            );
+          } else if (result.status === "offline") {
+            engineUpdateToast.info(
+              engineId,
+              details.name,
+              "Connect to the internet to check for updates",
             );
           }
           updateBtn.disabled = false;
