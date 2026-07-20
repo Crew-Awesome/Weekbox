@@ -1,5 +1,6 @@
 @import url("./variables.css");
 @import url("./base.css");
+@import url("./startup.css");
 @import url("./sidebar.css");
 @import url("./home/layout.css");
 @import url("./home/nav.css");

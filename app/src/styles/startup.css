@@ -1,0 +1,51 @@
+.startup-loading-screen {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: var(--bg-color);
+  opacity: 1;
+  transition: opacity 180ms ease;
+}
+
+.startup-loading-screen--complete {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.startup-loading-card {
+  width: min(100%, 340px);
+  text-align: center;
+}
+
+.startup-loading-title {
+  margin: 0 0 16px;
+  color: var(--text-main);
+  font-size: 1.2rem;
+  font-weight: 800;
+}
+
+.startup-loading-progress {
+  height: 8px;
+  overflow: hidden;
+  border: 1px solid var(--border-color);
+  border-radius: 999px;
+  background: var(--bg-panel);
+}
+
+.startup-loading-progress-bar {
+  width: 4%;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--text-main);
+  transition: width 220ms ease;
+}
+
+.startup-loading-label {
+  min-height: 1.5em;
+  margin: 12px 0 0;
+  color: var(--text-muted);
+  font-size: 0.9rem;
+}

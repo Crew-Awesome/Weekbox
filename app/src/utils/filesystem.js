@@ -45,6 +45,7 @@ class FileSystemService {
     this.modsPath = "";
     this.dataPath = "";
     this.isInitialized = false;
+    this.startupMaintenancePromise = null;
     this.isStorageMoveInProgress = false;
     this.activeDownload = null;
     this.abortController = null;
@@ -84,7 +85,12 @@ class FileSystemService {
     });
   }
 
-  async init() {
+  async init({ deferMaintenance = false } = {}) {
+    if (this.isInitialized) {
+      if (!deferMaintenance) await this.runStartupMaintenance();
+      return;
+    }
+
     if (typeof Neutralino !== "undefined") {
       const defaultStoragePath = await this.getDefaultStorageParentPath();
       const savedPath = appSettings.get("storageParentPath");
@@ -113,17 +119,57 @@ class FileSystemService {
         this.setStoragePaths(defaultStoragePath);
         await this.ensureStorageDirectories();
       }
-      await this.cleanupIncompleteDownloads();
-      await this.cleanupInvalidEngineInstallations();
-      await this.cleanupInvalidInstalledMods();
     }
     this.isInitialized = true;
-    await this.migrateLegacyModCovers();
-    await this.injection.migrateLegacyEngineModsFor(
-      await this.getInstalledEngines(),
-    );
-    await this.importPsychOnlineEngineMods();
-    await this.cleanupHiddenModLinks();
+    if (!deferMaintenance) await this.runStartupMaintenance();
+  }
+
+  async runStartupMaintenance() {
+    if (this.startupMaintenancePromise) return this.startupMaintenancePromise;
+
+    const runPhase = async (label, task) => {
+      const startedAt = performance.now();
+      await task();
+      console.info(
+        `[WeekBox] Startup maintenance: ${label} finished in ${Math.round(performance.now() - startedAt)}ms`,
+      );
+    };
+
+    this.startupMaintenancePromise = (async () => {
+      await runPhase("cleaning incomplete downloads", () =>
+        this.cleanupIncompleteDownloads(),
+      );
+      await runPhase("validating engine installs", () =>
+        this.cleanupInvalidEngineInstallations(),
+      );
+      await runPhase("validating installed mods", () =>
+        this.cleanupInvalidInstalledMods(),
+      );
+      await runPhase("migrating legacy mod covers", () =>
+        this.migrateLegacyModCovers(),
+      );
+      let installedEngines = [];
+      await runPhase("finding installed engines", async () => {
+        installedEngines = await this.getInstalledEngines();
+      });
+      await runPhase("migrating engine mods", async () => {
+        await this.injection.migrateLegacyEngineModsFor(installedEngines);
+      });
+      await runPhase("importing Psych Online mods", () =>
+        this.importPsychOnlineEngineMods(installedEngines),
+      );
+      await runPhase("cleaning hidden mod links", () =>
+        this.cleanupHiddenModLinks(installedEngines),
+      );
+    })().catch((error) => {
+      console.warn("Could not complete startup maintenance", error);
+    });
+
+    return this.startupMaintenancePromise;
+  }
+
+  async startBackgroundMaintenance() {
+    return this.runStartupMaintenance();
   }
 
   async getDefaultStorageParentPath() {
@@ -415,12 +461,12 @@ class FileSystemService {
     return window.NL_OS === "Darwin" && isICloudPath(this.basePath);
   }
 
-  async cleanupHiddenModLinks() {
-    return this.maintenance.cleanupHiddenModLinks();
+  async cleanupHiddenModLinks(installedEngines = null) {
+    return this.maintenance.cleanupHiddenModLinks(installedEngines);
   }
 
-  async importPsychOnlineEngineMods() {
-    return this.maintenance.importPsychOnlineEngineMods();
+  async importPsychOnlineEngineMods(installedEngines = null) {
+    return this.maintenance.importPsychOnlineEngineMods(installedEngines);
   }
 
   async cleanupIncompleteDownloads() {

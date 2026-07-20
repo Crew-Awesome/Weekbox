@@ -14,6 +14,7 @@ import { appUpdater } from "./appUpdater.js";
 import { appUpdateModal } from "../ui/updates/appUpdateModal.js";
 import { toastSystem } from "../ui/toasts/toastSystem.js";
 import { storageRecommendationModal } from "../ui/storageRecommendationModal.js";
+import { startupLoader } from "./startupLoader.js";
 
 function clearTestToasts() {
   document
@@ -215,6 +216,7 @@ async function offerNestedStorageRepair() {
 
 async function startApp() {
   try {
+    startupLoader.setPhase("Starting native services", 8);
     Neutralino.init();
     // Updater relaunches originate from a background helper process. Bring
     // the new WeekBox window to the foreground as soon as native APIs are up.
@@ -244,15 +246,25 @@ async function startApp() {
       await downloadEngine.cleanupAll();
       await Neutralino.app.exit();
     });
+    startupLoader.setPhase("Restoring preferences", 20);
     await storageBridge.init();
     const defaultStoragePath = await FS.getDefaultStorageParentPath();
     const defaultDataPath = `${defaultStoragePath}/WeekBox/data`;
     await appSettings.init(await appSettings.resolveDataPath(defaultDataPath));
-    await FS.init();
+    startupLoader.setPhase("Preparing your library", 42);
+    await FS.init({ deferMaintenance: true });
     await appSettings.setDataPath(FS.dataPath);
+    startupLoader.setPhase("Loading interface", 64);
     registerHomeView();
     registerEnginesView();
     await router.init();
+    startupLoader.setPhase("Opening Home", 88);
+    await startupLoader.complete();
+
+    window.setTimeout(() => {
+      void FS.startBackgroundMaintenance();
+    }, 280);
+
     await offerNestedStorageRepair();
     await openLaunchDeepLink();
     await recommendSaferStorageLocation();
@@ -276,6 +288,7 @@ async function startApp() {
     }
     console.log("WeekBox: modules loaded.");
   } catch (error) {
+    startupLoader.setPhase("Could not start WeekBox", 100);
     console.error("Startup error:", error);
     try {
       errorHandler.show({

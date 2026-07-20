@@ -19,6 +19,33 @@
     <link rel="stylesheet" href="src/styles/styles.css" />
   </head>
   <body>
+    <div
+      id="startup-loading-screen"
+      class="startup-loading-screen"
+      role="status"
+      aria-live="polite"
+    >
+      <div class="startup-loading-card">
+        <p class="startup-loading-title">Loading</p>
+        <div
+          class="startup-loading-progress"
+          role="progressbar"
+          aria-label="WeekBox startup progress"
+          aria-valuemin="0"
+          aria-valuemax="100"
+          aria-valuenow="4"
+        >
+          <div
+            id="startup-loading-progress"
+            class="startup-loading-progress-bar"
+          ></div>
+        </div>
+        <p id="startup-loading-label" class="startup-loading-label">
+          Starting WeekBox
+        </p>
+      </div>
+    </div>
+
     <div id="app" class="app-layout">
       <div id="sidebar-container" style="display: contents"></div>
 

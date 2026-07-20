@@ -61,10 +61,10 @@ export class LibraryMaintenanceService {
     });
   }
 
-  async cleanupHiddenModLinks() {
+  async cleanupHiddenModLinks(installedEngines = null) {
     const hiddenMods = (await this.mods.getAll()).filter((mod) => mod.hidden);
     if (!hiddenMods.length) return;
-    const engines = await this.getInstalledEngines();
+    const engines = installedEngines || (await this.getInstalledEngines());
     await Promise.all(
       hiddenMods.map((mod) =>
         this.injection.unlinkFromInstalledEngines(mod, engines),
@@ -72,8 +72,8 @@ export class LibraryMaintenanceService {
     );
   }
 
-  async importPsychOnlineEngineMods() {
-    const engines = await this.getInstalledEngines();
+  async importPsychOnlineEngineMods(installedEngines = null) {
+    const engines = installedEngines || (await this.getInstalledEngines());
     const installedMods = await this.mods.getAll();
     for (const engine of engines.filter((item) => item.id === "psychonline")) {
       if (this.isEngineRunning(engine.id, engine.version)) continue;
