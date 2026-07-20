@@ -9,7 +9,8 @@ function quote(str) {
 }
 
 function log(msg) {
-    const time = new Date().toISOString().split('T')[1].slice(0, -1); // HH:MM:SS.mmm
+    /** HH:MM:SS.mmm */
+    const time = new Date().toISOString().split('T')[1].slice(0, -1);
     console.log(`[${time}] [Downloader] ${msg}`);
 }
 
@@ -45,14 +46,15 @@ async function ensureDir(path) {
     try {
         await Neutralino.filesystem.createDirectory(path);
     } catch (e) {
-        // Ignore if exists
+        /** Ignore if exists */
     }
 }
 
 async function removeDir(path) {
     try {
         if (window.NL_OS === 'Windows') {
-            await Neutralino.os.execCommand(`powershell -NoProfile -Command "Remove-Item -LiteralPath ${quote(path)} -Recurse -Force -ErrorAction Ignore"`);
+            /** Fix: Use single quotes for PowerShell literal paths to avoid nesting double quotes */
+            await Neutralino.os.execCommand(`powershell -NoProfile -Command "Remove-Item -LiteralPath '${path}' -Recurse -Force -ErrorAction Ignore"`);
         } else {
             await Neutralino.os.execCommand(`rm -rf ${quote(path)}`);
         }
@@ -67,13 +69,16 @@ async function removeDir(path) {
  * @param {string} installPath - The path where the mod was extracted
  */
 async function normalizeExtractedMod(installPath) {
-    // Loop up to 3 times to handle deeply nested folders
-    for (let i = 0; i < 3; i++) {
+    /** Loop up to 10 times to handle deeply nested folders recursively */
+    for (let i = 0; i < 10; i++) {
         try {
             const files = await Neutralino.filesystem.readDirectory(installPath);
-            const realFiles = files.filter(f => f.entry !== '.' && f.entry !== '..');
             
-            // If there's exactly one item and it's a directory, we need to extract its contents up one level
+            /** Filter out system or garbage files that could falsely trigger a multiple files condition */
+            const ignoreList = ['.', '..', '__macosx', '.ds_store', 'desktop.ini', 'thumbs.db'];
+            const realFiles = files.filter(f => !ignoreList.includes(f.entry.toLowerCase()));
+            
+            /** If there is exactly one item and it is a directory, we need to extract its contents up one level */
             if (realFiles.length === 1 && realFiles[0].type === 'DIRECTORY') {
                 const nestedDirName = realFiles[0].entry;
                 const nestedDirPath = window.NL_OS === 'Windows' 
@@ -83,20 +88,24 @@ async function normalizeExtractedMod(installPath) {
                 console.log(`[Downloader] Nested folder detected: "${nestedDirName}". Normalizing...`);
                 
                 if (window.NL_OS === 'Windows') {
-                    // Use LiteralPath and -Force to ensure hidden files are moved too, avoiding PowerShell errors
-                    const moveCmd = `powershell -NoProfile -NonInteractive -Command "Get-ChildItem -LiteralPath ${quote(nestedDirPath)} -Force | Move-Item -Destination ${quote(installPath)} -Force"`;
+                    /** 
+                     * Use LiteralPath and -Force to ensure hidden files are moved too, avoiding PowerShell errors.
+                     * Fix: Use single quotes for paths to prevent nesting double quotes inside the -Command string.
+                     */
+                    const moveCmd = `powershell -NoProfile -NonInteractive -Command "Get-ChildItem -LiteralPath '${nestedDirPath}' -Force | Move-Item -Destination '${installPath}' -Force"`;
                     await execAsync(moveCmd);
                     
-                    // Use -Recurse to ensure the directory is deleted even if some lock or hidden file remained
-                    const rmCmd = `powershell -NoProfile -NonInteractive -Command "Remove-Item -LiteralPath ${quote(nestedDirPath)} -Recurse -Force"`;
+                    /** Use -Recurse to ensure the directory is deleted even if some lock or hidden file remained */
+                    const rmCmd = `powershell -NoProfile -NonInteractive -Command "Remove-Item -LiteralPath '${nestedDirPath}' -Recurse -Force"`;
                     await execAsync(rmCmd);
                 } else {
-                    // Use bash with dotglob to ensure hidden files are moved too
+                    /** Use bash with dotglob to ensure hidden files are moved too */
                     const moveCmd = `bash -c "shopt -s dotglob; mv ${quote(nestedDirPath)}/* ${quote(installPath)}/; rmdir ${quote(nestedDirPath)}"`;
                     await execAsync(moveCmd);
                 }
             } else {
-                // Structure is fine (either multiple files/folders, or single file which is valid)
+                /** Structure is fine (contains either multiple real files or folders) */
+                console.log(`[Downloader] Normalization complete. Root contains ${realFiles.length} item(s).`);
                 break; 
             }
         } catch (e) {
@@ -119,12 +128,12 @@ export async function installMod(modName, downloadUrl) {
     try {
         log(`Initiating installation for: ${modName}`);
         
-        // 1. Prepare directories
+        /** 1. Prepare directories */
         await ensureDir(await getTempPath());
         await ensureDir(await getModsPath());
         await ensureDir(tempPath);
         
-        // 2. Ejecutar intentos de descarga y extracción (Máximo 3)
+        /** 2. Execute download and extraction attempts (Max 3) */
         let lastError = null;
         let extracted = false;
 
@@ -220,7 +229,7 @@ export async function installMod(modName, downloadUrl) {
         return { success: true, path: installPath };
     } catch (error) {
         log(`Mod installation failed: ${error}`);
-        // Clean up broken temp folder
+        /** Clean up broken temp folder */
         await removeDir(tempPath).catch(() => {});
         return { success: false, error: error.message };
     }
