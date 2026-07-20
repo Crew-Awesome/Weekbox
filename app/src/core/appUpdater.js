@@ -353,10 +353,13 @@ export const appUpdater = {
     }
 
     onProgress("Downloading update…");
-    const response = await fetch(update.asset.browser_download_url);
-    if (!response.ok)
-      throw new Error(`Update download failed: GitHub returned ${response.status}`);
-    const bytes = new Uint8Array(await response.arrayBuffer());
+    await downloadArchive({
+      url: update.asset.browser_download_url,
+      outPath: staging,
+      getTask: () => null,
+      onProgress: (status) => onProgress(status),
+    });
+    const bytes = new Uint8Array(await Neutralino.filesystem.readBinaryFile(staging));
 
     onProgress("Verifying update…");
     if (!isValidNeutralinoBundle(bytes)) {
@@ -403,12 +406,15 @@ export const appUpdater = {
       .catch(() => {});
 
     onProgress("Downloading update…");
-    const response = await fetch(update.asset.browser_download_url);
-    if (!response.ok)
-      throw new Error(`Update download failed: GitHub returned ${response.status}`);
-    const bytes = new Uint8Array(await response.arrayBuffer());
+    await downloadArchive({
+      url: update.asset.browser_download_url,
+      outPath: zipPath,
+      getTask: () => null,
+      onProgress: (status) => onProgress(status),
+    });
 
     onProgress("Verifying update…");
+    const bytes = new Uint8Array(await Neutralino.filesystem.readBinaryFile(zipPath));
     if (
       !(
         bytes[0] === 0x50 &&
@@ -420,9 +426,6 @@ export const appUpdater = {
       await Neutralino.filesystem.remove(zipPath).catch(() => {});
       throw new Error("Downloaded update is not a valid package.");
     }
-
-    onProgress("Preparing update…");
-    await Neutralino.filesystem.writeBinaryFile(zipPath, bytes);
 
     const pid = window.NL_PID;
     const script = [

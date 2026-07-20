@@ -260,6 +260,8 @@ export const modManagerModal = {
     const container = document.getElementById("mod-manager-modal-body");
     if (!container) return;
 
+    const savedScrollTop = container.scrollTop;
+
     const dependencies = mods.filter((mod) => mod.kind === "dependency");
     const playableMods = mods.filter((mod) => mod.kind !== "dependency");
 
@@ -314,6 +316,7 @@ export const modManagerModal = {
           "No dependencies installed yet.",
         );
       }
+      container.scrollTop = savedScrollTop;
       return;
     }
 
@@ -366,6 +369,10 @@ export const modManagerModal = {
         }
       });
       gridContainer.appendChild(addLocalButton);
+      container.scrollTop = savedScrollTop;
+      requestAnimationFrame(() => {
+        container.scrollTop = savedScrollTop;
+      });
     } catch (err) {
       console.error(err);
       container.innerHTML = modManagerTemplates.emptyState(

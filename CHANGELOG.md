@@ -5,6 +5,13 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.5.6] - 2026-07-20
+
+### Fixed
+
+- Fixed the Windows auto-updater failing with "Failed to fetch" when downloading an update. Updates now download through the same download engine the rest of the app uses, so installing from 1.5.4 or later works again.
+- The Mod Manager now keeps your scroll position when it refreshes (for example, after a mod finishes downloading or you toggle its visibility), instead of jumping back to the top.
+
 ## [1.5.5] - 2026-07-20
 
 ### Fixed
