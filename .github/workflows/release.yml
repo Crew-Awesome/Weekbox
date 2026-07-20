@@ -60,7 +60,9 @@ jobs:
 
           New-Item -ItemType Directory -Path dist/release-assets -Force | Out-Null
           foreach ($binary in $assets.Keys) {
-            Compress-Archive -LiteralPath "dist/WeekBox/$binary" -DestinationPath "dist/release-assets/$($assets[$binary])" -Force
+            $items = @("dist/WeekBox/$binary", "dist/WeekBox/resources.neu")
+            if (Test-Path "dist/WeekBox/extensions") { $items += "dist/WeekBox/extensions" }
+            Compress-Archive -LiteralPath $items -DestinationPath "dist/release-assets/$($assets[$binary])" -Force
           }
 
           Copy-Item "dist/WeekBox/resources.neu" "dist/release-assets/WeekBox-$version-resources.neu" -Force
