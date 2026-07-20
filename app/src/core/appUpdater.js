@@ -182,6 +182,16 @@ function getResourcesAsset(release) {
   });
 }
 
+function getWindowsPackage(release) {
+  const expression = /^WeekBox-\d+(?:\.\d+)*-windows-x64\.zip$/i;
+  return (release.assets || []).find(
+    (asset) =>
+      expression.test(asset.name || "") &&
+      asset.state === "uploaded" &&
+      Number(asset.size) > 0,
+  );
+}
+
 async function fetchLatestRelease() {
   const response = await fetch(RELEASES_API, {
     headers: {
@@ -206,6 +216,20 @@ export const appUpdater = {
     }
 
     if (window.NL_OS === "Windows") {
+      const packageAsset = getWindowsPackage(release);
+      if (packageAsset) {
+        if (compareVersions(latestVersion, currentVersion) <= 0) {
+          return { status: "current", currentVersion, latestVersion };
+        }
+        return {
+          status: "available",
+          currentVersion,
+          latestVersion,
+          asset: packageAsset,
+          windowsPackage: true,
+          releaseUrl: release.html_url || RELEASES_PAGE,
+        };
+      }
       const asset = getResourcesAsset(release);
       if (!asset) {
         return {
@@ -260,6 +284,9 @@ export const appUpdater = {
   },
 
   async install(update, onProgress = () => {}, onHandoff = () => {}) {
+    if (update?.windowsPackage) {
+      return this.installWindowsPackage(update, onProgress, onHandoff);
+    }
     if (update?.windowsResources) {
       return this.installWindowsResources(update, onProgress, onHandoff);
     }
@@ -357,6 +384,77 @@ export const appUpdater = {
     onProgress("Restarting WeekBox…");
     const exe = `${window.NL_PATH}/WeekBox-win_x64.exe`;
     await Neutralino.os.execCommand(`"${exe}"`, { background: true });
+    onHandoff();
+    await Neutralino.app.exit();
+  },
+
+  async installWindowsPackage(update, onProgress, onHandoff) {
+    if (!update?.asset)
+      throw new Error("No WeekBox update is ready to install.");
+
+    const updateDir = `${window.NL_PATH}/${UPDATE_DIRECTORY}`;
+    const zipPath = `${updateDir}/update.zip`;
+    const staging = `${updateDir}/staging`;
+    const scriptPath = `${updateDir}/apply-update.ps1`;
+    const appPath = window.NL_PATH;
+
+    await Neutralino.filesystem
+      .createDirectory(updateDir)
+      .catch(() => {});
+
+    onProgress("Downloading update…");
+    const response = await fetch(update.asset.browser_download_url);
+    if (!response.ok)
+      throw new Error(`Update download failed: GitHub returned ${response.status}`);
+    const bytes = new Uint8Array(await response.arrayBuffer());
+
+    onProgress("Verifying update…");
+    if (
+      !(
+        bytes[0] === 0x50 &&
+        bytes[1] === 0x4b &&
+        bytes[2] === 0x03 &&
+        bytes[3] === 0x04
+      )
+    ) {
+      await Neutralino.filesystem.remove(zipPath).catch(() => {});
+      throw new Error("Downloaded update is not a valid package.");
+    }
+
+    onProgress("Preparing update…");
+    await Neutralino.filesystem.writeBinaryFile(zipPath, bytes);
+
+    const pid = window.NL_PID;
+    const script = [
+      "$ErrorActionPreference = 'Stop'",
+      `$appPath = '${appPath}'`,
+      `$zip = '${zipPath}'`,
+      `$staging = '${staging}'`,
+      `$pid_app = ${pid}`,
+      "while (Get-Process -Id $pid_app -ErrorAction SilentlyContinue) { Start-Sleep -Seconds 1 }",
+      "Expand-Archive -Path $zip -DestinationPath $staging -Force",
+      "if (Test-Path \"$appPath\\WeekBox-win_x64.exe\") { Copy-Item \"$appPath\\WeekBox-win_x64.exe\" \"$staging\\WeekBox-win_x64.exe.bak\" -Force }",
+      "if (Test-Path \"$appPath\\resources.neu\") { Copy-Item \"$appPath\\resources.neu\" \"$staging\\resources.neu.bak\" -Force }",
+      "try {",
+      "  Copy-Item \"$staging\\WeekBox-win_x64.exe\" \"$appPath\\WeekBox-win_x64.exe\" -Force",
+      "  Copy-Item \"$staging\\resources.neu\" \"$appPath\\resources.neu\" -Force",
+      "} catch {",
+      "  if (Test-Path \"$staging\\WeekBox-win_x64.exe.bak\") { Copy-Item \"$staging\\WeekBox-win_x64.exe.bak\" \"$appPath\\WeekBox-win_x64.exe\" -Force }",
+      "  if (Test-Path \"$staging\\resources.neu.bak\") { Copy-Item \"$staging\\resources.neu.bak\" \"$appPath\\resources.neu\" -Force }",
+      "  throw",
+      "}",
+      "Remove-Item $zip -Force -ErrorAction SilentlyContinue",
+      "Remove-Item $staging -Recurse -Force -ErrorAction SilentlyContinue",
+      "Start-Process \"$appPath\\WeekBox-win_x64.exe\"",
+    ].join("\r\n");
+
+    await Neutralino.filesystem.writeFile(scriptPath, script);
+
+    onProgress("Restarting WeekBox to apply update…");
+    await Neutralino.os.execCommand(
+      `powershell -ExecutionPolicy Bypass -File "${scriptPath}"`,
+      { background: true },
+    );
     onHandoff();
     await Neutralino.app.exit();
   },
