@@ -110,6 +110,11 @@ export class ModCard extends HTMLElement {
             }
         });
 
+        // Evita que el ripple de la tarjeta se active al presionar el botón
+        downloadBtn.addEventListener('pointerdown', (e) => {
+            e.stopPropagation();
+        });
+
         downloadBtn.addEventListener('click', async (e) => {
             e.preventDefault();
             e.stopPropagation();

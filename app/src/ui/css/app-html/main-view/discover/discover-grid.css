@@ -9,13 +9,20 @@
 .discover-grid-container .md3-component-card {
     display: flex;
     flex-direction: column;
-    padding: 0;
+    /* Estado base permanente: 5px de padding en toda la tarjeta */
+    padding: 5px; 
     align-items: stretch;
     justify-content: flex-start;
     aspect-ratio: auto; 
     border-radius: 12px;
-    overflow: hidden;
+    overflow: hidden; /* Volvemos a ocultar el desbordamiento para mantener el diseño limpio */
     position: relative; /* Para el badge */
+    box-sizing: border-box;
+}
+
+/* Recortamos el ripple para que no se salga */
+.discover-grid-container .md3-component-card-ripple {
+    clip-path: inset(0 round 12px);
 }
 
 /* La imagen ahora es la miniatura 16:9 en la parte superior */
@@ -25,13 +32,14 @@
     aspect-ratio: 16 / 9;
     object-fit: cover;
     z-index: 1;
-    border-radius: 12px 12px 0 0;
-    transition: opacity 0.4s ease, transform 0.4s ease;
+    /* Redondeo de 8px para que encaje visualmente dentro del padding de 5px (que está en un contenedor de 12px) */
+    border-radius: 8px; 
+    transition: opacity 0.4s ease;
 }
 
 /* Efecto de imagen al hacer hover en la tarjeta */
-.discover-grid-container .md3-component-card:hover img {
-    opacity: 0.9;
+.discover-dynamic-card:hover img {
+    opacity: 0.95;
 }
 
 /* Engine Badge sobre la imagen */
@@ -53,7 +61,8 @@
 
 /* Área de contenido de texto debajo de la miniatura */
 .discover-grid-container .card-content {
-    padding: 16px;
+    /* 11px aquí + los 5px del contenedor = 16px originales de padding */
+    padding: 11px;
     display: flex;
     flex-direction: column;
     gap: 6px;
@@ -98,21 +107,31 @@
     font-weight: 500;
     cursor: pointer;
     transition: background-color 0.2s ease, opacity 0.2s ease;
+    /* FIX: El contenedor padre tiene pointer-events: none (cards.css), por lo que debemos forzar a que el botón sí escuche clicks */
+    pointer-events: auto !important;
 }
 
 .discover-grid-container .download-btn:hover {
     opacity: 0.85;
 }
 
-/* Lógica de color dinámico y animación de expansión de fondo en hover */
+/* Lógica de color dinámico */
 .discover-dynamic-card {
-    background-color: transparent !important;
+    /* El fondo cambia suavemente de transparente al color del mod */
+    background-color: rgba(var(--card-bg-rgb), 0) !important;
     /* Aseguramos que el texto principal nunca cambie de color */
     color: var(--m3-component-on-surface) !important;
-    border: 1px solid transparent;
-    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    border: none !important;
+    box-shadow: none !important;
+    transition: background-color 0.4s ease, transform 0.2s ease !important;
     position: relative;
     z-index: 1;
+}
+
+.discover-dynamic-card:hover {
+    /* Al hacer hover, se enciende el fondo completo de la tarjeta */
+    background-color: rgba(var(--card-bg-rgb), 0.6) !important;
+    box-shadow: none !important;
 }
 
 /* Forzamos a los textos internos a heredar el color y no cambiar */
@@ -120,30 +139,4 @@
 .discover-dynamic-card .card-content p,
 .discover-dynamic-card .mod-author-stats {
     color: var(--m3-component-on-surface) !important;
-}
-
-/* Usamos ::after para que no choque con el ::before que ya usa cards.css para el ripple */
-.discover-dynamic-card::after {
-    content: '';
-    position: absolute;
-    /* Inicia más pequeño hacia el centro */
-    top: 5px;
-    left: 5px;
-    right: 5px;
-    bottom: 5px;
-    background-color: rgba(var(--card-bg-rgb), 0); /* Transparente al inicio */
-    border-radius: inherit;
-    z-index: -1; /* Detrás del contenido pero por encima del fondo real */
-    /* Transición un poco más lenta para que se note el efecto de crecimiento */
-    transition: all 0.5s cubic-bezier(0.2, 0.8, 0.2, 1);
-    pointer-events: none;
-}
-
-.discover-dynamic-card:hover::after {
-    /* Crece hasta su tamaño completo original */
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background-color: rgba(var(--card-bg-rgb), 0.75); /* Aparece el color extraído */
 }
