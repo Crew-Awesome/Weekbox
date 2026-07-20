@@ -88,8 +88,8 @@
 }
 
 .discover-grid-container .download-btn {
-    background-color: var(--m3-component-primary-container);
-    color: var(--m3-component-on-primary-container);
+    background-color: var(--m3-component-primary-container, #EADDFF);
+    color: var(--m3-component-on-primary-container, #21005D);
     border: none;
     padding: 6px 16px;
     border-radius: 16px;

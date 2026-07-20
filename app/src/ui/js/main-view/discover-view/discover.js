@@ -1,13 +1,20 @@
 import { initCards } from '../../../utils/components/cards/cards.js';
 import { initCarousels } from '../../../utils/components/carousel/carousel.js';
 import { loadFeaturedCarousel } from './discover-carousel-featured.js';
-import { loadDiscoverMods } from './discover-cards-mods.js';
-import { initSearchBar } from './discover-search.js';
+import { renderModsGrid, loadDiscoverMods } from './discover-cards-mods.js';
+import { searchModsEngine } from '../../../../backend/api/searchEngine.js';
 
+import './discover-search.js';
+import './discover-cards-mods.js';
+
+/**
+ * Initializes the Discover view.
+ * Injects the grid template, loads the search bar component, and starts data fetching.
+ * @returns {Promise<void>}
+ */
 export async function init() {
     const container = document.querySelector('.discover-container');
     
-    // Inject the grid HTML
     try {
         const gridRes = await fetch('src/ui/html/app-html/main-view/discover-view/discover-grid.html');
         if (gridRes.ok) {
@@ -21,14 +28,36 @@ export async function init() {
         console.error('Error loading discover grid', e);
     }
     
-    // Initialize base components
+    const gridContainer = container.querySelector('.discover-grid-container');
+    if (gridContainer) {
+        const searchBarElement = document.createElement('search-bar');
+        
+        const wrapper = document.createElement('div');
+        wrapper.style.width = '100%';
+        wrapper.style.maxWidth = '700px';
+        wrapper.style.margin = '20px auto 32px auto';
+        wrapper.appendChild(searchBarElement);
+        
+        gridContainer.parentNode.insertBefore(wrapper, gridContainer);
+
+        searchBarElement.addEventListener('search', async (e) => {
+            const query = e.detail.query;
+            searchBarElement.setSearching(true);
+            
+            if (!query) {
+                await loadDiscoverMods(container);
+            } else {
+                const mods = await searchModsEngine(query);
+                renderModsGrid(container, mods);
+            }
+            
+            searchBarElement.setSearching(false);
+        });
+    }
+
     initCards(container);
     await loadFeaturedCarousel(container);
     initCarousels(container);
     
-    // Inject search bar and initialize
-    await initSearchBar(container);
-    
-    // Fetch API mods and inject them into the grid
     await loadDiscoverMods(container);
 }

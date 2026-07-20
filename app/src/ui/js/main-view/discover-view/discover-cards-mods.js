@@ -1,98 +1,132 @@
 import { extractImageColor } from '../../../utils/extractImgColor.js';
 import { gameBananaApi } from '../../../../core/config/api/gamebanana.js';
 import { installMod } from '../../../../backend/utils/fileSystem/downloader/mods.js';
+import { initCards } from '../../../utils/components/cards/cards.js';
 
-export function applyDiscoverCardMods(container) {
-    const dynamicCards = container.querySelectorAll('.md3-component-card[data-type="dynamic-color"]:not(.discover-dynamic-card)');
-    
-    dynamicCards.forEach(card => {
-        const img = card.querySelector('img');
-        if (!img) return;
-        
-        card.classList.add('discover-dynamic-card');
-        
-        // Wait for image to load before extracting color, if not already loaded
-        if (img.complete) {
-            extractColorFromImage(img, card);
-        } else {
-            img.onload = () => extractColorFromImage(img, card);
-        }
-    });
-}
-
-function extractColorFromImage(img, card) {
-    extractImageColor(img.src).then(colorData => {
-        card.style.setProperty('--card-bg', colorData.hex);
-        card.style.setProperty('--card-color', colorData.isDark ? '#FFFFFF' : '#000000');
-        card.style.setProperty('--card-bg-rgb', `${colorData.r}, ${colorData.g}, ${colorData.b}`);
-    }).catch(err => {
-        console.warn('Could not extract color for card', err);
-    });
-}
-
-export function renderModsGrid(container, mods) {
-    const grid = container.querySelector('#mods-grid');
-    const template = container.querySelector('#mod-card-template');
-    
-    if (!grid || !template) return;
-    
-    // Clear grid safely
-    while(grid.firstChild) {
-        grid.removeChild(grid.firstChild);
+/**
+ * Web Component representing a single Mod Card.
+ * Uses Light DOM to inherit global styles such as '.md3-component-card'.
+ * @extends HTMLElement
+ */
+export class ModCard extends HTMLElement {
+    /**
+     * Initializes the ModCard component.
+     */
+    constructor() {
+        super();
+        this._mod = null;
     }
-    
-    mods.forEach(mod => {
+
+    /**
+     * Sets the mod data and triggers a re-render if the component is connected to the DOM.
+     * @param {Object} data - The mod data object.
+     */
+    set mod(data) {
+        this._mod = data;
+        if (this.isConnected) {
+            this.render();
+        }
+    }
+
+    /**
+     * Gets the current mod data.
+     * @returns {Object} The mod data object.
+     */
+    get mod() {
+        return this._mod;
+    }
+
+    /**
+     * Invoked when the custom element is first connected to the document's DOM.
+     * Triggers the initial render if mod data is already provided.
+     */
+    connectedCallback() {
+        if (this._mod && !this.hasChildNodes()) {
+            this.render();
+        }
+    }
+
+    /**
+     * Renders the card by cloning the template and injecting data securely.
+     */
+    render() {
+        if (!this._mod) return;
+        
+        const template = document.querySelector('#mod-card-template');
+        if (!template) {
+            console.error('mod-card-template not found in the DOM');
+            return;
+        }
+
+        /**
+         * Securely clone the template.
+         * Using .textContent prevents XSS vulnerabilities when injecting dynamic data.
+         */
         const clone = template.content.cloneNode(true);
+        
         const card = clone.querySelector('.md3-component-card');
         const engineBadge = clone.querySelector('.card-badge-engine');
         const img = clone.querySelector('.mod-thumbnail');
         const title = clone.querySelector('.mod-title');
         const authorStats = clone.querySelector('.mod-author-stats');
         const downloadBtn = clone.querySelector('.download-btn');
-        
-        // Text values injected securely
-        engineBadge.textContent = mod.engineId || 'Unknown Engine';
-        title.textContent = mod.title;
+
+        engineBadge.textContent = this._mod.engineId || 'Unknown Engine';
+        title.textContent = this._mod.title;
         
         const formatNumber = num => new Intl.NumberFormat('en-US', { notation: "compact", compactDisplay: "short" }).format(num);
-        authorStats.textContent = `${mod.author} • ${formatNumber(mod.views)} views • ${mod.timeAgo}`;
+        authorStats.textContent = `${this._mod.author} • ${formatNumber(this._mod.views)} views • ${this._mod.timeAgo}`;
+
+        img.src = this._mod.image || '';
+        img.alt = this._mod.title || 'Mod Thumbnail';
         
-        // Setting attributes securely
-        img.src = mod.image || '';
-        img.alt = mod.title || 'Mod Thumbnail';
+        this.addEventListeners(card, downloadBtn);
         
-        // Fix for cards.css disabling pointer events on all child elements
-        downloadBtn.style.pointerEvents = 'auto';
+        this.appendChild(clone);
         
-        // Action bindings
-        const openMod = (e) => {
+        this.applyDynamicColor();
+        
+        /**
+         * Initialize ripple effects on the newly rendered card.
+         */
+        initCards(this);
+    }
+
+    /**
+     * Attaches interaction events to the card and its download button.
+     * @param {HTMLElement} cardElement - The main card container element.
+     * @param {HTMLElement} downloadBtn - The download button element.
+     */
+    addEventListeners(cardElement, downloadBtn) {
+        const modId = this._mod.id;
+        const modTitle = this._mod.title;
+
+        cardElement.addEventListener('click', (e) => {
             if (e) e.stopPropagation();
             if (window.Neutralino) {
-                Neutralino.os.open(`https://gamebanana.com/mods/${mod.id}`);
+                Neutralino.os.open(`https://gamebanana.com/mods/${modId}`);
             } else {
-                window.open(`https://gamebanana.com/mods/${mod.id}`, '_blank');
+                window.open(`https://gamebanana.com/mods/${modId}`, '_blank');
             }
-        };
-        
+        });
+
         downloadBtn.addEventListener('click', async (e) => {
             e.preventDefault();
             e.stopPropagation();
-            // 1. Change button state
+            
             const originalText = downloadBtn.textContent;
             downloadBtn.textContent = 'Iniciando...';
             downloadBtn.disabled = true;
             
             try {
-                // 2. Fetch full details to get the download URL
-                const details = await gameBananaApi.getModDetails(mod.id);
+                const details = await gameBananaApi.getModDetails(modId);
                 if (!details || !details.downloadUrl) {
                     throw new Error("No download URL found for this mod.");
                 }
                 
                 downloadBtn.textContent = 'Descargando...';
                 
-                // 3. Trigger native backend download
-                const result = await installMod(mod.title, details.downloadUrl);
+                const result = await installMod(modTitle, details.downloadUrl);
                 
                 if (result.success) {
                     downloadBtn.textContent = 'Instalado';
@@ -110,16 +144,67 @@ export function renderModsGrid(container, mods) {
                 }, 3000);
             }
         });
-        
-        card.addEventListener('click', openMod);
-        
-        grid.appendChild(clone);
-    });
-    
-    // Apply the dynamic background styling once the nodes are inserted
-    applyDiscoverCardMods(grid);
+    }
+
+    /**
+     * Extracts the dominant color from the loaded image and applies it as a dynamic background.
+     */
+    applyDynamicColor() {
+        const card = this.querySelector('.md3-component-card');
+        const img = this.querySelector('.mod-thumbnail');
+        if (!img || !card) return;
+
+        const extractColor = () => {
+            extractImageColor(img.src).then(colorData => {
+                card.style.setProperty('--card-bg', colorData.hex);
+                card.style.setProperty('--card-color', colorData.isDark ? '#FFFFFF' : '#000000');
+                card.style.setProperty('--card-bg-rgb', `${colorData.r}, ${colorData.g}, ${colorData.b}`);
+                card.classList.add('discover-dynamic-card');
+            }).catch(err => {
+                console.warn('Could not extract color for card', err);
+            });
+        };
+
+        if (img.complete) {
+            extractColor();
+        } else {
+            img.onload = extractColor;
+        }
+    }
 }
 
+if (!customElements.get('mod-card')) {
+    customElements.define('mod-card', ModCard);
+}
+
+/**
+ * Renders the provided mods into the grid container securely.
+ * @param {HTMLElement} container - The main discover view container.
+ * @param {Array} mods - Array of mod objects to render.
+ */
+export function renderModsGrid(container, mods) {
+    const grid = container.querySelector('#mods-grid');
+    if (!grid) return;
+    
+    /**
+     * Safely clear the grid using child removal instead of innerHTML.
+     */
+    while(grid.firstChild) {
+        grid.removeChild(grid.firstChild);
+    }
+    
+    mods.forEach(mod => {
+        const card = document.createElement('mod-card');
+        card.mod = mod;
+        grid.appendChild(card);
+    });
+}
+
+/**
+ * Fetches popular mods from the GameBanana API and triggers rendering.
+ * @param {HTMLElement} container - The main discover view container.
+ * @returns {Promise<void>}
+ */
 export async function loadDiscoverMods(container) {
     try {
         const response = await gameBananaApi.getGridMods('popular', 1);
