@@ -226,7 +226,7 @@ class FileSystemService {
     return storage.weekboxPath;
   }
 
-  async moveStorageTo(basePath, onProgress = () => {}) {
+  async moveStorageTo(basePath, onProgress = () => {}, options = {}) {
     this.assertStorageUnlocked();
     const destinationBasePath = String(basePath || "").replace(/[\\/]+$/, "");
     if (!destinationBasePath) throw new Error("Choose a storage folder first");
@@ -245,6 +245,7 @@ class FileSystemService {
       throw new Error("Selected storage folder is unavailable");
     }
     const destinationWeekboxPath = `${destinationBasePath}/WeekBox`;
+    let replacedStorageBackupPath = null;
     const repairingNestedStorage =
       destinationWeekboxPath.toLowerCase() === this.basePath.toLowerCase();
     if (await this.api.exists(destinationWeekboxPath)) {
@@ -257,11 +258,23 @@ class FileSystemService {
         entries[0].type === "DIRECTORY" &&
         entries[0].entry.toLowerCase() === "weekbox";
       if (entries.length > 0 && !canRepairNestedStorage) {
-        throw new Error(
-          "The selected parent already contains a non-empty WeekBox folder. Choose a different parent folder so WeekBox does not merge two libraries.",
+        if (!options.replaceExisting) {
+          throw new Error(
+            "The selected parent already contains a non-empty WeekBox folder. Choose a different parent folder so WeekBox does not merge two libraries.",
+          );
+        }
+        const timestamp = new Date()
+          .toISOString()
+          .replace(/[:.]/g, "-")
+          .replace("T", "_")
+          .replace("Z", "");
+        replacedStorageBackupPath = `${destinationBasePath}/WeekBox-backup-${timestamp}`;
+        await Neutralino.filesystem.move(
+          destinationWeekboxPath,
+          replacedStorageBackupPath,
         );
       }
-      if (!canRepairNestedStorage) {
+      if (!canRepairNestedStorage && !replacedStorageBackupPath) {
         await Neutralino.filesystem.remove(destinationWeekboxPath);
       }
     }
@@ -282,6 +295,14 @@ class FileSystemService {
         );
         await Neutralino.filesystem.remove(this.weekboxPath);
       } catch (error) {
+        if (
+          replacedStorageBackupPath &&
+          !(await this.api.exists(destinationWeekboxPath))
+        ) {
+          await Neutralino.filesystem
+            .move(replacedStorageBackupPath, destinationWeekboxPath)
+            .catch(() => {});
+        }
         await Promise.all(
           mods.map((mod) =>
             this.injection.injectIntoInstalledEngines(mod.id, engines),

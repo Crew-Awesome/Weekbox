@@ -11,6 +11,34 @@ import { existingStorageModal } from "../existingStorageModal.js";
 const appUpdates = new AppUpdateController(appUpdater);
 const storageMoveFeedback = new StorageMoveFeedback(toastSystem);
 
+async function formatStoragePath(path) {
+  const value = String(path || "");
+  if (window.NL_OS !== "Windows") return value;
+  try {
+    return await Neutralino.filesystem.getUnnormalizedPath(value);
+  } catch {
+    return value;
+  }
+}
+
+async function isSameStoragePath(left, right) {
+  const normalise = async (path) => {
+    const value = String(path || "");
+    try {
+      return (await Neutralino.filesystem.getNormalizedPath(value))
+        .replace(/[\\/]+$/, "")
+        .toLowerCase();
+    } catch {
+      return value.replace(/[\\/]+$/, "").toLowerCase();
+    }
+  };
+  const [normalisedLeft, normalisedRight] = await Promise.all([
+    normalise(left),
+    normalise(right),
+  ]);
+  return normalisedLeft === normalisedRight;
+}
+
 export const configModal = {
   async init() {
     if (!document.getElementById("config-modal")) {
@@ -162,9 +190,12 @@ export const configModal = {
     } catch {}
   },
 
-  updateStorageLocationLabel() {
+  async updateStorageLocationLabel() {
     const label = document.getElementById("storage-location-path");
-    if (label) label.textContent = FS.weekboxPath || "AppData/WeekBox";
+    if (label)
+      label.textContent = await formatStoragePath(
+        FS.weekboxPath || "AppData/WeekBox",
+      );
   },
 
   async openStorageLocation() {
@@ -230,9 +261,38 @@ export const configModal = {
         { defaultPath: FS.basePath },
       );
       if (!selectedPath) return;
+      if (
+        (await isSameStoragePath(selectedPath, FS.basePath)) ||
+        (await isSameStoragePath(selectedPath, FS.weekboxPath))
+      ) {
+        await Neutralino.os.showMessageBox(
+          "Already using this location",
+          "WeekBox is already using this storage location, so there is nothing to move.",
+          "OK",
+          "INFO",
+        );
+        return;
+      }
       const existingStorage = await FS.findExistingStorage(selectedPath);
       if (existingStorage) {
-        const choice = await existingStorageModal.show(existingStorage);
+        const choice = await existingStorageModal.show({
+          ...existingStorage,
+          weekboxPath: await formatStoragePath(existingStorage.weekboxPath),
+        });
+        if (choice === "replace") {
+          button.disabled = true;
+          button.innerHTML =
+            '<i class="fa-solid fa-folder-open"></i> Moving files…';
+          this.showStorageMoveToast();
+          await FS.moveStorageTo(
+            existingStorage.basePath,
+            (progress) => this.updateStorageMoveToast(progress),
+            { replaceExisting: true },
+          );
+          this.updateStorageLocationLabel();
+          this.completeStorageMoveToast();
+          return;
+        }
         if (choice !== "use") return;
 
         button.disabled = true;
@@ -254,7 +314,7 @@ export const configModal = {
       const newWeekboxPath = `${selectedPath.replace(/[\\/]+$/, "")}/WeekBox`;
       const choice = await Neutralino.os.showMessageBox(
         "Move WeekBox files?",
-        `WeekBox will move all mods, engines, and data to:\n${newWeekboxPath}\n\nThis can take a while for large libraries.`,
+        `WeekBox will move all mods, engines, and data to:\n${await formatStoragePath(newWeekboxPath)}\n\nThis can take a while for large libraries.`,
         "YES_NO",
         "QUESTION",
       );
@@ -314,7 +374,7 @@ export const configModal = {
       const defaultWeekboxPath = `${defaultPath.replace(/[\\/]+$/, "")}/WeekBox`;
       const choice = await Neutralino.os.showMessageBox(
         "Use the default location?",
-        `WeekBox will move all mods, engines, and data to:\n${defaultWeekboxPath}\n\nThis can take a while for large libraries.`,
+        `WeekBox will move all mods, engines, and data to:\n${await formatStoragePath(defaultWeekboxPath)}\n\nThis can take a while for large libraries.`,
         "YES_NO",
         "QUESTION",
       );
