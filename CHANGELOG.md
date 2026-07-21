@@ -5,6 +5,18 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.5.8] - 2026-07-20
+
+### Added
+
+- Retry attempts for downloading 7z and rar mod archives.
+- Category scanner for mod discovery.
+
+### Fixed
+
+- Nested mod folder extraction now works correctly.
+- Download speed improved and dead code removed.
+
 ## [1.2.3] - 2026-07-16
 
 ### Fixed
