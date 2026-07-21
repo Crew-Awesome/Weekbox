@@ -1,5 +1,5 @@
 <nav class="client-top-bar" id="client-top-bar">
-    <div class="client-top-bar__left">
+    <div class="client-top-bar__left" id="client-top-bar-left">
         <button class="client-icon-btn client-icon-btn--back" id="client-btn-back">
             <div class="icon-mask icon-mask--back"></div>
         </button>
@@ -11,19 +11,40 @@
             <img class="client-brand__icon" src="assets/icons/launcher-icon.ico" alt="Launcher Icon" />
             <span class="client-brand__name">Weekbox</span>
         </div>
+
+        <div class="client-nav-links">
+            <button class="client-text-btn client-text-btn--nav client-text-btn--active">Home</button>
+            <button class="client-text-btn client-text-btn--nav">Community</button>
+            <button class="client-text-btn client-text-btn--nav">Library</button>
+            <button class="client-text-btn client-text-btn--nav">Downloads</button>
+        </div>
     </div>
     
-    <div class="client-top-bar__spacer"></div>
+    <div class="client-top-bar__spacer" id="client-top-bar-spacer"></div>
 
-    <div class="client-top-bar__right">
-        <button class="client-icon-btn client-icon-btn--window" id="client-btn-minimize">
-            <div class="icon-mask icon-mask--minimize"></div>
+    <div class="client-top-bar__right" id="client-top-bar-right">
+        <!-- Notification Button -->
+        <button class="client-icon-btn client-icon-btn--notify" id="client-btn-notify">
+            <div class="icon-mask icon-mask--notify"></div>
+            <span class="client-notify-badge" id="client-notify-badge">12</span>
         </button>
-        <button class="client-icon-btn client-icon-btn--window" id="client-btn-maximize">
-            <div class="icon-mask icon-mask--maximize"></div>
-        </button>
-        <button class="client-icon-btn client-icon-btn--close" id="client-btn-close">
-            <div class="icon-mask icon-mask--close"></div>
-        </button>
+
+        <!-- Text Buttons -->
+        <button class="client-text-btn client-text-btn--donate">Donate</button>
+        <button class="client-text-btn client-text-btn--help">Help</button>
+
+        <!-- Window Controls -->
+        <div class="client-window-controls">
+            <button class="client-icon-btn client-icon-btn--window" id="client-btn-minimize">
+                <div class="icon-mask icon-mask--minimize"></div>
+            </button>
+            <button class="client-icon-btn client-icon-btn--window" id="client-btn-maximize">
+                <div class="icon-mask icon-mask--maximize" id="client-icon-maximize"></div>
+                <div class="icon-mask icon-mask--restore" id="client-icon-restore" style="display: none;"></div>
+            </button>
+            <button class="client-icon-btn client-icon-btn--close" id="client-btn-close">
+                <div class="icon-mask icon-mask--close"></div>
+            </button>
+        </div>
     </div>
 </nav>

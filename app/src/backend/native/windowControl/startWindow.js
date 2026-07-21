@@ -103,6 +103,7 @@ export function initWindowLogic() {
         updateCircleProgress(10);
         await Neutralino.window.setSize({ width: 400, height: 600 });
         await centerWindow(400, 600);
+        await Neutralino.window.show();
         
         setSplashText('Setting up temporary directories...');
         await ensureTmpDirectory();

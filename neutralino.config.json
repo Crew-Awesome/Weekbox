@@ -26,6 +26,8 @@
     "window": {
       "title": "WeekBox",
       "icon": "/app/assets/icons/launcher-icon.png",
+      "hidden": true,
+      "borderless": true,
       "width": 400,
       "height": 600,
       "minWidth": 200,

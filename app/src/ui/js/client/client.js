@@ -27,6 +27,21 @@ export class ClientController {
                 const html = await response.text();
                 this.container.innerHTML = html;
                 this._bindEvents();
+
+                // Make the entire top bar draggable via Neutralino's native API
+                try {
+                    await Neutralino.window.setDraggableRegion('client-top-bar');
+                    
+                    // Prevent interactive elements from triggering the window drag
+                    const interactiveElements = this.container.querySelectorAll('button, .client-brand, .client-nav-links');
+                    const stopDrag = (e) => e.stopPropagation();
+                    interactiveElements.forEach(el => {
+                        el.addEventListener('mousedown', stopDrag);
+                        el.addEventListener('pointerdown', stopDrag);
+                    });
+                } catch (err) {
+                    console.error('Error setting draggable region:', err);
+                }
             } else {
                 console.error(`Failed to load client HTML. Status: ${response.status}`);
             }
@@ -53,6 +68,23 @@ export class ClientController {
         }
 
         const btnMaximize = this.container.querySelector('#client-btn-maximize');
+        const iconMaximize = this.container.querySelector('#client-icon-maximize');
+        const iconRestore = this.container.querySelector('#client-icon-restore');
+
+        const updateMaximizeIcon = async () => {
+            if (!iconMaximize || !iconRestore) return;
+            try {
+                const isMaximized = await Neutralino.window.isMaximized();
+                if (isMaximized) {
+                    iconMaximize.style.display = 'none';
+                    iconRestore.style.display = 'block';
+                } else {
+                    iconMaximize.style.display = 'block';
+                    iconRestore.style.display = 'none';
+                }
+            } catch (e) {}
+        };
+
         if (btnMaximize) {
             btnMaximize.addEventListener('click', async () => {
                 try {
@@ -62,12 +94,16 @@ export class ClientController {
                     } else {
                         await Neutralino.window.maximize();
                     }
+                    setTimeout(updateMaximizeIcon, 100);
                 } catch (err) {
                     // Fallback
                     try { await Neutralino.window.maximize(); } catch (e) {}
                 }
             });
         }
+
+        window.addEventListener('resize', updateMaximizeIcon);
+        updateMaximizeIcon();
 
         const btnClose = this.container.querySelector('#client-btn-close');
         if (btnClose) {
