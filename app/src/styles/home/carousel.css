@@ -173,10 +173,12 @@
   border-radius: 50%;
   background: var(--text-muted);
   cursor: pointer;
-  transition: background 0.3s, transform 0.3s;
+  transition:
+    background 0.3s,
+    transform 0.3s;
 }
 
 .dot.active {
   background: var(--text-main);
   transform: scale(1.3);
-}
+}

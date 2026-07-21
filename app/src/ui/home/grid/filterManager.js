@@ -24,10 +24,14 @@ export const filterManager = {
     this.filterContainer = filters;
 
     this.filterClickHandler = (event) => {
-      const option = event.target.closest("#engine-filter-options .custom-option");
+      const option = event.target.closest(
+        "#engine-filter-options .custom-option",
+      );
       if (option) this.selectCategoryFilter(option);
 
-      const sortOption = event.target.closest("#sort-filter-options .custom-option");
+      const sortOption = event.target.closest(
+        "#sort-filter-options .custom-option",
+      );
       if (sortOption) this.selectSortFilter(sortOption);
     };
 
@@ -66,12 +70,15 @@ export const filterManager = {
   syncCategoryFilter() {
     const selectedText = document.getElementById("engine-filter-selected");
     const selectedIcon = document.getElementById("engine-filter-icon");
-    const options = [...document.querySelectorAll("#engine-filter-options .custom-option")];
-    
-    const selectedOption = options.find((option) => {
-      const value = option.dataset.categoryId;
-      return (value ? Number(value) : null) === gridState.currentCategoryId;
-    }) || options[0];
+    const options = [
+      ...document.querySelectorAll("#engine-filter-options .custom-option"),
+    ];
+
+    const selectedOption =
+      options.find((option) => {
+        const value = option.dataset.categoryId;
+        return (value ? Number(value) : null) === gridState.currentCategoryId;
+      }) || options[0];
 
     if (!selectedOption) return;
 
@@ -84,14 +91,21 @@ export const filterManager = {
     if (selectedText) selectedText.textContent = selectedOption.dataset.label;
     if (selectedIcon) {
       const icon = selectedOption.querySelector(".filter-engine-icon");
-      selectedIcon.replaceChildren(...[...icon.childNodes].map((node) => node.cloneNode(true)));
+      selectedIcon.replaceChildren(
+        ...[...icon.childNodes].map((node) => node.cloneNode(true)),
+      );
     }
   },
 
   syncSortFilter() {
     const selectedText = document.getElementById("sort-filter-selected");
-    const options = [...document.querySelectorAll("#sort-filter-options .custom-option")];
-    const selectedOption = options.find((option) => option.dataset.filter === gridState.currentFilter) || options[0];
+    const options = [
+      ...document.querySelectorAll("#sort-filter-options .custom-option"),
+    ];
+    const selectedOption =
+      options.find(
+        (option) => option.dataset.filter === gridState.currentFilter,
+      ) || options[0];
 
     if (!selectedOption) return;
 
@@ -110,5 +124,5 @@ export const filterManager = {
     this.filterContainer?.removeEventListener("click", this.filterClickHandler);
     this.filterContainer = null;
     this.filterClickHandler = null;
-  }
-};
+  },
+};

@@ -3,7 +3,9 @@ import { setupDropdown } from "../../utils/dropdown.js";
 
 export const filterManager = {
   setup(engineFilterElement, onFilterChange) {
-    const trigger = engineFilterElement.querySelector(".mod-manager-filter-trigger");
+    const trigger = engineFilterElement.querySelector(
+      ".mod-manager-filter-trigger",
+    );
     const menu = engineFilterElement.querySelector(".mod-manager-filter-menu");
 
     const filterDropdownCtrl = setupDropdown(trigger, engineFilterElement, {
@@ -28,7 +30,7 @@ export const filterManager = {
     const triggerIcon = filter.querySelector(".mod-manager-filter-icon");
     const menu = filter.querySelector(".mod-manager-filter-menu");
 
-    // FIX: String matching para prevenir fallos en la detección del standalones 
+    // FIX: String matching para prevenir fallos en la detección del standalones
     const standaloneIds = new Set(standaloneMods.map((mod) => String(mod.id)));
 
     const engineIds = [
@@ -109,5 +111,5 @@ export const filterManager = {
     );
 
     return currentFilter;
-  }
-};
+  },
+};

@@ -113,7 +113,9 @@ async function mergeParts(parts, outPath) {
     window.NL_OS === "Windows"
       ? buildWindowsMergeCommand(parts, outPath)
       : buildUnixMergeCommand(parts, outPath);
-  const result = await Neutralino.os.execCommand(command, { background: false });
+  const result = await Neutralino.os.execCommand(command, {
+    background: false,
+  });
   if (result.exitCode !== 0) {
     throw new Error(
       `Could not merge download parts: ${result.stdErr || result.stdOut || "unknown error"}`,
@@ -193,7 +195,7 @@ async function extractNestedArchives(destinationPath, getTask, onEntry) {
       if (getTask?.()?.cancelled) throw new Error("Cancelled");
       const parentDir = archivePath.slice(0, archivePath.lastIndexOf("/"));
       const command = getNestedExtractionCommand(archivePath, parentDir);
-      
+
       const executeNested = async (cmd) => {
         const process = await Neutralino.os.spawnProcess(cmd);
         const activeTask = getTask?.();
@@ -214,7 +216,13 @@ async function extractNestedArchives(destinationPath, getTask, onEntry) {
             Neutralino.events.off("spawnedProcess", handler);
             if (event.data === 0) resolve();
             else
-              reject(createProcessError("Nested extraction", event.data, processOutput));
+              reject(
+                createProcessError(
+                  "Nested extraction",
+                  event.data,
+                  processOutput,
+                ),
+              );
           },
         );
       };
@@ -225,9 +233,12 @@ async function extractNestedArchives(destinationPath, getTask, onEntry) {
       } catch (error) {
         let recovered = false;
         if (window.NL_OS === "Windows") {
-          if (String(error).includes("resolve failed") && !command.includes("--force-local")) {
+          if (
+            String(error).includes("resolve failed") &&
+            !command.includes("--force-local")
+          ) {
             try {
-              const fallbackCommand = command.includes("tar.exe") 
+              const fallbackCommand = command.includes("tar.exe")
                 ? command.replace("tar.exe -xf", "tar.exe --force-local -xf")
                 : command.replace("tar ", "tar --force-local ");
               await executeNested(fallbackCommand);
@@ -236,9 +247,14 @@ async function extractNestedArchives(destinationPath, getTask, onEntry) {
               error = retryError;
             }
           }
-          if (!recovered && String(archivePath).toLowerCase().endsWith(".zip")) {
+          if (
+            !recovered &&
+            String(archivePath).toLowerCase().endsWith(".zip")
+          ) {
             try {
-              await executeNested(getPowerShellExtractCommand(archivePath, parentDir));
+              await executeNested(
+                getPowerShellExtractCommand(archivePath, parentDir),
+              );
               recovered = true;
             } catch (psError) {
               error = psError;
@@ -530,7 +546,8 @@ export async function extractArchive({
         // Windows tar can return 1 for recoverable archive warnings. The caller
         // verifies that real files were extracted before recording an install.
         if (event.data === 0 || (isWindows && event.data === 1)) resolve();
-        else reject(createProcessError("Extraction", event.data, processOutput));
+        else
+          reject(createProcessError("Extraction", event.data, processOutput));
       },
     );
   };
@@ -540,9 +557,14 @@ export async function extractArchive({
   } catch (error) {
     let recovered = false;
     if (isWindows) {
-      if (String(error).includes("resolve failed") && !command.includes("--force-local")) {
+      if (
+        String(error).includes("resolve failed") &&
+        !command.includes("--force-local")
+      ) {
         try {
-          await execute(command.replace("tar.exe -xf", "tar.exe --force-local -xf"));
+          await execute(
+            command.replace("tar.exe -xf", "tar.exe --force-local -xf"),
+          );
           recovered = true;
         } catch (retryError) {
           error = retryError;
@@ -550,7 +572,9 @@ export async function extractArchive({
       }
       if (!recovered && String(archivePath).toLowerCase().endsWith(".zip")) {
         try {
-          await execute(getPowerShellExtractCommand(archivePath, destinationPath));
+          await execute(
+            getPowerShellExtractCommand(archivePath, destinationPath),
+          );
           recovered = true;
         } catch (psError) {
           error = psError;

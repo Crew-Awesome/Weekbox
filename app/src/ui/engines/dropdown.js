@@ -26,8 +26,15 @@ export const engineDropdown = {
     engine.versions.forEach((v, index) => {
       if (!v.version || v.version === "Unknown") {
         const sampleLink =
-          v.win64 || v.win32 || v.win || v.lin || v.mac ||
-          Object.values(v).find((val) => typeof val === "string" && val.startsWith("http")) || "";
+          v.win64 ||
+          v.win32 ||
+          v.win ||
+          v.lin ||
+          v.mac ||
+          Object.values(v).find(
+            (val) => typeof val === "string" && val.startsWith("http"),
+          ) ||
+          "";
         v.version = extractVersionFallback(sampleLink);
       }
       const optionDiv = document.createElement("div");
@@ -43,10 +50,10 @@ export const engineDropdown = {
           .querySelectorAll(".custom-option")
           .forEach((opt) => opt.classList.remove("selected"));
         optionDiv.classList.add("selected");
-        
+
         // Cerramos usando la nueva utilidad
         this.dropdownController?.close();
-        
+
         fetchAndRenderReleaseNotes(v, getTargetLink(v));
         if (onVersionChanged) onVersionChanged(v.version);
       });
@@ -68,4 +75,4 @@ export const engineDropdown = {
       this.dropdownController = null;
     }
   },
-};
+};
