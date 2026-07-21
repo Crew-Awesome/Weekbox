@@ -757,7 +757,7 @@ class FileSystemService {
 
   async getAvailableLocalModFolderName(name, existingFolderName = "") {
     const displayName = sanitizePathSegment(name) || "Local Mod";
-    const baseName = `${displayName} (Local)`;
+    const baseName = displayName;
     let folderName = baseName;
     let copyNumber = 2;
     while (
