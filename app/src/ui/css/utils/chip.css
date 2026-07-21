@@ -1,0 +1,97 @@
+/* 
+ * Scoped CSS for Md3Chip Component 
+ * BEM Methodology applied: .md3-component-chip
+ */
+
+.md3-component-chip {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 12px;
+    height: 32px;
+    border-radius: 8px; /* Material Design 3 uses slightly rounded borders, or 16px for a full pill shape */
+    background-color: var(--surface-container);
+    color: var(--on-surface);
+    font-family: 'Inter', sans-serif;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: default;
+    transition: background-color 0.2s ease, transform 0.1s ease, box-shadow 0.2s ease;
+    user-select: none;
+    box-sizing: border-box;
+    gap: 8px; /* Space between icon and text */
+    box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+}
+
+/* Hover & Active States */
+.md3-component-chip--hover {
+    background-color: var(--surface-container-high, #e0e0e0);
+    box-shadow: 0 2px 4px rgba(0,0,0,0.15);
+}
+
+.md3-component-chip--active {
+    background-color: var(--surface-container-highest, #d0d0d0);
+    transform: scale(0.98);
+}
+
+/* Disabled State */
+.md3-component-chip--state-disabled {
+    opacity: 0.5;
+    pointer-events: none;
+    background-color: var(--surface-container-low, #f0f0f0);
+}
+
+/* Icon Container */
+.md3-component-chip__icon-container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 18px;
+    height: 18px;
+}
+
+/* Icon (Image type) */
+.md3-component-chip__icon--img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+}
+
+/* Icon (FontAwesome type) */
+.md3-component-chip__icon--fa {
+    font-size: 16px;
+    color: inherit;
+}
+
+/* Label text */
+.md3-component-chip__label {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    line-height: 1;
+}
+
+/* Variants */
+.md3-component-chip--variant-primary {
+    background-color: var(--primary);
+    color: var(--on-primary);
+}
+.md3-component-chip--variant-primary.md3-component-chip--hover {
+    background-color: var(--primary-hover, var(--primary));
+    filter: brightness(1.1);
+}
+
+.md3-component-chip--variant-engine {
+    background-color: rgba(255, 255, 255, 0.1);
+    color: var(--on-surface);
+    backdrop-filter: blur(4px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+.md3-component-chip--variant-engine.md3-component-chip--hover {
+    background-color: rgba(255, 255, 255, 0.2);
+}
+
+.md3-component-chip--variant-time {
+    background-color: var(--secondary-container);
+    color: var(--on-secondary-container);
+}

@@ -1,6 +1,7 @@
 import { gameBananaApi } from '../../../../core/config/api/gamebanana.js';
 import { ENGINE_CATEGORY_IDS, ENGINE_DETAILS } from '../../../../core/config/engines.js';
 import { extractImageColor } from '../../../../ui/utils/extractImgColor.js';
+import { Md3Chip } from '../../../../ui/utils/components/chip/chip.js';
 
 // Global listener flag
 let isPopstateAttached = false;
@@ -250,13 +251,13 @@ function createModCard(mod, engineInfo) {
     
     // Píldora del Engine (si hay)
     if (engineInfo && engineInfo.icon) {
-        const chip = document.createElement('div');
-        chip.className = 'm3-card-engine-chip';
-        chip.innerHTML = `
-            <img src="assets/engine-icons/${engineInfo.icon}" alt="Engine">
-            <span>${engineInfo.name}</span>
-        `;
-        imgWrapper.appendChild(chip);
+        const chipContainer = document.createElement('div');
+        chipContainer.dataset.text = engineInfo.name;
+        chipContainer.dataset.icon = `assets/engine-icons/${engineInfo.icon}`;
+        chipContainer.dataset.variant = 'engine';
+        imgWrapper.appendChild(chipContainer);
+        
+        new Md3Chip(chipContainer);
     }
     
     // Contenido (texto abajo de la imagen)

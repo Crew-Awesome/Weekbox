@@ -58,39 +58,15 @@
     user-select: none;
 }
 
-/* Engine Chip */
-.m3-card-engine-chip {
+/* Engine Chip positioning via new Web Component */
+.browse-m3-card-img-wrapper .md3-component-chip {
     position: absolute;
     top: 6px;
     right: 6px;
     max-width: calc(100% - 12px);
-    display: flex;
-    align-items: center;
-    gap: 4px;
-    background: rgba(0, 0, 0, 0.4);
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
-    border-radius: 12px;
-    padding: 4px 8px;
-    color: white;
-    font-size: 0.7rem;
     z-index: 10;
-    overflow: hidden;
-    white-space: nowrap;
-    transform: translateZ(0); /* Hardware acceleration to prevent jitter with backdrop-filter */
+    transform: translateZ(0); /* Hardware acceleration */
     will-change: transform;
-}
-
-.m3-card-engine-chip span {
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
-
-.m3-card-engine-chip img {
-    width: 12px;
-    height: 12px;
-    object-fit: contain;
-    flex-shrink: 0;
 }
 
 .browse-m3-card .m3-card-content {
