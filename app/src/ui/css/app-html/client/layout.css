@@ -35,6 +35,9 @@
 
 /* Text Buttons */
 .client-text-btn {
+    display: flex;
+    align-items: center;
+    gap: 6px;
     background: transparent;
     border: none;
     padding: 6px 14px;
@@ -78,6 +81,10 @@
 .client-text-btn--donate:hover {
     background-color: var(--tertiary);
     color: var(--on-tertiary);
+}
+
+.client-text-btn--donate:hover .icon-mask--donate {
+    background-color: var(--on-tertiary);
 }
 
 .client-icon-btn {
@@ -145,6 +152,15 @@
     mask-image: url('../../../../../assets/app/client/close-window.svg');
 }
 
+.icon-mask--donate {
+    width: 16px;
+    height: 16px;
+    -webkit-mask-image: url('../../../../../assets/app/client/buy-me-a-coffee.svg');
+    mask-image: url('../../../../../assets/app/client/buy-me-a-coffee.svg');
+    background-color: var(--on-tertiary-container);
+    transition: background-color 0.2s ease;
+}
+
 .client-icon-btn:hover .icon-mask {
     background-color: var(--on-surface-variant);
 }
@@ -186,11 +202,14 @@
     background-color: var(--on-error);
 }
 
+/* Brand */
 .client-brand {
     display: flex;
     align-items: center;
-    gap: 12px;
-    margin-left: 16px;
+    gap: 8px;
+    margin-right: auto;
+    overflow: hidden;
+    cursor: default;
 }
 
 .client-brand__icon {
@@ -204,6 +223,17 @@
     font-size: 1.1rem;
     color: var(--primary);
     letter-spacing: 0.5px;
+    max-width: 0;
+    opacity: 0;
+    transform: translateX(-10px);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    white-space: nowrap;
+}
+
+.client-brand:hover .client-brand__name {
+    max-width: 100px;
+    opacity: 1;
+    transform: translateX(0);
 }
 
 .client-top-bar__spacer {

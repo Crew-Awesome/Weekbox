@@ -8,6 +8,7 @@
     height: 56px;
     display: flex;
     align-items: center;
+    justify-content: space-between;
     padding: 0 24px;
     box-sizing: border-box;
     background-color: var(--surface);
@@ -51,4 +52,100 @@
     background-color: var(--secondary-container);
     color: var(--on-secondary-container);
     font-weight: 600;
+}
+
+/* Search Container */
+.app-header__search-container {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-left: auto;
+}
+
+.app-header__search-box {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    background-color: var(--surface-container-high);
+    border-radius: 20px;
+    padding: 0 12px;
+    width: 200px;
+    height: 40px;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    border: 1px solid transparent;
+}
+
+.app-header__search-box:focus-within {
+    width: 320px;
+    background-color: var(--surface-container-highest);
+    border-color: var(--primary);
+}
+
+.app-header__search-icon {
+    width: 20px;
+    height: 20px;
+    background-color: var(--on-surface-variant);
+    -webkit-mask-image: url('../../../../../assets/app/header/search.svg');
+    mask-image: url('../../../../../assets/app/header/search.svg');
+    flex-shrink: 0;
+    z-index: 1;
+}
+
+.app-header__search-input {
+    background: transparent;
+    border: none;
+    outline: none;
+    color: var(--on-surface);
+    font-family: var(--font-primary);
+    font-size: 0.9rem;
+    width: 100%;
+    margin-right: 8px;
+    text-align: right;
+    z-index: 2;
+}
+
+.app-header__search-placeholder {
+    position: absolute;
+    left: 12px;
+    right: 40px;
+    top: 0;
+    bottom: 0;
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    pointer-events: none;
+    color: var(--on-surface-variant);
+    font-size: 0.9rem;
+    font-family: var(--font-primary);
+    z-index: 1;
+    overflow: hidden;
+}
+
+.placeholder-text {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    text-align: left;
+    width: 100%;
+}
+
+/* Filter Button */
+.app-header__filter-btn {
+    background: transparent;
+    border: none;
+    color: var(--on-surface-variant);
+    width: 40px;
+    height: 40px;
+    border-radius: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.app-header__filter-btn:hover {
+    background-color: var(--surface-container-high);
+    color: var(--on-surface);
 }
