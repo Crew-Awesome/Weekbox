@@ -5,41 +5,12 @@ import {
   getResourcesAsset,
   getWindowsPackage,
 } from "./updates/releaseAssets.js";
+import { compareVersions, normalizeVersion } from "./updates/versioning.js";
 
 const RELEASES_API =
   "https://api.github.com/repos/Crew-Awesome/Weekbox/releases/latest";
 const RELEASES_PAGE = "https://github.com/Crew-Awesome/Weekbox/releases/latest";
 const UPDATE_DIRECTORY = ".weekbox-update";
-
-/**
- * Normalizes a version string by removing leading 'v' characters, trimming whitespace,
- * and stripping out any pre-release tags (e.g. '-beta').
- * @param {string} value - The raw version string.
- * @returns {string} The normalized version string.
- */
-function normalizeVersion(value) {
-  return String(value || "")
-    .trim()
-    .replace(/^v/i, "")
-    .split("-")[0];
-}
-
-/**
- * Compares two version strings to determine their order.
- * @param {string} left - The first version string.
- * @param {string} right - The second version string.
- * @returns {number} 1 if left is greater, -1 if right is greater, 0 if equal.
- */
-function compareVersions(left, right) {
-  const leftParts = normalizeVersion(left).split(".").map(Number);
-  const rightParts = normalizeVersion(right).split(".").map(Number);
-  const length = Math.max(leftParts.length, rightParts.length);
-  for (let index = 0; index < length; index += 1) {
-    const difference = (leftParts[index] || 0) - (rightParts[index] || 0);
-    if (difference) return Math.sign(difference);
-  }
-  return 0;
-}
 
 function toHex(buffer) {
   return [...new Uint8Array(buffer)]
