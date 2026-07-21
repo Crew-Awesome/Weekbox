@@ -1,4 +1,50 @@
+@font-face {
+    font-family: 'Motiva Sans';
+    src: url('../../../assets/fonts/MotivaSansThin.ttf') format('truetype');
+    font-weight: 100;
+    font-style: normal;
+}
+@font-face {
+    font-family: 'Motiva Sans';
+    src: url('../../../assets/fonts/MotivaSansLight.woff.ttf') format('truetype');
+    font-weight: 300;
+    font-style: normal;
+}
+@font-face {
+    font-family: 'Motiva Sans';
+    src: url('../../../assets/fonts/MotivaSansRegular.woff.ttf') format('truetype');
+    font-weight: 400;
+    font-style: normal;
+}
+@font-face {
+    font-family: 'Motiva Sans';
+    src: url('../../../assets/fonts/MotivaSansMedium.woff.ttf') format('truetype');
+    font-weight: 500;
+    font-style: normal;
+}
+@font-face {
+    font-family: 'Motiva Sans';
+    src: url('../../../assets/fonts/MotivaSansBold.woff.ttf') format('truetype');
+    font-weight: 700;
+    font-style: normal;
+}
+@font-face {
+    font-family: 'Motiva Sans';
+    src: url('../../../assets/fonts/MotivaSansExtraBold.ttf') format('truetype');
+    font-weight: 800;
+    font-style: normal;
+}
+@font-face {
+    font-family: 'Motiva Sans';
+    src: url('../../../assets/fonts/MotivaSansBlack.woff.ttf') format('truetype');
+    font-weight: 900;
+    font-style: normal;
+}
+
 :root {
+    /* Fuentes */
+    --font-primary: 'Motiva Sans', 'Inter', sans-serif;
+    
     /* Tema Claro */
     --primary: #006874;
     --secondary: #4a6267;
@@ -44,8 +90,8 @@
         --on-primary: #00363d;
         --on-secondary: #1c3438;
         --on-tertiary: #24304d;
-        --error: #ffb4ab;
-        --on-error: #690005;
+        --error: #690005;
+        --on-error: #ffb4ab;
         --primary-container: #004f57;
         --secondary-container: #334b4f;
         --tertiary-container: #3a4664;

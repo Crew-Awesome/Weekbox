@@ -1,7 +1,7 @@
 import { centerWindow, ensureTmpDirectory, readStoredWindowDimensions, writeStoredWindowDimensions } from './windowSize.js';
 import { initModsLibrary, startLibraryWatcher } from '../../utils/fileSystem/mods-library.js';
 import { initCircleLoad, updateCircleProgress } from '../../../ui/utils/components/circleLoad/circleLoad.js';
-import { SidebarController } from '../../../ui/js/sidebar/sidebar.js';
+import { ClientController } from '../../../ui/js/client/client.js';
 
 /**
  * Loads HTML content into the main app container.
@@ -122,9 +122,9 @@ export function initWindowLogic() {
         await waitForResources();
         
         setSplashText('Starting layout and modules...');
-        // Initialize Sidebar (This triggers loading Discover and inserting posters)
-        const sidebar = new SidebarController();
-        await sidebar.init(); 
+        // Initialize Client Top Bar
+        const clientBar = new ClientController();
+        await clientBar.init(); 
         
         updateCircleProgress(60);
         
