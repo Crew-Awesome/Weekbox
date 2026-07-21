@@ -40,12 +40,59 @@ export class ClientController {
      * @private
      */
     _bindEvents() {
-        // Placeholder for future event bindings for top bar elements
-        const buttons = this.container.querySelectorAll('.client-btn');
-        buttons.forEach(button => {
-            button.addEventListener('click', (e) => {
-                console.log('Client button clicked:', e.target.textContent);
+        // Window Controls
+        const btnMinimize = this.container.querySelector('#client-btn-minimize');
+        if (btnMinimize) {
+            btnMinimize.addEventListener('click', async () => {
+                try {
+                    await Neutralino.window.minimize();
+                } catch (err) {
+                    console.error('Error minimizing window:', err);
+                }
             });
-        });
+        }
+
+        const btnMaximize = this.container.querySelector('#client-btn-maximize');
+        if (btnMaximize) {
+            btnMaximize.addEventListener('click', async () => {
+                try {
+                    const isMaximized = await Neutralino.window.isMaximized();
+                    if (isMaximized) {
+                        await Neutralino.window.unmaximize();
+                    } else {
+                        await Neutralino.window.maximize();
+                    }
+                } catch (err) {
+                    // Fallback
+                    try { await Neutralino.window.maximize(); } catch (e) {}
+                }
+            });
+        }
+
+        const btnClose = this.container.querySelector('#client-btn-close');
+        if (btnClose) {
+            btnClose.addEventListener('click', async () => {
+                try {
+                    await Neutralino.app.exit();
+                } catch (err) {
+                    console.error('Error closing app:', err);
+                }
+            });
+        }
+
+        // Navigation (Placeholders for routing logic)
+        const btnBack = this.container.querySelector('#client-btn-back');
+        if (btnBack) {
+            btnBack.addEventListener('click', () => {
+                console.log('Back clicked');
+            });
+        }
+
+        const btnForward = this.container.querySelector('#client-btn-forward');
+        if (btnForward) {
+            btnForward.addEventListener('click', () => {
+                console.log('Forward clicked');
+            });
+        }
     }
 }

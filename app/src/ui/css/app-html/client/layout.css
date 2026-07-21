@@ -42,14 +42,47 @@
     background-color: var(--surface-container-highest);
 }
 
-.client-icon-btn img {
+.icon-mask {
     width: 12px;
     height: 12px;
-    object-fit: contain;
+    background-color: var(--on-surface);
+    mask-size: contain;
+    mask-repeat: no-repeat;
+    mask-position: center;
+    -webkit-mask-size: contain;
+    -webkit-mask-repeat: no-repeat;
+    -webkit-mask-position: center;
+    transition: background-color 0.2s ease;
 }
 
-.client-icon-btn--back img {
+.icon-mask--back {
+    -webkit-mask-image: url('../../../../../assets/app/client/arrow-client.svg');
+    mask-image: url('../../../../../assets/app/client/arrow-client.svg');
     transform: scaleX(-1);
+}
+
+.icon-mask--forward {
+    -webkit-mask-image: url('../../../../../assets/app/client/arrow-client.svg');
+    mask-image: url('../../../../../assets/app/client/arrow-client.svg');
+}
+
+.icon-mask--minimize {
+    -webkit-mask-image: url('../../../../../assets/app/client/minimize-window.svg');
+    mask-image: url('../../../../../assets/app/client/minimize-window.svg');
+}
+
+.icon-mask--maximize {
+    -webkit-mask-image: url('../../../../../assets/app/client/de-maximize-window.svg');
+    mask-image: url('../../../../../assets/app/client/de-maximize-window.svg');
+}
+
+.icon-mask--close {
+    -webkit-mask-image: url('../../../../../assets/app/client/close-window.svg');
+    mask-image: url('../../../../../assets/app/client/close-window.svg');
+}
+
+.client-icon-btn:hover .icon-mask {
+    background-color: var(--on-surface-variant);
 }
 
 .client-icon-btn--window {
@@ -60,23 +93,28 @@
     background-color: var(--error);
 }
 
+.client-icon-btn--close:hover .icon-mask {
+    background-color: var(--on-error);
+}
+
 .client-brand {
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 12px;
     margin-left: 16px;
 }
 
 .client-brand__icon {
-    width: 20px;
-    height: 20px;
+    width: 24px;
+    height: 24px;
     object-fit: contain;
 }
 
 .client-brand__name {
-    font-weight: 500;
-    font-size: 0.95rem;
-    color: var(--on-surface);
+    font-weight: 700;
+    font-size: 1.1rem;
+    color: var(--primary);
+    letter-spacing: 0.5px;
 }
 
 .client-top-bar__spacer {
