@@ -8,6 +8,7 @@
 @import './app-html/layout.css';
 
 @import './app-html/client/layout.css';
+@import './app-html/header/layout.css';
 
 @import './app-html/main-view/discover/layout.css';
 @import './app-html/main-view/discover/discover-grid.css';

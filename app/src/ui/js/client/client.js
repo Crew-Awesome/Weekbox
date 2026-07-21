@@ -117,6 +117,22 @@ export class ClientController {
         }
 
         // Navigation (Placeholders for routing logic)
+        const navButtons = this.container.querySelectorAll('.client-text-btn--nav');
+        navButtons.forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                // Update visual active state
+                navButtons.forEach(b => b.classList.remove('client-text-btn--active'));
+                const clickedBtn = e.currentTarget;
+                clickedBtn.classList.add('client-text-btn--active');
+                
+                // Dispatch event to sync with HeaderController and other components
+                const targetName = clickedBtn.textContent.trim().toLowerCase();
+                document.dispatchEvent(new CustomEvent('navChange', {
+                    detail: { target: targetName }
+                }));
+            });
+        });
+
         const btnBack = this.container.querySelector('#client-btn-back');
         if (btnBack) {
             btnBack.addEventListener('click', () => {

@@ -2,6 +2,7 @@ import { centerWindow, ensureTmpDirectory, readStoredWindowDimensions, writeStor
 import { initModsLibrary, startLibraryWatcher } from '../../utils/fileSystem/mods-library.js';
 import { initCircleLoad, updateCircleProgress } from '../../../ui/utils/components/circleLoad/circleLoad.js';
 import { ClientController } from '../../../ui/js/client/client.js';
+import { HeaderController } from '../../../ui/js/header/header.js';
 
 /**
  * Loads HTML content into the main app container.
@@ -126,6 +127,10 @@ export function initWindowLogic() {
         // Initialize Client Top Bar
         const clientBar = new ClientController();
         await clientBar.init(); 
+        
+        // Initialize Secondary Header
+        const headerBar = new HeaderController();
+        await headerBar.init(); 
         
         updateCircleProgress(60);
         

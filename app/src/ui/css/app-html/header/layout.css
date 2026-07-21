@@ -1,0 +1,54 @@
+/**
+ * Defines the layout and styling for the application's secondary header.
+ * Uses Material 3 design tokens for seamless integration.
+ */
+
+.app-header {
+    width: 100%;
+    height: 56px;
+    display: flex;
+    align-items: center;
+    padding: 0 24px;
+    box-sizing: border-box;
+    background-color: var(--surface);
+    border-bottom: 1px solid var(--outline-variant);
+    flex-shrink: 0;
+}
+
+.app-header__content {
+    display: flex;
+    align-items: center;
+    width: 100%;
+}
+
+.app-header__tabs {
+    display: flex;
+    align-items: center;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    gap: 8px;
+}
+
+.app-header__tab {
+    padding: 6px 16px;
+    border-radius: 16px;
+    font-family: var(--font-primary);
+    font-size: 0.9rem;
+    font-weight: 500;
+    color: var(--on-surface-variant);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    user-select: none;
+}
+
+.app-header__tab:hover {
+    background-color: var(--surface-container-high);
+    color: var(--on-surface);
+}
+
+.app-header__tab--active {
+    background-color: var(--secondary-container);
+    color: var(--on-secondary-container);
+    font-weight: 600;
+}
