@@ -125,6 +125,12 @@ function getWindowsExtractionCommand(archivePath, destinationPath) {
   return `tar.exe -xf ${quoteCommandArgument(archivePath)} -C ${quoteCommandArgument(destinationPath)}`;
 }
 
+function getPowerShellExtractCommand(archivePath, destinationPath) {
+  const safeArchive = String(archivePath).replace(/'/g, "''");
+  const safeDest = String(destinationPath).replace(/'/g, "''");
+  return `powershell -NoProfile -NonInteractive -Command "Expand-Archive -Path '${safeArchive}' -DestinationPath '${safeDest}' -Force"`;
+}
+
 const NESTED_ARCHIVE_PATTERNS = [
   /\.zip$/i,
   /\.tar\.gz$/i,
@@ -217,16 +223,30 @@ async function extractNestedArchives(destinationPath, getTask, onEntry) {
         await executeNested(command);
         await Neutralino.filesystem.remove(archivePath).catch(() => {});
       } catch (error) {
-        if (window.NL_OS === "Windows" && String(error).includes("resolve failed") && !command.includes("--force-local")) {
-          try {
-            const fallbackCommand = command.includes("tar.exe") 
-              ? command.replace("tar.exe -xf", "tar.exe --force-local -xf")
-              : command.replace("tar ", "tar --force-local ");
-            await executeNested(fallbackCommand);
-            await Neutralino.filesystem.remove(archivePath).catch(() => {});
-          } catch (retryError) {
-            console.warn("Could not extract nested archive on retry:", archivePath, retryError);
+        let recovered = false;
+        if (window.NL_OS === "Windows") {
+          if (String(error).includes("resolve failed") && !command.includes("--force-local")) {
+            try {
+              const fallbackCommand = command.includes("tar.exe") 
+                ? command.replace("tar.exe -xf", "tar.exe --force-local -xf")
+                : command.replace("tar ", "tar --force-local ");
+              await executeNested(fallbackCommand);
+              recovered = true;
+            } catch (retryError) {
+              error = retryError;
+            }
           }
+          if (!recovered && String(archivePath).toLowerCase().endsWith(".zip")) {
+            try {
+              await executeNested(getPowerShellExtractCommand(archivePath, parentDir));
+              recovered = true;
+            } catch (psError) {
+              error = psError;
+            }
+          }
+        }
+        if (recovered) {
+          await Neutralino.filesystem.remove(archivePath).catch(() => {});
         } else {
           console.warn("Could not extract nested archive:", archivePath, error);
         }
@@ -518,11 +538,26 @@ export async function extractArchive({
   try {
     await execute(command);
   } catch (error) {
-    if (isWindows && String(error).includes("resolve failed") && !command.includes("--force-local")) {
-      await execute(command.replace("tar.exe -xf", "tar.exe --force-local -xf"));
-    } else {
-      throw error;
+    let recovered = false;
+    if (isWindows) {
+      if (String(error).includes("resolve failed") && !command.includes("--force-local")) {
+        try {
+          await execute(command.replace("tar.exe -xf", "tar.exe --force-local -xf"));
+          recovered = true;
+        } catch (retryError) {
+          error = retryError;
+        }
+      }
+      if (!recovered && String(archivePath).toLowerCase().endsWith(".zip")) {
+        try {
+          await execute(getPowerShellExtractCommand(archivePath, destinationPath));
+          recovered = true;
+        } catch (psError) {
+          error = psError;
+        }
+      }
     }
+    if (!recovered) throw error;
   }
 
   if (extractNested) {
