@@ -25,7 +25,8 @@ export function normalizeDiscoveryCandidate(raw, context = {}) {
       ? Number(context.categoryId)
       : null,
     engineId: context.engineId || null,
-    creatorId: context.creatorId || raw?._aSubmitter?._idRow?.toString() || null,
+    creatorId:
+      context.creatorId || raw?._aSubmitter?._idRow?.toString() || null,
     raw: {
       ...raw,
       __injectedCategoryId: Number.isFinite(Number(context.categoryId))

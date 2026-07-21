@@ -64,7 +64,9 @@ function createUnixApplyScript({
   const target = quoteShellString(appPath);
   const archive = quoteShellString(archivePath);
   const staging = quoteShellString(`${appPath}/.weekbox-update-staging`);
-  const targetBinary = targetExe ? quoteShellString(targetExe) : quoteShellString(`${appPath}/${binaryName}`);
+  const targetBinary = targetExe
+    ? quoteShellString(targetExe)
+    : quoteShellString(`${appPath}/${binaryName}`);
   const targetResources = quoteShellString(`${appPath}/resources.neu`);
   const updaterScript = quoteShellString(scriptPath);
 
@@ -189,14 +191,23 @@ function getResourcesAsset(release) {
     if (asset.state !== "uploaded" || Number(asset.size) <= 0) return false;
     const name = asset.name || "";
     return (
-      /^WeekBox-.*-resources\.neu$/i.test(name) || /^resources\.neu$/i.test(name)
+      /^WeekBox-.*-resources\.neu$/i.test(name) ||
+      /^resources\.neu$/i.test(name)
     );
   });
 }
 
 function getWindowsPackage(release) {
-  const arch = window.NL_ARCH === "arm64" ? "arm64" : window.NL_ARCH === "armhf" || window.NL_ARCH === "arm" ? "armhf" : "x64";
-  const expression = new RegExp(`^WeekBox-\\d+(?:\\.\\d+)*-windows-${arch}\\.zip$`, "i");
+  const arch =
+    window.NL_ARCH === "arm64"
+      ? "arm64"
+      : window.NL_ARCH === "armhf" || window.NL_ARCH === "arm"
+        ? "armhf"
+        : "x64";
+  const expression = new RegExp(
+    `^WeekBox-\\d+(?:\\.\\d+)*-windows-${arch}\\.zip$`,
+    "i",
+  );
   return (release.assets || []).find(
     (asset) =>
       expression.test(asset.name || "") &&
@@ -389,7 +400,9 @@ export const appUpdater = {
       getTask: () => null,
       onProgress: (status) => onProgress(status),
     });
-    const bytes = new Uint8Array(await Neutralino.filesystem.readBinaryFile(staging));
+    const bytes = new Uint8Array(
+      await Neutralino.filesystem.readBinaryFile(staging),
+    );
 
     onProgress("Verifying update…");
     if (!isValidNeutralinoBundle(bytes)) {
@@ -418,7 +431,9 @@ export const appUpdater = {
     const exe = window.NL_ARGS[0];
     if (window.NL_OS === "Darwin" && exe.includes(".app/Contents/MacOS/")) {
       const appBundle = exe.substring(0, exe.indexOf(".app/") + 5);
-      await Neutralino.os.execCommand(`open "${appBundle}"`, { background: true });
+      await Neutralino.os.execCommand(`open "${appBundle}"`, {
+        background: true,
+      });
     } else {
       await Neutralino.os.execCommand(`"${exe}"`, { background: true });
     }
@@ -436,9 +451,7 @@ export const appUpdater = {
     const scriptPath = `${updateDir}/apply-update.ps1`;
     const appPath = window.NL_PATH;
 
-    await Neutralino.filesystem
-      .createDirectory(updateDir)
-      .catch(() => {});
+    await Neutralino.filesystem.createDirectory(updateDir).catch(() => {});
 
     onProgress("Downloading update…");
     await downloadArchive({
@@ -449,15 +462,15 @@ export const appUpdater = {
     });
 
     onProgress("Verifying update…");
-    const bytes = new Uint8Array(await Neutralino.filesystem.readBinaryFile(zipPath));
-    if (
-      !(
-        bytes[0] === 0x50 &&
-        bytes[1] === 0x4b &&
-        bytes[2] === 0x03 &&
-        bytes[3] === 0x04
-      )
-    ) {
+    const bytes = new Uint8Array(
+      await Neutralino.filesystem.readBinaryFile(zipPath),
+    );
+    if (!(
+      bytes[0] === 0x50 &&
+      bytes[1] === 0x4b &&
+      bytes[2] === 0x03 &&
+      bytes[3] === 0x04
+    )) {
       await Neutralino.filesystem.remove(zipPath).catch(() => {});
       throw new Error("Downloaded update is not a valid package.");
     }
