@@ -46,8 +46,8 @@ export async function loadFeaturedCarousel(container) {
             
             // Agregar al carrusel final solo las secciones que tengan al menos 4 items, cortando en 4 exactos
             for (const [label, mods] of sectionsMap.entries()) {
-                if (mods.length >= 4) {
-                    featuredMods.push(...mods.slice(0, 4));
+                if (mods.length >= 1) {
+                    featuredMods.push(...mods);
                 }
             }
         }
@@ -109,7 +109,7 @@ export async function loadFeaturedCarousel(container) {
             return {
                 totalItems: featuredMods.length,
                 sectionCount: featuredMods.length / 4,
-                itemsPerSection: 4
+                itemsPerSection: 5
             };
         }
         return null;

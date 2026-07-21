@@ -45,8 +45,6 @@ export const gameBananaApi = {
   },
   featuredUrl:
     "https://raw.githubusercontent.com/Crew-Awesome/weekbox.featured/main/public/featured.json",
-  featuredManifestUrl:
-    "https://raw.githubusercontent.com/Crew-Awesome/weekbox.featured/main/public/featured-manifest.json",
   featuredCacheKey: "weekbox-featured-v3",
   searchCache: new Map(),
   ripeFeedCache: new Map(),
@@ -604,7 +602,6 @@ export const gameBananaApi = {
     if (!this.featuredService) {
       this.featuredService = new FeaturedService({
         url: this.featuredUrl,
-        manifestUrl: this.featuredManifestUrl,
         cacheKey: this.featuredCacheKey,
         getTimeAgo: this.getTimeAgo.bind(this),
       });

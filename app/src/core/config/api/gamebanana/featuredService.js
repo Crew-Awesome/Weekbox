@@ -1,7 +1,6 @@
 export class FeaturedService {
-  constructor({ url, manifestUrl, cacheKey, getTimeAgo }) {
+  constructor({ url, cacheKey, getTimeAgo }) {
     this.url = url;
-    this.manifestUrl = manifestUrl;
     this.cacheKey = cacheKey;
     this.getTimeAgo = getTimeAgo;
   }
@@ -9,55 +8,22 @@ export class FeaturedService {
   async getCarousel() {
     const cached = this.getCached();
     try {
-      const manifest = await this.fetchManifest();
-      if (cached?.revision === manifest.revision) return this.flatten(cached.featured);
       const response = await fetch(this.url, { cache: "no-store" });
       if (!response.ok) throw new Error("Featured request failed");
       const featured = await response.json();
       if (!this.isSupported(featured))
         throw new Error("Unsupported featured schema");
-      if (featured.revision !== manifest.revision)
-        throw new Error("Featured revision did not match manifest");
+      if (cached?.revision === featured.revision) return this.flatten(cached.featured);
       const mods = this.flatten(featured);
       if (mods.length === 0) throw new Error("No featured mods");
       localStorage.setItem(
         this.cacheKey,
-        JSON.stringify({ revision: manifest.revision, featured }),
+        JSON.stringify({ revision: featured.revision, featured }),
       );
       return mods;
     } catch (error) {
       return cached ? this.flatten(cached.featured) : [];
     }
-  }
-
-  async fetchManifest() {
-    let retries = 3;
-    let lastError = null;
-
-    while (retries > 0) {
-      try {
-        const response = await fetch(this.manifestUrl, { cache: "no-store" });
-        if (!response.ok) throw new Error("Featured manifest request failed: " + response.status);
-        
-        const manifest = await response.json();
-        if (
-          manifest?.schemaVersion !== 1 ||
-          typeof manifest?.revision !== "string" ||
-          !manifest.revision
-        ) {
-          throw new Error("Unsupported featured manifest");
-        }
-        return manifest;
-      } catch (error) {
-        lastError = error;
-        retries--;
-        if (retries > 0) {
-          await new Promise(resolve => setTimeout(resolve, 800)); // 800ms delay between retries
-        }
-      }
-    }
-    
-    throw lastError;
   }
 
   getCached() {
