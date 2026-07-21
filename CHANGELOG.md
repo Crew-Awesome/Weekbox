@@ -14,6 +14,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Updates no longer break when the archive contains subfolders.
 - Faster updates by downloading only the resources file when possible.
 - Extracting files on Windows drives (like D:) no longer confuses tar with a remote server.
+- Engine install errors no longer cause an unexpected error.
+
+### Changed
+
+- Local mods now use their chosen name. Duplicate names get a number.
 
 ## [1.5.7] - 2026-07-20
 
