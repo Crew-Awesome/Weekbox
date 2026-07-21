@@ -6,7 +6,7 @@ import { gameBananaApi } from '../../../../core/config/api/gamebanana.js';
  */
 async function fetchTemplate() {
     try {
-        const response = await fetch('src/ui/html/app-html/main-view/discover-view/discover-carousel-featured-item.html');
+        const response = await fetch('src/ui/html/app-html/home/browse/browse-carousel-featured-item.html');
         if (!response.ok) {
             throw new Error('Failed to fetch template');
         }
@@ -30,13 +30,33 @@ export async function loadFeaturedCarousel(container) {
     }
 
     try {
-        const featuredMods = await gameBananaApi.getFeaturedCarousel();
+        const rawFeaturedMods = await gameBananaApi.getFeaturedCarousel();
         
-        if (featuredMods && featuredMods.length > 0) {
+        // Extraer exactamente 4 mods por cada sección válida
+        const featuredMods = [];
+        const sectionsMap = new Map();
+        
+        if (rawFeaturedMods) {
+            for (const mod of rawFeaturedMods) {
+                if (!sectionsMap.has(mod.label)) {
+                    sectionsMap.set(mod.label, []);
+                }
+                sectionsMap.get(mod.label).push(mod);
+            }
+            
+            // Agregar al carrusel final solo las secciones que tengan al menos 4 items, cortando en 4 exactos
+            for (const [label, mods] of sectionsMap.entries()) {
+                if (mods.length >= 4) {
+                    featuredMods.push(...mods.slice(0, 4));
+                }
+            }
+        }
+        
+        if (featuredMods.length > 0) {
             const templateHtml = await fetchTemplate();
             
             if (!templateHtml) {
-                return;
+                return null;
             }
 
             const parser = new DOMParser();
@@ -44,7 +64,7 @@ export async function loadFeaturedCarousel(container) {
             const templateItem = doc.querySelector('.m3-carousel-item');
 
             if (!templateItem) {
-                return;
+                return null;
             }
 
             scroller.textContent = '';
@@ -85,8 +105,16 @@ export async function loadFeaturedCarousel(container) {
                 
                 scroller.appendChild(itemNode);
             });
+            
+            return {
+                totalItems: featuredMods.length,
+                sectionCount: featuredMods.length / 4,
+                itemsPerSection: 4
+            };
         }
+        return null;
     } catch (error) {
         console.error("Failed to load featured carousel:", error);
+        return null;
     }
 }

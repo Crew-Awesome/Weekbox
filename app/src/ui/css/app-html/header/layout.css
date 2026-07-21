@@ -66,7 +66,7 @@
     position: relative;
     display: flex;
     align-items: center;
-    justify-content: flex-end;
+    justify-content: flex-start;
     background-color: var(--surface-container-high);
     border-radius: 20px;
     padding: 0 12px;
@@ -90,6 +90,7 @@
     mask-image: url('../../../../../assets/app/header/search.svg');
     flex-shrink: 0;
     z-index: 1;
+    margin-right: 8px;
 }
 
 .app-header__search-input {
@@ -100,8 +101,7 @@
     font-family: var(--font-primary);
     font-size: 0.9rem;
     width: 100%;
-    margin-right: 8px;
-    text-align: right;
+    text-align: left;
     z-index: 2;
 }
 

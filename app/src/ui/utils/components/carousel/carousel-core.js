@@ -109,6 +109,16 @@ export class M3Carousel {
         // Track the exact resting index for resize handling
         this.currentIndex = Math.round(progress);
         
+        // Dispatch event if the stable visual index changes
+        // Since we have dummy items for infinite scrolling, we need to modulo against totalItems
+        const logicalIndex = ((this.currentIndex % this.totalItems) + this.totalItems) % this.totalItems;
+        if (this.lastEmittedIndex !== logicalIndex) {
+            this.lastEmittedIndex = logicalIndex;
+            this.element.dispatchEvent(new CustomEvent('m3-carousel-slide-change', { 
+                detail: { index: logicalIndex, total: this.totalItems }
+            }));
+        }
+        
         const isFinite = !this.isInfinite;
         
         const layouts = calculateVisuals(this.totalItems, progress, isFinite);
@@ -250,6 +260,29 @@ export class M3Carousel {
         if (this.autoInterval) {
             clearInterval(this.autoInterval);
             this.autoInterval = null;
+        }
+    }
+    
+    /**
+     * Calculates the nearest matching dummy index for a given logical index and scrolls to it.
+     */
+    goToLogicalIndex(logicalIndex) {
+        if (this.scroller.clientWidth === 0 || this.totalItems === 0) return;
+        
+        const currentLogicalIndex = ((this.currentIndex % this.totalItems) + this.totalItems) % this.totalItems;
+        let diff = logicalIndex - currentLogicalIndex;
+        
+        // Find the shortest path in an infinite carousel
+        if (this.isInfinite) {
+            if (diff > this.totalItems / 2) diff -= this.totalItems;
+            if (diff < -this.totalItems / 2) diff += this.totalItems;
+        }
+        
+        const targetIndex = this.currentIndex + diff;
+        this.smoothScrollToIndex(targetIndex, 600);
+        
+        if (this.isAuto) {
+            this.play(); // Reset timer
         }
     }
 }

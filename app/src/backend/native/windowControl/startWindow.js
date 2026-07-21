@@ -3,6 +3,9 @@ import { initModsLibrary, startLibraryWatcher } from '../../utils/fileSystem/mod
 import { initCircleLoad, updateCircleProgress } from '../../../ui/utils/components/circleLoad/circleLoad.js';
 import { ClientController } from '../../../ui/js/client/client.js';
 import { HeaderController } from '../../../ui/js/header/header.js';
+import { AppRouter } from '../../../ui/js/appRouter.js';
+import { gameBananaApi } from '../../../core/config/api/gamebanana.js';
+import { ENGINE_CATEGORY_IDS } from '../../../core/config/engines.js';
 
 /**
  * Loads HTML content into the main app container.
@@ -128,6 +131,10 @@ export function initWindowLogic() {
         const clientBar = new ClientController();
         await clientBar.init(); 
         
+        // Initialize App Router to listen for view changes
+        const router = new AppRouter();
+        await router.init();
+
         // Initialize Secondary Header
         const headerBar = new HeaderController();
         await headerBar.init(); 
@@ -178,6 +185,20 @@ export function initWindowLogic() {
         
         // Wait 1200ms before fading out
         await new Promise(resolve => setTimeout(resolve, 500));
+        
+        // Pre-fetch de la API en el background para acelerar Browse
+        setTimeout(() => {
+            console.log('[Setup] Iniciando pre-carga de GameBanana...');
+            const engineKeys = Object.keys(ENGINE_CATEGORY_IDS);
+            engineKeys.forEach(async (key) => {
+                const catId = parseInt(key, 10);
+                try {
+                    await gameBananaApi.getGridMods('popular', 1, catId);
+                } catch (e) {
+                    // Ignore errors in pre-fetch
+                }
+            });
+        }, 100);
         
         // Force a layout reflow before applying the opacity transition to ensure it animates smoothly
         splashContainer.style.transition = 'opacity 0.6s ease';

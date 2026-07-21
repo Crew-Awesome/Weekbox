@@ -98,6 +98,38 @@ export class HeaderController {
      */
     _bindEvents() {
         this._startPlaceholderRotation();
+        this._bindTabEvents();
+    }
+
+    /**
+     * Binds click events to the header tabs and triggers the initial view load.
+     * @private
+     */
+    _bindTabEvents() {
+        const tabs = this.container.querySelectorAll('.app-header__tab');
+        if (!tabs || tabs.length === 0) return;
+
+        tabs.forEach(tab => {
+            tab.addEventListener('click', () => {
+                // Remove active class from all
+                tabs.forEach(t => t.classList.remove('app-header__tab--active'));
+                // Add to clicked
+                tab.classList.add('app-header__tab--active');
+                
+                // Dispatch view change for AppRouter to catch
+                document.dispatchEvent(new CustomEvent('viewChange', {
+                    detail: { target: tab.textContent.trim() }
+                }));
+            });
+        });
+
+        // Trigger the active tab immediately to load the default view for this header
+        const activeTab = this.container.querySelector('.app-header__tab--active');
+        if (activeTab) {
+            document.dispatchEvent(new CustomEvent('viewChange', {
+                detail: { target: activeTab.textContent.trim() }
+            }));
+        }
     }
 
     /**

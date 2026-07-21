@@ -31,17 +31,33 @@ export class FeaturedService {
   }
 
   async fetchManifest() {
-    const response = await fetch(this.manifestUrl, { cache: "no-store" });
-    if (!response.ok) throw new Error("Featured manifest request failed");
-    const manifest = await response.json();
-    if (
-      manifest?.schemaVersion !== 1 ||
-      typeof manifest?.revision !== "string" ||
-      !manifest.revision
-    ) {
-      throw new Error("Unsupported featured manifest");
+    let retries = 3;
+    let lastError = null;
+
+    while (retries > 0) {
+      try {
+        const response = await fetch(this.manifestUrl, { cache: "no-store" });
+        if (!response.ok) throw new Error("Featured manifest request failed: " + response.status);
+        
+        const manifest = await response.json();
+        if (
+          manifest?.schemaVersion !== 1 ||
+          typeof manifest?.revision !== "string" ||
+          !manifest.revision
+        ) {
+          throw new Error("Unsupported featured manifest");
+        }
+        return manifest;
+      } catch (error) {
+        lastError = error;
+        retries--;
+        if (retries > 0) {
+          await new Promise(resolve => setTimeout(resolve, 800)); // 800ms delay between retries
+        }
+      }
     }
-    return manifest;
+    
+    throw lastError;
   }
 
   getCached() {
