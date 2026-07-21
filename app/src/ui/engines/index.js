@@ -179,7 +179,8 @@ export const enginesView = {
           version: this.currentVersion,
           name: this.currentEngine.meta.name,
         };
-        const installKey = `${this.activeInstall.engineId}:${this.activeInstall.version}`;
+        const install = this.activeInstall;
+        const installKey = `${install.engineId}:${install.version}`;
         this.setupDownloadActions(activeBtn, downloadActions);
         this.renderDownloadProgress({
           progress: 0,
@@ -198,7 +199,7 @@ export const enginesView = {
             this.downloadProgress = progress;
             this.renderDownloadProgress({ progress, status });
             if (!this.isVisible)
-              engineInstallToast.update(this.activeInstall, {
+              engineInstallToast.update(install, {
                 progress,
                 status,
               });
@@ -207,7 +208,7 @@ export const enginesView = {
         );
         const wasCancelled = this.cancelledInstall === installKey;
         if (wasCancelled && this.rollbackPromise) await this.rollbackPromise;
-        const finishedInstall = this.activeInstall;
+        const finishedInstall = install;
         this.activeInstall = null;
         if (downloadActions) downloadActions.hidden = true;
         if (wasCancelled) {
