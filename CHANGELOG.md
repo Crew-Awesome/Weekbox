@@ -5,6 +5,16 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.5.8] - 2026-07-20
+
+### Fixed
+
+- ZIP extraction no longer fails when GNU tar is installed on Windows; falls back to PowerShell if needed.
+- The auto-updater now detects the correct system architecture instead of forcing 64-bit.
+- Updates no longer break when the archive contains subfolders.
+- Faster updates by downloading only the resources file when possible.
+- Extracting files on Windows drives (like D:) no longer confuses tar with a remote server.
+
 ## [1.5.7] - 2026-07-20
 
 ### Fixed
