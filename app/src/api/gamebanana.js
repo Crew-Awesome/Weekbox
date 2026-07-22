@@ -78,6 +78,7 @@ export const gameBananaApi = {
   categoryResolver: null,
   searchService: null,
   psychOnlineFeedCache: new Map(),
+  downloadAvailabilityCache: new Map(),
 
   getEngineIdForSubmission(type, id) {
     return EXCLUDED_ENGINE_SUBMISSIONS.get(`${type}:${id}`) || null;
@@ -272,9 +273,12 @@ export const gameBananaApi = {
   },
 
   async isDownloadAvailable(url) {
+    const cacheKey = String(url);
+    const cached = this.downloadAvailabilityCache.get(cacheKey);
+    if (cached && cached.expiresAt > Date.now()) return cached.available;
     try {
       const result = await Neutralino.os.execCommand(
-        `curl -sSIL --connect-timeout 5 --max-time 12 ${quoteCommandArgument(url)}`,
+        `curl -sSIL --connect-timeout 3 --max-time 5 ${quoteCommandArgument(url)}`,
         { background: false },
       );
       if (result.exitCode !== 0) return null;
@@ -283,7 +287,12 @@ export const gameBananaApi = {
       ];
       const status = Number(statuses.at(-1)?.[1]);
       if (!Number.isFinite(status)) return null;
-      return status < 400;
+      const available = status < 400;
+      this.downloadAvailabilityCache.set(cacheKey, {
+        available,
+        expiresAt: Date.now() + 5 * 60 * 1000,
+      });
+      return available;
     } catch {
       // A blocked or unsupported HEAD request does not prove the download is
       // broken, so leave the option available in that case.
@@ -325,34 +334,47 @@ export const gameBananaApi = {
       (left, right) =>
         Number(right.uploadedAt || 0) - Number(left.uploadedAt || 0),
     );
-    await Promise.all(
-      options
-        .filter((option) => option.type === "external")
-        .map(async (option) => {
-          const details = await this.getExternalFileDetails(option.downloadUrl);
-          if (!details) {
-            option.unavailable = true;
-            return;
-          }
-          if (details.filename) option.name = details.filename;
-          if (details.size > 0) {
-            option.fileSize = details.size;
-            option.fileSizeStr = `${this.getExternalDownloadLabel(option.downloadUrl)} • ${this.formatBytes(details.size)}`;
-          }
-        }),
-    );
-    const availability = await Promise.all(
-      options
-        .filter((option) => option.type === "gamebanana")
-        .map(async (option) => ({
-          option,
-          available: await this.isDownloadAvailable(option.downloadUrl),
-        })),
-    );
-    availability.forEach(({ option, available }) => {
-      if (available === false) option.unavailable = true;
+    const verifyOptions = async () => {
+      await Promise.all(
+        options
+          .filter((option) => option.type === "external")
+          .map(async (option) => {
+            const details = await this.getExternalFileDetails(
+              option.downloadUrl,
+            );
+            if (!details) {
+              option.unavailable = true;
+              return;
+            }
+            if (details.filename) option.name = details.filename;
+            if (details.size > 0) {
+              option.fileSize = details.size;
+              option.fileSizeStr = `${this.getExternalDownloadLabel(option.downloadUrl)} • ${this.formatBytes(details.size)}`;
+            }
+          }),
+      );
+      await Promise.all(
+        options
+          .filter((option) => option.type === "gamebanana")
+          .map(async (option) => {
+            const available = await this.isDownloadAvailable(
+              option.downloadUrl,
+            );
+            if (available === false) option.unavailable = true;
+          }),
+      );
+    };
+    void verifyOptions();
+
+    return options.filter((option) => {
+      const cached = this.downloadAvailabilityCache.get(option.downloadUrl);
+      return (
+        !option.unavailable &&
+        (!cached ||
+          cached.expiresAt <= Date.now() ||
+          cached.available !== false)
+      );
     });
-    return options.filter((option) => !option.unavailable);
   },
 
   async getToolDetails(toolId) {
