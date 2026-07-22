@@ -6,3 +6,6 @@ neutralino.js
 *.log
 .tmp/
 node_modules/
+
+#why?
+.gemini/
