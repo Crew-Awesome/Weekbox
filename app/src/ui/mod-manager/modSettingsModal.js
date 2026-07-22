@@ -129,6 +129,7 @@ export const modSettingsModal = {
         moveButton.disabled = true;
         status.textContent = "Moving to mods…";
         try {
+          await FS.assertModChangeAllowed(mod.id);
           const movedMod = await FS.moveDependencyToMods(mod.id);
           if (!movedMod) throw new Error("Dependency could not be moved");
           await onSaved?.();
@@ -145,6 +146,7 @@ export const modSettingsModal = {
         moveButton.disabled = true;
         status.textContent = "Moving to dependencies…";
         try {
+          await FS.assertModChangeAllowed(mod.id);
           if (!mod.engineLocked) {
             await FS.setModEngineCompatibility(
               mod.id,
@@ -169,6 +171,7 @@ export const modSettingsModal = {
       saveButton.disabled = true;
       status.textContent = "Saving…";
       try {
+        await FS.assertModChangeAllowed(mod.id);
         if (!isExecutable && !mod.engineLocked) {
           await FS.setModEngineCompatibility(
             mod.id,

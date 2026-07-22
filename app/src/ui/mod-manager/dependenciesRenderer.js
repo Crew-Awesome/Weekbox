@@ -78,6 +78,8 @@ export const dependenciesRenderer = {
 
     dependencies.forEach((dependency) => {
       const users = getDependencyUsers(dependency, allMods);
+      const locked = FS.isModLockedForChanges(dependency, allMods);
+      const lockedMessage = "Close the engine before changing this dependency";
       const row = document.createElement("article");
       row.className = "mod-manager-dependency";
       const cover = document.createElement("img");
@@ -119,10 +121,12 @@ export const dependenciesRenderer = {
       );
       const settings = document.createElement("button");
       settings.type = "button";
-      settings.title = "Dependency Settings";
+      settings.title = locked ? lockedMessage : "Dependency Settings";
+      settings.disabled = locked;
       settings.innerHTML =
         '<i class="fa-solid fa-gear" aria-hidden="true"></i>';
       settings.addEventListener("click", async () => {
+        if (FS.isModLockedForChanges(dependency, allMods)) return;
         settings.disabled = true;
         settings.innerHTML =
           '<i class="fa-solid fa-spinner fa-spin" aria-hidden="true"></i>';
@@ -143,10 +147,13 @@ export const dependenciesRenderer = {
       remove.type = "button";
       remove.title = users.length
         ? "Remove dependent mods first"
-        : "Delete Dependency";
-      remove.disabled = users.length > 0;
+        : locked
+          ? lockedMessage
+          : "Delete Dependency";
+      remove.disabled = users.length > 0 || locked;
       remove.innerHTML = modManagerTemplates.deleteIcon();
       remove.addEventListener("click", async () => {
+        if (FS.isModLockedForChanges(dependency, allMods)) return;
         remove.disabled = true;
         try {
           await FS.removeInstalledMod(dependency.id);

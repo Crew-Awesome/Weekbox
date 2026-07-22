@@ -58,6 +58,25 @@ export const cardRenderer = {
         });
     };
 
+    const refreshChangeButtons = () => {
+      gridContainer.querySelectorAll(".mod-manager-card").forEach((card) => {
+        const mod = allMods.find((item) => String(item.id) === card.dataset.modId);
+        const locked = FS.isModLockedForChanges(mod, allMods);
+        const message = "Close the engine before changing this mod";
+        const deleteBtn = card.querySelector(".mod-manager-delete-btn");
+        const settingsBtn = card.querySelector(".mod-manager-settings-btn");
+        const visibilityBtn = card.querySelector(".mod-manager-vis-btn");
+        deleteBtn.disabled = locked;
+        deleteBtn.title = locked ? message : "Delete Mod";
+        deleteBtn.setAttribute("aria-label", locked ? message : "Delete Mod");
+        settingsBtn.disabled = locked;
+        settingsBtn.title = locked ? message : "Mod Settings";
+        settingsBtn.setAttribute("aria-label", locked ? message : "Mod Settings");
+        visibilityBtn.disabled = locked;
+        visibilityBtn.title = locked ? message : "Toggle Visibility";
+      });
+    };
+
     for (const mod of modsToRender) {
       const isExecutable = standaloneModIds.has(String(mod.id));
 
@@ -95,6 +114,7 @@ export const cardRenderer = {
       const eyeIcon = mod.hidden ? "fa-eye-slash" : "fa-eye";
       const card = document.createElement("div");
       card.className = "mod-manager-card";
+      card.dataset.modId = String(mod.id);
       card.dataset.modSearch = String(mod.name || "").toLocaleLowerCase();
       card.classList.toggle("is-hidden", Boolean(mod.hidden));
       card.classList.toggle("is-unassigned", isUnassigned);
@@ -156,10 +176,12 @@ export const cardRenderer = {
         } finally {
           launchBtn.disabled = false;
           refreshLaunchButtons();
+          refreshChangeButtons();
         }
       });
 
       deleteBtn.addEventListener("click", async () => {
+        if (FS.isModLockedForChanges(mod, allMods)) return;
         deleteBtn.disabled = true;
         deleteBtn.innerHTML = modManagerTemplates.deleteSpinner();
         try {
@@ -184,7 +206,7 @@ export const cardRenderer = {
 
       const settingsBtn = card.querySelector(".mod-manager-settings-btn");
       settingsBtn.addEventListener("click", async () => {
-        if (settingsBtn.disabled) return;
+        if (settingsBtn.disabled || FS.isModLockedForChanges(mod, allMods)) return;
         settingsBtn.disabled = true;
         settingsBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
         try {
@@ -202,6 +224,7 @@ export const cardRenderer = {
 
       const visBtn = card.querySelector(".mod-manager-vis-btn");
       visBtn.addEventListener("click", async () => {
+        if (FS.isModLockedForChanges(mod, allMods)) return;
         visBtn.disabled = true;
         const isNowHidden = !mod.hidden;
         mod.hidden = isNowHidden;
@@ -232,5 +255,6 @@ export const cardRenderer = {
 
     gridContainer.appendChild(fragment);
     refreshLaunchButtons();
+    refreshChangeButtons();
   },
 };

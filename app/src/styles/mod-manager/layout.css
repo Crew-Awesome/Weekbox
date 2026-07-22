@@ -1517,6 +1517,14 @@
   background-color: color-mix(in srgb, var(--card-color) 14%, var(--bg-panel));
 }
 
+.mod-manager-card .mod-action-btn:disabled,
+.mod-manager-card:not(.is-hidden):hover .mod-action-btn:disabled {
+  background-color: color-mix(in srgb, black 24%, var(--bg-panel));
+  color: color-mix(in srgb, var(--text-muted) 65%, transparent);
+  border-color: color-mix(in srgb, var(--border-color) 70%, black);
+  cursor: not-allowed;
+}
+
 .mod-manager-delete-btn:hover:not(:disabled) {
   color: #ff4a4a;
   background-color: rgba(255, 74, 74, 0.1);
@@ -2079,6 +2087,7 @@
 .mod-manager-dependency-actions button:disabled {
   cursor: not-allowed;
   opacity: 0.45;
+  background-color: color-mix(in srgb, black 24%, var(--bg-panel));
 }
 
 @media (max-width: 700px) {

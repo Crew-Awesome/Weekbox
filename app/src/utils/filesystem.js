@@ -738,6 +738,49 @@ class FileSystemService {
     return this.processes.isRunning(`standalone:${modId}`);
   }
 
+  isModRunning(modId) {
+    if (this.isStandaloneModRunning(modId)) return true;
+    return [...this.activeEngineMods.values()].some(
+      (runningModId) =>
+        runningModId !== null && String(runningModId) === String(modId),
+    );
+  }
+
+  isModLockedForChanges(mod, allMods = []) {
+    if (!mod) return false;
+    if (this.isModRunning(mod.id)) return true;
+
+    const isUsingModEngine = (item) => {
+      if (!item?.engineId) return false;
+      if (item.engineVersion) {
+        return this.isEngineRunning(item.engineId, item.engineVersion);
+      }
+      return [...this.activeEngineProcesses.keys()].some((key) =>
+        key.startsWith(`${item.engineId}:`),
+      );
+    };
+
+    if (isUsingModEngine(mod)) return true;
+    if (mod.kind !== "dependency") return false;
+
+    return allMods.some(
+      (item) =>
+        item.kind !== "dependency" &&
+        Array.isArray(item.dependencies) &&
+        item.dependencies.some((dependencyId) => sameId(dependencyId, mod.id)) &&
+        isUsingModEngine(item),
+    );
+  }
+
+  async assertModChangeAllowed(modId) {
+    const allMods = await this.mods.getAll();
+    const mod = allMods.find((item) => sameId(item.id, modId));
+    if (this.isModLockedForChanges(mod, allMods)) {
+      throw new Error(`Close the engine before changing ${mod?.name || "this mod"}`);
+    }
+    return mod;
+  }
+
   async saveInstalledMod(modId, modName, metadata = {}) {
     if (!this.isInitialized) return;
 
@@ -842,6 +885,7 @@ class FileSystemService {
 
   async setModHidden(modId, hidden) {
     if (!this.isInitialized) return null;
+    await this.assertModChangeAllowed(modId);
     const mod = await this.mods.setHidden(modId, hidden);
     if (!mod) return null;
     const engines = await this.getInstalledEngines();
@@ -854,6 +898,7 @@ class FileSystemService {
   }
 
   async setModEngineVersion(modId, engineVersion) {
+    await this.assertModChangeAllowed(modId);
     const mod = await this.mods.setEngineVersion(modId, engineVersion);
     if (!mod) return null;
     const engines = await this.getInstalledEngines();
@@ -866,6 +911,7 @@ class FileSystemService {
 
   async setModEngineCompatibility(modId, engineId, engineVersion) {
     if (!this.isInitialized) return null;
+    await this.assertModChangeAllowed(modId);
     const currentMod = (await this.mods.getAll()).find((item) =>
       sameId(item.id, modId),
     );
@@ -955,6 +1001,7 @@ class FileSystemService {
   async moveModToDependencies(modId) {
     this.assertStorageUnlocked();
     if (!this.isInitialized) return null;
+    await this.assertModChangeAllowed(modId);
     const mod = (await this.mods.getAll()).find((item) =>
       sameId(item.id, modId),
     );
@@ -968,6 +1015,7 @@ class FileSystemService {
   async moveDependencyToMods(modId) {
     this.assertStorageUnlocked();
     if (!this.isInitialized) return null;
+    await this.assertModChangeAllowed(modId);
     const mods = await this.mods.getAll();
     const dependency = mods.find((item) => sameId(item.id, modId));
     if (!dependency || dependency.kind !== "dependency")
@@ -1000,6 +1048,9 @@ class FileSystemService {
       sameId(item.id, modId),
     );
     if (!mod) return false;
+    if (this.isModLockedForChanges(mod, await this.mods.getAll())) {
+      throw new Error(`Close the engine before deleting ${mod.name}`);
+    }
     if (mod.kind === "dependency") {
       const consumers = (await this.mods.getAll()).filter(
         (item) =>
