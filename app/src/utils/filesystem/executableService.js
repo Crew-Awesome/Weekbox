@@ -10,6 +10,13 @@ function describeFileSystemError(error) {
   return String(error || "Unknown filesystem error");
 }
 
+function getBundleExecutableName(infoPlist) {
+  const match = String(infoPlist).match(
+    /<key>\s*CFBundleExecutable\s*<\/key>\s*<string>\s*([^<]+?)\s*<\/string>/i,
+  );
+  return match?.[1]?.trim() || "";
+}
+
 export class ExecutableService {
   async find(dir) {
     this.lastError = null;
@@ -33,10 +40,24 @@ export class ExecutableService {
                 const appEntries = getRealEntries(
                   await Neutralino.filesystem.readDirectory(macOSDirectory),
                 );
+                const bundleExecutable = getBundleExecutableName(
+                  await Neutralino.filesystem.readFile(
+                    `${fullPath}/Contents/Info.plist`,
+                  ),
+                );
                 const executable = appEntries.find(
-                  (appEntry) => String(appEntry.type).toUpperCase() === "FILE",
+                  (appEntry) =>
+                    String(appEntry.type).toUpperCase() === "FILE" &&
+                    appEntry.entry === bundleExecutable,
                 );
                 if (executable) return `${macOSDirectory}/${executable.entry}`;
+
+                const fallback = appEntries.find(
+                  (appEntry) =>
+                    String(appEntry.type).toUpperCase() === "FILE" &&
+                    !appEntry.entry.includes("."),
+                );
+                if (fallback) return `${macOSDirectory}/${fallback.entry}`;
               } catch (error) {
                 this.lastError = describeFileSystemError(error);
               }

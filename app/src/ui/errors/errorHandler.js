@@ -89,8 +89,9 @@ function describeIssue(error) {
     return {
       title: "Windows could not verify the download certificate",
       summary:
-        "WeekBox did not download anything. Check your Windows date and time, then try a different network or temporarily disable HTTPS scanning in antivirus software. A proxy, VPN, or blocked certificate-revocation service can cause this error.",
+        "WeekBox was blocked by Windows before the download started. Check your date and time, then try another network. A VPN, proxy, or antivirus HTTPS scanning can also block the certificate check.",
       tag: "Windows certificate check",
+      reportable: false,
     };
   }
   if (lower.includes("onedrive") || lower.includes("exit code 23")) {
@@ -302,9 +303,11 @@ export const errorHandler = {
     modal.querySelector("h2").textContent = issue.title;
     modal.querySelector(".error-summary").textContent = issue.summary;
     modal.querySelector("pre").textContent = report;
-    submitDiagnosticReport(context, issue).catch((error) => {
-      console.warn("Could not send diagnostic report:", error);
-    });
+    if (issue.reportable !== false) {
+      submitDiagnosticReport(context, issue).catch((error) => {
+        console.warn("Could not send diagnostic report:", error);
+      });
+    }
 
     const settingsButton = modal.querySelector(".error-settings");
     settingsButton.hidden = issue.action !== "storage";

@@ -11,7 +11,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - First-time storage setup no longer stops WeekBox from opening if it fails.
 - Error reports now show a proper stack trace when one is available.
-- macOS engines now run the real executable inside the app bundle.
+- macOS engines now run the correct app-bundle executable.
+- Mods now install in the right folder inside macOS app bundles.
+- Windows certificate-check download errors now show clearer help and are not reported as app errors.
 
 ## [1.7.0] - 2026-07-21
 
