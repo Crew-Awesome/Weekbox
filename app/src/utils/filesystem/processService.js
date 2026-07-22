@@ -80,7 +80,7 @@ export class ProcessService {
         continue;
       }
       if (!(await this.isPidRunning(record.pid))) continue;
-      this.activeProcesses.set(record.key, record);
+      this.activeProcesses.set(record.key, { ...record, recovered: true });
       this.monitor(record.key, record.pid);
       restored.push(record);
     }
@@ -111,6 +111,21 @@ export class ProcessService {
       this.complete(key);
     }, 2000);
     this.processMonitors.set(key, monitor);
+  }
+
+  async terminatePid(pid) {
+    const safePid = Number.parseInt(pid, 10);
+    if (!Number.isSafeInteger(safePid) || safePid <= 0) return false;
+    try {
+      const command =
+        window.NL_OS === "Windows"
+          ? `taskkill /PID ${safePid} /T /F`
+          : `kill -TERM ${safePid}`;
+      const result = await Neutralino.os.execCommand(command);
+      return result.exitCode === 0;
+    } catch {
+      return false;
+    }
   }
 
   async launch(key, executablePath, onStateChange, args = [], metadata = {}) {
@@ -155,6 +170,11 @@ export class ProcessService {
     if (!process) return false;
     onStateChange?.("closing");
     try {
+      if (process.recovered) {
+        if (!(await this.terminatePid(process.pid))) throw new Error();
+        this.complete(key, onStateChange);
+        return true;
+      }
       await Neutralino.os.updateSpawnedProcess(process.id, "exit");
       return true;
     } catch (error) {
@@ -166,6 +186,7 @@ export class ProcessService {
   async closeAndWait(key, onStateChange) {
     const process = this.activeProcesses.get(key);
     if (!process) return false;
+    if (process.recovered) return this.close(key, onStateChange);
     onStateChange?.("closing");
     let resolveExit;
     const exited = new Promise((resolve) => {

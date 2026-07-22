@@ -5,6 +5,15 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.7.3] - 2026-07-21
+
+### Fixed
+
+- WeekBox now restores running engine and mod state after reopening or updating.
+- Recovered mods can now be closed from WeekBox.
+- Mod and dependency controls return to normal after their engine closes.
+- Engine Manager no longer allows a running engine version to be uninstalled.
+
 ## [1.7.2] - 2026-07-21
 
 ### Fixed

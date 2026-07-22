@@ -86,6 +86,16 @@ export const cardRenderer = {
       });
     };
 
+    const onProcessExit = () => {
+      if (!gridContainer.isConnected) {
+        document.removeEventListener("weekbox-process-exit", onProcessExit);
+        return;
+      }
+      refreshLaunchButtons();
+      refreshChangeButtons();
+    };
+    document.addEventListener("weekbox-process-exit", onProcessExit);
+
     for (const mod of modsToRender) {
       const isExecutable = standaloneModIds.has(String(mod.id));
 

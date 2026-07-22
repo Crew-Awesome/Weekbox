@@ -2,7 +2,7 @@
   "applicationId": "com.weekbox.app",
   "storageLocation": "system",
   "applicationIcon": "app/assets/icons/launcher-icon.png",
-  "version": "1.7.2",
+  "version": "1.7.3",
   "defaultMode": "window",
   "port": 0,
   "documentRoot": "/app/",
