@@ -1,0 +1,106 @@
+.diagnostic-consent-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 2300;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: rgba(0, 0, 0, 0.78);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  opacity: 0;
+  transition: opacity 180ms ease;
+}
+
+.diagnostic-consent-overlay.show {
+  opacity: 1;
+}
+
+.diagnostic-consent-panel {
+  display: grid;
+  grid-template-columns: 62px minmax(0, 1fr);
+  width: min(550px, 100%);
+  overflow: hidden;
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  background: var(--bg-panel);
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+  transform: scale(0.96) translateY(12px);
+  transition: transform 180ms cubic-bezier(0.22, 1.25, 0.36, 1);
+}
+
+.diagnostic-consent-overlay.show .diagnostic-consent-panel {
+  transform: scale(1) translateY(0);
+}
+
+.diagnostic-consent-icon {
+  display: grid;
+  place-items: start center;
+  padding-top: 29px;
+  color: #75d6b0;
+  background: rgba(117, 214, 176, 0.1);
+  font-size: 1.28rem;
+}
+
+.diagnostic-consent-main {
+  padding: 24px 26px 25px;
+}
+.diagnostic-consent-main h2 {
+  margin: 0;
+  color: var(--text-main);
+  font-size: 1.35rem;
+}
+.diagnostic-consent-main > p {
+  margin: 13px 0;
+  color: var(--text-muted);
+  line-height: 1.5;
+}
+.diagnostic-consent-choice {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 13px;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  background: var(--bg-color);
+  color: var(--text-main);
+  cursor: pointer;
+}
+.diagnostic-consent-confirm {
+  width: 100%;
+  min-height: 40px;
+  margin-top: 14px;
+  border: 1px solid rgba(117, 214, 176, 0.5);
+  border-radius: 7px;
+  background: rgba(117, 214, 176, 0.14);
+  color: var(--text-main);
+  cursor: pointer;
+  font: inherit;
+  font-weight: 800;
+}
+.diagnostic-consent-confirm:hover,
+.diagnostic-consent-confirm:focus-visible {
+  background: rgba(117, 214, 176, 0.22);
+  outline: none;
+}
+.diagnostic-consent-confirm:disabled {
+  cursor: wait;
+  opacity: 0.7;
+}
+
+@media (max-width: 560px) {
+  .diagnostic-consent-overlay {
+    padding: 16px;
+  }
+  .diagnostic-consent-panel {
+    grid-template-columns: 1fr;
+  }
+  .diagnostic-consent-icon {
+    display: block;
+    padding: 14px 22px 0;
+  }
+  .diagnostic-consent-main {
+    padding: 18px 20px 20px;
+  }
+}

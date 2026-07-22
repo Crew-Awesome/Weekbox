@@ -18,4 +18,5 @@
 @import url("./responsive.css");
 @import url("./config/layout.css");
 @import url("./error-handler.css");
+@import url("./diagnostics-consent.css");
 @import url("./app-update-modal.css");

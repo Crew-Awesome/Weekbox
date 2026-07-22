@@ -14,6 +14,7 @@
   "singleInstance": true,
   "nativeAllowList": [
     "app.*",
+    "computer.*",
     "debug.*",
     "os.*",
     "window.*",

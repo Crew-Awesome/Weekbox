@@ -17,6 +17,7 @@ import { storageRecommendationModal } from "../ui/storageRecommendationModal.js"
 import { startupLoader } from "./startupLoader.js";
 import { networkStatus } from "./networkStatus.js";
 import { modManagerModal } from "../ui/mod-manager/index.js";
+import { diagnosticsConsentModal } from "../ui/diagnosticsConsentModal.js";
 
 function clearTestToasts() {
   document
@@ -272,6 +273,8 @@ async function startApp() {
     startupLoader.setPhase("Finishing library setup", 89);
     await maintenance;
     await startupLoader.complete();
+
+    await diagnosticsConsentModal.showIfNeeded();
 
     await offerNestedStorageRepair();
     await openLaunchDeepLink();

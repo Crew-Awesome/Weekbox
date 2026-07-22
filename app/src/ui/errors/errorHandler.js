@@ -1,3 +1,47 @@
+import { appSettings } from "../../core/settings.js";
+
+const DIAGNOSTIC_REPORT_ENDPOINT =
+  "https://fnfweekbox.vercel.app/api/diagnostic-report";
+
+function nonEmptyString(value, fallback = "Unknown") {
+  const text = String(value ?? "").trim();
+  return text || fallback;
+}
+
+function sanitizeDiagnosticText(value) {
+  return nonEmptyString(value, "No details available")
+    .replace(
+      /https?:\/\/(?:canary\.)?discord(?:app)?\.com\/api\/webhooks\/\d+\/[^\s"']+/gi,
+      "[REDACTED DISCORD WEBHOOK]",
+    )
+    .replace(
+      /\b(?:authorization|cookie|set-cookie|token|api[_-]?key|secret|password)\s*[:=]\s*(?:bearer\s+)?[^\s,;]+/gi,
+      "[REDACTED SECRET]",
+    )
+    .replace(/\bbearer\s+[a-z0-9._~-]+/gi, "[REDACTED SECRET]")
+    .replace(/[a-z]:\\users\\[^\\\r\n]+/gi, "[REDACTED WINDOWS PATH]")
+    .replace(/\/(?:users|home)\/[^\s\r\n:)}\]]+/gi, "[REDACTED USER PATH]")
+    .replace(/\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b/gi, "[REDACTED EMAIL]")
+    .slice(0, 12000);
+}
+
+async function getOperatingSystem() {
+  try {
+    const info = await Neutralino.computer.getOSInfo();
+    return nonEmptyString(info.description || info.name, window.NL_OS);
+  } catch {
+    return nonEmptyString(window.NL_OS);
+  }
+}
+
+async function getArchitecture() {
+  try {
+    return nonEmptyString(await Neutralino.computer.getArch(), window.NL_ARCH);
+  } catch {
+    return nonEmptyString(window.NL_ARCH);
+  }
+}
+
 function getMessage(error) {
   if (error instanceof Error) return error.stack || error.message;
   if (typeof error === "string") return error;
@@ -139,6 +183,46 @@ function createReport({ error, action, item, version, storagePath, issue }) {
     .join("\n");
 }
 
+async function submitDiagnosticReport(context, issue) {
+  if (
+    !appSettings.get("diagnosticReportingConsentAnswered") ||
+    !appSettings.get("diagnosticReportingEnabled")
+  ) {
+    return;
+  }
+
+  const errorMessage =
+    context.error instanceof Error
+      ? context.error.message
+      : getMessage(context.error);
+  const stackTrace =
+    context.error instanceof Error
+      ? context.error.stack || context.error.message
+      : getMessage(context.error);
+  const [operatingSystem, architecture] = await Promise.all([
+    getOperatingSystem(),
+    getArchitecture(),
+  ]);
+  const response = await fetch(DIAGNOSTIC_REPORT_ENDPOINT, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      appVersion: nonEmptyString(window.NL_APPVERSION),
+      operatingSystem: sanitizeDiagnosticText(operatingSystem),
+      architecture: sanitizeDiagnosticText(architecture),
+      action: sanitizeDiagnosticText(context.action || issue.tag),
+      errorMessage: sanitizeDiagnosticText(errorMessage),
+      stackTrace: sanitizeDiagnosticText(stackTrace),
+    }),
+  });
+
+  if (response.status !== 202) {
+    throw new Error(
+      `Diagnostic reporting failed with status ${response.status}`,
+    );
+  }
+}
+
 async function copyText(text) {
   try {
     await navigator.clipboard.writeText(text);
@@ -201,6 +285,9 @@ export const errorHandler = {
     modal.querySelector("h2").textContent = issue.title;
     modal.querySelector(".error-summary").textContent = issue.summary;
     modal.querySelector("pre").textContent = report;
+    submitDiagnosticReport(context, issue).catch((error) => {
+      console.warn("Could not send diagnostic report:", error);
+    });
 
     const settingsButton = modal.querySelector(".error-settings");
     settingsButton.hidden = issue.action !== "storage";

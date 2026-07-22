@@ -19,6 +19,8 @@ const settingDefinitions = {
   checkUpdatesOnStartup: { type: "boolean", defaultValue: true },
   checkUpdatesInBackground: { type: "boolean", defaultValue: true },
   checkAppUpdatesOnStartup: { type: "boolean", defaultValue: true },
+  diagnosticReportingEnabled: { type: "boolean", defaultValue: true },
+  diagnosticReportingConsentAnswered: { type: "boolean", defaultValue: false },
 };
 
 function isValidValue(definition, value) {
