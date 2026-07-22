@@ -5,6 +5,19 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.7.0] - 2026-07-21
+
+### Added
+
+- First-time setup now lets you choose where WeekBox saves its files.
+- WeekBox can send error reports to the developers if you allow it.
+- You can clean up leftover files from failed downloads in Settings.
+- V-Slice installs now support the macOS installer download.
+
+### Changed
+
+- Settings are now sorted into clearer sections.
+
 ## [1.6.0] - 2026-07-21
 
 ### Changed
