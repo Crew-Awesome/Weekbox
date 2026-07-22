@@ -1,3 +1,5 @@
+import { errorHandler } from "../../ui/errors/errorHandler.js";
+
 export class ProcessService {
   constructor(executables) {
     this.executables = executables;
@@ -40,6 +42,11 @@ export class ProcessService {
         executablePath,
         command,
         error,
+      });
+      errorHandler.show({
+        error,
+        action: "Launch engine",
+        item: executablePath,
       });
       onStateChange?.("error");
       return false;
