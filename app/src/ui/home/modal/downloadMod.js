@@ -1,5 +1,5 @@
 import { FS } from "../../../utils/filesystem.js";
-import { sanitizePathSegment } from "../../../utils/filesystem/pathUtils.js";
+import { sanitizeModFolderName } from "../../../utils/filesystem/pathUtils.js";
 import { gameBananaApi } from "../../../api/gamebanana.js";
 import { primeModCover } from "../../mod-manager/modImageLoader.js";
 import {
@@ -137,9 +137,12 @@ export const downloadMod = {
     if (!FS.isInitialized) await FS.init();
     FS.assertStorageUnlocked();
     const modsBasePath = FS.modsPath;
-    const sanitizedModName = sanitizePathSegment(modName);
-    const targetModFolder = `${modsBasePath}/${sanitizedModName}`;
     const taskKey = String(modId).replace(/[^a-z0-9_-]/gi, "_");
+    const sanitizedModName = sanitizeModFolderName(
+      modName,
+      `Mod-${taskKey}`,
+    );
+    const targetModFolder = `${modsBasePath}/${sanitizedModName}`;
     const tempFilePath = `${modsBasePath}/temp_${taskKey}.zip`;
     const downloadMarkerPath = `${targetModFolder}/.downloading`;
 

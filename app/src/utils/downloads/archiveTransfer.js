@@ -564,9 +564,7 @@ export async function extractArchive({
         }
         if (event.action !== "exit") return;
         Neutralino.events.off("spawnedProcess", handler);
-        // Windows tar can return 1 for recoverable archive warnings. The caller
-        // verifies that real files were extracted before recording an install.
-        if (event.data === 0 || (isWindows && event.data === 1)) resolve();
+        if (event.data === 0) resolve();
         else
           reject(createProcessError("Extraction", event.data, processOutput));
       },

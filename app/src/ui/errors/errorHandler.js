@@ -149,12 +149,18 @@ function describeIssue(error) {
       tag: "Archive problem",
     };
   }
-  if (lower.includes("downloaded archive did not contain any files")) {
+  if (
+    lower.includes("downloaded archive is empty") ||
+    lower.includes("downloaded archive did not contain any files")
+  ) {
     return {
-      title: "The download was empty",
+      title: "This download has no files to install",
       summary:
-        "The archive opened, but it did not contain installable files. This is usually an empty or incorrectly packaged upload from the download source. Try again later or choose another download option.",
+        "The download source provided an empty package. Nothing was installed. Try another download option or come back later; if it keeps happening, the upload needs to be fixed by its author.",
       tag: "Empty download",
+      // This is a bad or empty upload, not an application failure. Do not send
+      // a stack trace to diagnostics (or its webhook) for it.
+      reportable: false,
     };
   }
   if (lower.includes("disk image does not contain a macos application")) {
@@ -193,15 +199,15 @@ function describeIssue(error) {
 
 function createReport({ error, action, item, version, storagePath, issue }) {
   return [
-    "WeekBox error report",
+    "WeekBox support report",
     `Time: ${new Date().toLocaleString()}`,
     `OS: ${window.NL_OS || "Unknown"}`,
     `Action: ${action || "Unknown"}`,
     item ? `Item: ${item}` : null,
     version ? `Version: ${version}` : null,
-    storagePath ? `Storage path: ${storagePath}` : null,
-    `Friendly issue: ${issue.tag}`,
-    `Original error: ${getMessage(error)}`,
+    storagePath ? `Storage path: ${sanitizeDiagnosticText(storagePath)}` : null,
+    `Issue: ${issue.tag}`,
+    `What happened: ${issue.summary}`,
   ]
     .filter(Boolean)
     .join("\n");
