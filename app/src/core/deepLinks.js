@@ -4,6 +4,11 @@ import { sidebar } from "../ui/sidebar.js";
 import { router } from "./router.js";
 
 function parseWeekboxLink(value) {
+  const directMatch = String(value || "")
+    .trim()
+    .match(/^weekbox:\/\/mod(?:\/|,)(\d+)\/?$/i);
+  if (directMatch) return { type: "mod", id: Number(directMatch[1]) };
+
   try {
     const url = new URL(value);
     if (url.protocol !== "weekbox:") return null;

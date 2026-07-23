@@ -5,6 +5,24 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.8.1] - 2026-07-22
+
+### Added
+
+- Windows Setup now registers `weekbox://mod/<id>` links.
+
+### Changed
+
+- Windows Setup now clearly separates the program location from the library location.
+
+### Fixed
+
+- Clicking a source icon while a mod is loading no longer reloads WeekBox.
+- Invalid Google Drive pages are no longer offered as downloads.
+- Missing download links now show a useful error instead of a native error.
+- Deep links also accept the accidental `weekbox://mod,<id>` format.
+- macOS archive extraction no longer assumes that the `7z` command is installed.
+
 ## [1.8.0] - 2026-07-22
 
 ### Added

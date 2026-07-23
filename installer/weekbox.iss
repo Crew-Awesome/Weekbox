@@ -1,5 +1,5 @@
 #ifndef MyAppVersion
-  #define MyAppVersion "1.8.0"
+  #define MyAppVersion "1.8.1"
 #endif
 
 #define MyAppName "WeekBox"
@@ -21,8 +21,10 @@ AppPublisher={#MyAppPublisher}
 AppPublisherURL={#MyAppURL}
 AppSupportURL={#MyAppURL}/issues
 AppUpdatesURL={#MyAppURL}/releases
+ChangesAssociations=yes
 DefaultDirName={%LOCALAPPDATA}\{#MyAppName}
 DefaultGroupName={#MyAppName}
+DisableDirPage=no
 DisableProgramGroupPage=yes
 PrivilegesRequired=lowest
 PrivilegesRequiredOverridesAllowed=dialog
@@ -59,6 +61,12 @@ Source: "..\installer\weekbox-banner.bmp"; Flags: dontcopy
 Name: "{group}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"
 Name: "{autodesktop}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; Tasks: desktopicon
 
+[Registry]
+Root: HKCU; Subkey: "Software\Classes\weekbox"; ValueType: string; ValueName: ""; ValueData: "URL:WeekBox Protocol"; Flags: uninsdeletekey
+Root: HKCU; Subkey: "Software\Classes\weekbox"; ValueType: string; ValueName: "URL Protocol"; ValueData: ""
+Root: HKCU; Subkey: "Software\Classes\weekbox\DefaultIcon"; ValueType: string; ValueName: ""; ValueData: "{app}\{#MyAppExeName},0"
+Root: HKCU; Subkey: "Software\Classes\weekbox\shell\open\command"; ValueType: string; ValueName: ""; ValueData: """{app}\{#MyAppExeName}"" ""%1"""
+
 [Run]
 Filename: "{app}\{#MyAppExeName}"; Description: "{cm:LaunchProgram,{#StringChange(MyAppName, '&', '&&')}}"; Flags: nowait postinstall skipifsilent
 
@@ -82,6 +90,10 @@ var
   BannerPath: String;
   TopY: Integer;
 begin
+  WizardForm.SelectDirLabel.Caption :=
+    'Choose where the WeekBox program is installed. This does not move your ' +
+    'mods, engines, or data. Change the library location inside WeekBox Settings.';
+
   DiscordPage := CreateCustomPage(wpInstalling,
     'Join the WeekBox community',
     'Get help, share mods, and hear about updates first.');

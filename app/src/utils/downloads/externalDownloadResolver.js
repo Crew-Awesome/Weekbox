@@ -2,8 +2,8 @@ function quoteCommandArgument(value) {
   return `"${String(value).replaceAll('"', '\\"')}"`;
 }
 
-function getGoogleDriveFileId(url) {
-  const parsed = new URL(url);
+export function getGoogleDriveFileId(url) {
+  const parsed = url instanceof URL ? url : new URL(url);
   return (
     parsed.searchParams.get("id") ||
     parsed.pathname.match(/\/file\/d\/([^/]+)/)?.[1] ||
@@ -12,16 +12,30 @@ function getGoogleDriveFileId(url) {
 }
 
 export async function resolveExternalDownloadUrl(url, executeCommand) {
-  const parsed = new URL(url);
+  const value = String(url || "").trim();
+  if (!value) throw new Error("This download link is missing");
+  let parsed;
+  try {
+    parsed = new URL(value);
+  } catch {
+    throw new Error("This external download link is invalid");
+  }
+  if (parsed.protocol !== "https:" && parsed.protocol !== "http:") {
+    throw new Error("This external download link is not supported");
+  }
   const hostname = parsed.hostname.toLowerCase();
   if (hostname === "drive.google.com") {
-    const fileId = getGoogleDriveFileId(url);
-    if (!fileId) throw new Error("Could not find the Google Drive file ID");
+    const fileId = getGoogleDriveFileId(parsed);
+    if (!fileId) {
+      throw new Error(
+        "This Google Drive link does not point to a downloadable file",
+      );
+    }
     return `https://drive.usercontent.google.com/download?id=${encodeURIComponent(fileId)}&export=download&confirm=t`;
   }
   if (hostname === "mediafire.com" || hostname === "www.mediafire.com") {
     const result = await executeCommand(
-      `curl -fsSL --connect-timeout 10 --max-time 30 ${quoteCommandArgument(url)}`,
+      `curl -fsSL --connect-timeout 10 --max-time 30 ${quoteCommandArgument(value)}`,
       { background: false },
     );
     if (result.exitCode !== 0) {
@@ -37,7 +51,7 @@ export async function resolveExternalDownloadUrl(url, executeCommand) {
     }
     return directUrl;
   }
-  return url;
+  return value;
 }
 
 export async function getRangeSupportedFileSize(url, executeCommand) {

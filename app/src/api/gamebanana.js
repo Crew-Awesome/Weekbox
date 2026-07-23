@@ -195,7 +195,11 @@ export const gameBananaApi = {
     const addExternal = (value, name = "") => {
       try {
         const url = new URL(value);
-        if (!supportedHosts.has(url.hostname.toLowerCase())) return;
+        const hostname = url.hostname.toLowerCase();
+        if (!supportedHosts.has(hostname)) return;
+        if (hostname === "drive.google.com" && !getGoogleDriveFileId(url)) {
+          return;
+        }
         if (!files.has(url.href)) {
           files.set(url.href, {
             id: `external:${url.href}`,

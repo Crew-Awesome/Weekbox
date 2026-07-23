@@ -37,6 +37,10 @@
     transform 0.2s ease;
 }
 
+.modal-gamebanana-link[hidden] {
+  display: none;
+}
+
 .modal-gamebanana-link:hover {
   filter: drop-shadow(0 0 7px rgba(255, 255, 255, 0.95));
   transform: scale(1.12);

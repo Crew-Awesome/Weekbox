@@ -136,6 +136,20 @@ function describeIssue(error) {
     };
   }
   if (
+    lower.includes("download link is missing") ||
+    lower.includes("download link is invalid") ||
+    lower.includes("download does not have a valid link") ||
+    lower.includes("does not point to a downloadable file")
+  ) {
+    return {
+      title: "This download link is not usable",
+      summary:
+        "The mod page does not provide a direct file link. Choose another download or ask the mod author to replace the link.",
+      tag: "Invalid external download",
+      reportable: false,
+    };
+  }
+  if (
     !lower.includes("end-of-central-directory signature not found") &&
     !lower.includes("cannot find zipfile directory") &&
     (lower.includes("extraction failed") ||

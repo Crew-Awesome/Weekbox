@@ -86,6 +86,22 @@ function isNonFatalUnzipFilenameWarning(exitCode, output) {
   );
 }
 
+async function detectArchiveFormat(path) {
+  try {
+    const data = new Uint8Array(
+      await Neutralino.filesystem.readBinaryFile(path, { pos: 0, size: 560 }),
+    );
+    const startsWith = (...bytes) =>
+      bytes.every((byte, index) => data[index] === byte);
+    if (startsWith(0x50, 0x4b)) return "zip";
+    if (startsWith(0x52, 0x61, 0x72, 0x21, 0x1a, 0x07)) return "rar";
+    if (startsWith(0x37, 0x7a, 0xbc, 0xaf, 0x27, 0x1c)) return "7z";
+    if (startsWith(0x1f, 0x8b)) return "gzip";
+    if (String.fromCharCode(...data.slice(257, 262)) === "ustar") return "tar";
+  } catch {}
+  return "unknown";
+}
+
 function getDownloadSegments(totalBytes, outPath) {
   const count = Math.min(
     MAX_DOWNLOAD_SEGMENTS,
@@ -437,6 +453,12 @@ export async function downloadArchive({
   onProgress,
   sourceType,
 }) {
+  if (!String(url || "").trim()) {
+    throw new Error("This download does not have a valid link");
+  }
+  if (!String(outPath || "").trim()) {
+    throw new Error("WeekBox could not prepare the download destination");
+  }
   if (sourceType === "external") {
     onProgress?.("Preparing external download...", 2);
     url = await resolveExternalDownloadUrl(url, (...args) =>
@@ -557,9 +579,16 @@ export async function extractArchive({
   }
 
   const isWindows = window.NL_OS === "Windows";
+  const archiveFormat = await detectArchiveFormat(archivePath);
   const command = isWindows
     ? getWindowsExtractionCommand(archivePath, destinationPath)
-    : `unzip -oq "${archivePath}" -d "${destinationPath}"`;
+    : archiveFormat === "tar" || archiveFormat === "gzip"
+      ? `tar -xf ${quoteCommandArgument(archivePath)} -C ${quoteCommandArgument(destinationPath)}`
+      : archiveFormat === "rar" || archiveFormat === "7z"
+        ? window.NL_OS === "Darwin"
+          ? `tar -xf ${quoteCommandArgument(archivePath)} -C ${quoteCommandArgument(destinationPath)}`
+          : `7z x -y -aoa -o${quoteCommandArgument(destinationPath)} ${quoteCommandArgument(archivePath)}`
+        : `unzip -oq ${quoteCommandArgument(archivePath)} -d ${quoteCommandArgument(destinationPath)}`;
 
   const execute = async (cmd) => {
     const process = await Neutralino.os.spawnProcess(cmd);
@@ -621,14 +650,18 @@ export async function extractArchive({
           error = psError;
         }
       }
-    } else {
+    } else if (archiveFormat === "unknown" || archiveFormat === "zip") {
       // GameBanana and mirrors sometimes serve a tar/7z/rar payload with a
       // .zip download name. Try format-detecting extractors before reporting
       // the original unzip error.
       const fallbackCommands = [
         `tar -xf ${quoteCommandArgument(archivePath)} -C ${quoteCommandArgument(destinationPath)}`,
-        `7z x -y -aoa -o${quoteCommandArgument(destinationPath)} ${quoteCommandArgument(archivePath)}`,
       ];
+      if (window.NL_OS !== "Darwin") {
+        fallbackCommands.push(
+          `7z x -y -aoa -o${quoteCommandArgument(destinationPath)} ${quoteCommandArgument(archivePath)}`,
+        );
+      }
       for (const fallbackCommand of fallbackCommands) {
         try {
           await execute(fallbackCommand);
@@ -639,6 +672,15 @@ export async function extractArchive({
           // unzip's more useful original error.
         }
       }
+    }
+    if (
+      !recovered &&
+      window.NL_OS === "Darwin" &&
+      (archiveFormat === "rar" || archiveFormat === "7z")
+    ) {
+      throw new Error(
+        `This ${archiveFormat.toUpperCase()} download cannot be unpacked by this version of macOS. Ask the mod author for a ZIP download.`,
+      );
     }
     if (!recovered) throw error;
   }

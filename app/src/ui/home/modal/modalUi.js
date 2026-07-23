@@ -44,8 +44,8 @@ export function resetModal() {
   document.getElementById("modal-main-image").src = "";
   document.getElementById("modal-main-image").classList.remove("fade-anim");
   const gameBananaLink = document.getElementById("modal-gamebanana-link");
-  gameBananaLink.href = "";
-  gameBananaLink.onclick = null;
+  gameBananaLink.removeAttribute("href");
+  gameBananaLink.onclick = (event) => event.preventDefault();
   gameBananaLink.hidden = true;
   gameBananaLink.querySelector("img").src =
     "https://images.gamebanana.com/static/img/banana.png";
@@ -94,7 +94,8 @@ export function showModData(data, isInstalled, onDownload) {
   const gameBananaLink = document.getElementById("modal-gamebanana-link");
   const sourceUrl =
     data.source === "sniro" ? data.sourceUrl : data.gameBananaUrl;
-  gameBananaLink.href = sourceUrl;
+  if (sourceUrl) gameBananaLink.href = sourceUrl;
+  else gameBananaLink.removeAttribute("href");
   gameBananaLink.hidden = !sourceUrl;
   if (data.source === "sniro") {
     gameBananaLink.querySelector("img").src = "assets/icons/psychonline.png";
