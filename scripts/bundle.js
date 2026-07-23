@@ -36,7 +36,7 @@ async function buildAssets(watch = false) {
   };
 
   const cssOptions = {
-    entryPoints: [path.resolve(__dirname, "../app/src/styles/styles.css")],
+    entryPoints: [path.resolve(__dirname, "../app/src/ui/styles/styles.css")],
     bundle: true,
     outfile: path.resolve(outDir, "bundle.css"),
     minify: !watch,

@@ -1,12 +1,12 @@
 import { emitViewChange } from "./events.js";
-import { sidebar } from "../../ui/sidebar.js";
+import { sidebar } from "../../ui/js/sidebar.js";
 
 export const router = {
   async init() {
     this.mainContent = document.getElementById("main-content");
     this.sidebarContainer = document.getElementById("sidebar-container");
     // El sidebar se mantiene en su ruta original
-    await this.loadComponent(this.sidebarContainer, "src/html/sidebar.html");
+    await this.loadComponent(this.sidebarContainer, "src/ui/html/sidebar.html");
     await sidebar.init();
     await this.navigate("home");
   },
@@ -20,7 +20,7 @@ export const router = {
       // Las secciones del router ahora apuntan a la carpeta sections
       await this.loadComponent(
         this.mainContent,
-        `src/html/sections/${viewId}.html`,
+        `src/ui/html/sections/${viewId}.html`,
       );
       this.currentViewId = viewId;
       emitViewChange(viewId);

@@ -1,4 +1,4 @@
-import { errorHandler } from "../../ui/errors/errorHandler.js";
+import { errorHandler } from "../../ui/js/errors/errorHandler.js";
 import {
   findDescendantPids,
   parsePosixProcessTree,
