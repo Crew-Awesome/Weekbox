@@ -141,39 +141,41 @@ class FileSystemService {
     const runPhase = async (label, progress, task) => {
       onProgress?.(label, progress);
       const startedAt = performance.now();
-      await task();
+      await task((message, nextProgress = progress) =>
+        onProgress?.(message, nextProgress),
+      );
       console.info(
         `[WeekBox] Startup maintenance: ${label} finished in ${Math.round(performance.now() - startedAt)}ms`,
       );
     };
 
     this.startupMaintenancePromise = (async () => {
-      await runPhase("Removing retired engines", 90, () =>
-        this.removeRetiredEngines(),
+      await runPhase("Checking for retired engines…", 90, (reportProgress) =>
+        this.removeRetiredEngines(reportProgress),
       );
-      await runPhase("Cleaning incomplete downloads", 90, () =>
+      await runPhase("Cleaning incomplete downloads…", 91, () =>
         this.cleanupIncompleteDownloads(),
       );
-      await runPhase("Validating engine installs", 92, () =>
+      await runPhase("Checking installed engines…", 92, () =>
         this.cleanupInvalidEngineInstallations(),
       );
-      await runPhase("Validating installed mods", 94, () =>
+      await runPhase("Checking installed mods…", 94, () =>
         this.cleanupInvalidInstalledMods(),
       );
-      await runPhase("Migrating library data", 96, () =>
+      await runPhase("Updating mod artwork…", 96, () =>
         this.migrateLegacyModCovers(),
       );
       let installedEngines = [];
-      await runPhase("Finding installed engines", 97, async () => {
+      await runPhase("Scanning engine versions…", 97, async () => {
         installedEngines = await this.getInstalledEngines();
       });
-      await runPhase("Migrating engine mods", 98, async () => {
+      await runPhase("Updating engine mod folders…", 98, async () => {
         await this.injection.migrateLegacyEngineModsFor(installedEngines);
       });
-      await runPhase("Importing Psych Online mods", 99, () =>
+      await runPhase("Importing Psych Online mods…", 99, () =>
         this.importPsychOnlineEngineMods(installedEngines),
       );
-      await runPhase("Cleaning hidden mod links", 99, () =>
+      await runPhase("Cleaning stale mod links…", 99, () =>
         this.cleanupHiddenModLinks(installedEngines),
       );
     })();
@@ -181,8 +183,17 @@ class FileSystemService {
     return this.startupMaintenancePromise;
   }
 
-  async removeRetiredEngines() {
+  async removeRetiredEngines(reportProgress) {
     const mods = await this.mods.getAll();
+    const retiredEnginePath = `${this.enginesPath}/alepsych`;
+    const hasRetiredEngine = await this.api.exists(retiredEnginePath);
+    const hasAssignedMods = mods.some((mod) =>
+      RETIRED_ENGINE_IDS.has(mod.engineId),
+    );
+    if (hasRetiredEngine || hasAssignedMods) {
+      reportProgress?.("Removing a retired engine and updating its mods…", 90);
+    }
+
     let changed = false;
     for (const mod of mods) {
       if (!RETIRED_ENGINE_IDS.has(mod.engineId)) continue;

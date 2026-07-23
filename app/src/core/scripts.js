@@ -260,7 +260,7 @@ async function offerNestedStorageRepair() {
 async function startApp() {
   let startupStep = "starting native services";
   try {
-    startupLoader.setPhase("Starting native services", 8);
+    startupLoader.setPhase("Starting WeekBox services…", 8);
     Neutralino.init();
     networkStatus.init();
     // Updater relaunches originate from a background helper process. Bring
@@ -291,7 +291,7 @@ async function startApp() {
       await downloadEngine.cleanupAll();
       await Neutralino.app.exit();
     });
-    startupLoader.setPhase("Restoring preferences", 20);
+    startupLoader.setPhase("Loading your preferences…", 20);
     startupStep = "restoring preferences";
     await storageBridge.init();
     startupStep = "finding the default storage location";
@@ -306,7 +306,7 @@ async function startApp() {
     await syncWindowsProtocolRegistration(
       appSettings.get("registerProtocolLinks"),
     );
-    startupLoader.setPhase("Preparing your library", 42);
+    startupLoader.setPhase("Opening your WeekBox library…", 42);
     startupStep = "preparing the WeekBox library";
     await FS.init({ deferMaintenance: true });
     await appSettings.setDataPath(FS.dataPath);
@@ -315,19 +315,19 @@ async function startApp() {
     } catch (error) {
       console.warn("Could not finish first-run storage setup", error);
     }
-    startupLoader.setPhase("Loading interface", 64);
+    startupLoader.setPhase("Loading navigation and engines…", 64);
     registerHomeView();
     registerEnginesView();
     await router.init();
-    startupLoader.setPhase("Preparing Mod Manager", 70);
+    startupLoader.setPhase("Preparing Mod Manager…", 70);
     const modManagerReady = modManagerModal.preload();
-    startupLoader.setPhase("Loading Home content", 72);
+    startupLoader.setPhase("Loading Home content…", 72);
     const maintenance = FS.startBackgroundMaintenance({
       onProgress: (message, progress) =>
         startupLoader.setPhase(message, progress),
     });
     await Promise.all([homeView.ready, modManagerReady]);
-    startupLoader.setPhase("Finishing library setup", 89);
+    startupLoader.setPhase("Checking your library…", 89);
     await maintenance;
     await startupLoader.complete();
 
