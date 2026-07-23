@@ -4,8 +4,13 @@
   "description": "",
   "main": "index.js",
   "scripts": {
+    "build:assets": "node scripts/bundle.js",
+    "build:assets:watch": "node scripts/bundle.js --watch",
+    "dev:neu": "npx @neutralinojs/neu run",
+    "dev": "npm-run-all --parallel build:assets:watch dev:neu",
+    "prebuild": "npm run build:assets",
     "build": "npx @neutralinojs/neu build",
-    "release": "npx @neutralinojs/neu build --release",
+    "release": "npm run build:assets && npx @neutralinojs/neu build --release",
     "format": "node scripts/formatter.js"
   },
   "repository": {
@@ -22,6 +27,8 @@
   "homepage": "https://github.com/Crew-Awesome/Weekbox#readme",
   "devDependencies": {
     "@neutralinojs/neu": "11.7.2",
+    "esbuild": "^0.28.1",
+    "npm-run-all": "^4.1.5",
     "prettier": "^3.9.5"
   }
 }
