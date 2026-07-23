@@ -727,20 +727,18 @@ class FileSystemService {
     return standaloneMods;
   }
 
-  async runStandaloneMod(modId, onExit) {
+  async runStandaloneMod(modId, onStateChange) {
     const mod = (await this.getStandaloneMods()).find((item) =>
       sameId(item.id, modId),
     );
     if (!mod) {
-      onExit?.();
+      onStateChange?.("error");
       return false;
     }
     return this.processes.launch(
       `standalone:${mod.id}`,
       mod.exePath,
-      (state) => {
-        if (state === "completed" || state === "error") onExit?.();
-      },
+      onStateChange,
       [],
       { modId: mod.id },
     );
@@ -1030,7 +1028,11 @@ class FileSystemService {
 
     const engines = await this.getInstalledEngines();
     await this.injection.unlinkFromInstalledEngines(mod, engines);
-    return this.mods.moveToDependencies(modId);
+    const dependency = await this.mods.moveToDependencies(modId);
+    if (dependency?.engineId && !dependency.hidden) {
+      await this.injection.injectIntoInstalledEngines(modId, engines);
+    }
+    return dependency;
   }
 
   async moveDependencyToMods(modId) {

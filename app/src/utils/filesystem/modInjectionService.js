@@ -8,6 +8,10 @@ function supportsEngineVersion(mod, version) {
   return !mod.engineVersion || mod.engineVersion === version;
 }
 
+function usesAddonsDirectory(mod, engineId) {
+  return engineId === "codename" && mod.kind === "dependency";
+}
+
 export class ModInjectionService {
   constructor({
     api,
@@ -27,9 +31,13 @@ export class ModInjectionService {
     return `${this.getEnginesPath()}/${engineId}/${version}/mods`;
   }
 
-  async getEngineModsPath(engineId, version) {
-    const legacyModsPath = this.getLegacyModsPath(engineId, version);
-    if (window.NL_OS !== "Darwin") return legacyModsPath;
+  getLegacyAddonsPath(engineId, version) {
+    return `${this.getEnginesPath()}/${engineId}/${version}/addons`;
+  }
+
+  async getEngineContentPath(engineId, version, directoryName) {
+    const legacyPath = `${this.getEnginesPath()}/${engineId}/${version}/${directoryName}`;
+    if (window.NL_OS !== "Darwin") return legacyPath;
 
     const executablePath = await this.executables.find(
       `${this.getEnginesPath()}/${engineId}/${version}`,
@@ -37,8 +45,16 @@ export class ModInjectionService {
     const normalizedPath = String(executablePath || "").replace(/\\/g, "/");
     const bundleMatch = normalizedPath.match(/^(.+?\.app)(?:\/|$)/i);
     return bundleMatch
-      ? `${bundleMatch[1]}/Contents/Resources/mods`
-      : legacyModsPath;
+      ? `${bundleMatch[1]}/Contents/Resources/${directoryName}`
+      : legacyPath;
+  }
+
+  async getEngineModsPath(engineId, version) {
+    return this.getEngineContentPath(engineId, version, "mods");
+  }
+
+  async getEngineAddonsPath(engineId, version) {
+    return this.getEngineContentPath(engineId, version, "addons");
   }
 
   async migrateLegacyEngineMods(engineId, version) {
@@ -83,7 +99,9 @@ export class ModInjectionService {
     const folderName = getModFolderName(mod);
     const sourcePath = `${this.getModsPath()}/${folderName}`;
     await this.migrateLegacyEngineMods(engineId, version);
-    const modsPath = await this.getEngineModsPath(engineId, version);
+    const modsPath = usesAddonsDirectory(mod, engineId)
+      ? await this.getEngineAddonsPath(engineId, version)
+      : await this.getEngineModsPath(engineId, version);
     const engineFolderName = getEngineModFolderName(mod);
     const linkPath = `${modsPath}/${engineFolderName}`;
 
@@ -97,6 +115,8 @@ export class ModInjectionService {
           !sameId(otherMod.id, mod.id) &&
           otherMod.engineId === engineId &&
           !otherMod.hidden &&
+          usesAddonsDirectory(otherMod, engineId) ===
+            usesAddonsDirectory(mod, engineId) &&
           getEngineModFolderName(otherMod) === engineFolderName,
       );
       if (conflicts.length) {
@@ -165,7 +185,14 @@ export class ModInjectionService {
   async unlinkFromEngine(mod, engineId, version) {
     const legacyModsPath = this.getLegacyModsPath(engineId, version);
     const bundleModsPath = await this.getEngineModsPath(engineId, version);
-    const paths = [...new Set([bundleModsPath, legacyModsPath])].map(
+    const enginePaths = [bundleModsPath, legacyModsPath];
+    if (engineId === "codename") {
+      enginePaths.push(
+        await this.getEngineAddonsPath(engineId, version),
+        this.getLegacyAddonsPath(engineId, version),
+      );
+    }
+    const paths = [...new Set(enginePaths)].map(
       (modsPath) => `${modsPath}/${getEngineModFolderName(mod)}`,
     );
     let removed = false;
@@ -201,7 +228,14 @@ export class ModInjectionService {
   async cleanup(engineId, version) {
     const legacyModsPath = this.getLegacyModsPath(engineId, version);
     const bundleModsPath = await this.getEngineModsPath(engineId, version);
-    for (const modsPath of new Set([bundleModsPath, legacyModsPath])) {
+    const enginePaths = [bundleModsPath, legacyModsPath];
+    if (engineId === "codename") {
+      enginePaths.push(
+        await this.getEngineAddonsPath(engineId, version),
+        this.getLegacyAddonsPath(engineId, version),
+      );
+    }
+    for (const modsPath of new Set(enginePaths)) {
       if (!(await this.api.exists(modsPath))) continue;
       try {
         const entries = await Neutralino.filesystem.readDirectory(modsPath);

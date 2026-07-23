@@ -33,6 +33,7 @@ export function settingsContent({
   canMoveToDependencies,
   isDependency,
   isExecutable,
+  readOnly,
 }) {
   return `
     <form class="mod-settings-modal">
@@ -45,12 +46,12 @@ export function settingsContent({
       </header>
       <div class="mod-settings-body">
         <div class="mod-settings-identity">
-          <label class="mod-settings-cover-picker" title="Change cover image">
+          <label class="mod-settings-cover-picker" title="${readOnly ? "Changes are unavailable while the mod is running" : "Change cover image"}">
             <img class="mod-settings-cover" src="${escapeHtml(localCover || "assets/icons/launcher-icon.png")}" alt="Current mod cover">
             <span><i class="fa-solid fa-image" aria-hidden="true"></i> Change image</span>
-            <input class="mod-settings-file" type="file" accept="image/*">
+            <input class="mod-settings-file" type="file" accept="image/*" ${readOnly ? "disabled" : ""}>
           </label>
-          <input class="mod-settings-name" aria-label="Mod name" value="${escapeHtml(mod.name)}" maxlength="120" required>
+          <input class="mod-settings-name" aria-label="Mod name" value="${escapeHtml(mod.name)}" maxlength="120" required ${readOnly ? "disabled" : ""}>
         </div>
         ${
           isExecutable
@@ -85,13 +86,14 @@ export function settingsContent({
         </div>`
         }
         ${mod.engineLocked ? '<p class="mod-settings-note">This mod is locked to Psych Online.</p>' : ""}
+        ${readOnly ? '<p class="mod-settings-note">Close the engine to change these settings. You can still open the mod folder.</p>' : ""}
       </div>
       <footer class="mod-settings-footer">
-        <button type="button" class="mod-settings-reset" ${canReset ? "" : `disabled title="${escapeHtml(resetTitle)}"`}>Reset</button>
-        ${isDependency ? '<button type="button" class="mod-settings-move-to-mods">Move to Mods</button>' : canMoveToDependencies ? '<button type="button" class="mod-settings-move-to-dependencies">Move to Dependencies</button>' : ""}
+        <button type="button" class="mod-settings-reset" ${canReset && !readOnly ? "" : `disabled title="${escapeHtml(readOnly ? "Close the engine to change settings" : resetTitle)}"`}>Reset</button>
+        ${isDependency ? `<button type="button" class="mod-settings-move-to-mods" ${readOnly ? "disabled" : ""}>Move to Mods</button>` : canMoveToDependencies ? `<button type="button" class="mod-settings-move-to-dependencies" ${readOnly ? "disabled" : ""}>Move to Dependencies</button>` : ""}
         <span class="mod-settings-status" role="status"></span>
         <button type="button" class="mod-settings-cancel">Cancel</button>
-        <button type="submit" class="mod-settings-save">Save</button>
+        <button type="submit" class="mod-settings-save" ${readOnly ? "disabled" : ""}>Save</button>
       </footer>
     </form>`;
 }

@@ -5,10 +5,11 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [1.7.4] - 2026-07-22
+## [1.8.0] - 2026-07-22
 
 ### Added
 
+- Codename dependencies now use the engine's `addons` folder. WeekBox creates the folder when needed.
 - Download choices now show file dates.
 
 ### Changed
@@ -16,10 +17,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Newer download files are shown first.
 - Download checks now run in the background and are cached.
 - Mod downloads use safer folder names and handle wrapped folders better.
+- Running mods and dependencies can open their settings in read-only mode. Their folder can still be opened.
+- Linux and macOS try other extractors when a download is not really a ZIP file.
 - Error messages and support reports are clearer.
 
 ### Fixed
 
+- A converted Codename dependency is now moved from `mods` to `addons` correctly.
+- Executable mods now show as running on the first launch, even if Mod Manager refreshes.
+- ZIP files with mismatched Unicode filenames no longer fail when their files were extracted correctly.
 - Mods with Unicode names now install correctly.
 - Empty downloads now show the right error.
 - Bad downloads no longer look like WeekBox errors.

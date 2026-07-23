@@ -123,12 +123,12 @@ export const dependenciesRenderer = {
       );
       const settings = document.createElement("button");
       settings.type = "button";
-      settings.title = locked ? lockedMessage : "Dependency Settings";
-      settings.disabled = locked;
+      settings.title = locked
+        ? "Open dependency settings (read-only while running)"
+        : "Dependency Settings";
       settings.innerHTML =
         '<i class="fa-solid fa-gear" aria-hidden="true"></i>';
       settings.addEventListener("click", async () => {
-        if (FS.isModLockedForChanges(dependency, allMods)) return;
         settings.disabled = true;
         settings.innerHTML =
           '<i class="fa-solid fa-spinner fa-spin" aria-hidden="true"></i>';
@@ -138,6 +138,7 @@ export const dependenciesRenderer = {
             isExecutable: false,
             installedEngines,
             onSaved: onSettingsSaved,
+            readOnly: FS.isModLockedForChanges(dependency, allMods),
           });
         } finally {
           settings.disabled = false;
@@ -166,8 +167,10 @@ export const dependenciesRenderer = {
       });
       syncDependencyActions.push(() => {
         const isLocked = FS.isModLockedForChanges(dependency, allMods);
-        settings.disabled = isLocked;
-        settings.title = isLocked ? lockedMessage : "Dependency Settings";
+        settings.disabled = false;
+        settings.title = isLocked
+          ? "Open dependency settings (read-only while running)"
+          : "Dependency Settings";
         remove.disabled = users.length > 0 || isLocked;
         remove.title = users.length
           ? "Remove dependent mods first"

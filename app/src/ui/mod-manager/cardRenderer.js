@@ -31,7 +31,6 @@ export const cardRenderer = {
       gridContainer
         .querySelectorAll(".mod-manager-launch-btn")
         .forEach((button) => {
-          if (button.disabled) return;
           const isStandalone = button.dataset.launchKind === "standalone";
           const engine = isStandalone
             ? null
@@ -65,12 +64,11 @@ export const cardRenderer = {
         deleteBtn.disabled = locked;
         deleteBtn.title = locked ? message : "Delete Mod";
         deleteBtn.setAttribute("aria-label", locked ? message : "Delete Mod");
-        settingsBtn.disabled = locked;
-        settingsBtn.title = locked ? message : "Mod Settings";
-        settingsBtn.setAttribute(
-          "aria-label",
-          locked ? message : "Mod Settings",
-        );
+        settingsBtn.disabled = false;
+        settingsBtn.title = locked
+          ? "Open mod settings (read-only while running)"
+          : "Mod Settings";
+        settingsBtn.setAttribute("aria-label", settingsBtn.title);
         visibilityBtn.disabled = locked;
         visibilityBtn.title = locked ? message : "Toggle Visibility";
       });
@@ -217,8 +215,7 @@ export const cardRenderer = {
 
       const settingsBtn = card.querySelector(".mod-manager-settings-btn");
       settingsBtn.addEventListener("click", async () => {
-        if (settingsBtn.disabled || FS.isModLockedForChanges(mod, allMods))
-          return;
+        if (settingsBtn.disabled) return;
         settingsBtn.disabled = true;
         settingsBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
         try {
@@ -227,6 +224,7 @@ export const cardRenderer = {
             isExecutable,
             installedEngines,
             onSaved: onSettingsSaved,
+            readOnly: FS.isModLockedForChanges(mod, allMods),
           });
         } finally {
           settingsBtn.disabled = false;

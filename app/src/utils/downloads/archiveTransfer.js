@@ -3,10 +3,7 @@ import {
   getRangeSupportedFileSize,
   resolveExternalDownloadUrl,
 } from "./externalDownloadResolver.js";
-import {
-  getOsProcessId,
-  sameProcessId,
-} from "../filesystem/spawnedProcess.js";
+import { getOsProcessId, sameProcessId } from "../filesystem/spawnedProcess.js";
 
 function formatArchiveEntry(output) {
   const lines = output.trim().split("\n");
@@ -70,8 +67,22 @@ function appendProcessOutput(output, data) {
 
 function createProcessError(operation, exitCode, output) {
   const detail = output.trim();
+  if (operation === "Download" && Number(exitCode) === 23) {
+    return new Error(
+      "The download could not be written to storage. Check that the WeekBox folder is writable and has enough free space, then try again.",
+    );
+  }
   return new Error(
     `${operation} failed with exit code ${exitCode}${detail ? `: ${detail}` : ""}`,
+  );
+}
+
+function isNonFatalUnzipFilenameWarning(exitCode, output) {
+  if (Number(exitCode) !== 1) return false;
+  const detail = String(output || "");
+  return (
+    /mismatching ["']?local["']? filename/i.test(detail) &&
+    /continuing with ["']?central["']? filename version/i.test(detail)
   );
 }
 
@@ -570,7 +581,12 @@ export async function extractArchive({
         }
         if (event.action !== "exit") return;
         Neutralino.events.off("spawnedProcess", handler);
-        if (event.data === 0) resolve();
+        if (
+          event.data === 0 ||
+          (!isWindows &&
+            isNonFatalUnzipFilenameWarning(event.data, processOutput))
+        )
+          resolve();
         else
           reject(createProcessError("Extraction", event.data, processOutput));
       },
@@ -603,6 +619,24 @@ export async function extractArchive({
           recovered = true;
         } catch (psError) {
           error = psError;
+        }
+      }
+    } else {
+      // GameBanana and mirrors sometimes serve a tar/7z/rar payload with a
+      // .zip download name. Try format-detecting extractors before reporting
+      // the original unzip error.
+      const fallbackCommands = [
+        `tar -xf ${quoteCommandArgument(archivePath)} -C ${quoteCommandArgument(destinationPath)}`,
+        `7z x -y -aoa -o${quoteCommandArgument(destinationPath)} ${quoteCommandArgument(archivePath)}`,
+      ];
+      for (const fallbackCommand of fallbackCommands) {
+        try {
+          await execute(fallbackCommand);
+          recovered = true;
+          break;
+        } catch {
+          // Keep trying available system extractors. If none work, preserve
+          // unzip's more useful original error.
         }
       }
     }

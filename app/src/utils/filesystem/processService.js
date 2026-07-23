@@ -47,6 +47,14 @@ export class ProcessService {
     );
   }
 
+  notifyStateChange(key, state) {
+    document.dispatchEvent(
+      new CustomEvent("weekbox-process-change", {
+        detail: { key, state },
+      }),
+    );
+  }
+
   complete(key, onStateChange) {
     this.closingProcesses.delete(key);
     this.activeProcesses.delete(key);
@@ -63,6 +71,7 @@ export class ProcessService {
     document.dispatchEvent(
       new CustomEvent("weekbox-process-exit", { detail: { key } }),
     );
+    this.notifyStateChange(key, "completed");
     onStateChange?.("completed");
   }
 
@@ -162,7 +171,7 @@ export class ProcessService {
     try {
       const windows = window.NL_OS === "Windows";
       const command = windows
-        ? "powershell -NoProfile -NonInteractive -Command \"Get-CimInstance Win32_Process | Select-Object ProcessId,ParentProcessId | ConvertTo-Json -Compress\""
+        ? 'powershell -NoProfile -NonInteractive -Command "Get-CimInstance Win32_Process | Select-Object ProcessId,ParentProcessId | ConvertTo-Json -Compress"'
         : "ps -eo pid=,ppid=";
       const result = await Neutralino.os.execCommand(command);
       if (result.exitCode !== 0) return null;
@@ -187,7 +196,8 @@ export class ProcessService {
       checking = true;
       try {
         if (await this.isPidRunning(pid)) return;
-        if (this.activeProcesses.get(key) === trackedProcess) this.complete(key);
+        if (this.activeProcesses.get(key) === trackedProcess)
+          this.complete(key);
       } finally {
         checking = false;
       }
@@ -229,6 +239,7 @@ export class ProcessService {
       process.metadata = { ...metadata, executablePath };
       this.activeProcesses.set(key, process);
       this.remember(key, process, process.metadata);
+      this.notifyStateChange(key, "launched");
       await this.watchOrMonitor(key, process, onStateChange);
       onStateChange?.("launched");
       return true;

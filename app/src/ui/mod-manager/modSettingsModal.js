@@ -14,7 +14,13 @@ export const modSettingsModal = {
   openRequestId: 0,
   dropdowns: null,
 
-  async open({ mod, isExecutable, installedEngines, onSaved }) {
+  async open({
+    mod,
+    isExecutable,
+    installedEngines,
+    onSaved,
+    readOnly = false,
+  }) {
     if (this.isOpening) return false;
     this.close();
     this.isOpening = true;
@@ -36,7 +42,8 @@ export const modSettingsModal = {
     }
     if (requestId !== this.openRequestId) return false;
 
-    const controlsDisabled = isExecutable || mod.engineLocked ? "disabled" : "";
+    const controlsDisabled =
+      readOnly || isExecutable || mod.engineLocked ? "disabled" : "";
     const isDependency = mod.kind === "dependency";
     overlay.innerHTML = settingsContent({
       mod,
@@ -49,6 +56,7 @@ export const modSettingsModal = {
       canMoveToDependencies: !isExecutable && mod.kind !== "dependency",
       isDependency,
       isExecutable,
+      readOnly,
     });
 
     const form = overlay.querySelector("form");
