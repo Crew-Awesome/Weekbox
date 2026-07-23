@@ -6,6 +6,7 @@
   "scripts": {
     "format": "node scripts/formatter.js",
     "assets": "node scripts/bundle.js",
+    "postinstall": "npx @neutralinojs/neu update",
     "dev": "npx npm-run-all --parallel \"assets -- --watch\" neu",
     "neu": "npx @neutralinojs/neu run",
     "build": "npm run assets && npx @neutralinojs/neu build"

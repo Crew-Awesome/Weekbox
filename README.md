@@ -39,17 +39,17 @@ Everything you install stays local. WeekBox has no account system and does not u
 
 ## Run and build
 
-Install the Neutralino CLI, then run from source:
+Install dependencies, then run from source:
 
 ```bash
-npm install -g @neutralinojs/neu
-neu run
+npm install
+npm run dev
 ```
 
 Build release binaries:
 
 ```bash
-neu build
+npm run build
 ```
 
 The launcher icon, window icon, and Credits icon all come from the same source asset in `app/assets/icons/launcher-icon.png`.
