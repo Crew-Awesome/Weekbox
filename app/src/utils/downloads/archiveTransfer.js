@@ -102,6 +102,23 @@ async function detectArchiveFormat(path) {
   return "unknown";
 }
 
+async function hasExtractedPayload(path) {
+  try {
+    const entries = await Neutralino.filesystem.readDirectory(path);
+    for (const entry of entries) {
+      if ([".", "..", ".downloading"].includes(entry.entry)) continue;
+      if (entry.type === "FILE") return true;
+      if (
+        entry.type === "DIRECTORY" &&
+        (await hasExtractedPayload(`${path}/${entry.entry}`))
+      ) {
+        return true;
+      }
+    }
+  } catch {}
+  return false;
+}
+
 function getDownloadSegments(totalBytes, outPath) {
   const count = Math.min(
     MAX_DOWNLOAD_SEGMENTS,
@@ -627,7 +644,11 @@ export async function extractArchive({
   } catch (error) {
     let recovered = false;
     if (isWindows) {
+      // bsdtar can return code 1 for filename and metadata warnings even
+      // after writing the archive contents successfully.
+      if (await hasExtractedPayload(destinationPath)) recovered = true;
       if (
+        !recovered &&
         String(error).includes("resolve failed") &&
         !command.includes("--force-local")
       ) {

@@ -9,6 +9,7 @@ const SETTINGS_PATH_KEY = "weekbox-settings-data-path";
  */
 const settingDefinitions = {
   launchOnStartup: { type: "boolean", defaultValue: false },
+  registerProtocolLinks: { type: "boolean", defaultValue: true },
   blurOutOfFocus: { type: "boolean", defaultValue: true },
   hideOnLaunch: { type: "boolean", defaultValue: false },
   autoStartAfterDownload: { type: "boolean", defaultValue: false },

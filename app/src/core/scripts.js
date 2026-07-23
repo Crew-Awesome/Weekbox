@@ -19,6 +19,7 @@ import { networkStatus } from "./networkStatus.js";
 import { modManagerModal } from "../ui/mod-manager/index.js";
 import { diagnosticsConsentModal } from "../ui/diagnosticsConsentModal.js";
 import { firstRunStorageModal } from "../ui/firstRunStorageModal.js";
+import { syncWindowsProtocolRegistration } from "./windowsProtocol.js";
 
 function clearTestToasts() {
   document
@@ -302,6 +303,9 @@ async function startApp() {
       `${settingsDataPath}/settings.json`,
     );
     await appSettings.init(settingsDataPath);
+    await syncWindowsProtocolRegistration(
+      appSettings.get("registerProtocolLinks"),
+    );
     startupLoader.setPhase("Preparing your library", 42);
     startupStep = "preparing the WeekBox library";
     await FS.init({ deferMaintenance: true });

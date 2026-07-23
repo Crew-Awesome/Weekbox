@@ -10,10 +10,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - Windows Setup now registers `weekbox://mod/<id>` links.
+- Portable Windows builds register `weekbox:` links after their first launch.
 
 ### Changed
 
 - Windows Setup now clearly separates the program location from the library location.
+- Added an enabled-by-default setting for opening WeekBox links.
 
 ### Fixed
 
@@ -22,6 +24,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Missing download links now show a useful error instead of a native error.
 - Deep links also accept the accidental `weekbox://mod,<id>` format.
 - macOS archive extraction no longer assumes that the `7z` command is installed.
+- Windows extraction warnings no longer fail installs after files were successfully unpacked.
+- The WeekBox link setting is now only shown on Windows.
 
 ## [1.8.0] - 2026-07-22
 

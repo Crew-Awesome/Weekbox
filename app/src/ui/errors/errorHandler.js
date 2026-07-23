@@ -139,6 +139,7 @@ function describeIssue(error) {
     lower.includes("download link is missing") ||
     lower.includes("download link is invalid") ||
     lower.includes("download does not have a valid link") ||
+    lower.includes("could not find the google drive file id") ||
     lower.includes("does not point to a downloadable file")
   ) {
     return {

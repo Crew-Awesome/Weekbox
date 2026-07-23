@@ -8,6 +8,7 @@ import { AppUpdateController } from "./appUpdateController.js";
 import { StorageMoveFeedback } from "./storageMoveFeedback.js";
 import { existingStorageModal } from "../existingStorageModal.js";
 import { networkStatus } from "../../core/networkStatus.js";
+import { syncWindowsProtocolRegistration } from "../../core/windowsProtocol.js";
 
 const appUpdates = new AppUpdateController(appUpdater);
 const storageMoveFeedback = new StorageMoveFeedback(toastSystem);
@@ -50,6 +51,13 @@ export const configModal = {
       const wrapper = document.createElement("div");
       wrapper.innerHTML = html;
       document.body.appendChild(wrapper.firstElementChild);
+
+      if (window.NL_OS !== "Windows") {
+        document
+          .getElementById("setting-registerProtocolLinks")
+          ?.closest(".setting-item")
+          ?.remove();
+      }
 
       this.bindEvents();
       this.updateNetworkAvailability();
@@ -147,6 +155,7 @@ export const configModal = {
      */
     const toggleIds = [
       "launchOnStartup",
+      "registerProtocolLinks",
       "blurOutOfFocus",
       "hideOnLaunch",
       "autoStartAfterDownload",
@@ -170,6 +179,13 @@ export const configModal = {
               return;
             }
           }
+          if (settingKey === "registerProtocolLinks") {
+            const updated = await syncWindowsProtocolRegistration(enabled);
+            if (!updated) {
+              checkbox.checked = appSettings.get(settingKey);
+              return;
+            }
+          }
           appSettings.set(settingKey, enabled);
         });
       }
@@ -179,6 +195,7 @@ export const configModal = {
   loadSettingsToUI() {
     const toggleIds = [
       "launchOnStartup",
+      "registerProtocolLinks",
       "blurOutOfFocus",
       "hideOnLaunch",
       "autoStartAfterDownload",
