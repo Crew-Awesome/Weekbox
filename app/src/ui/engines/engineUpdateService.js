@@ -129,7 +129,7 @@ export const engineUpdateService = {
     if (!networkStatus.online) return;
     if (!FS.isInitialized) await FS.init();
     const installed = await FS.getInstalledEngines();
-    for (const engineId of ["codename", "alepsych", "psychonline"]) {
+    for (const engineId of ["codename", "psychonline"]) {
       const installedVersion = installed.find(
         (engine) =>
           engine.id === engineId &&

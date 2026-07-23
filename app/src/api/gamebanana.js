@@ -35,7 +35,6 @@ import {
 const EXCLUDED_ENGINE_SUBMISSIONS = new Map([
   ["mods:309789", "psych"],
   ["mods:44201", "fpsplus"],
-  ["wips:95612", "alepsych"],
   ["mods:598553", "codename"],
   ["mods:535203", "pslice"],
   ["mods:479714", "psychonline"],

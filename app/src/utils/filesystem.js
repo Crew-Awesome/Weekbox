@@ -38,6 +38,8 @@ function isWeekBoxFolder(path) {
   return /(?:^|[\\/])weekbox$/i.test(String(path).replace(/[\\/]+$/, ""));
 }
 
+const RETIRED_ENGINE_IDS = new Set(["alepsych"]);
+
 class FileSystemService {
   constructor() {
     this.basePath = "";
@@ -146,6 +148,9 @@ class FileSystemService {
     };
 
     this.startupMaintenancePromise = (async () => {
+      await runPhase("Removing retired engines", 90, () =>
+        this.removeRetiredEngines(),
+      );
       await runPhase("Cleaning incomplete downloads", 90, () =>
         this.cleanupIncompleteDownloads(),
       );
@@ -174,6 +179,24 @@ class FileSystemService {
     })();
 
     return this.startupMaintenancePromise;
+  }
+
+  async removeRetiredEngines() {
+    const mods = await this.mods.getAll();
+    let changed = false;
+    for (const mod of mods) {
+      if (!RETIRED_ENGINE_IDS.has(mod.engineId)) continue;
+      mod.engineId = null;
+      mod.engineVersion = null;
+      changed = true;
+    }
+    if (changed) await this.mods.saveAll(mods);
+
+    await Promise.all(
+      [...RETIRED_ENGINE_IDS].map((engineId) =>
+        this.api.remove(`${this.enginesPath}/${engineId}`),
+      ),
+    );
   }
 
   async startBackgroundMaintenance(options) {

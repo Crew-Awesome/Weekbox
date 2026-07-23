@@ -96,7 +96,6 @@ export const engineManagerModal = {
       "codename",
       "psych",
       "pslice",
-      "alepsych",
       "fpsplus",
       "psychonline",
       "executable",
@@ -172,8 +171,7 @@ export const engineManagerModal = {
           <span class="version-text">${version}</span>
           <div class="version-actions">
             ${
-              ((engineId === "codename" || engineId === "alepsych") &&
-                version === "Nightly") ||
+              (engineId === "codename" && version === "Nightly") ||
               (engineId === "psychonline" && version === "Latest")
                 ? `
               <button class="engine-action-btn engine-update-btn" title="${updateDisabled ? "Connect to the internet to check for updates" : "Check for updates"}" aria-label="Check ${details.name} for updates" ${updateDisabled ? "disabled" : ""}>

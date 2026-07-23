@@ -20,11 +20,6 @@
     "versions": "pslice"
   },
   {
-    "name": "ALE Psych",
-    "icon": "alepsych.png",
-    "versions": "alepsych"
-  },
-  {
     "name": "FPS Plus",
     "icon": "fpsplus.png",
     "versions": "fpsplus"
