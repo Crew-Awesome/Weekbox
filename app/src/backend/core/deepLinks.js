@@ -1,6 +1,6 @@
 import { gameBananaApi } from "../api/gamebanana.js";
-import { modModal } from "../../ui/js/home/modal/index.js";
-import { sidebar } from "../../ui/js/sidebar.js";
+import { modModal } from "../../ui/js/index.js";
+import { sidebar } from "../../ui/js/index.js";
 import { router } from "./router.js";
 
 function parseWeekboxLink(value) {

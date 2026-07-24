@@ -1,24 +1,24 @@
 import { storageBridge } from "./storagePatch.js";
 import { router } from "./router.js";
-import { homeView, registerHomeView } from "../../ui/js/home/index.js";
-import { registerEnginesView } from "../../ui/js/engines/index.js";
-import { downloadEngine } from "../../ui/js/engines/downloadEngine.js";
-import { engineUpdateToast } from "../../ui/js/engines/engineUpdateToast.js";
-import { toastDownloadMod } from "../../ui/js/home/modal/toastDownloadMod.js";
+import { homeView, registerHomeView } from "../../ui/js/index.js";
+import { registerEnginesView } from "../../ui/js/index.js";
+import { downloadEngine } from "../../ui/js/index.js";
+import { engineUpdateToast } from "../../ui/js/index.js";
+import { toastDownloadMod } from "../../ui/js/index.js";
 import { disableProductionRefreshShortcuts } from "./productionShortcuts.js";
-import { FS } from "../../ui/utils/filesystem.js";
+import { FS } from "../../ui/utils/index.js";
 import { appSettings } from "./settings.js";
 import { openLaunchDeepLink, openWeekboxLink } from "./deepLinks.js";
-import { errorHandler } from "../../ui/js/errors/errorHandler.js";
+import { errorHandler } from "../../ui/js/index.js";
 import { appUpdater } from "./appUpdater.js";
-import { appUpdateModal } from "../../ui/js/updates/appUpdateModal.js";
-import { toastSystem } from "../../ui/js/toasts/toastSystem.js";
-import { storageRecommendationModal } from "../../ui/js/storageRecommendationModal.js";
+import { appUpdateModal } from "../../ui/js/index.js";
+import { toastSystem } from "../../ui/js/index.js";
+import { storageRecommendationModal } from "../../ui/js/index.js";
 import { startupLoader } from "./startupLoader.js";
 import { networkStatus } from "./networkStatus.js";
-import { modManagerModal } from "../../ui/js/mod-manager/index.js";
-import { diagnosticsConsentModal } from "../../ui/js/diagnosticsConsentModal.js";
-import { firstRunStorageModal } from "../../ui/js/firstRunStorageModal.js";
+import { modManagerModal } from "../../ui/js/index.js";
+import { diagnosticsConsentModal } from "../../ui/js/index.js";
+import { firstRunStorageModal } from "../../ui/js/index.js";
 import { syncWindowsProtocolRegistration } from "./windowsProtocol.js";
 
 function clearTestToasts() {

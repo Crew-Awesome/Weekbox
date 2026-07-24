@@ -1,7 +1,0 @@
-export function sameProcessId(left, right) {
-  return String(left) === String(right);
-}
-
-export function getOsProcessId(process) {
-  return process?.pid ?? process?.id ?? null;
-}

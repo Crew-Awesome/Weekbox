@@ -1,4 +1,4 @@
-import { downloadArchive } from "../../ui/utils/downloads/archiveTransfer.js";
+import { downloadArchive } from "../../ui/utils/index.js";
 import {
   getPlatformPackage,
   getReleaseAsset,
