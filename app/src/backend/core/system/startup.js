@@ -14,7 +14,7 @@ import { registerEnginesView } from "../../../ui/js/index.js";
 import { downloadEngine } from "../../../ui/js/index.js";
 import { engineUpdateToast } from "../../../ui/js/index.js";
 import { toastDownloadMod } from "../../../ui/js/index.js";
-import { FS } from "../../../ui/utils/index.js";
+import { FS } from "../../../ui/utils/index-utils.js";
 import { errorHandler } from "../../../ui/js/index.js";
 import { appUpdateModal } from "../../../ui/js/index.js";
 import { toastSystem } from "../../../ui/js/index.js";

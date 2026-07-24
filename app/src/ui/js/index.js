@@ -108,14 +108,14 @@ var AppUpdateController = _AppUpdateController;
 
 // app/src/ui/js/config/index.js
 import { appSettings as appSettings2 } from "../../backend/core/index-core.js";
-import { FS as FS4 } from "../utils/index.js";
+import { FS as FS4 } from "../utils/index-utils.js";
 
 // app/src/ui/js/engines/downloadEngine.js
-import { FS } from "../utils/index.js";
+import { FS } from "../utils/index-utils.js";
 import {
   downloadArchive,
   extractArchive
-} from "../utils/index.js";
+} from "../utils/index-utils.js";
 
 // app/src/ui/js/errors/errorHandler.js
 import { appSettings } from "../../backend/core/index-core.js";
@@ -824,15 +824,15 @@ var downloadEngine = {
 };
 
 // app/src/ui/js/home/modal/downloadMod.js
-import { FS as FS3 } from "../utils/index.js";
+import { FS as FS3 } from "../utils/index-utils.js";
 import {
   sanitizeModFolderName,
   sanitizePathSegment
-} from "../utils/index.js";
+} from "../utils/index-utils.js";
 import { gameBananaApi } from "../../backend/providers/gamebanana/gamebanana.provider.js";
 
 // app/src/ui/js/mod-manager/modImageLoader.js
-import { FS as FS2 } from "../utils/index.js";
+import { FS as FS2 } from "../utils/index-utils.js";
 var modCoverCache = /* @__PURE__ */ new Map();
 function primeModCover(modId, coverUrl) {
   if (coverUrl) modCoverCache.set(String(modId), coverUrl);
@@ -893,7 +893,7 @@ __name(loadModCardImage, "loadModCardImage");
 import {
   downloadArchive as downloadArchive2,
   extractArchive as extractArchive2
-} from "../utils/index.js";
+} from "../utils/index-utils.js";
 
 // app/src/ui/js/toasts/toastSystem.js
 var TOAST_STATES = ["complete", "error", "offer", "missing-engine"];
@@ -1958,13 +1958,13 @@ var diagnosticsConsentModal = {
 };
 
 // app/src/ui/js/engine-manager/index.js
-import { FS as FS6 } from "../utils/index.js";
+import { FS as FS6 } from "../utils/index-utils.js";
 import { ENGINE_DETAILS as ENGINE_DETAILS3 } from "../../backend/config/engines.config.js";
 
 // app/src/ui/js/engines/engineUpdateService.js
 import { getEngineUpdateCandidate } from "../../backend/providers/github/github-release.provider.js";
 import { ENGINE_DETAILS as ENGINE_DETAILS2 } from "../../backend/config/engines.config.js";
-import { FS as FS5 } from "../utils/index.js";
+import { FS as FS5 } from "../utils/index-utils.js";
 
 // app/src/ui/js/engines/utils.js
 function getTargetPlatform(versionData) {
@@ -2313,7 +2313,7 @@ var engineUpdateService = {
 };
 
 // app/src/ui/js/engine-manager/index.js
-import { applyDominantColor } from "../utils/index.js";
+import { applyDominantColor } from "../utils/index-utils.js";
 import { networkStatus as networkStatus3 } from "../../backend/core/index-core.js";
 var engineManagerModal = {
   currentIndex: 0,
@@ -2739,7 +2739,7 @@ async function fetchAndRenderReleaseNotes(versionData, targetLink) {
 __name(fetchAndRenderReleaseNotes, "fetchAndRenderReleaseNotes");
 
 // app/src/ui/js/engines/dropdown.js
-import { setupDropdown } from "../utils/index.js";
+import { setupDropdown } from "../utils/index-utils.js";
 var engineDropdown = {
   dropdownController: null,
   setup(engine, onVersionChanged) {
@@ -2844,10 +2844,10 @@ var engineInstallToast = {
 // app/src/ui/js/engines/index.js
 import { appEvents } from "../../backend/core/index-core.js";
 import { getSelectedEngine } from "../../backend/core/index-core.js";
-import { FS as FS8 } from "../utils/index.js";
+import { FS as FS8 } from "../utils/index-utils.js";
 
 // app/src/ui/js/engines/modsMasterClass.js
-import { FS as FS7 } from "../utils/index.js";
+import { FS as FS7 } from "../utils/index-utils.js";
 var _ModsMasterClass = class _ModsMasterClass {
   async injectBeforeLaunch(engineId, version) {
     if (!FS7.isInitialized) await FS7.init();
@@ -3234,21 +3234,21 @@ import { setSelectedEngine } from "../../backend/core/index-core.js";
 import { getEngineReleaseVersions } from "../../backend/providers/github/github-release.provider.js";
 
 // app/src/ui/js/mod-manager/index.js
-import { FS as FS13 } from "../utils/index.js";
+import { FS as FS13 } from "../utils/index-utils.js";
 
 // app/src/ui/js/mod-manager/dependenciesRenderer.js
-import { FS as FS10 } from "../utils/index.js";
-import { sanitizePathSegment as sanitizePathSegment3 } from "../utils/index.js";
+import { FS as FS10 } from "../utils/index-utils.js";
+import { sanitizePathSegment as sanitizePathSegment3 } from "../utils/index-utils.js";
 import { gameBananaApi as gameBananaApi3 } from "../../backend/providers/gamebanana/gamebanana.provider.js";
 
 // app/src/ui/js/mod-manager/modSettingsModal.js
 import { gameBananaApi as gameBananaApi2 } from "../../backend/providers/gamebanana/gamebanana.provider.js";
-import { FS as FS9 } from "../utils/index.js";
-import { sanitizePathSegment as sanitizePathSegment2 } from "../utils/index.js";
+import { FS as FS9 } from "../utils/index-utils.js";
+import { sanitizePathSegment as sanitizePathSegment2 } from "../utils/index-utils.js";
 
 // app/src/ui/js/mod-manager/modSettingsDropdowns.js
 import { ENGINE_DETAILS as ENGINE_DETAILS5 } from "../../backend/config/engines.config.js";
-import { setupDropdown as setupDropdown2 } from "../utils/index.js";
+import { setupDropdown as setupDropdown2 } from "../utils/index-utils.js";
 
 // app/src/ui/js/mod-manager/modSettingsTemplates.js
 function escapeHtml(value) {
@@ -3809,13 +3809,13 @@ var dependenciesRenderer = {
 };
 
 // app/src/ui/js/mod-manager/cardRenderer.js
-import { FS as FS11 } from "../utils/index.js";
+import { FS as FS11 } from "../utils/index-utils.js";
 import { gameBananaApi as gameBananaApi4 } from "../../backend/providers/gamebanana/gamebanana.provider.js";
 import {
   ENGINE_DETAILS as ENGINE_DETAILS6,
   getEngineLaunchBehavior
 } from "../../backend/config/engines.config.js";
-import { applyDominantColor as applyDominantColor2 } from "../utils/index.js";
+import { applyDominantColor as applyDominantColor2 } from "../utils/index-utils.js";
 const modManagerTemplates2 = __modManagerTemplates;
 var cardRenderer = {
   async renderCards(gridContainer, modsToRender, allMods, standaloneMods, installedEngines, onModDeleted, onSettingsSaved) {
@@ -4028,7 +4028,7 @@ var cardRenderer = {
 // app/src/ui/js/mod-manager/localModImportModal.js
 import { ENGINE_DETAILS as ENGINE_DETAILS7 } from "../../backend/config/engines.config.js";
 import { gameBananaApi as gameBananaApi5 } from "../../backend/providers/gamebanana/gamebanana.provider.js";
-import { FS as FS12 } from "../utils/index.js";
+import { FS as FS12 } from "../utils/index-utils.js";
 function folderName(path) {
   return String(path || "").split(/[\\/]/).filter(Boolean).pop() || "Local mod";
 }
@@ -4258,7 +4258,7 @@ var localModImportModal = {
 const modManagerTemplates3 = __modManagerTemplates;
 
 // app/src/ui/js/mod-manager/filterSortModal.js
-import { setupDropdown as setupDropdown3 } from "../utils/index.js";
+import { setupDropdown as setupDropdown3 } from "../utils/index-utils.js";
 import { ENGINE_DETAILS as ENGINE_DETAILS8 } from "../../backend/config/engines.config.js";
 var BASE_TYPE_OPTIONS = [
   ["all", "All mods", "fa-layer-group"],
@@ -4812,7 +4812,7 @@ var modManagerModal = {
 };
 
 // app/src/ui/js/sidebar.js
-import { FS as FS14 } from "../utils/index.js";
+import { FS as FS14 } from "../utils/index-utils.js";
 import { networkStatus as networkStatus5 } from "../../backend/core/index-core.js";
 var sidebar = {
   updateEngineMarquee(button) {
@@ -5351,7 +5351,7 @@ var downloadChoiceModal = {
 };
 
 // app/src/ui/js/home/modal/index.js
-import { FS as FS15 } from "../utils/index.js";
+import { FS as FS15 } from "../utils/index-utils.js";
 
 // app/src/ui/js/home/modal/modalUi.js
 import { ENGINE_DETAILS as ENGINE_DETAILS9 } from "../../backend/config/engines.config.js";
@@ -5731,7 +5731,7 @@ var homeCarousel = {
 
 // app/src/ui/js/home/grid/cardBuilder.js
 import { ENGINE_DETAILS as ENGINE_DETAILS10 } from "../../backend/config/engines.config.js";
-import { applyDominantColor as applyDominantColor3 } from "../utils/index.js";
+import { applyDominantColor as applyDominantColor3 } from "../utils/index-utils.js";
 function createCard(mod, index) {
   const card = document.createElement("button");
   card.type = "button";
@@ -5930,7 +5930,7 @@ var gridRender = {
 };
 
 // app/src/ui/js/home/grid/filterManager.js
-import { setupDropdown as setupDropdown4 } from "../utils/index.js";
+import { setupDropdown as setupDropdown4 } from "../utils/index-utils.js";
 var filterManager = {
   filterClickHandler: null,
   filterContainer: null,

@@ -2,7 +2,7 @@ import { getPlatformPackage, getReleaseAsset, getResourcesAsset, getWindowsPacka
 import { normalizeVersion, compareVersions } from './versioning.util.js';
 
 
-import { downloadArchive } from "../../../ui/utils/index.js";
+import { downloadArchive } from "../../../ui/utils/index-utils.js";
 function toHex(buffer) {
   return [...new Uint8Array(buffer)].map((byte) => byte.toString(16).padStart(2, "0")).join("");
 }
