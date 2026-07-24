@@ -1,0 +1,111 @@
+:root {
+    /* Fuentes */
+    --font-primary: 'Motiva Sans', 'Inter', sans-serif;
+    
+    /* Tema Claro */
+    --primary: #006874;
+    --secondary: #4a6267;
+    --tertiary: #525e7d;
+    --on-primary: #ffffff;
+    --on-secondary: #ffffff;
+    --on-tertiary: #ffffff;
+    --error: #ba1a1a;
+    --on-error: #ffffff;
+    --primary-container: #9eeffd;
+    --secondary-container: #cde7ec;
+    --tertiary-container: #dae2ff;
+    --on-primary-container: #004f57;
+    --on-secondary-container: #334b4f;
+    --on-tertiary-container: #3a4664;
+    --error-container: #ffdad6;
+    --on-error-container: #93000a;
+    --surface-dim: #d5dbdc;
+    --surface: #f5fafb;
+    --surface-bright: #f5fafb;
+    --inverse-surface: #2b3133;
+    --surface-container-lowest: #ffffff;
+    --surface-container-low: #eff5f6;
+    --surface-container: #e9eff0;
+    --surface-container-high: #e3e9ea;
+    --surface-container-highest: #dee3e5;
+    --on-surface: #171d1e;
+    --on-surface-variant: #3f484a;
+    --outline: #6f797a;
+    --outline-variant: #bfc8ca;
+    --inverse-on-surface: #ecf2f3;
+    --inverse-primary: #82d3e0;
+    --scrim: #000000;
+    --shadow: #000000;
+
+    /* Fallbacks for unmigrated components (Legacy) */
+    --bg-color: var(--surface);
+    --bg-panel: var(--surface-container);
+    --bg-hover: var(--surface-container-high);
+
+    --text-main: var(--on-surface);
+    --text-muted: var(--on-surface-variant);
+
+    --accent-color: var(--primary);
+    --accent-hover: var(--primary-container);
+
+    --play-color: var(--on-primary);
+    --play-bg: var(--primary);
+
+    --border-color: var(--outline-variant);
+
+    --font-main: var(--font-primary);
+
+    --spacing-xs: 4px;
+    --spacing-sm: 8px;
+    --spacing-md: 16px;
+    --spacing-lg: 24px;
+    --spacing-xl: 32px;
+
+    --border-radius: 8px;
+
+    --sidebar-width: 240px;
+    --sidebar-width-collapsed: 72px;
+
+    --bp-sm: 480px;
+    --bp-md: 768px;
+    --bp-lg: 1024px;
+}
+
+@media (prefers-color-scheme: dark) {
+    :root {
+        /* Tema oscuro */
+        --primary: #82d3e0;
+        --secondary: #b1cbd0;
+        --tertiary: #bac6ea;
+        --on-primary: #00363d;
+        --on-secondary: #1c3438;
+        --on-tertiary: #24304d;
+        --error: #690005;
+        --on-error: #ffb4ab;
+        --primary-container: #004f57;
+        --secondary-container: #334b4f;
+        --tertiary-container: #3a4664;
+        --on-primary-container: #9eeffd;
+        --on-secondary-container: #cde7ec;
+        --on-tertiary-container: #dae2ff;
+        --error-container: #93000a;
+        --on-error-container: #ffdad6;
+        --surface-dim: #0e1415;
+        --surface: #0e1415;
+        --surface-bright: #343a3b;
+        --inverse-surface: #dee3e5;
+        --surface-container-lowest: #090f10;
+        --surface-container-low: #171d1e;
+        --surface-container: #1b2122;
+        --surface-container-high: #252b2c;
+        --surface-container-highest: #303637;
+        --on-surface: #dee3e5;
+        --on-surface-variant: #bfc8ca;
+        --outline: #899294;
+        --outline-variant: #3f484a;
+        --inverse-on-surface: #2b3133;
+        --inverse-primary: #006874;
+        --scrim: #000000;
+        --shadow: #000000;
+    }
+}

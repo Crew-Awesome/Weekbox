@@ -1,0 +1,350 @@
+/* Efecto marquee */
+.marquee-container {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  width: 100%;
+  position: relative;
+  text-align: left;
+  mask-image: linear-gradient(to right, black 85%, transparent 100%);
+  -webkit-mask-image: linear-gradient(to right, black 85%, transparent 100%);
+}
+
+.marquee-text {
+  display: inline-block;
+}
+
+.nav-btn:hover .marquee-text.is-overflowing {
+  animation: marquee 1.8s ease-in-out 350ms alternate infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .nav-btn:hover .marquee-text.is-overflowing {
+    animation: none;
+  }
+}
+
+.home-container {
+  display: flex;
+  flex-direction: column;
+  min-height: 100%;
+}
+
+.home-content {
+  padding: var(--spacing-xl);
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xl);
+}
+
+.home-offline-panel {
+  display: grid;
+  place-items: center;
+  align-content: center;
+  gap: 12px;
+  min-height: 100%;
+  padding: 48px 24px;
+  text-align: center;
+}
+
+.home-offline-panel > i {
+  color: var(--text-muted);
+  font-size: 2rem;
+}
+
+.home-offline-panel h2 {
+  margin: 0;
+  color: var(--text-main);
+  font-size: 1.35rem;
+}
+
+.home-offline-panel p {
+  max-width: 480px;
+  margin: 0;
+  color: var(--text-muted);
+  line-height: 1.55;
+}
+
+#home-nav.home-nav {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  height: 100px !important;
+  padding: 20px var(--spacing-xl) !important;
+
+  display: flex !important;
+  justify-content: center !important;
+  align-items: center !important;
+
+  background-color: rgba(10, 10, 10, 0.65) !important;
+  backdrop-filter: blur(24px) !important;
+  -webkit-backdrop-filter: blur(24px) !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05) !important;
+
+  transition:
+    height 0.35s ease,
+    padding 0.35s ease,
+    background-color 0.35s ease,
+    box-shadow 0.35s ease !important;
+}
+
+.home-container.scrolled #home-nav.home-nav {
+  height: 70px !important;
+  padding: 10px var(--spacing-xl) !important;
+  background-color: rgba(10, 10, 10, 0.85) !important;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5) !important;
+}
+
+.search-container {
+  position: relative;
+  width: 100%;
+  max-width: 540px !important;
+
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+
+  transform-origin: center;
+  transition: transform 0.6s cubic-bezier(0.22, 1, 0.36, 1) !important;
+}
+
+.home-container.scrolled .search-container {
+  transform: scale(0.96) !important;
+}
+
+.search-icon {
+  position: absolute;
+  left: 20px !important;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--text-muted);
+  font-size: 1rem;
+  transition: color 0.3s ease;
+  pointer-events: none;
+  z-index: 2;
+}
+
+#mod-search-input.search-input {
+  width: 100% !important;
+  background-color: rgba(255, 255, 255, 0.04) !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  color: var(--text-main) !important;
+  padding: 14px 20px 14px 48px !important;
+  border-radius: 30px !important;
+  font-family: inherit;
+  font-size: 0.95rem;
+  font-weight: 500;
+  outline: none;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15) !important;
+
+  transition:
+    background-color 0.25s ease,
+    border-color 0.25s ease,
+    box-shadow 0.25s ease,
+    transform 0.25s ease !important;
+}
+
+.search-hint {
+  position: absolute;
+  top: 50%;
+  left: 48px;
+  z-index: 3;
+  max-width: calc(100% - 72px);
+  overflow: hidden;
+  color: rgba(255, 255, 255, 0.3);
+  font-size: 0.95rem;
+  font-weight: 400;
+  pointer-events: none;
+  text-overflow: ellipsis;
+  transform: translateY(-50%);
+  transition:
+    opacity 240ms ease,
+    transform 240ms ease;
+  white-space: nowrap;
+}
+
+.search-hint.is-hidden,
+.search-container:focus-within .search-hint {
+  opacity: 0;
+  transform: translateY(calc(-50% - 3px));
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .search-hint {
+    transition: none;
+  }
+}
+
+#mod-search-input.search-input:hover {
+  background-color: rgba(255, 255, 255, 0.07) !important;
+  border-color: rgba(255, 255, 255, 0.15) !important;
+}
+
+#mod-search-input.search-input:focus {
+  background-color: rgba(15, 15, 15, 0.95) !important;
+  border-color: var(--text-main) !important;
+  box-shadow:
+    0 0 0 4px rgba(255, 255, 255, 0.08),
+    0 15px 35px rgba(0, 0, 0, 0.6) !important;
+  transform: translateY(-2px) !important;
+}
+
+#mod-search-input.search-input:focus::placeholder {
+  color: rgba(255, 255, 255, 0.5) !important;
+}
+
+.search-container:focus-within .search-icon {
+  color: var(--text-main) !important;
+}
+
+.search-dropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  width: 100%;
+  margin-top: var(--spacing-xs);
+  background-color: var(--bg-panel);
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.8);
+  z-index: 200;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.carousel-container {
+  position: relative;
+  width: 100%;
+  min-height: 380px;
+  border-radius: var(--border-radius);
+  background-color: var(--bg-panel);
+  overflow: hidden;
+  display: flex;
+}
+
+.carousel-track {
+  display: flex;
+  width: 100%;
+  transition: transform 0.5s cubic-bezier(0.25, 1, 0.5, 1);
+}
+
+.carousel-slide {
+  min-width: 100%;
+  position: relative;
+  background-size: cover;
+  background-position: center;
+  display: flex;
+  align-items: flex-end;
+}
+
+.carousel-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    to top,
+    rgba(10, 10, 10, 0.95) 0%,
+    rgba(10, 10, 10, 0.6) 25%,
+    transparent 45%
+  );
+  z-index: 1;
+}
+
+.carousel-content {
+  position: relative;
+  z-index: 2;
+  padding: var(--spacing-xl);
+  padding-bottom: var(--spacing-xl);
+  max-width: 800px;
+  width: 100%;
+}
+
+.carousel-content h1 {
+  font-size: 2.2rem;
+  margin-bottom: var(--spacing-xs);
+  color: var(--text-main);
+  text-shadow: 0px 4px 10px rgba(0, 0, 0, 0.8);
+}
+
+.carousel-author {
+  font-size: 1rem;
+  margin-bottom: 2px;
+  color: #dfdfdf;
+}
+
+/* ------------------------------------
+   P├¡ldora del Engine (Carousel / Grid)
+------------------------------------ */
+.home-engine-badge {
+  width: fit-content;
+  height: 24px;
+  padding: 0 9px 0 5px;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 6px;
+  background: rgba(20, 20, 20, 0.45);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--text-main);
+  font-size: 0.75rem;
+  font-weight: 600;
+  margin: 2px 0;
+  position: static; /* Fuerzo posicionamiento est├ítico por defecto */
+}
+
+.home-engine-badge img {
+  width: 16px;
+  height: 16px;
+  object-fit: contain;
+  border-radius: 4px;
+}
+
+.home-engine-badge i {
+  font-size: 14px;
+  color: var(--text-muted);
+}
+
+.carousel-slide > .home-engine-badge {
+  position: absolute;
+  z-index: 2;
+  top: var(--spacing-lg);
+  right: var(--spacing-lg);
+  margin: 0;
+}
+
+.carousel-controls {
+  position: absolute;
+  bottom: var(--spacing-lg);
+  right: var(--spacing-xl);
+  z-index: 3;
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+}
+
+.carousel-btn {
+  background: rgba(0, 0, 0, 0.6);
+  color: white;
+  border: 1px solid var(--border-color);
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.2s;
+}
+
+.carousel-btn:hover {
+  background: var(--text-main);
+  color: black;
+}
+
+.carousel-dots {
+  display: flex;
+  gap: 8px;
+}

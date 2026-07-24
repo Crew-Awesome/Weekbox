@@ -1,5 +1,6 @@
 import { appSettings } from '../../core/index-core.js';
 import { getOsProcessId, sameProcessId } from '../processes/spawned-process.util.js';
+import { resolveExternalDownloadUrl, getRangeSupportedFileSize } from './external-download.resolver.js';
 
 function formatArchiveEntry(output) {
   const lines = output.trim().split("\n");
@@ -359,6 +360,31 @@ async function runCurlDownload(command, getTask, onProgress, getProgress) {
 }
 
 async function downloadSingleArchive({ url, outPath, getTask, onProgress }) {
+  if (url.includes("drive.google.com") || url.includes("drive.usercontent.google.com")) {
+    const fileId = url.match(/id=([^&]+)/)?.[1] || url.match(/\/file\/d\/([^/]+)/)?.[1];
+    if (fileId) {
+      const cookiePath = outPath + ".cookie";
+      await runCurlDownload(
+        `curl -s -L -c ${quoteCommandArgument(cookiePath)} "https://drive.google.com/uc?export=download&id=${fileId}"`,
+        getTask,
+        () => {} 
+      );
+      let token = "t";
+      try {
+        const cookieStr = await Neutralino.filesystem.readFile(cookiePath);
+        const match = cookieStr.match(/download_warning_([^\s]+)/);
+        if (match) token = match[1];
+      } catch (e) {}
+      await runCurlDownload(
+        `curl -# -L --fail --show-error -b ${quoteCommandArgument(cookiePath)} "https://drive.google.com/uc?export=download&id=${fileId}&confirm=${token}" -o ${quoteCommandArgument(outPath)}`,
+        getTask,
+        onProgress
+      );
+      await Neutralino.filesystem.remove(cookiePath).catch(() => {});
+      return;
+    }
+  }
+
   await runCurlDownload(
     `curl -# -L --fail --show-error ${quoteCommandArgument(url)} -o ${quoteCommandArgument(outPath)}`,
     getTask,
@@ -548,16 +574,24 @@ async function extractArchive({
   const archiveFormat = await detectArchiveFormat(archivePath);
   let portable7z = null;
   if (archiveFormat === "rar" || archiveFormat === "7z") {
-    const binNames = isWindows ? ["7z.exe", "7za.exe"] : window.NL_OS === "Darwin" ? ["7zz-mac", "7za-mac", "7zz"] : ["7zz-linux", "7za-linux", "7zzs", "7zz"];
+    const binNames = isWindows ? (archiveFormat === "rar" ? ["7z.exe"] : ["7z.exe", "7za.exe"]) : window.NL_OS === "Darwin" ? ["7zz-mac", "7za-mac", "7zz"] : ["7zz-linux", "7za-linux", "7zzs", "7zz"];
     for (const binName of binNames) {
-      const binPath = `${window.NL_CWD}/app/assets/bin/${binName}`;
-      try {
-        if ((await Neutralino.filesystem.getStats(binPath)).isFile) {
-          portable7z = binPath;
-          break;
+      const pathsToTry = [
+        `${window.NL_PATH}/app/assets/bin/${binName}`,
+        `${window.NL_PATH}/assets/bin/${binName}`,
+        `${window.NL_CWD}/app/assets/bin/${binName}`,
+        `${window.NL_CWD}/assets/bin/${binName}`
+      ];
+      for (const binPath of pathsToTry) {
+        try {
+          if ((await Neutralino.filesystem.getStats(binPath)).isFile) {
+            portable7z = binPath;
+            break;
+          }
+        } catch {
         }
-      } catch {
       }
+      if (portable7z) break;
     }
   }
   const command = portable7z ? `${quoteCommandArgument(portable7z)} x -y -aoa -o${quoteCommandArgument(destinationPath)} ${quoteCommandArgument(archivePath)}` : isWindows ? getWindowsExtractionCommand(archivePath, destinationPath) : archiveFormat === "tar" || archiveFormat === "gzip" ? `tar -xf ${quoteCommandArgument(archivePath)} -C ${quoteCommandArgument(destinationPath)}` : archiveFormat === "rar" || archiveFormat === "7z" ? window.NL_OS === "Darwin" ? `tar -xf ${quoteCommandArgument(archivePath)} -C ${quoteCommandArgument(destinationPath)}` : `7z x -y -aoa -o${quoteCommandArgument(destinationPath)} ${quoteCommandArgument(archivePath)}` : `unzip -oq ${quoteCommandArgument(archivePath)} -d ${quoteCommandArgument(destinationPath)}`;

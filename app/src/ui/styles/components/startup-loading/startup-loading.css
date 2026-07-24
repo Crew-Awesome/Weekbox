@@ -1,0 +1,55 @@
+.startup-loading {
+  position: fixed;
+  inset: 0;
+  z-index: 2000;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: var(--surface);
+  opacity: 1;
+  transition: opacity 180ms ease;
+}
+
+.startup-loading--complete {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.startup-loading__card {
+  width: min(100%, 340px);
+  padding: 28px;
+  border: 1px solid var(--outline-variant);
+  border-radius: 14px;
+  background: var(--surface-container);
+  box-shadow: 0 20px 50px var(--shadow);
+  text-align: center;
+}
+
+.startup-loading__title {
+  margin: 0 0 16px;
+  color: var(--on-surface);
+  font-size: 1.2rem;
+  font-weight: 800;
+}
+
+.startup-loading__progress-container {
+  height: 8px;
+  overflow: hidden;
+  border: 1px solid var(--outline-variant);
+  border-radius: 999px;
+  background: var(--surface-container);
+}
+
+.startup-loading__progress-bar {
+  width: 4%;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--primary);
+  transition: width 220ms ease;
+}
+
+.startup-loading__label {
+  min-height: 1.5em;
+  margin: 12px 0 0;
+  color: var(--on-surface-variant);
+}

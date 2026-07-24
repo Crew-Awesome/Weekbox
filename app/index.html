@@ -24,14 +24,14 @@
   <body>
     <div
       id="startup-loading-screen"
-      class="startup-loading-screen"
+      class="startup-loading"
       role="status"
       aria-live="polite"
     >
       <div class="startup-loading-card">
-        <p id="startup-loading-title" class="startup-loading-title">Loading</p>
+        <p id="startup-loading-title" class="startup-loading__title">Loading</p>
         <div
-          class="startup-loading-progress"
+          class="startup-loading__progress-container"
           role="progressbar"
           aria-label="WeekBox startup progress"
           aria-valuemin="0"
@@ -40,10 +40,10 @@
         >
           <div
             id="startup-loading-progress"
-            class="startup-loading-progress-bar"
+            class="startup-loading__progress-bar"
           ></div>
         </div>
-        <p id="startup-loading-label" class="startup-loading-label">
+        <p id="startup-loading-label" class="startup-loading__label">
           Starting WeekBox
         </p>
       </div>
@@ -52,8 +52,7 @@
     <div id="app" class="app-layout">
       <div id="sidebar-container" style="display: contents"></div>
 
-      <main class="content" id="main-content">
-        <p style="padding: 24px; color: var(--text-muted)">
+      <main class="app-layout__content" id="main-content">
           Loading interface...
         </p>
       </main>

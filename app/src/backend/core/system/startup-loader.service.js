@@ -21,16 +21,16 @@ var screen, bar, label, title, startupLoader;
       async complete() {
         this.setPhase("Ready", 100);
         await new Promise((resolve) => requestAnimationFrame(resolve));
-        screen?.classList.add("startup-loading-screen--complete");
+        screen?.classList.add("startup-loading--complete");
         window.setTimeout(() => screen?.remove(), 240);
       },
       fail(message = "WeekBox could not start") {
         if (title) title.textContent = "Startup failed";
         this.setPhase(message, 100);
-        screen?.classList.remove("startup-loading-screen--complete");
-        screen?.classList.add("startup-loading-screen--failed");
+        screen?.classList.remove("startup-loading--complete");
+        screen?.classList.add("startup-loading--failed");
         requestAnimationFrame(
-          () => screen?.classList.add("startup-loading-screen--complete")
+          () => screen?.classList.add("startup-loading--complete")
         );
         window.setTimeout(() => screen?.remove(), 200);
       }

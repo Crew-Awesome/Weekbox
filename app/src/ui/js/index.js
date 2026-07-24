@@ -291,7 +291,7 @@ function describeIssue(error) {
       reportable: false
     };
   }
-  if (!lower.includes("end-of-central-directory signature not found") && !lower.includes("cannot find zipfile directory") && (lower.includes("extraction failed") || lower.includes("invalid archive") || lower.includes("archive file"))) {
+  if (!lower.includes("end-of-central-directory signature not found") && !lower.includes("cannot find zipfile directory") && (lower.includes("extraction failed") || lower.includes("failed to extract") || lower.includes("extraction process failed") || lower.includes("invalid archive") || lower.includes("archive file"))) {
     return {
       title: "WeekBox could not unpack the download",
       summary: "The downloaded file may be incomplete or invalid. Retry the download with a local storage folder.",
@@ -2954,6 +2954,7 @@ var enginesView = {
       this.currentEngine.id,
       this.currentVersion
     );
+    if (!document.getElementById("launch-engine-btn")) return;
     const newBtn = launchBtn.cloneNode(true);
     launchBtn.parentNode.replaceChild(newBtn, launchBtn);
     const activeBtn = document.getElementById("launch-engine-btn");
@@ -4817,7 +4818,7 @@ import { networkStatus as networkStatus5 } from "../../backend/core/index-core.j
 var sidebar = {
   updateEngineMarquee(button) {
     const container = button.querySelector(".marquee-container");
-    const label = button.querySelector(".marquee-text");
+    const label = button.querySelector(".sidebar__marquee-text");
     if (!container || !label) return;
     requestAnimationFrame(() => {
       const distance = Math.max(0, label.scrollWidth - container.clientWidth);
@@ -4827,12 +4828,14 @@ var sidebar = {
     });
   },
   refreshEngineMarquees() {
-    document.querySelectorAll(".engine-btn").forEach((button) => this.updateEngineMarquee(button));
+    document
+        .querySelectorAll(".sidebar__engine-btn")
+        .forEach((button) => this.updateEngineMarquee(button));
   },
   async init() {
     this.sidebar = document.getElementById("sidebar");
     this.resizer = document.getElementById("sidebar-resizer");
-    this.tabButtons = document.querySelectorAll(".nav-btn[data-tab]");
+    this.tabButtons = document.querySelectorAll(".sidebar__btn[data-tab]");
     this.modManagerBtn = document.getElementById("mod-manager-btn");
     this.engineManagerBtn = document.getElementById("engine-manager-btn");
     this.configBtn = document.getElementById("config-btn");
@@ -4853,7 +4856,7 @@ var sidebar = {
     this.resizer.addEventListener("mousedown", () => {
       this.isResizing = true;
       document.body.style.cursor = "ew-resize";
-      this.resizer.classList.add("resizing");
+      this.resizer.classList.add("sidebar__resizer--resizing");
     });
     document.addEventListener("mousemove", (e) => {
       if (!this.isResizing) return;
@@ -4867,7 +4870,7 @@ var sidebar = {
       if (this.isResizing) {
         this.isResizing = false;
         document.body.style.cursor = "default";
-        this.resizer.classList.remove("resizing");
+        this.resizer.classList.remove("sidebar__resizer--resizing");
       }
     });
   },
@@ -4879,7 +4882,7 @@ var sidebar = {
         if (this.engineManagerBtn)
           this.engineManagerBtn.classList.remove("active");
         if (this.configBtn) this.configBtn.classList.remove("active");
-        const engineBtns = document.querySelectorAll(".engine-btn");
+        const engineBtns = document.querySelectorAll(".sidebar__engine-btn");
         engineBtns.forEach((b) => b.classList.remove("active"));
         btn.classList.add("active");
         const viewToLoad = btn.getAttribute("data-tab");
@@ -4904,7 +4907,7 @@ var sidebar = {
   },
   setupBrandButton() {
     if (!this.brandBtn) return;
-    const brandIcon = this.brandBtn.querySelector(".sidebar-brand-icon");
+    const brandIcon = this.brandBtn.querySelector(".sidebar__brand-icon");
     if (!brandIcon) return;
     this.brandBtn.addEventListener("click", () => {
       brandIcon.animate(
@@ -4943,11 +4946,11 @@ var sidebar = {
     }
   },
   openEngine(engineId) {
-    const button = document.querySelector(
-      `.engine-btn[data-engine-id="${engineId}"]`
+    const btn = document.querySelector(
+      `.sidebar__engine-btn[data-engine-id="${engineId}"]`
     );
-    if (!button) return false;
-    button.click();
+    if (!btn) return false;
+    btn.click();
     return true;
   },
   extractVersionFromUrl(url) {
@@ -4970,13 +4973,13 @@ var sidebar = {
         const displayName = engineDef.name;
         const iconSrc = engineDef.icon ? `assets/icons/${engineDef.icon}` : "";
         const btn = document.createElement("button");
-        btn.className = "nav-btn engine-btn";
+        btn.className = "sidebar__btn sidebar__engine-btn";
         btn.dataset.engineId = engineDef.versions;
         btn.disabled = !networkStatus5.online;
         btn.title = networkStatus5.online ? "" : "Connect to the internet to browse engine releases";
         btn.innerHTML = `
-          <img src="${iconSrc}" class="engine-icon" onerror="this.onerror=null; this.src='data:image/svg+xml;utf8,<svg xmlns=\\'http://www.w3.org/2000/svg\\' viewBox=\\'0 0 512 512\\'><path fill=\\'%23888\\' d=\\'M448 32H64C28.65 32 0 60.65 0 96v320c0 35.35 28.65 64 64 64h384c35.35 0 64-28.65 64-64V96C512 60.65 483.3 32 448 32zM212.7 222.7L132.7 302.7C126.4 308.9 118.2 312 110.1 312s-16.38-3.125-22.62-9.375c-12.5-12.5-12.5-32.75 0-45.25L155.3 189.3l-67.88-67.88c-12.5-12.5-12.5-32.75 0-45.25s32.75-12.5 45.25 0l102.6 102.6C247.7 191.3 247.7 210.2 212.7 222.7zM384 320c-17.67 0-32-14.33-32-32s14.33-32 32-32h32c17.67 0 32 14.33 32 32s-14.33 32-32 32H384z\\'/></svg>'">
-          <div class="marquee-container"><span class="marquee-text">${displayName}</span></div>
+          <img src="${iconSrc}" class="sidebar__engine-icon" onerror="this.onerror=null; this.src='data:image/svg+xml;utf8,<svg xmlns=\\'http://www.w3.org/2000/svg\\' viewBox=\\'0 0 512 512\\'><path fill=\\'%23888\\' d=\\'M448 32H64C28.65 32 0 60.65 0 96v320c0 35.35 28.65 64 64 64h384c35.35 0 64-28.65 64-64V96C512 60.65 483.3 32 448 32zM212.7 222.7L132.7 302.7C126.4 308.9 118.2 312 110.1 312s-16.38-3.125-22.62-9.375c-12.5-12.5-12.5-32.75 0-45.25L155.3 189.3l-67.88-67.88c-12.5-12.5-12.5-32.75 0-45.25s32.75-12.5 45.25 0l102.6 102.6C247.7 191.3 247.7 210.2 212.7 222.7zM384 320c-17.67 0-32-14.33-32-32s14.33-32 32-32h32c17.67 0 32 14.33 32 32s-14.33 32-32 32H384z\\'/></svg>'">
+          <div class="sidebar__marquee-container"><span class="sidebar__marquee-text">${displayName}</span></div>
         `;
         btn.addEventListener("click", async () => {
           this.tabButtons.forEach((b) => b.classList.remove("active"));
@@ -4984,7 +4987,7 @@ var sidebar = {
           if (this.engineManagerBtn)
             this.engineManagerBtn.classList.remove("active");
           if (this.configBtn) this.configBtn.classList.remove("active");
-          const engineBtns = document.querySelectorAll(".engine-btn");
+          const engineBtns = document.querySelectorAll(".sidebar__engine-btn");
           engineBtns.forEach((b) => b.classList.remove("active"));
           btn.classList.add("active");
           try {
@@ -5049,13 +5052,13 @@ var sidebar = {
     const sidebarNav = document.querySelector(".sidebar-nav");
     if (!sidebarNav) return;
     const container = document.createElement("div");
-    container.className = "engines-list";
+    container.className = "sidebar__list";
     container.id = "standalone-mods-container";
     const divider = document.createElement("div");
     divider.className = "nav-divider";
     container.appendChild(divider);
     const sectionTitle = document.createElement("p");
-    sectionTitle.className = "section-title";
+    sectionTitle.className = "sidebar__title";
     sectionTitle.textContent = "Standalone Mods";
     container.appendChild(sectionTitle);
     const wrapper = document.createElement("div");
@@ -5065,11 +5068,11 @@ var sidebar = {
     sidebarNav.appendChild(container);
     for (const mod of standaloneMods) {
       const btn = document.createElement("button");
-      btn.className = "nav-btn engine-btn standalone-btn";
+      btn.className = "sidebar__btn sidebar__engine-btn standalone-btn";
       const iconSrc = mod.icoPath || "data:image/svg+xml;utf8,<svg xmlns=\\'http://www.w3.org/2000/svg\\' viewBox=\\'0 0 512 512\\'><path fill=\\'%23888\\' d=\\'M448 32H64C28.65 32 0 60.65 0 96v320c0 35.35 28.65 64 64 64h384c35.35 0 64-28.65 64-64V96C512 60.65 483.3 32 448 32zM212.7 222.7L132.7 302.7C126.4 308.9 118.2 312 110.1 312s-16.38-3.125-22.62-9.375c-12.5-12.5-12.5-32.75 0-45.25L155.3 189.3l-67.88-67.88c-12.5-12.5-12.5-32.75 0-45.25s32.75-12.5 45.25 0l102.6 102.6C247.7 191.3 247.7 210.2 212.7 222.7zM384 320c-17.67 0-32-14.33-32-32s14.33-32 32-32h32c17.67 0 32 14.33 32 32s-14.33 32-32 32H384z\\'/></svg>";
       btn.innerHTML = `
-        <img src="${iconSrc}" class="engine-icon" onerror="this.onerror=null; this.src='data:image/svg+xml;utf8,<svg xmlns=\\'http://www.w3.org/2000/svg\\' viewBox=\\'0 0 512 512\\'><path fill=\\'%23888\\' d=\\'M448 32H64C28.65 32 0 60.65 0 96v320c0 35.35 28.65 64 64 64h384c35.35 0 64-28.65 64-64V96C512 60.65 483.3 32 448 32zM212.7 222.7L132.7 302.7C126.4 308.9 118.2 312 110.1 312s-16.38-3.125-22.62-9.375c-12.5-12.5-12.5-32.75 0-45.25L155.3 189.3l-67.88-67.88c-12.5-12.5-12.5-32.75 0-45.25s32.75-12.5 45.25 0l102.6 102.6C247.7 191.3 247.7 210.2 212.7 222.7zM384 320c-17.67 0-32-14.33-32-32s14.33-32 32-32h32c17.67 0 32 14.33 32 32s-14.33 32-32 32H384z\\'/></svg>'">
-        <div class="marquee-container"><span class="marquee-text">${mod.name}</span></div>
+        <img src="${iconSrc}" class="sidebar__engine-icon" onerror="this.onerror=null; this.src='data:image/svg+xml;utf8,<svg xmlns=\\'http://www.w3.org/2000/svg\\' viewBox=\\'0 0 512 512\\'><path fill=\\'%23888\\' d=\\'M448 32H64C28.65 32 0 60.65 0 96v320c0 35.35 28.65 64 64 64h384c35.35 0 64-28.65 64-64V96C512 60.65 483.3 32 448 32zM212.7 222.7L132.7 302.7C126.4 308.9 118.2 312 110.1 312s-16.38-3.125-22.62-9.375c-12.5-12.5-12.5-32.75 0-45.25L155.3 189.3l-67.88-67.88c-12.5-12.5-12.5-32.75 0-45.25s32.75-12.5 45.25 0l102.6 102.6C247.7 191.3 247.7 210.2 212.7 222.7zM384 320c-17.67 0-32-14.33-32-32s14.33-32 32-32h32c17.67 0 32 14.33 32 32s-14.33 32-32 32H384z\\'/></svg>'">
+        <div class="sidebar__marquee-container"><span class="sidebar__marquee-text">${mod.name}</span></div>
       `;
       btn.addEventListener("click", async () => {
         if (btn.classList.contains("running")) {
@@ -5086,19 +5089,19 @@ var sidebar = {
         if (this.engineManagerBtn)
           this.engineManagerBtn.classList.remove("active");
         if (this.configBtn) this.configBtn.classList.remove("active");
-        const engineBtns = document.querySelectorAll(".engine-btn");
+        const engineBtns = document.querySelectorAll(".sidebar__engine-btn");
         engineBtns.forEach((b) => b.classList.remove("active"));
         btn.classList.add("active");
-        const originalText = btn.querySelector(".marquee-text").textContent;
-        btn.querySelector(".marquee-container").innerHTML = `
+        const originalText = btn.querySelector(".sidebar__marquee-text").textContent;
+        btn.querySelector(".sidebar__marquee-container").innerHTML = `
           <div style="display: flex; align-items: center; gap: 8px;">
             <i class="fa-solid fa-stop" style="color: #ff4a4a;" title="Stop"></i>
-            <span>Launched</span>
+            <span class="sidebar__marquee-text" style="font-weight: 800; color: #ff4a4a;">Running...</span>
           </div>
         `;
         btn.classList.add("running");
         await FS14.runStandaloneMod(mod.id, () => {
-          btn.querySelector(".marquee-container").innerHTML = `<span class="marquee-text">${originalText}</span>`;
+          btn.querySelector(".sidebar__marquee-container").innerHTML = `<span class="sidebar__marquee-text">${originalText}</span>`;
           this.updateEngineMarquee(btn);
           btn.classList.remove("running");
           btn.classList.remove("active");

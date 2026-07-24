@@ -1005,47 +1005,47 @@
 </template>
 <template id="tpl-sidebar">
 <aside class="sidebar" id="sidebar">
-  <div class="sidebar-top">
-    <nav class="sidebar-nav">
+  <div class="sidebar__top">
+    <nav class="sidebar__nav">
       <button
-        class="sidebar-brand"
+        class="sidebar__brand"
         id="sidebar-brand-btn"
         type="button"
         aria-label="Spin the WeekBox icon"
       >
         <img
-          class="sidebar-brand-icon"
+          class="sidebar__brand-icon"
           src="assets/icons/launcher-icon.png"
           alt=""
         />
         <span>WeekBox</span>
         <span
           id="sidebar-network-status"
-          class="sidebar-network-status"
+          class="sidebar__network-status"
           role="status"
           aria-label="Checking connection"
         ></span>
       </button>
-      <button class="nav-btn active" data-tab="home">
+      <button class="sidebar__btn sidebar__btn--active" data-tab="home">
         <i class="fa-solid fa-house"></i> <span>Home</span>
       </button>
-      <button class="nav-btn" id="mod-manager-btn">
+      <button class="sidebar__btn" id="mod-manager-btn">
         <i class="fa-solid fa-folder-open"></i> <span>Mod Manager</span>
       </button>
-      <button class="nav-btn" id="engine-manager-btn">
+      <button class="sidebar__btn" id="engine-manager-btn">
         <i class="fa-solid fa-server"></i> <span>Engine Manager</span>
       </button>
-      <div class="nav-divider"></div>
-      <div id="engines-container" class="engines-list">
-        <p class="section-title">Engines</p>
-        <div class="engines-wrapper" id="engines-wrapper"></div>
+      <div class="sidebar__divider"></div>
+      <div id="engines-container" class="sidebar__list">
+        <p class="sidebar__title">Engines</p>
+        <div class="sidebar__wrapper" id="engines-wrapper"></div>
       </div>
     </nav>
   </div>
-  <button class="nav-btn config-btn" id="config-btn">
+  <button class="sidebar__btn sidebar__btn--config" id="config-btn">
     <i class="fa-solid fa-gear"></i> <span>Config</span>
   </button>
-  <div class="sidebar-resizer" id="sidebar-resizer"></div>
+  <div class="sidebar__resizer" id="sidebar-resizer"></div>
 </aside>
 
 </template>
