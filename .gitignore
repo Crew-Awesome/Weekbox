@@ -1,6 +1,7 @@
 .lite_workspace.lua
 /bin
 /dist
+app/dist/
 neutralino.js
 .storage
 /data
