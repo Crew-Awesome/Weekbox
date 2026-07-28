@@ -11,11 +11,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- WeekBox can use Wine on Linux to open Windows games and mods.
+- WeekBox can use Wine on Linux and macOS to open Windows `.exe` games and mods.
 - WeekBox can open `.7z`, `.rar`, `.tar`, and `.zip` downloads without a separate archive app.
 - WeekBox supports more Google Drive downloads.
 - The startup screen shows what WeekBox is doing.
-- Settings can choose which installed Wine version runs Windows `.exe` mods.
+- Linux and macOS Settings can choose which installed Wine version runs Windows `.exe` mods.
 
 ### Changed
 
@@ -31,14 +31,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Linux download and archive commands work correctly.
 - WeekBox retries downloads after some connection errors.
 - WeekBox waits for downloaded files before trying to use them.
-- Diagnostic reports now fit the reporting server limits.
+- Diagnostic reports no longer fail because they are too long.
 - Mod files are moved one at a time to avoid Windows file errors.
 - Engine update data errors no longer stop an engine update.
 - Codename mods can launch on Linux again.
 - Mods cannot launch while their engine version is updating.
 - WeekBox closes the matching running engine before updating it.
 - WeekBox checks again before replacing an engine folder.
-- WeekBox gives a clearer message when Wine is missing.
+- WeekBox gives a clearer message when Wine is missing on Linux or macOS.
 
 ### Removed
 
