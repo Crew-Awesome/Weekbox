@@ -75,6 +75,37 @@ function createProcessError(operation, exitCode, output) {
   );
 }
 
+function isTransientDownloadError(error) {
+  return /exit code (?:28|35|56)\b/i.test(String(error?.message || error));
+}
+
+function wait(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+async function retryTransientDownload(operation, getTask, onProgress, cleanup) {
+  const attempts = 3;
+  let lastError;
+  for (let attempt = 1; attempt <= attempts; attempt += 1) {
+    if (getTask?.()?.cancelled) throw new Error("Cancelled");
+    try {
+      return await operation();
+    } catch (error) {
+      lastError = error;
+      if (!isTransientDownloadError(error) || attempt === attempts) throw error;
+      await cleanup?.();
+      onProgress?.(`Connection interrupted. Retrying (${attempt + 1}/${attempts})...`, 2);
+      await wait(attempt * 500);
+    }
+  }
+  if (operation === "Download" && Number(exitCode) === 22 && /\b404\b/.test(detail)) {
+    return new Error(
+      "This download is no longer available (404). Choose another download file or try again later."
+    );
+  }
+  throw lastError;
+}
+
 function isNonFatalUnzipFilenameWarning(exitCode, output) {
   if (Number(exitCode) !== 1) return false;
   const detail = String(output || "");
@@ -364,10 +395,15 @@ async function downloadSingleArchive({ url, outPath, getTask, onProgress }) {
     const fileId = url.match(/id=([^&]+)/)?.[1] || url.match(/\/file\/d\/([^/]+)/)?.[1];
     if (fileId) {
       const cookiePath = outPath + ".cookie";
-      await runCurlDownload(
-        `curl -s -L -c ${quoteCommandArgument(cookiePath)} "https://drive.google.com/uc?export=download&id=${fileId}"`,
+      await retryTransientDownload(
+        () => runCurlDownload(
+          `curl -s -L -c ${quoteCommandArgument(cookiePath)} "https://drive.google.com/uc?export=download&id=${fileId}"`,
+          getTask,
+          () => {}
+        ),
         getTask,
-        () => {} 
+        onProgress,
+        () => Neutralino.filesystem.remove(cookiePath).catch(() => {})
       );
       let token = "t";
       try {
@@ -375,20 +411,30 @@ async function downloadSingleArchive({ url, outPath, getTask, onProgress }) {
         const match = cookieStr.match(/download_warning_([^\s]+)/);
         if (match) token = match[1];
       } catch (e) {}
-      await runCurlDownload(
-        `curl -# -L --fail --show-error -b ${quoteCommandArgument(cookiePath)} "https://drive.google.com/uc?export=download&id=${fileId}&confirm=${token}" -o ${quoteCommandArgument(outPath)}`,
+      await retryTransientDownload(
+        () => runCurlDownload(
+          `curl -# -L --fail --show-error -b ${quoteCommandArgument(cookiePath)} "https://drive.google.com/uc?export=download&id=${fileId}&confirm=${token}" -o ${quoteCommandArgument(outPath)}`,
+          getTask,
+          onProgress
+        ),
         getTask,
-        onProgress
+        onProgress,
+        () => Neutralino.filesystem.remove(outPath).catch(() => {})
       );
       await Neutralino.filesystem.remove(cookiePath).catch(() => {});
       return;
     }
   }
 
-  await runCurlDownload(
-    `curl -# -L --fail --show-error ${quoteCommandArgument(url)} -o ${quoteCommandArgument(outPath)}`,
+  await retryTransientDownload(
+    () => runCurlDownload(
+      `curl -# -L --fail --show-error ${quoteCommandArgument(url)} -o ${quoteCommandArgument(outPath)}`,
+      getTask,
+      onProgress
+    ),
     getTask,
-    onProgress
+    onProgress,
+    () => Neutralino.filesystem.remove(outPath).catch(() => {})
   );
 }
 
@@ -446,6 +492,23 @@ async function downloadSegmentedArchive({
   }
 }
 
+async function waitForDownloadedArchive(outPath) {
+  let lastError;
+  for (let attempt = 1; attempt <= 3; attempt += 1) {
+    try {
+      const stats = await Neutralino.filesystem.getStats(outPath);
+      if (stats.size > 0) return stats;
+      lastError = new Error("The downloaded archive is empty");
+    } catch (error) {
+      lastError = error;
+    }
+    if (attempt < 3) await wait(attempt * 250);
+  }
+  throw new Error(
+    `WeekBox could not access the temporary download after it completed. ${lastError?.message || lastError || "Unknown filesystem error"}`
+  );
+}
+
 async function downloadArchive({
   url,
   outPath,
@@ -495,9 +558,11 @@ async function downloadArchive({
       onProgress?.("Retrying download...", 2);
       await downloadSingleArchive({ url, outPath, getTask, onProgress });
     }
+    await waitForDownloadedArchive(outPath);
     return;
   }
   await downloadSingleArchive({ url, outPath, getTask, onProgress });
+  await waitForDownloadedArchive(outPath);
 }
 
 async function extractArchive({

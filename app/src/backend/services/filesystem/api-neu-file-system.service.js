@@ -42,10 +42,24 @@ var APIneuFileSystem = {
    * Escribe datos en un archivo. Reemplaza el archivo si ya existe.
    */
   async write(path, data, isBinary = false) {
-    if (isBinary) {
-      await Neutralino.filesystem.writeBinaryFile(path, data);
-    } else {
-      await Neutralino.filesystem.writeFile(path, data);
+    if (typeof path !== 'string' || !path.trim()) {
+      throw new Error('WeekBox could not write storage data because the destination path is missing.');
+    }
+    if (data === undefined || data === null) {
+      throw new Error(`WeekBox could not write ${path} because the file contents are missing.`);
+    }
+    const normalizedPath = String(path).replace(/\\/g, '/');
+    const separator = normalizedPath.lastIndexOf('/');
+    if (separator > 0) await this.ensureDir(normalizedPath.slice(0, separator));
+    try {
+      if (isBinary) {
+        await Neutralino.filesystem.writeBinaryFile(path, data);
+      } else {
+        await Neutralino.filesystem.writeFile(path, data);
+      }
+    } catch (error) {
+      const fileName = normalizedPath.slice(separator + 1) || normalizedPath;
+      throw new Error(`WeekBox could not write ${fileName}. Check that its storage folder is writable and has free space. ${error?.message || error}`);
     }
   },
   /**

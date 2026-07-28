@@ -1098,7 +1098,7 @@ var downloadMod = {
   async cacheModCover(modId, coverUrl) {
     return FS3.ensureModCover(modId, async () => coverUrl);
   },
-  async moveEntries(entries, sourceDir, destinationDir, concurrency = 8) {
+  async moveEntries(entries, sourceDir, destinationDir, concurrency = 1) {
     const queue = entries.filter(
       (entry) => entry.entry !== "." && entry.entry !== ".."
     );
@@ -1107,10 +1107,22 @@ var downloadMod = {
       while (nextIndex < queue.length) {
         const entry = queue[nextIndex];
         nextIndex += 1;
-        await Neutralino.filesystem.move(
-          `${sourceDir}/${entry.entry}`,
-          `${destinationDir}/${entry.entry}`
-        );
+        const sourcePath = `${sourceDir}/${entry.entry}`;
+        const destinationPath = `${destinationDir}/${entry.entry}`;
+        let lastError;
+        for (let attempt = 1; attempt <= 3; attempt += 1) {
+          try {
+            await Neutralino.filesystem.move(sourcePath, destinationPath);
+            lastError = null;
+            break;
+          } catch (error) {
+            lastError = error;
+            if (attempt < 3) await new Promise((resolve) => setTimeout(resolve, attempt * 250));
+          }
+        }
+        if (lastError) {
+          throw new Error(`Could not move extracted file ${entry.entry}: ${lastError?.message || lastError}`);
+        }
       }
     }, "worker");
     await Promise.all(
@@ -2181,10 +2193,14 @@ async function saveInstalledBuild(engineId, installedVersion, buildKey) {
   const state = await readUpdateState();
   state.builds || (state.builds = {});
   state.builds[getBuildStateKey(engineId, installedVersion)] = buildKey;
-  await FS5.api.write(
-    `${FS5.dataPath}/${UPDATE_STATE_FILE}`,
-    JSON.stringify(state, null, 2)
-  );
+  try {
+    await FS5.api.write(
+      `${FS5.dataPath}/${UPDATE_STATE_FILE}`,
+      JSON.stringify(state, null, 2)
+    );
+  } catch (error) {
+    console.warn("Could not save engine update state:", error);
+  }
 }
 __name(saveInstalledBuild, "saveInstalledBuild");
 function getValue(key) {
