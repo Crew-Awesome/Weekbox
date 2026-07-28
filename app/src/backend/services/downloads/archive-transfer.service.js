@@ -70,13 +70,19 @@ function createProcessError(operation, exitCode, output) {
       "To install .7z or .rar mods on Linux, you must install the p7zip package (e.g. sudo apt install p7zip-full)."
     );
   }
+  if (operation === "Download" && Number(exitCode) === 28) {
+    const curlMessage = detail.match(/curl:\s*\(28\)\s*[^\r\n]+/i)?.[0];
+    return new Error(
+      `Could not connect to the download server. Check your connection and try again later.${curlMessage ? ` ${curlMessage}` : ""}`
+    );
+  }
   return new Error(
     `${operation} failed with exit code ${exitCode}${detail ? `: ${detail}` : ""}`
   );
 }
 
 function isTransientDownloadError(error) {
-  return /exit code (?:28|35|56)\b/i.test(String(error?.message || error));
+  return /(?:exit code|curl:\s*\()\s*(?:28|35|56)\b/i.test(String(error?.message || error));
 }
 
 function wait(ms) {
@@ -428,7 +434,7 @@ async function downloadSingleArchive({ url, outPath, getTask, onProgress }) {
 
   await retryTransientDownload(
     () => runCurlDownload(
-      `curl -# -L --fail --show-error ${quoteCommandArgument(url)} -o ${quoteCommandArgument(outPath)}`,
+      `curl -# -L --fail --show-error --connect-timeout 15 --retry 2 --retry-delay 1 --retry-all-errors ${quoteCommandArgument(url)} -o ${quoteCommandArgument(outPath)}`,
       getTask,
       onProgress
     ),

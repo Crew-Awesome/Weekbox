@@ -87,8 +87,10 @@ var _LibraryMaintenanceService = class _LibraryMaintenanceService {
           (mod) => getModFolderName(mod) === folderName
         );
         if (existing) {
-          if (!existing.hidden)
-            await this.injection.link(existing, engine.id, engine.version);
+          // The folder is already present in the Psych Online installation.
+          // It may belong to a different installed mod that uses the same
+          // engine folder name, so attempting to link it again can turn a
+          // recoverable duplicate into a startup-blocking conflict.
           continue;
         }
         const sourcePath = `${engineModsPath}/${entry.entry}`;

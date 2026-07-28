@@ -774,6 +774,7 @@ var downloadEngine = {
     const engineRoot = `${FS.enginesPath}/${engineId}`;
     const currentDir = `${engineRoot}/${version}`;
     const backupDir = `${engineRoot}/.previous-${Date.now()}`;
+    let backupReady = false;
     FS.setEngineUpdateInProgress(engineId, version, true);
     try {
       if (FS.isEngineRunning(engineId, version)) {
@@ -788,7 +789,6 @@ var downloadEngine = {
         onStateChange
       );
       if (!installed) return false;
-      let backupReady = false;
       if (!await FS.findExecutable(`${engineRoot}/${updateVersion}`)) {
         await FS.api.remove(`${engineRoot}/${updateVersion}`).catch(() => {
         });
