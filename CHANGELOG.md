@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.8.3] - 2026-07-28
+
+### Fixed
+
+- Updates are checked before WeekBox opens.
+- Engine updates no longer crash with a `backupReady` error.
+- Duplicate Psych Online mod folders no longer stop WeekBox from opening.
+- Download errors are clearer and retry when possible.
+- More ZIP files can open on Linux.
+- Normal download and storage errors are not sent to error reports.
+
 ## [1.8.2] - 2026-07-27
 
 ### Added

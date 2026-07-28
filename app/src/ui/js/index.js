@@ -258,7 +258,8 @@ function describeIssue(error) {
       summary: "WeekBox cannot safely download engines into OneDrive. Use a local folder such as C:\\WeekBoxData instead.",
       actionLabel: "Open storage settings",
       action: "storage",
-      tag: "Storage location"
+      tag: "Storage location",
+      reportable: false
     };
   }
   if (lower.includes("access is denied") || lower.includes("permission")) {
@@ -267,7 +268,8 @@ function describeIssue(error) {
       summary: "Check that your storage folder is local, writable, and not being used by another program.",
       actionLabel: "Open storage settings",
       action: "storage",
-      tag: "Folder access"
+      tag: "Folder access",
+      reportable: false
     };
   }
   if (lower.includes("could not access the engine folder") || lower.includes("filesystem error")) {
@@ -276,14 +278,32 @@ function describeIssue(error) {
       summary: "The folder containing this engine is unavailable or cannot be read. Check that the selected drive is connected and writable.",
       actionLabel: "Open storage settings",
       action: "storage",
-      tag: "Storage drive unavailable"
+      tag: "Storage drive unavailable",
+      reportable: false
+    };
+  }
+  if (lower.includes("engine folder conflict")) {
+    return {
+      title: "Two mods use the same engine folder",
+      summary: "Hide or remove one of the conflicting mods, then try again.",
+      tag: "Duplicate engine folder",
+      reportable: false
+    };
+  }
+  if (lower.includes("could not connect to the download server") || lower.includes("exit code 28") || lower.includes("curl: (28)")) {
+    return {
+      title: "WeekBox could not reach the download server",
+      summary: "The download host did not respond in time. Check your connection and try again later.",
+      tag: "Download connection",
+      reportable: false
     };
   }
   if (lower.includes("exit code 22") || /\b(?:403|404)\b/.test(lower)) {
     return {
       title: "This download is no longer available",
       summary: "The selected engine file could not be downloaded. Try another version or try again later.",
-      tag: "Download unavailable"
+      tag: "Download unavailable",
+      reportable: false
     };
   }
   if (lower.includes("download link is missing") || lower.includes("download link is invalid") || lower.includes("download does not have a valid link") || lower.includes("could not find the google drive file id") || lower.includes("does not point to a downloadable file")) {
@@ -294,11 +314,20 @@ function describeIssue(error) {
       reportable: false
     };
   }
+  if (lower.includes("unsupported method")) {
+    return {
+      title: "WeekBox could not unpack this ZIP file",
+      summary: "This download uses a ZIP format that is not supported on this system. Try another download file or version.",
+      tag: "Unsupported ZIP format",
+      reportable: false
+    };
+  }
   if (!lower.includes("end-of-central-directory signature not found") && !lower.includes("cannot find zipfile directory") && (lower.includes("extraction failed") || lower.includes("failed to extract") || lower.includes("extraction process failed") || lower.includes("invalid archive") || lower.includes("archive file"))) {
     return {
       title: "WeekBox could not unpack the download",
       summary: "The downloaded file may be incomplete or invalid. Retry the download with a local storage folder.",
-      tag: "Archive problem"
+      tag: "Archive problem",
+      reportable: false
     };
   }
   if (lower.includes("downloaded archive is empty") || lower.includes("downloaded archive did not contain any files")) {
@@ -315,21 +344,24 @@ function describeIssue(error) {
     return {
       title: "The macOS installer contains no app",
       summary: "WeekBox mounted the downloaded disk image but could not find an application inside it. Try another version or report this release to the engine author.",
-      tag: "Invalid macOS installer"
+      tag: "Invalid macOS installer",
+      reportable: false
     };
   }
   if (lower.includes("end-of-central-directory signature not found") || lower.includes("cannot find zipfile directory")) {
     return {
       title: "The download was not a ZIP file",
       summary: "The download source returned something other than the expected archive, often an expired link or a server error page. WeekBox kept it from being installed. Try again later or choose another version.",
-      tag: "Invalid download file"
+      tag: "Invalid download file",
+      reportable: false
     };
   }
   if (lower.includes("does not contain a runnable engine")) {
     return {
       title: "This engine build is not supported",
       summary: `The download finished, but WeekBox could not find a runnable ${window.NL_OS === "Darwin" ? "macOS" : window.NL_OS === "Linux" ? "Linux" : "Windows"} app file. Copy the report so we can investigate this version.`,
-      tag: "Unsupported build"
+      tag: "Unsupported build",
+      reportable: false
     };
   }
   return {

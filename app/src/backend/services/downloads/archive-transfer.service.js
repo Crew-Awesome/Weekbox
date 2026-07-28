@@ -644,7 +644,7 @@ async function extractArchive({
   const isWindows = window.NL_OS === "Windows";
   const archiveFormat = await detectArchiveFormat(archivePath);
   let portable7z = null;
-  if (archiveFormat === "rar" || archiveFormat === "7z") {
+  if (archiveFormat === "rar" || archiveFormat === "7z" || !isWindows && archiveFormat === "zip") {
     const binNames = isWindows ? (archiveFormat === "rar" ? ["7z.exe"] : ["7z.exe", "7za.exe"]) : window.NL_OS === "Darwin" ? ["7zz-mac", "7za-mac", "7zz"] : ["7zz-linux", "7za-linux", "7zzs", "7zz"];
     for (const binName of binNames) {
       const pathsToTry = [
