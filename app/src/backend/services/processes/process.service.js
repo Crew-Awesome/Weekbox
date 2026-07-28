@@ -193,7 +193,7 @@ var _ProcessService = class _ProcessService {
     try {
       onStateChange?.("running");
       const isExe = String(executablePath).toLowerCase().endsWith(".exe");
-      if (window.NL_OS === "Linux" && isExe) {
+      if ((window.NL_OS === "Linux" || window.NL_OS === "Darwin") && isExe) {
         const wineCheck = await Neutralino.os.execCommand("which wine");
         if (wineCheck.exitCode !== 0) {
           window.dispatchEvent(new CustomEvent("wine-missing"));

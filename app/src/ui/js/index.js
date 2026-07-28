@@ -130,6 +130,10 @@ var wineModal = {
   },
   show() {
     if (document.getElementById("wine-missing-modal")) return;
+    const isMacOS = window.NL_OS === "Darwin";
+    const platform = isMacOS ? "macOS" : "Linux";
+    const installHelp = isMacOS ? "Install Wine for macOS, then try again." : `Please install it using your distribution's package manager, for example:<br>
+            <code style="background: #27272a; padding: 4px 8px; border-radius: 4px; display: inline-block; margin-top: 8px;">sudo apt install wine</code>`;
     const modal = document.createElement("section");
     modal.id = "wine-missing-modal";
     modal.className = "app-update-overlay";
@@ -143,9 +147,8 @@ var wineModal = {
         <div class="app-update-main">
           <h2 id="app-update-title" style="margin: 0 0 12px 0;">Wine is missing</h2>
           <p class="app-update-copy" style="margin: 0 0 20px 0; color: #a1a1aa; line-height: 1.5;">
-            To play Windows (.exe) mods on Linux, you need to install <strong>Wine</strong>.<br><br>
-            Please install it using your distribution's package manager, for example:<br>
-            <code style="background: #27272a; padding: 4px 8px; border-radius: 4px; display: inline-block; margin-top: 8px;">sudo apt install wine</code>
+            To play Windows (.exe) mods on ${platform}, you need to install <strong>Wine</strong>.<br><br>
+            ${installHelp}
           </p>
           <div class="app-update-actions" style="justify-content: center;">
             <button class="app-update-install" type="button" style="width: 100%;">Got it</button>
