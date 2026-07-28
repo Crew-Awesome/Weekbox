@@ -70,8 +70,26 @@ var _ProcessService = class _ProcessService {
   }
   async watch(key, process, onStateChange) {
     const handler = async (event) => {
-      if (!sameProcessId(event.detail.id, process.id) || event.detail.action !== "exit")
+      if (!sameProcessId(event.detail.id, process.id))
         return;
+      const launchDetails = {
+        key,
+        pid: process.pid,
+        executablePath: process.metadata?.executablePath
+      };
+      if (event.detail.action === "stdOut") {
+        console.info("[WeekBox launch stdout]", launchDetails, event.detail.data);
+        return;
+      }
+      if (event.detail.action === "stdErr") {
+        console.error("[WeekBox launch stderr]", launchDetails, event.detail.data);
+        return;
+      }
+      if (event.detail.action !== "exit") return;
+      console.info("[WeekBox launch exit]", {
+        ...launchDetails,
+        exitCode: event.detail.data
+      });
       Neutralino.events.off("spawnedProcess", handler);
       this.processHandlers.delete(key);
       if (!this.closingProcesses.has(key)) {
@@ -215,7 +233,13 @@ var _ProcessService = class _ProcessService {
   async getWineCommand() {
     const installations = await this.getWineInstallations();
     const selected = appSettings.get("wineCommand");
-    return installations.find((wine) => wine.command === selected)?.command || installations[0]?.command || null;
+    const resolved = installations.find((wine) => wine.command === selected)?.command || installations[0]?.command || null;
+    console.info("[WeekBox Wine]", {
+      selected: selected || null,
+      resolved,
+      installations
+    });
+    return resolved;
   }
   async launch(key, executablePath, onStateChange, args = [], metadata = {}) {
     if (this.activeProcesses.has(key)) {
@@ -226,6 +250,15 @@ var _ProcessService = class _ProcessService {
     try {
       onStateChange?.("running");
       const isExe = String(executablePath).toLowerCase().endsWith(".exe");
+      const cwd = this.executables.getDirectory(executablePath);
+      console.info("[WeekBox launch requested]", {
+        key,
+        executablePath,
+        args,
+        cwd,
+        platform: window.NL_OS,
+        isExe
+      });
       if ((window.NL_OS === "Linux" || window.NL_OS === "Darwin") && isExe) {
         const wineCommand = await this.getWineCommand();
         if (!wineCommand) {
@@ -243,10 +276,17 @@ var _ProcessService = class _ProcessService {
           ...args.map((arg) => `"${String(arg).replaceAll('"', '\\"')}"`)
         ].join(" ");
       }
+      console.info("[WeekBox launch command]", { key, command, cwd });
       const process = await Neutralino.os.spawnProcess(command, {
-        cwd: this.executables.getDirectory(executablePath)
+        cwd
       });
       process.metadata = { ...metadata, executablePath };
+      console.info("[WeekBox launch spawned]", {
+        key,
+        processId: process.id,
+        pid: process.pid,
+        executablePath
+      });
       this.activeProcesses.set(key, process);
       this.remember(key, process, process.metadata);
       this.notifyStateChange(key, "launched");
