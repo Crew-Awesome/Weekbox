@@ -771,16 +771,21 @@ var downloadEngine = {
     const engineRoot = `${FS.enginesPath}/${engineId}`;
     const currentDir = `${engineRoot}/${version}`;
     const backupDir = `${engineRoot}/.previous-${Date.now()}`;
-    const installed = await this.install(
-      engineId,
-      updateVersion,
-      downloadUrl,
-      onProgress,
-      onStateChange
-    );
-    if (!installed) return false;
-    let backupReady = false;
+    FS.setEngineUpdateInProgress(engineId, version, true);
     try {
+      if (FS.isEngineRunning(engineId, version)) {
+        const closed = await FS.closeEngineAndWait(engineId, version);
+        if (!closed) return false;
+      }
+      const installed = await this.install(
+        engineId,
+        updateVersion,
+        downloadUrl,
+        onProgress,
+        onStateChange
+      );
+      if (!installed) return false;
+      let backupReady = false;
       if (!await FS.findExecutable(`${engineRoot}/${updateVersion}`)) {
         await FS.api.remove(`${engineRoot}/${updateVersion}`).catch(() => {
         });
@@ -788,6 +793,9 @@ var downloadEngine = {
       }
       await FS.cleanupEngineMods(engineId, version);
       await FS.cleanupEngineMods(engineId, updateVersion);
+      if (FS.isEngineRunning(engineId, version)) {
+        throw new Error("The engine started while its update was downloading. Close it before the update can replace its files.");
+      }
       await FS.api.remove(backupDir).catch(() => {
       });
       if (await FS.api.exists(currentDir)) {
@@ -819,6 +827,8 @@ var downloadEngine = {
       }
       console.error("Could not replace engine update:", error);
       return false;
+    } finally {
+      FS.setEngineUpdateInProgress(engineId, version, false);
     }
   }
 };
@@ -2286,9 +2296,6 @@ var engineUpdateService = {
     }
   },
   async promptAndUpdate(engineId, installedVersion, update) {
-    if (FS5.isEngineRunning(engineId, installedVersion)) {
-      return { status: "running" };
-    }
     const name = ENGINE_DETAILS2[engineId]?.name || engineId;
     const choice = await engineUpdateModal.confirm({
       engineId,
@@ -3644,15 +3651,21 @@ function replaceProcessExitListener(owner, listener, eventTarget = document) {
       "weekbox-process-change",
       previous.listener
     );
+    previous.eventTarget.removeEventListener(
+      "weekbox-engine-update-change",
+      previous.listener
+    );
   }
   eventTarget.addEventListener("weekbox-process-exit", listener);
   eventTarget.addEventListener("weekbox-process-change", listener);
+  eventTarget.addEventListener("weekbox-engine-update-change", listener);
   ownerListeners.set(owner, { eventTarget, listener });
   return () => {
     const current = ownerListeners.get(owner);
     if (current?.listener !== listener) return;
     eventTarget.removeEventListener("weekbox-process-exit", listener);
     eventTarget.removeEventListener("weekbox-process-change", listener);
+    eventTarget.removeEventListener("weekbox-engine-update-change", listener);
     ownerListeners.delete(owner);
   };
 }
@@ -3660,11 +3673,14 @@ __name(replaceProcessExitListener, "replaceProcessExitListener");
 function syncLaunchButton(button, state, templates) {
   const isRunning = state === "running";
   const canSwitchMod = state === "switch";
+  const isUpdating = state === "updating";
   button.classList.toggle("is-running", isRunning);
   button.classList.toggle("is-switchable", canSwitchMod);
+  button.disabled = isUpdating || state === "unavailable";
+  button.title = isUpdating ? "Engine update in progress" : "";
   button.setAttribute(
     "aria-label",
-    `${isRunning ? "Close" : canSwitchMod ? "Switch Mod" : button.dataset.launchLabel} ${button.dataset.modName}`
+    `${isUpdating ? "Engine updating" : isRunning ? "Close" : canSwitchMod ? "Switch Mod" : button.dataset.launchLabel} ${button.dataset.modName}`
   );
   button.innerHTML = isRunning ? templates.launchButtonRunning() : canSwitchMod ? templates.launchButtonSwitch() : templates.launchButtonDefault(button.dataset.launchLabel);
 }

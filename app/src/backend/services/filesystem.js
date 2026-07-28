@@ -6,7 +6,7 @@ import { ModInjectionService } from './filesystem/mod-injection.service.js';
 import { ModRepository } from './filesystem/mod-repository.service.js';
 import { ProcessService } from './processes/process.service.js';
 import { appSettings } from '../core/index-core.js';
-import { getParentPath, sanitizePathSegment, getRealEntries, getModFolderName } from './filesystem/path.util.js';
+import { getParentPath, sanitizePathSegment, getRealEntries, getModFolderName, getEngineModFolderName } from './filesystem/path.util.js';
 import { isValidEngineVersion } from './filesystem/engine-version.service.js';
 import {
   getEngineLaunchBehavior,
@@ -51,6 +51,7 @@ var _FileSystemService = class _FileSystemService {
     this.processes = new ProcessService(this.executables);
     this.activeEngineProcesses = this.processes.activeProcesses;
     this.activeEngineMods = /* @__PURE__ */ new Map();
+    this.engineUpdates = /* @__PURE__ */ new Set();
     document.addEventListener("weekbox-process-exit", (event) => {
       this.activeEngineMods.delete(event.detail.key);
     });
@@ -522,6 +523,20 @@ var _FileSystemService = class _FileSystemService {
   isEngineRunning(engineId, version) {
     return this.processes.isRunning(`${engineId}:${version}`);
   }
+  getEngineUpdateKey(engineId, version) {
+    return `${engineId}:${version}`;
+  }
+  isEngineUpdateInProgress(engineId, version) {
+    return this.engineUpdates.has(this.getEngineUpdateKey(engineId, version));
+  }
+  setEngineUpdateInProgress(engineId, version, inProgress) {
+    const key = this.getEngineUpdateKey(engineId, version);
+    if (inProgress) this.engineUpdates.add(key);
+    else this.engineUpdates.delete(key);
+    document.dispatchEvent(new CustomEvent("weekbox-engine-update-change", {
+      detail: { engineId, version, inProgress }
+    }));
+  }
   getRunningEngineMod(engineId, version) {
     return this.activeEngineMods.get(`${engineId}:${version}`) ?? null;
   }
@@ -530,6 +545,7 @@ var _FileSystemService = class _FileSystemService {
       return this.isStandaloneModRunning(mod.id) ? "running" : "launch";
     }
     if (!engine) return "unavailable";
+    if (this.isEngineUpdateInProgress(engine.id, engine.version)) return "updating";
     if (!this.isEngineRunning(engine.id, engine.version)) return "launch";
     const behavior = getEngineLaunchBehavior(engine.id);
     if (behavior.scope !== "exclusive-mod") return "running";
@@ -541,6 +557,8 @@ var _FileSystemService = class _FileSystemService {
     const state = this.getModLaunchState(mod, engine, isStandalone);
     if (state === "unavailable" && !isStandalone)
       throw new Error("Assigned engine is not installed");
+    if (state === "updating" && !isStandalone)
+      throw new Error("This engine is updating. Wait for the update to finish before launching a mod.");
     if (isStandalone) {
       return state === "running" ? this.closeStandaloneMod(mod.id, onStateChange) : this.runStandaloneMod(mod.id, onStateChange);
     }
