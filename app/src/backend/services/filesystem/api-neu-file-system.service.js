@@ -14,28 +14,20 @@ var APIneuFileSystem = {
    * Asegura que un directorio exista. Si no existe, lo crea.
    */
   async ensureDir(path) {
-    const normalizedPath = path.replace(/\\/g, '/');
-    const parts = normalizedPath.split('/');
-    let currentPath = parts[0];
-    
-    for (let i = 1; i < parts.length; i++) {
-      currentPath += '/' + parts[i];
-      if (currentPath === '' || currentPath.endsWith(':')) continue;
-      
-      const exists = await this.exists(currentPath);
-      if (!exists) {
-        try {
-          await Neutralino.filesystem.createDirectory(currentPath);
-        } catch (error) {
-          if (error.code !== 'NE_FS_DIRCRER' && error.code !== 'EEXIST') {
-            console.warn(`No se pudo crear el directorio: ${currentPath}`, error);
-          }
-        }
+    if (typeof path !== "string" || !path.trim()) {
+      throw new Error("WeekBox could not create a storage folder because its path is missing.");
+    }
+    const normalizedPath = path.replace(/\\/g, "/");
+    if (await this.exists(normalizedPath)) return;
+    try {
+      await Neutralino.filesystem.createDirectory(normalizedPath);
+    } catch (error) {
+      if (!await this.exists(normalizedPath)) {
+        throw new Error(`WeekBox could not create its storage folder at ${normalizedPath}. ${error?.message || error}`);
       }
     }
-    
-    if (!await this.exists(path)) {
-      throw new Error(`Directory was not created: ${path}`);
+    if (!await this.exists(normalizedPath)) {
+      throw new Error(`WeekBox could not create its storage folder at ${normalizedPath}.`);
     }
   },
   /**
