@@ -1714,7 +1714,7 @@ var configModal = {
       wines.forEach((wine) => {
         const option = document.createElement("option");
         option.value = wine.command;
-        option.textContent = `${wine.version} — ${wine.command}`;
+        option.textContent = wine.version;
         option.selected = wine.command === selected;
         select.appendChild(option);
       });

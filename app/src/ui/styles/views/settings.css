@@ -206,6 +206,10 @@
   flex-wrap: wrap;
 }
 
+.wine-setting[hidden] {
+  display: none !important;
+}
+
 .wine-setting-control {
   display: flex;
   align-items: center;
