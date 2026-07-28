@@ -523,6 +523,9 @@ var _FileSystemService = class _FileSystemService {
   isEngineRunning(engineId, version) {
     return this.processes.isRunning(`${engineId}:${version}`);
   }
+  async getWineInstallations() {
+    return this.processes.getWineInstallations();
+  }
   getEngineUpdateKey(engineId, version) {
     return `${engineId}:${version}`;
   }

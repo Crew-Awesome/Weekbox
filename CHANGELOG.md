@@ -15,6 +15,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - WeekBox can open `.7z`, `.rar`, `.tar`, and `.zip` downloads without a separate archive app.
 - WeekBox supports more Google Drive downloads.
 - The startup screen shows what WeekBox is doing.
+- Settings can choose which installed Wine version runs Windows `.exe` mods.
 
 ### Changed
 
@@ -30,6 +31,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Linux download and archive commands work correctly.
 - WeekBox retries downloads after some connection errors.
 - WeekBox waits for downloaded files before trying to use them.
+- Diagnostic reports now fit the reporting server limits.
 - Mod files are moved one at a time to avoid Windows file errors.
 - Engine update data errors no longer stop an engine update.
 - Codename mods can launch on Linux again.

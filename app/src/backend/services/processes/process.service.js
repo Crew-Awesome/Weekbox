@@ -1,7 +1,12 @@
 import { getOsProcessId, sameProcessId } from './spawned-process.util.js';
 import { parseWindowsProcessTree, parsePosixProcessTree, findDescendantPids } from './process-tree.util.js';
+import { appSettings } from '../../core/system/settings.service.js';
 
 var ACTIVE_PROCESSES_KEY = "weekbox_active_processes";
+var WINE_COMMANDS = ["wine", "wine64", "wine-stable", "wine-devel", "wine-staging", "wine64-stable", "wine64-devel"];
+function quoteShellArgument(value) {
+  return `"${String(value).replaceAll('"', '\\"')}"`;
+}
 var _ProcessService = class _ProcessService {
   constructor(executables) {
     this.executables = executables;
@@ -184,6 +189,34 @@ var _ProcessService = class _ProcessService {
       return false;
     }
   }
+  async getWineInstallations() {
+    if (window.NL_OS !== "Linux" && window.NL_OS !== "Darwin") return [];
+    const commands = WINE_COMMANDS.map((command) => `command -v ${command} 2>/dev/null`).join("; ");
+    let output = "";
+    try {
+      const result = await Neutralino.os.execCommand(commands);
+      output = `${result.stdOut || ""}\n${result.stdErr || ""}`;
+    } catch {
+      return [];
+    }
+    const paths = [...new Set(output.split(/\r?\n/).map((path) => path.trim()).filter((path) => path.startsWith("/")))];
+    const installations = await Promise.all(paths.map(async (command) => {
+      try {
+        const result = await Neutralino.os.execCommand(`${quoteShellArgument(command)} --version`);
+        if (result.exitCode !== 0) return null;
+        const version = String(result.stdOut || result.stdErr || "Wine").trim().split(/\r?\n/)[0] || "Wine";
+        return { command, version };
+      } catch {
+        return null;
+      }
+    }));
+    return installations.filter(Boolean);
+  }
+  async getWineCommand() {
+    const installations = await this.getWineInstallations();
+    const selected = appSettings.get("wineCommand");
+    return installations.find((wine) => wine.command === selected)?.command || installations[0]?.command || null;
+  }
   async launch(key, executablePath, onStateChange, args = [], metadata = {}) {
     if (this.activeProcesses.has(key)) {
       onStateChange?.("already_running");
@@ -194,14 +227,14 @@ var _ProcessService = class _ProcessService {
       onStateChange?.("running");
       const isExe = String(executablePath).toLowerCase().endsWith(".exe");
       if ((window.NL_OS === "Linux" || window.NL_OS === "Darwin") && isExe) {
-        const wineCheck = await Neutralino.os.execCommand("which wine");
-        if (wineCheck.exitCode !== 0) {
+        const wineCommand = await this.getWineCommand();
+        if (!wineCommand) {
           window.dispatchEvent(new CustomEvent("wine-missing"));
           onStateChange?.("error");
           return false;
         }
         command = [
-          `wine "${executablePath}"`,
+          `${quoteShellArgument(wineCommand)} ${quoteShellArgument(executablePath)}`,
           ...args.map((arg) => `"${String(arg).replaceAll('"', '\\"')}"`)
         ].join(" ");
       } else {

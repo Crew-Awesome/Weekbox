@@ -201,3 +201,48 @@
 .config-tab-content {
   animation: fade-in 0.3s ease;
 }
+
+.wine-setting {
+  flex-wrap: wrap;
+}
+
+.wine-setting-control {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #d49a3a;
+}
+
+.wine-setting-control select {
+  min-width: 220px;
+  max-width: 360px;
+  padding: 8px 10px;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  background: var(--bg-color);
+  color: var(--text-main);
+  font: inherit;
+}
+
+.wine-setting-control button {
+  width: 34px;
+  height: 34px;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  background: var(--bg-hover);
+  color: var(--text-main);
+  cursor: pointer;
+}
+
+.wine-setting-control button:disabled,
+.wine-setting-control select:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.wine-setting-status {
+  width: 100%;
+  margin: 4px 0 0;
+  color: var(--text-muted);
+  font-size: 0.82rem;
+}

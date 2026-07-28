@@ -176,14 +176,14 @@ function nonEmptyString(value, fallback = "Unknown") {
   return text || fallback;
 }
 __name(nonEmptyString, "nonEmptyString");
-function sanitizeDiagnosticText(value) {
+function sanitizeDiagnosticText(value, maximumLength = 12e3) {
   return nonEmptyString(value, "No details available").replace(
     /https?:\/\/(?:canary\.)?discord(?:app)?\.com\/api\/webhooks\/\d+\/[^\s"']+/gi,
     "[REDACTED DISCORD WEBHOOK]"
   ).replace(
     /\b(?:authorization|cookie|set-cookie|token|api[_-]?key|secret|password)\s*[:=]\s*(?:bearer\s+)?[^\s,;]+/gi,
     "[REDACTED SECRET]"
-  ).replace(/\bbearer\s+[a-z0-9._~-]+/gi, "[REDACTED SECRET]").replace(/[a-z]:\\users\\[^\\\r\n]+/gi, "[REDACTED WINDOWS PATH]").replace(/\/(?:users|home)\/[^\s\r\n:)}\]]+/gi, "[REDACTED USER PATH]").replace(/\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b/gi, "[REDACTED EMAIL]").slice(0, 12e3);
+  ).replace(/\bbearer\s+[a-z0-9._~-]+/gi, "[REDACTED SECRET]").replace(/[a-z]:\\users\\[^\\\r\n]+/gi, "[REDACTED WINDOWS PATH]").replace(/\/(?:users|home)\/[^\s\r\n:)}\]]+/gi, "[REDACTED USER PATH]").replace(/\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b/gi, "[REDACTED EMAIL]").slice(0, maximumLength);
 }
 __name(sanitizeDiagnosticText, "sanitizeDiagnosticText");
 async function getOperatingSystem() {
@@ -367,12 +367,12 @@ async function submitDiagnosticReport(context, issue) {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
-      appVersion: nonEmptyString(window.NL_APPVERSION),
-      operatingSystem: sanitizeDiagnosticText(operatingSystem),
-      architecture: sanitizeDiagnosticText(architecture),
-      action: sanitizeDiagnosticText(context.action || issue.tag),
-      errorMessage: sanitizeDiagnosticText(errorMessage),
-      stackTrace: sanitizeDiagnosticText(stackTrace)
+      appVersion: nonEmptyString(window.NL_APPVERSION).replace(/[^0-9A-Za-z._+-]/g, "-").slice(0, 80),
+      operatingSystem: sanitizeDiagnosticText(operatingSystem, 100),
+      architecture: sanitizeDiagnosticText(architecture, 100),
+      action: sanitizeDiagnosticText(context.action || issue.tag, 240),
+      errorMessage: sanitizeDiagnosticText(errorMessage, 2e3),
+      stackTrace: sanitizeDiagnosticText(stackTrace, 8e3)
     })
   });
   if (response.status !== 202) {
@@ -1584,6 +1584,12 @@ var configModal = {
     document.addEventListener("app-update-available", (event) => {
       this.showAvailableAppUpdate(event.detail);
     });
+    document.getElementById("setting-wineCommand")?.addEventListener("change", (event) => {
+      appSettings2.set("wineCommand", event.target.value || null);
+    });
+    document.getElementById("refresh-wine-versions")?.addEventListener("click", () => {
+      this.updateWineSelector();
+    });
     const tabBtns = document.querySelectorAll(".config-tab-btn");
     tabBtns.forEach((btn) => {
       btn.addEventListener("click", () => {
@@ -1665,6 +1671,7 @@ var configModal = {
     this.updateStorageLocationLabel();
     this.updateAppVersionLabel();
     this.updateNetworkAvailability();
+    this.updateWineSelector();
     try {
       const update = JSON.parse(
         sessionStorage.getItem("weekbox_available_app_update") || "null"
@@ -1679,6 +1686,48 @@ var configModal = {
       label.textContent = await formatStoragePath(
         FS4.weekboxPath || "AppData/WeekBox"
       );
+  },
+  async updateWineSelector() {
+    const setting = document.getElementById("wine-setting");
+    const select = document.getElementById("setting-wineCommand");
+    const status = document.getElementById("wine-setting-status");
+    const refresh = document.getElementById("refresh-wine-versions");
+    if (!setting || !select || !status) return;
+    const supported = window.NL_OS === "Linux" || window.NL_OS === "Darwin";
+    setting.hidden = !supported;
+    if (!supported) return;
+    if (refresh) refresh.disabled = true;
+    status.textContent = "Looking for Wine versions…";
+    try {
+      const wines = await FS4.getWineInstallations();
+      select.replaceChildren();
+      if (!wines.length) {
+        const option = document.createElement("option");
+        option.value = "";
+        option.textContent = "Wine is not installed";
+        select.appendChild(option);
+        select.disabled = true;
+        status.textContent = "Install Wine to run Windows .exe mods.";
+        return;
+      }
+      const selected = appSettings2.get("wineCommand");
+      wines.forEach((wine) => {
+        const option = document.createElement("option");
+        option.value = wine.command;
+        option.textContent = `${wine.version} — ${wine.command}`;
+        option.selected = wine.command === selected;
+        select.appendChild(option);
+      });
+      select.disabled = false;
+      if (!select.value) select.value = wines[0].command;
+      status.textContent = `${wines.length} Wine ${wines.length === 1 ? "version" : "versions"} found.`;
+    } catch {
+      select.replaceChildren();
+      select.disabled = true;
+      status.textContent = "Could not find Wine versions.";
+    } finally {
+      if (refresh) refresh.disabled = false;
+    }
   },
   async cleanupIncompleteDownloads() {
     const button = document.getElementById("cleanup-incomplete-downloads");
