@@ -7,33 +7,42 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### Fixed
+## [1.8.2] - 2026-07-27
 
-- WeekBox now generates and includes the Neutralino client library during dependency setup, preventing startup failures when the `Neutralino` API is unavailable.
+### Added
+
+- WeekBox can use Wine on Linux to open Windows games and mods.
+- WeekBox can open `.7z`, `.rar`, `.tar`, and `.zip` downloads without a separate archive app.
+- WeekBox supports more Google Drive downloads.
+- The startup screen shows what WeekBox is doing.
 
 ### Changed
 
-- Local development and build instructions now use the project npm scripts.
-
-## [1.8.2] - 2026-07-22
-
-### Changed
-
-- WeekBox now loads its app files in a safer way. This helps it start more reliably, especially on Linux.
-- WeekBox makes sure it does not use old app files from its cache after an update.
-- The startup screen now tells you what WeekBox is doing while it checks your library.
-- On Linux, WeekBox can open Windows `.exe` games and mods with Wine when Wine is installed.
+- WeekBox starts more reliably on Linux.
+- WeekBox does not use old app files after an update.
+- The Mod Manager is taller.
+- The app code and styles were reorganized.
+- Building and running from source now use npm commands.
 
 ### Fixed
 
-- WeekBox can unpack `.7z` and `.rar` downloads on Windows, macOS, and Linux without needing you to install a separate archive app.
-- Linux download and archive commands now run correctly.
-- If Wine is missing on Linux, WeekBox explains how to install it instead of failing without a clear reason.
+- WeekBox includes the Neutralino files it needs to start.
+- Linux download and archive commands work correctly.
+- WeekBox retries downloads after some connection errors.
+- WeekBox waits for downloaded files before trying to use them.
+- Mod files are moved one at a time to avoid Windows file errors.
+- Engine update data errors no longer stop an engine update.
+- Codename mods can launch on Linux again.
+- Mods cannot launch while their engine version is updating.
+- WeekBox closes the matching running engine before updating it.
+- WeekBox checks again before replacing an engine folder.
+- WeekBox gives a clearer message when Wine is missing.
 
 ### Removed
 
 - ALE Psych has been removed from WeekBox.
-- Old ALE Psych installs are removed when WeekBox starts. Mods that used ALE Psych are kept, but are changed to Unassigned.
+- Old ALE Psych installs are removed when WeekBox starts.
+- Mods that used ALE Psych are changed to Unassigned.
 
 ## [1.8.1] - 2026-07-22
 
