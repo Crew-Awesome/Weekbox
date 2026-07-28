@@ -76,6 +76,11 @@ function createProcessError(operation, exitCode, output) {
       `Could not connect to the download server. Check your connection and try again later.${curlMessage ? ` ${curlMessage}` : ""}`
     );
   }
+  if (operation === "Download" && Number(exitCode) === 22 && /\b404\b/.test(detail)) {
+    return new Error(
+      "This download is no longer available (404). Choose another download file or try again later."
+    );
+  }
   return new Error(
     `${operation} failed with exit code ${exitCode}${detail ? `: ${detail}` : ""}`
   );
@@ -103,11 +108,6 @@ async function retryTransientDownload(operation, getTask, onProgress, cleanup) {
       onProgress?.(`Connection interrupted. Retrying (${attempt + 1}/${attempts})...`, 2);
       await wait(attempt * 500);
     }
-  }
-  if (operation === "Download" && Number(exitCode) === 22 && /\b404\b/.test(detail)) {
-    return new Error(
-      "This download is no longer available (404). Choose another download file or try again later."
-    );
   }
   throw lastError;
 }
