@@ -8,6 +8,7 @@
   background: rgb(0 0 0 / 72%);
   opacity: 0;
   transition: opacity 0.18s ease;
+  overscroll-behavior: contain;
 }
 
 .dependency-review-overlay[hidden] {
@@ -24,6 +25,8 @@
   border-radius: 12px;
   background: var(--bg-panel);
   box-shadow: 0 20px 55px rgb(0 0 0 / 45%);
+  max-height: calc(100dvh - 40px);
+  overflow: hidden;
 }
 
 .dependency-review-heading {
@@ -136,6 +139,19 @@
 .dependency-review-open:focus-visible {
   outline: 2px solid var(--text-main);
   outline-offset: 2px;
+}
+
+@media (max-width: 560px) {
+  .dependency-review-overlay {
+    padding: var(--spacing-md);
+  }
+
+  .dependency-review-heading,
+  .dependency-review-list,
+  .dependency-review-actions {
+    padding-right: var(--spacing-md);
+    padding-left: var(--spacing-md);
+  }
 }
 
 .mod-manager-overlay {

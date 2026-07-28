@@ -26,11 +26,21 @@ body {
   background-color: var(--surface);
   color: var(--on-surface);
   font-family: var(--font-primary, sans-serif);
-  user-select: none;
-  -webkit-user-select: none;
   height: 100vh;
   width: 100vw;
   overflow: hidden;
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
 }
 
 h1,

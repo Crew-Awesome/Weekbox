@@ -950,8 +950,24 @@ var toastSystem = {
     container = document.createElement("div");
     container.id = "toast-system-container";
     container.className = "toast-system-container";
+    const liveRegion = document.createElement("div");
+    liveRegion.id = "toast-system-live-region";
+    liveRegion.className = "visually-hidden";
+    liveRegion.setAttribute("role", "status");
+    liveRegion.setAttribute("aria-live", "polite");
+    liveRegion.setAttribute("aria-atomic", "true");
+    container.appendChild(liveRegion);
     document.body.appendChild(container);
     return container;
+  },
+  announce(id, message) {
+    const liveRegion = document.getElementById("toast-system-live-region");
+    const title = this.toasts.get(id)?.title?.textContent;
+    if (!liveRegion || !title || !message) return;
+    liveRegion.textContent = "";
+    requestAnimationFrame(() => {
+      liveRegion.textContent = `${title}: ${message}`;
+    });
   },
   show(id, {
     title,
@@ -968,8 +984,10 @@ var toastSystem = {
     toast.id = id;
     toast.className = "engine-update-toast toast-system-item";
     toast.classList.toggle("has-progress", showProgress);
-    toast.setAttribute("role", onSelect ? "button" : "status");
-    if (onSelect) toast.tabIndex = 0;
+    if (onSelect) {
+      toast.setAttribute("role", "button");
+      toast.tabIndex = 0;
+    }
     toast.innerHTML = `
       <div class="engine-update-toast-icon"><span class="toast-system-media">${mediaHtml}</span><span class="toast-system-status-badge">${badgeHtml}</span></div>
       <div class="engine-update-toast-body">
@@ -993,6 +1011,7 @@ var toastSystem = {
     };
     this.toasts.set(id, entry);
     this.ensureContainer().appendChild(toast);
+    this.announce(id, message);
     toast.querySelector(".toast-system-cancel")?.addEventListener("click", (event) => {
       event.stopPropagation();
       onCancel(id);
@@ -1091,6 +1110,7 @@ var toastDownloadMod = {
       badgeHtml: '<i class="fa-solid fa-check"></i>'
     });
     toastSystem.update(downloadId, { message: "Installed", progress: 100 });
+    toastSystem.announce(downloadId, "Installed");
     setTimeout(() => this.hide(downloadId), 4e3);
   },
   cancelAnim(downloadId) {
@@ -1099,6 +1119,7 @@ var toastDownloadMod = {
       showProgress: true
     });
     toastSystem.update(downloadId, { message: "Cancelling\u2026", progress: 100 });
+    toastSystem.announce(downloadId, "Cancelling");
   },
   error(downloadId, message) {
     toastSystem.setState(downloadId, "error", {
@@ -1109,6 +1130,7 @@ var toastDownloadMod = {
       message: `Error: ${message}`,
       progress: 100
     });
+    toastSystem.announce(downloadId, `Error: ${message}`);
     setTimeout(() => this.hide(downloadId), 5e3);
   },
   hide(downloadId) {
@@ -5296,6 +5318,59 @@ var modModalCarousel = {
   }
 };
 
+// app/src/ui/js/home/modal/dialogFocus.js
+var checkoutDialogStates = /* @__PURE__ */ new WeakMap();
+function getCheckoutDialogFocusables(dialog) {
+  return [...dialog.querySelectorAll(
+    'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+  )].filter((element) => !element.hidden && element.getClientRects().length > 0);
+}
+__name(getCheckoutDialogFocusables, "getCheckoutDialogFocusables");
+function activateCheckoutDialog(overlay, dialog, initialFocus, onEscape) {
+  deactivateCheckoutDialog(overlay, false);
+  const background = [...document.body.children].filter((element) => element !== overlay).map((element) => [element, element.inert]);
+  background.forEach(([element]) => element.inert = true);
+  const onKeydown = /* @__PURE__ */ __name((event) => {
+    if (event.key === "Escape" && onEscape) {
+      event.preventDefault();
+      onEscape();
+      return;
+    }
+    if (event.key !== "Tab") return;
+    const focusables = getCheckoutDialogFocusables(dialog);
+    if (!focusables.length) {
+      event.preventDefault();
+      return;
+    }
+    const first = focusables[0];
+    const last = focusables[focusables.length - 1];
+    if (event.shiftKey && document.activeElement === first) {
+      event.preventDefault();
+      last.focus();
+    } else if (!event.shiftKey && document.activeElement === last) {
+      event.preventDefault();
+      first.focus();
+    }
+  }, "onKeydown");
+  checkoutDialogStates.set(overlay, {
+    background,
+    onKeydown,
+    previousFocus: document.activeElement
+  });
+  document.addEventListener("keydown", onKeydown);
+  (initialFocus || getCheckoutDialogFocusables(dialog)[0])?.focus();
+}
+__name(activateCheckoutDialog, "activateCheckoutDialog");
+function deactivateCheckoutDialog(overlay, restoreFocus = true) {
+  const state = checkoutDialogStates.get(overlay);
+  if (!state) return;
+  document.removeEventListener("keydown", state.onKeydown);
+  state.background.forEach(([element, wasInert]) => element.inert = wasInert);
+  checkoutDialogStates.delete(overlay);
+  if (restoreFocus && state.previousFocus?.isConnected) state.previousFocus.focus();
+}
+__name(deactivateCheckoutDialog, "deactivateCheckoutDialog");
+
 // app/src/ui/js/home/modal/dependencyReviewModal.js
 function ensureModal2() {
   let overlay = document.getElementById("dependency-review-modal");
@@ -5364,6 +5439,7 @@ var dependencyReviewModal = {
       const finish = /* @__PURE__ */ __name((result) => {
         overlay.classList.remove("show");
         document.removeEventListener("keydown", onKeydown);
+        deactivateCheckoutDialog(overlay);
         setTimeout(() => overlay.hidden = true, 180);
         resolve(result);
       }, "finish");
@@ -5382,7 +5458,7 @@ var dependencyReviewModal = {
       overlay.hidden = false;
       requestAnimationFrame(() => overlay.classList.add("show"));
       document.addEventListener("keydown", onKeydown);
-      confirm.focus();
+      activateCheckoutDialog(overlay, overlay.querySelector(".dependency-review-modal"), confirm);
     });
   }
 };
@@ -5421,6 +5497,7 @@ var downloadChoiceModal = {
       ...options.map((option, index) => {
         const row = document.createElement("label");
         row.className = "dependency-review-item";
+        row.title = option.name;
         const input = document.createElement("input");
         input.type = "radio";
         input.name = "download-choice";
@@ -5450,6 +5527,7 @@ var downloadChoiceModal = {
       const finish = /* @__PURE__ */ __name((result) => {
         overlay.classList.remove("show");
         document.removeEventListener("keydown", onKeydown);
+        deactivateCheckoutDialog(overlay);
         setTimeout(() => overlay.hidden = true, 180);
         resolve(result);
       }, "finish");
@@ -5464,7 +5542,7 @@ var downloadChoiceModal = {
       overlay.hidden = false;
       requestAnimationFrame(() => overlay.classList.add("show"));
       document.addEventListener("keydown", onKeydown);
-      confirm.focus();
+      activateCheckoutDialog(overlay, overlay.querySelector(".dependency-review-modal"), confirm);
     });
   }
 };
@@ -5493,12 +5571,21 @@ __name(ensureModal4, "ensureModal");
 function showModal() {
   const modal = document.getElementById("mod-modal");
   modal.style.display = "flex";
-  requestAnimationFrame(() => modal.classList.add("show"));
+  requestAnimationFrame(() => {
+    modal.classList.add("show");
+    activateCheckoutDialog(
+      modal,
+      modal.querySelector(".modal-content"),
+      document.getElementById("modal-close-btn"),
+      () => document.getElementById("modal-close-btn")?.click()
+    );
+  });
 }
 __name(showModal, "showModal");
 function hideModal() {
   const modal = document.getElementById("mod-modal");
   if (!modal) return;
+  deactivateCheckoutDialog(modal);
   modal.classList.remove("show");
   setTimeout(() => {
     modal.style.display = "none";
@@ -5539,6 +5626,80 @@ function resetModal() {
   document.getElementById("modal-engine-name").textContent = "";
 }
 __name(resetModal, "resetModal");
+var descriptionReferenceVersion = 0;
+function linkifyDescriptionGameBananaUrls(content) {
+  const textNodes = [];
+  const walker = document.createTreeWalker(content, NodeFilter.SHOW_TEXT);
+  while (walker.nextNode()) {
+    const textNode = walker.currentNode;
+    if (!textNode.parentElement?.closest("a, button, script, style")) {
+      textNodes.push(textNode);
+    }
+  }
+  const gameBananaUrl = /https?:\/\/(?:www\.)?gamebanana\.com\/(?:mods|tools)\/\d+(?:[/?#][^\s<]*)?/gi;
+  textNodes.forEach((textNode) => {
+    const matches = [...textNode.textContent.matchAll(gameBananaUrl)];
+    if (!matches.length) return;
+    const fragment = document.createDocumentFragment();
+    let cursor = 0;
+    matches.forEach((match) => {
+      const url = match[0];
+      const index = match.index || 0;
+      fragment.append(textNode.textContent.slice(cursor, index));
+      const link = document.createElement("a");
+      link.href = url;
+      link.textContent = url;
+      fragment.append(link);
+      cursor = index + url.length;
+    });
+    fragment.append(textNode.textContent.slice(cursor));
+    textNode.replaceWith(fragment);
+  });
+}
+__name(linkifyDescriptionGameBananaUrls, "linkifyDescriptionGameBananaUrls");
+function enhanceDescriptionGameBananaLinks(description) {
+  const version = ++descriptionReferenceVersion;
+  description.querySelectorAll("a[href]").forEach((link) => {
+    const submission = gameBananaApi6.getGameBananaSubmission(link.href);
+    if (!submission) return;
+    const reference = document.createElement("button");
+    reference.type = "button";
+    reference.className = "modal-description-submission-link";
+    reference.title = "Loading GameBanana details";
+    const icon = document.createElement("img");
+    icon.src = "https://images.gamebanana.com/static/img/banana.png";
+    icon.alt = "";
+    const label = document.createElement("span");
+    label.textContent = "Loading GameBanana details…";
+    reference.append(icon, label);
+    reference.addEventListener("click", async () => {
+      try {
+        await modModal.openSubmission(submission);
+      } catch (error) {
+        console.warn("Could not open GameBanana submission reference", error);
+        errorHandler.show({
+          error,
+          action: "Open GameBanana reference",
+          item: reference.title
+        });
+      }
+    });
+    link.replaceWith(reference);
+    const getDetails = submission.type === "tool" ? gameBananaApi6.getToolDetails(submission.id, { requireDownload: false }) : gameBananaApi6.getModDetails(submission.id, { includeRequirements: false });
+    getDetails.then((details) => {
+      if (!description.isConnected || version !== descriptionReferenceVersion) return;
+      const kind = submission.type === "tool" ? "tool" : "mod";
+      const title = details?.title || link.textContent.trim() || `GameBanana ${kind}`;
+      label.textContent = title;
+      reference.title = `Open ${title} details`;
+    }).catch(() => {
+      if (!description.isConnected || version !== descriptionReferenceVersion) return;
+      label.textContent = link.textContent.trim() || "GameBanana submission";
+      reference.title = "Open GameBanana submission details";
+    });
+  });
+}
+__name(enhanceDescriptionGameBananaLinks, "enhanceDescriptionGameBananaLinks");
 function showModData(data, isInstalled, onDownload) {
   document.getElementById("modal-title").textContent = data.title;
   const author = document.getElementById("modal-author");
@@ -5554,7 +5715,9 @@ function showModData(data, isInstalled, onDownload) {
   content.content.querySelectorAll(
     "img, picture, video, audio, iframe, embed, object, source"
   ).forEach((element) => element.remove());
+  linkifyDescriptionGameBananaUrls(content.content);
   description.replaceChildren(content.content);
+  enhanceDescriptionGameBananaLinks(description);
   document.getElementById("modal-image-loader").style.display = "none";
   const gameBananaLink = document.getElementById("modal-gamebanana-link");
   const sourceUrl = data.source === "peo" ? data.sourceUrl : data.gameBananaUrl;
@@ -5563,8 +5726,8 @@ function showModData(data, isInstalled, onDownload) {
   gameBananaLink.hidden = !sourceUrl;
   if (data.source === "peo") {
     gameBananaLink.querySelector("img").src = "assets/icons/psychonline.png";
-    gameBananaLink.setAttribute("aria-label", "Open Psych Online mods");
-    gameBananaLink.title = "Open Psych Online mods";
+    gameBananaLink.setAttribute("aria-label", `Open ${data.title} on Psych Online`);
+    gameBananaLink.title = `Open ${data.title} on Psych Online`;
   }
   gameBananaLink.onclick = (event) => {
     event.preventDefault();
@@ -5654,6 +5817,29 @@ var modModal = {
         isInstalled,
         () => this.installWithDependencies(data)
       );
+  },
+  async openSubmission(submission) {
+    if (submission.type !== "tool") {
+      await this.open(submission.id);
+      return;
+    }
+    if (!document.getElementById("mod-modal")) {
+      await this.init();
+    }
+    if (!document.getElementById("mod-modal")) return;
+    showModal();
+    resetModal();
+    document.getElementById("modal-title").textContent = "Loading info...";
+    document.getElementById("modal-image-loader").style.display = "block";
+    const data = await gameBananaApi6.getToolDetails(submission.id, {
+      requireDownload: false
+    });
+    if (!data) {
+      document.getElementById("modal-title").textContent = "Error loading tool";
+      return;
+    }
+    const isInstalled = await FS15.isModInstalled(data.id);
+    await this.populateData(data, isInstalled);
   },
   close() {
     modModalCarousel.stopAutoPlay();

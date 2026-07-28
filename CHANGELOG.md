@@ -9,6 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [1.8.3] - 2026-07-28
 
+### Added
+
+- GameBanana links in mod descriptions now show the linked mod or tool name and open its details in WeekBox.
+
 ### Fixed
 
 - Updates are checked before WeekBox opens.
@@ -17,6 +21,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Download errors are clearer and retry when possible.
 - More ZIP files can open on Linux.
 - Normal download and storage errors are not sent to error reports.
+- GameBanana links in mod descriptions no longer cause an unexpected error when opened.
+- Psych Online source icons now open the selected mod instead of the general mods page.
 
 ## [1.8.2] - 2026-07-27
 

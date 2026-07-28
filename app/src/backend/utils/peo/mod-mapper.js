@@ -69,7 +69,7 @@ export function toModDetails(data, baseUrl) {
     downloadType: "peo",
     downloadOptions,
     requirements: [],
-    sourceUrl: `${baseUrl}/mods`,
+    sourceUrl: `${baseUrl}/mod/${encodeURIComponent(data.id)}`,
     engineId: "psychonline",
     engineLocked: true,
   };

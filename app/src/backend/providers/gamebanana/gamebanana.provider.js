@@ -380,7 +380,7 @@ export const gameBananaApi = {
     });
   },
 
-  async getToolDetails(toolId) {
+  async getToolDetails(toolId, { requireDownload = true } = {}) {
     try {
       const response = await fetch(
         `${this.baseUrl}/Tool/${Number(toolId)}/ProfilePage`,
@@ -388,16 +388,40 @@ export const gameBananaApi = {
       if (!response.ok) return null;
       const data = await response.json();
       const file = this.getPrimaryDownloadFile(data);
-      if (!file) return null;
-      const preview = data._aPreviewMedia?._aImages?.[0];
+      if (!file && requireDownload) return null;
+      const images = (data._aPreviewMedia?._aImages || []).map(
+        (image) => `${image._sBaseUrl}/${image._sFile}`,
+      );
+      if (!images.length) images.push("assets/icons/launcher-icon.png");
+      const id = `tool:${data._idRow}`;
       return {
-        id: data._idRow,
-        dependencyId: `tool:${data._idRow}`,
+        id,
+        dependencyId: id,
         type: "tool",
         title: data._sName || "Unknown Tool",
-        downloadUrl: file._sDownloadUrl,
-        fileSizeStr: this.formatBytes(file._nFilesize || 0),
-        thumbnail: preview ? `${preview._sBaseUrl}/${preview._sFile}` : null,
+        author: data._aSubmitter?._sName || "Unknown Creator",
+        description: data._sText || "<p>No description available.</p>",
+        likes: data._nLikeCount || 0,
+        views: data._nViewCount || 0,
+        timeAgo: this.getTimeAgo(data._tsDateAdded),
+        images,
+        downloadUrl: file?._sDownloadUrl || "",
+        fileSizeStr: file
+          ? this.formatBytes(file._nFilesize || 0)
+          : "No download available",
+        thumbnail: images[0] || null,
+        downloadOptions: file
+          ? [
+              {
+                id: `file:${file._idRow || data._idRow}`,
+                type: "tool",
+                name: file._sFile || file._sDescription || "Download",
+                fileSize: Number(file._nFilesize || 0),
+                fileSizeStr: this.formatBytes(file._nFilesize || 0),
+                downloadUrl: file._sDownloadUrl,
+              },
+            ]
+          : [],
         gameBananaUrl: `https://gamebanana.com/tools/${data._idRow}`,
       };
     } catch (error) {

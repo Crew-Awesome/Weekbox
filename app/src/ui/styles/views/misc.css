@@ -578,6 +578,11 @@ body.window-unfocused::after {
   transform: scale(1.1);
 }
 
+.modal-close-btn:focus-visible {
+  outline: 2px solid var(--text-main);
+  outline-offset: 3px;
+}
+
 .modal-header-info {
   padding: var(--spacing-xl) var(--spacing-xl) var(--spacing-md)
     var(--spacing-xl);
@@ -637,7 +642,7 @@ body.window-unfocused::after {
   overflow-y: auto;
   font-size: 0.9rem;
   line-height: 1.6;
-  color: #dfdfdf;
+  color: var(--text-main);
 }
 
 .modal-description img {
@@ -648,6 +653,48 @@ body.window-unfocused::after {
 
 .modal-description a {
   color: var(--text-main);
+}
+
+.modal-description-submission-link {
+  display: inline-flex;
+  max-width: 100%;
+  align-items: center;
+  gap: 7px;
+  padding: 4px 8px;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  background: var(--bg-panel);
+  color: var(--text-main);
+  cursor: pointer;
+  font: inherit;
+  font-weight: 700;
+  line-height: 1.35;
+  text-align: start;
+  transition:
+    background-color 160ms ease,
+    border-color 160ms ease,
+    transform 160ms ease;
+}
+
+.modal-description-submission-link:hover {
+  border-color: var(--text-muted);
+  background: var(--bg-hover);
+}
+
+.modal-description-submission-link:active {
+  transform: scale(0.96);
+}
+
+.modal-description-submission-link:focus-visible {
+  outline: 2px solid var(--text-main);
+  outline-offset: 2px;
+}
+
+.modal-description-submission-link img {
+  width: 16px;
+  height: 16px;
+  flex: 0 0 auto;
+  object-fit: contain;
 }
 
 .modal-description table {
@@ -691,7 +738,7 @@ body.window-unfocused::after {
 }
 
 .modal-download-btn:active {
-  transform: scale(0.97);
+  transform: scale(0.96);
 }
 
 .modal-download-btn:disabled {
@@ -898,6 +945,57 @@ body.window-unfocused::after {
   max-width: calc(100vw - 32px);
   gap: 12px;
   pointer-events: none;
+}
+
+@media (max-width: 760px) {
+  .modal-overlay {
+    padding: var(--spacing-md);
+  }
+
+  .modal-content {
+    width: min(100%, 680px);
+    height: auto;
+    max-height: calc(100dvh - (var(--spacing-md) * 2));
+    flex-direction: column;
+  }
+
+  .modal-main {
+    flex: 0 0 min(34vh, 260px);
+  }
+
+  .modal-aside {
+    width: 100%;
+    min-height: 0;
+    border-top: 1px solid var(--border-color);
+    border-left: 0;
+  }
+
+  .modal-description {
+    max-height: min(30vh, 260px);
+    padding: var(--spacing-md);
+  }
+
+  .modal-header-info,
+  .modal-footer-actions {
+    padding: var(--spacing-md);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .modal-overlay,
+  .modal-content,
+  .dependency-review-overlay,
+  .engine-update-toast,
+  .download-progress-toast {
+    transition: none;
+    animation: none;
+  }
+
+  .modal-content,
+  .engine-update-toast,
+  .download-progress-toast {
+    transform: none;
+  }
 }
 
 .toast-system-item:not(.complete):not(.error):not(.offer) {

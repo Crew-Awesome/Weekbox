@@ -946,7 +946,7 @@
 </template>
 <template id="tpl-modal">
 <div class="modal-overlay" id="mod-modal" style="display: none">
-  <div class="modal-content">
+  <section class="modal-content" role="dialog" aria-modal="true" aria-labelledby="modal-title">
     <main class="modal-main">
       <div class="modal-main-image-wrapper">
         <img id="modal-main-image" src="" alt="Mod Preview" />
@@ -971,8 +971,8 @@
     </main>
 
     <aside class="modal-aside">
-      <button class="modal-close-btn" id="modal-close-btn">
-        <i class="fa-solid fa-xmark"></i>
+      <button class="modal-close-btn" id="modal-close-btn" type="button" aria-label="Close mod details">
+        <i class="fa-solid fa-xmark" aria-hidden="true"></i>
       </button>
 
       <div class="modal-header-info">
@@ -1011,7 +1011,7 @@
         </button>
       </div>
     </aside>
-  </div>
+  </section>
 </div>
 
 </template>
