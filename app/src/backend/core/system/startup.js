@@ -260,6 +260,26 @@ No files will be merged because the outer folder contains only this inner WeekBo
       }
     }
     
+    async function handleStartupAppUpdate() {
+      if (!networkStatus.online || !appSettings.get("checkAppUpdatesOnStartup")) {
+        return false;
+      }
+      let update;
+      try {
+        update = await appUpdater.check();
+      } catch (error) {
+        console.warn("Could not check for a WeekBox update during startup", error);
+        return false;
+      }
+      if (update.status !== "available") return false;
+      try {
+        sessionStorage.setItem("weekbox_available_app_update", JSON.stringify(update));
+      } catch {
+      }
+      document.dispatchEvent(new CustomEvent("app-update-available", { detail: update }));
+      return await appUpdateModal.show(update) === "updating";
+    }
+
     async function startApp() {
       let startupStep = "starting native services";
       try {
@@ -301,6 +321,8 @@ No files will be merged because the outer folder contains only this inner WeekBo
         await syncWindowsProtocolRegistration(
           appSettings.get("registerProtocolLinks")
         );
+        startupLoader.setPhase("Checking for WeekBox updates…", 36);
+        if (await handleStartupAppUpdate()) return;
         startupLoader.setPhase("Opening your WeekBox library\u2026", 42);
         startupStep = "preparing the WeekBox library";
         await FS.init({ deferMaintenance: true });
@@ -328,23 +350,6 @@ No files will be merged because the outer folder contains only this inner WeekBo
         await offerNestedStorageRepair();
         await openLaunchDeepLink();
         await recommendSaferStorageLocation();
-        if (networkStatus.online && appSettings.get("checkAppUpdatesOnStartup")) {
-          appUpdater.check().then((update) => {
-            if (update.status !== "available") return;
-            try {
-              sessionStorage.setItem(
-                "weekbox_available_app_update",
-                JSON.stringify(update)
-              );
-            } catch {
-            }
-            document.dispatchEvent(
-              new CustomEvent("app-update-available", { detail: update })
-            );
-            appUpdateModal.show(update);
-          }).catch(() => {
-          });
-        }
         console.log("WeekBox: modules loaded.");
       } catch (error) {
         const message = error?.message || String(error);

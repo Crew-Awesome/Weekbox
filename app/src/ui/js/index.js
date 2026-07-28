@@ -6575,7 +6575,8 @@ var appUpdateModal = {
     setTimeout(() => modal.remove(), 220);
   },
   show(update) {
-    if (document.getElementById("app-update-modal")) return;
+    if (document.getElementById("app-update-modal")) return Promise.resolve("later");
+    return new Promise((resolve) => {
     const modal = document.createElement("section");
     modal.id = "app-update-modal";
     modal.className = "app-update-overlay";
@@ -6599,14 +6600,18 @@ var appUpdateModal = {
       </div>`;
     modal.querySelector("[data-update-version]").textContent = update.latestVersion;
     const manualUrl = update.releaseUrl || "https://github.com/Crew-Awesome/Weekbox/releases/latest";
-    const close = /* @__PURE__ */ __name(() => this.close(), "close");
-    modal.querySelector(".app-update-later").addEventListener("click", close);
+    const close = /* @__PURE__ */ __name((choice = "later") => {
+      this.close();
+      resolve(choice);
+    }, "close");
+    modal.querySelector(".app-update-later").addEventListener("click", () => close("later"));
     modal.querySelector(".app-update-manual").addEventListener("click", () => {
       Neutralino.os.open(manualUrl).catch(() => {
       });
+      close("manual");
     });
     modal.addEventListener("click", (event) => {
-      if (event.target === modal) close();
+      if (event.target === modal) close("later");
     });
     modal.querySelector(".app-update-install").addEventListener("click", async (event) => {
       const button = event.currentTarget;
@@ -6620,7 +6625,7 @@ var appUpdateModal = {
             progress.textContent = message;
           },
           () => {
-            this.close();
+            close("updating");
             document.body.classList.remove("window-unfocused");
           }
         );
@@ -6634,6 +6639,7 @@ var appUpdateModal = {
     document.body.appendChild(modal);
     requestAnimationFrame(() => modal.classList.add("show"));
     modal.querySelector(".app-update-install").focus();
+    });
   }
 };
 export {
