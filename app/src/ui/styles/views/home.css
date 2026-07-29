@@ -77,10 +77,10 @@
   justify-content: center !important;
   align-items: center !important;
 
-  background-color: rgba(10, 10, 10, 0.65) !important;
+  background-color: var(--surface-glass) !important;
   backdrop-filter: blur(24px) !important;
   -webkit-backdrop-filter: blur(24px) !important;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.05) !important;
+  border-bottom: 1px solid var(--outline-variant) !important;
 
   transition:
     height 0.35s ease,
@@ -92,8 +92,8 @@
 .home-container.scrolled #home-nav.home-nav {
   height: 70px !important;
   padding: 10px var(--spacing-xl) !important;
-  background-color: rgba(10, 10, 10, 0.85) !important;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5) !important;
+  background-color: var(--surface-container) !important;
+  box-shadow: 0 10px 30px rgb(0 0 0 / 0.28) !important;
 }
 
 .search-container {
@@ -127,8 +127,8 @@
 
 #mod-search-input.search-input {
   width: 100% !important;
-  background-color: rgba(255, 255, 255, 0.04) !important;
-  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  background-color: var(--surface-container-low) !important;
+  border: 1px solid var(--outline-variant) !important;
   color: var(--text-main) !important;
   padding: 14px 20px 14px 48px !important;
   border-radius: 30px !important;
@@ -152,7 +152,7 @@
   z-index: 3;
   max-width: calc(100% - 72px);
   overflow: hidden;
-  color: rgba(255, 255, 255, 0.3);
+  color: var(--text-muted);
   font-size: 0.95rem;
   font-weight: 400;
   pointer-events: none;
@@ -177,21 +177,21 @@
 }
 
 #mod-search-input.search-input:hover {
-  background-color: rgba(255, 255, 255, 0.07) !important;
-  border-color: rgba(255, 255, 255, 0.15) !important;
+  background-color: var(--surface-container-high) !important;
+  border-color: var(--outline) !important;
 }
 
 #mod-search-input.search-input:focus {
-  background-color: rgba(15, 15, 15, 0.95) !important;
-  border-color: var(--text-main) !important;
+  background-color: var(--surface-container-lowest) !important;
+  border-color: var(--focus-ring) !important;
   box-shadow:
-    0 0 0 4px rgba(255, 255, 255, 0.08),
-    0 15px 35px rgba(0, 0, 0, 0.6) !important;
+    0 0 0 4px var(--focus-halo),
+    0 15px 35px rgb(0 0 0 / 0.32) !important;
   transform: translateY(-2px) !important;
 }
 
 #mod-search-input.search-input:focus::placeholder {
-  color: rgba(255, 255, 255, 0.5) !important;
+  color: var(--text-muted) !important;
 }
 
 .search-container:focus-within .search-icon {
@@ -244,8 +244,8 @@
   inset: 0;
   background: linear-gradient(
     to top,
-    rgba(10, 10, 10, 0.95) 0%,
-    rgba(10, 10, 10, 0.6) 25%,
+    color-mix(in srgb, var(--surface) 94%, transparent) 0%,
+    color-mix(in srgb, var(--surface) 58%, transparent) 25%,
     transparent 45%
   );
   z-index: 1;
@@ -270,7 +270,7 @@
 .carousel-author {
   font-size: 1rem;
   margin-bottom: 2px;
-  color: #dfdfdf;
+  color: var(--inverse-on-surface);
 }
 
 /* ------------------------------------
@@ -280,15 +280,16 @@
   width: fit-content;
   height: 24px;
   padding: 0 9px 0 5px;
-  border: 1px solid rgba(255, 255, 255, 0.15);
+  border: 1px solid
+    color-mix(in srgb, var(--inverse-on-surface) 22%, transparent);
   border-radius: 6px;
-  background: rgba(20, 20, 20, 0.45);
+  background: color-mix(in srgb, var(--inverse-surface) 72%, transparent);
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  color: var(--text-main);
+  color: var(--inverse-on-surface);
   font-size: 0.75rem;
   font-weight: 600;
   margin: 2px 0;

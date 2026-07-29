@@ -1,5 +1,5 @@
 .markdown-body {
-  color: #e0e0e0;
+  color: var(--text-main);
   font-size: 0.95rem;
   line-height: 1.6;
 }
@@ -28,11 +28,11 @@
 
 .markdown-body p {
   margin-bottom: var(--spacing-sm);
-  color: #cccccc;
+  color: var(--text-muted);
 }
 
 .markdown-body a {
-  color: #58a6ff;
+  color: var(--primary);
   text-decoration: none;
 }
 
@@ -52,7 +52,7 @@
 
 .markdown-body code,
 .markdown-body tt {
-  background-color: rgba(255, 255, 255, 0.1);
+  background-color: var(--surface-container-high);
   padding: 2px 6px;
   border-radius: 4px;
   font-family: monospace;
@@ -62,7 +62,7 @@
   overflow-x: auto;
   padding: var(--spacing-sm);
   border-radius: 8px;
-  background-color: rgba(255, 255, 255, 0.05);
+  background-color: var(--surface-code);
 }
 
 .markdown-body pre code {

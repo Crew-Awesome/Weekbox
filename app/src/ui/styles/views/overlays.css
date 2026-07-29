@@ -6,7 +6,7 @@
   align-items: center;
   justify-content: center;
   padding: 24px;
-  background: rgba(0, 0, 0, 0.75);
+  background: var(--surface-overlay);
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
   opacity: 0;
@@ -39,8 +39,8 @@
   display: grid;
   place-items: start center;
   padding-top: 28px;
-  color: #ffb257;
-  background: rgba(255, 178, 87, 0.09);
+  color: var(--warning);
+  background: var(--warning-container);
   font-size: 1.35rem;
 }
 
@@ -74,8 +74,8 @@
 
 .error-close:hover,
 .error-close:focus-visible {
-  background: rgba(255, 74, 74, 0.12);
-  color: #ff6b6b;
+  background: var(--error-container);
+  color: var(--on-error-container);
   outline: none;
 }
 
@@ -131,7 +131,7 @@
   padding: 0 13px;
   border: 1px solid var(--border-color);
   border-radius: 7px;
-  background: rgba(255, 255, 255, 0.06);
+  background: var(--surface-glass);
   color: var(--text-main);
   cursor: pointer;
   font: inherit;
@@ -150,14 +150,14 @@
 .error-action:hover,
 .error-action:focus-visible {
   border-color: var(--text-muted);
-  background: rgba(255, 255, 255, 0.12);
+  background: var(--surface-container-high);
   outline: none;
   transform: translateY(-1px);
 }
 
 .error-settings {
-  border-color: rgba(255, 178, 87, 0.45);
-  background: rgba(255, 178, 87, 0.12);
+  border-color: var(--warning);
+  background: var(--warning-container);
 }
 
 .storage-recommendation-path {
@@ -176,7 +176,7 @@
 }
 
 .storage-recommendation-overlay {
-  background: rgba(0, 0, 0, 0.38);
+  background: var(--surface-overlay-subtle);
   backdrop-filter: blur(3px);
   -webkit-backdrop-filter: blur(3px);
 }
@@ -218,7 +218,7 @@
   display: grid;
   place-items: center;
   padding: 24px;
-  background: rgba(0, 0, 0, 0.78);
+  background: var(--surface-overlay);
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
   opacity: 0;
@@ -250,8 +250,8 @@
   display: grid;
   place-items: start center;
   padding-top: 29px;
-  color: #75d6b0;
-  background: rgba(117, 214, 176, 0.1);
+  color: var(--success);
+  background: var(--success-container);
   font-size: 1.28rem;
 }
 
@@ -292,9 +292,9 @@
   width: 100%;
   min-height: 40px;
   margin-top: 14px;
-  border: 1px solid rgba(117, 214, 176, 0.5);
+  border: 1px solid var(--success);
   border-radius: 7px;
-  background: rgba(117, 214, 176, 0.14);
+  background: var(--success-container);
   color: var(--text-main);
   cursor: pointer;
   font: inherit;
@@ -303,7 +303,7 @@
 
 .diagnostic-consent-confirm:hover,
 .diagnostic-consent-confirm:focus-visible {
-  background: rgba(117, 214, 176, 0.22);
+  background: color-mix(in srgb, var(--success-container) 76%, var(--success));
   outline: none;
 }
 
@@ -335,7 +335,7 @@
   display: grid;
   place-items: center;
   padding: 24px;
-  background: rgba(0, 0, 0, 0.72);
+  background: var(--surface-overlay);
   backdrop-filter: blur(8px);
   opacity: 0;
   transition: opacity 180ms ease;
@@ -366,8 +366,8 @@
   display: grid;
   place-items: start center;
   padding-top: 29px;
-  color: #80d4ff;
-  background: rgba(90, 182, 255, 0.1);
+  color: var(--info);
+  background: var(--info-container);
   font-size: 1.3rem;
 }
 
@@ -378,7 +378,7 @@
 
 .app-update-label {
   margin: 0 0 5px;
-  color: #80d4ff;
+  color: var(--info);
   font-size: 0.74rem;
   font-weight: 700;
   letter-spacing: 0.08em;
@@ -425,16 +425,16 @@
 }
 
 .app-update-install {
-  border: 1px solid #4baee8;
-  background: #2395d4;
-  color: #fff;
+  border: 1px solid var(--info);
+  background: var(--info);
+  color: var(--on-info);
   font-weight: 700;
 }
 
 .app-update-install:hover,
 .app-update-install:focus-visible {
-  background: #38a8e6;
-  
+  background: color-mix(in srgb, var(--info) 82%, white);
+
   outline: none;
 }
 
