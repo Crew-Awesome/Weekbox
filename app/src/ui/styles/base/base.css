@@ -58,19 +58,12 @@ p {
 a {
   color: var(--primary);
   text-decoration: none;
-  transition:
-    color 0.2s ease,
-    opacity 0.2s ease;
+  transition: color 0.2s ease, opacity 0.2s ease;
 }
 
 a:hover {
   text-decoration: underline;
   opacity: 0.8;
-}
-
-:focus-visible {
-  outline: 2px solid var(--focus-ring);
-  outline-offset: 2px;
 }
 
 /* App Layout Structure */
