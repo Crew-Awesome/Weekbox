@@ -12,5 +12,5 @@ jobs:
         env:
           REVALIDATE_SECRET: ${{ secrets.WEEKBOX_SITE_REVALIDATE_SECRET }}
         run: |
-          curl --fail-with-body --request POST 'https://weekbox.site/api/revalidate-release' \
+          curl --fail-with-body --request POST 'https://fnfweekbox.vercel.app/api/revalidate-release' \
             --header "Authorization: Bearer ${REVALIDATE_SECRET}"
