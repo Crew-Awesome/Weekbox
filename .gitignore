@@ -8,3 +8,5 @@ neutralino.js
 *.log
 .tmp/
 node_modules/
+
+.vercel
