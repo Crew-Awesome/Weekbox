@@ -6,7 +6,7 @@ on:
 
   # Runs after the release workflow finishes
   workflow_run:
-    workflows: ["Release"]
+    workflows: ["Build release assets"]
     types: [completed]
 
 jobs:
