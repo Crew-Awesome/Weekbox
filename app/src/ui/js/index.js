@@ -389,7 +389,6 @@ async function submitDiagnosticReport(context, issue) {
   if (!appSettings.get("diagnosticReportingConsentAnswered") || !appSettings.get("diagnosticReportingEnabled")) {
     return;
   }
-  const errorMessage = getDiagnosticErrorMessage(context.error);
   const stackTrace = getDiagnosticStackTrace(context.error);
   const [operatingSystem, architecture] = await Promise.all([
     getOperatingSystem(),
@@ -402,8 +401,13 @@ async function submitDiagnosticReport(context, issue) {
       appVersion: nonEmptyString(window.NL_APPVERSION).replace(/[^0-9A-Za-z._+-]/g, "-").slice(0, 80),
       operatingSystem: sanitizeDiagnosticText(operatingSystem, 100),
       architecture: sanitizeDiagnosticText(architecture, 100),
-      action: sanitizeDiagnosticText(context.action || issue.tag, 240),
-      errorMessage: sanitizeDiagnosticText(errorMessage, 2e3),
+      action: {
+        label: sanitizeDiagnosticText(
+          [context.action || issue.tag, context.item].filter(Boolean).join(": "),
+          240,
+        ),
+        url: sanitizeDiagnosticText(context.targetUrl || "", 2e3),
+      },
       stackTrace: sanitizeDiagnosticText(stackTrace, 8e3)
     })
   });
@@ -776,6 +780,7 @@ var downloadEngine = {
           action: "Install engine",
           item: engineId,
           version,
+          targetUrl: downloadUrl,
           storagePath: FS.weekboxPath
         });
       }
@@ -1196,6 +1201,22 @@ var downloadMod = {
       Array.from({ length: Math.min(concurrency, queue.length) }, worker)
     );
   },
+  isArchiveMetadataEntry(entry) {
+    return (
+      entry.entry === ".DS_Store" ||
+      entry.entry.startsWith("__MACOSX") ||
+      entry.entry.startsWith("_MACOSX")
+    );
+  },
+  getInstallableExtractedEntries(entries) {
+    return entries.filter(
+      (entry) =>
+        entry.entry !== "." &&
+        entry.entry !== ".." &&
+        entry.entry !== ".downloading" &&
+        !this.isArchiveMetadataEntry(entry),
+    );
+  },
   async hasExtractedFiles(path) {
     const entries = await Neutralino.filesystem.readDirectory(path);
     for (const entry of entries) {
@@ -1324,9 +1345,7 @@ var downloadMod = {
       while (hasNestedArchive) {
         hasNestedArchive = false;
         const files = await Neutralino.filesystem.readDirectory(targetModFolder);
-        const realFiles = files.filter(
-          (f) => f.entry !== "." && f.entry !== ".." && f.entry !== ".downloading"
-        );
+        const realFiles = this.getInstallableExtractedEntries(files);
         if (realFiles.length === 1 && realFiles[0].type === "FILE") {
           const entryName = realFiles[0].entry.toLowerCase();
           if (entryName.endsWith(".zip") || entryName.endsWith(".rar") || entryName.endsWith(".7z") || entryName.endsWith(".tar") || entryName.endsWith(".gz")) {
@@ -1368,9 +1387,7 @@ var downloadMod = {
       if (this.activeTasks.get(modId)?.cancelled) throw new Error("Cancelled");
       toastDownloadMod.update(modId, 99, "Preparing mod folder...");
       const extractedEntries = await Neutralino.filesystem.readDirectory(targetModFolder);
-      const realEntries = extractedEntries.filter(
-        (entry) => entry.entry !== "." && entry.entry !== ".." && entry.entry !== ".downloading"
-      );
+      const realEntries = this.getInstallableExtractedEntries(extractedEntries);
       const wrapper = realEntries.length === 1 && realEntries[0].type === "DIRECTORY" ? realEntries[0] : null;
       if (wrapper) {
         engineFolderName = sanitizePathSegment(wrapper.entry) || fallbackFolderName;
@@ -1446,6 +1463,7 @@ var downloadMod = {
           error,
           action: "Install mod",
           item: modName,
+          targetUrl: metadata.sourceUrl || downloadUrl,
           storagePath: FS3.weekboxPath
         });
         this.activeTasks.delete(modId);
