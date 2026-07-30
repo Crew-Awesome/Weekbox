@@ -1,0 +1,16 @@
+name: Refresh WeekBox site release cache
+
+on:
+  release:
+    types: [published]
+
+jobs:
+  refresh-download-page:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Refresh the Downloads page
+        env:
+          REVALIDATE_SECRET: ${{ secrets.WEEKBOX_SITE_REVALIDATE_SECRET }}
+        run: |
+          curl --fail-with-body --request POST 'https://weekbox.site/api/revalidate-release' \
+            --header "Authorization: Bearer ${REVALIDATE_SECRET}"
