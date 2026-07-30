@@ -7,23 +7,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [1.8.3] - 2026-07-28
+## [1.8.3] - 2026-07-30
 
 ### Added
 
 - WeekBox can download ZIP files from GitHub Releases.
 - GameBanana links in mod descriptions can open the linked mod or tool in WeekBox.
 - Mod downloads can show a list when there is more than one file to choose from.
+- Mods downloaded inside Psych Online are added to WeekBox too.
+- Psych Online mods without cover art use a Psych Online banner.
 
 ### Fixed
 
 - Downloads give better errors for bad links, no internet, timeouts, missing files, and Windows certificate problems.
 - Download reports are shorter and the same error is not sent again and again.
+- Error details now include the useful diagnostic report information.
 - Mods already installed no longer show as an unexpected error.
+- Deleting a mod no longer fails when an engine folder is not empty.
 - OneDrive only blocks downloads and installs, not WeekBox starting.
 - Mac archive files like `__MACOSX` and `.DS_Store` are removed when installing mods.
 - The Choose Download window works again after using it before.
 - Engine updates, engine uninstalling, and the Engine Manager work better.
+- WeekBox no longer crashes if an engine page changes while its button is updating.
 - Duplicate Psych Online mod folders no longer stop WeekBox from opening.
 
 ## [1.8.2] - 2026-07-27

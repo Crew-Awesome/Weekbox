@@ -61,7 +61,10 @@ function appendProcessOutput(output, data) {
 function getUsefulProcessOutput(output) {
   return String(output || "")
     .split(/\r?\n|\r/)
-    .map((line) => line.trim())
+    // curl writes its progress meter with carriage returns. On some Windows
+    // shells its final error lands on the same line as the last meter frame.
+    // Keep the error, but remove that frame before it reaches diagnostics.
+    .map((line) => line.trim().replace(/^[#=O\-\s\d.%]+(?=curl:\s*\()/i, ""))
     .filter((line) => line)
     .filter((line) => !/^[#=O\-\s]+$/.test(line))
     .filter((line) => !/^[#=O\-\s]+\d+(?:\.\d+)?%?$/.test(line))

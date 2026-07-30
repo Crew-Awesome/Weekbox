@@ -59,19 +59,6 @@
   object-fit: contain;
 }
 
-.sidebar__network-status {
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
-  background-color: var(--outline-variant);
-  transition: background-color 0.2s;
-  margin-left: auto;
-}
-
-.sidebar__network-status--online {
-  background-color: var(--primary);
-}
-
 /* Navigation Buttons */
 .sidebar__btn {
   background: transparent;

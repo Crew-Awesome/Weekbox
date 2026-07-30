@@ -85,6 +85,7 @@ var _ModRepository = class _ModRepository {
     if (typeof name === "string" && name.trim()) mod.name = name.trim();
     if (coverPath !== void 0) {
       mod.coverPath = coverPath || null;
+      delete mod.coverFallback;
       delete mod.image;
       delete mod.imageBase64;
     }

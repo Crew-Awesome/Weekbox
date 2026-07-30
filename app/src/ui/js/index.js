@@ -253,7 +253,7 @@ function describeIssue(error) {
       reportable: false
     };
   }
-  if (lower.includes("onedrive") || lower.includes("exit code 23")) {
+  if (lower.includes("onedrive") || lower.includes("exit code 23") || lower.includes("download could not be written to storage")) {
     return {
       title: "Choose a local storage folder",
       summary: "WeekBox cannot safely download or install files in OneDrive. Use a local folder such as C:\\WeekBoxData instead.",
@@ -386,12 +386,33 @@ function createReport({ error, action, item, version, storagePath, issue }) {
   ].filter(Boolean).join("\n");
 }
 __name(createReport, "createReport");
+function createDiagnosticReport({ error, action, item, targetUrl }) {
+  const downloadDetails = error?.downloadDiagnostics || {};
+  return [
+    "WeekBox diagnostic report",
+    "Stack trace",
+    sanitizeDiagnosticText(getDiagnosticStackTrace(error), 8e3),
+    `App version\n${nonEmptyString(window.NL_APPVERSION)}`,
+    `OS / architecture\n${nonEmptyString(window.NL_OS)} / ${nonEmptyString(window.NL_ARCH)}`,
+    `Action\n${[action, item].filter(Boolean).join(": ") || "Unknown"}`,
+    targetUrl ? `URL\n${sanitizeDiagnosticText(targetUrl, 2e3)}` : null,
+    downloadDetails.httpStatus ? `HTTP status\n${downloadDetails.httpStatus}` : null,
+    downloadDetails.curlCode != null ? `Curl code\n${downloadDetails.curlCode}` : null,
+    downloadDetails.retryCount != null ? `Retry count\n${downloadDetails.retryCount}` : null
+  ].filter(Boolean).join("\n");
+}
+__name(createDiagnosticReport, "createDiagnosticReport");
 async function submitDiagnosticReport(context, issue) {
   if (!appSettings.get("diagnosticReportingConsentAnswered") || !appSettings.get("diagnosticReportingEnabled")) {
     return;
   }
   const now = Date.now();
-  const fingerprint = [context.action, context.item, context.targetUrl, getDiagnosticErrorMessage(context.error)].join("\n");
+  const normalizedAction = /^(?:run|start) weekbox$/i.test(String(context.action || "")) ? "Start WeekBox" : context.action;
+  const normalizedErrorMessage = getDiagnosticErrorMessage(context.error).replace(
+    /^WeekBox could not finish preparing the WeekBox library:\s*/i,
+    ""
+  );
+  const fingerprint = [normalizedAction, context.item, context.targetUrl, normalizedErrorMessage].join("\n");
   for (const [key, sentAt] of recentDiagnosticReports) {
     if (now - sentAt > 5 * 60 * 1e3) recentDiagnosticReports.delete(key);
   }
@@ -485,7 +506,7 @@ var errorHandler = {
   },
   show(context) {
     const issue = describeIssue(context.error);
-    const report = createReport({ ...context, issue });
+    const report = createDiagnosticReport(context);
     const modal = this.ensureModal();
     modal.querySelector("h2").textContent = issue.title;
     modal.querySelector(".error-summary").textContent = issue.summary;
@@ -903,6 +924,7 @@ import { gameBananaApi } from "../../backend/providers/gamebanana/gamebanana.pro
 // app/src/ui/js/mod-manager/modImageLoader.js
 import { FS as FS2 } from "../utils/index-utils.js";
 var modCoverCache = /* @__PURE__ */ new Map();
+var PSYCH_ONLINE_FALLBACK_COVER = "assets/images/psychonline-mod-banner.jpg";
 function primeModCover(modId, coverUrl) {
   if (coverUrl) modCoverCache.set(String(modId), coverUrl);
 }
@@ -940,20 +962,21 @@ function loadModCardImage({
     card.classList.toggle("has-no-cover", !hasCover);
   }, "finishLoading");
   Promise.resolve().then(() => getModCover(mod.id, fetchDetails)).then((localCover) => {
-    if (!localCover || !image) {
+    const cover = mod.coverFallback === "psychonline" ? PSYCH_ONLINE_FALLBACK_COVER : localCover || (mod.engineId === "psychonline" ? PSYCH_ONLINE_FALLBACK_COVER : null);
+    if (!cover || !image) {
       finishLoading(false);
       return;
     }
     const preload = new Image();
     preload.addEventListener("load", () => {
       if (!card.isConnected) return;
-      image.src = localCover;
+      image.src = cover;
       image.hidden = false;
       applyDominantColor4(image, card);
       requestAnimationFrame(() => finishLoading(true));
     });
     preload.addEventListener("error", () => finishLoading(false));
-    preload.src = localCover;
+    preload.src = cover;
   }).catch(() => finishLoading(false));
 }
 __name(loadModCardImage, "loadModCardImage");
@@ -3180,9 +3203,10 @@ var enginesView = {
       this.currentEngine.id,
       this.currentVersion
     );
-    if (!document.getElementById("launch-engine-btn")) return;
-    const newBtn = launchBtn.cloneNode(true);
-    launchBtn.parentNode.replaceChild(newBtn, launchBtn);
+    const currentLaunchBtn = document.getElementById("launch-engine-btn");
+    if (!currentLaunchBtn?.parentNode) return;
+    const newBtn = currentLaunchBtn.cloneNode(true);
+    currentLaunchBtn.parentNode.replaceChild(newBtn, currentLaunchBtn);
     const activeBtn = document.getElementById("launch-engine-btn");
     if (isInstalled) {
       activeBtn.textContent = "Launch";
@@ -4208,6 +4232,12 @@ var cardRenderer = {
           }, 300);
           document.dispatchEvent(new CustomEvent("mods-updated"));
         } catch (error) {
+          errorHandler.show({
+            error,
+            action: "Delete mod",
+            item: mod.name,
+            storagePath: FS11.weekboxPath
+          });
           deleteBtn.disabled = false;
           deleteBtn.innerHTML = modManagerTemplates2.deleteIcon();
         }
@@ -5162,17 +5192,6 @@ var sidebar = {
     enginesContainer?.setAttribute(
       "aria-disabled",
       String(!networkStatus5.online)
-    );
-    const networkIndicator = document.getElementById("sidebar-network-status");
-    networkIndicator?.classList.toggle("is-online", networkStatus5.online);
-    networkIndicator?.classList.toggle("is-offline", !networkStatus5.online);
-    networkIndicator?.setAttribute(
-      "aria-label",
-      networkStatus5.online ? "Online" : "Offline"
-    );
-    networkIndicator?.setAttribute(
-      "title",
-      networkStatus5.online ? "Online" : "Offline"
     );
     await this.loadEngines();
     if (networkStatus5.online) engineUpdateService.startScheduledChecks();

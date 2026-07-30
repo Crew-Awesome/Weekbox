@@ -1,7 +1,7 @@
 import { ENGINE_DETAILS } from '../../config/engines.config.js';
 import { isValidEngineVersion } from './engine-version.service.js';
 import { ModRepository } from './mod-repository.service.js';
-import { getRealEntries, getModFolderName, sanitizePathSegment } from './path.util.js';
+import { getRealEntries, getModFolderName, getEngineModFolderName, sanitizePathSegment } from './path.util.js';
 
 function sameId(left, right) {
   return String(left) === String(right);
@@ -13,18 +13,20 @@ function getStableUrlId(url) {
   return (hash >>> 0).toString(36);
 }
 
-function getImportedPsychOnlineMetadata(folderName, downloadUrl) {
-  const parsed = new URL(downloadUrl);
-  const isPeo = parsed.hostname.toLowerCase() === "funkin.sniro.boo";
+function getImportedPsychOnlineMetadata(folderName, downloadUrl = null) {
+  const hasDownloadUrl = /^https?:\/\//i.test(String(downloadUrl || ""));
+  const parsed = hasDownloadUrl ? new URL(downloadUrl) : null;
+  const isPeo = parsed?.hostname.toLowerCase() === "funkin.sniro.boo";
   const sourceId = isPeo ? parsed.pathname.match(/^\/mod\/([^/]+)\/dl\//)?.[1] : null;
   return {
-    id: sourceId ? `peo:${sourceId}` : `psychonline:${getStableUrlId(downloadUrl)}`,
+    id: sourceId ? `peo:${sourceId}` : `psychonline:${getStableUrlId(downloadUrl || folderName)}`,
     name: folderName,
     engineId: "psychonline",
     engineLocked: true,
-    source: isPeo ? "peo" : "gamebanana",
-    sourceUrl: isPeo ? "https://funkin.sniro.boo/mods" : downloadUrl,
-    downloadUrl,
+    source: isPeo ? "peo" : hasDownloadUrl ? "gamebanana" : "local",
+    sourceUrl: isPeo ? "https://funkin.sniro.boo/mods" : hasDownloadUrl ? downloadUrl : null,
+    downloadUrl: hasDownloadUrl ? downloadUrl : null,
+    coverFallback: hasDownloadUrl ? null : "psychonline",
     folderName
   };
 }
@@ -66,6 +68,14 @@ var _LibraryMaintenanceService = class _LibraryMaintenanceService {
   async importPsychOnlineEngineMods(installedEngines = null) {
     const engines = installedEngines || await this.getInstalledEngines();
     const installedMods = await this.mods.getAll();
+    let updatedLocalCovers = false;
+    for (const mod of installedMods) {
+      if (mod.engineId === "psychonline" && mod.source === "local" && mod.coverFallback !== "psychonline") {
+        mod.coverFallback = "psychonline";
+        updatedLocalCovers = true;
+      }
+    }
+    if (updatedLocalCovers) await this.mods.saveAll(installedMods);
     for (const engine of engines.filter((item) => item.id === "psychonline")) {
       if (this.isEngineRunning(engine.id, engine.version)) continue;
       const engineModsPath = await this.getEngineModsPath(
@@ -83,8 +93,12 @@ var _LibraryMaintenanceService = class _LibraryMaintenanceService {
       for (const entry of entries.filter((item) => item.type === "DIRECTORY")) {
         const folderName = sanitizePathSegment(entry.entry);
         if (!folderName) continue;
+        // An installed mod can keep its library folder under one name while
+        // using a different folder name inside Psych Online.  Treat either
+        // name as the same existing entry; otherwise re-importing its link
+        // turns into an engine-folder conflict during startup.
         const existing = installedMods.find(
-          (mod) => getModFolderName(mod) === folderName
+          (mod) => getModFolderName(mod) === folderName || getEngineModFolderName(mod) === folderName
         );
         if (existing) {
           // The folder is already present in the Psych Online installation.
@@ -95,9 +109,10 @@ var _LibraryMaintenanceService = class _LibraryMaintenanceService {
         }
         const sourcePath = `${engineModsPath}/${entry.entry}`;
         const urlPath = `${sourcePath}/mod_url.txt`;
-        if (!await this.api.exists(urlPath)) continue;
-        const downloadUrl = (await this.api.read(urlPath)).trim();
-        if (!/^https?:\/\//i.test(downloadUrl)) continue;
+        const downloadUrl = await this.api.exists(urlPath)
+          ? (await this.api.read(urlPath)).trim()
+          : null;
+        if (downloadUrl && !/^https?:\/\//i.test(downloadUrl)) continue;
         const destinationPath = `${this.getModsPath()}/${folderName}`;
         if (await this.api.exists(destinationPath)) continue;
         let metadata;

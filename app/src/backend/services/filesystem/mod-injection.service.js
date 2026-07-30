@@ -151,6 +151,15 @@ var _ModInjectionService = class _ModInjectionService {
     let removed = false;
     for (const linkPath of paths) {
       if (!await this.api.exists(linkPath)) continue;
+      const linkCheck = window.NL_OS === "Windows"
+        ? `cmd /c fsutil reparsepoint query "${linkPath.replace(/\//g, "\\")}"`
+        : `test -L "${linkPath}"`;
+      const isLink = await Neutralino.os.execCommand(linkCheck, {
+        background: false
+      }).then((result) => result.exitCode === 0).catch(() => false);
+      // Directly downloaded engine mods are normal folders. They do not belong
+      // to this WeekBox library entry, so never delete them as if they were links.
+      if (!isLink) continue;
       const command = window.NL_OS === "Windows" ? `cmd /c rmdir "${linkPath.replace(/\//g, "\\")}"` : window.NL_OS === "Darwin" ? `rm -f "${linkPath}"` : `rm -rf "${linkPath}"`;
       const result = await Neutralino.os.execCommand(command, {
         background: false
@@ -166,7 +175,9 @@ var _ModInjectionService = class _ModInjectionService {
   }
   async unlinkFromInstalledEngines(mod, engines) {
     return Promise.allSettled(
-      engines.map(
+      engines.filter(
+        (engine) => engine.id === mod.engineId && supportsEngineVersion(mod, engine.version)
+      ).map(
         (engine) => this.unlinkFromEngine(mod, engine.id, engine.version)
       )
     );
