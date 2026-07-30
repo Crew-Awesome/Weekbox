@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.8.4] - 2026-07-30
+
+### Fixed
+
+- Downloads try again if GameBanana is being slow or resets the connection.
+- Broken download parts are cleaned up instead of being installed.
+- WeekBox gives better messages for missing files and storage problems.
+- Mods with the same Psych Online folder do not stop WeekBox from opening.
+- Install errors no longer show your Windows username in reports.
+
 ## [1.8.3] - 2026-07-30
 
 ### Added

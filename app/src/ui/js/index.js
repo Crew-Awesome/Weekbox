@@ -184,7 +184,7 @@ function sanitizeDiagnosticText(value, maximumLength = 12e3) {
   ).replace(
     /\b(?:authorization|cookie|set-cookie|token|api[_-]?key|secret|password)\s*[:=]\s*(?:bearer\s+)?[^\s,;]+/gi,
     "[REDACTED SECRET]"
-  ).replace(/\bbearer\s+[a-z0-9._~-]+/gi, "[REDACTED SECRET]").replace(/[a-z]:\\users\\[^\\\r\n]+/gi, "[REDACTED WINDOWS PATH]").replace(/\/(?:users|home)\/[^\s\r\n:)}\]]+/gi, "[REDACTED USER PATH]").replace(/\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b/gi, "[REDACTED EMAIL]").slice(0, maximumLength);
+  ).replace(/\bbearer\s+[a-z0-9._~-]+/gi, "[REDACTED SECRET]").replace(/[a-z]:\\users\\[^\r\n]*/gi, "[REDACTED WINDOWS PATH]").replace(/\\\\[^\\\r\n]+\\users\\[^\r\n]*/gi, "[REDACTED WINDOWS PATH]").replace(/\/(?:users|home)\/[^\s\r\n:)}\]]+/gi, "[REDACTED USER PATH]").replace(/\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b/gi, "[REDACTED EMAIL]").slice(0, maximumLength);
 }
 __name(sanitizeDiagnosticText, "sanitizeDiagnosticText");
 async function getOperatingSystem() {
@@ -723,6 +723,16 @@ var downloadEngine = {
     }
     const enginesBasePath = FS.enginesPath;
     const engineDir = `${enginesBasePath}/${engineId}/${version}`;
+    if (await FS.api.exists(engineDir)) {
+      errorHandler.show({
+        error: new Error("This engine version is already installed."),
+        action: "Install engine",
+        item: engineId,
+        version,
+        storagePath: FS.weekboxPath
+      });
+      return false;
+    }
     const archiveExtension = window.NL_OS === "Darwin" && /\.dmg(?:$|[?#])/i.test(downloadUrl) ? ".dmg" : ".zip";
     const tempFilePath = `${enginesBasePath}/temp_${engineId}_${version}${archiveExtension}`;
     const taskKey = this.getTaskKey(engineId, version);
@@ -1212,7 +1222,19 @@ var downloadMod = {
   async cacheModCover(modId, coverUrl) {
     return FS3.ensureModCover(modId, async () => coverUrl);
   },
+  async refreshGameBananaDownloadUrl(modId, sourceType, previousUrl) {
+    if (sourceType === "external" || sourceType === "peo") return null;
+    const source = String(modId || "").match(/^(mod|tool):(\d+)$/);
+    const type = sourceType === "tool" || source?.[1] === "tool" ? "tool" : "mod";
+    const sourceId = source?.[2] || modId;
+    if (!String(sourceId || "").trim()) return null;
+    const details = type === "tool" ? await gameBananaApi.getToolDetails(sourceId) : await gameBananaApi.getModDetails(sourceId, { includeRequirements: false });
+    const options = details?.downloadOptions || [];
+    return options.find((option) => option.downloadUrl && option.downloadUrl !== previousUrl)?.downloadUrl || null;
+  },
   async moveEntries(entries, sourceDir, destinationDir, concurrency = 1) {
+    if (!String(sourceDir || "").trim()) throw new Error("Could not move extracted files: required parameter 'sourceDir' is missing.");
+    if (!String(destinationDir || "").trim()) throw new Error("Could not move extracted files: required parameter 'destinationDir' is missing.");
     const queue = entries.filter(
       (entry) => entry.entry !== "." && entry.entry !== ".."
     );
@@ -1221,8 +1243,15 @@ var downloadMod = {
       while (nextIndex < queue.length) {
         const entry = queue[nextIndex];
         nextIndex += 1;
+        if (!String(entry?.entry || "").trim()) throw new Error("Could not move extracted files: required parameter 'entry' is missing.");
         const sourcePath = `${sourceDir}/${entry.entry}`;
         const destinationPath = `${destinationDir}/${entry.entry}`;
+        if (!await FS3.api.exists(sourcePath)) {
+          throw new Error(`Could not move extracted file ${entry.entry}: the extracted path no longer exists.`);
+        }
+        if (await FS3.api.exists(destinationPath)) {
+          throw new Error(`Could not move extracted file ${entry.entry}: the destination already exists.`);
+        }
         let lastError;
         for (let attempt = 1; attempt <= 3; attempt += 1) {
           try {
@@ -1274,6 +1303,7 @@ var downloadMod = {
     );
   },
   async hasExtractedFiles(path) {
+    if (!String(path || "").trim() || !await FS3.api.exists(path)) return false;
     const entries = await Neutralino.filesystem.readDirectory(path);
     for (const entry of entries) {
       if (entry.entry === "." || entry.entry === ".." || entry.entry === ".downloading" || this.isArchiveMetadataEntry(entry)) {
@@ -1354,7 +1384,8 @@ var downloadMod = {
     const fallbackFolderName = sanitizeModFolderName(modName, `Mod-${taskKey}`);
     let storageFolderName = `${fallbackFolderName}--${taskKey}`;
     let engineFolderName = fallbackFolderName;
-    let targetModFolder = `${modsBasePath}/.extract_${taskKey}`;
+    const extractionKey = `${taskKey}_${Date.now()}`;
+    let targetModFolder = `${modsBasePath}/.extract_${extractionKey}`;
     const tempFilePath = `${modsBasePath}/temp_${taskKey}.zip`;
     let downloadMarkerPath = `${targetModFolder}/.downloading`;
     this.activeTasks.set(modId, {
@@ -1380,8 +1411,7 @@ var downloadMod = {
       await FS3.api.write(downloadMarkerPath, "1");
       if (this.activeTasks.get(modId)?.cancelled) throw new Error("Cancelled");
       toastDownloadMod.update(modId, 2, "Connecting...");
-      await downloadArchive2({
-        url: downloadUrl,
+      const downloadOptions = {
         sourceType,
         outPath: tempFilePath,
         getTask: /* @__PURE__ */ __name(() => this.activeTasks.get(modId), "getTask"),
@@ -1389,7 +1419,18 @@ var downloadMod = {
           toastDownloadMod.update(modId, progress, status);
           this.reportInstallProgress(modId, modName, status, progress);
         }, "onProgress")
-      });
+      };
+      try {
+        await downloadArchive2({ url: downloadUrl, ...downloadOptions });
+      } catch (error) {
+        if (error?.downloadDiagnostics?.httpStatus !== 404) throw error;
+        const refreshedUrl = await this.refreshGameBananaDownloadUrl(modId, sourceType, downloadUrl).catch(() => null);
+        if (!refreshedUrl) throw error;
+        toastDownloadMod.update(modId, 2, "Refreshing download link...");
+        this.reportInstallProgress(modId, modName, "Refreshing download link...", 2);
+        await downloadArchive2({ url: refreshedUrl, ...downloadOptions });
+        downloadUrl = refreshedUrl;
+      }
       const archiveStats = await Neutralino.filesystem.getStats(tempFilePath);
       if (!archiveStats.size) throw new Error("Downloaded archive is empty");
       if (this.activeTasks.get(modId)?.cancelled) throw new Error("Cancelled");
@@ -1464,8 +1505,12 @@ var downloadMod = {
       const realEntries = this.getInstallableExtractedEntries(extractedEntries);
       const wrapper = realEntries.length === 1 && realEntries[0].type === "DIRECTORY" ? realEntries[0] : null;
       if (wrapper) {
-        engineFolderName = sanitizePathSegment(wrapper.entry) || fallbackFolderName;
+        const wrapperName = sanitizePathSegment(wrapper.entry) || fallbackFolderName;
+        engineFolderName = /^(?:bin|mods?|assets?|data|files?)$/i.test(wrapperName) ? fallbackFolderName : wrapperName;
+        if (engineId === "psychonline") engineFolderName = `${engineFolderName}--${taskKey}`;
         storageFolderName = `${sanitizeModFolderName(wrapper.entry, fallbackFolderName)}--${taskKey}`;
+      } else if (engineId === "psychonline") {
+        engineFolderName = `${fallbackFolderName}--${taskKey}`;
       }
       const stagingFolder = targetModFolder;
       const finalModFolder = `${modsBasePath}/${storageFolderName}`;
@@ -1473,8 +1518,10 @@ var downloadMod = {
         throw new Error("This mod is already installed");
       }
       if (wrapper) {
+        const wrapperPath = `${stagingFolder}/${wrapper.entry}`;
+        if (!await FS3.api.exists(wrapperPath)) throw new Error(`Could not prepare this mod: extracted folder '${wrapper.entry}' is missing.`);
         await Neutralino.filesystem.move(
-          `${stagingFolder}/${wrapper.entry}`,
+          wrapperPath,
           finalModFolder
         );
       } else {

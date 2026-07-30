@@ -46,6 +46,18 @@ function quoteCommandArgument(value) {
   return `"${String(value).replaceAll('"', '\\"')}"`;
 }
 
+function getParentPath(path) {
+  const normalized = String(path || "").replace(/\\/g, "/");
+  return normalized.slice(0, normalized.lastIndexOf("/"));
+}
+
+function requireValue(value, name) {
+  if (!String(value || "").trim()) {
+    throw new Error(`WeekBox could not continue: required parameter '${name}' is missing.`);
+  }
+  return String(value);
+}
+
 function spawnProcessWithShell(command) {
   if (window.NL_OS === "Windows") {
     return Neutralino.os.spawnProcess(command);
@@ -87,7 +99,7 @@ function createProcessError(operation, exitCode, output) {
   };
   if (operation === "Download" && Number(exitCode) === 23) {
     return createDownloadError(
-      "The download could not be written to storage. Check that the WeekBox folder is writable and has enough free space, then try again."
+      "The download could not be written to storage. The folder may be missing, locked, read-only, or out of space."
     );
   }
   if (operation === "Extraction" && Number(exitCode) === 127 && detail.includes("7z")) {
@@ -96,13 +108,13 @@ function createProcessError(operation, exitCode, output) {
     );
   }
   if (operation === "Download" && Number(exitCode) === 28) {
-    return createDownloadError("The download server did not respond in time. Check your connection and try again.");
+    return createDownloadError("GameBanana's download server is unavailable right now. Try again in a few minutes.");
   }
   if (operation === "Download" && Number(exitCode) === 6) {
     return createDownloadError("WeekBox could not find the download server. Check your DNS or connection and try again.");
   }
   if (operation === "Download" && Number(exitCode) === 35) {
-    return createDownloadError("Windows could not verify the download certificate. Check your date and time, then try another network. Certificate validation was not bypassed.");
+    return createDownloadError("The connection to the download server was reset. Try again in a few minutes.");
   }
   if (operation === "Download" && Number(exitCode) === 1) {
     return createDownloadError("The download was interrupted before it finished. Try again.");
@@ -112,7 +124,7 @@ function createProcessError(operation, exitCode, output) {
   }
   if (operation === "Download" && Number(exitCode) === 22 && /\b404\b/.test(detail)) {
     return createDownloadError(
-      "This download is no longer available (404). Choose another download file or try again later."
+      "This download is no longer available (404). The file may have been removed, replaced, or made private."
     );
   }
   if (operation === "Download" && Number(exitCode) === 22) {
@@ -436,6 +448,8 @@ async function runCurlDownload(command, getTask, onProgress, getProgress) {
 }
 
 async function downloadSingleArchive({ url, outPath, getTask, onProgress }) {
+  requireValue(url, "url");
+  requireValue(outPath, "outPath");
   if (url.includes("drive.google.com") || url.includes("drive.usercontent.google.com")) {
     const fileId = url.match(/id=([^&]+)/)?.[1] || url.match(/\/file\/d\/([^/]+)/)?.[1];
     if (fileId) {
@@ -473,7 +487,7 @@ async function downloadSingleArchive({ url, outPath, getTask, onProgress }) {
 
   await retryTransientDownload(
     () => runCurlDownload(
-      `curl -# -L --fail --show-error --connect-timeout 15 --retry 2 --retry-delay 1 --retry-all-errors ${quoteCommandArgument(url)} -o ${quoteCommandArgument(outPath)}`,
+      `curl -sS -L --fail --show-error --connect-timeout 15 ${quoteCommandArgument(url)} -o ${quoteCommandArgument(outPath)}`,
       getTask,
       onProgress
     ),
@@ -567,6 +581,17 @@ async function downloadArchive({
   if (!String(outPath || "").trim()) {
     throw new Error("WeekBox could not prepare the download destination");
   }
+  const destinationDir = getParentPath(outPath);
+  requireValue(destinationDir, "download destination folder");
+  const partPath = `${outPath}.part`;
+  await Neutralino.filesystem.createDirectory(destinationDir).catch(() => {});
+  try {
+    await Neutralino.filesystem.writeFile(`${partPath}.write-check`, "");
+    await Neutralino.filesystem.remove(`${partPath}.write-check`);
+  } catch (error) {
+    throw new Error(`The download could not be written to storage. The destination folder is missing, locked, read-only, or out of space. (${error?.code || "write check failed"})`);
+  }
+  await Neutralino.filesystem.remove(partPath).catch(() => {});
   if (sourceType === "external") {
     onProgress?.("Preparing external download...", 2);
     url = await resolveExternalDownloadUrl(
@@ -591,23 +616,30 @@ async function downloadArchive({
     try {
       await downloadSegmentedArchive({
         url,
-        outPath,
+        outPath: partPath,
         totalBytes: remoteFileSize,
         getTask,
         onProgress
       });
     } catch (error) {
       if (getTask()?.cancelled) throw error;
-      await Neutralino.filesystem.remove(outPath).catch(() => {
+      await Neutralino.filesystem.remove(partPath).catch(() => {
       });
       onProgress?.("Retrying download...", 2);
-      await downloadSingleArchive({ url, outPath, getTask, onProgress });
+      await downloadSingleArchive({ url, outPath: partPath, getTask, onProgress });
     }
-    await waitForDownloadedArchive(outPath);
+    await waitForDownloadedArchive(partPath);
+    await Neutralino.filesystem.move(partPath, outPath);
     return;
   }
-  await downloadSingleArchive({ url, outPath, getTask, onProgress });
-  await waitForDownloadedArchive(outPath);
+  try {
+    await downloadSingleArchive({ url, outPath: partPath, getTask, onProgress });
+    await waitForDownloadedArchive(partPath);
+    await Neutralino.filesystem.move(partPath, outPath);
+  } catch (error) {
+    await Neutralino.filesystem.remove(partPath).catch(() => {});
+    throw error;
+  }
 }
 
 async function extractArchive({

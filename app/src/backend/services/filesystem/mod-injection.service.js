@@ -1,4 +1,4 @@
-import { getModFolderName, getEngineModFolderName } from './path.util.js';
+import { getModFolderName, getEngineModFolderName, normalizeFolderName } from './path.util.js';
 
 function sameId(left, right) {
   return String(left) === String(right);
@@ -80,10 +80,13 @@ var _ModInjectionService = class _ModInjectionService {
   }
   async link(mod, engineId, version) {
     const folderName = getModFolderName(mod);
+    if (!String(folderName || "").trim()) throw new Error("WeekBox could not link this mod: required parameter 'folderName' is missing.");
     const sourcePath = `${this.getModsPath()}/${folderName}`;
     await this.migrateLegacyEngineMods(engineId, version);
     const modsPath = usesAddonsDirectory(mod, engineId) ? await this.getEngineAddonsPath(engineId, version) : await this.getEngineModsPath(engineId, version);
     const engineFolderName = getEngineModFolderName(mod);
+    if (!String(modsPath || "").trim()) throw new Error("WeekBox could not link this mod: required parameter 'modsPath' is missing.");
+    if (!String(engineFolderName || "").trim()) throw new Error("WeekBox could not link this mod: required parameter 'engineFolderName' is missing.");
     const linkPath = `${modsPath}/${engineFolderName}`;
     if (!await this.api.exists(sourcePath)) {
       throw new Error(`Mod files not found for ${mod.name}`);
@@ -91,7 +94,7 @@ var _ModInjectionService = class _ModInjectionService {
     await this.api.ensureDir(modsPath);
     if (await this.api.exists(linkPath)) {
       const conflicts = (await this.modRepository.getAll()).filter(
-        (otherMod) => !sameId(otherMod.id, mod.id) && otherMod.engineId === engineId && !otherMod.hidden && usesAddonsDirectory(otherMod, engineId) === usesAddonsDirectory(mod, engineId) && getEngineModFolderName(otherMod) === engineFolderName
+        (otherMod) => !sameId(otherMod.id, mod.id) && otherMod.engineId === engineId && !otherMod.hidden && usesAddonsDirectory(otherMod, engineId) === usesAddonsDirectory(mod, engineId) && normalizeFolderName(getEngineModFolderName(otherMod)) === normalizeFolderName(engineFolderName)
       );
       if (conflicts.length) {
         throw new Error(

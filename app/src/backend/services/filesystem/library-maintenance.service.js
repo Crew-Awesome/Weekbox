@@ -1,7 +1,7 @@
 import { ENGINE_DETAILS } from '../../config/engines.config.js';
 import { isValidEngineVersion } from './engine-version.service.js';
 import { ModRepository } from './mod-repository.service.js';
-import { getRealEntries, getModFolderName, getEngineModFolderName, sanitizePathSegment } from './path.util.js';
+import { getRealEntries, getModFolderName, getEngineModFolderName, sanitizePathSegment, normalizeFolderName } from './path.util.js';
 
 function sameId(left, right) {
   return String(left) === String(right);
@@ -98,7 +98,7 @@ var _LibraryMaintenanceService = class _LibraryMaintenanceService {
         // name as the same existing entry; otherwise re-importing its link
         // turns into an engine-folder conflict during startup.
         const existing = installedMods.find(
-          (mod) => getModFolderName(mod) === folderName || getEngineModFolderName(mod) === folderName
+          (mod) => normalizeFolderName(getModFolderName(mod)) === normalizeFolderName(folderName) || normalizeFolderName(getEngineModFolderName(mod)) === normalizeFolderName(folderName)
         );
         if (existing) {
           // The folder is already present in the Psych Online installation.
@@ -122,10 +122,19 @@ var _LibraryMaintenanceService = class _LibraryMaintenanceService {
           continue;
         }
         if (installedMods.some((mod) => sameId(mod.id, metadata.id))) continue;
+        if (!await this.api.exists(sourcePath) || await this.api.exists(destinationPath)) continue;
         await Neutralino.filesystem.move(sourcePath, destinationPath);
+        try {
+          await this.injection.link(metadata, engine.id, engine.version);
+        } catch (error) {
+          if (!String(error?.message || error).includes("Engine folder conflict")) throw error;
+          // A locally discovered optional Psych Online mod must not prevent
+          // WeekBox from starting. Keep it in the library, hidden, so the
+          // user can resolve the conflict later without losing its files.
+          metadata.hidden = true;
+        }
         await this.mods.add(metadata.id, metadata.name, metadata);
-        installedMods.push({ ...metadata, hidden: false });
-        await this.injection.link(metadata, engine.id, engine.version);
+        installedMods.push({ ...metadata, hidden: Boolean(metadata.hidden) });
       }
     }
   }
@@ -137,7 +146,7 @@ var _LibraryMaintenanceService = class _LibraryMaintenanceService {
         );
         await Promise.all(
           entries.filter(
-            (entry) => entry.type === "FILE" && /^temp_.+\.(?:zip|dmg)(?:\.part-\d+)?$/i.test(entry.entry)
+            (entry) => entry.type === "FILE" && /^temp_.+\.(?:zip|dmg)(?:\.part(?:-\d+)?)?$/i.test(entry.entry)
           ).map(
             (entry) => this.api.remove(`${path}/${entry.entry}`).catch(() => {
             })
