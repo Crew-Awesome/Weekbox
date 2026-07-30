@@ -291,7 +291,7 @@ function describeIssue(error) {
       reportable: false
     };
   }
-  if (lower.includes("could not connect to the download server") || lower.includes("could not find the download server") || lower.includes("download was interrupted") || lower.includes("exit code 28") || lower.includes("curl: (28)")) {
+  if (lower.includes("could not connect to the download server") || lower.includes("could not find the download server") || lower.includes("connection to the download server was interrupted") || lower.includes("download was interrupted") || lower.includes("exit code 28") || lower.includes("curl: (28)")) {
     return {
       title: "WeekBox could not reach the download server",
       summary: "The download host did not respond in time. Check your connection and try again later.",

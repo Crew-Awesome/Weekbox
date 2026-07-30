@@ -64,6 +64,7 @@ function getUsefulProcessOutput(output) {
     .map((line) => line.trim())
     .filter((line) => line)
     .filter((line) => !/^[#=O\-\s]+$/.test(line))
+    .filter((line) => !/^[#=O\-\s]+\d+(?:\.\d+)?%?$/.test(line))
     .filter((line) => !/^(?:%\s*Total|Dload\s+Upload|\d+(?:\.\d+)?\s+\d+(?:\.\d+)?\s+\d+(?:\.\d+)?)/i.test(line))
     .join("\n")
     .trim();
@@ -102,6 +103,9 @@ function createProcessError(operation, exitCode, output) {
   }
   if (operation === "Download" && Number(exitCode) === 1) {
     return createDownloadError("The download was interrupted before it finished. Try again.");
+  }
+  if (operation === "Download" && Number(exitCode) === 56) {
+    return createDownloadError("The connection to the download server was interrupted. Try again.");
   }
   if (operation === "Download" && Number(exitCode) === 22 && /\b404\b/.test(detail)) {
     return createDownloadError(
