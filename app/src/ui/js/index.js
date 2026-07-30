@@ -2465,6 +2465,7 @@ import { networkStatus as networkStatus3 } from "../../backend/core/index-core.j
 var engineManagerModal = {
   currentIndex: 0,
   resizeObserver: null,
+  closeTimer: null,
   async init() {
     if (!document.getElementById("engine-manager-modal")) {
       const tpl = document.getElementById("tpl-engine-manager");
@@ -2494,6 +2495,10 @@ var engineManagerModal = {
     if (!FS6.isInitialized) await FS6.init();
     const modal = document.getElementById("engine-manager-modal");
     if (!modal) return;
+    if (this.closeTimer) {
+      clearTimeout(this.closeTimer);
+      this.closeTimer = null;
+    }
     modal.style.display = "flex";
     requestAnimationFrame(() => {
       modal.classList.add("show");
@@ -2511,7 +2516,10 @@ var engineManagerModal = {
     if (!modal) return;
     deactivateCheckoutDialog(modal);
     modal.classList.remove("show");
-    setTimeout(() => {
+    if (this.closeTimer) clearTimeout(this.closeTimer);
+    this.closeTimer = setTimeout(() => {
+      this.closeTimer = null;
+      if (modal.classList.contains("show")) return;
       modal.style.display = "none";
       if (this.resizeObserver) {
         this.resizeObserver.disconnect();
