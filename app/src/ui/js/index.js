@@ -1308,6 +1308,14 @@ var downloadMod = {
     }
   },
   async install(modId, modName, downloadUrl, engineId = null, metadata = {}) {
+    if (!/^https?:\/\//i.test(String(downloadUrl || ""))) {
+      errorHandler.show({
+        error: new Error("The selected download does not have a valid URL. Choose another download file."),
+        action: "Install mod",
+        item: `${modName} (${modId})`
+      });
+      return false;
+    }
     if (!FS3.isInitialized) await FS3.init();
     FS3.assertStorageUnlocked();
     if (FS3.isOneDriveStorage()) {
