@@ -511,21 +511,28 @@
   id="engine-manager-modal"
   style="display: none"
 >
-  <div class="mod-manager-content">
+  <section
+    class="mod-manager-content"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="engine-manager-title"
+  >
     <header class="mod-manager-header">
-      <h2>Engine Manager</h2>
+      <h2 id="engine-manager-title">Engine Manager</h2>
       <div class="mod-manager-header-actions">
         <button
           class="mod-manager-action-btn mod-manager-close-btn"
           id="engine-manager-close-btn"
+          type="button"
           title="Close"
+          aria-label="Close Engine Manager"
         >
-          <i class="fa-solid fa-xmark"></i>
+          <i class="fa-solid fa-xmark" aria-hidden="true"></i>
         </button>
       </div>
     </header>
     <div class="engine-manager-body" id="engine-manager-modal-body"></div>
-  </div>
+  </section>
 </div>
 
 </template>

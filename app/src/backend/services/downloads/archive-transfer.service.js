@@ -58,8 +58,16 @@ function appendProcessOutput(output, data) {
   return next.length > 4e3 ? next.slice(-4e3) : next;
 }
 
+function getUsefulProcessOutput(output) {
+  return String(output || "")
+    .split(/\r?\n/)
+    .filter((line) => !/^[#=O\-\s]+$/.test(line))
+    .join("\n")
+    .trim();
+}
+
 function createProcessError(operation, exitCode, output) {
-  const detail = output.trim();
+  const detail = getUsefulProcessOutput(output);
   if (operation === "Download" && Number(exitCode) === 23) {
     return new Error(
       "The download could not be written to storage. Check that the WeekBox folder is writable and has enough free space, then try again."

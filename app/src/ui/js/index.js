@@ -2495,12 +2495,21 @@ var engineManagerModal = {
     const modal = document.getElementById("engine-manager-modal");
     if (!modal) return;
     modal.style.display = "flex";
-    requestAnimationFrame(() => modal.classList.add("show"));
+    requestAnimationFrame(() => {
+      modal.classList.add("show");
+      activateCheckoutDialog(
+        modal,
+        modal.querySelector(".mod-manager-content"),
+        document.getElementById("engine-manager-close-btn"),
+        () => this.close()
+      );
+    });
     await this.loadInstalledEngines();
   },
   close() {
     const modal = document.getElementById("engine-manager-modal");
     if (!modal) return;
+    deactivateCheckoutDialog(modal);
     modal.classList.remove("show");
     setTimeout(() => {
       modal.style.display = "none";
