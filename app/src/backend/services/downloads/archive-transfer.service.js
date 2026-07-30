@@ -683,7 +683,10 @@ async function extractArchive({
   const isWindows = window.NL_OS === "Windows";
   const archiveFormat = await detectArchiveFormat(archivePath);
   let portable7z = null;
-  if (archiveFormat === "rar" || archiveFormat === "7z" || !isWindows && archiveFormat === "zip") {
+  // Use the bundled extractor for ZIPs on Windows too. Windows tar can reject
+  // valid archives on some systems, then the old PowerShell fallback can fail
+  // before it even starts when PowerShell/AMSI is damaged.
+  if (archiveFormat === "rar" || archiveFormat === "7z" || archiveFormat === "zip") {
     const binNames = isWindows ? (archiveFormat === "rar" ? ["7z.exe"] : ["7z.exe", "7za.exe"]) : window.NL_OS === "Darwin" ? ["7zz-mac", "7za-mac", "7zz"] : ["7zz-linux", "7za-linux", "7zzs", "7zz"];
     for (const binName of binNames) {
       const pathsToTry = [
