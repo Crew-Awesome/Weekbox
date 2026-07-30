@@ -1,16 +1,31 @@
 name: Refresh WeekBox site release cache
 
 on:
-  release:
-    types: [published]
+  # Allows you to run it manually from the Actions tab
+  workflow_dispatch:
+
+  # Runs after the release workflow finishes
+  workflow_run:
+    workflows: ["Release"]
+    types: [completed]
 
 jobs:
   refresh-download-page:
+    # Run manually, or only after a successful release workflow
+    if: >-
+      ${{
+        github.event_name == 'workflow_dispatch' ||
+        github.event.workflow_run.conclusion == 'success'
+      }}
+
     runs-on: ubuntu-latest
+
     steps:
       - name: Refresh the Downloads page
         env:
           REVALIDATE_SECRET: ${{ secrets.WEEKBOX_SITE_REVALIDATE_SECRET }}
         run: |
-          curl --fail-with-body --request POST 'https://fnfweekbox.vercel.app/api/revalidate-release' \
+          curl --fail-with-body --silent --show-error \
+            --request POST \
+            'https://fnfweekbox.vercel.app/api/revalidate-release' \
             --header "Authorization: Bearer ${REVALIDATE_SECRET}"
