@@ -2557,10 +2557,14 @@ var engineManagerModal = {
     const track = document.createElement("div");
     track.className = "em-carousel-track";
     const btnPrev = document.createElement("button");
+    btnPrev.type = "button";
     btnPrev.className = "em-nav-btn left";
+    btnPrev.setAttribute("aria-label", "Previous engine");
     btnPrev.innerHTML = '<i class="fa-solid fa-chevron-left"></i>';
     const btnNext = document.createElement("button");
+    btnNext.type = "button";
     btnNext.className = "em-nav-btn right";
+    btnNext.setAttribute("aria-label", "Next engine");
     btnNext.innerHTML = '<i class="fa-solid fa-chevron-right"></i>';
     const indexContainer = document.createElement("div");
     indexContainer.className = "em-carousel-index";
@@ -2602,6 +2606,7 @@ var engineManagerModal = {
         item.className = "version-item";
         const updateDisabled = !networkStatus3.online;
         const running = FS6.isEngineRunning(engineId, version);
+        const updating = FS6.isEngineUpdateInProgress(engineId, version);
         item.innerHTML = `
           <span class="version-text">${version}</span>
           <div class="version-actions">
@@ -2612,7 +2617,7 @@ var engineManagerModal = {
             <button class="engine-action-btn engine-dir-btn" title="Open Directory">
               <i class="fa-solid fa-folder-open"></i>
             </button>
-            <button class="engine-action-btn engine-delete-btn" title="${running ? "Close the engine before uninstalling" : "Uninstall Version"}" aria-label="${running ? "Close the engine before uninstalling" : "Uninstall Version"}" ${running ? "disabled" : ""}>
+            <button class="engine-action-btn engine-delete-btn" title="${running ? "Close the engine before uninstalling" : updating ? "Wait for the engine update to finish" : "Uninstall Version"}" aria-label="${running ? "Close the engine before uninstalling" : updating ? "Wait for the engine update to finish" : "Uninstall Version"}" ${running || updating ? "disabled" : ""}>
               <i class="fa-solid fa-trash"></i>
             </button>
           </div>
@@ -2622,49 +2627,29 @@ var engineManagerModal = {
           e.stopPropagation();
           updateBtn.disabled = true;
           updateBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
-          const result = await engineUpdateService.checkEngineUpdate(
-            engineId,
-            version
-          );
-          if (result.status === "current") {
-            engineUpdateToast.info(
+          try {
+            const result = await engineUpdateService.checkEngineUpdate(
               engineId,
-              details.name,
-              "Already up to date"
+              version
             );
-          } else if (result.status === "skipped") {
-            engineUpdateToast.info(
-              engineId,
-              details.name,
-              "This update is skipped"
-            );
-          } else if (result.status === "pinned") {
-            engineUpdateToast.info(
-              engineId,
-              details.name,
-              "This version is pinned"
-            );
-          } else if (result.status === "unavailable") {
-            engineUpdateToast.info(
-              engineId,
-              details.name,
-              "Could not check for updates"
-            );
-          } else if (result.status === "running") {
-            engineUpdateToast.info(
-              engineId,
-              details.name,
-              "Close the engine before updating"
-            );
-          } else if (result.status === "offline") {
-            engineUpdateToast.info(
-              engineId,
-              details.name,
-              "Connect to the internet to check for updates"
-            );
+            const messages = {
+              current: "Already up to date",
+              skipped: "This update is skipped",
+              pinned: "This version is pinned",
+              unavailable: "Could not check for updates",
+              running: "Close the engine before updating",
+              offline: "Connect to the internet to check for updates"
+            };
+            if (messages[result.status]) {
+              engineUpdateToast.info(engineId, details.name, messages[result.status]);
+            }
+          } catch (error) {
+            console.warn("Could not check engine updates", error);
+            engineUpdateToast.info(engineId, details.name, "Could not check for updates");
+          } finally {
+            updateBtn.disabled = false;
+            updateBtn.innerHTML = '<i class="fa-solid fa-rotate"></i>';
           }
-          updateBtn.disabled = false;
-          updateBtn.innerHTML = '<i class="fa-solid fa-rotate"></i>';
         });
         item.querySelector(".engine-dir-btn").addEventListener("click", async (e) => {
           e.stopPropagation();
@@ -2677,22 +2662,32 @@ var engineManagerModal = {
         const deleteBtn = item.querySelector(".engine-delete-btn");
         deleteBtn.addEventListener("click", async (e) => {
           e.stopPropagation();
-          if (FS6.isEngineRunning(engineId, version)) return;
+          if (FS6.isEngineRunning(engineId, version) || FS6.isEngineUpdateInProgress(engineId, version)) return;
+          const choice = await Neutralino.os.showMessageBox(
+            "Uninstall engine version",
+            `Remove ${details.name} ${version}? This cannot be undone.`,
+            "YES_NO",
+            "WARNING"
+          );
+          if (choice !== "YES") return;
           deleteBtn.disabled = true;
           deleteBtn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i>`;
           const targetPath = `${FS6.enginesPath}/${engineId}/${version}`;
           try {
+            let result;
             if (window.NL_OS === "Windows") {
-              await Neutralino.os.execCommand(
+              result = await Neutralino.os.execCommand(
                 `rmdir /S /Q "${targetPath.replace(/\//g, "\\")}"`,
                 { background: false }
-              ).catch(() => {
-              });
+              );
             } else {
-              await Neutralino.os.execCommand(`rm -rf "${targetPath}"`, { background: false }).catch(() => {
-              });
+              result = await Neutralino.os.execCommand(`rm -rf "${targetPath}"`, { background: false });
+            }
+            if (result?.exitCode !== 0 || await FS6.api.exists(targetPath)) {
+              throw new Error(result?.stdErr || "The engine folder could not be removed");
             }
           } catch (e2) {
+            errorHandler.show({ error: e2, action: "Uninstall engine", item: `${details.name} ${version}` });
           }
           await this.loadInstalledEngines();
         });
@@ -2700,16 +2695,21 @@ var engineManagerModal = {
       });
       card.appendChild(versionsList);
       track.appendChild(card);
+      const indexButton = document.createElement("button");
+      indexButton.type = "button";
+      indexButton.className = "em-index-icon";
+      indexButton.title = details.name;
+      indexButton.setAttribute("aria-label", `Select ${details.name}`);
       const indexIcon = document.createElement("img");
-      indexIcon.className = "em-index-icon";
       indexIcon.src = `assets/icons/${details.icon}`;
+      indexIcon.alt = "";
       indexIcon.onerror = () => indexIcon.src = "assets/icons/exe.png";
-      indexIcon.title = details.name;
-      indexIcon.addEventListener("click", () => {
+      indexButton.appendChild(indexIcon);
+      indexButton.addEventListener("click", () => {
         this.currentIndex = idx;
         updateCarousel();
       });
-      indexContainer.appendChild(indexIcon);
+      indexContainer.appendChild(indexButton);
     });
     const updateCarousel = /* @__PURE__ */ __name(() => {
       const vw = viewport.clientWidth;
@@ -2723,6 +2723,7 @@ var engineManagerModal = {
       });
       Array.from(indexContainer.children).forEach((icon, idx) => {
         icon.classList.toggle("active", idx === this.currentIndex);
+        icon.setAttribute("aria-pressed", String(idx === this.currentIndex));
       });
       btnPrev.style.display = this.currentIndex === 0 ? "none" : "flex";
       btnNext.style.display = this.currentIndex === sortedEngineEntries.length - 1 ? "none" : "flex";

@@ -760,7 +760,9 @@
 .em-index-icon {
   width: 32px;
   height: 32px;
-  object-fit: contain;
+  padding: 0;
+  border: 0;
+  background: transparent;
   border-radius: 6px;
   opacity: 0.3;
   cursor: pointer;
@@ -821,10 +823,6 @@
   margin-bottom: var(--spacing-md);
 }
 
-.engine-versions-list/* Removed scrollbar */
-.engine-versions-list/* Removed track */
-.engine-versions-list/* Removed thumb */
-.engine-versions-list/* Removed thumb:hover */
 
 .version-item {
   position: relative;
@@ -845,12 +843,27 @@
   background-color: var(--engine-color);
 }
 
+.engine-column.active .version-item:focus-within {
+  background-color: var(--engine-color);
+}
+
 .engine-column.active .version-item:hover .version-text {
   opacity: 0;
   transform: scale(0.9);
 }
 
+.engine-column.active .version-item:focus-within .version-text {
+  opacity: 0;
+  transform: scale(0.9);
+}
+
 .engine-column.active .version-item:hover .version-actions {
+  opacity: 1;
+  pointer-events: auto;
+  transform: scale(1);
+}
+
+.engine-column.active .version-item:focus-within .version-actions {
   opacity: 1;
   pointer-events: auto;
   transform: scale(1);
@@ -889,4 +902,19 @@
   color: #8fc8ff;
   border-color: rgb(143 200 255 / 35%);
   background-color: rgb(143 200 255 / 10%);
+}
+
+.em-index-icon img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  border-radius: inherit;
+}
+
+.em-index-icon:focus-visible,
+.em-nav-btn:focus-visible,
+.engine-action-btn:focus-visible {
+  outline: 2px solid var(--text-main);
+  outline-offset: 3px;
 }
