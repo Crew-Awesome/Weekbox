@@ -189,6 +189,7 @@ export const gameBananaApi = {
       "drive.google.com",
       "mediafire.com",
       "www.mediafire.com",
+      "github.com",
     ]);
     const files = new Map();
     const addExternal = (value, name = "") => {
@@ -197,6 +198,14 @@ export const gameBananaApi = {
         const hostname = url.hostname.toLowerCase();
         if (!supportedHosts.has(hostname)) return;
         if (hostname === "drive.google.com" && !getGoogleDriveFileId(url)) {
+          return;
+        }
+        if (
+          hostname === "github.com" &&
+          !/^\/[^/]+\/[^/]+\/releases\/download\/[^/]+\/[^/]+$/i.test(
+            url.pathname,
+          )
+        ) {
           return;
         }
         if (!files.has(url.href)) {
@@ -252,7 +261,7 @@ export const gameBananaApi = {
             /https?:\/\/download[^"'\s<>]+\.mediafire\.com[^"'\s<>]*/i,
           )?.[0];
         if (!downloadUrl) return null;
-      } else {
+      } else if (hostname !== "github.com") {
         return null;
       }
       const result = await Neutralino.os.execCommand(

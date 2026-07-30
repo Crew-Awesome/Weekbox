@@ -32,7 +32,7 @@
       "minWidth": 800,
       "minHeight": 500,
       "center": true,
-      "enableInspector": false,
+      "enableInspector": true,
       "openInspectorOnStartup": false,
       "resizable": true,
       "exitProcessOnClose": true,

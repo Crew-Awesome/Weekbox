@@ -30,6 +30,7 @@ export function getExternalDownloadLabel(url) {
     const hostname = new URL(url).hostname.toLowerCase();
     if (hostname.endsWith("mediafire.com")) return "MediaFire download";
     if (hostname === "drive.google.com") return "Drive download";
+    if (hostname === "github.com") return "GitHub release download";
   } catch {}
   return "External download";
 }
