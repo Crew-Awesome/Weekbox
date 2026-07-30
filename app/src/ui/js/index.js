@@ -1202,11 +1202,25 @@ var downloadMod = {
     );
   },
   isArchiveMetadataEntry(entry) {
+    const name = String(entry.entry || "");
     return (
-      entry.entry === ".DS_Store" ||
-      entry.entry.startsWith("__MACOSX") ||
-      entry.entry.startsWith("_MACOSX")
+      name === ".DS_Store" ||
+      name.startsWith("._") ||
+      /^(?:__|_)macosx$/i.test(name)
     );
+  },
+  async removeArchiveMetadata(path) {
+    const entries = await Neutralino.filesystem.readDirectory(path);
+    for (const entry of entries) {
+      if (entry.entry === "." || entry.entry === "..") continue;
+      const entryPath = `${path}/${entry.entry}`;
+      if (this.isArchiveMetadataEntry(entry)) {
+        await FS3.api.remove(entryPath).catch(() => {
+        });
+      } else if (entry.type === "DIRECTORY") {
+        await this.removeArchiveMetadata(entryPath);
+      }
+    }
   },
   getInstallableExtractedEntries(entries) {
     return entries.filter(
@@ -1220,7 +1234,7 @@ var downloadMod = {
   async hasExtractedFiles(path) {
     const entries = await Neutralino.filesystem.readDirectory(path);
     for (const entry of entries) {
-      if (entry.entry === "." || entry.entry === ".." || entry.entry === ".downloading") {
+      if (entry.entry === "." || entry.entry === ".." || entry.entry === ".downloading" || this.isArchiveMetadataEntry(entry)) {
         continue;
       }
       if (entry.type === "FILE") return true;
@@ -1341,6 +1355,7 @@ var downloadMod = {
         clearInterval(extractionStatusTimer);
       }
       if (this.activeTasks.get(modId)?.cancelled) throw new Error("Cancelled");
+      await this.removeArchiveMetadata(targetModFolder);
       let hasNestedArchive = true;
       while (hasNestedArchive) {
         hasNestedArchive = false;
@@ -1371,6 +1386,7 @@ var downloadMod = {
               });
               throw new Error("Cancelled");
             }
+            await this.removeArchiveMetadata(innerTempPath);
             await FS3.api.remove(innerZipPath).catch(() => {
             });
             const extractedFiles = await Neutralino.filesystem.readDirectory(innerTempPath);
@@ -5364,6 +5380,8 @@ function getCheckoutDialogFocusables(dialog) {
 __name(getCheckoutDialogFocusables, "getCheckoutDialogFocusables");
 function activateCheckoutDialog(overlay, dialog, initialFocus, onEscape) {
   deactivateCheckoutDialog(overlay, false);
+  const wasInert = overlay.inert;
+  overlay.inert = false;
   const background = [...document.body.children].filter((element) => element !== overlay).map((element) => [element, element.inert]);
   background.forEach(([element]) => element.inert = true);
   const onKeydown = /* @__PURE__ */ __name((event) => {
@@ -5391,7 +5409,8 @@ function activateCheckoutDialog(overlay, dialog, initialFocus, onEscape) {
   checkoutDialogStates.set(overlay, {
     background,
     onKeydown,
-    previousFocus: document.activeElement
+    previousFocus: document.activeElement,
+    wasInert
   });
   document.addEventListener("keydown", onKeydown);
   (initialFocus || getCheckoutDialogFocusables(dialog)[0])?.focus();
@@ -5402,6 +5421,7 @@ function deactivateCheckoutDialog(overlay, restoreFocus = true) {
   if (!state) return;
   document.removeEventListener("keydown", state.onKeydown);
   state.background.forEach(([element, wasInert]) => element.inert = wasInert);
+  overlay.inert = state.wasInert;
   checkoutDialogStates.delete(overlay);
   if (restoreFocus && state.previousFocus?.isConnected) state.previousFocus.focus();
 }
