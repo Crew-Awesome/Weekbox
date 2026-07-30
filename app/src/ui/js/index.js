@@ -171,6 +171,7 @@ window.addEventListener("wine-missing", () => {
 
 // app/src/ui/js/errors/errorHandler.js
 var DIAGNOSTIC_REPORT_ENDPOINT = "https://fnfweekbox.vercel.app/api/diagnostic-report";
+var recentDiagnosticReports = /* @__PURE__ */ new Map();
 function nonEmptyString(value, fallback = "Unknown") {
   const text = String(value ?? "").trim();
   return text || fallback;
@@ -244,7 +245,7 @@ __name(getDiagnosticStackTrace, "getDiagnosticStackTrace");
 function describeIssue(error) {
   const message = getMessage(error);
   const lower = message.toLowerCase();
-  if (lower.includes("crypt_e_no_revocation_check") || lower.includes("schannel") && lower.includes("exit code 35")) {
+  if (lower.includes("crypt_e_no_revocation_check") || lower.includes("could not verify the download certificate") || lower.includes("schannel") && lower.includes("exit code 35")) {
     return {
       title: "Windows could not verify the download certificate",
       summary: "WeekBox was blocked by Windows before the download started. Check your date and time, then try another network. A VPN, proxy, or antivirus HTTPS scanning can also block the certificate check.",
@@ -255,7 +256,7 @@ function describeIssue(error) {
   if (lower.includes("onedrive") || lower.includes("exit code 23")) {
     return {
       title: "Choose a local storage folder",
-      summary: "WeekBox cannot safely download engines into OneDrive. Use a local folder such as C:\\WeekBoxData instead.",
+      summary: "WeekBox cannot safely download or install files in OneDrive. Use a local folder such as C:\\WeekBoxData instead.",
       actionLabel: "Open storage settings",
       action: "storage",
       tag: "Storage location",
@@ -290,7 +291,7 @@ function describeIssue(error) {
       reportable: false
     };
   }
-  if (lower.includes("could not connect to the download server") || lower.includes("exit code 28") || lower.includes("curl: (28)")) {
+  if (lower.includes("could not connect to the download server") || lower.includes("could not find the download server") || lower.includes("download was interrupted") || lower.includes("exit code 28") || lower.includes("curl: (28)")) {
     return {
       title: "WeekBox could not reach the download server",
       summary: "The download host did not respond in time. Check your connection and try again later.",
@@ -389,7 +390,22 @@ async function submitDiagnosticReport(context, issue) {
   if (!appSettings.get("diagnosticReportingConsentAnswered") || !appSettings.get("diagnosticReportingEnabled")) {
     return;
   }
+  const now = Date.now();
+  const fingerprint = [context.action, context.item, context.targetUrl, getDiagnosticErrorMessage(context.error)].join("\n");
+  for (const [key, sentAt] of recentDiagnosticReports) {
+    if (now - sentAt > 5 * 60 * 1e3) recentDiagnosticReports.delete(key);
+  }
+  if (recentDiagnosticReports.has(fingerprint)) return;
+  recentDiagnosticReports.set(fingerprint, now);
   const stackTrace = getDiagnosticStackTrace(context.error);
+  const downloadDetails = context.error?.downloadDiagnostics || {};
+  const detailLabel = [
+    context.action || issue.tag,
+    context.item,
+    downloadDetails.curlCode != null ? `curl ${downloadDetails.curlCode}` : null,
+    downloadDetails.httpStatus ? `HTTP ${downloadDetails.httpStatus}` : null,
+    downloadDetails.retryCount != null ? `retry ${downloadDetails.retryCount}` : null
+  ].filter(Boolean).join(": ");
   const [operatingSystem, architecture] = await Promise.all([
     getOperatingSystem(),
     getArchitecture()
@@ -403,7 +419,7 @@ async function submitDiagnosticReport(context, issue) {
       architecture: sanitizeDiagnosticText(architecture, 100),
       action: {
         label: sanitizeDiagnosticText(
-          [context.action || issue.tag, context.item].filter(Boolean).join(": "),
+          detailLabel,
           240,
         ),
         url: sanitizeDiagnosticText(context.targetUrl || "", 2e3),
@@ -677,9 +693,12 @@ var downloadEngine = {
     if (!FS.isInitialized) await FS.init();
     FS.assertStorageUnlocked();
     if (FS.isOneDriveStorage()) {
-      throw new Error(
-        "WeekBox storage is inside OneDrive. Choose a local folder outside OneDrive, such as C:\\WeekBoxData, before downloading engines."
-      );
+      errorHandler.show({
+        error: new Error("WeekBox storage is inside OneDrive. Choose a local folder outside OneDrive before downloading or installing engines."),
+        action: "Install engine",
+        storagePath: FS.weekboxPath
+      });
+      return false;
     }
     const enginesBasePath = FS.enginesPath;
     const engineDir = `${enginesBasePath}/${engineId}/${version}`;
@@ -1291,6 +1310,14 @@ var downloadMod = {
   async install(modId, modName, downloadUrl, engineId = null, metadata = {}) {
     if (!FS3.isInitialized) await FS3.init();
     FS3.assertStorageUnlocked();
+    if (FS3.isOneDriveStorage()) {
+      errorHandler.show({
+        error: new Error("WeekBox storage is inside OneDrive. Choose a local folder outside OneDrive before downloading or installing mods."),
+        action: "Install mod",
+        storagePath: FS3.weekboxPath
+      });
+      return false;
+    }
     const modsBasePath = FS3.modsPath;
     const taskKey = String(modId).replace(/[^a-z0-9_-]/gi, "_");
     const fallbackFolderName = sanitizeModFolderName(modName, `Mod-${taskKey}`);
@@ -1472,14 +1499,24 @@ var downloadMod = {
       return true;
     } catch (error) {
       this.reportInstallProgress(modId, modName, "cancelled", 0);
+      if (error?.message === "This mod is already installed") {
+        this.activeTasks.delete(modId);
+        toastDownloadMod.hide(modId);
+        const modalBtn = document.getElementById("modal-download-btn");
+        if (modalBtn && document.getElementById("mod-modal")?.classList.contains("show")) {
+          modalBtn.disabled = true;
+          modalBtn.innerHTML = '<i class="fa-solid fa-check"></i> Already Installed';
+        }
+        return true;
+      }
       if (error.message !== "Cancelled") {
         await this.cleanupData(modId, tempFilePath, targetModFolder);
         toastDownloadMod.error(modId, error.message || "Installation failed");
         errorHandler.show({
           error,
           action: "Install mod",
-          item: modName,
-          targetUrl: metadata.sourceUrl || downloadUrl,
+          item: `${modName} (${modId})`,
+          targetUrl: downloadUrl || metadata.sourceUrl,
           storagePath: FS3.weekboxPath
         });
         this.activeTasks.delete(modId);

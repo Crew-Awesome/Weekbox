@@ -60,16 +60,29 @@ function appendProcessOutput(output, data) {
 
 function getUsefulProcessOutput(output) {
   return String(output || "")
-    .split(/\r?\n/)
+    .split(/\r?\n|\r/)
+    .map((line) => line.trim())
+    .filter((line) => line)
     .filter((line) => !/^[#=O\-\s]+$/.test(line))
+    .filter((line) => !/^(?:%\s*Total|Dload\s+Upload|\d+(?:\.\d+)?\s+\d+(?:\.\d+)?\s+\d+(?:\.\d+)?)/i.test(line))
     .join("\n")
     .trim();
 }
 
 function createProcessError(operation, exitCode, output) {
   const detail = getUsefulProcessOutput(output);
+  const httpStatus = detail.match(/\bHTTP\/\S+\s+(\d{3})\b|\b(\d{3})\b/)?.[1] || detail.match(/\b(\d{3})\b/)?.[1] || null;
+  const createDownloadError = (message) => {
+    const error = new Error(message);
+    error.downloadDiagnostics = {
+      curlCode: Number(exitCode),
+      httpStatus: httpStatus ? Number(httpStatus) : null,
+      stderr: detail
+    };
+    return error;
+  };
   if (operation === "Download" && Number(exitCode) === 23) {
-    return new Error(
+    return createDownloadError(
       "The download could not be written to storage. Check that the WeekBox folder is writable and has enough free space, then try again."
     );
   }
@@ -79,15 +92,24 @@ function createProcessError(operation, exitCode, output) {
     );
   }
   if (operation === "Download" && Number(exitCode) === 28) {
-    const curlMessage = detail.match(/curl:\s*\(28\)\s*[^\r\n]+/i)?.[0];
-    return new Error(
-      `Could not connect to the download server. Check your connection and try again later.${curlMessage ? ` ${curlMessage}` : ""}`
-    );
+    return createDownloadError("The download server did not respond in time. Check your connection and try again.");
+  }
+  if (operation === "Download" && Number(exitCode) === 6) {
+    return createDownloadError("WeekBox could not find the download server. Check your DNS or connection and try again.");
+  }
+  if (operation === "Download" && Number(exitCode) === 35) {
+    return createDownloadError("Windows could not verify the download certificate. Check your date and time, then try another network. Certificate validation was not bypassed.");
+  }
+  if (operation === "Download" && Number(exitCode) === 1) {
+    return createDownloadError("The download was interrupted before it finished. Try again.");
   }
   if (operation === "Download" && Number(exitCode) === 22 && /\b404\b/.test(detail)) {
-    return new Error(
+    return createDownloadError(
       "This download is no longer available (404). Choose another download file or try again later."
     );
+  }
+  if (operation === "Download" && Number(exitCode) === 22) {
+    return createDownloadError(`The download server rejected this file${httpStatus ? ` (HTTP ${httpStatus})` : ""}. Choose another download or try again later.`);
   }
   return new Error(
     `${operation} failed with exit code ${exitCode}${detail ? `: ${detail}` : ""}`
@@ -95,7 +117,8 @@ function createProcessError(operation, exitCode, output) {
 }
 
 function isTransientDownloadError(error) {
-  return /(?:exit code|curl:\s*\()\s*(?:28|35|56)\b/i.test(String(error?.message || error));
+  const code = error?.downloadDiagnostics?.curlCode;
+  return [1, 6, 28, 35, 56].includes(Number(code)) || /(?:exit code|curl:\s*\()\s*(?:1|6|28|35|56)\b/i.test(String(error?.message || error));
 }
 
 function wait(ms) {
@@ -111,6 +134,7 @@ async function retryTransientDownload(operation, getTask, onProgress, cleanup) {
       return await operation();
     } catch (error) {
       lastError = error;
+      if (error?.downloadDiagnostics) error.downloadDiagnostics.retryCount = attempt - 1;
       if (!isTransientDownloadError(error) || attempt === attempts) throw error;
       await cleanup?.();
       onProgress?.(`Connection interrupted. Retrying (${attempt + 1}/${attempts})...`, 2);
