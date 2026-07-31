@@ -3,6 +3,7 @@ var APIneuFileSystem = {
    * Comprueba si un archivo o directorio existe.
    */
   async exists(path) {
+    if (typeof path !== "string" || !path.trim()) return false;
     try {
       await Neutralino.filesystem.getStats(path);
       return true;
@@ -58,6 +59,12 @@ var APIneuFileSystem = {
    * Agrega datos al final de un archivo existente.
    */
   async append(path, data, isBinary = false) {
+    if (typeof path !== "string" || !path.trim()) {
+      throw new Error("WeekBox could not append storage data because the destination path is missing.");
+    }
+    if (data === undefined || data === null) {
+      throw new Error(`WeekBox could not append ${path} because the file contents are missing.`);
+    }
     if (isBinary) {
       await Neutralino.filesystem.appendBinaryFile(path, data);
     } else {
@@ -68,6 +75,9 @@ var APIneuFileSystem = {
    * Lee el contenido de un archivo.
    */
   async read(path, isBinary = false) {
+    if (typeof path !== "string" || !path.trim()) {
+      throw new Error("WeekBox could not read storage data because the source path is missing.");
+    }
     if (isBinary) {
       return await Neutralino.filesystem.readBinaryFile(path);
     } else {
@@ -78,6 +88,7 @@ var APIneuFileSystem = {
    * Borra un archivo o directorio.
    */
   async remove(path) {
+    if (typeof path !== "string" || !path.trim()) return;
     const exists = await this.exists(path);
     if (exists) {
       await Neutralino.filesystem.remove(path);

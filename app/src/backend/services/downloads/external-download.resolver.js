@@ -31,17 +31,17 @@ async function resolveExternalDownloadUrl(url, executeCommand) {
   }
   if (hostname === "mediafire.com" || hostname === "www.mediafire.com") {
     const result = await executeCommand(
-      `curl -fsSL --connect-timeout 10 --max-time 30 ${quoteCommandArgument(value)}`,
+      `curl --globoff -fsSL --connect-timeout 10 --max-time 30 ${quoteCommandArgument(value)}`,
       { background: false }
     );
     if (result.exitCode !== 0) {
-      throw new Error(
-        result.stdErr || "Could not open the MediaFire download page"
-      );
+      throw new Error("This MediaFire link could not be opened. Choose another download link.");
     }
-    const directUrl = (result.stdOut || "").replaceAll("&amp;", "&").match(/https?:\/\/download[^"'\s<>]+\.mediafire\.com[^"'\s<>]*/i)?.[0];
+    const page = (result.stdOut || "").replaceAll("&amp;", "&").replaceAll("\\/", "/");
+    const directUrl = page.match(/https?:\/\/(?:download\d*|[a-z0-9-]+)\.mediafire\.com[^"'\s<>\\]+/i)?.[0]
+      || page.match(/https?:\/\/[^"'\s<>]+\/download\/[^"'\s<>]+/i)?.[0];
     if (!directUrl) {
-      throw new Error("Could not find the MediaFire download link");
+      throw new Error("This MediaFire link is not supported. Choose another download link.");
     }
     return directUrl;
   }
@@ -50,7 +50,7 @@ async function resolveExternalDownloadUrl(url, executeCommand) {
 
 async function getRangeSupportedFileSize(url, executeCommand) {
   const result = await executeCommand(
-    `curl -sS -L -I --connect-timeout 3 --max-time 3 --range 0-0 ${quoteCommandArgument(url)}`,
+    `curl --globoff -sS -L -I --connect-timeout 3 --max-time 3 --range 0-0 ${quoteCommandArgument(url)}`,
     { background: false }
   );
   if (result.exitCode !== 0) {

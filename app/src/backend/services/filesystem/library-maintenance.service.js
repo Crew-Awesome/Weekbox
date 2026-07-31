@@ -56,7 +56,8 @@ var _LibraryMaintenanceService = class _LibraryMaintenanceService {
     });
   }
   async cleanupHiddenModLinks(installedEngines = null) {
-    const hiddenMods = (await this.mods.getAll()).filter((mod) => mod.hidden);
+    const storedMods = await this.mods.getAll();
+    const hiddenMods = (Array.isArray(storedMods) ? storedMods : []).filter((mod) => mod.hidden);
     if (!hiddenMods.length) return;
     const engines = installedEngines || await this.getInstalledEngines();
     await Promise.all(
@@ -67,7 +68,8 @@ var _LibraryMaintenanceService = class _LibraryMaintenanceService {
   }
   async importPsychOnlineEngineMods(installedEngines = null) {
     const engines = installedEngines || await this.getInstalledEngines();
-    const installedMods = await this.mods.getAll();
+    const storedMods = await this.mods.getAll();
+    const installedMods = Array.isArray(storedMods) ? storedMods : [];
     let updatedLocalCovers = false;
     for (const mod of installedMods) {
       if (mod.engineId === "psychonline" && mod.source === "local" && mod.coverFallback !== "psychonline") {
@@ -160,7 +162,7 @@ var _LibraryMaintenanceService = class _LibraryMaintenanceService {
         await Neutralino.filesystem.readDirectory(modsPath)
       );
       await Promise.all(
-        modFolders.filter((entry) => entry.type === "DIRECTORY").map(async (entry) => {
+        modFolders.filter((entry) => entry.type === "DIRECTORY" && !entry.entry.startsWith(".extract_")).map(async (entry) => {
           const modPath = `${modsPath}/${entry.entry}`;
           if (await this.api.exists(`${modPath}/.downloading`)) {
             await this.api.remove(modPath);

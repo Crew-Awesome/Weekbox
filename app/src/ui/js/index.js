@@ -205,7 +205,7 @@ async function getArchitecture() {
 }
 __name(getArchitecture, "getArchitecture");
 function getMessage(error) {
-  if (error instanceof Error) return error.stack || error.message;
+  if (error instanceof Error) return error.message || error.stack || "An unexpected error occurred";
   if (typeof error === "string") return error;
   if (error && typeof error === "object") {
     try {
@@ -314,7 +314,15 @@ function describeIssue(error) {
       reportable: false
     };
   }
-  if (lower.includes("gamebanana's download server is unavailable") || lower.includes("could not connect to the gamebanana download server") || lower.includes("connection to the download server was reset") || lower.includes("could not connect to the download server") || lower.includes("could not find the download server") || lower.includes("connection to the download server was interrupted") || lower.includes("download was interrupted") || lower.includes("exit code 7") || lower.includes("curl: (7)") || lower.includes("exit code 28") || lower.includes("curl: (28)")) {
+  if (lower.includes("valid integrity checksum")) {
+    return {
+      title: "This update cannot be verified",
+      summary: "WeekBox did not install the update because its release file has no valid checksum. Use the GitHub release page to update manually.",
+      tag: "Invalid update metadata",
+      reportable: false
+    };
+  }
+  if (lower.includes("gamebanana's download server is unavailable") || lower.includes("could not connect to the gamebanana download server") || lower.includes("connection to the download server was reset") || lower.includes("could not connect to the download server") || lower.includes("could not find the download server") || lower.includes("connection to the download server was interrupted") || lower.includes("download was interrupted") || lower.includes("download was incomplete") || lower.includes("download process ended unexpectedly") || lower.includes("exit code 7") || lower.includes("curl: (7)") || lower.includes("exit code 18") || lower.includes("curl: (18)") || lower.includes("exit code -1") || lower.includes("exit code 28") || lower.includes("curl: (28)")) {
     return {
       title: "WeekBox could not reach the download server",
       summary: "The download host did not respond in time. Check your connection and try again later.",
@@ -330,7 +338,7 @@ function describeIssue(error) {
       reportable: false
     };
   }
-  if (lower.includes("download link is missing") || lower.includes("download link is invalid") || lower.includes("download does not have a valid link") || lower.includes("could not find the google drive file id") || lower.includes("does not point to a downloadable file")) {
+  if (lower.includes("download link is missing") || lower.includes("download link is invalid") || lower.includes("download does not have a valid link") || lower.includes("could not find the google drive file id") || lower.includes("does not point to a downloadable file") || lower.includes("mediafire link is not supported") || lower.includes("mediafire link could not be opened")) {
     return {
       title: "This download link is not usable",
       summary: "The mod page does not provide a direct file link. Choose another download or ask the mod author to replace the link.",
@@ -413,6 +421,9 @@ function createDiagnosticReport({ error, action, item, targetUrl }) {
   const downloadDetails = error?.downloadDiagnostics || {};
   return [
     "WeekBox diagnostic report",
+    `Error\n${sanitizeDiagnosticText(getDiagnosticErrorMessage(error), 2e3)}`,
+    error?.code ? `Error code\n${sanitizeDiagnosticText(error.code, 120)}` : null,
+    error?.cause?.message ? `Cause\n${sanitizeDiagnosticText(error.cause.message, 2e3)}` : null,
     "Stack trace",
     sanitizeDiagnosticText(getDiagnosticStackTrace(error), 8e3),
     `App version\n${nonEmptyString(window.NL_APPVERSION)}`,
@@ -426,18 +437,16 @@ function createDiagnosticReport({ error, action, item, targetUrl }) {
 }
 __name(createDiagnosticReport, "createDiagnosticReport");
 async function submitDiagnosticReport(context, issue) {
-  const now = Date.now();
   const normalizedAction = /^(?:run|start) weekbox$/i.test(String(context.action || "")) ? "Start WeekBox" : context.action;
   const normalizedErrorMessage = getDiagnosticErrorMessage(context.error).replace(
     /^WeekBox could not finish preparing the WeekBox library:\s*/i,
     ""
   );
-  const fingerprint = [normalizedAction, context.item, context.targetUrl, normalizedErrorMessage].join("\n");
-  for (const [key, sentAt] of recentDiagnosticReports) {
-    if (now - sentAt > 5 * 60 * 1e3) recentDiagnosticReports.delete(key);
-  }
+  const diagnostics = context.error?.downloadDiagnostics || {};
+  const errorType = context.error?.code || diagnostics.curlCode || diagnostics.httpStatus || normalizedErrorMessage.replace(/[A-Za-z]:\\[^\s]+|\/[^\s]+|\d+/g, "#").slice(0, 180);
+  const fingerprint = [normalizedAction, context.item || "", errorType].join("\n");
   if (recentDiagnosticReports.has(fingerprint)) return;
-  recentDiagnosticReports.set(fingerprint, now);
+  recentDiagnosticReports.set(fingerprint, Date.now());
   const stackTrace = getDiagnosticStackTrace(context.error);
   const downloadDetails = context.error?.downloadDiagnostics || {};
   const detailLabel = [
@@ -1223,6 +1232,7 @@ var toastDownloadMod = {
 // app/src/ui/js/home/modal/downloadMod.js
 var downloadMod = {
   activeTasks: /* @__PURE__ */ new Map(),
+  activeMoves: /* @__PURE__ */ new Map(),
   reportInstallProgress(modId, modName, status, progress, coverUrl = null) {
     document.dispatchEvent(
       new CustomEvent("mod-install-progress", {
@@ -1262,10 +1272,41 @@ var downloadMod = {
     const name = window.NL_OS === "Windows" ? rawName.replace(/[. ]+$/, "") : rawName;
     return name ? `${String(directory || "").replace(/[\\/]+$/, "")}/${name}` : null;
   },
+  async movePath(sourcePath, destinationPath, label = "extracted files") {
+    if (!String(sourcePath || "").trim()) throw new Error(`Could not move ${label}: required parameter 'sourcePath' is missing.`);
+    if (!String(destinationPath || "").trim()) throw new Error(`Could not move ${label}: required parameter 'destinationPath' is missing.`);
+    const key = `${sourcePath}\n${destinationPath}`;
+    if (this.activeMoves.has(key)) return this.activeMoves.get(key);
+    const move = (async () => {
+      let lastError;
+      for (let attempt = 1; attempt <= 3; attempt += 1) {
+        const sourceExists = await FS3.api.exists(sourcePath);
+        const destinationExists = await FS3.api.exists(destinationPath);
+        if (!sourceExists && destinationExists) return;
+        if (!sourceExists) throw new Error(`Could not move ${label}: the extracted path no longer exists.`);
+        if (destinationExists) throw new Error(`Could not move ${label}: the destination already exists.`);
+        try {
+          await Neutralino.filesystem.move(sourcePath, destinationPath);
+          return;
+        } catch (error) {
+          lastError = error;
+          await new Promise((resolve) => setTimeout(resolve, attempt * 250));
+        }
+      }
+      try {
+        await Neutralino.filesystem.copy(sourcePath, destinationPath, { recursive: true, overwrite: false, skip: false });
+        await FS3.api.remove(sourcePath);
+      } catch (error) {
+        throw new Error(`Could not move ${label}: ${error?.message || lastError?.message || error || lastError}`);
+      }
+    })();
+    this.activeMoves.set(key, move);
+    try { return await move; } finally { this.activeMoves.delete(key); }
+  },
   async moveEntries(entries, sourceDir, destinationDir, concurrency = 1) {
     if (!String(sourceDir || "").trim()) throw new Error("Could not move extracted files: required parameter 'sourceDir' is missing.");
     if (!String(destinationDir || "").trim()) throw new Error("Could not move extracted files: required parameter 'destinationDir' is missing.");
-    const queue = entries.filter(
+    const queue = (Array.isArray(entries) ? entries : []).filter(
       (entry) => entry.entry !== "." && entry.entry !== ".."
     );
     let nextIndex = 0;
@@ -1277,26 +1318,7 @@ var downloadMod = {
         const sourcePath = this.getExtractedEntryPath(sourceDir, entry.entry);
         const destinationPath = this.getExtractedEntryPath(destinationDir, entry.entry);
         if (!sourcePath || !destinationPath) throw new Error(`Could not move extracted file ${entry.entry}: the path is invalid.`);
-        if (!await FS3.api.exists(sourcePath)) {
-          throw new Error(`Could not move extracted file ${entry.entry}: the extracted path no longer exists.`);
-        }
-        if (await FS3.api.exists(destinationPath)) {
-          throw new Error(`Could not move extracted file ${entry.entry}: the destination already exists.`);
-        }
-        let lastError;
-        for (let attempt = 1; attempt <= 3; attempt += 1) {
-          try {
-            await Neutralino.filesystem.move(sourcePath, destinationPath);
-            lastError = null;
-            break;
-          } catch (error) {
-            lastError = error;
-            if (attempt < 3) await new Promise((resolve) => setTimeout(resolve, attempt * 250));
-          }
-        }
-        if (lastError) {
-          throw new Error(`Could not move extracted file ${entry.entry}: ${lastError?.message || lastError}`);
-        }
+        await this.movePath(sourcePath, destinationPath, `extracted file ${entry.entry}`);
       }
     }, "worker");
     await Promise.all(
@@ -1313,6 +1335,7 @@ var downloadMod = {
   },
   async removeArchiveMetadata(path) {
     const entries = await Neutralino.filesystem.readDirectory(path);
+    if (!Array.isArray(entries)) return;
     for (const entry of entries) {
       if (entry.entry === "." || entry.entry === "..") continue;
       const entryPath = this.getExtractedEntryPath(path, entry.entry);
@@ -1326,7 +1349,7 @@ var downloadMod = {
     }
   },
   getInstallableExtractedEntries(entries) {
-    return entries.filter(
+    return (Array.isArray(entries) ? entries : []).filter(
       (entry) =>
         entry.entry !== "." &&
         entry.entry !== ".." &&
@@ -1337,6 +1360,7 @@ var downloadMod = {
   async hasExtractedFiles(path) {
     if (!String(path || "").trim() || !await FS3.api.exists(path)) return false;
     const entries = await Neutralino.filesystem.readDirectory(path);
+    if (!Array.isArray(entries)) return false;
     for (const entry of entries) {
       if (entry.entry === "." || entry.entry === ".." || entry.entry === ".downloading" || this.isArchiveMetadataEntry(entry)) {
         continue;
@@ -1368,8 +1392,6 @@ var downloadMod = {
       }
       toastDownloadMod.cancelAnim(modId);
       setTimeout(() => {
-        this.cleanupData(modId, task.tempFilePath, task.targetModFolder);
-        this.activeTasks.delete(modId);
         toastDownloadMod.hide(modId);
         const modalBtn = document.getElementById("modal-download-btn");
         if (modalBtn && document.getElementById("mod-modal").classList.contains("show")) {
@@ -1412,12 +1434,13 @@ var downloadMod = {
       });
       return false;
     }
+    if (this.activeTasks.has(modId)) return false;
     const modsBasePath = FS3.modsPath;
     const taskKey = String(modId).replace(/[^a-z0-9_-]/gi, "_");
     const fallbackFolderName = sanitizeModFolderName(modName, `Mod-${taskKey}`);
     let storageFolderName = `${fallbackFolderName}--${taskKey}`;
     let engineFolderName = fallbackFolderName;
-    const extractionKey = `${taskKey}_${Date.now()}`;
+    const extractionKey = `${taskKey}_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
     let targetModFolder = `${modsBasePath}/.extract_${extractionKey}`;
     const tempFilePath = `${modsBasePath}/temp_${taskKey}_${Date.now()}.zip`;
     let downloadMarkerPath = `${targetModFolder}/.downloading`;
@@ -1502,7 +1525,7 @@ var downloadMod = {
             const innerZipPath = this.getExtractedEntryPath(targetModFolder, realFiles[0].entry);
             if (!innerZipPath || !await FS3.api.exists(innerZipPath)) throw new Error("Could not open the extracted archive file.");
             toastDownloadMod.update(modId, 98, "Extracting nested archive...");
-            const innerTempPath = `${modsBasePath}/temp_inner_${modId}`;
+            const innerTempPath = `${modsBasePath}/temp_inner_${extractionKey}`;
             await FS3.api.ensureDir(innerTempPath);
             await extractArchive2({
               archivePath: innerZipPath,
@@ -1556,10 +1579,7 @@ var downloadMod = {
       if (wrapper) {
         const wrapperPath = this.getExtractedEntryPath(stagingFolder, wrapper.entry);
         if (!wrapperPath || !await FS3.api.exists(wrapperPath)) throw new Error(`Could not prepare this mod: extracted folder '${wrapper.entry}' is missing.`);
-        await Neutralino.filesystem.move(
-          wrapperPath,
-          finalModFolder
-        );
+        await this.movePath(wrapperPath, finalModFolder, `extracted folder ${wrapper.entry}`);
       } else {
         await FS3.api.ensureDir(finalModFolder);
         await this.moveEntries(realEntries, stagingFolder, finalModFolder);
@@ -1625,8 +1645,9 @@ var downloadMod = {
         }
         return true;
       }
+      await this.cleanupData(modId, tempFilePath, targetModFolder);
+      this.activeTasks.delete(modId);
       if (error.message !== "Cancelled") {
-        await this.cleanupData(modId, tempFilePath, targetModFolder);
         toastDownloadMod.error(modId, error.message || "Installation failed");
         errorHandler.show({
           error,
@@ -1635,7 +1656,6 @@ var downloadMod = {
           targetUrl: downloadUrl || metadata.sourceUrl,
           storagePath: FS3.weekboxPath
         });
-        this.activeTasks.delete(modId);
       }
       return false;
     }

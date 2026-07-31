@@ -19,6 +19,13 @@ function quoteShellString(value) {
 function quotePowerShellLiteral(value) {
   return String(value).replaceAll("'", "''");
 }
+function getExpectedDigest(asset) {
+  const digest = String(asset?.digest || "").trim().toLowerCase();
+  if (!/^sha256:[a-f0-9]{64}$/.test(digest)) {
+    throw new Error("This update does not include a valid integrity checksum.");
+  }
+  return digest.slice("sha256:".length);
+}
 function createUnixApplyScript({
   appPath,
   archivePath,
@@ -231,7 +238,7 @@ var RELEASES_API, RELEASES_PAGE, UPDATE_DIRECTORY, appUpdater;
         const updatePath = `${window.NL_PATH}/${UPDATE_DIRECTORY}`;
         const archivePath = `${updatePath}/${update.asset.name}`;
         const scriptPath = `${updatePath}/apply-update.sh`;
-        const expectedDigest = update.asset.digest.slice("sha256:".length).toLowerCase();
+        const expectedDigest = getExpectedDigest(update.asset);
         await Neutralino.filesystem.createDirectory(updatePath).catch(() => {
         });
         onProgress("Downloading update\u2026");
@@ -254,7 +261,7 @@ var RELEASES_API, RELEASES_PAGE, UPDATE_DIRECTORY, appUpdater;
           expectedDigest,
           binaryName: platform.binary,
           scriptPath,
-          targetExe: window.NL_ARGS[0]
+          targetExe: window.NL_ARGS?.[0] || null
         });
         await Neutralino.filesystem.writeFile(scriptPath, applyScript);
         const command = `/bin/sh ${quoteShellString(scriptPath)} >/dev/null 2>&1 &`;
@@ -294,7 +301,7 @@ var RELEASES_API, RELEASES_PAGE, UPDATE_DIRECTORY, appUpdater;
           throw new Error("Downloaded update is not a valid app bundle.");
         }
         const actual = toHex(await crypto.subtle.digest("SHA-256", bytes));
-        const expected = update.asset.digest.slice("sha256:".length).toLowerCase();
+        const expected = getExpectedDigest(update.asset);
         if (actual !== expected) {
           await Neutralino.filesystem.remove(backup).catch(() => {
           });
@@ -304,7 +311,8 @@ var RELEASES_API, RELEASES_PAGE, UPDATE_DIRECTORY, appUpdater;
         await Neutralino.filesystem.writeBinaryFile(staging, bytes);
         await Neutralino.filesystem.writeBinaryFile(target, bytes);
         onProgress("Restarting WeekBox\u2026");
-        const exe = window.NL_ARGS[0];
+        const exe = String(window.NL_ARGS?.[0] || "").trim();
+        if (!exe) throw new Error("WeekBox could not restart because the application path is missing.");
         if (window.NL_OS === "Darwin" && exe.includes(".app/Contents/MacOS/")) {
           const appBundle = exe.substring(0, exe.indexOf(".app/") + 5);
           await Neutralino.os.execCommand(`open "${appBundle}"`, {
@@ -343,14 +351,18 @@ var RELEASES_API, RELEASES_PAGE, UPDATE_DIRECTORY, appUpdater;
           throw new Error("Downloaded update is not a valid package.");
         }
         const actualZipDigest = toHex(await crypto.subtle.digest("SHA-256", bytes));
-        const expectedZipDigest = update.asset.digest.slice("sha256:".length).toLowerCase();
+        const expectedZipDigest = getExpectedDigest(update.asset);
         if (actualZipDigest !== expectedZipDigest) {
           await Neutralino.filesystem.remove(zipPath).catch(() => {
           });
           throw new Error("Downloaded update failed its integrity check.");
         }
         const pid = window.NL_PID;
-        const targetExe = window.NL_ARGS[0].split(/[/\\]/).pop();
+        const executableArgument = String(window.NL_ARGS?.[0] || "").trim();
+        const targetExe = executableArgument.split(/[/\\]/).pop();
+        if (!String(appPath || "").trim() || !targetExe) {
+          throw new Error("WeekBox could not apply the update because the application path is missing.");
+        }
         const escapedAppPath = quotePowerShellLiteral(appPath);
         const escapedZipPath = quotePowerShellLiteral(zipPath);
         const escapedStagingPath = quotePowerShellLiteral(staging);

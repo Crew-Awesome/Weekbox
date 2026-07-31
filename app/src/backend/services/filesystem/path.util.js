@@ -12,7 +12,7 @@ function getParentPath(path) {
 }
 
 function getRealEntries(entries) {
-  return entries.filter((entry) => entry.entry !== "." && entry.entry !== "..");
+  return (Array.isArray(entries) ? entries : []).filter((entry) => entry?.entry !== "." && entry?.entry !== "..");
 }
 
 function getModFolderName(mod) {

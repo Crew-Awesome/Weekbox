@@ -331,7 +331,8 @@ var _FileSystemService = class _FileSystemService {
     }
     this.isStorageMoveInProgress = true;
     try {
-      const mods = await this.mods.getAll();
+      const storedMods = await this.mods.getAll();
+      const mods = Array.isArray(storedMods) ? storedMods : [];
       const engines = await this.getInstalledEngines();
       await Promise.all(
         mods.map(
@@ -346,7 +347,9 @@ var _FileSystemService = class _FileSystemService {
         );
         await Neutralino.filesystem.remove(this.weekboxPath);
       } catch (error) {
-        if (replacedStorageBackupPath && !await this.api.exists(destinationWeekboxPath)) {
+        if (replacedStorageBackupPath) {
+          await this.api.remove(destinationWeekboxPath).catch(() => {
+          });
           await Neutralino.filesystem.move(replacedStorageBackupPath, destinationWeekboxPath).catch(() => {
           });
         }
@@ -363,10 +366,11 @@ var _FileSystemService = class _FileSystemService {
       this.setStoragePaths(destinationBasePath);
       await appSettings.setDataPath(this.dataPath);
       appSettings.set("storageParentPath", destinationBasePath);
-      const [movedMods, movedEngines] = await Promise.all([
+      const [storedMovedMods, movedEngines] = await Promise.all([
         this.mods.getAll(),
         this.getInstalledEngines()
       ]);
+      const movedMods = Array.isArray(storedMovedMods) ? storedMovedMods : [];
       await Promise.all(
         movedMods.map(
           (mod) => this.injection.injectIntoInstalledEngines(mod.id, movedEngines)
@@ -962,15 +966,17 @@ var _FileSystemService = class _FileSystemService {
   async removeInstalledMod(modId) {
     this.assertStorageUnlocked();
     if (!this.isInitialized) return false;
-    const mod = (await this.mods.getAll()).find(
+    const storedMods = await this.mods.getAll();
+    const allMods = Array.isArray(storedMods) ? storedMods : [];
+    const mod = allMods.find(
       (item) => sameId(item.id, modId)
     );
     if (!mod) return false;
-    if (this.isModLockedForChanges(mod, await this.mods.getAll())) {
+    if (this.isModLockedForChanges(mod, allMods)) {
       throw new Error(`Close the engine before deleting ${mod.name}`);
     }
     if (mod.kind === "dependency") {
-      const consumers = (await this.mods.getAll()).filter(
+      const consumers = allMods.filter(
         (item) => Array.isArray(item.dependencies) && item.dependencies.includes(modId)
       );
       if (consumers.length) {
@@ -994,13 +1000,15 @@ var _FileSystemService = class _FileSystemService {
     const modPath = `${this.modsPath}/${folderName}`;
     if (await this.api.exists(modPath)) {
       const command = window.NL_OS === "Windows" ? `cmd /c rmdir /S /Q "${modPath.replace(/\//g, "\\")}"` : `rm -rf "${modPath}"`;
-      const result = await Neutralino.os.execCommand(command, {
-        background: false
-      });
-      if (result.exitCode !== 0) {
-        throw new Error(
-          result.stdErr || `Could not remove mod files for ${mod.name}`
-        );
+      let result;
+      for (let attempt = 1; attempt <= 3; attempt += 1) {
+        result = await Neutralino.os.execCommand(command, { background: false });
+        if (result.exitCode === 0 || !await this.api.exists(modPath)) break;
+        if (attempt < 3) await new Promise((resolve) => setTimeout(resolve, attempt * 400));
+      }
+      if (result?.exitCode !== 0 && await this.api.exists(modPath)) {
+        const detail = String(result?.stdErr || result?.stdOut || "").replace(/[\0\r]+/g, " ").trim();
+        throw new Error(detail ? `Could not remove mod files because a file is in use: ${detail}` : `Could not remove mod files for ${mod.name}. Close any program using this mod and try again.`);
       }
     }
     await this.mods.remove(modId);

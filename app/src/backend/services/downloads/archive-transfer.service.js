@@ -60,6 +60,7 @@ function requireValue(value, name) {
 }
 
 function spawnProcessWithShell(command) {
+  requireValue(command, "command");
   if (window.NL_OS === "Windows") {
     return Neutralino.os.spawnProcess(command);
   }
@@ -123,6 +124,12 @@ function createProcessError(operation, exitCode, output) {
   if (operation === "Download" && Number(exitCode) === 1) {
     return createDownloadError("The download was interrupted before it finished. Try again.");
   }
+  if (operation === "Download" && Number(exitCode) === 18) {
+    return createDownloadError("The download was incomplete. WeekBox will retry it.");
+  }
+  if (operation === "Download" && Number(exitCode) === -1) {
+    return createDownloadError("The download process ended unexpectedly. WeekBox will retry it.");
+  }
   if (operation === "Download" && Number(exitCode) === 56) {
     return createDownloadError("The connection to the download server was interrupted. Try again.");
   }
@@ -141,7 +148,7 @@ function createProcessError(operation, exitCode, output) {
 
 function isTransientDownloadError(error) {
   const code = error?.downloadDiagnostics?.curlCode;
-  return [1, 6, 7, 28, 35, 56].includes(Number(code)) || /(?:exit code|curl:\s*\()\s*(?:1|6|7|28|35|56)\b/i.test(String(error?.message || error));
+  return [1, 6, 7, 18, 28, 35, 56, -1].includes(Number(code)) || /(?:exit code|curl:\s*\()\s*(?:-1|1|6|7|18|28|35|56)\b/i.test(String(error?.message || error));
 }
 
 function wait(ms) {
@@ -405,7 +412,14 @@ async function extractNestedArchives(destinationPath, getTask, onEntry) {
 }
 
 async function runCurlDownload(command, getTask, onProgress, getProgress) {
-  const process = await spawnProcessWithShell(command);
+  let process;
+  try {
+    process = await spawnProcessWithShell(command);
+  } catch (error) {
+    const nativeError = createProcessError("Download", -1, error?.message || error);
+    nativeError.cause = error;
+    throw nativeError;
+  }
   const task = getTask();
   if (task) task.pid = getOsProcessId(process);
   let processOutput = "";
@@ -491,7 +505,7 @@ async function downloadSingleArchive({ url, outPath, getTask, onProgress }) {
 
   await retryTransientDownload(
     () => runCurlDownload(
-      `curl -sS -L --fail --show-error --connect-timeout 15 ${quoteCommandArgument(url)} -o ${quoteCommandArgument(outPath)}`,
+      `curl --globoff -sS -L --fail --show-error --connect-timeout 15 ${quoteCommandArgument(url)} -o ${quoteCommandArgument(outPath)}`,
       getTask,
       onProgress
     ),
@@ -515,11 +529,12 @@ async function downloadSegmentedArchive({
     const requests = parts.map(
       (part) => `-L --range ${part.start}-${part.end} -o ${quoteCommandArgument(part.path)} ${quoteCommandArgument(url)}`
     ).join(" --next ");
-    await runCurlDownload(
-      `curl -# --fail --show-error --parallel --parallel-max ${parts.length} ${requests}`,
-      getTask,
-      onProgress,
-      async () => {
+    await retryTransientDownload(
+      () => runCurlDownload(
+        `curl --globoff -# --fail --show-error --parallel --parallel-max ${parts.length} ${requests}`,
+        getTask,
+        onProgress,
+        async () => {
         const sizes = await Promise.all(
           parts.map(async (part) => {
             try {
@@ -530,7 +545,11 @@ async function downloadSegmentedArchive({
           })
         );
         return sizes.reduce((total, size) => total + size, 0) / totalBytes * 100;
-      }
+        }
+      ),
+      getTask,
+      onProgress,
+      () => removeParts(parts)
     );
     if (getTask()?.cancelled) throw new Error("Cancelled");
     const partSizes = await Promise.all(

@@ -5,7 +5,11 @@ import { appSettings } from '../../core/system/settings.service.js';
 var ACTIVE_PROCESSES_KEY = "weekbox_active_processes";
 var WINE_COMMANDS = ["wine", "wine64", "wine-stable", "wine-devel", "wine-staging", "wine64-stable", "wine64-devel"];
 function quoteShellArgument(value) {
-  return `"${String(value).replaceAll('"', '\\"')}"`;
+  const argument = String(value ?? "").replace(/[\r\n]/g, "");
+  if (window.NL_OS === "Windows") {
+    return `"${argument.replace(/["^%]/g, "^$&")}"`;
+  }
+  return `'${argument.replaceAll("'", `'"'"'`)}'`;
 }
 var _ProcessService = class _ProcessService {
   constructor(executables) {
@@ -235,12 +239,12 @@ var _ProcessService = class _ProcessService {
         }
         command = [
           `${quoteShellArgument(wineCommand)} ${quoteShellArgument(executablePath)}`,
-          ...args.map((arg) => `"${String(arg).replaceAll('"', '\\"')}"`)
+          ...args.map((arg) => quoteShellArgument(arg))
         ].join(" ");
       } else {
         command = [
-          `"${executablePath}"`,
-          ...args.map((arg) => `"${String(arg).replaceAll('"', '\\"')}"`)
+          quoteShellArgument(executablePath),
+          ...args.map((arg) => quoteShellArgument(arg))
         ].join(" ");
       }
       const process = await Neutralino.os.spawnProcess(command, {

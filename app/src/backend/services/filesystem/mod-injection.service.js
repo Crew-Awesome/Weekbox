@@ -93,7 +93,8 @@ var _ModInjectionService = class _ModInjectionService {
     }
     await this.api.ensureDir(modsPath);
     if (await this.api.exists(linkPath)) {
-      const conflicts = (await this.modRepository.getAll()).filter(
+      const storedMods = await this.modRepository.getAll();
+      const conflicts = (Array.isArray(storedMods) ? storedMods : []).filter(
         (otherMod) => !sameId(otherMod.id, mod.id) && otherMod.engineId === engineId && !otherMod.hidden && usesAddonsDirectory(otherMod, engineId) === usesAddonsDirectory(mod, engineId) && normalizeFolderName(getEngineModFolderName(otherMod)) === normalizeFolderName(engineFolderName)
       );
       if (conflicts.length) {
@@ -108,19 +109,30 @@ var _ModInjectionService = class _ModInjectionService {
       background: false
     });
     if (result.exitCode !== 0) {
+      if (window.NL_OS === "Windows" && /local ntfs volumes are required|not supported/i.test(String(result.stdErr || ""))) {
+        await Neutralino.filesystem.copy(sourcePath, linkPath, {
+          recursive: true,
+          overwrite: false,
+          skip: false
+        });
+        await this.api.write(`${linkPath}/.weekbox-copy-link`, "1");
+        return { linked: true, copied: true, path: linkPath };
+      }
       throw new Error(result.stdErr || `Could not inject ${mod.name}`);
     }
     return { linked: true, path: linkPath };
   }
   async injectOne(modId, engineId, version) {
-    const mod = (await this.modRepository.getAll()).find(
+    const storedMods = await this.modRepository.getAll();
+    const mod = (Array.isArray(storedMods) ? storedMods : []).find(
       (item) => sameId(item.id, modId)
     );
     if (!mod || mod.hidden || !supportsEngineVersion(mod, version)) return;
     return this.link(mod, engineId, version);
   }
   async injectForEngine(engineId, version) {
-    const mods = (await this.modRepository.getAll()).filter(
+    const storedMods = await this.modRepository.getAll();
+    const mods = (Array.isArray(storedMods) ? storedMods : []).filter(
       (mod) => mod.engineId === engineId && !mod.hidden && supportsEngineVersion(mod, version)
     );
     return Promise.allSettled(
@@ -128,7 +140,8 @@ var _ModInjectionService = class _ModInjectionService {
     );
   }
   async injectIntoInstalledEngines(modId, engines) {
-    const mod = (await this.modRepository.getAll()).find(
+    const storedMods = await this.modRepository.getAll();
+    const mod = (Array.isArray(storedMods) ? storedMods : []).find(
       (item) => sameId(item.id, modId)
     );
     if (!mod?.engineId || mod.hidden) return [];
@@ -160,9 +173,10 @@ var _ModInjectionService = class _ModInjectionService {
       const isLink = await Neutralino.os.execCommand(linkCheck, {
         background: false
       }).then((result) => result.exitCode === 0).catch(() => false);
+      const isCopiedLink = await this.api.exists(`${linkPath}/.weekbox-copy-link`);
       // Directly downloaded engine mods are normal folders. They do not belong
       // to this WeekBox library entry, so never delete them as if they were links.
-      if (!isLink) continue;
+      if (!isLink && !isCopiedLink) continue;
       const command = window.NL_OS === "Windows" ? `cmd /c rmdir "${linkPath.replace(/\//g, "\\")}"` : window.NL_OS === "Darwin" ? `rm -f "${linkPath}"` : `rm -rf "${linkPath}"`;
       const result = await Neutralino.os.execCommand(command, {
         background: false

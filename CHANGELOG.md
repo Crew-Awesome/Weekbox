@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.8.9] - 2026-07-31
+
+### Fixed
+
+- Mod installs no longer delete temp folders too early.
+- Downloads retry incomplete files and bad connections.
+- Mods can copy into Psych Online on non-NTFS drives.
+- Updates now reject files without a valid checksum.
+- Storage moves keep the old library if the copy fails.
+- Engine launch paths are escaped safely.
+- MediaFire links with special characters download properly.
+- Locked mod files retry before WeekBox gives up.
+- Error reports no longer repeat in the same app session.
+
 ## [1.8.8] - 2026-07-30
 
 ### Fixed
