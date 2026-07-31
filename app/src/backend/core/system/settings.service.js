@@ -51,7 +51,7 @@ var SETTINGS_FILE_NAME, SETTINGS_SCHEMA_VERSION, LEGACY_PREFIX, SETTINGS_PATH_KE
       checkUpdatesInBackground: { type: "boolean", defaultValue: true },
       checkAppUpdatesOnStartup: { type: "boolean", defaultValue: true },
       diagnosticReportingEnabled: { type: "boolean", defaultValue: true },
-      diagnosticReportingConsentAnswered: { type: "boolean", defaultValue: false },
+      diagnosticReportingConsentAnswered: { type: "boolean", defaultValue: true },
       wineCommand: { type: "string", defaultValue: null, nullable: true },
       firstRunStorageSetupComplete: { type: "boolean", defaultValue: false }
     };
