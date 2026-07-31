@@ -25,6 +25,11 @@ jobs:
         with:
           ref: ${{ env.RELEASE_TAG }}
 
+      - name: Sync release notes from CHANGELOG.md
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: node .github/scripts/sync-release-notes.mjs "$env:RELEASE_TAG"
+
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
@@ -94,3 +99,12 @@ jobs:
           Get-ChildItem dist/release-assets | ForEach-Object {
             gh release upload $env:RELEASE_TAG $_.FullName --clobber
           }
+
+      - name: Refresh the Downloads page
+        shell: pwsh
+        env:
+          REVALIDATE_SECRET: ${{ secrets.WEEKBOX_SITE_REVALIDATE_SECRET }}
+        run: |
+          curl.exe --fail-with-body --silent --show-error --request POST `
+            'https://fnfweekbox.vercel.app/api/revalidate-release' `
+            --header "Authorization: Bearer $env:REVALIDATE_SECRET"
