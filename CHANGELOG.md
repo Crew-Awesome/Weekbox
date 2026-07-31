@@ -20,6 +20,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - MediaFire links with special characters download properly.
 - Locked mod files retry before WeekBox gives up.
 - Error reports no longer repeat in the same app session.
+- Update windows can now be clicked over the engine window.
 
 ## [1.8.8] - 2026-07-30
 

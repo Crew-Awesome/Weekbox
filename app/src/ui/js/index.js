@@ -2336,23 +2336,19 @@ var engineUpdateModal = {
       const finish = /* @__PURE__ */ __name((result) => {
         overlay.classList.remove("show");
         overlay.removeEventListener("click", onOverlayClick);
-        document.removeEventListener("keydown", onKeydown);
+        deactivateCheckoutDialog(overlay);
         setTimeout(() => overlay.hidden = true, 180);
         resolve(result);
       }, "finish");
       const onOverlayClick = /* @__PURE__ */ __name((event) => {
         if (event.target === overlay) finish("dismissed");
       }, "onOverlayClick");
-      const onKeydown = /* @__PURE__ */ __name((event) => {
-        if (event.key === "Escape") finish("dismissed");
-      }, "onKeydown");
       confirm.onclick = () => finish("update");
       later.onclick = () => finish("skip");
       overlay.hidden = false;
       requestAnimationFrame(() => overlay.classList.add("show"));
       overlay.addEventListener("click", onOverlayClick);
-      document.addEventListener("keydown", onKeydown);
-      confirm.focus();
+      activateCheckoutDialog(overlay, overlay.querySelector(".engine-update-modal"), confirm, () => finish("dismissed"));
     });
   }
 };
@@ -6967,6 +6963,7 @@ var appUpdateModal = {
   close() {
     const modal = document.getElementById("app-update-modal");
     if (!modal) return;
+    deactivateCheckoutDialog(modal);
     modal.classList.remove("show");
     setTimeout(() => modal.remove(), 220);
   },
@@ -7024,7 +7021,11 @@ var appUpdateModal = {
     });
     document.body.appendChild(modal);
     requestAnimationFrame(() => modal.classList.add("show"));
-    modal.querySelector(".app-update-install").focus();
+    activateCheckoutDialog(
+      modal,
+      modal.querySelector(".app-update-content"),
+      modal.querySelector(".app-update-install")
+    );
     });
   }
 };
