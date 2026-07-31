@@ -411,9 +411,6 @@ function createDiagnosticReport({ error, action, item, targetUrl }) {
 }
 __name(createDiagnosticReport, "createDiagnosticReport");
 async function submitDiagnosticReport(context, issue) {
-  if (!appSettings.get("diagnosticReportingConsentAnswered") || !appSettings.get("diagnosticReportingEnabled")) {
-    return;
-  }
   const now = Date.now();
   const normalizedAction = /^(?:run|start) weekbox$/i.test(String(context.action || "")) ? "Start WeekBox" : context.action;
   const normalizedErrorMessage = getDiagnosticErrorMessage(context.error).replace(
@@ -1844,8 +1841,7 @@ var configModal = {
       "multithreadStorageMoves",
       "checkUpdatesOnStartup",
       "checkUpdatesInBackground",
-      "checkAppUpdatesOnStartup",
-      "diagnosticReportingEnabled"
+      "checkAppUpdatesOnStartup"
     ];
     toggleIds.forEach((settingKey) => {
       const checkbox = document.getElementById(`setting-${settingKey}`);
@@ -1882,8 +1878,7 @@ var configModal = {
       "multithreadStorageMoves",
       "checkUpdatesOnStartup",
       "checkUpdatesInBackground",
-      "checkAppUpdatesOnStartup",
-      "diagnosticReportingEnabled"
+      "checkAppUpdatesOnStartup"
     ];
     toggleIds.forEach((settingKey) => {
       const checkbox = document.getElementById(`setting-${settingKey}`);
@@ -2206,51 +2201,6 @@ This can take a while for large libraries.`,
     setTimeout(() => {
       modal.style.display = "none";
     }, 300);
-  }
-};
-
-// app/src/ui/js/diagnosticsConsentModal.js
-import { appSettings as appSettings3 } from "../../backend/core/index-core.js";
-var diagnosticsConsentModal = {
-  async showIfNeeded() {
-    if (appSettings3.get("diagnosticReportingConsentAnswered")) return;
-    const modal = document.createElement("section");
-    modal.className = "diagnostic-consent-overlay";
-    modal.setAttribute("role", "dialog");
-    modal.setAttribute("aria-modal", "true");
-    modal.setAttribute("aria-labelledby", "diagnostic-consent-title");
-    modal.innerHTML = `
-      <div class="diagnostic-consent-panel">
-        <div class="diagnostic-consent-icon" aria-hidden="true"><i class="fa-solid fa-shield-heart"></i></div>
-        <div class="diagnostic-consent-main">
-          <h2 id="diagnostic-consent-title">Help improve WeekBox</h2>
-          <p>If WeekBox breaks, it can send an error report to the people who make WeekBox so they can fix it. Your personal file locations, email address, and common secret codes are removed before it is sent.</p>
-          <label class="diagnostic-consent-choice">
-            <span><strong>Send diagnostic reports</strong></span>
-            <span class="switch"><input type="checkbox" checked /><span class="slider round"></span></span>
-          </label>
-          <button type="button" class="diagnostic-consent-confirm">Continue</button>
-        </div>
-      </div>`;
-    document.body.appendChild(modal);
-    requestAnimationFrame(() => modal.classList.add("show"));
-    const checkbox = modal.querySelector("input");
-    const confirm = modal.querySelector(".diagnostic-consent-confirm");
-    confirm.focus();
-    modal.addEventListener("keydown", (event) => {
-      if (event.key === "Escape") event.preventDefault();
-    });
-    await new Promise((resolve) => {
-      confirm.addEventListener("click", async () => {
-        confirm.disabled = true;
-        appSettings3.set("diagnosticReportingEnabled", checkbox.checked);
-        appSettings3.set("diagnosticReportingConsentAnswered", true);
-        await appSettings3.write().catch(() => {
-        });
-        modal.remove();
-        resolve();
-      });
-    });
   }
 };
 
@@ -7047,7 +6997,6 @@ export {
   dependenciesRenderer,
   dependencyReviewModal,
   describeExtractedFiles,
-  diagnosticsConsentModal,
   downloadChoiceModal,
   downloadEngine,
   downloadMod,

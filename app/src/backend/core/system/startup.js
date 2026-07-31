@@ -20,7 +20,6 @@ import { appUpdateModal } from "../../../ui/js/index.js";
 import { toastSystem } from "../../../ui/js/index.js";
 import { storageRecommendationModal } from "../../../ui/js/index.js";
 import { modManagerModal } from "../../../ui/js/index.js";
-import { diagnosticsConsentModal } from "../../../ui/js/index.js";
 import { firstRunStorageModal } from "../../../ui/js/index.js";
 
     
@@ -347,7 +346,6 @@ No files will be merged because the outer folder contains only this inner WeekBo
         startupLoader.setPhase("Checking your library\u2026", 89);
         await maintenance;
         await startupLoader.complete();
-        await diagnosticsConsentModal.showIfNeeded();
         await offerNestedStorageRepair();
         await openLaunchDeepLink();
         await recommendSaferStorageLocation();
