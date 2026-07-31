@@ -6980,7 +6980,7 @@ var appUpdateModal = {
     setTimeout(() => modal.remove(), 220);
   },
   show(update) {
-    if (document.getElementById("app-update-modal")) return Promise.resolve("later");
+    if (document.getElementById("app-update-modal")) return Promise.resolve("updating");
     return new Promise((resolve) => {
     const modal = document.createElement("section");
     modal.id = "app-update-modal";
@@ -6997,32 +6997,22 @@ var appUpdateModal = {
           <p class="app-update-copy">WeekBox <strong data-update-version></strong> is ready. The app will close, apply the update, and reopen automatically.</p>
           <p class="app-update-progress" aria-live="polite"></p>
           <div class="app-update-actions">
-            <button class="app-update-manual" type="button"><i class="fa-brands fa-github" aria-hidden="true"></i> Download manually</button>
-            <button class="app-update-later" type="button">Later</button>
+            <button class="app-update-manual" type="button" hidden><i class="fa-brands fa-github" aria-hidden="true"></i> Download update manually</button>
             <button class="app-update-install" type="button"><i class="fa-solid fa-download" aria-hidden="true"></i> Install and close</button>
           </div>
         </div>
       </div>`;
     modal.querySelector("[data-update-version]").textContent = update.latestVersion;
     const manualUrl = update.releaseUrl || "https://github.com/Crew-Awesome/Weekbox/releases/latest";
-    const close = /* @__PURE__ */ __name((choice = "later") => {
+    const close = /* @__PURE__ */ __name((choice) => {
       this.close();
       resolve(choice);
     }, "close");
-    modal.querySelector(".app-update-later").addEventListener("click", () => close("later"));
-    modal.querySelector(".app-update-manual").addEventListener("click", () => {
-      Neutralino.os.open(manualUrl).catch(() => {
-      });
-      close("manual");
-    });
-    modal.addEventListener("click", (event) => {
-      if (event.target === modal) close("later");
-    });
     modal.querySelector(".app-update-install").addEventListener("click", async (event) => {
       const button = event.currentTarget;
       const progress = modal.querySelector(".app-update-progress");
+      const manualButton = modal.querySelector(".app-update-manual");
       button.disabled = true;
-      modal.querySelector(".app-update-later").disabled = true;
       try {
         await appUpdater2.install(
           update,
@@ -7035,10 +7025,10 @@ var appUpdateModal = {
           }
         );
       } catch (error) {
-        progress.textContent = `${error?.message || "Could not install the update."} Download it manually instead.`;
+        progress.textContent = `${error?.message || "Could not install the update."} Download the update manually, then reopen WeekBox.`;
         button.disabled = false;
-        modal.querySelector(".app-update-later").disabled = false;
-        modal.querySelector(".app-update-manual").disabled = false;
+        manualButton.hidden = false;
+        manualButton.onclick = () => Neutralino.os.open(manualUrl).catch(() => {});
       }
     });
     document.body.appendChild(modal);

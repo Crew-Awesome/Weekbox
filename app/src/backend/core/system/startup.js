@@ -261,7 +261,7 @@ No files will be merged because the outer folder contains only this inner WeekBo
     }
     
     async function handleStartupAppUpdate() {
-      if (!networkStatus.online || !appSettings.get("checkAppUpdatesOnStartup")) {
+      if (!networkStatus.online) {
         return false;
       }
       let update;
@@ -303,6 +303,7 @@ No files will be merged because the outer folder contains only this inner WeekBo
         });
         disableProductionRefreshShortcuts();
         Neutralino.events.on("windowClose", async () => {
+          if (document.getElementById("app-update-modal")) return;
           await downloadEngine.cleanupAll();
           await Neutralino.app.exit();
         });
