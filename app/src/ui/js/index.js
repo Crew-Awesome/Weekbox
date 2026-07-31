@@ -291,6 +291,14 @@ function describeIssue(error) {
       reportable: false
     };
   }
+  if (lower.includes("engine version is already installed")) {
+    return {
+      title: "This engine version is already installed",
+      summary: "Choose another version or remove the installed one first.",
+      tag: "Engine already installed",
+      reportable: false
+    };
+  }
   if (lower.includes("gamebanana's download server is unavailable") || lower.includes("connection to the download server was reset") || lower.includes("could not connect to the download server") || lower.includes("could not find the download server") || lower.includes("connection to the download server was interrupted") || lower.includes("download was interrupted") || lower.includes("exit code 28") || lower.includes("curl: (28)")) {
     return {
       title: "WeekBox could not reach the download server",
@@ -1232,6 +1240,14 @@ var downloadMod = {
     const options = details?.downloadOptions || [];
     return options.find((option) => option.downloadUrl && option.downloadUrl !== previousUrl)?.downloadUrl || null;
   },
+  getExtractedEntryPath(directory, entryName) {
+    const rawName = String(entryName || "");
+    if (!rawName || /[\\/]/.test(rawName)) return null;
+    // Windows silently removes trailing dots and spaces. Archives can still
+    // list those names, so use the name Windows actually created on disk.
+    const name = window.NL_OS === "Windows" ? rawName.replace(/[. ]+$/, "") : rawName;
+    return name ? `${String(directory || "").replace(/[\\/]+$/, "")}/${name}` : null;
+  },
   async moveEntries(entries, sourceDir, destinationDir, concurrency = 1) {
     if (!String(sourceDir || "").trim()) throw new Error("Could not move extracted files: required parameter 'sourceDir' is missing.");
     if (!String(destinationDir || "").trim()) throw new Error("Could not move extracted files: required parameter 'destinationDir' is missing.");
@@ -1244,8 +1260,9 @@ var downloadMod = {
         const entry = queue[nextIndex];
         nextIndex += 1;
         if (!String(entry?.entry || "").trim()) throw new Error("Could not move extracted files: required parameter 'entry' is missing.");
-        const sourcePath = `${sourceDir}/${entry.entry}`;
-        const destinationPath = `${destinationDir}/${entry.entry}`;
+        const sourcePath = this.getExtractedEntryPath(sourceDir, entry.entry);
+        const destinationPath = this.getExtractedEntryPath(destinationDir, entry.entry);
+        if (!sourcePath || !destinationPath) throw new Error(`Could not move extracted file ${entry.entry}: the path is invalid.`);
         if (!await FS3.api.exists(sourcePath)) {
           throw new Error(`Could not move extracted file ${entry.entry}: the extracted path no longer exists.`);
         }
@@ -1284,7 +1301,8 @@ var downloadMod = {
     const entries = await Neutralino.filesystem.readDirectory(path);
     for (const entry of entries) {
       if (entry.entry === "." || entry.entry === "..") continue;
-      const entryPath = `${path}/${entry.entry}`;
+      const entryPath = this.getExtractedEntryPath(path, entry.entry);
+      if (!entryPath || !await FS3.api.exists(entryPath)) continue;
       if (this.isArchiveMetadataEntry(entry)) {
         await FS3.api.remove(entryPath).catch(() => {
         });
@@ -1310,7 +1328,8 @@ var downloadMod = {
         continue;
       }
       if (entry.type === "FILE") return true;
-      if (entry.type === "DIRECTORY" && await this.hasExtractedFiles(`${path}/${entry.entry}`)) {
+      const entryPath = this.getExtractedEntryPath(path, entry.entry);
+      if (entry.type === "DIRECTORY" && entryPath && await this.hasExtractedFiles(entryPath)) {
         return true;
       }
     }
@@ -1464,7 +1483,8 @@ var downloadMod = {
           const entryName = realFiles[0].entry.toLowerCase();
           if (entryName.endsWith(".zip") || entryName.endsWith(".rar") || entryName.endsWith(".7z") || entryName.endsWith(".tar") || entryName.endsWith(".gz")) {
             hasNestedArchive = true;
-            const innerZipPath = `${targetModFolder}/${realFiles[0].entry}`;
+            const innerZipPath = this.getExtractedEntryPath(targetModFolder, realFiles[0].entry);
+            if (!innerZipPath || !await FS3.api.exists(innerZipPath)) throw new Error("Could not open the extracted archive file.");
             toastDownloadMod.update(modId, 98, "Extracting nested archive...");
             const innerTempPath = `${modsBasePath}/temp_inner_${modId}`;
             await FS3.api.ensureDir(innerTempPath);
@@ -1518,8 +1538,8 @@ var downloadMod = {
         throw new Error("This mod is already installed");
       }
       if (wrapper) {
-        const wrapperPath = `${stagingFolder}/${wrapper.entry}`;
-        if (!await FS3.api.exists(wrapperPath)) throw new Error(`Could not prepare this mod: extracted folder '${wrapper.entry}' is missing.`);
+        const wrapperPath = this.getExtractedEntryPath(stagingFolder, wrapper.entry);
+        if (!wrapperPath || !await FS3.api.exists(wrapperPath)) throw new Error(`Could not prepare this mod: extracted folder '${wrapper.entry}' is missing.`);
         await Neutralino.filesystem.move(
           wrapperPath,
           finalModFolder
