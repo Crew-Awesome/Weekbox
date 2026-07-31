@@ -225,6 +225,11 @@ function getDiagnosticErrorMessage(error) {
   return getMessage(error);
 }
 __name(getDiagnosticErrorMessage, "getDiagnosticErrorMessage");
+function hasActionableDiagnostic(error) {
+  const message = String(error?.message || "").trim();
+  return Boolean(message && !/^at\s|bundle\.js:\d+:/i.test(message)) || Boolean(error?.code);
+}
+__name(hasActionableDiagnostic, "hasActionableDiagnostic");
 function getDiagnosticStackTrace(error) {
   if (error instanceof Error && error.stack) return error.stack;
   if (error && typeof error === "object" && typeof error.stack === "string") {
@@ -291,6 +296,16 @@ function describeIssue(error) {
       reportable: false
     };
   }
+  if (lower.includes("could not prepare storage for this install") || lower.includes("could not finalize the temporary download")) {
+    return {
+      title: "WeekBox cannot use this storage folder",
+      summary: "Check that the folder is writable, has free space, and is not being used by another program.",
+      actionLabel: "Open storage settings",
+      action: "storage",
+      tag: "Temporary storage",
+      reportable: false
+    };
+  }
   if (lower.includes("engine version is already installed")) {
     return {
       title: "This engine version is already installed",
@@ -299,7 +314,7 @@ function describeIssue(error) {
       reportable: false
     };
   }
-  if (lower.includes("gamebanana's download server is unavailable") || lower.includes("connection to the download server was reset") || lower.includes("could not connect to the download server") || lower.includes("could not find the download server") || lower.includes("connection to the download server was interrupted") || lower.includes("download was interrupted") || lower.includes("exit code 28") || lower.includes("curl: (28)")) {
+  if (lower.includes("gamebanana's download server is unavailable") || lower.includes("could not connect to the gamebanana download server") || lower.includes("connection to the download server was reset") || lower.includes("could not connect to the download server") || lower.includes("could not find the download server") || lower.includes("connection to the download server was interrupted") || lower.includes("download was interrupted") || lower.includes("exit code 7") || lower.includes("curl: (7)") || lower.includes("exit code 28") || lower.includes("curl: (28)")) {
     return {
       title: "WeekBox could not reach the download server",
       summary: "The download host did not respond in time. Check your connection and try again later.",
@@ -516,7 +531,7 @@ var errorHandler = {
     modal.querySelector("h2").textContent = issue.title;
     modal.querySelector(".error-summary").textContent = issue.summary;
     modal.querySelector("pre").textContent = report;
-    if (issue.reportable !== false) {
+    if (issue.reportable !== false && hasActionableDiagnostic(context.error)) {
       submitDiagnosticReport(context, issue).catch((error) => {
         console.warn("Could not send diagnostic report:", error);
       });
@@ -739,7 +754,7 @@ var downloadEngine = {
       return false;
     }
     const archiveExtension = window.NL_OS === "Darwin" && /\.dmg(?:$|[?#])/i.test(downloadUrl) ? ".dmg" : ".zip";
-    const tempFilePath = `${enginesBasePath}/temp_${engineId}_${version}${archiveExtension}`;
+    const tempFilePath = `${enginesBasePath}/temp_${engineId}_${version}_${Date.now()}${archiveExtension}`;
     const taskKey = this.getTaskKey(engineId, version);
     if (this.activeTasks.has(taskKey)) return false;
     const task = {
@@ -764,7 +779,9 @@ var downloadEngine = {
       await FS.api.ensureDir(enginesBasePath);
       await FS.api.ensureDir(`${enginesBasePath}/${engineId}`);
       await FS.api.ensureDir(engineDir);
-      await FS.api.write(`${engineDir}/.downloading`, "1");
+      await FS.api.write(`${engineDir}/.downloading`, "1").catch((error) => {
+        throw new Error(`WeekBox could not prepare storage for this install. Check that the folder is writable and has free space. (${error?.code || "write failed"})`);
+      });
       this.throwIfCancelled(task);
       updateProgress("Connecting...", 2);
       await downloadArchive({
@@ -1402,7 +1419,7 @@ var downloadMod = {
     let engineFolderName = fallbackFolderName;
     const extractionKey = `${taskKey}_${Date.now()}`;
     let targetModFolder = `${modsBasePath}/.extract_${extractionKey}`;
-    const tempFilePath = `${modsBasePath}/temp_${taskKey}.zip`;
+    const tempFilePath = `${modsBasePath}/temp_${taskKey}_${Date.now()}.zip`;
     let downloadMarkerPath = `${targetModFolder}/.downloading`;
     this.activeTasks.set(modId, {
       cancelled: false,
@@ -1424,7 +1441,9 @@ var downloadMod = {
     try {
       await FS3.api.ensureDir(modsBasePath);
       await FS3.api.ensureDir(targetModFolder);
-      await FS3.api.write(downloadMarkerPath, "1");
+      await FS3.api.write(downloadMarkerPath, "1").catch((error) => {
+        throw new Error(`WeekBox could not prepare storage for this install. Check that the folder is writable and has free space. (${error?.code || "write failed"})`);
+      });
       if (this.activeTasks.get(modId)?.cancelled) throw new Error("Cancelled");
       toastDownloadMod.update(modId, 2, "Connecting...");
       const downloadOptions = {
@@ -1552,7 +1571,9 @@ var downloadMod = {
       const activeTask = this.activeTasks.get(modId);
       if (activeTask) activeTask.targetModFolder = targetModFolder;
       await FS3.api.ensureDir(targetModFolder);
-      await FS3.api.write(downloadMarkerPath, "1");
+      await FS3.api.write(downloadMarkerPath, "1").catch((error) => {
+        throw new Error(`WeekBox could not prepare storage for this install. Check that the folder is writable and has free space. (${error?.code || "write failed"})`);
+      });
       if (this.activeTasks.get(modId)?.cancelled) throw new Error("Cancelled");
       toastDownloadMod.update(modId, 99, "Deleting temp Zip...");
       await FS3.api.remove(tempFilePath);

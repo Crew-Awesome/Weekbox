@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.8.7] - 2026-07-30
+
+### Fixed
+
+- Downloads wait for Windows before moving the finished ZIP file.
+- Downloads use a new temp ZIP name every time.
+- GameBanana connection problems and storage problems no longer send error reports.
+- Error reports now skip empty stack-only errors.
+
 ## [1.8.6] - 2026-07-30
 
 ### Changed

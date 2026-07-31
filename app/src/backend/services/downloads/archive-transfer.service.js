@@ -42,6 +42,7 @@ function listenForProcess(process, getTask, onEvent) {
 
 var MIN_SEGMENTED_DOWNLOAD_BYTES = 8 * 1024 * 1024;
 var MAX_DOWNLOAD_SEGMENTS = 4;
+var archiveFinalizations = new Map();
 function quoteCommandArgument(value) {
   return `"${String(value).replaceAll('"', '\\"')}"`;
 }
@@ -113,6 +114,9 @@ function createProcessError(operation, exitCode, output) {
   if (operation === "Download" && Number(exitCode) === 6) {
     return createDownloadError("WeekBox could not find the download server. Check your DNS or connection and try again.");
   }
+  if (operation === "Download" && Number(exitCode) === 7) {
+    return createDownloadError("WeekBox could not connect to the GameBanana download server. Try again in a few minutes.");
+  }
   if (operation === "Download" && Number(exitCode) === 35) {
     return createDownloadError("The connection to the download server was reset. Try again in a few minutes.");
   }
@@ -137,7 +141,7 @@ function createProcessError(operation, exitCode, output) {
 
 function isTransientDownloadError(error) {
   const code = error?.downloadDiagnostics?.curlCode;
-  return [1, 6, 28, 35, 56].includes(Number(code)) || /(?:exit code|curl:\s*\()\s*(?:1|6|28|35|56)\b/i.test(String(error?.message || error));
+  return [1, 6, 7, 28, 35, 56].includes(Number(code)) || /(?:exit code|curl:\s*\()\s*(?:1|6|7|28|35|56)\b/i.test(String(error?.message || error));
 }
 
 function wait(ms) {
@@ -568,6 +572,37 @@ async function waitForDownloadedArchive(outPath) {
   );
 }
 
+async function finalizeDownloadedArchive(partPath, outPath) {
+  if (archiveFinalizations.has(outPath)) return archiveFinalizations.get(outPath);
+  const finalization = (async () => {
+    await wait(150); // Let curl release Windows file handles after exit.
+    await waitForDownloadedArchive(partPath);
+    let lastError;
+    for (let attempt = 1; attempt <= 3; attempt += 1) {
+      try {
+        if (await Neutralino.filesystem.getStats(outPath).then(() => true).catch(() => false)) {
+          await Neutralino.filesystem.remove(outPath);
+        }
+        await Neutralino.filesystem.move(partPath, outPath);
+        return;
+      } catch (error) {
+        lastError = error;
+        await wait(attempt * 250);
+      }
+    }
+    try {
+      await Neutralino.filesystem.copy(partPath, outPath, { recursive: false, overwrite: true, skip: false });
+      await Neutralino.filesystem.remove(partPath).catch(() => {});
+    } catch (copyError) {
+      const error = new Error("WeekBox could not finalize the temporary download. Close apps that may be using the WeekBox folder and try again.");
+      error.downloadDiagnostics = { stage: "finalize", code: copyError?.code || lastError?.code || "NE_FS_MOVEERR" };
+      throw error;
+    }
+  })();
+  archiveFinalizations.set(outPath, finalization);
+  try { return await finalization; } finally { archiveFinalizations.delete(outPath); }
+}
+
 async function downloadArchive({
   url,
   outPath,
@@ -628,14 +663,12 @@ async function downloadArchive({
       onProgress?.("Retrying download...", 2);
       await downloadSingleArchive({ url, outPath: partPath, getTask, onProgress });
     }
-    await waitForDownloadedArchive(partPath);
-    await Neutralino.filesystem.move(partPath, outPath);
+    await finalizeDownloadedArchive(partPath, outPath);
     return;
   }
   try {
     await downloadSingleArchive({ url, outPath: partPath, getTask, onProgress });
-    await waitForDownloadedArchive(partPath);
-    await Neutralino.filesystem.move(partPath, outPath);
+    await finalizeDownloadedArchive(partPath, outPath);
   } catch (error) {
     await Neutralino.filesystem.remove(partPath).catch(() => {});
     throw error;
