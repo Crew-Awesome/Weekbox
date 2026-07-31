@@ -12,12 +12,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - WeekBox now asks you to update before opening when a new version is ready.
+- Diagnostic reports are now sent automatically when WeekBox has an unexpected error.
 
 ### Fixed
 
 - If automatic updating fails, WeekBox shows a button to download the update manually.
 - Extracted mod folders with spaces at the end no longer fail on Windows.
 - Already installed engine versions no longer send an error report.
+- The Diagnostic Reporting setting and Privacy category were removed.
 
 ## [1.8.5] - 2026-07-30
 
