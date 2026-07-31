@@ -25,16 +25,16 @@ jobs:
         with:
           ref: ${{ env.RELEASE_TAG }}
 
-      - name: Sync release notes from CHANGELOG.md
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: node .github/scripts/sync-release-notes.mjs "$env:RELEASE_TAG"
-
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: npm
+
+      - name: Sync release notes from CHANGELOG.md
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: node .github/scripts/sync-release-notes.mjs "$env:RELEASE_TAG"
 
       - name: Install dependencies
         run: npm ci

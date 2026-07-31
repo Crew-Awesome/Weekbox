@@ -16,6 +16,9 @@ function quoteShellString(value) {
   const escaped = String(value).replaceAll("'", `'"'"'`);
   return `'${escaped}'`;
 }
+function quotePowerShellLiteral(value) {
+  return String(value).replaceAll("'", "''");
+}
 function createUnixApplyScript({
   appPath,
   archivePath,
@@ -348,11 +351,14 @@ var RELEASES_API, RELEASES_PAGE, UPDATE_DIRECTORY, appUpdater;
         }
         const pid = window.NL_PID;
         const targetExe = window.NL_ARGS[0].split(/[/\\]/).pop();
+        const escapedAppPath = quotePowerShellLiteral(appPath);
+        const escapedZipPath = quotePowerShellLiteral(zipPath);
+        const escapedStagingPath = quotePowerShellLiteral(staging);
         const script = [
           "$ErrorActionPreference = 'Stop'",
-          `$appPath = '${appPath}'`,
-          `$zip = '${zipPath}'`,
-          `$staging = '${staging}'`,
+          `$appPath = '${escapedAppPath}'`,
+          `$zip = '${escapedZipPath}'`,
+          `$staging = '${escapedStagingPath}'`,
           `$pid_app = ${pid}`,
           "while (Get-Process -Id $pid_app -ErrorAction SilentlyContinue) { Start-Sleep -Seconds 1 }",
           "Expand-Archive -Path $zip -DestinationPath $staging -Force",
