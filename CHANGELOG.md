@@ -15,6 +15,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Downloads use a new temp ZIP name every time.
 - GameBanana connection problems and storage problems no longer send error reports.
 - Error reports now skip empty stack-only errors.
+- Updates now check downloaded files before installing them.
+- GameBanana links are escaped safely before WeekBox runs curl.
 
 ## [1.8.6] - 2026-07-30
 

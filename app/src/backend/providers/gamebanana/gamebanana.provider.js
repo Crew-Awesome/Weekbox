@@ -42,7 +42,11 @@ const EXCLUDED_ENGINE_SUBMISSIONS = new Map([
 
 const NON_DEPENDENCY_REQUIREMENTS = new Set(EXCLUDED_ENGINE_SUBMISSIONS.keys());
 function quoteCommandArgument(value) {
-  return `'${String(value).replaceAll("'", "'\\''")}'`;
+  const argument = String(value).replace(/[\r\n]/g, "");
+  if (window.NL_OS === "Windows") {
+    return `"${argument.replace(/["^%]/g, "^$&")}"`;
+  }
+  return `'${argument.replaceAll("'", "'\\''")}'`;
 }
 
 function getGoogleDriveFileId(url) {
