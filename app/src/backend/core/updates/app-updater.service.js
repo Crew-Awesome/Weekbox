@@ -138,6 +138,9 @@ var RELEASES_API, RELEASES_PAGE, UPDATE_DIRECTORY, appUpdater;
         }
         const resourcesAsset = getResourcesAsset(release);
         if (resourcesAsset) {
+          if (!/^sha256:[a-f0-9]{64}$/i.test(resourcesAsset.digest || "")) {
+            throw new Error("The latest WeekBox release has no valid SHA-256 digest.");
+          }
           if (compareVersions(latestVersion, currentVersion) <= 0) {
             return { status: "current", currentVersion, latestVersion };
           }
@@ -153,6 +156,9 @@ var RELEASES_API, RELEASES_PAGE, UPDATE_DIRECTORY, appUpdater;
         if (window.NL_OS === "Windows") {
           const packageAsset = getWindowsPackage(release);
           if (packageAsset) {
+            if (!/^sha256:[a-f0-9]{64}$/i.test(packageAsset.digest || "")) {
+              throw new Error("The latest WeekBox release has no valid SHA-256 digest.");
+            }
             if (compareVersions(latestVersion, currentVersion) <= 0) {
               return { status: "current", currentVersion, latestVersion };
             }
@@ -284,14 +290,12 @@ var RELEASES_API, RELEASES_PAGE, UPDATE_DIRECTORY, appUpdater;
           });
           throw new Error("Downloaded update is not a valid app bundle.");
         }
-        if (update.asset.digest && /^sha256:[a-f0-9]{64}$/i.test(update.asset.digest)) {
-          const actual = toHex(await crypto.subtle.digest("SHA-256", bytes));
-          const expected = update.asset.digest.slice("sha256:".length).toLowerCase();
-          if (actual !== expected) {
-            await Neutralino.filesystem.remove(backup).catch(() => {
-            });
-            throw new Error("Downloaded update failed its integrity check.");
-          }
+        const actual = toHex(await crypto.subtle.digest("SHA-256", bytes));
+        const expected = update.asset.digest.slice("sha256:".length).toLowerCase();
+        if (actual !== expected) {
+          await Neutralino.filesystem.remove(backup).catch(() => {
+          });
+          throw new Error("Downloaded update failed its integrity check.");
         }
         onProgress("Installing update\u2026");
         await Neutralino.filesystem.writeBinaryFile(staging, bytes);
@@ -334,6 +338,13 @@ var RELEASES_API, RELEASES_PAGE, UPDATE_DIRECTORY, appUpdater;
           await Neutralino.filesystem.remove(zipPath).catch(() => {
           });
           throw new Error("Downloaded update is not a valid package.");
+        }
+        const actualZipDigest = toHex(await crypto.subtle.digest("SHA-256", bytes));
+        const expectedZipDigest = update.asset.digest.slice("sha256:".length).toLowerCase();
+        if (actualZipDigest !== expectedZipDigest) {
+          await Neutralino.filesystem.remove(zipPath).catch(() => {
+          });
+          throw new Error("Downloaded update failed its integrity check.");
         }
         const pid = window.NL_PID;
         const targetExe = window.NL_ARGS[0].split(/[/\\]/).pop();
