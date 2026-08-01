@@ -1021,16 +1021,6 @@ var _FileSystemService = class _FileSystemService {
     if (this.isModLockedForChanges(mod, allMods)) {
       throw new Error(`Close the engine before deleting ${mod.name}`);
     }
-    if (mod.kind === "dependency") {
-      const consumers = allMods.filter(
-        (item) => Array.isArray(item.dependencies) && item.dependencies.includes(modId)
-      );
-      if (consumers.length) {
-        throw new Error(
-          `Remove ${consumers.map((item) => item.name).join(", ")} before removing ${mod.name}`
-        );
-      }
-    }
     const unlinkResults = await this.injection.unlinkFromInstalledEngines(
       mod,
       await this.getInstalledEngines()

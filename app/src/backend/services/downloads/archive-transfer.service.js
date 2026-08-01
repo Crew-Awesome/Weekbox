@@ -138,7 +138,10 @@ function createProcessError(operation, exitCode, output) {
       "This download is no longer available (404). The file may have been removed, replaced, or made private."
     );
   }
-  if (operation === "Download" && Number(exitCode) === 22 && /\b(?:503|504)\b/.test(detail)) {
+  if (operation === "Download" && Number(exitCode) === 52) {
+    return createDownloadError("The download server closed the connection without sending a file. WeekBox will retry it.");
+  }
+  if (operation === "Download" && Number(exitCode) === 22 && /\b(?:408|503|504)\b/.test(detail)) {
     return createDownloadError("The download server is temporarily unavailable. WeekBox will retry it.");
   }
   if (operation === "Download" && Number(exitCode) === 22) {
@@ -152,7 +155,7 @@ function createProcessError(operation, exitCode, output) {
 function isTransientDownloadError(error) {
   const code = error?.downloadDiagnostics?.curlCode;
   const httpStatus = Number(error?.downloadDiagnostics?.httpStatus);
-  return [503, 504].includes(httpStatus) || [1, 6, 7, 18, 28, 35, 56, -1].includes(Number(code)) || /(?:exit code|curl:\s*\()\s*(?:-1|1|6|7|18|28|35|56)\b/i.test(String(error?.message || error));
+  return [408, 503, 504].includes(httpStatus) || [1, 6, 7, 18, 28, 35, 52, 56, -1].includes(Number(code)) || /(?:exit code|curl:\s*\()\s*(?:-1|1|6|7|18|28|35|52|56)\b/i.test(String(error?.message || error));
 }
 
 function wait(ms) {
@@ -595,7 +598,9 @@ async function downloadSegmentedArchive({
 
 async function waitForDownloadedArchive(outPath) {
   let lastError;
-  for (let attempt = 1; attempt <= 3; attempt += 1) {
+  // Windows can keep curl's output handle open for a few seconds after its
+  // process-exit event. Do not treat that short handoff as a failed download.
+  for (let attempt = 1; attempt <= 8; attempt += 1) {
     try {
       const stats = await Neutralino.filesystem.getStats(outPath);
       if (stats.size > 0) return stats;
@@ -603,7 +608,7 @@ async function waitForDownloadedArchive(outPath) {
     } catch (error) {
       lastError = error;
     }
-    if (attempt < 3) await wait(attempt * 250);
+    if (attempt < 8) await wait(attempt * 250);
   }
   throw new Error(
     `WeekBox could not access the temporary download after it completed. ${lastError?.message || lastError || "Unknown filesystem error"}`
@@ -616,7 +621,7 @@ async function finalizeDownloadedArchive(partPath, outPath) {
     await wait(150); // Let curl release Windows file handles after exit.
     await waitForDownloadedArchive(partPath);
     let lastError;
-    for (let attempt = 1; attempt <= 3; attempt += 1) {
+    for (let attempt = 1; attempt <= 8; attempt += 1) {
       try {
         if (await Neutralino.filesystem.getStats(outPath).then(() => true).catch(() => false)) {
           await Neutralino.filesystem.remove(outPath);
@@ -625,11 +630,12 @@ async function finalizeDownloadedArchive(partPath, outPath) {
         return;
       } catch (error) {
         lastError = error;
-        await wait(attempt * 250);
+        if (attempt < 8) await wait(attempt * 250);
       }
     }
     try {
       await Neutralino.filesystem.copy(partPath, outPath, { recursive: false, overwrite: true, skip: false });
+      await waitForDownloadedArchive(outPath);
       await Neutralino.filesystem.remove(partPath).catch(() => {});
     } catch (copyError) {
       const error = new Error("WeekBox could not finalize the temporary download. Close apps that may be using the WeekBox folder and try again.");

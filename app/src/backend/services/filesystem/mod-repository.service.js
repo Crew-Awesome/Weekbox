@@ -148,6 +148,18 @@ var _ModRepository = class _ModRepository {
     if (!await this.api.exists(this.filePath)) return;
     const mods = await this.getAll();
     const remainingMods = mods.filter((mod) => !sameId(mod.id, modId));
+    // A dependency can be deleted deliberately. Keep the remaining library
+    // valid by removing its stale references in the same write.
+    for (const mod of remainingMods) {
+      if (Array.isArray(mod.dependencies)) {
+        mod.dependencies = mod.dependencies.filter((dependencyId) => !sameId(dependencyId, modId));
+        if (!mod.dependencies.length) delete mod.dependencies;
+      }
+      if (Array.isArray(mod.consumers)) {
+        mod.consumers = mod.consumers.filter((consumerId) => !sameId(consumerId, modId));
+        if (!mod.consumers.length) delete mod.consumers;
+      }
+    }
     if (remainingMods.length !== mods.length) await this.saveAll(remainingMods);
   }
   async has(modId) {

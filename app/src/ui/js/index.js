@@ -1830,7 +1830,9 @@ var configModal = {
       const html = tpl.innerHTML;
       const wrapper = document.createElement("div");
       wrapper.innerHTML = html;
-      document.body.appendChild(wrapper.firstElementChild);
+      const modal = wrapper.firstElementChild;
+      if (!modal) return;
+      document.body.appendChild(modal);
       if (window.NL_OS !== "Windows") {
         document.getElementById("setting-registerProtocolLinks")?.closest(".setting-item")?.remove();
       }
@@ -2640,7 +2642,9 @@ var engineManagerModal = {
       const html = tpl.innerHTML;
       const wrapper = document.createElement("div");
       wrapper.innerHTML = html;
-      document.body.appendChild(wrapper.firstElementChild);
+      const modal = wrapper.firstElementChild;
+      if (!modal) return;
+      document.body.appendChild(modal);
       document.getElementById("engine-manager-close-btn").addEventListener("click", () => this.close());
       document.getElementById("engine-manager-modal").addEventListener("click", (e) => {
         if (e.target.id === "engine-manager-modal") this.close();
@@ -4209,8 +4213,8 @@ var dependenciesRenderer = {
       });
       const remove = document.createElement("button");
       remove.type = "button";
-      remove.title = users.length ? "Remove dependent mods first" : locked ? lockedMessage : "Delete Dependency";
-      remove.disabled = users.length > 0 || locked;
+      remove.title = locked ? lockedMessage : users.length ? "Delete dependency and disconnect it from dependent mods" : "Delete Dependency";
+      remove.disabled = locked;
       remove.innerHTML = modManagerTemplates.deleteIcon();
       remove.addEventListener("click", async () => {
         if (FS10.isModLockedForChanges(dependency, allMods)) return;
@@ -4226,8 +4230,8 @@ var dependenciesRenderer = {
         const isLocked = FS10.isModLockedForChanges(dependency, allMods);
         settings.disabled = false;
         settings.title = isLocked ? "Open dependency settings (read-only while running)" : "Dependency Settings";
-        remove.disabled = users.length > 0 || isLocked;
-        remove.title = users.length ? "Remove dependent mods first" : isLocked ? lockedMessage : "Delete Dependency";
+        remove.disabled = isLocked;
+        remove.title = isLocked ? lockedMessage : users.length ? "Delete dependency and disconnect it from dependent mods" : "Delete Dependency";
       });
       actions.append(directory, settings, remove);
       row.append(cover, copy, actions);
@@ -4957,7 +4961,9 @@ var modManagerModal = {
     if (!document.getElementById("mod-manager-modal")) {
       const wrapper = document.createElement("div");
       wrapper.innerHTML = modManagerTemplates3.mainModal();
-      document.body.appendChild(wrapper.firstElementChild);
+      const modal = wrapper.firstElementChild;
+      if (!modal) throw new Error("Could not create Mod Manager");
+      document.body.appendChild(modal);
       document.getElementById("mod-manager-close-btn").addEventListener("click", () => this.close());
       document.getElementById("mod-manager-modal").addEventListener("click", (e) => {
         if (e.target.id === "mod-manager-modal") this.close();
@@ -5279,8 +5285,8 @@ var modManagerModal = {
         standaloneMods,
         installedEngines,
         (deletedId) => {
-          this.cachedMods = this.cachedMods.filter((m) => m.id !== deletedId);
-          this.cachedStandaloneMods = this.cachedStandaloneMods.filter(
+          this.cachedMods = (Array.isArray(this.cachedMods) ? this.cachedMods : []).filter((m) => m.id !== deletedId);
+          this.cachedStandaloneMods = (Array.isArray(this.cachedStandaloneMods) ? this.cachedStandaloneMods : []).filter(
             (m) => m.id !== deletedId
           );
         },
@@ -5919,7 +5925,9 @@ async function ensureModal4(onClose) {
     if (!tpl) throw new Error("Could not load mod modal");
     const wrapper = document.createElement("div");
     wrapper.innerHTML = tpl.innerHTML;
-    document.body.appendChild(wrapper.firstElementChild);
+    const modalRoot = wrapper.firstElementChild;
+    if (!modalRoot) throw new Error("Could not create mod modal");
+    document.body.appendChild(modalRoot);
   }
   const modal = document.getElementById("mod-modal");
   const closeBtn = document.getElementById("modal-close-btn");
@@ -6452,7 +6460,7 @@ function createCard(mod, index) {
   }
   const badgeWrapper = document.createElement("div");
   badgeWrapper.innerHTML = engineBadgeHtml;
-  info.appendChild(badgeWrapper.firstElementChild);
+  if (badgeWrapper.firstElementChild) info.appendChild(badgeWrapper.firstElementChild);
   const stats = document.createElement("div");
   stats.className = "mod-stats";
   [

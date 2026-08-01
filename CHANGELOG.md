@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.9.2] - 2026-08-01
+
+### Fixed
+
+- Dependencies can be deleted without leaving broken links in the mods that used them.
+- Mod deletion no longer crashes if the Mod Manager cache has not loaded yet.
+- Startup modals no longer try to attach an empty template to the page.
+- Mods with an unknown engine no longer stop the Home page from loading.
+- Downloads retry empty server replies and HTTP 408 timeouts.
+- WeekBox waits longer for Windows to release finished downloads before moving them.
+
 ## [1.9.1] - 2026-07-31
 
 ### Fixed
