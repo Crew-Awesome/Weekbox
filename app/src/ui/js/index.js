@@ -3616,6 +3616,7 @@ function settingsContent({
   isDependency,
   isExecutable,
   readOnly,
+  fileLocked = false,
   tagSuggestions = []
 }) {
   return `
@@ -3665,14 +3666,14 @@ function settingsContent({
           </label>
         </div>`}
         ${mod.engineLocked ? '<p class="mod-settings-note">This mod is locked to Psych Online.</p>' : ""}
-        ${readOnly ? '<p class="mod-settings-note">Close the engine to change these settings. You can still open the mod folder.</p>' : ""}
+        ${readOnly ? '<p class="mod-settings-note">Close the engine to change these settings. You can still open the mod folder.</p>' : fileLocked ? '<p class="mod-settings-note">This addon or dependency is being used by a running mod. File and engine changes are locked; tags and cover can still be changed.</p>' : ""}
         <div class="mod-settings-extra">
           ${!isExecutable ? `<label>Type<span class="mod-settings-dropdown"><button type="button" class="mod-settings-dropdown-trigger mod-settings-type-trigger" aria-haspopup="listbox" aria-expanded="false" ${controlsDisabled}><span class="mod-settings-select-icon"><i class="fa-solid fa-layer-group" aria-hidden="true"></i></span><span class="mod-settings-type-selected"></span><i class="fa-solid fa-chevron-down mod-settings-select-chevron" aria-hidden="true"></i></button><div class="mod-settings-dropdown-menu mod-settings-type-menu" role="listbox" aria-label="Type" hidden></div><select class="mod-settings-type" hidden></select></span></label>` : ""}
           <div class="mod-settings-tags-field"><span>Tags</span><div class="mod-settings-tag-editor"><span class="mod-settings-tag-pills"></span><input class="mod-settings-tag-input" placeholder="Type a tag and press Enter" ${readOnly ? "disabled" : ""}></div><div class="mod-settings-tag-suggestions" hidden>${tagSuggestions.map((tag) => `<button type="button" data-tag="${escapeHtml(tag)}">#${escapeHtml(tag)}</button>`).join("")}</div></div>
         </div>
       </div>
       <footer class="mod-settings-footer">
-        <button type="button" class="mod-settings-reset" ${canReset && !readOnly ? "" : `disabled title="${escapeHtml(readOnly ? "Close the engine to change settings" : resetTitle)}"`}>Reset</button>
+        <button type="button" class="mod-settings-reset" ${canReset && !readOnly && !fileLocked ? "" : `disabled title="${escapeHtml(readOnly ? "Close the engine to change settings" : fileLocked ? "This addon or dependency is in use" : resetTitle)}"`}>Reset</button>
         <span class="mod-settings-status" role="status"></span>
         <button type="button" class="mod-settings-cancel">Cancel</button>
         <button type="submit" class="mod-settings-save" ${readOnly ? "disabled" : ""}>Save</button>
@@ -3814,7 +3815,8 @@ var modSettingsModal = {
     isExecutable,
     installedEngines,
     onSaved,
-    readOnly = false
+    readOnly = false,
+    fileLocked = false
   }) {
     if (this.isOpening) return false;
     this.close();
@@ -3835,7 +3837,7 @@ var modSettingsModal = {
       this.isOpening = false;
     }
     if (requestId !== this.openRequestId) return false;
-    const controlsDisabled = readOnly || isExecutable || mod.engineLocked ? "disabled" : "";
+    const controlsDisabled = readOnly || fileLocked || isExecutable || mod.engineLocked ? "disabled" : "";
     const isDependency = mod.kind === "dependency";
     const installedModsForTags = await FS9.getInstalledMods();
     const tagSuggestions = [...new Set((Array.isArray(installedModsForTags) ? installedModsForTags : []).flatMap((item) => Array.isArray(item.tags) ? item.tags : []))].filter((tag) => !((mod.tags || []).includes(tag))).sort();
@@ -3848,6 +3850,7 @@ var modSettingsModal = {
       isDependency,
       isExecutable,
       readOnly,
+      fileLocked,
       tagSuggestions
     });
     const form = overlay.querySelector("form");
@@ -3954,7 +3957,7 @@ var modSettingsModal = {
       moveButton.disabled = true;
       status.textContent = "Moving to mods\u2026";
       try {
-        await FS9.assertModChangeAllowed(mod.id);
+        if (!fileLocked) await FS9.assertModChangeAllowed(mod.id);
         const movedMod = await FS9.moveDependencyToMods(mod.id);
         if (!movedMod) throw new Error("Dependency could not be moved");
         await onSaved?.();
@@ -3994,19 +3997,20 @@ var modSettingsModal = {
       saveButton.disabled = true;
       status.textContent = "Saving\u2026";
       try {
-        await FS9.assertModChangeAllowed(mod.id);
-        if (!isExecutable && !mod.engineLocked) {
+        if (!fileLocked) await FS9.assertModChangeAllowed(mod.id);
+        if (!fileLocked && !isExecutable && !mod.engineLocked) {
           await FS9.setModEngineCompatibility(
             mod.id,
             dropdowns.engineSelect.value || null,
             dropdowns.versionSelect.value || null
           );
         }
-        if (!isExecutable && typeSelect && typeSelect.value !== (mod.kind || "mod")) {
+        if (!fileLocked && !isExecutable && typeSelect && typeSelect.value !== (mod.kind || "mod")) {
           await FS9.setModType(mod.id, typeSelect.value);
         }
         if (!await FS9.setModTags(mod.id, tags)) throw new Error("Mod tags could not be saved");
         const appearance = { name };
+        if (fileLocked && !mod.folderName) appearance.folderName = mod.name ? sanitizePathSegment2(mod.name) : null;
         if (pendingCoverDataUrl) appearance.coverDataUrl = pendingCoverDataUrl;
         else if (pendingCoverUrl) appearance.coverUrl = pendingCoverUrl;
         if (!await FS9.updateModAppearance(mod.id, appearance)) {
@@ -4067,6 +4071,16 @@ function replaceProcessExitListener(owner, listener, eventTarget = document) {
 }
 __name(replaceProcessExitListener, "replaceProcessExitListener");
 function syncLaunchButton(button, state, templates) {
+  const nonPlayable = button.dataset.nonPlayable === "true";
+  if (nonPlayable) {
+    button.classList.remove("is-running", "is-switchable");
+    button.disabled = true;
+    const globallyRunning = state === "global-running";
+    button.title = globallyRunning ? "Running through the engine" : button.dataset.nonPlayableLabel || "Not playable";
+    button.setAttribute("aria-label", button.title);
+    button.innerHTML = templates.launchButtonDefault(globallyRunning ? "Running" : button.dataset.nonPlayableLabel || "Not playable");
+    return;
+  }
   const isRunning = state === "running";
   const canSwitchMod = state === "switch";
   const isUpdating = state === "updating";
@@ -4280,8 +4294,9 @@ var cardRenderer = {
         deleteBtn.disabled = locked;
         deleteBtn.title = locked ? message : "Delete Mod";
         deleteBtn.setAttribute("aria-label", locked ? message : "Delete Mod");
-        settingsBtn.disabled = false;
-        settingsBtn.title = locked ? "Open mod settings (read-only while running)" : "Mod Settings";
+        const supportLocked = mod.kind === "dependency" || mod.kind === "addon";
+        settingsBtn.disabled = locked && !supportLocked;
+        settingsBtn.title = locked && supportLocked ? "Launcher settings only while this is in use" : locked ? "Open mod settings (read-only while running)" : "Mod Settings";
         settingsBtn.setAttribute("aria-label", settingsBtn.title);
         visibilityBtn.disabled = locked;
         visibilityBtn.title = locked ? message : "Toggle Visibility";
@@ -4326,6 +4341,7 @@ var cardRenderer = {
       }
       const isHidden = mod.hidden;
       const isUnassigned = !isExecutable && !mod.engineId;
+      const isNonPlayable = !isExecutable && (mod.kind === "dependency" || mod.kind === "addon");
       const eyeIcon = mod.hidden ? "fa-eye-slash" : "fa-eye";
       const card = document.createElement("div");
       card.className = "mod-manager-card";
@@ -4333,6 +4349,7 @@ var cardRenderer = {
       card.dataset.modSearch = `${String(mod.name || "")} ${(mod.tags || []).join(" ")}`.toLocaleLowerCase();
       card.classList.toggle("is-hidden", Boolean(mod.hidden));
       card.classList.toggle("is-unassigned", isUnassigned);
+      card.classList.toggle("is-non-playable", isNonPlayable);
       if (mod.hidden) {
         card.style.opacity = "0.5";
       }
@@ -4345,10 +4362,15 @@ var cardRenderer = {
         launchLabel,
         mod.name,
         mod.hidden,
-        isUnassigned,
+        isUnassigned || isNonPlayable,
         eyeIcon,
         engineBadgeHtml
       );
+      if (isNonPlayable) {
+        const nonPlayableButton = card.querySelector(".mod-manager-launch-btn");
+        nonPlayableButton?.setAttribute("data-non-playable", "true");
+        nonPlayableButton?.setAttribute("data-non-playable-label", mod.kind === "addon" ? "Addon" : "Dependency");
+      }
       card.classList.add("is-cover-loading");
       loadModCardImage({
         mod,
@@ -4422,7 +4444,8 @@ var cardRenderer = {
             isExecutable,
             installedEngines,
             onSaved: onSettingsSaved,
-            readOnly: FS11.isModLockedForChanges(mod, allMods)
+            readOnly: FS11.isModLockedForChanges(mod, allMods) && mod.kind !== "addon" && mod.kind !== "dependency",
+            fileLocked: FS11.isModLockedForChanges(mod, allMods) && (mod.kind === "addon" || mod.kind === "dependency")
           });
         } finally {
           settingsBtn.disabled = false;

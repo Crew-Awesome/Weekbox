@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.9.1] - 2026-07-31
+
+### Fixed
+
+- Tag suggestions stay hidden when there are no matches.
+- Tags can contain spaces.
+- Codename mods can be managed unless that specific mod is running.
+- Addons and dependencies cannot be launched.
+- Addons and dependencies stay locked while their engine version is in use.
+- Used addons and dependencies keep safe launcher-only settings available.
+- Used addons and dependencies keep their folder identity while cosmetic details can change.
+- Addon and dependency cards no longer show launch or switch controls.
+
 ## [1.9.0] - 2026-07-31
 
 ### Fixed

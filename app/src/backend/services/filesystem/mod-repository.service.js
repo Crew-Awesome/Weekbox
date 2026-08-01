@@ -112,6 +112,9 @@ var _ModRepository = class _ModRepository {
     const mod = mods.find((item) => sameId(item.id, modId));
     if (!mod) return null;
     if (typeof name === "string" && name.trim()) mod.name = name.trim();
+    if (arguments[1] && Object.prototype.hasOwnProperty.call(arguments[1], "folderName")) {
+      mod.folderName = arguments[1].folderName || null;
+    }
     if (coverPath !== void 0) {
       mod.coverPath = coverPath || null;
       delete mod.coverFallback;

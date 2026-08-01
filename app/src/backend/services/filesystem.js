@@ -551,6 +551,13 @@ var _FileSystemService = class _FileSystemService {
     if (isStandalone) {
       return this.isStandaloneModRunning(mod.id) ? "running" : "launch";
     }
+    if (mod?.kind === "dependency" || mod?.kind === "addon") {
+      const runningGlobally = mod.engineId && [...this.activeEngineMods.entries()].some(([key, runningModId]) => {
+        const [engineId, version] = String(key).split(":");
+        return runningModId !== null && runningModId !== void 0 && engineId === mod.engineId && (!mod.engineVersion || mod.engineVersion === version);
+      });
+      return runningGlobally ? "global-running" : "unavailable";
+    }
     if (!engine) return "unavailable";
     if (this.isEngineUpdateInProgress(engine.id, engine.version)) return "updating";
     if (!this.isEngineRunning(engine.id, engine.version)) return "launch";
@@ -562,6 +569,9 @@ var _FileSystemService = class _FileSystemService {
   }
   async toggleModLaunch(mod, engine, isStandalone, onStateChange) {
     const state = this.getModLaunchState(mod, engine, isStandalone);
+    if (!isStandalone && (mod?.kind === "dependency" || mod?.kind === "addon")) {
+      throw new Error("Dependencies and addons cannot be launched");
+    }
     if (state === "unavailable" && !isStandalone)
       throw new Error("Assigned engine is not installed");
     if (state === "updating" && !isStandalone)
@@ -660,7 +670,7 @@ var _FileSystemService = class _FileSystemService {
     if (!this.isInitialized) return [];
     const standaloneMods = [];
     for (const mod of await this.mods.getAll()) {
-      if (mod.kind === "dependency") continue;
+      if (mod.kind === "dependency" || mod.kind === "addon") continue;
       const executable = await this.findExecutable(
         `${this.modsPath}/${getModFolderName(mod)}`
       );
@@ -712,20 +722,30 @@ var _FileSystemService = class _FileSystemService {
     if (this.isModRunning(mod.id)) return true;
     const isUsingModEngine = (item) => {
       if (!item?.engineId) return false;
-      if (item.engineVersion) {
-        return this.isEngineRunning(item.engineId, item.engineVersion);
-      }
-      return [...this.activeEngineProcesses.keys()].some(
-        (key) => key.startsWith(`${item.engineId}:`)
-      );
+      return this.isModRunning(item.id);
     };
-    if (isUsingModEngine(mod)) return true;
+    if (mod.kind === "addon") {
+      return [...this.activeEngineMods.entries()].some(([key, runningModId]) => {
+        const [engineId, version] = String(key).split(":");
+        return runningModId !== null && runningModId !== void 0 && engineId === mod.engineId && (!mod.engineVersion || mod.engineVersion === version);
+      }) || allMods.some((item) => {
+        if (!item || item.kind === "addon" || item.kind === "dependency" || item.engineId !== mod.engineId) return false;
+        if (mod.engineVersion && item.engineVersion && mod.engineVersion !== item.engineVersion) return false;
+        return isUsingModEngine(item);
+      });
+    }
     if (mod.kind !== "dependency") return false;
-    return allMods.some(
-      (item) => item.kind !== "dependency" && Array.isArray(item.dependencies) && item.dependencies.some(
-        (dependencyId) => sameId(dependencyId, mod.id)
-      ) && isUsingModEngine(item)
-    );
+    const engineProcessUsesDependency = [...this.activeEngineMods.entries()].some(([key, runningModId]) => {
+      const [engineId, version] = String(key).split(":");
+      return runningModId !== null && runningModId !== void 0 && engineId === mod.engineId && (!mod.engineVersion || mod.engineVersion === version);
+    });
+    if (engineProcessUsesDependency) return true;
+    return allMods.some((item) => {
+      if (!item || item.kind === "dependency" || item.kind === "addon") return false;
+      const sameEngine = item.engineId && mod.engineId === item.engineId && (!mod.engineVersion || !item.engineVersion || mod.engineVersion === item.engineVersion);
+      const consumes = Array.isArray(item.dependencies) && item.dependencies.some((dependencyId) => sameId(dependencyId, mod.id));
+      return (consumes || sameEngine) && isUsingModEngine(item);
+    });
   }
   async assertModChangeAllowed(modId) {
     const allMods = await this.mods.getAll();
@@ -923,9 +943,7 @@ var _FileSystemService = class _FileSystemService {
     return this.mods.removeDependencyConsumer(dependencyId, consumerId);
   }
   async setModTags(modId, tags) {
-    this.assertStorageUnlocked();
     if (!this.isInitialized) return null;
-    await this.assertModChangeAllowed(modId);
     return this.mods.setTags(modId, tags);
   }
   async setModType(modId, type) {
