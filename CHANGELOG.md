@@ -7,7 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [1.8.10] - 2026-07-31
+## [1.9.0] - 2026-07-31
 
 ### Fixed
 
@@ -15,6 +15,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Downloads retry temporary server errors and stop after a timeout.
 - Locked mod links retry before WeekBox gives up.
 - External downloads now keep useful file details for diagnostics.
+
+### Changed
+
+- Mods and dependencies are now together in one Mods page.
+- Mod Manager now supports tags and cleaner type filters.
+- Mod settings now has tags, a type picker, and a cleaner layout.
+- Mod settings can change type and edit tags.
+- You can include or exclude many mod types at once, and search by tag.
+- Filter menus keep their engine icons and close correctly when dismissed.
+- Tag suggestions stay hidden until you start typing.
+- Filter choices now only show types and engines that are installed.
+- Filter menus keep their include and exclude buttons visible.
+- Empty filter groups stay hidden.
 
 ## [1.8.9] - 2026-07-31
 

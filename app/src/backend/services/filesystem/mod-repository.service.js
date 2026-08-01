@@ -2,6 +2,11 @@ function sameId(left, right) {
   return String(left) === String(right);
 }
 
+function normalizeTags(tags) {
+  if (!Array.isArray(tags)) return [];
+  return [...new Set(tags.map((tag) => String(tag || "").trim().replace(/^#+/, "").toLocaleLowerCase()).filter((tag) => tag && tag.length <= 32 && !/\s/.test(tag)))].slice(0, 20);
+}
+
 var _ModRepository = class _ModRepository {
   constructor({ api, getDataPath }) {
     this.api = api;
@@ -50,6 +55,30 @@ var _ModRepository = class _ModRepository {
     if (!mod) return null;
     mod.engineId = engineId || null;
     mod.engineVersion = engineId ? engineVersion || null : null;
+    await this.saveAll(mods);
+    return mod;
+  }
+  async setTags(modId, tags) {
+    const mods = await this.getAll();
+    const mod = mods.find((item) => sameId(item.id, modId));
+    if (!mod) return null;
+    mod.tags = normalizeTags(tags);
+    await this.saveAll(mods);
+    return mod;
+  }
+  async setType(modId, type) {
+    const mods = await this.getAll();
+    const mod = mods.find((item) => sameId(item.id, modId));
+    if (!mod) return null;
+    if (!['mod', 'dependency', 'addon'].includes(type)) throw new Error('Unknown mod type');
+    if (type === 'dependency') return this.moveToDependencies(modId);
+    if (mod.kind === 'dependency') {
+      const consumers = mods.filter((item) => Array.isArray(item.dependencies) && item.dependencies.some((dependencyId) => sameId(dependencyId, modId)));
+      if (consumers.length) throw new Error(`Remove ${consumers.map((item) => item.name).join(', ')} before changing ${mod.name}`);
+      delete mod.consumers;
+    }
+    if (type === 'addon') mod.kind = 'addon';
+    else delete mod.kind;
     await this.saveAll(mods);
     return mod;
   }

@@ -3613,10 +3613,10 @@ function settingsContent({
   controlsDisabled,
   canReset,
   resetTitle,
-  canMoveToDependencies,
   isDependency,
   isExecutable,
-  readOnly
+  readOnly,
+  tagSuggestions = []
 }) {
   return `
     <form class="mod-settings-modal">
@@ -3666,10 +3666,13 @@ function settingsContent({
         </div>`}
         ${mod.engineLocked ? '<p class="mod-settings-note">This mod is locked to Psych Online.</p>' : ""}
         ${readOnly ? '<p class="mod-settings-note">Close the engine to change these settings. You can still open the mod folder.</p>' : ""}
+        <div class="mod-settings-extra">
+          ${!isExecutable ? `<label>Type<span class="mod-settings-dropdown"><button type="button" class="mod-settings-dropdown-trigger mod-settings-type-trigger" aria-haspopup="listbox" aria-expanded="false" ${controlsDisabled}><span class="mod-settings-select-icon"><i class="fa-solid fa-layer-group" aria-hidden="true"></i></span><span class="mod-settings-type-selected"></span><i class="fa-solid fa-chevron-down mod-settings-select-chevron" aria-hidden="true"></i></button><div class="mod-settings-dropdown-menu mod-settings-type-menu" role="listbox" aria-label="Type" hidden></div><select class="mod-settings-type" hidden></select></span></label>` : ""}
+          <div class="mod-settings-tags-field"><span>Tags</span><div class="mod-settings-tag-editor"><span class="mod-settings-tag-pills"></span><input class="mod-settings-tag-input" placeholder="Type a tag and press Enter" ${readOnly ? "disabled" : ""}></div><div class="mod-settings-tag-suggestions" hidden>${tagSuggestions.map((tag) => `<button type="button" data-tag="${escapeHtml(tag)}">#${escapeHtml(tag)}</button>`).join("")}</div></div>
+        </div>
       </div>
       <footer class="mod-settings-footer">
         <button type="button" class="mod-settings-reset" ${canReset && !readOnly ? "" : `disabled title="${escapeHtml(readOnly ? "Close the engine to change settings" : resetTitle)}"`}>Reset</button>
-        ${isDependency ? `<button type="button" class="mod-settings-move-to-mods" ${readOnly ? "disabled" : ""}>Move to Mods</button>` : canMoveToDependencies ? `<button type="button" class="mod-settings-move-to-dependencies" ${readOnly ? "disabled" : ""}>Move to Dependencies</button>` : ""}
         <span class="mod-settings-status" role="status"></span>
         <button type="button" class="mod-settings-cancel">Cancel</button>
         <button type="submit" class="mod-settings-save" ${readOnly ? "disabled" : ""}>Save</button>
@@ -3694,6 +3697,27 @@ function setupModSettingsDropdowns(overlay, mod, installedEngines) {
   const versionSelected = overlay.querySelector(
     ".mod-settings-version-selected"
   );
+  const typeSelect = overlay.querySelector(".mod-settings-type");
+  const typeTrigger = overlay.querySelector(".mod-settings-type-trigger");
+  const typeMenu = overlay.querySelector(".mod-settings-type-menu");
+  const typeSelected = overlay.querySelector(".mod-settings-type-selected");
+  const typeOptions = [
+    ["mod", "Mod", "fa-layer-group"],
+    ...(mod.engineId === "codename" || mod.kind === "addon" ? [["addon", "Addon", "fa-cubes"]] : []),
+    ...(mod.engineId !== "codename" && mod.kind !== "addon" || mod.kind === "dependency" ? [["dependency", "Dependency", "fa-puzzle-piece"]] : [])
+  ];
+  typeSelect.innerHTML = typeOptions.map(([value, label]) => `<option value="${value}" ${value === (mod.kind || "mod") ? "selected" : ""}>${label}</option>`).join("");
+  typeMenu.innerHTML = typeOptions.map(([value, label, icon]) => `<button type="button" data-type="${value}" role="option" aria-selected="${value === (mod.kind || "mod")}"><i class="fa-solid ${icon}" aria-hidden="true"></i>${label}</button>`).join("");
+  const renderType = () => {
+    const current = typeOptions.find(([value]) => value === typeSelect.value) || typeOptions[0];
+    typeSelected.textContent = current[1];
+    typeMenu.querySelectorAll("button[data-type]").forEach((button) => {
+      const selected = button.dataset.type === typeSelect.value;
+      button.classList.toggle("selected", selected);
+      button.setAttribute("aria-selected", String(selected));
+    });
+  };
+  renderType();
   const renderVersions = /* @__PURE__ */ __name((selectedVersion = mod.engineVersion || "") => {
     const versions = installedEngines.filter((item) => item.id === engineSelect.value).map((item) => item.version);
     versionSelect.innerHTML = [
@@ -3743,6 +3767,14 @@ function setupModSettingsDropdowns(overlay, mod, installedEngines) {
       menuElement: versionMenu
     }
   );
+  const typeDropdown = setupDropdown2(typeTrigger, typeTrigger.parentElement, { menuElement: typeMenu });
+  typeMenu.addEventListener("click", (event) => {
+    const option = event.target.closest("button[data-type]");
+    if (!option) return;
+    typeSelect.value = option.dataset.type;
+    renderType();
+    typeDropdown.close();
+  });
   engineMenu.addEventListener("click", (event) => {
     const option = event.target.closest("button[data-engine-id]");
     if (!option) return;
@@ -3761,9 +3793,11 @@ function setupModSettingsDropdowns(overlay, mod, installedEngines) {
   return {
     engineSelect,
     versionSelect,
+    typeSelect,
     destroy: /* @__PURE__ */ __name(() => {
       engineDropdown2.destroy();
       versionDropdown.destroy();
+      typeDropdown.destroy();
     }, "destroy")
   };
 }
@@ -3803,22 +3837,69 @@ var modSettingsModal = {
     if (requestId !== this.openRequestId) return false;
     const controlsDisabled = readOnly || isExecutable || mod.engineLocked ? "disabled" : "";
     const isDependency = mod.kind === "dependency";
+    const installedModsForTags = await FS9.getInstalledMods();
+    const tagSuggestions = [...new Set((Array.isArray(installedModsForTags) ? installedModsForTags : []).flatMap((item) => Array.isArray(item.tags) ? item.tags : []))].filter((tag) => !((mod.tags || []).includes(tag))).sort();
     overlay.innerHTML = settingsContent({
       mod,
       localCover,
       controlsDisabled,
       canReset: Boolean(getGameBananaSource(mod)) && networkStatus4.online,
       resetTitle: networkStatus4.online ? "Defaults are only available for GameBanana mods" : "Connect to the internet to reset GameBanana mod information",
-      canMoveToDependencies: !isExecutable && mod.kind !== "dependency",
       isDependency,
       isExecutable,
-      readOnly
+      readOnly,
+      tagSuggestions
     });
     const form = overlay.querySelector("form");
     const nameInput = overlay.querySelector(".mod-settings-name");
     const cover = overlay.querySelector(".mod-settings-cover");
     const fileInput = overlay.querySelector(".mod-settings-file");
     const status = overlay.querySelector(".mod-settings-status");
+    const typeSelect = overlay.querySelector(".mod-settings-type");
+    const tagInput = overlay.querySelector(".mod-settings-tag-input");
+    const tagPills = overlay.querySelector(".mod-settings-tag-pills");
+    const tagSuggestionsMenu = overlay.querySelector(".mod-settings-tag-suggestions");
+    let tags = [...new Set((mod.tags || []).map((tag) => String(tag).trim().replace(/^#+/, "").toLocaleLowerCase()).filter(Boolean))];
+    const renderTags = () => {
+      if (!tagPills) return;
+      tagPills.replaceChildren(...tags.map((tag) => {
+        const pill = document.createElement("button");
+        pill.type = "button";
+        pill.className = "mod-settings-tag-pill";
+        pill.textContent = `#${tag} ×`;
+        pill.disabled = readOnly;
+        pill.addEventListener("click", () => { tags = tags.filter((item) => item !== tag); renderTags(); });
+        return pill;
+      }));
+    };
+    const addTag = () => {
+      const tag = String(tagInput?.value || "").trim().replace(/^#+/, "").toLocaleLowerCase();
+      if (tag && !/\s/.test(tag) && !tags.includes(tag) && tags.length < 20) tags.push(tag);
+      if (tagInput) tagInput.value = "";
+      renderTags();
+    };
+    tagInput?.addEventListener("keydown", (event) => { if (event.key === "Enter") { event.preventDefault(); addTag(); } });
+    tagInput?.addEventListener("blur", addTag);
+    tagInput?.addEventListener("focus", () => { if (tagSuggestionsMenu?.children.length && tagInput.value.trim()) tagSuggestionsMenu.hidden = false; });
+    tagInput?.addEventListener("input", () => {
+      const query = String(tagInput.value || "").replace(/^#+/, "").toLocaleLowerCase();
+      tagSuggestionsMenu?.querySelectorAll("button[data-tag]").forEach((button) => {
+        button.hidden = !query || !button.dataset.tag.includes(query) || tags.includes(button.dataset.tag);
+      });
+      if (tagSuggestionsMenu) tagSuggestionsMenu.hidden = !query;
+    });
+    tagSuggestionsMenu?.addEventListener("mousedown", (event) => {
+      const button = event.target.closest("button[data-tag]");
+      if (!button) return;
+      event.preventDefault();
+      if (!tags.includes(button.dataset.tag)) tags.push(button.dataset.tag);
+      tagInput.value = "";
+      renderTags();
+      tagSuggestionsMenu.hidden = true;
+    });
+    tagInput?.addEventListener("blur", () => setTimeout(() => { if (tagSuggestionsMenu) tagSuggestionsMenu.hidden = true; }, 120));
+    tagInput?.addEventListener("keydown", (event) => { if (event.key === "Escape" && tagSuggestionsMenu) tagSuggestionsMenu.hidden = true; });
+    renderTags();
     const dropdowns = isExecutable ? null : setupModSettingsDropdowns(overlay, mod, installedEngines);
     this.dropdowns = dropdowns;
     let pendingCoverDataUrl = null;
@@ -3920,6 +4001,10 @@ var modSettingsModal = {
             dropdowns.versionSelect.value || null
           );
         }
+        if (!isExecutable && typeSelect && typeSelect.value !== (mod.kind || "mod")) {
+          await FS9.setModType(mod.id, typeSelect.value);
+        }
+        if (!await FS9.setModTags(mod.id, tags)) throw new Error("Mod tags could not be saved");
         const appearance = { name };
         if (pendingCoverDataUrl) appearance.coverDataUrl = pendingCoverDataUrl;
         else if (pendingCoverUrl) appearance.coverUrl = pendingCoverUrl;
@@ -4244,7 +4329,7 @@ var cardRenderer = {
       const card = document.createElement("div");
       card.className = "mod-manager-card";
       card.dataset.modId = String(mod.id);
-      card.dataset.modSearch = String(mod.name || "").toLocaleLowerCase();
+      card.dataset.modSearch = `${String(mod.name || "")} ${(mod.tags || []).join(" ")}`.toLocaleLowerCase();
       card.classList.toggle("is-hidden", Boolean(mod.hidden));
       card.classList.toggle("is-unassigned", isUnassigned);
       if (mod.hidden) {
@@ -4697,7 +4782,7 @@ function createDropdown({ label, options, selected, onSelect }) {
   return { dropdown, sync, destroy: dropdownCtrl.destroy };
 }
 __name(createDropdown, "createDropdown");
-function openFilterSortModal({ filter, sort, engineIds = [], onApply }) {
+function openFilterSortModal({ filters = { include: [], exclude: [] }, sort, engineIds = [], hasMods = false, hasDependencies = false, hasAddons = false, hasExecutables = false, hasUnassigned = false, onApply }) {
   document.getElementById("mod-manager-filter-modal")?.remove();
   const overlay = document.createElement("section");
   overlay.id = "mod-manager-filter-modal";
@@ -4717,37 +4802,105 @@ function openFilterSortModal({ filter, sort, engineIds = [], onApply }) {
       <button type="button" class="mod-manager-filter-reset">Reset</button>
       <button type="submit" class="mod-manager-filter-apply">Apply</button>
     </div>`;
-  let selectedFilter = filter;
+  const selectedFilters = {
+    include: new Set(Array.isArray(filters) ? filters : filters.include || []),
+    exclude: new Set(Array.isArray(filters) ? filters.exclude ? filters : [] : filters.exclude || [])
+  };
   let selectedSort = sort;
   const controls = panel.querySelector(".mod-manager-filter-dropdowns");
-  const typeDropdown = createDropdown({
-    label: "Type",
-    options: getTypeOptions(engineIds),
-    selected: filter,
-    onSelect: /* @__PURE__ */ __name((value) => selectedFilter = value, "onSelect")
-  });
-  const sortDropdown = createDropdown({
-    label: "Sort by",
-    options: SORT_OPTIONS,
-    selected: sort,
-    onSelect: /* @__PURE__ */ __name((value) => selectedSort = value, "onSelect")
-  });
-  controls.append(typeDropdown.dropdown, sortDropdown.dropdown);
+  const modTypes = [...(hasMods ? [["kind:mod", "Mods", "fa-layer-group"]] : []), ...(hasDependencies ? [["kind:dependency", "Dependencies", "fa-puzzle-piece"]] : []), ...(hasAddons ? [["kind:addon", "Addons", "fa-cubes"]] : [])];
+  const engineTypes = [...(hasExecutables ? [["executable", "Executables", "fa-file-code", "assets/icons/exe.png"]] : []), ...(hasUnassigned ? [["unassigned", "Unassigned", "fa-circle-question"]] : []), ...engineIds.map((id) => [`engine:${id}`, ENGINE_DETAILS8[id]?.name || id, "fa-microchip", ENGINE_DETAILS8[id] ? `assets/icons/${ENGINE_DETAILS8[id].icon}` : null])];
+  const createMultiDropdown = (label, options, emptyLabel) => {
+    const dropdown = document.createElement("div");
+    dropdown.className = "pill-dropdown mod-manager-multi-dropdown";
+    const trigger = document.createElement("button");
+    trigger.type = "button";
+    trigger.className = "pill-btn";
+    const menu = document.createElement("div");
+    menu.className = "custom-options-container";
+    menu.hidden = true;
+    const sync = () => {
+      const selected = options.filter(([value]) => selectedFilters.include.has(value) || selectedFilters.exclude.has(value));
+      trigger.innerHTML = `<i class="fa-solid fa-filter" aria-hidden="true"></i><span>${escapeHtml(label)}${selected.length ? ` (${selected.length})` : ""}</span><i class="fa-solid fa-chevron-down" aria-hidden="true"></i>`;
+      menu.querySelectorAll("[data-value]").forEach((option) => {
+        const value = option.dataset.value;
+        option.classList.toggle("is-included", selectedFilters.include.has(value));
+        option.classList.toggle("is-excluded", selectedFilters.exclude.has(value));
+      });
+    };
+    if (!options.length) menu.innerHTML = `<span class="mod-manager-filter-empty">${emptyLabel}</span>`;
+    options.forEach(([value, optionLabel, iconClass, iconPath]) => {
+      const option = document.createElement("div");
+      option.className = "custom-option mod-manager-filter-option";
+      option.dataset.value = value;
+      option.innerHTML = `${iconPath ? `<img src="${escapeHtml(iconPath)}" alt="">` : `<i class="fa-solid ${iconClass || "fa-filter"}" aria-hidden="true"></i>`}<span>${escapeHtml(optionLabel)}</span><span class="mod-manager-filter-option-actions"><button type="button" data-action="include" title="Include ${escapeHtml(optionLabel)}"><i class="fa-solid fa-check" aria-hidden="true"></i></button><button type="button" data-action="exclude" title="Exclude ${escapeHtml(optionLabel)}"><i class="fa-solid fa-xmark" aria-hidden="true"></i></button></span>`;
+      option.addEventListener("click", (event) => {
+        const button = event.target.closest("button[data-action]");
+        if (!button) return;
+        const target = button.dataset.action;
+        const other = target === "include" ? "exclude" : "include";
+        if (selectedFilters[target].has(value)) selectedFilters[target].delete(value);
+        else { selectedFilters[target].add(value); selectedFilters[other].delete(value); }
+        sync();
+      });
+      menu.append(option);
+    });
+    const ctrl = setupDropdown3(trigger, dropdown, { menuElement: menu });
+    dropdown.append(trigger, menu);
+    sync();
+    return { dropdown, sync, destroy: ctrl.destroy };
+  };
+  const createPillDropdown = (label, options, value, onSelect) => {
+    const dropdown = document.createElement("div");
+    dropdown.className = "pill-dropdown mod-manager-multi-dropdown";
+    const trigger = document.createElement("button");
+    trigger.type = "button";
+    trigger.className = "pill-btn";
+    const menu = document.createElement("div");
+    menu.className = "custom-options-container";
+    menu.hidden = true;
+    const sync = (nextValue = value) => {
+      value = nextValue;
+      const item = options.find(([itemValue]) => itemValue === value) || options[0];
+      trigger.innerHTML = `<span>${escapeHtml(label)}: ${escapeHtml(item[1])}</span><i class="fa-solid fa-chevron-down" aria-hidden="true"></i>`;
+      menu.querySelectorAll("button").forEach((option) => option.classList.toggle("selected", option.dataset.value === value));
+    };
+    options.forEach(([itemValue, itemLabel, icon]) => {
+      const option = document.createElement("button");
+      option.type = "button";
+      option.className = "custom-option";
+      option.dataset.value = itemValue;
+      option.innerHTML = `<i class="fa-solid ${icon || "fa-check"}" aria-hidden="true"></i><span>${escapeHtml(itemLabel)}</span>`;
+      option.addEventListener("click", () => { sync(itemValue); onSelect(itemValue); ctrl.close(); });
+      menu.append(option);
+    });
+    const ctrl = setupDropdown3(trigger, dropdown, { menuElement: menu });
+    dropdown.append(trigger, menu);
+    sync(value);
+    return { dropdown, sync, destroy: ctrl.destroy };
+  };
+  const typeDropdown = createMultiDropdown("Types", modTypes, "No types available");
+  const engineDropdown = createMultiDropdown("Engines", engineTypes, "No engines available");
+  const sortDropdown = createPillDropdown("Sort", SORT_OPTIONS, selectedSort, (value) => selectedSort = value);
+  controls.append(typeDropdown.dropdown, engineDropdown.dropdown, sortDropdown.dropdown);
   const close = /* @__PURE__ */ __name(() => {
     typeDropdown.destroy();
+    engineDropdown.destroy();
     sortDropdown.destroy();
     overlay.remove();
   }, "close");
   panel.querySelector(".mod-manager-filter-dismiss").addEventListener("click", close);
   panel.querySelector(".mod-manager-filter-reset").addEventListener("click", () => {
-    selectedFilter = "all";
+    selectedFilters.include.clear();
+    selectedFilters.exclude.clear();
     selectedSort = "added-desc";
-    typeDropdown.sync(selectedFilter);
+    typeDropdown.sync();
+    engineDropdown.sync();
     sortDropdown.sync(selectedSort);
   });
   panel.addEventListener("submit", (event) => {
     event.preventDefault();
-    onApply({ filter: selectedFilter, sort: selectedSort });
+    onApply({ filters: { include: [...selectedFilters.include], exclude: [...selectedFilters.exclude] }, sort: selectedSort });
     close();
   });
   overlay.addEventListener("click", (event) => {
@@ -4765,14 +4918,12 @@ __name(openFilterSortModal, "openFilterSortModal");
 
 // app/src/ui/js/mod-manager/index.js
 var modManagerModal = {
-  typeFilter: "all",
+  typeFilters: { include: [], exclude: [] },
   sortMode: "added-desc",
   searchQuery: "",
-  activeView: "mods",
   cachedMods: null,
   cachedStandaloneMods: null,
   cachedInstalledEngines: null,
-  cachedViews: { mods: null, dependencies: null },
   eventBound: false,
   loadRequestId: 0,
   preloadPromise: null,
@@ -4793,37 +4944,35 @@ var modManagerModal = {
         if (!grid) return;
         const isListView = grid.classList.toggle("list-view");
         localStorage.setItem(
-          this.activeView === "dependencies" ? "weekbox_dependency_view" : "weekbox_mod_manager_view",
+          "weekbox_mod_manager_view",
           isListView ? "list" : "grid"
         );
         toggleBtn.querySelector("i").className = isListView ? "fa-solid fa-table-cells-large" : "fa-solid fa-list";
       });
-      document.getElementById("mod-manager-dependencies-toggle").addEventListener("click", () => {
-        this.activeView = this.activeView === "mods" ? "dependencies" : "mods";
-        if (!this.showCachedView()) {
-          this.render(
-            this.cachedMods || [],
-            this.cachedStandaloneMods || [],
-            this.cachedInstalledEngines || [],
-            { preserveOtherView: true }
-          );
-        }
-      });
       document.getElementById("mod-manager-search-input").addEventListener("input", (event) => {
         this.searchQuery = event.target.value.trim().toLocaleLowerCase();
+        this.renderSearchSuggestions(event.target.value);
         this.applySearchFilter();
       });
+      document.getElementById("mod-manager-search-input").addEventListener("blur", () => setTimeout(() => { const menu = document.getElementById("mod-manager-search-suggestions"); if (menu) menu.hidden = true; }, 120));
+      document.getElementById("mod-manager-search-input").addEventListener("keydown", (event) => { if (event.key === "Escape") { const menu = document.getElementById("mod-manager-search-suggestions"); if (menu) menu.hidden = true; } });
       document.getElementById("mod-manager-filter-toggle").addEventListener("click", () => {
         openFilterSortModal({
-          filter: this.typeFilter,
+          filters: this.typeFilters,
           sort: this.sortMode,
+          tags: [...new Set((this.cachedMods || []).flatMap((mod) => Array.isArray(mod.tags) ? mod.tags : []))].sort(),
           engineIds: [
             ...new Set(
-              (this.cachedMods || []).filter((mod) => mod.kind !== "dependency" && mod.engineId).map((mod) => mod.engineId)
+              (this.cachedMods || []).filter((mod) => mod.engineId).map((mod) => mod.engineId)
             )
           ],
-          onApply: /* @__PURE__ */ __name(({ filter, sort }) => {
-            this.typeFilter = filter;
+          hasExecutables: (this.cachedStandaloneMods || []).length > 0,
+          hasUnassigned: (this.cachedMods || []).some((mod) => !mod.engineId && !(this.cachedStandaloneMods || []).some((standalone) => String(standalone.id) === String(mod.id))),
+          hasMods: (this.cachedMods || []).some((mod) => !mod.kind && !(this.cachedStandaloneMods || []).some((standalone) => String(standalone.id) === String(mod.id))),
+          hasDependencies: (this.cachedMods || []).some((mod) => mod.kind === "dependency"),
+          hasAddons: (this.cachedMods || []).some((mod) => mod.kind === "addon"),
+          onApply: /* @__PURE__ */ __name(({ filters, sort }) => {
+            this.typeFilters = filters;
             this.sortMode = sort;
             this.render(
               this.cachedMods || [],
@@ -4840,7 +4989,6 @@ var modManagerModal = {
             this.cachedMods = null;
             this.cachedStandaloneMods = null;
             this.cachedInstalledEngines = null;
-            this.cachedViews = { mods: null, dependencies: null };
             this.preloaded = false;
             this.preloadPromise = null;
           }
@@ -4933,55 +5081,67 @@ var modManagerModal = {
       }
     }
   },
-  syncActiveView() {
-    const isModsView = this.activeView === "mods";
-    const dependenciesToggle = document.getElementById(
-      "mod-manager-dependencies-toggle"
-    );
-    if (dependenciesToggle) {
-      dependenciesToggle.setAttribute("aria-pressed", String(!isModsView));
-      const currentLabel = isModsView ? "Mods" : "Dependencies";
-      const nextLabel = isModsView ? "Dependencies" : "Mods";
-      const label = dependenciesToggle.querySelector("span");
-      label.textContent = currentLabel;
-      label.dataset.hoverLabel = nextLabel;
-      dependenciesToggle.setAttribute("aria-label", `Show ${nextLabel}`);
-    }
-    document.querySelector(".mod-manager-header-actions")?.classList.toggle("dependencies-view", !isModsView);
-    document.querySelector(".mod-manager-search")?.classList.toggle("is-hidden", !isModsView);
-  },
   syncViewToggleIcon() {
     const grid = document.getElementById("mod-manager-grid-container");
     const toggleIcon = document.querySelector("#mod-manager-view-toggle i");
     if (!grid || !toggleIcon) return;
     toggleIcon.className = grid.classList.contains("list-view") ? "fa-solid fa-table-cells-large" : "fa-solid fa-list";
   },
-  showCachedView() {
-    const view = this.cachedViews[this.activeView];
-    const container = document.getElementById("mod-manager-modal-body");
-    if (!view || !container) return false;
-    container.replaceChildren(view);
-    this.syncActiveView();
-    this.syncViewToggleIcon();
-    this.applySearchFilter();
-    this.renderPendingInstallCards();
-    return true;
-  },
   applySearchFilter() {
     const grid = document.getElementById("mod-manager-grid-container");
-    if (!grid || this.activeView !== "mods") return;
+    if (!grid) return;
     grid.querySelectorAll(".mod-manager-card").forEach((card) => {
       if (card.classList.contains("mod-manager-installing-card")) return;
       card.classList.toggle(
         "is-search-hidden",
-        Boolean(this.searchQuery) && !card.dataset.modSearch.includes(this.searchQuery)
+        Boolean(this.searchQuery) && !card.dataset.modSearch.includes(this.searchQuery.replace(/^#/, ""))
       );
     });
+  },
+  renderSearchSuggestions(value) {
+    const menu = document.getElementById("mod-manager-search-suggestions");
+    if (!menu) return;
+    const query = String(value || "").replace(/^#/, "").toLocaleLowerCase();
+    const tags = [...new Set((this.cachedMods || []).flatMap((mod) => Array.isArray(mod.tags) ? mod.tags : []))].filter((tag) => !query || tag.includes(query)).slice(0, 8);
+    menu.innerHTML = tags.map((tag) => `<button type="button" data-tag="${escapeHtml(tag)}"><i class="fa-solid fa-tag" aria-hidden="true"></i>#${escapeHtml(tag)}</button>`).join("");
+    menu.hidden = !query || !tags.length;
+    if (!menu.dataset.bound) {
+      menu.addEventListener("mousedown", (event) => {
+        const button = event.target.closest("button[data-tag]");
+        if (!button) return;
+        event.preventDefault();
+        const input = document.getElementById("mod-manager-search-input");
+        if (!input) return;
+        input.value = `#${button.dataset.tag}`;
+        this.searchQuery = input.value.toLocaleLowerCase();
+        menu.hidden = true;
+        this.applySearchFilter();
+      });
+      menu.dataset.bound = "true";
+    }
+  },
+  renderActiveFilters() {
+    const container = document.getElementById("mod-manager-active-filters");
+    if (!container) return;
+    container.replaceChildren();
+    const selected = this.typeFilters || { include: [], exclude: [] };
+    [["include", selected.include || []], ["exclude", selected.exclude || []]].forEach(([mode, filters]) => filters.forEach((filter) => {
+      const chip = document.createElement("button");
+      chip.type = "button";
+      chip.className = `mod-manager-filter-chip ${mode === "exclude" ? "is-exclude" : ""}`;
+      chip.textContent = `${filter.startsWith("tag:") ? "#" : ""}${filter.replace(/^(tag:|kind:)/, "")}`;
+      chip.title = "Remove filter";
+      chip.addEventListener("click", () => {
+        this.typeFilters[mode] = this.typeFilters[mode].filter((item) => item !== filter);
+        this.render(this.cachedMods || [], this.cachedStandaloneMods || [], this.cachedInstalledEngines || []);
+      });
+      container.append(chip);
+    }));
   },
   updatePendingInstallCard(install) {
     const modal = document.getElementById("mod-manager-modal");
     const grid = document.getElementById("mod-manager-grid-container");
-    if (!modal?.classList.contains("show") || !grid || this.activeView !== "mods") {
+    if (!modal?.classList.contains("show") || !grid) {
       return;
     }
     let card = Array.from(
@@ -5028,25 +5188,32 @@ var modManagerModal = {
       (install) => this.updatePendingInstallCard(install)
     );
   },
-  async render(mods, standaloneMods, installedEngines = this.cachedInstalledEngines || [], { preserveOtherView = false } = {}) {
+  async render(mods, standaloneMods, installedEngines = this.cachedInstalledEngines || []) {
     const container = document.getElementById("mod-manager-modal-body");
     if (!container) return;
     const savedScrollTop = container.scrollTop;
-    const dependencies = mods.filter((mod) => mod.kind === "dependency");
-    const playableMods = mods.filter((mod) => mod.kind !== "dependency");
-    this.syncActiveView();
+    const playableMods = mods;
     const standaloneModIds = new Set(standaloneMods.map((m) => String(m.id)));
     const modOrder = new Map(
       playableMods.map((mod, index) => [String(mod.id), index])
     );
-    const filteredMods = playableMods.filter((mod) => {
+    const selectedFilters = this.typeFilters || { include: [], exclude: [] };
+    const filterMatches = (mod, filter) => {
       const isExecutable = standaloneModIds.has(String(mod.id));
-      if (this.typeFilter.startsWith("engine:") && mod.engineId !== this.typeFilter.slice("engine:".length))
-        return false;
-      if (this.typeFilter === "executable" && !isExecutable) return false;
-      if (this.typeFilter === "unassigned" && (mod.engineId || isExecutable))
-        return false;
-      return true;
+      if (filter.startsWith("engine:")) return mod.engineId === filter.slice("engine:".length);
+      if (filter.startsWith("tag:")) return (mod.tags || []).map((tag) => String(tag).toLocaleLowerCase()).includes(filter.slice(4));
+      if (filter === "kind:mod") return !mod.kind && !isExecutable;
+      if (filter === "kind:dependency") return mod.kind === "dependency";
+      if (filter === "kind:addon") return mod.kind === "addon";
+      if (filter === "executable") return isExecutable;
+      if (filter === "unassigned") return !mod.engineId && !isExecutable;
+      return false;
+    };
+    const filteredMods = playableMods.filter((mod) => {
+      const included = selectedFilters.include || [];
+      const excluded = selectedFilters.exclude || [];
+      if (excluded.some((filter) => filterMatches(mod, filter))) return false;
+      return !included.length || included.some((filter) => filterMatches(mod, filter));
     }).sort((left, right) => {
       if (this.sortMode === "name-asc")
         return String(left.name || "").localeCompare(
@@ -5067,42 +5234,10 @@ var modManagerModal = {
       const difference = modOrder.get(String(left.id)) - modOrder.get(String(right.id));
       return this.sortMode === "added-asc" ? difference : -difference;
     });
-    if (!preserveOtherView) {
-      this.cachedViews = { mods: null, dependencies: null };
-    }
     container.innerHTML = "";
-    if (this.activeView === "dependencies") {
-      if (dependencies.length) {
-        const isListView2 = localStorage.getItem("weekbox_dependency_view") !== "grid";
-        const toggleIcon2 = document.querySelector("#mod-manager-view-toggle i");
-        if (toggleIcon2)
-          toggleIcon2.className = isListView2 ? "fa-solid fa-table-cells-large" : "fa-solid fa-list";
-        await dependenciesRenderer.render(
-          container,
-          dependencies,
-          mods,
-          installedEngines,
-          isListView2,
-          (deletedId) => {
-            this.cachedMods = this.cachedMods.filter((m) => m.id !== deletedId);
-            this.cachedStandaloneMods = this.cachedStandaloneMods.filter(
-              (m) => m.id !== deletedId
-            );
-            this.render(this.cachedMods, this.cachedStandaloneMods);
-            document.dispatchEvent(new CustomEvent("mods-updated"));
-          },
-          () => this.loadInstalledMods(true)
-        );
-        this.cachedViews.dependencies = container.firstElementChild;
-      } else {
-        container.innerHTML = modManagerTemplates3.emptyState(
-          "No dependencies installed yet."
-        );
-        this.cachedViews.dependencies = container.firstElementChild;
-      }
-      container.scrollTop = savedScrollTop;
-      return;
-    }
+    const count = document.getElementById("mod-manager-title-count");
+    if (count) count.textContent = `${filteredMods.length} / ${mods.length}`;
+    this.renderActiveFilters();
     const gridContainer = document.createElement("div");
     gridContainer.id = "mod-manager-grid-container";
     gridContainer.className = "mod-manager-grid";
@@ -5146,7 +5281,6 @@ var modManagerModal = {
         }
       });
       gridContainer.appendChild(addLocalButton);
-      this.cachedViews.mods = gridContainer;
       container.scrollTop = savedScrollTop;
       requestAnimationFrame(() => {
         container.scrollTop = savedScrollTop;

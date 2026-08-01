@@ -3,11 +3,11 @@
     <div class="mod-manager-overlay" id="mod-manager-modal" style="display: none">
       <div class="mod-manager-content">
         <header class="mod-manager-header">
-          <div class="mod-manager-title-group">
-            <h2>Mod Manager</h2>
-            <button class="mod-manager-dependencies-toggle" id="mod-manager-dependencies-toggle" type="button" aria-label="Show Dependencies" aria-pressed="false"><i class="fa-solid fa-puzzle-piece" aria-hidden="true"></i><span data-hover-label="Dependencies">Mods</span></button>
+          <div class="mod-manager-title-group"><h2>Mods</h2><span class="mod-manager-title-count" id="mod-manager-title-count"></span></div>
+          <div class="mod-manager-tools">
+            <div class="mod-manager-search-wrap"><label class="mod-manager-search" for="mod-manager-search-input"><i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i><input id="mod-manager-search-input" type="search" placeholder="Search mods and tags" autocomplete="off" /></label><div class="mod-manager-search-suggestions" id="mod-manager-search-suggestions" hidden></div></div>
+            <div class="mod-manager-active-filters" id="mod-manager-active-filters" aria-label="Active filters"></div>
           </div>
-          <label class="mod-manager-search" for="mod-manager-search-input"><i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i><input id="mod-manager-search-input" type="search" placeholder="Search your mods" autocomplete="off" /></label>
           <div class="mod-manager-header-actions">
             <button class="mod-manager-action-btn" id="mod-manager-filter-toggle" title="Filter and sort" aria-label="Filter and sort"><i class="fa-solid fa-arrow-down-wide-short" aria-hidden="true"></i></button>
             <button class="mod-manager-action-btn" id="mod-manager-view-toggle" title="Toggle View Mode">
@@ -870,27 +870,11 @@
 <div class="mod-manager-overlay" id="mod-manager-modal" style="display: none">
   <div class="mod-manager-content">
     <header class="mod-manager-header">
-      <div class="mod-manager-title-group">
-        <h2>Mod Manager</h2>
-        <button
-          class="mod-manager-dependencies-toggle"
-          id="mod-manager-dependencies-toggle"
-          type="button"
-          aria-label="Show Dependencies"
-          aria-pressed="false"
-        >
-          <i class="fa-solid fa-puzzle-piece" aria-hidden="true"></i
-          ><span data-hover-label="Dependencies">Mods</span>
-        </button>
+      <div class="mod-manager-title-group"><h2>Mods</h2><span class="mod-manager-title-count" id="mod-manager-title-count"></span></div>
+      <div class="mod-manager-tools">
+        <div class="mod-manager-search-wrap"><label class="mod-manager-search" for="mod-manager-search-input"><i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i><input id="mod-manager-search-input" type="search" placeholder="Search mods and tags" autocomplete="off" /></label><div class="mod-manager-search-suggestions" id="mod-manager-search-suggestions" hidden></div></div>
+        <div class="mod-manager-active-filters" id="mod-manager-active-filters" aria-label="Active filters"></div>
       </div>
-      <label class="mod-manager-search" for="mod-manager-search-input"
-        ><i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i
-        ><input
-          id="mod-manager-search-input"
-          type="search"
-          placeholder="Search your mods"
-          autocomplete="off"
-      /></label>
       <div class="mod-manager-header-actions">
         <button
           class="mod-manager-action-btn"

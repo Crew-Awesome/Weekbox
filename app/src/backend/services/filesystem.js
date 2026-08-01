@@ -922,6 +922,34 @@ var _FileSystemService = class _FileSystemService {
     if (!this.isInitialized) return null;
     return this.mods.removeDependencyConsumer(dependencyId, consumerId);
   }
+  async setModTags(modId, tags) {
+    this.assertStorageUnlocked();
+    if (!this.isInitialized) return null;
+    await this.assertModChangeAllowed(modId);
+    return this.mods.setTags(modId, tags);
+  }
+  async setModType(modId, type) {
+    this.assertStorageUnlocked();
+    if (!this.isInitialized) return null;
+    await this.assertModChangeAllowed(modId);
+    const mods = await this.mods.getAll();
+    const mod = mods.find((item) => sameId(item.id, modId));
+    if (!mod) return null;
+    if (type === "addon" && mod.engineId !== "codename") {
+      throw new Error("Addons are only available for Codename Engine mods");
+    }
+    if (type === "dependency") return this.moveModToDependencies(modId);
+    const engines = await this.getInstalledEngines();
+    if (mod.kind === "dependency") {
+      const consumers = mods.filter((item) => item.kind !== "dependency" && Array.isArray(item.dependencies) && item.dependencies.some((dependencyId) => sameId(dependencyId, modId)));
+      if (consumers.length) throw new Error(`Remove ${consumers.map((item) => item.name).join(", ")} before changing ${mod.name}`);
+    }
+    // Remove the current link before changing its destination (mods vs Codename addons).
+    if ((mod.kind || "mod") !== type) await this.injection.unlinkFromInstalledEngines(mod, engines);
+    const updated = await this.mods.setType(modId, type);
+    if (updated?.engineId && !updated.hidden) await this.injection.injectIntoInstalledEngines(modId, engines);
+    return updated;
+  }
   async moveModToDependencies(modId) {
     this.assertStorageUnlocked();
     if (!this.isInitialized) return null;

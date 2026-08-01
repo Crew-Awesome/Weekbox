@@ -9,7 +9,8 @@ function supportsEngineVersion(mod, version) {
 }
 
 function usesAddonsDirectory(mod, engineId) {
-  return engineId === "codename" && mod.kind === "dependency";
+  // Legacy Codename dependencies already live in addons; keep that placement on migration.
+  return engineId === "codename" && (mod.kind === "dependency" || mod.kind === "addon");
 }
 
 var _ModInjectionService = class _ModInjectionService {
