@@ -19,6 +19,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Used addons and dependencies keep safe launcher-only settings available.
 - Used addons and dependencies keep their folder identity while cosmetic details can change.
 - Addon and dependency cards no longer show launch or switch controls.
+- Cosmetic settings stay editable for every mod, including running ones.
+- Mod Settings groups Type, Engine, and Version together and greys locked file controls.
 
 ## [1.9.0] - 2026-07-31
 

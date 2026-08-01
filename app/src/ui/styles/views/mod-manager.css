@@ -2004,6 +2004,9 @@
 .mod-manager-search input[type="search"]::-webkit-search-cancel-button { filter: invert(1) grayscale(1) brightness(2); opacity: .95; }
 .mod-manager-search-suggestions, .mod-settings-tag-suggestions { position: absolute; z-index: 60; top: calc(100% + 7px); right: 0; left: 0; display: grid; gap: 3px; padding: 5px; border: 1px solid var(--border-color); border-radius: 9px; background: var(--bg-panel); box-shadow: 0 12px 28px rgb(0 0 0 / 42%); }
 .mod-manager-card.is-non-playable .mod-manager-launch-btn { display: none !important; }
+.mod-settings-engine { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.mod-settings-extra { margin-top: 0; padding-top: 0; border-top: 0; }
+@media (max-width: 620px) { .mod-settings-engine { grid-template-columns: 1fr 1fr; } }
 .mod-manager-search-suggestions[hidden], .mod-settings-tag-suggestions[hidden] { display: none !important; }
 .mod-manager-search-suggestions button, .mod-settings-tag-suggestions button { display: flex; align-items: center; gap: 8px; width: 100%; min-height: 32px; padding: 7px 9px; border: 0; border-radius: 6px; background: transparent; color: var(--text-muted); cursor: pointer; font: inherit; font-size: .78rem; text-align: left; }
 .mod-manager-search-suggestions button:hover, .mod-settings-tag-suggestions button:hover { background: var(--bg-hover); color: var(--text-main); }

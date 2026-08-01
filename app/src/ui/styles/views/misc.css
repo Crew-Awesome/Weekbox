@@ -389,6 +389,9 @@ body.window-unfocused::after {
   }
 }
 
+.mod-settings-engine { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+@media (max-width: 620px) { .mod-settings-engine { grid-template-columns: 1fr 1fr; } }
+
 .modal-overlay {
   position: fixed;
   inset: 0;
@@ -1914,3 +1917,6 @@ input:checked + .slider:before {
   gap: 9px;
   margin-top: 16px;
 }
+
+.mod-settings-engine { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+@media (max-width: 620px) { .mod-settings-engine { grid-template-columns: 1fr 1fr; } }

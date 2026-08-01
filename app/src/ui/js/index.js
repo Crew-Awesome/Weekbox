@@ -3644,6 +3644,7 @@ function settingsContent({
               <div class="mod-settings-executable-value"><img src="assets/icons/exe.png" alt=""><span>Executable</span></div>
             </div>
           </div>` : `<div class="mod-settings-engine" ${controlsDisabled ? 'aria-disabled="true"' : ""}>
+          <label>Type<span class="mod-settings-dropdown"><button type="button" class="mod-settings-dropdown-trigger mod-settings-type-trigger" aria-haspopup="listbox" aria-expanded="false" ${controlsDisabled}><span class="mod-settings-select-icon"><i class="fa-solid fa-layer-group" aria-hidden="true"></i></span><span class="mod-settings-type-selected"></span><i class="fa-solid fa-chevron-down mod-settings-select-chevron" aria-hidden="true"></i></button><div class="mod-settings-dropdown-menu mod-settings-type-menu" role="listbox" aria-label="Type" hidden></div><select class="mod-settings-type" hidden></select></span></label>
           <label>Engine
             <span class="mod-settings-dropdown">
               <button type="button" class="mod-settings-dropdown-trigger mod-settings-engine-trigger" aria-haspopup="listbox" aria-expanded="false" ${controlsDisabled}>
@@ -3666,14 +3667,13 @@ function settingsContent({
           </label>
         </div>`}
         ${mod.engineLocked ? '<p class="mod-settings-note">This mod is locked to Psych Online.</p>' : ""}
-        ${readOnly ? '<p class="mod-settings-note">Close the engine to change these settings. You can still open the mod folder.</p>' : fileLocked ? '<p class="mod-settings-note">This addon or dependency is being used by a running mod. File and engine changes are locked; tags and cover can still be changed.</p>' : ""}
+        ${readOnly ? '<p class="mod-settings-note">Close the engine to change these settings. You can still open the mod folder.</p>' : ""}
         <div class="mod-settings-extra">
-          ${!isExecutable ? `<label>Type<span class="mod-settings-dropdown"><button type="button" class="mod-settings-dropdown-trigger mod-settings-type-trigger" aria-haspopup="listbox" aria-expanded="false" ${controlsDisabled}><span class="mod-settings-select-icon"><i class="fa-solid fa-layer-group" aria-hidden="true"></i></span><span class="mod-settings-type-selected"></span><i class="fa-solid fa-chevron-down mod-settings-select-chevron" aria-hidden="true"></i></button><div class="mod-settings-dropdown-menu mod-settings-type-menu" role="listbox" aria-label="Type" hidden></div><select class="mod-settings-type" hidden></select></span></label>` : ""}
           <div class="mod-settings-tags-field"><span>Tags</span><div class="mod-settings-tag-editor"><span class="mod-settings-tag-pills"></span><input class="mod-settings-tag-input" placeholder="Type a tag and press Enter" ${readOnly ? "disabled" : ""}></div><div class="mod-settings-tag-suggestions" hidden>${tagSuggestions.map((tag) => `<button type="button" data-tag="${escapeHtml(tag)}">#${escapeHtml(tag)}</button>`).join("")}</div></div>
         </div>
       </div>
       <footer class="mod-settings-footer">
-        <button type="button" class="mod-settings-reset" ${canReset && !readOnly && !fileLocked ? "" : `disabled title="${escapeHtml(readOnly ? "Close the engine to change settings" : fileLocked ? "This addon or dependency is in use" : resetTitle)}"`}>Reset</button>
+        <button type="button" class="mod-settings-reset" ${canReset && !readOnly ? "" : `disabled title="${escapeHtml(readOnly ? "Close the engine to change settings" : resetTitle)}"`}>Reset</button>
         <span class="mod-settings-status" role="status"></span>
         <button type="button" class="mod-settings-cancel">Cancel</button>
         <button type="submit" class="mod-settings-save" ${readOnly ? "disabled" : ""}>Save</button>
@@ -4295,8 +4295,8 @@ var cardRenderer = {
         deleteBtn.title = locked ? message : "Delete Mod";
         deleteBtn.setAttribute("aria-label", locked ? message : "Delete Mod");
         const supportLocked = mod.kind === "dependency" || mod.kind === "addon";
-        settingsBtn.disabled = locked && !supportLocked;
-        settingsBtn.title = locked && supportLocked ? "Launcher settings only while this is in use" : locked ? "Open mod settings (read-only while running)" : "Mod Settings";
+        settingsBtn.disabled = false;
+        settingsBtn.title = locked ? "Cosmetic settings only while this is in use" : "Mod Settings";
         settingsBtn.setAttribute("aria-label", settingsBtn.title);
         visibilityBtn.disabled = locked;
         visibilityBtn.title = locked ? message : "Toggle Visibility";
@@ -4444,8 +4444,8 @@ var cardRenderer = {
             isExecutable,
             installedEngines,
             onSaved: onSettingsSaved,
-            readOnly: FS11.isModLockedForChanges(mod, allMods) && mod.kind !== "addon" && mod.kind !== "dependency",
-            fileLocked: FS11.isModLockedForChanges(mod, allMods) && (mod.kind === "addon" || mod.kind === "dependency")
+            readOnly: false,
+            fileLocked: FS11.isModLockedForChanges(mod, allMods)
           });
         } finally {
           settingsBtn.disabled = false;
