@@ -138,6 +138,9 @@ function createProcessError(operation, exitCode, output) {
       "This download is no longer available (404). The file may have been removed, replaced, or made private."
     );
   }
+  if (operation === "Download" && Number(exitCode) === 22 && /\b(?:503|504)\b/.test(detail)) {
+    return createDownloadError("The download server is temporarily unavailable. WeekBox will retry it.");
+  }
   if (operation === "Download" && Number(exitCode) === 22) {
     return createDownloadError(`The download server rejected this file${httpStatus ? ` (HTTP ${httpStatus})` : ""}. Choose another download or try again later.`);
   }
@@ -148,11 +151,27 @@ function createProcessError(operation, exitCode, output) {
 
 function isTransientDownloadError(error) {
   const code = error?.downloadDiagnostics?.curlCode;
-  return [1, 6, 7, 18, 28, 35, 56, -1].includes(Number(code)) || /(?:exit code|curl:\s*\()\s*(?:-1|1|6|7|18|28|35|56)\b/i.test(String(error?.message || error));
+  const httpStatus = Number(error?.downloadDiagnostics?.httpStatus);
+  return [503, 504].includes(httpStatus) || [1, 6, 7, 18, 28, 35, 56, -1].includes(Number(code)) || /(?:exit code|curl:\s*\()\s*(?:-1|1|6|7|18|28|35|56)\b/i.test(String(error?.message || error));
 }
 
 function wait(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+async function getDownloadContentType(url) {
+  try {
+    const result = await Neutralino.os.execCommand(
+      `curl --globoff -sSIL --connect-timeout 10 --max-time 30 ${quoteCommandArgument(url)}`,
+      { background: false }
+    );
+    if (result.exitCode !== 0) return null;
+    const headers = `${result.stdOut || ""}\n${result.stdErr || ""}`;
+    const values = [...headers.matchAll(/^content-type:\s*([^;\r\n]+)/gim)].map((match) => match[1].trim());
+    return values.at(-1) || null;
+  } catch {
+    return null;
+  }
 }
 
 async function retryTransientDownload(operation, getTask, onProgress, cleanup) {
@@ -505,7 +524,7 @@ async function downloadSingleArchive({ url, outPath, getTask, onProgress }) {
 
   await retryTransientDownload(
     () => runCurlDownload(
-      `curl --globoff -sS -L --fail --show-error --connect-timeout 15 ${quoteCommandArgument(url)} -o ${quoteCommandArgument(outPath)}`,
+      `curl --globoff -sS -L --fail --show-error --connect-timeout 15 --max-time 120 ${quoteCommandArgument(url)} -o ${quoteCommandArgument(outPath)}`,
       getTask,
       onProgress
     ),
@@ -627,7 +646,8 @@ async function downloadArchive({
   outPath,
   getTask,
   onProgress,
-  sourceType
+  sourceType,
+  onDiagnostic
 }) {
   if (!String(url || "").trim()) {
     throw new Error("This download does not have a valid link");
@@ -652,6 +672,7 @@ async function downloadArchive({
       url,
       (...args) => Neutralino.os.execCommand(...args)
     );
+    onDiagnostic?.({ resolvedUrl: url, contentType: await getDownloadContentType(url) });
   }
   const useMultithreadDownloads = appSettings.get("multithreadDownloads");
   let remoteFileSize = 0;
@@ -683,11 +704,15 @@ async function downloadArchive({
       await downloadSingleArchive({ url, outPath: partPath, getTask, onProgress });
     }
     await finalizeDownloadedArchive(partPath, outPath);
+    const stats = await Neutralino.filesystem.getStats(outPath);
+    onDiagnostic?.({ resolvedUrl: url, downloadedSize: stats.size, archiveFormat: await detectArchiveFormat(outPath) });
     return;
   }
   try {
     await downloadSingleArchive({ url, outPath: partPath, getTask, onProgress });
     await finalizeDownloadedArchive(partPath, outPath);
+    const stats = await Neutralino.filesystem.getStats(outPath);
+    onDiagnostic?.({ resolvedUrl: url, downloadedSize: stats.size, archiveFormat: await detectArchiveFormat(outPath) });
   } catch (error) {
     await Neutralino.filesystem.remove(partPath).catch(() => {});
     throw error;
@@ -701,6 +726,8 @@ async function extractArchive({
   onEntry,
   extractNested = false
 }) {
+  requireValue(archivePath, "archivePath");
+  requireValue(destinationPath, "destinationPath");
   const reportEntry = createThrottledEntryReporter(onEntry);
   const isDiskImage = window.NL_OS === "Darwin" && /\.dmg$/i.test(String(archivePath));
   if (isDiskImage) {

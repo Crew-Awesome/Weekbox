@@ -177,14 +177,26 @@ var _ModInjectionService = class _ModInjectionService {
       // Directly downloaded engine mods are normal folders. They do not belong
       // to this WeekBox library entry, so never delete them as if they were links.
       if (!isLink && !isCopiedLink) continue;
-      const command = window.NL_OS === "Windows" ? `cmd /c rmdir "${linkPath.replace(/\//g, "\\")}"` : window.NL_OS === "Darwin" ? `rm -f "${linkPath}"` : `rm -rf "${linkPath}"`;
-      const result = await Neutralino.os.execCommand(command, {
-        background: false
-      });
-      if (result.exitCode !== 0) {
-        throw new Error(
-          result.stdErr || `Could not remove mod link for ${mod.name}`
-        );
+      let lastError;
+      for (let attempt = 1; attempt <= 3; attempt += 1) {
+        try {
+          if (isCopiedLink) {
+            await this.api.remove(linkPath);
+          } else {
+            const command = window.NL_OS === "Windows" ? `cmd /c rmdir "${linkPath.replace(/\//g, "\\")}"` : window.NL_OS === "Darwin" ? `rm -f "${linkPath}"` : `rm -rf "${linkPath}"`;
+            const result = await Neutralino.os.execCommand(command, { background: false });
+            if (result.exitCode !== 0) throw new Error(result.stdErr || result.stdOut || "The directory is not empty");
+          }
+          if (!await this.api.exists(linkPath)) break;
+          throw new Error("The directory is not empty");
+        } catch (error) {
+          lastError = error;
+          if (attempt < 3) await new Promise((resolve) => setTimeout(resolve, attempt * 350));
+        }
+      }
+      if (await this.api.exists(linkPath)) {
+        const detail = String(lastError?.message || lastError || "").replace(/[\0\r]+/g, " ").trim();
+        throw new Error(detail ? `Could not remove mod link because a file is in use: ${detail}` : `Could not remove mod link for ${mod.name}. Close the engine and try again.`);
       }
       removed = true;
     }

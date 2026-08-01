@@ -66,6 +66,33 @@ var _LibraryMaintenanceService = class _LibraryMaintenanceService {
       )
     );
   }
+  async moveImportedPsychOnlineMod(sourcePath, destinationPath) {
+    let lastError;
+    for (let attempt = 1; attempt <= 3; attempt += 1) {
+      if (!await this.api.exists(sourcePath)) return await this.api.exists(destinationPath);
+      if (await this.api.exists(destinationPath)) return false;
+      try {
+        await Neutralino.filesystem.move(sourcePath, destinationPath);
+        return true;
+      } catch (error) {
+        lastError = error;
+        await new Promise((resolve) => setTimeout(resolve, attempt * 250));
+      }
+    }
+    try {
+      if (await this.api.exists(destinationPath)) return false;
+      await Neutralino.filesystem.copy(sourcePath, destinationPath, {
+        recursive: true,
+        overwrite: false,
+        skip: false
+      });
+      await this.api.remove(sourcePath);
+      return true;
+    } catch (error) {
+      console.warn("Could not import Psych Online mod:", error?.message || lastError?.message || error);
+      return false;
+    }
+  }
   async importPsychOnlineEngineMods(installedEngines = null) {
     const engines = installedEngines || await this.getInstalledEngines();
     const storedMods = await this.mods.getAll();
@@ -125,7 +152,8 @@ var _LibraryMaintenanceService = class _LibraryMaintenanceService {
         }
         if (installedMods.some((mod) => sameId(mod.id, metadata.id))) continue;
         if (!await this.api.exists(sourcePath) || await this.api.exists(destinationPath)) continue;
-        await Neutralino.filesystem.move(sourcePath, destinationPath);
+        const moved = await this.moveImportedPsychOnlineMod(sourcePath, destinationPath);
+        if (!moved) continue;
         try {
           await this.injection.link(metadata, engine.id, engine.version);
         } catch (error) {

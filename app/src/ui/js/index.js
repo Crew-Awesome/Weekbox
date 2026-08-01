@@ -306,6 +306,14 @@ function describeIssue(error) {
       reportable: false
     };
   }
+  if (lower.includes("file is in use") || lower.includes("directory is not empty") || lower.includes("being used by another process")) {
+    return {
+      title: "Close the app using this mod",
+      summary: "WeekBox could not finish because a mod file is still in use. Close the engine or file browser, then try again.",
+      tag: "Locked mod files",
+      reportable: false
+    };
+  }
   if (lower.includes("engine version is already installed")) {
     return {
       title: "This engine version is already installed",
@@ -330,7 +338,7 @@ function describeIssue(error) {
       reportable: false
     };
   }
-  if (lower.includes("exit code 22") || /\b(?:403|404)\b/.test(lower)) {
+  if (lower.includes("exit code 22") || /\b(?:403|404|503|504)\b/.test(lower)) {
     return {
       title: "This download is no longer available",
       summary: "The selected engine file could not be downloaded. Try another version or try again later.",
@@ -432,7 +440,13 @@ function createDiagnosticReport({ error, action, item, targetUrl }) {
     targetUrl ? `URL\n${sanitizeDiagnosticText(targetUrl, 2e3)}` : null,
     downloadDetails.httpStatus ? `HTTP status\n${downloadDetails.httpStatus}` : null,
     downloadDetails.curlCode != null ? `Curl code\n${downloadDetails.curlCode}` : null,
-    downloadDetails.retryCount != null ? `Retry count\n${downloadDetails.retryCount}` : null
+    downloadDetails.retryCount != null ? `Retry count\n${downloadDetails.retryCount}` : null,
+    downloadDetails.resolvedUrl ? `Resolved URL\n${sanitizeDiagnosticText(downloadDetails.resolvedUrl, 2e3)}` : null,
+    downloadDetails.contentType ? `Content type\n${sanitizeDiagnosticText(downloadDetails.contentType, 200)}` : null,
+    downloadDetails.downloadedSize != null ? `Downloaded size\n${downloadDetails.downloadedSize}` : null,
+    downloadDetails.archiveFormat ? `Archive format\n${downloadDetails.archiveFormat}` : null,
+    downloadDetails.extractionPath ? `Extraction path\n${sanitizeDiagnosticText(downloadDetails.extractionPath, 2e3)}` : null,
+    downloadDetails.extractedEntryCount != null ? `Extracted entries\n${downloadDetails.extractedEntryCount}` : null
   ].filter(Boolean).join("\n");
 }
 __name(createDiagnosticReport, "createDiagnosticReport");
@@ -1449,7 +1463,8 @@ var downloadMod = {
       pid: null,
       modName,
       tempFilePath,
-      targetModFolder
+      targetModFolder,
+      downloadDiagnostics: {}
     });
     const { toastThumbnail, sourceType, ...installMetadata } = metadata;
     const coverUrlPromise = this.fetchModCoverUrl(
@@ -1476,7 +1491,11 @@ var downloadMod = {
         onProgress: /* @__PURE__ */ __name((status, progress) => {
           toastDownloadMod.update(modId, progress, status);
           this.reportInstallProgress(modId, modName, status, progress);
-        }, "onProgress")
+        }, "onProgress"),
+        onDiagnostic: /* @__PURE__ */ __name((details) => {
+          const task = this.activeTasks.get(modId);
+          if (task) Object.assign(task.downloadDiagnostics, details);
+        }, "onDiagnostic")
       };
       try {
         await downloadArchive2({ url: downloadUrl, ...downloadOptions });
@@ -1490,7 +1509,11 @@ var downloadMod = {
         downloadUrl = refreshedUrl;
       }
       const archiveStats = await Neutralino.filesystem.getStats(tempFilePath);
-      if (!archiveStats.size) throw new Error("Downloaded archive is empty");
+      if (!archiveStats.size) {
+        const error = new Error("Downloaded archive is empty");
+        error.downloadDiagnostics = this.activeTasks.get(modId)?.downloadDiagnostics || {};
+        throw error;
+      }
       if (this.activeTasks.get(modId)?.cancelled) throw new Error("Cancelled");
       toastDownloadMod.update(modId, 98, "Extracting...");
       this.reportInstallProgress(modId, modName, "Installing...", 98);
@@ -1599,7 +1622,13 @@ var downloadMod = {
       await FS3.api.remove(tempFilePath);
       const hasExtractedFiles = await this.hasExtractedFiles(targetModFolder);
       if (!hasExtractedFiles) {
-        throw new Error("Downloaded archive did not contain any files");
+        const error = new Error("Downloaded archive did not contain any files");
+        error.downloadDiagnostics = {
+          ...(this.activeTasks.get(modId)?.downloadDiagnostics || {}),
+          extractionPath: targetModFolder,
+          extractedEntryCount: realEntries.length
+        };
+        throw error;
       }
       await FS3.api.remove(downloadMarkerPath);
       await FS3.api.write(`${targetModFolder}/mod_url.txt`, downloadUrl);

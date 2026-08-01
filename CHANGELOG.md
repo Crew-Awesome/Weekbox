@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.8.10] - 2026-07-31
+
+### Fixed
+
+- Psych Online imports no longer stop WeekBox when folders cannot move.
+- Downloads retry temporary server errors and stop after a timeout.
+- Locked mod links retry before WeekBox gives up.
+- External downloads now keep useful file details for diagnostics.
+
 ## [1.8.9] - 2026-07-31
 
 ### Fixed
