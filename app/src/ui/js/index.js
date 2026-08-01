@@ -3873,8 +3873,8 @@ var modSettingsModal = {
       }));
     };
     const addTag = () => {
-      const tag = String(tagInput?.value || "").trim().replace(/^#+/, "").toLocaleLowerCase();
-      if (tag && !/\s/.test(tag) && !tags.includes(tag) && tags.length < 20) tags.push(tag);
+      const tag = String(tagInput?.value || "").trim().replace(/^#+/, "").replace(/\s+/g, " ").toLocaleLowerCase();
+      if (tag && tag.length <= 48 && !tags.includes(tag) && tags.length < 20) tags.push(tag);
       if (tagInput) tagInput.value = "";
       renderTags();
     };
@@ -3886,7 +3886,8 @@ var modSettingsModal = {
       tagSuggestionsMenu?.querySelectorAll("button[data-tag]").forEach((button) => {
         button.hidden = !query || !button.dataset.tag.includes(query) || tags.includes(button.dataset.tag);
       });
-      if (tagSuggestionsMenu) tagSuggestionsMenu.hidden = !query;
+      const hasVisibleSuggestions = Boolean(tagSuggestionsMenu?.querySelector("button[data-tag]:not([hidden])"));
+      if (tagSuggestionsMenu) tagSuggestionsMenu.hidden = !query || !hasVisibleSuggestions;
     });
     tagSuggestionsMenu?.addEventListener("mousedown", (event) => {
       const button = event.target.closest("button[data-tag]");

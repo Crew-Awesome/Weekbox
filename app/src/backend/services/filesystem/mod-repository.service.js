@@ -4,7 +4,7 @@ function sameId(left, right) {
 
 function normalizeTags(tags) {
   if (!Array.isArray(tags)) return [];
-  return [...new Set(tags.map((tag) => String(tag || "").trim().replace(/^#+/, "").toLocaleLowerCase()).filter((tag) => tag && tag.length <= 32 && !/\s/.test(tag)))].slice(0, 20);
+  return [...new Set(tags.map((tag) => String(tag || "").trim().replace(/^#+/, "").replace(/\s+/g, " ").toLocaleLowerCase()).filter((tag) => tag && tag.length <= 48))].slice(0, 20);
 }
 
 var _ModRepository = class _ModRepository {
