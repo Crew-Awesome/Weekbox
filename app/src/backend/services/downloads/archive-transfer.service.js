@@ -433,6 +433,58 @@ async function extractNestedArchives(destinationPath, getTask, onEntry) {
   }
 }
 
+function formatTransferBytes(bytes) {
+  const value = Number(bytes) || 0;
+  if (value < 1024 * 1024) return `${Math.max(0, Math.round(value / 1024))} KB`;
+  return `${(value / (1024 * 1024)).toFixed(value >= 100 * 1024 * 1024 ? 0 : 1)} MB`;
+}
+
+function createFileProgressReader(path, totalBytes = 0) {
+  let previousBytes = 0;
+  let previousAt = performance.now();
+  return async () => {
+    const stats = await Neutralino.filesystem.getStats(path);
+    const bytes = Number(stats?.size) || 0;
+    const now = performance.now();
+    const elapsed = Math.max(1, now - previousAt);
+    const bytesPerSecond = Math.max(0, (bytes - previousBytes) * 1000 / elapsed);
+    previousBytes = bytes;
+    previousAt = now;
+    const total = Number(totalBytes) || 0;
+    const progress = total > 0 ? Math.min(99, bytes / total * 100) : undefined;
+    const amount = total > 0
+      ? `${formatTransferBytes(bytes)} of ${formatTransferBytes(total)}`
+      : formatTransferBytes(bytes);
+    const speed = bytesPerSecond > 0 ? ` at ${formatTransferBytes(bytesPerSecond)}/s` : "";
+    return { progress, status: `Downloading ${amount}${speed}...` };
+  };
+}
+
+function createPartsProgressReader(parts, totalBytes) {
+  let previousBytes = 0;
+  let previousAt = performance.now();
+  return async () => {
+    const sizes = await Promise.all(parts.map(async (part) => {
+      try {
+        return Number((await Neutralino.filesystem.getStats(part.path)).size) || 0;
+      } catch {
+        return 0;
+      }
+    }));
+    const bytes = sizes.reduce((total, size) => total + size, 0);
+    const now = performance.now();
+    const elapsed = Math.max(1, now - previousAt);
+    const bytesPerSecond = Math.max(0, (bytes - previousBytes) * 1000 / elapsed);
+    previousBytes = bytes;
+    previousAt = now;
+    const speed = bytesPerSecond > 0 ? ` at ${formatTransferBytes(bytesPerSecond)}/s` : "";
+    return {
+      progress: Math.min(99, bytes / totalBytes * 100),
+      status: `Downloading ${formatTransferBytes(bytes)} of ${formatTransferBytes(totalBytes)}${speed}...`
+    };
+  };
+}
+
 async function runCurlDownload(command, getTask, onProgress, getProgress) {
   let process;
   try {
@@ -446,17 +498,23 @@ async function runCurlDownload(command, getTask, onProgress, getProgress) {
   if (task) task.pid = getOsProcessId(process);
   let processOutput = "";
   let maxPercent = 0;
-  const reportProgress = (percent) => {
-    if (Number.isNaN(percent) || percent < maxPercent) return;
-    maxPercent = percent;
-    onProgress?.("Downloading...", 2 + percent * 0.96);
+  let lastStatus = "";
+  const reportProgress = (update) => {
+    const details = typeof update === "object" ? update : { progress: update };
+    const percent = Number(details.progress);
+    if (!Number.isNaN(percent)) maxPercent = Math.max(maxPercent, percent);
+    const status = details.status || "Downloading...";
+    if (status === lastStatus && Number.isNaN(percent)) return;
+    lastStatus = status;
+    onProgress?.(status, 2 + maxPercent * 0.96);
   };
+  reportProgress({ status: "Download process started..." });
   let isCheckingProgress = false;
   const progressTimer = getProgress ? setInterval(async () => {
     if (isCheckingProgress) return;
     isCheckingProgress = true;
     try {
-      reportProgress(await getProgress());
+          reportProgress(await getProgress());
     } catch (error) {
     } finally {
       isCheckingProgress = false;
@@ -472,8 +530,10 @@ async function runCurlDownload(command, getTask, onProgress, getProgress) {
           processOutput = appendProcessOutput(processOutput, output);
           if (getProgress) return;
           const matches = output.match(/(\d+\.?\d*)%/g);
-          if (!matches?.length) return;
-          reportProgress(Number.parseFloat(matches[matches.length - 1]));
+          reportProgress({
+            progress: matches?.length ? Number.parseFloat(matches[matches.length - 1]) : undefined,
+            status: "Receiving download data..."
+          });
           return;
         }
         if (event.action !== "exit") return;
@@ -487,13 +547,14 @@ async function runCurlDownload(command, getTask, onProgress, getProgress) {
   }
 }
 
-async function downloadSingleArchive({ url, outPath, getTask, onProgress }) {
+async function downloadSingleArchive({ url, outPath, totalBytes = 0, getTask, onProgress }) {
   requireValue(url, "url");
   requireValue(outPath, "outPath");
   if (url.includes("drive.google.com") || url.includes("drive.usercontent.google.com")) {
     const fileId = url.match(/id=([^&]+)/)?.[1] || url.match(/\/file\/d\/([^/]+)/)?.[1];
     if (fileId) {
       const cookiePath = outPath + ".cookie";
+      onProgress?.("Authorizing Google Drive download...", 2);
       await retryTransientDownload(
         () => runCurlDownload(
           `curl -s -L -c ${quoteCommandArgument(cookiePath)} "https://drive.google.com/uc?export=download&id=${fileId}"`,
@@ -514,7 +575,8 @@ async function downloadSingleArchive({ url, outPath, getTask, onProgress }) {
         () => runCurlDownload(
           `curl -# -L --fail --show-error -b ${quoteCommandArgument(cookiePath)} "https://drive.google.com/uc?export=download&id=${fileId}&confirm=${token}" -o ${quoteCommandArgument(outPath)}`,
           getTask,
-          onProgress
+          onProgress,
+          createFileProgressReader(outPath, totalBytes)
         ),
         getTask,
         onProgress,
@@ -527,9 +589,15 @@ async function downloadSingleArchive({ url, outPath, getTask, onProgress }) {
 
   await retryTransientDownload(
     () => runCurlDownload(
-      `curl --globoff -sS -L --fail --show-error --connect-timeout 15 --max-time 120 ${quoteCommandArgument(url)} -o ${quoteCommandArgument(outPath)}`,
+      // Keep curl's progress bar enabled. `runCurlDownload` consumes its
+      // percentage updates; using -s here suppressed them and left every
+      // single-connection transfer looking like it was stuck at 2%.
+      // Use a low-speed timeout instead of an absolute transfer limit so a
+      // legitimate large or slow download is not aborted after two minutes.
+      `curl --globoff -# -L --fail --show-error --connect-timeout 15 --speed-time 60 --speed-limit 1024 ${quoteCommandArgument(url)} -o ${quoteCommandArgument(outPath)}`,
       getTask,
-      onProgress
+      onProgress,
+      createFileProgressReader(outPath, totalBytes)
     ),
     getTask,
     onProgress,
@@ -545,6 +613,7 @@ async function downloadSegmentedArchive({
   onProgress
 }) {
   const parts = getDownloadSegments(totalBytes, outPath);
+  const getProgress = createPartsProgressReader(parts, totalBytes);
   try {
     await removeParts(parts);
     onProgress?.("Opening parallel download connections...", 2);
@@ -556,18 +625,7 @@ async function downloadSegmentedArchive({
         `curl --globoff -# --fail --show-error --parallel --parallel-max ${parts.length} ${requests}`,
         getTask,
         onProgress,
-        async () => {
-        const sizes = await Promise.all(
-          parts.map(async (part) => {
-            try {
-              return (await Neutralino.filesystem.getStats(part.path)).size;
-            } catch (error) {
-              return 0;
-            }
-          })
-        );
-        return sizes.reduce((total, size) => total + size, 0) / totalBytes * 100;
-        }
+        getProgress
       ),
       getTask,
       onProgress,
@@ -664,6 +722,7 @@ async function downloadArchive({
   const destinationDir = getParentPath(outPath);
   requireValue(destinationDir, "download destination folder");
   const partPath = `${outPath}.part`;
+  onProgress?.("Preparing download destination...", 1);
   await Neutralino.filesystem.createDirectory(destinationDir).catch(() => {});
   try {
     await Neutralino.filesystem.writeFile(`${partPath}.write-check`, "");
@@ -706,18 +765,29 @@ async function downloadArchive({
       if (getTask()?.cancelled) throw error;
       await Neutralino.filesystem.remove(partPath).catch(() => {
       });
-      onProgress?.("Retrying download...", 2);
-      await downloadSingleArchive({ url, outPath: partPath, getTask, onProgress });
+      onProgress?.("Parallel download failed. Retrying with one connection...", 2);
+      await downloadSingleArchive({
+        url,
+        outPath: partPath,
+        totalBytes: remoteFileSize,
+        getTask,
+        onProgress
+      });
     }
+    onProgress?.("Finalizing downloaded file...", 98);
     await finalizeDownloadedArchive(partPath, outPath);
     const stats = await Neutralino.filesystem.getStats(outPath);
+    onProgress?.("Verifying downloaded archive...", 98);
     onDiagnostic?.({ resolvedUrl: url, downloadedSize: stats.size, archiveFormat: await detectArchiveFormat(outPath) });
     return;
   }
   try {
+    onProgress?.("Connecting to download server...", 2);
     await downloadSingleArchive({ url, outPath: partPath, getTask, onProgress });
+    onProgress?.("Finalizing downloaded file...", 98);
     await finalizeDownloadedArchive(partPath, outPath);
     const stats = await Neutralino.filesystem.getStats(outPath);
+    onProgress?.("Verifying downloaded archive...", 98);
     onDiagnostic?.({ resolvedUrl: url, downloadedSize: stats.size, archiveFormat: await detectArchiveFormat(outPath) });
   } catch (error) {
     await Neutralino.filesystem.remove(partPath).catch(() => {});
