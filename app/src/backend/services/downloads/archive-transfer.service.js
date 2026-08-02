@@ -514,7 +514,7 @@ async function runCurlDownload(command, getTask, onProgress, getProgress) {
     if (isCheckingProgress) return;
     isCheckingProgress = true;
     try {
-          reportProgress(await getProgress());
+      reportProgress(await getProgress());
     } catch (error) {
     } finally {
       isCheckingProgress = false;
@@ -783,7 +783,13 @@ async function downloadArchive({
   }
   try {
     onProgress?.("Connecting to download server...", 2);
-    await downloadSingleArchive({ url, outPath: partPath, getTask, onProgress });
+    await downloadSingleArchive({
+      url,
+      outPath: partPath,
+      totalBytes: remoteFileSize,
+      getTask,
+      onProgress
+    });
     onProgress?.("Finalizing downloaded file...", 98);
     await finalizeDownloadedArchive(partPath, outPath);
     const stats = await Neutralino.filesystem.getStats(outPath);
