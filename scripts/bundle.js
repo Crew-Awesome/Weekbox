@@ -3,17 +3,6 @@ const path = require("path");
 const fs = require("fs");
 
 /**
- * Ensures that the output directory exists before bundling.
- *
- * @param {string} dir - The directory path to ensure exists.
- */
-function ensureDirectoryExists(dir) {
-  if (!fs.existsSync(dir)) {
-    fs.mkdirSync(dir, { recursive: true });
-  }
-}
-
-/**
  * Builds the application assets (JavaScript and CSS) using esbuild.
  * This bundles all modules into single files to avoid connection drops
  * in Neutralino's built-in web server caused by too many concurrent requests.
@@ -23,7 +12,7 @@ function ensureDirectoryExists(dir) {
  */
 async function buildAssets(watch = false) {
   const outDir = path.resolve(__dirname, "../app/dist");
-  ensureDirectoryExists(outDir);
+  fs.mkdirSync(outDir, { recursive: true });
 
   const jsOptions = {
     entryPoints: [path.resolve(__dirname, "../app/src/backend/core/index-core.js")],

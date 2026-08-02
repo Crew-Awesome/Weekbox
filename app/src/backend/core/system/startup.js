@@ -340,7 +340,7 @@ No files will be merged because the outer folder contains only this inner WeekBo
         startupLoader.setPhase("Preparing Mod Manager\u2026", 70);
         const modManagerReady = modManagerModal.preload();
         startupLoader.setPhase("Loading Home content\u2026", 72);
-        const maintenance = FS.startBackgroundMaintenance({
+        const maintenance = FS.runStartupMaintenance({
           onProgress: (message, progress) => startupLoader.setPhase(message, progress)
         });
         await Promise.all([homeView.ready, modManagerReady]);

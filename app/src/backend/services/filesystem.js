@@ -208,9 +208,6 @@ var _FileSystemService = class _FileSystemService {
       )
     );
   }
-  async startBackgroundMaintenance(options) {
-    return this.runStartupMaintenance(options);
-  }
   async getDefaultStorageParentPath() {
     if (window.NL_OS === "Windows") {
       const localAppDataPath = await Neutralino.os.getEnv("LOCALAPPDATA");
