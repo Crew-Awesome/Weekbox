@@ -15,6 +15,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Downloads retry busy servers with a longer, cancellable backoff.
 - Expired and temporarily unavailable GameBanana download links refresh automatically.
 - Mod installs fall back to copying when Neutralino cannot move an extracted folder.
+- Mod installation retries the copy fallback when Windows temporarily locks an extracted file.
 - Mod installs verify copied folders before removing the original download.
 
 ### Changed

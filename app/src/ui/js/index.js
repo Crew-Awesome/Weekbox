@@ -1311,15 +1311,23 @@ var downloadMod = {
           await new Promise((resolve) => setTimeout(resolve, attempt * 250));
         }
       }
-      try {
-        await Neutralino.filesystem.copy(sourcePath, destinationPath, { recursive: true, overwrite: false, skip: false });
-        await FS3.api.remove(sourcePath);
-        if (!await FS3.api.exists(destinationPath) || await FS3.api.exists(sourcePath)) {
-          throw new Error("the copied path could not be finalized");
+      for (let attempt = 1; attempt <= 4; attempt += 1) {
+        try {
+          await Neutralino.filesystem.copy(sourcePath, destinationPath, { recursive: true, overwrite: false, skip: false });
+          if (!await FS3.api.exists(destinationPath)) {
+            throw new Error("the copied path could not be finalized");
+          }
+          await FS3.api.remove(sourcePath).catch(() => {});
+          return;
+        } catch (error) {
+          lastError = error;
+          await FS3.api.remove(destinationPath).catch(() => {});
+          if (attempt < 4) {
+            await new Promise((resolve) => setTimeout(resolve, attempt * 500));
+          }
         }
-      } catch (error) {
-        throw new Error(`Could not move ${label}: ${error?.message || lastError?.message || error || lastError}`);
       }
+      throw new Error(`Could not move ${label}: ${lastError?.message || lastError}`);
     })();
     this.activeMoves.set(key, move);
     try { return await move; } finally { this.activeMoves.delete(key); }
