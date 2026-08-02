@@ -1,5 +1,3 @@
-// Re-export UI components
-export { globalDownloadToast } from './components/download-toast.component.js';
 export { setupDropdown } from './components/dropdown.component.js';
 
 // Re-export Media
