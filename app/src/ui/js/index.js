@@ -1304,12 +1304,19 @@ var downloadMod = {
           return;
         } catch (error) {
           lastError = error;
+          // Neutralino can sporadically reject a valid move request with a
+          // parameter error. Copying is a safe equivalent for an extracted
+          // archive and avoids leaving a completed install unusable.
+          if (/required parameter is missing/i.test(String(error?.message || error))) break;
           await new Promise((resolve) => setTimeout(resolve, attempt * 250));
         }
       }
       try {
         await Neutralino.filesystem.copy(sourcePath, destinationPath, { recursive: true, overwrite: false, skip: false });
         await FS3.api.remove(sourcePath);
+        if (!await FS3.api.exists(destinationPath) || await FS3.api.exists(sourcePath)) {
+          throw new Error("the copied path could not be finalized");
+        }
       } catch (error) {
         throw new Error(`Could not move ${label}: ${error?.message || lastError?.message || error || lastError}`);
       }
@@ -1500,7 +1507,9 @@ var downloadMod = {
       try {
         await downloadArchive2({ url: downloadUrl, ...downloadOptions });
       } catch (error) {
-        if (error?.downloadDiagnostics?.httpStatus !== 404) throw error;
+        // A GameBanana URL can point at a mirror that has just gone away.
+        // Refresh it for both expired files and transient CDN failures.
+        if (![404, 408, 503, 504].includes(Number(error?.downloadDiagnostics?.httpStatus))) throw error;
         const refreshedUrl = await this.refreshGameBananaDownloadUrl(modId, sourceType, downloadUrl).catch(() => null);
         if (!refreshedUrl) throw error;
         toastDownloadMod.update(modId, 2, "Refreshing download link...");

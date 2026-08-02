@@ -162,6 +162,16 @@ function wait(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
+async function waitForRetry(ms, getTask) {
+  let remaining = ms;
+  while (remaining > 0) {
+    if (getTask?.()?.cancelled) throw new Error("Cancelled");
+    const interval = Math.min(250, remaining);
+    await wait(interval);
+    remaining -= interval;
+  }
+}
+
 async function getDownloadContentType(url) {
   try {
     const result = await Neutralino.os.execCommand(
@@ -178,7 +188,10 @@ async function getDownloadContentType(url) {
 }
 
 async function retryTransientDownload(operation, getTask, onProgress, cleanup) {
-  const attempts = 3;
+  // CDN mirrors can briefly return 503/504 while a replacement mirror is
+  // becoming available. Give that recovery enough time instead of retrying
+  // three times within a second and immediately surfacing a failure.
+  const attempts = 4;
   let lastError;
   for (let attempt = 1; attempt <= attempts; attempt += 1) {
     if (getTask?.()?.cancelled) throw new Error("Cancelled");
@@ -189,8 +202,8 @@ async function retryTransientDownload(operation, getTask, onProgress, cleanup) {
       if (error?.downloadDiagnostics) error.downloadDiagnostics.retryCount = attempt - 1;
       if (!isTransientDownloadError(error) || attempt === attempts) throw error;
       await cleanup?.();
-      onProgress?.(`Connection interrupted. Retrying (${attempt + 1}/${attempts})...`, 2);
-      await wait(attempt * 500);
+      onProgress?.(`Download server is busy. Retrying (${attempt + 1}/${attempts})...`, 2);
+      await waitForRetry(1000 * 2 ** (attempt - 1), getTask);
     }
   }
   throw lastError;

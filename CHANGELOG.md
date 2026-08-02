@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.9.3] - 2026-08-02
+
+### Fixed
+
+- Startup maintenance failures no longer prevent WeekBox from opening.
+- Downloads retry busy servers with a longer, cancellable backoff.
+- Expired and temporarily unavailable GameBanana download links refresh automatically.
+- Mod installs fall back to copying when Neutralino cannot move an extracted folder.
+- Mod installs verify copied folders before removing the original download.
+
+### Changed
+
+- The startup progress screen now identifies the WeekBox interface while it loads.
+
 ## [1.9.2] - 2026-08-01
 
 ### Fixed

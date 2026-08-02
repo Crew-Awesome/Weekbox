@@ -125,12 +125,18 @@ var _FileSystemService = class _FileSystemService {
     const runPhase = async (label, progress, task) => {
       onProgress?.(label, progress);
       const startedAt = performance.now();
-      await task(
-        (message, nextProgress = progress) => onProgress?.(message, nextProgress)
-      );
-      console.info(
-        `[WeekBox] Startup maintenance: ${label} finished in ${Math.round(performance.now() - startedAt)}ms`
-      );
+      try {
+        await task(
+          (message, nextProgress = progress) => onProgress?.(message, nextProgress)
+        );
+        console.info(
+          `[WeekBox] Startup maintenance: ${label} finished in ${Math.round(performance.now() - startedAt)}ms`
+        );
+      } catch (error) {
+        // Maintenance repairs stale files and metadata; a single failed repair
+        // must not prevent an otherwise healthy library from opening.
+        console.warn(`[WeekBox] Startup maintenance skipped: ${label}`, error);
+      }
     };
     this.startupMaintenancePromise = (async () => {
       await runPhase(

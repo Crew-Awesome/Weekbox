@@ -332,6 +332,7 @@ No files will be merged because the outer folder contains only this inner WeekBo
         } catch (error) {
           console.warn("Could not finish first-run storage setup", error);
         }
+        startupStep = "loading the WeekBox interface";
         startupLoader.setPhase("Loading navigation and engines\u2026", 64);
         registerHomeView();
         registerEnginesView();
