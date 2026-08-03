@@ -43,7 +43,7 @@ export const modSettingsModal = {
     if (requestId !== this.openRequestId) return false;
 
     const controlsDisabled =
-      readOnly || isExecutable || mod.engineLocked ? "disabled" : "";
+      readOnly || mod.engineLocked ? "disabled" : "";
     const isDependency = mod.kind === "dependency";
     overlay.innerHTML = settingsContent({
       mod,
@@ -64,9 +64,12 @@ export const modSettingsModal = {
     const cover = overlay.querySelector(".mod-settings-cover");
     const fileInput = overlay.querySelector(".mod-settings-file");
     const status = overlay.querySelector(".mod-settings-status");
-    const dropdowns = isExecutable
-      ? null
-      : setupModSettingsDropdowns(overlay, mod, installedEngines);
+    const dropdowns = setupModSettingsDropdowns(
+      overlay,
+      mod,
+      installedEngines,
+      isExecutable,
+    );
     this.dropdowns = dropdowns;
     let pendingCoverDataUrl = null;
     let pendingCoverUrl = null;
@@ -156,11 +159,12 @@ export const modSettingsModal = {
         try {
           await FS.assertModChangeAllowed(mod.id);
           if (!mod.engineLocked) {
-            await FS.setModEngineCompatibility(
-              mod.id,
-              dropdowns.engineSelect.value || null,
-              dropdowns.versionSelect.value || null,
-            );
+            const engineId = dropdowns.engineSelect.value || null;
+            const version =
+              engineId && dropdowns.versionSelect
+                ? dropdowns.versionSelect.value || null
+                : null;
+            await FS.setModEngineCompatibility(mod.id, engineId, version);
           }
           const movedMod = await FS.moveModToDependencies(mod.id);
           if (!movedMod) throw new Error("Mod could not be moved");
@@ -180,12 +184,13 @@ export const modSettingsModal = {
       status.textContent = "Saving…";
       try {
         await FS.assertModChangeAllowed(mod.id);
-        if (!isExecutable && !mod.engineLocked) {
-          await FS.setModEngineCompatibility(
-            mod.id,
-            dropdowns.engineSelect.value || null,
-            dropdowns.versionSelect.value || null,
-          );
+        if (!mod.engineLocked) {
+          const engineId = dropdowns.engineSelect.value || null;
+          const version =
+            engineId && dropdowns.versionSelect
+              ? dropdowns.versionSelect.value || null
+              : null;
+          await FS.setModEngineCompatibility(mod.id, engineId, version);
         }
         const appearance = { name };
         if (pendingCoverDataUrl) appearance.coverDataUrl = pendingCoverDataUrl;

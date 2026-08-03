@@ -734,11 +734,6 @@ var _FileSystemService = class _FileSystemService {
         `${this.modsPath}/${getModFolderName(mod)}`,
       );
       if (!executable) continue;
-      if (mod.engineId) {
-        this.setModEngineCompatibility(mod.id, null, null).catch(() => {});
-        mod.engineId = null;
-        mod.engineVersion = null;
-      }
       standaloneMods.push({
         ...mod,
         exePath: executable,
@@ -852,14 +847,6 @@ var _FileSystemService = class _FileSystemService {
   }
   async saveInstalledMod(modId, modName, metadata = {}) {
     if (!this.isInitialized) return;
-    const tempMod = { name: modName, id: modId, ...metadata };
-    const executable = await this.findExecutable(
-      `${this.modsPath}/${getModFolderName(tempMod)}`,
-    );
-    if (executable) {
-      metadata.engineId = null;
-      metadata.engineVersion = null;
-    }
     await this.mods.add(modId, modName, metadata);
   }
   async getAvailableLocalModFolderName(name, existingFolderName = "") {

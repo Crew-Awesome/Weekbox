@@ -90,34 +90,45 @@ export const cardRenderer = {
 
     for (const mod of modsToRender) {
       const isExecutable = standaloneModIds.has(String(mod.id));
-
-      const engine = isExecutable
-        ? null
-        : installedEngines.find(
+      const hasEngine = Boolean(mod.engineId);
+      const engine = hasEngine
+        ? installedEngines.find(
             (item) =>
               item.id === mod.engineId &&
               (!mod.engineVersion || item.version === mod.engineVersion),
-          );
+          )
+        : null;
+
+      const formatVersionLabel = (version) => {
+        if (!version) return "v 0.0.1";
+        const clean = String(version).trim();
+        if (/^v\s+/i.test(clean)) return clean;
+        if (/^v/i.test(clean)) return `v ${clean.slice(1).trim()}`;
+        return `v ${clean}`;
+      };
 
       let engineBadgeHtml = modManagerTemplates.unassignedBadge();
 
-      if (isExecutable) {
-        // FIX: Si es ejecutable, se omite por completo la renderización del dropdown
-        engineBadgeHtml = modManagerTemplates.executableBadge();
-      } else if (mod.engineLocked) {
+      if (mod.engineLocked) {
         const engineInfo = ENGINE_DETAILS.psychonline;
+        const versionLabel = formatVersionLabel(
+          mod.engineVersion || engine?.version,
+        );
         engineBadgeHtml = modManagerTemplates.engineBadge(
-          engineInfo.name,
+          versionLabel,
           engineInfo.icon,
         );
-      } else {
+      } else if (mod.engineId && ENGINE_DETAILS[mod.engineId]) {
         const engineInfo = ENGINE_DETAILS[mod.engineId];
-        if (engineInfo) {
-          engineBadgeHtml = modManagerTemplates.engineBadge(
-            engineInfo.name,
-            engineInfo.icon,
-          );
-        }
+        const versionLabel = formatVersionLabel(
+          mod.engineVersion || engine?.version,
+        );
+        engineBadgeHtml = modManagerTemplates.engineBadge(
+          versionLabel,
+          engineInfo.icon,
+        );
+      } else if (isExecutable) {
+        engineBadgeHtml = modManagerTemplates.executableBadge();
       }
 
       const isHidden = mod.hidden;
@@ -133,17 +144,18 @@ export const cardRenderer = {
         card.style.opacity = "0.5";
       }
 
+      const launchAsStandalone = isExecutable && !mod.engineId;
       const launchLabel =
-        isExecutable ||
+        launchAsStandalone ||
         getEngineLaunchBehavior(mod.engineId)?.scope === "exclusive-mod"
           ? "Launch Mod"
           : "Launch Engine";
 
       card.innerHTML = modManagerTemplates.cardContent(
-        isExecutable ? "standalone" : "engine",
+        launchAsStandalone ? "standalone" : "engine",
         mod.id,
-        engine?.id || "",
-        engine?.version || "",
+        engine?.id || mod.engineId || "",
+        engine?.version || mod.engineVersion || "",
         launchLabel,
         mod.name,
         mod.hidden,
@@ -166,7 +178,7 @@ export const cardRenderer = {
         launchBtn.disabled = true;
         try {
           if (
-            FS.getModLaunchState(mod, engine, isExecutable) === "unavailable"
+            FS.getModLaunchState(mod, engine, launchAsStandalone) === "unavailable"
           ) {
             const engineInfo = ENGINE_DETAILS[mod.engineId];
             engineUpdateToast.missingEngine(
@@ -176,7 +188,7 @@ export const cardRenderer = {
             );
             return;
           }
-          await FS.toggleModLaunch(mod, engine, isExecutable, () => {
+          await FS.toggleModLaunch(mod, engine, launchAsStandalone, () => {
             refreshLaunchButtons();
             refreshChangeButtons();
           });

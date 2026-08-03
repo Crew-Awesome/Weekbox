@@ -53,27 +53,18 @@ export function settingsContent({
           </label>
           <input class="mod-settings-name" aria-label="Mod name" value="${escapeHtml(mod.name)}" maxlength="120" required ${readOnly ? "disabled" : ""}>
         </div>
-        ${
-          isExecutable
-            ? `
-          <div class="mod-settings-engine mod-settings-executable-type">
-            <div>
-              <span>Type</span>
-              <div class="mod-settings-executable-value"><img src="assets/icons/exe.png" alt=""><span>Executable</span></div>
-            </div>
-          </div>`
-            : `<div class="mod-settings-engine" ${controlsDisabled ? 'aria-disabled="true"' : ""}>
-          <label>Engine
+        <div class="mod-settings-engine ${mod.engineId ? "has-version" : ""}" ${controlsDisabled ? 'aria-disabled="true"' : ""}>
+          <label class="mod-settings-engine-field">Engine
             <span class="mod-settings-dropdown">
               <button type="button" class="mod-settings-dropdown-trigger mod-settings-engine-trigger" aria-haspopup="listbox" aria-expanded="false" ${controlsDisabled}>
-                <span class="mod-settings-select-icon mod-settings-engine-icon"><i class="fa-solid fa-question-circle" aria-hidden="true"></i></span>
-                <span class="mod-settings-engine-selected"></span><i class="fa-solid fa-chevron-down mod-settings-select-chevron" aria-hidden="true"></i>
+                <span class="mod-settings-select-icon mod-settings-engine-icon">${isExecutable ? '<img src="assets/icons/exe.png" alt="">' : '<i class="fa-solid fa-question-circle" aria-hidden="true"></i>'}</span>
+                <span class="mod-settings-engine-selected">${isExecutable ? "Executable" : "Unassigned"}</span><i class="fa-solid fa-chevron-down mod-settings-select-chevron" aria-hidden="true"></i>
               </button>
               <div class="mod-settings-dropdown-menu mod-settings-engine-menu" role="listbox" aria-label="Engine" hidden></div>
               <select class="mod-settings-engine-select" hidden></select>
             </span>
           </label>
-          <label>Version
+          <label class="mod-settings-version-field" ${!mod.engineId ? "hidden" : ""}>Version
             <span class="mod-settings-dropdown">
               <button type="button" class="mod-settings-dropdown-trigger mod-settings-version-trigger" aria-haspopup="listbox" aria-expanded="false" ${controlsDisabled}>
                 <span class="mod-settings-select-icon"><i class="fa-solid fa-code-branch" aria-hidden="true"></i></span>
@@ -83,8 +74,7 @@ export function settingsContent({
               <select class="mod-settings-version-select" hidden></select>
             </span>
           </label>
-        </div>`
-        }
+        </div>
         ${mod.engineLocked ? '<p class="mod-settings-note">This mod is locked to Psych Online.</p>' : ""}
         ${readOnly ? '<p class="mod-settings-note">Close the engine to change these settings. You can still open the mod folder.</p>' : ""}
       </div>

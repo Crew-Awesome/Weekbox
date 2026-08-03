@@ -8,6 +8,10 @@ export function createCard(mod, index) {
   card.className = "mod-card";
   if (mod.source === "sniro") card.classList.add("mod-card--no-author");
 
+  const cardBg = document.createElement("div");
+  cardBg.className = "mod-card-bg";
+  card.appendChild(cardBg);
+
   const imageContainer = document.createElement("div");
   imageContainer.className = "mod-image-container";
 
@@ -21,6 +25,37 @@ export function createCard(mod, index) {
     image.src = "assets/icons/launcher-icon.png";
   };
   imageContainer.appendChild(image);
+
+  // Engine / category indicator at top-left
+  const engine = ENGINE_DETAILS[mod.engineId];
+  const engineIndicator = document.createElement("span");
+  engineIndicator.className = "grid-engine-indicator";
+  const engineName = engine
+    ? engine.name
+    : mod.gameId === 8694
+      ? "Base Game"
+      : "Unassigned";
+  engineIndicator.dataset.label = engineName;
+  engineIndicator.setAttribute("role", "img");
+  engineIndicator.setAttribute("aria-label", engineName);
+
+  if (engine?.icon) {
+    const engineIcon = document.createElement("img");
+    engineIcon.src = `assets/icons/${engine.icon}`;
+    engineIcon.alt = "";
+    engineIndicator.appendChild(engineIcon);
+  } else if (mod.gameId === 8694) {
+    const fnfIcon = document.createElement("img");
+    fnfIcon.src = "assets/icons/vslice.png";
+    fnfIcon.alt = "";
+    engineIndicator.appendChild(fnfIcon);
+  } else {
+    const defaultIcon = document.createElement("i");
+    defaultIcon.className = "fa-solid fa-question-circle";
+    defaultIcon.setAttribute("aria-hidden", "true");
+    engineIndicator.appendChild(defaultIcon);
+  }
+  imageContainer.appendChild(engineIndicator);
 
   // Keep the displayed image on its normal request path. A separate CORS-safe
   // image lets the canvas read the cover pixels for the hover color.
@@ -47,27 +82,6 @@ export function createCard(mod, index) {
   author.textContent = `by ${mod.author}`;
   info.appendChild(title);
   if (mod.source !== "sniro") info.appendChild(author);
-
-  let engineBadgeHtml = `
-    <div class="home-engine-badge grid-engine-badge">
-      <i class="fa-solid fa-question-circle"></i>
-      <span>${mod.gameId === 8694 ? "FNF Mod" : "Unassigned"}</span>
-    </div>
-  `;
-
-  const engine = ENGINE_DETAILS[mod.engineId];
-  if (engine) {
-    engineBadgeHtml = `
-      <div class="home-engine-badge grid-engine-badge">
-        <img src="assets/icons/${engine.icon}" alt=""/>
-         <span>${engine.name}</span>
-      </div>
-    `;
-  }
-
-  const badgeWrapper = document.createElement("div");
-  badgeWrapper.innerHTML = engineBadgeHtml;
-  info.appendChild(badgeWrapper.firstElementChild);
 
   const stats = document.createElement("div");
   stats.className = "mod-stats";

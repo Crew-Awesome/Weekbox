@@ -189,6 +189,7 @@
 }
 
 #mod-manager-modal .mod-manager-content {
+  width: min(920px, 94vw);
   height: 84vh;
 }
 
@@ -1048,10 +1049,12 @@
 }
 
 .mod-manager-grid {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: repeat(3, 260px);
   gap: var(--spacing-lg);
   width: 100%;
+  justify-content: center;
+  align-content: start;
 }
 
 .mod-manager-card {
@@ -1060,13 +1063,57 @@
   border-radius: var(--border-radius);
   display: flex;
   flex-direction: column;
-  overflow: visible; /* CR├ìTICO para que los men├║s desplegables se vean bien */
+  overflow: visible; /* CRÍTICO para que los menús desplegables se vean bien */
   position: relative;
   isolation: isolate;
-  width: calc(33.333% - (var(--spacing-lg) * 2 / 3));
-  min-width: 240px;
+  width: 260px;
+  min-width: 260px;
+  max-width: 260px;
   --card-color: rgba(255, 255, 255, 0.3);
   transition: transform 0.35s cubic-bezier(0.25, 1, 0.5, 1);
+}
+
+.mod-manager-add-local-card {
+  box-sizing: border-box;
+  width: 260px;
+  min-width: 260px;
+  max-width: 260px;
+  min-height: 240px;
+  border: 2px dashed var(--border-color);
+  border-radius: var(--border-radius);
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font: inherit;
+  transition:
+    border-color 0.2s ease,
+    background-color 0.2s ease,
+    color 0.2s ease,
+    transform 0.2s ease;
+}
+
+.mod-manager-add-local-card:hover {
+  border-color: var(--accent-color);
+  color: var(--text-main);
+  background: var(--bg-hover);
+  transform: translateY(-4px);
+}
+
+.mod-manager-add-local-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  font-size: 0.88rem;
+  font-weight: 650;
+}
+
+.mod-manager-add-local-content i {
+  font-size: 1.6rem;
+  color: var(--accent-color);
 }
 
 .mod-manager-installing-card {
@@ -1122,7 +1169,7 @@
 .mod-manager-card-bg {
   position: absolute;
   inset: 0;
-  border-radius: var(--border-radius);
+  border-radius: inherit;
   overflow: hidden;
   z-index: -1;
   pointer-events: none;
@@ -1165,7 +1212,7 @@
   width: 100%;
   height: 140px;
   overflow: hidden;
-  background-color: #000;
+  background-color: transparent;
   border-radius: var(--border-radius) var(--border-radius) 0 0;
 }
 
@@ -1176,10 +1223,16 @@
   height: 100%;
   object-fit: cover;
   opacity: 0;
+  border-radius: var(--border-radius) var(--border-radius) 0 0;
+  -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 260 140'%3E%3Cpath fill='%23000' d='M56 0 L250 0 A10 10 0 0 1 260 10 L260 140 L0 140 L0 56 A8 8 0 0 1 8 48 L40 48 A8 8 0 0 0 48 40 L48 8 A8 8 0 0 1 56 0 Z'/%3E%3C/svg%3E");
+  mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 260 140'%3E%3Cpath fill='%23000' d='M56 0 L250 0 A10 10 0 0 1 260 10 L260 140 L0 140 L0 56 A8 8 0 0 1 8 48 L40 48 A8 8 0 0 0 48 40 L48 8 A8 8 0 0 1 56 0 Z'/%3E%3C/svg%3E");
+  -webkit-mask-size: 100% 100%;
+  mask-size: 100% 100%;
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
   transition:
     opacity 0.18s ease,
-    filter 0.25s ease,
-    transform 0.35s cubic-bezier(0.25, 1, 0.5, 1);
+    filter 0.25s ease;
 }
 
 .mod-manager-launch-btn {
@@ -1207,6 +1260,13 @@
   height: 100%;
   display: block;
   background: #4b4b4b;
+  border-radius: var(--border-radius) var(--border-radius) 0 0;
+  -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 260 140'%3E%3Cpath fill='%23000' d='M56 0 L250 0 A10 10 0 0 1 260 10 L260 140 L0 140 L0 56 A8 8 0 0 1 8 48 L40 48 A8 8 0 0 0 48 40 L48 8 A8 8 0 0 1 56 0 Z'/%3E%3C/svg%3E");
+  mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 260 140'%3E%3Cpath fill='%23000' d='M56 0 L250 0 A10 10 0 0 1 260 10 L260 140 L0 140 L0 56 A8 8 0 0 1 8 48 L40 48 A8 8 0 0 0 48 40 L48 8 A8 8 0 0 1 56 0 Z'/%3E%3C/svg%3E");
+  -webkit-mask-size: 100% 100%;
+  mask-size: 100% 100%;
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
   transition: opacity 0.18s ease;
 }
 
@@ -1238,7 +1298,7 @@
 .mod-manager-card:not(.is-hidden):hover .mod-manager-cover,
 .mod-manager-cover-wrap:focus-within .mod-manager-cover {
   filter: blur(4px) brightness(0.65);
-  transform: scale(1.04);
+  transform: none;
 }
 
 .mod-manager-card:not(.is-hidden):hover .mod-manager-launch-btn,
@@ -1315,25 +1375,98 @@
 .mod-manager-engine-indicator {
   position: absolute;
   z-index: 3;
-  top: 8px;
-  left: 8px;
-  display: grid;
-  width: 32px;
-  height: 32px;
-  place-items: center;
-  border: 1px solid rgb(255 255 255 / 18%);
-  border-radius: 7px;
-  background: rgb(16 16 16 / 82%);
-  box-shadow: 0 3px 10px rgb(0 0 0 / 35%);
+  top: 0;
+  left: 0;
+  width: 48px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  box-shadow: none;
   color: var(--text-muted);
   pointer-events: auto;
 }
 
 .mod-manager-engine-indicator img {
-  width: 20px;
-  height: 20px;
+  width: 28px;
+  height: 28px;
   object-fit: contain;
   border-radius: 4px;
+  filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.45));
+  transition: transform 0.2s cubic-bezier(0.25, 1, 0.5, 1);
+}
+
+.mod-manager-engine-indicator i {
+  font-size: 1.35rem;
+  color: var(--text-muted);
+  filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.45));
+  transition:
+    transform 0.2s cubic-bezier(0.25, 1, 0.5, 1),
+    color 0.2s ease;
+}
+
+.mod-manager-engine-indicator:hover img,
+.mod-manager-engine-indicator:hover i {
+  transform: scale(1.15);
+}
+
+.mod-manager-engine-indicator::before {
+  content: "";
+  position: absolute;
+  top: calc(100% - 2px);
+  left: 24px;
+  width: 0;
+  height: 0;
+  border-left: 7px solid transparent;
+  border-right: 7px solid transparent;
+  border-bottom: 7px solid rgba(36, 36, 36, 0.8);
+  opacity: 0;
+  pointer-events: none;
+  transform: translateX(-50%) translateY(-4px);
+  transition:
+    opacity 150ms ease,
+    transform 150ms ease;
+  z-index: 2301;
+}
+
+.mod-manager-engine-indicator::after {
+  content: attr(data-label);
+  position: absolute;
+  top: calc(100% + 5px);
+  left: 24px;
+  padding: 6px 12px;
+  border-radius: 8px;
+  background: rgba(36, 36, 36, 0.8);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.55);
+  color: #ffffff;
+  font-size: 0.82rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  line-height: 1.2;
+  opacity: 0;
+  pointer-events: none;
+  transform: translateX(-50%) translateY(-4px);
+  transition:
+    opacity 150ms ease,
+    transform 150ms ease;
+  white-space: nowrap;
+  z-index: 2300;
+}
+
+.mod-manager-engine-indicator:hover::before,
+.mod-manager-engine-indicator:hover::after {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+
+.mod-manager-engine-indicator[data-label=""]::before,
+.mod-manager-engine-indicator[data-label=""]::after {
+  display: none;
 }
 
 .mod-manager-engine-tooltip {
@@ -1342,7 +1475,9 @@
   padding: 5px 8px;
   border: 1px solid rgb(255 255 255 / 14%);
   border-radius: 6px;
-  background: rgb(16 16 16 / 94%);
+  background: rgba(16, 16, 16, 0.8);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
   box-shadow: 0 6px 16px rgb(0 0 0 / 38%);
   color: var(--text-main);
   font-size: 0.72rem;
@@ -2006,8 +2141,9 @@
 
 .mod-manager-dependency-list {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  grid-template-columns: repeat(auto-fill, 260px);
   gap: 12px;
+  justify-content: center;
 }
 
 .mod-manager-dependency-list.list-view {
@@ -2397,7 +2533,10 @@
   display: none !important;
 }
 .mod-settings-engine {
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: 1fr;
+}
+.mod-settings-engine.has-version {
+  grid-template-columns: 1fr 1fr;
 }
 .mod-settings-extra {
   margin-top: 0;
@@ -2405,8 +2544,8 @@
   border-top: 0;
 }
 @media (max-width: 620px) {
-  .mod-settings-engine {
-    grid-template-columns: 1fr 1fr;
+  .mod-settings-engine.has-version {
+    grid-template-columns: 1fr;
   }
 }
 .mod-manager-search-suggestions[hidden],
