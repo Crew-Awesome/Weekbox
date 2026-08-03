@@ -1,17 +1,23 @@
-import { APIneuFileSystem } from './filesystem/api-neu-file-system.service.js';
-import { ExecutableService } from './filesystem/executable.service.js';
-import { LibraryMaintenanceService } from './filesystem/library-maintenance.service.js';
-import { ModCoverService } from './filesystem/mod-cover.service.js';
-import { ModInjectionService } from './filesystem/mod-injection.service.js';
-import { ModRepository } from './filesystem/mod-repository.service.js';
-import { ProcessService } from './processes/process.service.js';
-import { appSettings } from '../core/index-core.js';
-import { getParentPath, sanitizePathSegment, getRealEntries, getModFolderName, getEngineModFolderName } from './filesystem/path.util.js';
-import { isValidEngineVersion } from './filesystem/engine-version.service.js';
+import { APIneuFileSystem } from "./filesystem/api-neu-file-system.service.js";
+import { ExecutableService } from "./filesystem/executable.service.js";
+import { LibraryMaintenanceService } from "./filesystem/library-maintenance.service.js";
+import { ModCoverService } from "./filesystem/mod-cover.service.js";
+import { ModInjectionService } from "./filesystem/mod-injection.service.js";
+import { ModRepository } from "./filesystem/mod-repository.service.js";
+import { ProcessService } from "./processes/process.service.js";
+import { appSettings } from "../core/index-core.js";
+import {
+  getParentPath,
+  sanitizePathSegment,
+  getRealEntries,
+  getModFolderName,
+  getEngineModFolderName,
+} from "./filesystem/path.util.js";
+import { isValidEngineVersion } from "./filesystem/engine-version.service.js";
 import {
   getEngineLaunchBehavior,
   getEngineModLaunchArgs,
-  ENGINE_DETAILS as ENGINE_DETAILS
+  ENGINE_DETAILS as ENGINE_DETAILS,
 } from "../../backend/config/engines.config.js";
 
 function sameId(left, right) {
@@ -24,7 +30,7 @@ function isOneDrivePath(path) {
 
 function isICloudPath(path) {
   return /(?:^|\/)Library\/Mobile Documents\/com~apple~CloudDocs(?:\/|$)/i.test(
-    String(path)
+    String(path),
   );
 }
 
@@ -57,29 +63,31 @@ var _FileSystemService = class _FileSystemService {
     });
     this.mods = new ModRepository({
       api: this.api,
-      getDataPath: () => this.dataPath
+      getDataPath: () => this.dataPath,
     });
     this.covers = new ModCoverService({
       api: this.api,
-      getDataPath: () => this.dataPath
+      getDataPath: () => this.dataPath,
     });
     this.injection = new ModInjectionService({
       api: this.api,
       executables: this.executables,
       modRepository: this.mods,
       getEnginesPath: () => this.enginesPath,
-      getModsPath: () => this.modsPath
+      getModsPath: () => this.modsPath,
     });
     this.maintenance = new LibraryMaintenanceService({
       api: this.api,
       mods: this.mods,
       injection: this.injection,
       getEnginesPath: () => this.enginesPath,
-      getEngineModsPath: (engineId, version) => this.injection.getEngineModsPath(engineId, version),
+      getEngineModsPath: (engineId, version) =>
+        this.injection.getEngineModsPath(engineId, version),
       getModsPath: () => this.modsPath,
       getInstalledEngines: () => this.getInstalledEngines(),
-      isEngineRunning: (engineId, version) => this.isEngineRunning(engineId, version),
-      findExecutable: (path) => this.findExecutable(path)
+      isEngineRunning: (engineId, version) =>
+        this.isEngineRunning(engineId, version),
+      findExecutable: (path) => this.findExecutable(path),
     });
   }
   async init({ deferMaintenance = false } = {}) {
@@ -126,11 +134,11 @@ var _FileSystemService = class _FileSystemService {
       onProgress?.(label, progress);
       const startedAt = performance.now();
       try {
-        await task(
-          (message, nextProgress = progress) => onProgress?.(message, nextProgress)
+        await task((message, nextProgress = progress) =>
+          onProgress?.(message, nextProgress),
         );
         console.info(
-          `[WeekBox] Startup maintenance: ${label} finished in ${Math.round(performance.now() - startedAt)}ms`
+          `[WeekBox] Startup maintenance: ${label} finished in ${Math.round(performance.now() - startedAt)}ms`,
         );
       } catch (error) {
         // Maintenance repairs stale files and metadata; a single failed repair
@@ -142,27 +150,19 @@ var _FileSystemService = class _FileSystemService {
       await runPhase(
         "Checking for retired engines\u2026",
         90,
-        (reportProgress) => this.removeRetiredEngines(reportProgress)
+        (reportProgress) => this.removeRetiredEngines(reportProgress),
       );
-      await runPhase(
-        "Cleaning incomplete downloads\u2026",
-        91,
-        () => this.cleanupIncompleteDownloads()
+      await runPhase("Cleaning incomplete downloads\u2026", 91, () =>
+        this.cleanupIncompleteDownloads(),
       );
-      await runPhase(
-        "Checking installed engines\u2026",
-        92,
-        () => this.cleanupInvalidEngineInstallations()
+      await runPhase("Checking installed engines\u2026", 92, () =>
+        this.cleanupInvalidEngineInstallations(),
       );
-      await runPhase(
-        "Checking installed mods\u2026",
-        94,
-        () => this.cleanupInvalidInstalledMods()
+      await runPhase("Checking installed mods\u2026", 94, () =>
+        this.cleanupInvalidInstalledMods(),
       );
-      await runPhase(
-        "Updating mod artwork\u2026",
-        96,
-        () => this.migrateLegacyModCovers()
+      await runPhase("Updating mod artwork\u2026", 96, () =>
+        this.migrateLegacyModCovers(),
       );
       let installedEngines = [];
       await runPhase("Scanning engine versions\u2026", 97, async () => {
@@ -171,15 +171,11 @@ var _FileSystemService = class _FileSystemService {
       await runPhase("Updating engine mod folders\u2026", 98, async () => {
         await this.injection.migrateLegacyEngineModsFor(installedEngines);
       });
-      await runPhase(
-        "Importing Psych Online mods\u2026",
-        99,
-        () => this.importPsychOnlineEngineMods(installedEngines)
+      await runPhase("Importing Psych Online mods\u2026", 99, () =>
+        this.importPsychOnlineEngineMods(installedEngines),
       );
-      await runPhase(
-        "Cleaning stale mod links\u2026",
-        99,
-        () => this.cleanupHiddenModLinks(installedEngines)
+      await runPhase("Cleaning stale mod links\u2026", 99, () =>
+        this.cleanupHiddenModLinks(installedEngines),
       );
     })();
     return this.startupMaintenancePromise;
@@ -188,11 +184,14 @@ var _FileSystemService = class _FileSystemService {
     const mods = await this.mods.getAll();
     const retiredEnginePath = `${this.enginesPath}/alepsych`;
     const hasRetiredEngine = await this.api.exists(retiredEnginePath);
-    const hasAssignedMods = mods.some(
-      (mod) => RETIRED_ENGINE_IDS.has(mod.engineId)
+    const hasAssignedMods = mods.some((mod) =>
+      RETIRED_ENGINE_IDS.has(mod.engineId),
     );
     if (hasRetiredEngine || hasAssignedMods) {
-      reportProgress?.("Removing a retired engine and updating its mods\u2026", 90);
+      reportProgress?.(
+        "Removing a retired engine and updating its mods\u2026",
+        90,
+      );
     }
     let changed = false;
     for (const mod of mods) {
@@ -203,9 +202,9 @@ var _FileSystemService = class _FileSystemService {
     }
     if (changed) await this.mods.saveAll(mods);
     await Promise.all(
-      [...RETIRED_ENGINE_IDS].map(
-        (engineId) => this.api.remove(`${this.enginesPath}/${engineId}`)
-      )
+      [...RETIRED_ENGINE_IDS].map((engineId) =>
+        this.api.remove(`${this.enginesPath}/${engineId}`),
+      ),
     );
   }
   async getDefaultStorageParentPath() {
@@ -229,7 +228,7 @@ var _FileSystemService = class _FileSystemService {
   }
   async ensureStorageDirectories() {
     await this.api.ensureDir(this.basePath);
-    if (!await this.api.exists(this.basePath)) {
+    if (!(await this.api.exists(this.basePath))) {
       throw new Error("Selected storage folder is unavailable");
     }
     await this.api.ensureDir(this.weekboxPath);
@@ -246,9 +245,12 @@ var _FileSystemService = class _FileSystemService {
     if (!parentPath) return null;
     try {
       const entries = getRealEntries(
-        await Neutralino.filesystem.readDirectory(this.basePath)
+        await Neutralino.filesystem.readDirectory(this.basePath),
       );
-      const hasOnlyNestedWeekBox = entries.length === 1 && entries[0].type === "DIRECTORY" && entries[0].entry.toLowerCase() === "weekbox";
+      const hasOnlyNestedWeekBox =
+        entries.length === 1 &&
+        entries[0].type === "DIRECTORY" &&
+        entries[0].entry.toLowerCase() === "weekbox";
       return hasOnlyNestedWeekBox ? parentPath : null;
     } catch {
       return null;
@@ -262,15 +264,21 @@ var _FileSystemService = class _FileSystemService {
   async findExistingStorage(basePath) {
     const selectedPath = String(basePath || "").replace(/[\\/]+$/, "");
     if (!selectedPath) return null;
-    const weekboxPath = isWeekBoxFolder(selectedPath) ? selectedPath : `${selectedPath}/WeekBox`;
-    const storageBasePath = isWeekBoxFolder(selectedPath) ? getParentPath(selectedPath) : selectedPath;
+    const weekboxPath = isWeekBoxFolder(selectedPath)
+      ? selectedPath
+      : `${selectedPath}/WeekBox`;
+    const storageBasePath = isWeekBoxFolder(selectedPath)
+      ? getParentPath(selectedPath)
+      : selectedPath;
     const requiredPaths = ["data", "engines", "mods"].map(
-      (directory) => `${weekboxPath}/${directory}`
+      (directory) => `${weekboxPath}/${directory}`,
     );
     const hasRequiredFolders = await Promise.all(
-      requiredPaths.map((path) => this.api.exists(path))
+      requiredPaths.map((path) => this.api.exists(path)),
     );
-    return hasRequiredFolders.every(Boolean) ? { basePath: storageBasePath, weekboxPath } : null;
+    return hasRequiredFolders.every(Boolean)
+      ? { basePath: storageBasePath, weekboxPath }
+      : null;
   }
   async useExistingStorage(basePath) {
     this.assertStorageUnlocked();
@@ -280,7 +288,7 @@ var _FileSystemService = class _FileSystemService {
     const storage = await this.findExistingStorage(basePath);
     if (!storage) {
       throw new Error(
-        "The selected folder does not contain a complete WeekBox library."
+        "The selected folder does not contain a complete WeekBox library.",
       );
     }
     this.setStoragePaths(storage.basePath);
@@ -288,14 +296,13 @@ var _FileSystemService = class _FileSystemService {
     appSettings.set("storageParentPath", storage.basePath);
     return storage.weekboxPath;
   }
-  async moveStorageTo(basePath, onProgress = () => {
-  }, options = {}) {
+  async moveStorageTo(basePath, onProgress = () => {}, options = {}) {
     this.assertStorageUnlocked();
     const destinationBasePath = String(basePath || "").replace(/[\\/]+$/, "");
     if (!destinationBasePath) throw new Error("Choose a storage folder first");
     if (isWeekBoxFolder(destinationBasePath)) {
       throw new Error(
-        "Choose the folder that will contain WeekBox, not the WeekBox folder itself. For example, choose C:\\Users\\you\\AppData\\Local instead of C:\\Users\\you\\AppData\\Local\\WeekBox."
+        "Choose the folder that will contain WeekBox, not the WeekBox folder itself. For example, choose C:\\Users\\you\\AppData\\Local instead of C:\\Users\\you\\AppData\\Local\\WeekBox.",
       );
     }
     if (destinationBasePath.toLowerCase() === this.basePath.toLowerCase()) {
@@ -304,28 +311,37 @@ var _FileSystemService = class _FileSystemService {
     if (this.hasRunningProcesses()) {
       throw new Error("Close running engines before moving WeekBox files");
     }
-    if (!await this.api.exists(destinationBasePath)) {
+    if (!(await this.api.exists(destinationBasePath))) {
       throw new Error("Selected storage folder is unavailable");
     }
     const destinationWeekboxPath = `${destinationBasePath}/WeekBox`;
     let replacedStorageBackupPath = null;
-    const repairingNestedStorage = destinationWeekboxPath.toLowerCase() === this.basePath.toLowerCase();
+    const repairingNestedStorage =
+      destinationWeekboxPath.toLowerCase() === this.basePath.toLowerCase();
     if (await this.api.exists(destinationWeekboxPath)) {
       const entries = getRealEntries(
-        await Neutralino.filesystem.readDirectory(destinationWeekboxPath)
+        await Neutralino.filesystem.readDirectory(destinationWeekboxPath),
       );
-      const canRepairNestedStorage = repairingNestedStorage && entries.length === 1 && entries[0].type === "DIRECTORY" && entries[0].entry.toLowerCase() === "weekbox";
+      const canRepairNestedStorage =
+        repairingNestedStorage &&
+        entries.length === 1 &&
+        entries[0].type === "DIRECTORY" &&
+        entries[0].entry.toLowerCase() === "weekbox";
       if (entries.length > 0 && !canRepairNestedStorage) {
         if (!options.replaceExisting) {
           throw new Error(
-            "The selected parent already contains a non-empty WeekBox folder. Choose a different parent folder so WeekBox does not merge two libraries."
+            "The selected parent already contains a non-empty WeekBox folder. Choose a different parent folder so WeekBox does not merge two libraries.",
           );
         }
-        const timestamp = (/* @__PURE__ */ new Date()).toISOString().replace(/[:.]/g, "-").replace("T", "_").replace("Z", "");
+        const timestamp = /* @__PURE__ */ new Date()
+          .toISOString()
+          .replace(/[:.]/g, "-")
+          .replace("T", "_")
+          .replace("Z", "");
         replacedStorageBackupPath = `${destinationBasePath}/WeekBox-backup-${timestamp}`;
         await Neutralino.filesystem.move(
           destinationWeekboxPath,
-          replacedStorageBackupPath
+          replacedStorageBackupPath,
         );
       }
       if (!canRepairNestedStorage && !replacedStorageBackupPath) {
@@ -338,32 +354,31 @@ var _FileSystemService = class _FileSystemService {
       const mods = Array.isArray(storedMods) ? storedMods : [];
       const engines = await this.getInstalledEngines();
       await Promise.all(
-        mods.map(
-          (mod) => this.injection.unlinkFromInstalledEngines(mod, engines)
-        )
+        mods.map((mod) =>
+          this.injection.unlinkFromInstalledEngines(mod, engines),
+        ),
       );
       try {
         await this.copyDirectoryWithProgress(
           this.weekboxPath,
           destinationWeekboxPath,
-          onProgress
+          onProgress,
         );
         await Neutralino.filesystem.remove(this.weekboxPath);
       } catch (error) {
         if (replacedStorageBackupPath) {
-          await this.api.remove(destinationWeekboxPath).catch(() => {
-          });
-          await Neutralino.filesystem.move(replacedStorageBackupPath, destinationWeekboxPath).catch(() => {
-          });
+          await this.api.remove(destinationWeekboxPath).catch(() => {});
+          await Neutralino.filesystem
+            .move(replacedStorageBackupPath, destinationWeekboxPath)
+            .catch(() => {});
         }
         await Promise.all(
-          mods.map(
-            (mod) => this.injection.injectIntoInstalledEngines(mod.id, engines)
-          )
-        ).catch(() => {
-        });
+          mods.map((mod) =>
+            this.injection.injectIntoInstalledEngines(mod.id, engines),
+          ),
+        ).catch(() => {});
         throw new Error(
-          "Could not move WeekBox files. The original location was kept."
+          "Could not move WeekBox files. The original location was kept.",
         );
       }
       this.setStoragePaths(destinationBasePath);
@@ -371,13 +386,13 @@ var _FileSystemService = class _FileSystemService {
       appSettings.set("storageParentPath", destinationBasePath);
       const [storedMovedMods, movedEngines] = await Promise.all([
         this.mods.getAll(),
-        this.getInstalledEngines()
+        this.getInstalledEngines(),
       ]);
       const movedMods = Array.isArray(storedMovedMods) ? storedMovedMods : [];
       await Promise.all(
-        movedMods.map(
-          (mod) => this.injection.injectIntoInstalledEngines(mod.id, movedEngines)
-        )
+        movedMods.map((mod) =>
+          this.injection.injectIntoInstalledEngines(mod.id, movedEngines),
+        ),
       );
       return this.weekboxPath;
     } finally {
@@ -390,7 +405,7 @@ var _FileSystemService = class _FileSystemService {
     const collectFiles = async (directoryPath) => {
       directories.push(directoryPath);
       const entries = getRealEntries(
-        await Neutralino.filesystem.readDirectory(directoryPath)
+        await Neutralino.filesystem.readDirectory(directoryPath),
       );
       for (const entry of entries) {
         const entryPath = `${directoryPath}/${entry.entry}`;
@@ -408,7 +423,11 @@ var _FileSystemService = class _FileSystemService {
     let copiedBytes = 0;
     let copiedFiles = 0;
     const reportProgress = () => {
-      const progress = totalBytes ? copiedBytes / totalBytes * 100 : files.length ? copiedFiles / files.length * 100 : 100;
+      const progress = totalBytes
+        ? (copiedBytes / totalBytes) * 100
+        : files.length
+          ? (copiedFiles / files.length) * 100
+          : 100;
       onProgress({ progress, copiedFiles, totalFiles: files.length });
     };
     reportProgress();
@@ -425,7 +444,7 @@ var _FileSystemService = class _FileSystemService {
         await Neutralino.filesystem.copy(
           file.path,
           `${destinationPath}${relativePath}`,
-          { recursive: false, overwrite: false, skip: false }
+          { recursive: false, overwrite: false, skip: false },
         );
         copiedBytes += fileSizes.get(file.path) || 0;
         copiedFiles += 1;
@@ -433,7 +452,7 @@ var _FileSystemService = class _FileSystemService {
       }
     };
     await Promise.all(
-      Array.from({ length: Math.min(concurrency, files.length) }, copyNextFile)
+      Array.from({ length: Math.min(concurrency, files.length) }, copyNextFile),
     );
   }
   async shouldRecommendDefaultStorage() {
@@ -443,10 +462,14 @@ var _FileSystemService = class _FileSystemService {
     if (appSettings.get("storageMoveRecommendationDismissed")) return false;
     if (window.NL_OS === "Darwin") return this.isICloudStorage();
     const defaultPath = await this.getDefaultStorageParentPath();
-    const usingDefault = this.basePath.toLowerCase() === String(defaultPath).toLowerCase();
+    const usingDefault =
+      this.basePath.toLowerCase() === String(defaultPath).toLowerCase();
     if (usingDefault) return false;
     const documentsPath = await Neutralino.os.getPath("documents");
-    return this.basePath.toLowerCase() === documentsPath.toLowerCase() || this.isOneDriveStorage();
+    return (
+      this.basePath.toLowerCase() === documentsPath.toLowerCase() ||
+      this.isOneDriveStorage()
+    );
   }
   isOneDriveStorage() {
     return window.NL_OS === "Windows" && isOneDrivePath(this.basePath);
@@ -479,8 +502,11 @@ var _FileSystemService = class _FileSystemService {
     }
     if (!isValidEngineVersion(version)) return false;
     const path = `${this.enginesPath}/${engineId}/${version}`;
-    if (!await this.api.exists(path)) return false;
-    return !await this.api.exists(`${path}/.downloading`) && Boolean(await this.findExecutable(path));
+    if (!(await this.api.exists(path))) return false;
+    return (
+      !(await this.api.exists(`${path}/.downloading`)) &&
+      Boolean(await this.findExecutable(path))
+    );
   }
   async findExecutable(directory) {
     return this.executables.find(directory);
@@ -489,12 +515,15 @@ var _FileSystemService = class _FileSystemService {
     return this.executables.getLastError();
   }
   async runEngine(engineId, version, onStateChange, args = [], modId = null) {
-    if (!Object.prototype.hasOwnProperty.call(ENGINE_DETAILS, engineId) || !isValidEngineVersion(version)) {
+    if (
+      !Object.prototype.hasOwnProperty.call(ENGINE_DETAILS, engineId) ||
+      !isValidEngineVersion(version)
+    ) {
       onStateChange?.("not_found");
       return false;
     }
     const executable = await this.findExecutable(
-      `${this.enginesPath}/${engineId}/${version}`
+      `${this.enginesPath}/${engineId}/${version}`,
     );
     if (!executable) {
       onStateChange?.("not_found");
@@ -507,13 +536,14 @@ var _FileSystemService = class _FileSystemService {
       (state) => {
         if (state === "completed" || state === "error") {
           this.activeEngineMods.delete(key);
-          this.importPsychOnlineEngineMods().then(() => this.injectModsIntoEngine(engineId, version)).catch(() => {
-          });
+          this.importPsychOnlineEngineMods()
+            .then(() => this.injectModsIntoEngine(engineId, version))
+            .catch(() => {});
         }
         onStateChange?.(state);
       },
       args,
-      { modId }
+      { modId },
     );
     if (launched) this.activeEngineMods.set(key, modId);
     return launched;
@@ -543,9 +573,11 @@ var _FileSystemService = class _FileSystemService {
     const key = this.getEngineUpdateKey(engineId, version);
     if (inProgress) this.engineUpdates.add(key);
     else this.engineUpdates.delete(key);
-    document.dispatchEvent(new CustomEvent("weekbox-engine-update-change", {
-      detail: { engineId, version, inProgress }
-    }));
+    document.dispatchEvent(
+      new CustomEvent("weekbox-engine-update-change", {
+        detail: { engineId, version, inProgress },
+      }),
+    );
   }
   getRunningEngineMod(engineId, version) {
     return this.activeEngineMods.get(`${engineId}:${version}`) ?? null;
@@ -555,14 +587,22 @@ var _FileSystemService = class _FileSystemService {
       return this.isStandaloneModRunning(mod.id) ? "running" : "launch";
     }
     if (mod?.kind === "dependency" || mod?.kind === "addon") {
-      const runningGlobally = mod.engineId && [...this.activeEngineMods.entries()].some(([key, runningModId]) => {
-        const [engineId, version] = String(key).split(":");
-        return runningModId !== null && runningModId !== void 0 && engineId === mod.engineId && (!mod.engineVersion || mod.engineVersion === version);
-      });
+      const runningGlobally =
+        mod.engineId &&
+        [...this.activeEngineMods.entries()].some(([key, runningModId]) => {
+          const [engineId, version] = String(key).split(":");
+          return (
+            runningModId !== null &&
+            runningModId !== void 0 &&
+            engineId === mod.engineId &&
+            (!mod.engineVersion || mod.engineVersion === version)
+          );
+        });
       return runningGlobally ? "global-running" : "unavailable";
     }
     if (!engine) return "unavailable";
-    if (this.isEngineUpdateInProgress(engine.id, engine.version)) return "updating";
+    if (this.isEngineUpdateInProgress(engine.id, engine.version))
+      return "updating";
     if (!this.isEngineRunning(engine.id, engine.version)) return "launch";
     const behavior = getEngineLaunchBehavior(engine.id);
     if (behavior.scope !== "exclusive-mod") return "running";
@@ -572,29 +612,36 @@ var _FileSystemService = class _FileSystemService {
   }
   async toggleModLaunch(mod, engine, isStandalone, onStateChange) {
     const state = this.getModLaunchState(mod, engine, isStandalone);
-    if (!isStandalone && (mod?.kind === "dependency" || mod?.kind === "addon")) {
+    if (
+      !isStandalone &&
+      (mod?.kind === "dependency" || mod?.kind === "addon")
+    ) {
       throw new Error("Dependencies and addons cannot be launched");
     }
     if (state === "unavailable" && !isStandalone)
       throw new Error("Assigned engine is not installed");
     if (state === "updating" && !isStandalone)
-      throw new Error("This engine is updating. Wait for the update to finish before launching a mod.");
+      throw new Error(
+        "This engine is updating. Wait for the update to finish before launching a mod.",
+      );
     if (isStandalone) {
-      return state === "running" ? this.closeStandaloneMod(mod.id, onStateChange) : this.runStandaloneMod(mod.id, onStateChange);
+      return state === "running"
+        ? this.closeStandaloneMod(mod.id, onStateChange)
+        : this.runStandaloneMod(mod.id, onStateChange);
     }
     const behavior = getEngineLaunchBehavior(engine.id);
     const launch = async () => {
       await this.injectModIntoEngine(mod.id, engine.id, engine.version);
       const args = getEngineModLaunchArgs(
         engine.id,
-        getEngineModFolderName(mod)
+        getEngineModFolderName(mod),
       );
       return this.runEngine(
         engine.id,
         engine.version,
         onStateChange,
         args,
-        behavior.scope === "exclusive-mod" ? mod.id : null
+        behavior.scope === "exclusive-mod" ? mod.id : null,
       );
     };
     if (state === "launch") return launch();
@@ -608,29 +655,39 @@ var _FileSystemService = class _FileSystemService {
     if (!this.isInitialized) return [];
     try {
       const entries = await Neutralino.filesystem.readDirectory(
-        this.enginesPath
+        this.enginesPath,
       );
       const engines = await Promise.all(
-        entries.filter(
-          (entry) => entry.type === "DIRECTORY" && Object.prototype.hasOwnProperty.call(ENGINE_DETAILS, entry.entry)
-        ).map(async (engine) => {
-          const versions = await Neutralino.filesystem.readDirectory(
-            `${this.enginesPath}/${engine.entry}`
-          );
-          const installedVersions = await Promise.all(
-            versions.filter(
-              (version) => version.type === "DIRECTORY" && isValidEngineVersion(version.entry) && (engine.entry !== "psychonline" || version.entry === "Latest")
-            ).map(async (version) => {
-              const versionPath = `${this.enginesPath}/${engine.entry}/${version.entry}`;
-              if (await this.api.exists(`${versionPath}/.downloading`)) {
-                return null;
-              }
-              if (!await this.findExecutable(versionPath)) return null;
-              return { id: engine.entry, version: version.entry };
-            })
-          );
-          return installedVersions.filter(Boolean);
-        })
+        entries
+          .filter(
+            (entry) =>
+              entry.type === "DIRECTORY" &&
+              Object.prototype.hasOwnProperty.call(ENGINE_DETAILS, entry.entry),
+          )
+          .map(async (engine) => {
+            const versions = await Neutralino.filesystem.readDirectory(
+              `${this.enginesPath}/${engine.entry}`,
+            );
+            const installedVersions = await Promise.all(
+              versions
+                .filter(
+                  (version) =>
+                    version.type === "DIRECTORY" &&
+                    isValidEngineVersion(version.entry) &&
+                    (engine.entry !== "psychonline" ||
+                      version.entry === "Latest"),
+                )
+                .map(async (version) => {
+                  const versionPath = `${this.enginesPath}/${engine.entry}/${version.entry}`;
+                  if (await this.api.exists(`${versionPath}/.downloading`)) {
+                    return null;
+                  }
+                  if (!(await this.findExecutable(versionPath))) return null;
+                  return { id: engine.entry, version: version.entry };
+                }),
+            );
+            return installedVersions.filter(Boolean);
+          }),
       );
       return engines.flat();
     } catch (error) {
@@ -645,7 +702,7 @@ var _FileSystemService = class _FileSystemService {
   }
   async injectModIntoInstalledEngines(modId) {
     const engines = (await this.getInstalledEngines()).filter(
-      (engine) => !this.isEngineRunning(engine.id, engine.version)
+      (engine) => !this.isEngineRunning(engine.id, engine.version),
     );
     return this.injection.injectIntoInstalledEngines(modId, engines);
   }
@@ -661,8 +718,7 @@ var _FileSystemService = class _FileSystemService {
       for (const e of entries) {
         if (e.type === "DIRECTORY") validFolders.add(e.entry);
       }
-    } catch (error) {
-    }
+    } catch (error) {}
     const available = mods.filter((mod) => {
       const folderName = getModFolderName(mod);
       return folderName && validFolders.has(folderName);
@@ -675,26 +731,25 @@ var _FileSystemService = class _FileSystemService {
     for (const mod of await this.mods.getAll()) {
       if (mod.kind === "dependency" || mod.kind === "addon") continue;
       const executable = await this.findExecutable(
-        `${this.modsPath}/${getModFolderName(mod)}`
+        `${this.modsPath}/${getModFolderName(mod)}`,
       );
       if (!executable) continue;
       if (mod.engineId) {
-        this.setModEngineCompatibility(mod.id, null, null).catch(() => {
-        });
+        this.setModEngineCompatibility(mod.id, null, null).catch(() => {});
         mod.engineId = null;
         mod.engineVersion = null;
       }
       standaloneMods.push({
         ...mod,
         exePath: executable,
-        icoPath: await this.executables.getIconDataUrl(executable)
+        icoPath: await this.executables.getIconDataUrl(executable),
       });
     }
     return standaloneMods;
   }
   async runStandaloneMod(modId, onStateChange) {
-    const mod = (await this.getStandaloneMods()).find(
-      (item) => sameId(item.id, modId)
+    const mod = (await this.getStandaloneMods()).find((item) =>
+      sameId(item.id, modId),
     );
     if (!mod) {
       onStateChange?.("error");
@@ -705,7 +760,7 @@ var _FileSystemService = class _FileSystemService {
       mod.exePath,
       onStateChange,
       [],
-      { modId: mod.id }
+      { modId: mod.id },
     );
   }
   async closeStandaloneMod(modId, onStateChange) {
@@ -717,7 +772,8 @@ var _FileSystemService = class _FileSystemService {
   isModRunning(modId) {
     if (this.isStandaloneModRunning(modId)) return true;
     return [...this.activeEngineMods.values()].some(
-      (runningModId) => runningModId !== null && String(runningModId) === String(modId)
+      (runningModId) =>
+        runningModId !== null && String(runningModId) === String(modId),
     );
   }
   isModLockedForChanges(mod, allMods = []) {
@@ -728,25 +784,59 @@ var _FileSystemService = class _FileSystemService {
       return this.isModRunning(item.id);
     };
     if (mod.kind === "addon") {
-      return [...this.activeEngineMods.entries()].some(([key, runningModId]) => {
-        const [engineId, version] = String(key).split(":");
-        return runningModId !== null && runningModId !== void 0 && engineId === mod.engineId && (!mod.engineVersion || mod.engineVersion === version);
-      }) || allMods.some((item) => {
-        if (!item || item.kind === "addon" || item.kind === "dependency" || item.engineId !== mod.engineId) return false;
-        if (mod.engineVersion && item.engineVersion && mod.engineVersion !== item.engineVersion) return false;
-        return isUsingModEngine(item);
-      });
+      return (
+        [...this.activeEngineMods.entries()].some(([key, runningModId]) => {
+          const [engineId, version] = String(key).split(":");
+          return (
+            runningModId !== null &&
+            runningModId !== void 0 &&
+            engineId === mod.engineId &&
+            (!mod.engineVersion || mod.engineVersion === version)
+          );
+        }) ||
+        allMods.some((item) => {
+          if (
+            !item ||
+            item.kind === "addon" ||
+            item.kind === "dependency" ||
+            item.engineId !== mod.engineId
+          )
+            return false;
+          if (
+            mod.engineVersion &&
+            item.engineVersion &&
+            mod.engineVersion !== item.engineVersion
+          )
+            return false;
+          return isUsingModEngine(item);
+        })
+      );
     }
     if (mod.kind !== "dependency") return false;
-    const engineProcessUsesDependency = [...this.activeEngineMods.entries()].some(([key, runningModId]) => {
+    const engineProcessUsesDependency = [
+      ...this.activeEngineMods.entries(),
+    ].some(([key, runningModId]) => {
       const [engineId, version] = String(key).split(":");
-      return runningModId !== null && runningModId !== void 0 && engineId === mod.engineId && (!mod.engineVersion || mod.engineVersion === version);
+      return (
+        runningModId !== null &&
+        runningModId !== void 0 &&
+        engineId === mod.engineId &&
+        (!mod.engineVersion || mod.engineVersion === version)
+      );
     });
     if (engineProcessUsesDependency) return true;
     return allMods.some((item) => {
-      if (!item || item.kind === "dependency" || item.kind === "addon") return false;
-      const sameEngine = item.engineId && mod.engineId === item.engineId && (!mod.engineVersion || !item.engineVersion || mod.engineVersion === item.engineVersion);
-      const consumes = Array.isArray(item.dependencies) && item.dependencies.some((dependencyId) => sameId(dependencyId, mod.id));
+      if (!item || item.kind === "dependency" || item.kind === "addon")
+        return false;
+      const sameEngine =
+        item.engineId &&
+        mod.engineId === item.engineId &&
+        (!mod.engineVersion ||
+          !item.engineVersion ||
+          mod.engineVersion === item.engineVersion);
+      const consumes =
+        Array.isArray(item.dependencies) &&
+        item.dependencies.some((dependencyId) => sameId(dependencyId, mod.id));
       return (consumes || sameEngine) && isUsingModEngine(item);
     });
   }
@@ -755,7 +845,7 @@ var _FileSystemService = class _FileSystemService {
     const mod = allMods.find((item) => sameId(item.id, modId));
     if (this.isModLockedForChanges(mod, allMods)) {
       throw new Error(
-        `Close the engine before changing ${mod?.name || "this mod"}`
+        `Close the engine before changing ${mod?.name || "this mod"}`,
       );
     }
     return mod;
@@ -764,7 +854,7 @@ var _FileSystemService = class _FileSystemService {
     if (!this.isInitialized) return;
     const tempMod = { name: modName, id: modId, ...metadata };
     const executable = await this.findExecutable(
-      `${this.modsPath}/${getModFolderName(tempMod)}`
+      `${this.modsPath}/${getModFolderName(tempMod)}`,
     );
     if (executable) {
       metadata.engineId = null;
@@ -777,7 +867,10 @@ var _FileSystemService = class _FileSystemService {
     const baseName = displayName;
     let folderName = baseName;
     let copyNumber = 2;
-    while (folderName !== existingFolderName && await this.api.exists(`${this.modsPath}/${folderName}`)) {
+    while (
+      folderName !== existingFolderName &&
+      (await this.api.exists(`${this.modsPath}/${folderName}`))
+    ) {
       folderName = `${baseName} (${copyNumber++})`;
     }
     return folderName;
@@ -788,16 +881,25 @@ var _FileSystemService = class _FileSystemService {
     engineId,
     engineVersion,
     coverDataUrl,
-    coverUrl
+    coverUrl,
   }) {
     this.assertStorageUnlocked();
     if (!this.isInitialized) throw new Error("WeekBox storage is not ready");
     const modName = String(name || "").trim();
     if (!modName) throw new Error("Give the mod a name");
-    const normalizedSource = String(sourcePath || "").replace(/\\/g, "/").replace(/\/+$/, "");
-    const normalizedModsPath = this.modsPath.replace(/\\/g, "/").replace(/\/+$/, "");
+    const normalizedSource = String(sourcePath || "")
+      .replace(/\\/g, "/")
+      .replace(/\/+$/, "");
+    const normalizedModsPath = this.modsPath
+      .replace(/\\/g, "/")
+      .replace(/\/+$/, "");
     if (!normalizedSource) throw new Error("Choose a mod folder first");
-    if (normalizedSource.toLowerCase() === normalizedModsPath.toLowerCase() || normalizedSource.toLowerCase().startsWith(`${normalizedModsPath.toLowerCase()}/`)) {
+    if (
+      normalizedSource.toLowerCase() === normalizedModsPath.toLowerCase() ||
+      normalizedSource
+        .toLowerCase()
+        .startsWith(`${normalizedModsPath.toLowerCase()}/`)
+    ) {
       throw new Error("Choose a folder outside your WeekBox mods library");
     }
     const sourceStats = await Neutralino.filesystem.getStats(normalizedSource);
@@ -811,35 +913,32 @@ var _FileSystemService = class _FileSystemService {
       await Neutralino.filesystem.copy(normalizedSource, destinationPath, {
         recursive: true,
         overwrite: false,
-        skip: false
+        skip: false,
       });
       await this.saveInstalledMod(modId, modName, {
         folderName,
         engineFolderName: sanitizePathSegment(modName) || folderName,
         engineId: engineId || null,
         engineVersion: engineId ? engineVersion || null : null,
-        source: "local"
+        source: "local",
       });
       if (coverDataUrl || coverUrl) {
         await this.updateModAppearance(modId, { coverDataUrl, coverUrl });
       }
-      const importedMod = (await this.mods.getAll()).find(
-        (mod) => sameId(mod.id, modId)
+      const importedMod = (await this.mods.getAll()).find((mod) =>
+        sameId(mod.id, modId),
       );
       if (importedMod?.engineId && !importedMod.hidden) {
         await this.injection.injectIntoInstalledEngines(
           importedMod.id,
-          await this.getInstalledEngines()
+          await this.getInstalledEngines(),
         );
       }
       return importedMod;
     } catch (error) {
-      await this.api.remove(destinationPath).catch(() => {
-      });
-      await this.mods.remove(modId).catch(() => {
-      });
-      await this.covers.remove(modId).catch(() => {
-      });
+      await this.api.remove(destinationPath).catch(() => {});
+      await this.mods.remove(modId).catch(() => {});
+      await this.covers.remove(modId).catch(() => {});
       throw error;
     }
   }
@@ -870,8 +969,8 @@ var _FileSystemService = class _FileSystemService {
   async setModEngineCompatibility(modId, engineId, engineVersion) {
     if (!this.isInitialized) return null;
     await this.assertModChangeAllowed(modId);
-    const currentMod = (await this.mods.getAll()).find(
-      (item) => sameId(item.id, modId)
+    const currentMod = (await this.mods.getAll()).find((item) =>
+      sameId(item.id, modId),
     );
     if (!currentMod) return null;
     if (currentMod.engineLocked && engineId !== "psychonline") {
@@ -882,7 +981,7 @@ var _FileSystemService = class _FileSystemService {
     const mod = await this.mods.setEngineCompatibility(
       modId,
       engineId,
-      engineVersion
+      engineVersion,
     );
     if (mod?.kind !== "dependency" && mod?.engineId && !mod.hidden) {
       await this.injection.injectIntoInstalledEngines(modId, engines);
@@ -894,7 +993,9 @@ var _FileSystemService = class _FileSystemService {
     const { coverDataUrl, coverUrl, ...metadata } = appearance;
     let coverPath;
     if (coverDataUrl !== void 0) {
-      coverPath = coverDataUrl ? await this.covers.saveDataUrl(modId, coverDataUrl) : null;
+      coverPath = coverDataUrl
+        ? await this.covers.saveDataUrl(modId, coverDataUrl)
+        : null;
     } else if (coverUrl !== void 0) {
       coverPath = coverUrl ? await this.covers.saveUrl(modId, coverUrl) : null;
     }
@@ -912,7 +1013,9 @@ var _FileSystemService = class _FileSystemService {
     const localCover = await this.getModCover(modId);
     if (localCover) return localCover;
     const coverUrl = await getDefaultCoverUrl();
-    const coverPath = coverUrl ? await this.covers.saveUrl(modId, coverUrl) : await this.covers.saveNoImagePlaceholder(modId);
+    const coverPath = coverUrl
+      ? await this.covers.saveUrl(modId, coverUrl)
+      : await this.covers.saveNoImagePlaceholder(modId);
     const updatedMod = await this.mods.updateAppearance(modId, { coverPath });
     return updatedMod ? this.getModCover(modId) : null;
   }
@@ -925,7 +1028,7 @@ var _FileSystemService = class _FileSystemService {
         if (mod.imageBase64) {
           mod.coverPath = await this.covers.saveDataUrl(
             mod.id,
-            mod.imageBase64
+            mod.imageBase64,
           );
         }
         delete mod.imageBase64;
@@ -962,21 +1065,31 @@ var _FileSystemService = class _FileSystemService {
     if (type === "dependency") return this.moveModToDependencies(modId);
     const engines = await this.getInstalledEngines();
     if (mod.kind === "dependency") {
-      const consumers = mods.filter((item) => item.kind !== "dependency" && Array.isArray(item.dependencies) && item.dependencies.some((dependencyId) => sameId(dependencyId, modId)));
-      if (consumers.length) throw new Error(`Remove ${consumers.map((item) => item.name).join(", ")} before changing ${mod.name}`);
+      const consumers = mods.filter(
+        (item) =>
+          item.kind !== "dependency" &&
+          Array.isArray(item.dependencies) &&
+          item.dependencies.some((dependencyId) => sameId(dependencyId, modId)),
+      );
+      if (consumers.length)
+        throw new Error(
+          `Remove ${consumers.map((item) => item.name).join(", ")} before changing ${mod.name}`,
+        );
     }
     // Remove the current link before changing its destination (mods vs Codename addons).
-    if ((mod.kind || "mod") !== type) await this.injection.unlinkFromInstalledEngines(mod, engines);
+    if ((mod.kind || "mod") !== type)
+      await this.injection.unlinkFromInstalledEngines(mod, engines);
     const updated = await this.mods.setType(modId, type);
-    if (updated?.engineId && !updated.hidden) await this.injection.injectIntoInstalledEngines(modId, engines);
+    if (updated?.engineId && !updated.hidden)
+      await this.injection.injectIntoInstalledEngines(modId, engines);
     return updated;
   }
   async moveModToDependencies(modId) {
     this.assertStorageUnlocked();
     if (!this.isInitialized) return null;
     await this.assertModChangeAllowed(modId);
-    const mod = (await this.mods.getAll()).find(
-      (item) => sameId(item.id, modId)
+    const mod = (await this.mods.getAll()).find((item) =>
+      sameId(item.id, modId),
     );
     if (!mod || mod.kind === "dependency") return mod || null;
     const engines = await this.getInstalledEngines();
@@ -996,18 +1109,21 @@ var _FileSystemService = class _FileSystemService {
     if (!dependency || dependency.kind !== "dependency")
       return dependency || null;
     const consumers = mods.filter(
-      (item) => item.kind !== "dependency" && Array.isArray(item.dependencies) && item.dependencies.some((dependencyId) => sameId(dependencyId, modId))
+      (item) =>
+        item.kind !== "dependency" &&
+        Array.isArray(item.dependencies) &&
+        item.dependencies.some((dependencyId) => sameId(dependencyId, modId)),
     );
     if (consumers.length) {
       throw new Error(
-        `Remove ${consumers.map((item) => item.name).join(", ")} before moving ${dependency.name}`
+        `Remove ${consumers.map((item) => item.name).join(", ")} before moving ${dependency.name}`,
       );
     }
     const mod = await this.mods.moveToMods(modId);
     if (mod?.engineId && !mod.hidden) {
       await this.injection.injectIntoInstalledEngines(
         modId,
-        await this.getInstalledEngines()
+        await this.getInstalledEngines(),
       );
     }
     return mod;
@@ -1017,78 +1133,91 @@ var _FileSystemService = class _FileSystemService {
     if (!this.isInitialized) return false;
     const storedMods = await this.mods.getAll();
     const allMods = Array.isArray(storedMods) ? storedMods : [];
-    const mod = allMods.find(
-      (item) => sameId(item.id, modId)
-    );
+    const mod = allMods.find((item) => sameId(item.id, modId));
     if (!mod) return false;
     if (this.isModLockedForChanges(mod, allMods)) {
       throw new Error(`Close the engine before deleting ${mod.name}`);
     }
     const unlinkResults = await this.injection.unlinkFromInstalledEngines(
       mod,
-      await this.getInstalledEngines()
+      await this.getInstalledEngines(),
     );
     const unlinkFailure = unlinkResults.find(
-      (result) => result.status === "rejected"
+      (result) => result.status === "rejected",
     );
     if (unlinkFailure) throw unlinkFailure.reason;
     const folderName = getModFolderName(mod);
-    if (!folderName || /[\\/]/.test(folderName) || folderName === "." || folderName === "..") {
+    if (
+      !folderName ||
+      /[\\/]/.test(folderName) ||
+      folderName === "." ||
+      folderName === ".."
+    ) {
       throw new Error(`Invalid mod folder for ${mod.name}`);
     }
     const modPath = `${this.modsPath}/${folderName}`;
     if (await this.api.exists(modPath)) {
-      const command = window.NL_OS === "Windows" ? `cmd /c rmdir /S /Q "${modPath.replace(/\//g, "\\")}"` : `rm -rf "${modPath}"`;
+      const command =
+        window.NL_OS === "Windows"
+          ? `cmd /c rmdir /S /Q "${modPath.replace(/\//g, "\\")}"`
+          : `rm -rf "${modPath}"`;
       let result;
       for (let attempt = 1; attempt <= 3; attempt += 1) {
-        result = await Neutralino.os.execCommand(command, { background: false });
-        if (result.exitCode === 0 || !await this.api.exists(modPath)) break;
-        if (attempt < 3) await new Promise((resolve) => setTimeout(resolve, attempt * 400));
+        result = await Neutralino.os.execCommand(command, {
+          background: false,
+        });
+        if (result.exitCode === 0 || !(await this.api.exists(modPath))) break;
+        if (attempt < 3)
+          await new Promise((resolve) => setTimeout(resolve, attempt * 400));
       }
-      if (result?.exitCode !== 0 && await this.api.exists(modPath)) {
-        const detail = String(result?.stdErr || result?.stdOut || "").replace(/[\0\r]+/g, " ").trim();
-        throw new Error(detail ? `Could not remove mod files because a file is in use: ${detail}` : `Could not remove mod files for ${mod.name}. Close any program using this mod and try again.`);
+      if (result?.exitCode !== 0 && (await this.api.exists(modPath))) {
+        const detail = String(result?.stdErr || result?.stdOut || "")
+          .replace(/[\0\r]+/g, " ")
+          .trim();
+        throw new Error(
+          detail
+            ? `Could not remove mod files because a file is in use: ${detail}`
+            : `Could not remove mod files for ${mod.name}. Close any program using this mod and try again.`,
+        );
       }
     }
     await this.mods.remove(modId);
-    await this.covers.remove(modId).catch(() => {
-    });
+    await this.covers.remove(modId).catch(() => {});
     if (Array.isArray(mod.dependencies)) {
       await Promise.all(
-        mod.dependencies.map(
-          (dependencyId) => this.removeDependencyConsumer(dependencyId, modId)
-        )
+        mod.dependencies.map((dependencyId) =>
+          this.removeDependencyConsumer(dependencyId, modId),
+        ),
       );
     }
     return true;
   }
   async isModInstalled(modId) {
     if (!this.isInitialized) return false;
-    const mod = (await this.mods.getAll()).find(
-      (item) => sameId(item.id, modId)
+    const mod = (await this.mods.getAll()).find((item) =>
+      sameId(item.id, modId),
     );
-    return Boolean(mod && await this.hasModFiles(mod));
+    return Boolean(mod && (await this.hasModFiles(mod)));
   }
   async flattenModFolder(targetDir) {
     if (!this.isInitialized) return;
     try {
       const entries = getRealEntries(
-        await Neutralino.filesystem.readDirectory(targetDir)
+        await Neutralino.filesystem.readDirectory(targetDir),
       );
       if (entries.length !== 1 || entries[0].type !== "DIRECTORY") return;
       const sourceDir = `${targetDir}/${entries[0].entry}`;
       const nestedEntries = getRealEntries(
-        await Neutralino.filesystem.readDirectory(sourceDir)
+        await Neutralino.filesystem.readDirectory(sourceDir),
       );
       for (const entry of nestedEntries) {
         await Neutralino.filesystem.move(
           `${sourceDir}/${entry.entry}`,
-          `${targetDir}/${entry.entry}`
+          `${targetDir}/${entry.entry}`,
         );
       }
       await Neutralino.filesystem.remove(sourceDir);
-    } catch (error) {
-    }
+    } catch (error) {}
   }
 };
 

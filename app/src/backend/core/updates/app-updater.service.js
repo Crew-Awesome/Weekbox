@@ -1,10 +1,16 @@
-import { getPlatformPackage, getReleaseAsset, getResourcesAsset, getWindowsPackage } from './release-assets.util.js';
-import { normalizeVersion, compareVersions } from './versioning.util.js';
-
+import {
+  getPlatformPackage,
+  getReleaseAsset,
+  getResourcesAsset,
+  getWindowsPackage,
+} from "./release-assets.util.js";
+import { normalizeVersion, compareVersions } from "./versioning.util.js";
 
 import { downloadArchive } from "../../../ui/utils/index-utils.js";
 function toHex(buffer) {
-  return [...new Uint8Array(buffer)].map((byte) => byte.toString(16).padStart(2, "0")).join("");
+  return [...new Uint8Array(buffer)]
+    .map((byte) => byte.toString(16).padStart(2, "0"))
+    .join("");
 }
 function isValidNeutralinoBundle(bytes) {
   if (!bytes || bytes.length < 4) return false;
@@ -20,7 +26,9 @@ function quotePowerShellLiteral(value) {
   return String(value).replaceAll("'", "''");
 }
 function getExpectedDigest(asset) {
-  const digest = String(asset?.digest || "").trim().toLowerCase();
+  const digest = String(asset?.digest || "")
+    .trim()
+    .toLowerCase();
   if (!/^sha256:[a-f0-9]{64}$/.test(digest)) {
     throw new Error("This update does not include a valid integrity checksum.");
   }
@@ -32,12 +40,14 @@ function createUnixApplyScript({
   expectedDigest,
   binaryName,
   scriptPath,
-  targetExe
+  targetExe,
 }) {
   const target = quoteShellString(appPath);
   const archive = quoteShellString(archivePath);
   const staging = quoteShellString(`${appPath}/.weekbox-update-staging`);
-  const targetBinary = targetExe ? quoteShellString(targetExe) : quoteShellString(`${appPath}/${binaryName}`);
+  const targetBinary = targetExe
+    ? quoteShellString(targetExe)
+    : quoteShellString(`${appPath}/${binaryName}`);
   const targetResources = quoteShellString(`${appPath}/resources.neu`);
   const updaterScript = quoteShellString(scriptPath);
   return `#!/bin/sh
@@ -112,8 +122,8 @@ async function fetchLatestRelease() {
   const response = await fetch(RELEASES_API, {
     headers: {
       Accept: "application/vnd.github+json",
-      "X-GitHub-Api-Version": "2026-03-10"
-    }
+      "X-GitHub-Api-Version": "2026-03-10",
+    },
   });
   if (!response.ok)
     throw new Error(`Update check failed: GitHub returned ${response.status}`);
@@ -121,287 +131,290 @@ async function fetchLatestRelease() {
 }
 var RELEASES_API, RELEASES_PAGE, UPDATE_DIRECTORY, appUpdater;
 
-    
-    
-    RELEASES_API = "https://api.github.com/repos/Crew-Awesome/Weekbox/releases/latest";
-    RELEASES_PAGE = "https://github.com/Crew-Awesome/Weekbox/releases/latest";
-    UPDATE_DIRECTORY = ".weekbox-update";
-    
-    
-    
-    
-    
-    
-    appUpdater = {
-      getCurrentVersion,
-      /**
-       * Checks for available updates by comparing the current application version
-       * against the latest version reported by the GitHub API.
-       * @returns {Promise<Object>} An object detailing the update availability status.
-       */
-      async check() {
-        const release = await fetchLatestRelease();
-        const latestVersion = normalizeVersion(release.tag_name);
-        const currentVersion = await getCurrentVersion();
-        if (!latestVersion) {
-          throw new Error("Could not determine the latest WeekBox version.");
-        }
-        const resourcesAsset = getResourcesAsset(release);
-        if (resourcesAsset) {
-          if (!/^sha256:[a-f0-9]{64}$/i.test(resourcesAsset.digest || "")) {
-            throw new Error("The latest WeekBox release has no valid SHA-256 digest.");
-          }
-          if (compareVersions(latestVersion, currentVersion) <= 0) {
-            return { status: "current", currentVersion, latestVersion };
-          }
-          return {
-            status: "available",
-            currentVersion,
-            latestVersion,
-            asset: resourcesAsset,
-            isResourcesUpdate: true,
-            releaseUrl: release.html_url || RELEASES_PAGE
-          };
-        }
-        if (window.NL_OS === "Windows") {
-          const packageAsset = getWindowsPackage(release);
-          if (packageAsset) {
-            if (!/^sha256:[a-f0-9]{64}$/i.test(packageAsset.digest || "")) {
-              throw new Error("The latest WeekBox release has no valid SHA-256 digest.");
-            }
-            if (compareVersions(latestVersion, currentVersion) <= 0) {
-              return { status: "current", currentVersion, latestVersion };
-            }
-            return {
-              status: "available",
-              currentVersion,
-              latestVersion,
-              asset: packageAsset,
-              windowsPackage: true,
-              releaseUrl: release.html_url || RELEASES_PAGE
-            };
-          }
-          return {
-            status: "unsupported",
-            message: "Automatic updates are not available for this release yet. Download the latest version manually."
-          };
-        }
-        const platform = getPlatformPackage();
-        if (!platform) {
-          return {
-            status: "unsupported",
-            message: "Automatic updates are not available for this platform."
-          };
-        }
-        const asset = getReleaseAsset(release, platform);
-        if (!asset) {
+RELEASES_API =
+  "https://api.github.com/repos/Crew-Awesome/Weekbox/releases/latest";
+RELEASES_PAGE = "https://github.com/Crew-Awesome/Weekbox/releases/latest";
+UPDATE_DIRECTORY = ".weekbox-update";
+
+appUpdater = {
+  getCurrentVersion,
+  /**
+   * Checks for available updates by comparing the current application version
+   * against the latest version reported by the GitHub API.
+   * @returns {Promise<Object>} An object detailing the update availability status.
+   */
+  async check() {
+    const release = await fetchLatestRelease();
+    const latestVersion = normalizeVersion(release.tag_name);
+    const currentVersion = await getCurrentVersion();
+    if (!latestVersion) {
+      throw new Error("Could not determine the latest WeekBox version.");
+    }
+    const resourcesAsset = getResourcesAsset(release);
+    if (resourcesAsset) {
+      if (!/^sha256:[a-f0-9]{64}$/i.test(resourcesAsset.digest || "")) {
+        throw new Error(
+          "The latest WeekBox release has no valid SHA-256 digest.",
+        );
+      }
+      if (compareVersions(latestVersion, currentVersion) <= 0) {
+        return { status: "current", currentVersion, latestVersion };
+      }
+      return {
+        status: "available",
+        currentVersion,
+        latestVersion,
+        asset: resourcesAsset,
+        isResourcesUpdate: true,
+        releaseUrl: release.html_url || RELEASES_PAGE,
+      };
+    }
+    if (window.NL_OS === "Windows") {
+      const packageAsset = getWindowsPackage(release);
+      if (packageAsset) {
+        if (!/^sha256:[a-f0-9]{64}$/i.test(packageAsset.digest || "")) {
           throw new Error(
-            `The latest WeekBox release has no update package for ${window.NL_OS}.`
+            "The latest WeekBox release has no valid SHA-256 digest.",
           );
         }
         if (compareVersions(latestVersion, currentVersion) <= 0) {
           return { status: "current", currentVersion, latestVersion };
         }
-        if (!/^sha256:[a-f0-9]{64}$/i.test(asset.digest || "")) {
-          throw new Error(
-            "The latest WeekBox release has no valid SHA-256 digest."
-          );
-        }
         return {
           status: "available",
           currentVersion,
           latestVersion,
-          asset,
-          releaseUrl: release.html_url || RELEASES_PAGE
+          asset: packageAsset,
+          windowsPackage: true,
+          releaseUrl: release.html_url || RELEASES_PAGE,
         };
-      },
-      /**
-       * Orchestrates the installation of a new update based on its type and target platform.
-       * @param {Object} update - The update data object returned by check().
-       * @param {Function} [onProgress] - Callback to report installation progress.
-       * @param {Function} [onHandoff] - Callback executed immediately before exiting the app.
-       */
-      async install(update, onProgress = () => {
-      }, onHandoff = () => {
-      }) {
-        if (update?.isResourcesUpdate) {
-          return this.installResourcesUpdate(update, onProgress, onHandoff);
-        }
-        if (update?.windowsPackage) {
-          return this.installWindowsPackage(update, onProgress, onHandoff);
-        }
-        const platform = getPlatformPackage();
-        if (!platform)
-          throw new Error("Automatic updates are not available for this platform.");
-        if (!update?.asset)
-          throw new Error("No WeekBox update is ready to install.");
-        const updatePath = `${window.NL_PATH}/${UPDATE_DIRECTORY}`;
-        const archivePath = `${updatePath}/${update.asset.name}`;
-        const scriptPath = `${updatePath}/apply-update.sh`;
-        const expectedDigest = getExpectedDigest(update.asset);
-        await Neutralino.filesystem.createDirectory(updatePath).catch(() => {
-        });
-        onProgress("Downloading update\u2026");
-        await downloadArchive({
-          url: update.asset.browser_download_url,
-          outPath: archivePath,
-          getTask: () => null,
-          onProgress: (status) => onProgress(status)
-        });
-        const data = await Neutralino.filesystem.readBinaryFile(archivePath);
-        onProgress("Verifying update\u2026");
-        const actualDigest = toHex(await crypto.subtle.digest("SHA-256", data));
-        if (actualDigest !== expectedDigest) {
-          throw new Error("Downloaded update failed its integrity check.");
-        }
-        onProgress("Closing WeekBox to apply update\u2026");
-        const applyScript = createUnixApplyScript({
-          appPath: window.NL_PATH,
-          archivePath,
-          expectedDigest,
-          binaryName: platform.binary,
-          scriptPath,
-          targetExe: window.NL_ARGS?.[0] || null
-        });
-        await Neutralino.filesystem.writeFile(scriptPath, applyScript);
-        const command = `/bin/sh ${quoteShellString(scriptPath)} >/dev/null 2>&1 &`;
-        await Neutralino.os.execCommand(command, {
-          background: true
-        });
-        onHandoff();
-        await Neutralino.app.exit();
-      },
-      async installResourcesUpdate(update, onProgress, onHandoff) {
-        if (!update?.asset)
-          throw new Error("No WeekBox update is ready to install.");
-        const target = `${window.NL_PATH}/resources.neu`;
-        const staging = `${window.NL_PATH}/${UPDATE_DIRECTORY}/resources.neu`;
-        const backup = `${window.NL_PATH}/${UPDATE_DIRECTORY}/resources.neu.bak`;
-        await Neutralino.filesystem.createDirectory(`${window.NL_PATH}/${UPDATE_DIRECTORY}`).catch(() => {
-        });
-        const targetExists = await Neutralino.filesystem.getStats(target).then(() => true).catch(() => false);
-        if (targetExists) {
-          const current = await Neutralino.filesystem.readBinaryFile(target);
-          await Neutralino.filesystem.writeBinaryFile(backup, current);
-        }
-        onProgress("Downloading update\u2026");
-        await downloadArchive({
-          url: update.asset.browser_download_url,
-          outPath: staging,
-          getTask: () => null,
-          onProgress: (status) => onProgress(status)
-        });
-        const bytes = new Uint8Array(
-          await Neutralino.filesystem.readBinaryFile(staging)
-        );
-        onProgress("Verifying update\u2026");
-        if (!isValidNeutralinoBundle(bytes)) {
-          await Neutralino.filesystem.remove(backup).catch(() => {
-          });
-          throw new Error("Downloaded update is not a valid app bundle.");
-        }
-        const actual = toHex(await crypto.subtle.digest("SHA-256", bytes));
-        const expected = getExpectedDigest(update.asset);
-        if (actual !== expected) {
-          await Neutralino.filesystem.remove(backup).catch(() => {
-          });
-          throw new Error("Downloaded update failed its integrity check.");
-        }
-        onProgress("Installing update\u2026");
-        await Neutralino.filesystem.writeBinaryFile(staging, bytes);
-        await Neutralino.filesystem.writeBinaryFile(target, bytes);
-        onProgress("Restarting WeekBox\u2026");
-        const exe = String(window.NL_ARGS?.[0] || "").trim();
-        if (!exe) throw new Error("WeekBox could not restart because the application path is missing.");
-        if (window.NL_OS === "Darwin" && exe.includes(".app/Contents/MacOS/")) {
-          const appBundle = exe.substring(0, exe.indexOf(".app/") + 5);
-          await Neutralino.os.execCommand(`open "${appBundle}"`, {
-            background: true
-          });
-        } else {
-          await Neutralino.os.execCommand(`"${exe}"`, { background: true });
-        }
-        onHandoff();
-        await Neutralino.app.exit();
-      },
-      async installWindowsPackage(update, onProgress, onHandoff) {
-        if (!update?.asset)
-          throw new Error("No WeekBox update is ready to install.");
-        const updateDir = `${window.NL_PATH}/${UPDATE_DIRECTORY}`;
-        const zipPath = `${updateDir}/update.zip`;
-        const staging = `${updateDir}/staging`;
-        const scriptPath = `${updateDir}/apply-update.ps1`;
-        const appPath = window.NL_PATH;
-        await Neutralino.filesystem.createDirectory(updateDir).catch(() => {
-        });
-        onProgress("Downloading update\u2026");
-        await downloadArchive({
-          url: update.asset.browser_download_url,
-          outPath: zipPath,
-          getTask: () => null,
-          onProgress: (status) => onProgress(status)
-        });
-        onProgress("Verifying update\u2026");
-        const bytes = new Uint8Array(
-          await Neutralino.filesystem.readBinaryFile(zipPath)
-        );
-        if (!(bytes[0] === 80 && bytes[1] === 75 && bytes[2] === 3 && bytes[3] === 4)) {
-          await Neutralino.filesystem.remove(zipPath).catch(() => {
-          });
-          throw new Error("Downloaded update is not a valid package.");
-        }
-        const actualZipDigest = toHex(await crypto.subtle.digest("SHA-256", bytes));
-        const expectedZipDigest = getExpectedDigest(update.asset);
-        if (actualZipDigest !== expectedZipDigest) {
-          await Neutralino.filesystem.remove(zipPath).catch(() => {
-          });
-          throw new Error("Downloaded update failed its integrity check.");
-        }
-        const pid = window.NL_PID;
-        const executableArgument = String(window.NL_ARGS?.[0] || "").trim();
-        const targetExe = executableArgument.split(/[/\\]/).pop();
-        if (!String(appPath || "").trim() || !targetExe) {
-          throw new Error("WeekBox could not apply the update because the application path is missing.");
-        }
-        const escapedAppPath = quotePowerShellLiteral(appPath);
-        const escapedZipPath = quotePowerShellLiteral(zipPath);
-        const escapedStagingPath = quotePowerShellLiteral(staging);
-        const script = [
-          "$ErrorActionPreference = 'Stop'",
-          `$appPath = '${escapedAppPath}'`,
-          `$zip = '${escapedZipPath}'`,
-          `$staging = '${escapedStagingPath}'`,
-          `$pid_app = ${pid}`,
-          "while (Get-Process -Id $pid_app -ErrorAction SilentlyContinue) { Start-Sleep -Seconds 1 }",
-          "Expand-Archive -Path $zip -DestinationPath $staging -Force",
-          `$sourceExe = (Get-ChildItem -Path $staging -Filter '*.exe' -Recurse | Select-Object -First 1).FullName`,
-          `if (-not $sourceExe) { throw 'Executable not found in update package' }`,
-          `$sourceResources = (Get-ChildItem -Path $staging -Filter 'resources.neu' -Recurse | Select-Object -First 1).FullName`,
-          `if (Test-Path "$appPath\\$targetExe") { Copy-Item "$appPath\\$targetExe" "$staging\\app.exe.bak" -Force }`,
-          `if (Test-Path "$appPath\\resources.neu") { Copy-Item "$appPath\\resources.neu" "$staging\\resources.neu.bak" -Force }`,
-          "try {",
-          `  Copy-Item $sourceExe "$appPath\\$targetExe" -Force`,
-          `  if ($sourceResources) { Copy-Item $sourceResources "$appPath\\resources.neu" -Force }`,
-          "} catch {",
-          `  if (Test-Path "$staging\\app.exe.bak") { Copy-Item "$staging\\app.exe.bak" "$appPath\\$targetExe" -Force }`,
-          `  if (Test-Path "$staging\\resources.neu.bak") { Copy-Item "$staging\\resources.neu.bak" "$appPath\\resources.neu" -Force }`,
-          "  throw",
-          "}",
-          "Remove-Item $zip -Force -ErrorAction SilentlyContinue",
-          "Remove-Item $staging -Recurse -Force -ErrorAction SilentlyContinue",
-          `Start-Process "$appPath\\$targetExe"`
-        ].join("\r\n");
-        await Neutralino.filesystem.writeFile(scriptPath, script);
-        onProgress("Restarting WeekBox to apply update\u2026");
-        await Neutralino.os.execCommand(
-          `powershell -ExecutionPolicy Bypass -File "${scriptPath}"`,
-          { background: true }
-        );
-        onHandoff();
-        await Neutralino.app.exit();
       }
+      return {
+        status: "unsupported",
+        message:
+          "Automatic updates are not available for this release yet. Download the latest version manually.",
+      };
+    }
+    const platform = getPlatformPackage();
+    if (!platform) {
+      return {
+        status: "unsupported",
+        message: "Automatic updates are not available for this platform.",
+      };
+    }
+    const asset = getReleaseAsset(release, platform);
+    if (!asset) {
+      throw new Error(
+        `The latest WeekBox release has no update package for ${window.NL_OS}.`,
+      );
+    }
+    if (compareVersions(latestVersion, currentVersion) <= 0) {
+      return { status: "current", currentVersion, latestVersion };
+    }
+    if (!/^sha256:[a-f0-9]{64}$/i.test(asset.digest || "")) {
+      throw new Error(
+        "The latest WeekBox release has no valid SHA-256 digest.",
+      );
+    }
+    return {
+      status: "available",
+      currentVersion,
+      latestVersion,
+      asset,
+      releaseUrl: release.html_url || RELEASES_PAGE,
     };
-  
-
+  },
+  /**
+   * Orchestrates the installation of a new update based on its type and target platform.
+   * @param {Object} update - The update data object returned by check().
+   * @param {Function} [onProgress] - Callback to report installation progress.
+   * @param {Function} [onHandoff] - Callback executed immediately before exiting the app.
+   */
+  async install(update, onProgress = () => {}, onHandoff = () => {}) {
+    if (update?.isResourcesUpdate) {
+      return this.installResourcesUpdate(update, onProgress, onHandoff);
+    }
+    if (update?.windowsPackage) {
+      return this.installWindowsPackage(update, onProgress, onHandoff);
+    }
+    const platform = getPlatformPackage();
+    if (!platform)
+      throw new Error("Automatic updates are not available for this platform.");
+    if (!update?.asset)
+      throw new Error("No WeekBox update is ready to install.");
+    const updatePath = `${window.NL_PATH}/${UPDATE_DIRECTORY}`;
+    const archivePath = `${updatePath}/${update.asset.name}`;
+    const scriptPath = `${updatePath}/apply-update.sh`;
+    const expectedDigest = getExpectedDigest(update.asset);
+    await Neutralino.filesystem.createDirectory(updatePath).catch(() => {});
+    onProgress("Downloading update\u2026");
+    await downloadArchive({
+      url: update.asset.browser_download_url,
+      outPath: archivePath,
+      getTask: () => null,
+      onProgress: (status) => onProgress(status),
+    });
+    const data = await Neutralino.filesystem.readBinaryFile(archivePath);
+    onProgress("Verifying update\u2026");
+    const actualDigest = toHex(await crypto.subtle.digest("SHA-256", data));
+    if (actualDigest !== expectedDigest) {
+      throw new Error("Downloaded update failed its integrity check.");
+    }
+    onProgress("Closing WeekBox to apply update\u2026");
+    const applyScript = createUnixApplyScript({
+      appPath: window.NL_PATH,
+      archivePath,
+      expectedDigest,
+      binaryName: platform.binary,
+      scriptPath,
+      targetExe: window.NL_ARGS?.[0] || null,
+    });
+    await Neutralino.filesystem.writeFile(scriptPath, applyScript);
+    const command = `/bin/sh ${quoteShellString(scriptPath)} >/dev/null 2>&1 &`;
+    await Neutralino.os.execCommand(command, {
+      background: true,
+    });
+    onHandoff();
+    await Neutralino.app.exit();
+  },
+  async installResourcesUpdate(update, onProgress, onHandoff) {
+    if (!update?.asset)
+      throw new Error("No WeekBox update is ready to install.");
+    const target = `${window.NL_PATH}/resources.neu`;
+    const staging = `${window.NL_PATH}/${UPDATE_DIRECTORY}/resources.neu`;
+    const backup = `${window.NL_PATH}/${UPDATE_DIRECTORY}/resources.neu.bak`;
+    await Neutralino.filesystem
+      .createDirectory(`${window.NL_PATH}/${UPDATE_DIRECTORY}`)
+      .catch(() => {});
+    const targetExists = await Neutralino.filesystem
+      .getStats(target)
+      .then(() => true)
+      .catch(() => false);
+    if (targetExists) {
+      const current = await Neutralino.filesystem.readBinaryFile(target);
+      await Neutralino.filesystem.writeBinaryFile(backup, current);
+    }
+    onProgress("Downloading update\u2026");
+    await downloadArchive({
+      url: update.asset.browser_download_url,
+      outPath: staging,
+      getTask: () => null,
+      onProgress: (status) => onProgress(status),
+    });
+    const bytes = new Uint8Array(
+      await Neutralino.filesystem.readBinaryFile(staging),
+    );
+    onProgress("Verifying update\u2026");
+    if (!isValidNeutralinoBundle(bytes)) {
+      await Neutralino.filesystem.remove(backup).catch(() => {});
+      throw new Error("Downloaded update is not a valid app bundle.");
+    }
+    const actual = toHex(await crypto.subtle.digest("SHA-256", bytes));
+    const expected = getExpectedDigest(update.asset);
+    if (actual !== expected) {
+      await Neutralino.filesystem.remove(backup).catch(() => {});
+      throw new Error("Downloaded update failed its integrity check.");
+    }
+    onProgress("Installing update\u2026");
+    await Neutralino.filesystem.writeBinaryFile(staging, bytes);
+    await Neutralino.filesystem.writeBinaryFile(target, bytes);
+    onProgress("Restarting WeekBox\u2026");
+    const exe = String(window.NL_ARGS?.[0] || "").trim();
+    if (!exe)
+      throw new Error(
+        "WeekBox could not restart because the application path is missing.",
+      );
+    if (window.NL_OS === "Darwin" && exe.includes(".app/Contents/MacOS/")) {
+      const appBundle = exe.substring(0, exe.indexOf(".app/") + 5);
+      await Neutralino.os.execCommand(`open "${appBundle}"`, {
+        background: true,
+      });
+    } else {
+      await Neutralino.os.execCommand(`"${exe}"`, { background: true });
+    }
+    onHandoff();
+    await Neutralino.app.exit();
+  },
+  async installWindowsPackage(update, onProgress, onHandoff) {
+    if (!update?.asset)
+      throw new Error("No WeekBox update is ready to install.");
+    const updateDir = `${window.NL_PATH}/${UPDATE_DIRECTORY}`;
+    const zipPath = `${updateDir}/update.zip`;
+    const staging = `${updateDir}/staging`;
+    const scriptPath = `${updateDir}/apply-update.ps1`;
+    const appPath = window.NL_PATH;
+    await Neutralino.filesystem.createDirectory(updateDir).catch(() => {});
+    onProgress("Downloading update\u2026");
+    await downloadArchive({
+      url: update.asset.browser_download_url,
+      outPath: zipPath,
+      getTask: () => null,
+      onProgress: (status) => onProgress(status),
+    });
+    onProgress("Verifying update\u2026");
+    const bytes = new Uint8Array(
+      await Neutralino.filesystem.readBinaryFile(zipPath),
+    );
+    if (!(
+      bytes[0] === 80 &&
+      bytes[1] === 75 &&
+      bytes[2] === 3 &&
+      bytes[3] === 4
+    )) {
+      await Neutralino.filesystem.remove(zipPath).catch(() => {});
+      throw new Error("Downloaded update is not a valid package.");
+    }
+    const actualZipDigest = toHex(await crypto.subtle.digest("SHA-256", bytes));
+    const expectedZipDigest = getExpectedDigest(update.asset);
+    if (actualZipDigest !== expectedZipDigest) {
+      await Neutralino.filesystem.remove(zipPath).catch(() => {});
+      throw new Error("Downloaded update failed its integrity check.");
+    }
+    const pid = window.NL_PID;
+    const executableArgument = String(window.NL_ARGS?.[0] || "").trim();
+    const targetExe = executableArgument.split(/[/\\]/).pop();
+    if (!String(appPath || "").trim() || !targetExe) {
+      throw new Error(
+        "WeekBox could not apply the update because the application path is missing.",
+      );
+    }
+    const escapedAppPath = quotePowerShellLiteral(appPath);
+    const escapedZipPath = quotePowerShellLiteral(zipPath);
+    const escapedStagingPath = quotePowerShellLiteral(staging);
+    const script = [
+      "$ErrorActionPreference = 'Stop'",
+      `$appPath = '${escapedAppPath}'`,
+      `$zip = '${escapedZipPath}'`,
+      `$staging = '${escapedStagingPath}'`,
+      `$pid_app = ${pid}`,
+      "while (Get-Process -Id $pid_app -ErrorAction SilentlyContinue) { Start-Sleep -Seconds 1 }",
+      "Expand-Archive -Path $zip -DestinationPath $staging -Force",
+      `$sourceExe = (Get-ChildItem -Path $staging -Filter '*.exe' -Recurse | Select-Object -First 1).FullName`,
+      `if (-not $sourceExe) { throw 'Executable not found in update package' }`,
+      `$sourceResources = (Get-ChildItem -Path $staging -Filter 'resources.neu' -Recurse | Select-Object -First 1).FullName`,
+      `if (Test-Path "$appPath\\$targetExe") { Copy-Item "$appPath\\$targetExe" "$staging\\app.exe.bak" -Force }`,
+      `if (Test-Path "$appPath\\resources.neu") { Copy-Item "$appPath\\resources.neu" "$staging\\resources.neu.bak" -Force }`,
+      "try {",
+      `  Copy-Item $sourceExe "$appPath\\$targetExe" -Force`,
+      `  if ($sourceResources) { Copy-Item $sourceResources "$appPath\\resources.neu" -Force }`,
+      "} catch {",
+      `  if (Test-Path "$staging\\app.exe.bak") { Copy-Item "$staging\\app.exe.bak" "$appPath\\$targetExe" -Force }`,
+      `  if (Test-Path "$staging\\resources.neu.bak") { Copy-Item "$staging\\resources.neu.bak" "$appPath\\resources.neu" -Force }`,
+      "  throw",
+      "}",
+      "Remove-Item $zip -Force -ErrorAction SilentlyContinue",
+      "Remove-Item $staging -Recurse -Force -ErrorAction SilentlyContinue",
+      `Start-Process "$appPath\\$targetExe"`,
+    ].join("\r\n");
+    await Neutralino.filesystem.writeFile(scriptPath, script);
+    onProgress("Restarting WeekBox to apply update\u2026");
+    await Neutralino.os.execCommand(
+      `powershell -ExecutionPolicy Bypass -File "${scriptPath}"`,
+      { background: true },
+    );
+    onHandoff();
+    await Neutralino.app.exit();
+  },
+};
 
 export { appUpdater };

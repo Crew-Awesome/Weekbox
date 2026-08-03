@@ -1,16 +1,18 @@
-import { getRealEntries, getParentPath } from './path.util.js';
+import { getRealEntries, getParentPath } from "./path.util.js";
 
 function describeFileSystemError(error) {
   if (error instanceof Error) return error.message;
   if (error && typeof error === "object") {
-    return error.message || error.description || error.code || JSON.stringify(error);
+    return (
+      error.message || error.description || error.code || JSON.stringify(error)
+    );
   }
   return String(error || "Unknown filesystem error");
 }
 
 function getBundleExecutableName(infoPlist) {
   const match = String(infoPlist).match(
-    /<key>\s*CFBundleExecutable\s*<\/key>\s*<string>\s*([^<]+?)\s*<\/string>/i
+    /<key>\s*CFBundleExecutable\s*<\/key>\s*<string>\s*([^<]+?)\s*<\/string>/i,
   );
   return match?.[1]?.trim() || "";
 }
@@ -25,7 +27,7 @@ var _ExecutableService = class _ExecutableService {
       const currentDir = directories.pop();
       try {
         const entries = getRealEntries(
-          await Neutralino.filesystem.readDirectory(currentDir)
+          await Neutralino.filesystem.readDirectory(currentDir),
         );
         for (const entry of entries) {
           const fullPath = `${currentDir}/${entry.entry}`;
@@ -34,19 +36,23 @@ var _ExecutableService = class _ExecutableService {
               const macOSDirectory = `${fullPath}/Contents/MacOS`;
               try {
                 const appEntries = getRealEntries(
-                  await Neutralino.filesystem.readDirectory(macOSDirectory)
+                  await Neutralino.filesystem.readDirectory(macOSDirectory),
                 );
                 const bundleExecutable = getBundleExecutableName(
                   await Neutralino.filesystem.readFile(
-                    `${fullPath}/Contents/Info.plist`
-                  )
+                    `${fullPath}/Contents/Info.plist`,
+                  ),
                 );
                 const executable = appEntries.find(
-                  (appEntry) => String(appEntry.type).toUpperCase() === "FILE" && appEntry.entry === bundleExecutable
+                  (appEntry) =>
+                    String(appEntry.type).toUpperCase() === "FILE" &&
+                    appEntry.entry === bundleExecutable,
                 );
                 if (executable) return `${macOSDirectory}/${executable.entry}`;
                 const fallback = appEntries.find(
-                  (appEntry) => String(appEntry.type).toUpperCase() === "FILE" && !appEntry.entry.includes(".")
+                  (appEntry) =>
+                    String(appEntry.type).toUpperCase() === "FILE" &&
+                    !appEntry.entry.includes("."),
                 );
                 if (fallback) return `${macOSDirectory}/${fallback.entry}`;
               } catch (error) {
@@ -56,7 +62,12 @@ var _ExecutableService = class _ExecutableService {
             directories.push(fullPath);
             continue;
           }
-          if (entry.entry.toLowerCase().endsWith(".exe") || !isWindows && !entry.entry.includes(".") && entry.entry !== "CodeResources") {
+          if (
+            entry.entry.toLowerCase().endsWith(".exe") ||
+            (!isWindows &&
+              !entry.entry.includes(".") &&
+              entry.entry !== "CodeResources")
+          ) {
             return fullPath;
           }
         }
@@ -65,7 +76,7 @@ var _ExecutableService = class _ExecutableService {
         console.warn(
           "Could not inspect engine directory:",
           currentDir,
-          this.lastError
+          this.lastError,
         );
       }
     }
@@ -73,10 +84,15 @@ var _ExecutableService = class _ExecutableService {
       try {
         const result = await Neutralino.os.execCommand(
           `where.exe /r "${dir.replace(/\//g, "\\")}" *.exe`,
-          { background: false }
+          { background: false },
         );
         if (result.exitCode === 0) {
-          return (result.stdOut || "").split(/\r?\n/).map((path) => path.trim()).find(Boolean) || null;
+          return (
+            (result.stdOut || "")
+              .split(/\r?\n/)
+              .map((path) => path.trim())
+              .find(Boolean) || null
+          );
         }
       } catch (error) {
         console.warn("Could not search for a Windows executable:", dir, error);
@@ -98,20 +114,24 @@ var _ExecutableService = class _ExecutableService {
         ".ico": "image/x-icon",
         ".icns": "image/x-icns",
         ".png": "image/png",
-        ".svg": "image/svg+xml"
+        ".svg": "image/svg+xml",
       };
       const icon = entries.find((entry) => {
-        const extension = entry.entry.slice(entry.entry.lastIndexOf(".")).toLowerCase();
+        const extension = entry.entry
+          .slice(entry.entry.lastIndexOf("."))
+          .toLowerCase();
         return entry.type === "FILE" && extension in iconMimeTypes;
       });
       if (!icon) return "";
       const data = await Neutralino.filesystem.readBinaryFile(
-        `${executableDir}/${icon.entry}`
+        `${executableDir}/${icon.entry}`,
       );
       const bytes = new Uint8Array(data);
       let binary = "";
       for (const byte of bytes) binary += String.fromCharCode(byte);
-      const extension = icon.entry.slice(icon.entry.lastIndexOf(".")).toLowerCase();
+      const extension = icon.entry
+        .slice(icon.entry.lastIndexOf("."))
+        .toLowerCase();
       return `data:${iconMimeTypes[extension]};base64,${window.btoa(binary)}`;
     } catch (error) {
       return "";

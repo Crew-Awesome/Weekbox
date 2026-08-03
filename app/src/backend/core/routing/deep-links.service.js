@@ -1,12 +1,12 @@
-import { router } from './router.service.js';
-import { gameBananaApi } from '../../providers/gamebanana/gamebanana.provider.js';
-
-
+import { router } from "./router.service.js";
+import { gameBananaApi } from "../../providers/gamebanana/gamebanana.provider.js";
 
 import { modModal } from "../../../ui/js/index.js";
 import { sidebar as sidebar2 } from "../../../ui/js/index.js";
 function parseWeekboxLink(value) {
-  const directMatch = String(value || "").trim().match(/^weekbox:\/\/mod(?:\/|,)(\d+)\/?$/i);
+  const directMatch = String(value || "")
+    .trim()
+    .match(/^weekbox:\/\/mod(?:\/|,)(\d+)\/?$/i);
   if (directMatch) return { type: "mod", id: Number(directMatch[1]) };
   try {
     const url = new URL(value);
@@ -24,7 +24,7 @@ async function openWeekboxLink(value) {
   if (!target) return false;
   const engineId = gameBananaApi.getEngineIdForSubmission(
     `${target.type}s`,
-    target.id
+    target.id,
   );
   if (engineId) return sidebar2.openEngine(engineId);
   await router.navigate("home");
@@ -32,20 +32,12 @@ async function openWeekboxLink(value) {
   return true;
 }
 async function openLaunchDeepLink() {
-  const link = window.NL_ARGS?.find(
-    (argument) => argument.toLowerCase().startsWith("weekbox:")
+  const link = window.NL_ARGS?.find((argument) =>
+    argument.toLowerCase().startsWith("weekbox:"),
   );
   if (!link) return false;
-  await Neutralino.window.focus().catch(() => {
-  });
+  await Neutralino.window.focus().catch(() => {});
   return openWeekboxLink(link);
 }
-
-    
-    
-    
-    
-  
-
 
 export { parseWeekboxLink, openWeekboxLink, openLaunchDeepLink };

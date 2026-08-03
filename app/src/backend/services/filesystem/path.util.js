@@ -1,9 +1,15 @@
 function sanitizePathSegment(value) {
-  return String(value || "").replace(/[<>:"/\\|?*]+/g, "").trim();
+  return String(value || "")
+    .replace(/[<>:"/\\|?*]+/g, "")
+    .trim();
 }
 
 function sanitizeModFolderName(value, fallback = "Mod") {
-  const asciiName = sanitizePathSegment(value).normalize("NFKD").replace(/[^\x20-\x7E]/g, "").replace(/\s+/g, " ").trim();
+  const asciiName = sanitizePathSegment(value)
+    .normalize("NFKD")
+    .replace(/[^\x20-\x7E]/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
   return asciiName || fallback;
 }
 
@@ -12,7 +18,9 @@ function getParentPath(path) {
 }
 
 function getRealEntries(entries) {
-  return (Array.isArray(entries) ? entries : []).filter((entry) => entry?.entry !== "." && entry?.entry !== "..");
+  return (Array.isArray(entries) ? entries : []).filter(
+    (entry) => entry?.entry !== "." && entry?.entry !== "..",
+  );
 }
 
 function getModFolderName(mod) {
@@ -30,7 +38,18 @@ function getEngineModFolderName(mod) {
 }
 
 function normalizeFolderName(value) {
-  return sanitizePathSegment(value).replace(/\s+/g, " ").trim().toLocaleLowerCase();
+  return sanitizePathSegment(value)
+    .replace(/\s+/g, " ")
+    .trim()
+    .toLocaleLowerCase();
 }
 
-export { getParentPath, sanitizePathSegment, getRealEntries, getModFolderName, getEngineModFolderName, sanitizeModFolderName, normalizeFolderName };
+export {
+  getParentPath,
+  sanitizePathSegment,
+  getRealEntries,
+  getModFolderName,
+  getEngineModFolderName,
+  sanitizeModFolderName,
+  normalizeFolderName,
+};

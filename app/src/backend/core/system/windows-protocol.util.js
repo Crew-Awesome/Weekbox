@@ -1,5 +1,7 @@
 function getExecutablePath() {
-  return String(window.NL_ARGS?.[0] || "").trim().replace(/^"|"$/g, "");
+  return String(window.NL_ARGS?.[0] || "")
+    .trim()
+    .replace(/^"|"$/g, "");
 }
 function quotePowerShell(value) {
   return `'${String(value).replace(/'/g, "''")}'`;
@@ -21,28 +23,30 @@ async function syncWindowsProtocolRegistration(enabled) {
   }
   const key = quotePowerShell(PROTOCOL_KEY);
   const executable = quotePowerShell(executablePath);
-  const script = enabled ? [
-    `$key = ${key}`,
-    `$exe = ${executable}`,
-    `$command = '"' + $exe + '" "%1"'`,
-    "New-Item -Path $key -Force | Out-Null",
-    "Set-Item -Path $key -Value 'URL:WeekBox Protocol'",
-    "New-ItemProperty -Path $key -Name 'URL Protocol' -Value '' -PropertyType String -Force | Out-Null",
-    'New-Item -Path "$key\\DefaultIcon" -Force | Out-Null',
-    `Set-Item -Path "$key\\DefaultIcon" -Value ($exe + ',0')`,
-    'New-Item -Path "$key\\shell\\open\\command" -Force | Out-Null',
-    'Set-Item -Path "$key\\shell\\open\\command" -Value $command'
-  ].join("; ") : [
-    `$key = ${key}`,
-    `$exe = ${executable}`,
-    `$expected = '"' + $exe + '" "%1"'`,
-    '$commandKey = Get-Item -LiteralPath "$key\\shell\\open\\command" -ErrorAction SilentlyContinue',
-    "if ($commandKey -and $commandKey.GetValue('') -eq $expected) { Remove-Item -LiteralPath $key -Recurse -Force }"
-  ].join("; ");
+  const script = enabled
+    ? [
+        `$key = ${key}`,
+        `$exe = ${executable}`,
+        `$command = '"' + $exe + '" "%1"'`,
+        "New-Item -Path $key -Force | Out-Null",
+        "Set-Item -Path $key -Value 'URL:WeekBox Protocol'",
+        "New-ItemProperty -Path $key -Name 'URL Protocol' -Value '' -PropertyType String -Force | Out-Null",
+        'New-Item -Path "$key\\DefaultIcon" -Force | Out-Null',
+        `Set-Item -Path "$key\\DefaultIcon" -Value ($exe + ',0')`,
+        'New-Item -Path "$key\\shell\\open\\command" -Force | Out-Null',
+        'Set-Item -Path "$key\\shell\\open\\command" -Value $command',
+      ].join("; ")
+    : [
+        `$key = ${key}`,
+        `$exe = ${executable}`,
+        `$expected = '"' + $exe + '" "%1"'`,
+        '$commandKey = Get-Item -LiteralPath "$key\\shell\\open\\command" -ErrorAction SilentlyContinue',
+        "if ($commandKey -and $commandKey.GetValue('') -eq $expected) { Remove-Item -LiteralPath $key -Recurse -Force }",
+      ].join("; ");
   try {
     const encoded = encodePowerShell(script);
     const result = await Neutralino.os.execCommand(
-      `powershell.exe -NoProfile -NonInteractive -EncodedCommand ${encoded}`
+      `powershell.exe -NoProfile -NonInteractive -EncodedCommand ${encoded}`,
     );
     if (result.exitCode !== 0) {
       throw new Error(result.stdErr || "Windows protocol registration failed");
@@ -55,12 +59,6 @@ async function syncWindowsProtocolRegistration(enabled) {
 }
 var PROTOCOL_KEY;
 
-    PROTOCOL_KEY = "HKCU:\\Software\\Classes\\weekbox";
-    
-    
-    
-    
-  
-
+PROTOCOL_KEY = "HKCU:\\Software\\Classes\\weekbox";
 
 export { syncWindowsProtocolRegistration };

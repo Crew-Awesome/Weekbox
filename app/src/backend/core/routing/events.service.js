@@ -3,9 +3,6 @@ function emitViewChange(view) {
 }
 var appEvents;
 
-    appEvents = new EventTarget();
-    
-  
-
+appEvents = new EventTarget();
 
 export { emitViewChange, appEvents };

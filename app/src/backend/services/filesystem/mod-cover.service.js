@@ -24,7 +24,7 @@ var _ModCoverService = class _ModCoverService {
   }
   async read(modId) {
     const path = this.getCoverPath(modId);
-    if (!await this.api.exists(path)) return null;
+    if (!(await this.api.exists(path))) return null;
     const bytes = await this.api.read(path, true);
     return blobToDataUrl(new Blob([bytes], { type: "image/webp" }));
   }
@@ -40,9 +40,11 @@ var _ModCoverService = class _ModCoverService {
       const canvas = document.createElement("canvas");
       canvas.width = Math.max(1, Math.round(image.naturalWidth * scale));
       canvas.height = Math.max(1, Math.round(image.naturalHeight * scale));
-      canvas.getContext("2d").drawImage(image, 0, 0, canvas.width, canvas.height);
-      return await new Promise(
-        (resolve) => canvas.toBlob((result) => resolve(result || blob), "image/webp", 0.84)
+      canvas
+        .getContext("2d")
+        .drawImage(image, 0, 0, canvas.width, canvas.height);
+      return await new Promise((resolve) =>
+        canvas.toBlob((result) => resolve(result || blob), "image/webp", 0.84),
       );
     } catch {
       return blob;
@@ -56,7 +58,7 @@ var _ModCoverService = class _ModCoverService {
     await this.api.write(
       this.getCoverPath(modId),
       await optimized.arrayBuffer(),
-      true
+      true,
     );
     return `mod-covers/${safeCoverName(modId)}.webp`;
   }
@@ -82,8 +84,8 @@ var _ModCoverService = class _ModCoverService {
     context.textAlign = "center";
     context.textBaseline = "middle";
     context.fillText("NO IMAGE ASSIGNED", canvas.width / 2, canvas.height / 2);
-    const image = await new Promise(
-      (resolve) => canvas.toBlob(resolve, "image/webp", 0.84)
+    const image = await new Promise((resolve) =>
+      canvas.toBlob(resolve, "image/webp", 0.84),
     );
     if (!image) throw new Error("Could not create the fallback mod image");
     return this.saveBlob(modId, image);

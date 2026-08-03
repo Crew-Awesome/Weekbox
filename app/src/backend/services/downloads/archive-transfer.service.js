@@ -1,10 +1,22 @@
-import { appSettings } from '../../core/index-core.js';
-import { getOsProcessId, sameProcessId } from '../processes/spawned-process.util.js';
-import { resolveExternalDownloadUrl, getRangeSupportedFileSize } from './external-download.resolver.js';
+import { appSettings } from "../../core/index-core.js";
+import {
+  getOsProcessId,
+  sameProcessId,
+} from "../processes/spawned-process.util.js";
+import {
+  resolveExternalDownloadUrl,
+  getRangeSupportedFileSize,
+} from "./external-download.resolver.js";
 
 function formatArchiveEntry(output) {
   const lines = output.trim().split("\n");
-  let name = lines[lines.length - 1].trim().replace(/^x\s+/, "").replace(/^inflating:\s+/, "").replace(/^extracting:\s+/, "").replace(/^creating:\s+/, "").trim();
+  let name = lines[lines.length - 1]
+    .trim()
+    .replace(/^x\s+/, "")
+    .replace(/^inflating:\s+/, "")
+    .replace(/^extracting:\s+/, "")
+    .replace(/^creating:\s+/, "")
+    .trim();
   const parts = name.split(/[/\\]/);
   if (parts.length > 2) name = `.../${parts.slice(-2).join("/")}`;
   return name;
@@ -31,7 +43,10 @@ function listenForProcess(process, getTask, onEvent) {
         return;
       }
       if (!sameProcessId(event.detail.id, process.id)) return;
-      if (event.detail.action === "exit" && sameProcessId(task?.pid, getOsProcessId(process))) {
+      if (
+        event.detail.action === "exit" &&
+        sameProcessId(task?.pid, getOsProcessId(process))
+      ) {
         task.pid = null;
       }
       onEvent(event.detail, handler, resolve, reject);
@@ -54,7 +69,9 @@ function getParentPath(path) {
 
 function requireValue(value, name) {
   if (!String(value || "").trim()) {
-    throw new Error(`WeekBox could not continue: required parameter '${name}' is missing.`);
+    throw new Error(
+      `WeekBox could not continue: required parameter '${name}' is missing.`,
+    );
   }
   return String(value);
 }
@@ -73,89 +90,139 @@ function appendProcessOutput(output, data) {
 }
 
 function getUsefulProcessOutput(output) {
-  return String(output || "")
-    .split(/\r?\n|\r/)
-    // curl writes its progress meter with carriage returns. On some Windows
-    // shells its final error lands on the same line as the last meter frame.
-    // Keep the error, but remove that frame before it reaches diagnostics.
-    .map((line) => line.trim().replace(/^[#=O\-\s\d.%]+(?=curl:\s*\()/i, ""))
-    .filter((line) => line)
-    .filter((line) => !/^[#=O\-\s]+$/.test(line))
-    .filter((line) => !/^[#=O\-\s]+\d+(?:\.\d+)?%?$/.test(line))
-    .filter((line) => !/^(?:%\s*Total|Dload\s+Upload|\d+(?:\.\d+)?\s+\d+(?:\.\d+)?\s+\d+(?:\.\d+)?)/i.test(line))
-    .join("\n")
-    .trim();
+  return (
+    String(output || "")
+      .split(/\r?\n|\r/)
+      // curl writes its progress meter with carriage returns. On some Windows
+      // shells its final error lands on the same line as the last meter frame.
+      // Keep the error, but remove that frame before it reaches diagnostics.
+      .map((line) => line.trim().replace(/^[#=O\-\s\d.%]+(?=curl:\s*\()/i, ""))
+      .filter((line) => line)
+      .filter((line) => !/^[#=O\-\s]+$/.test(line))
+      .filter((line) => !/^[#=O\-\s]+\d+(?:\.\d+)?%?$/.test(line))
+      .filter(
+        (line) =>
+          !/^(?:%\s*Total|Dload\s+Upload|\d+(?:\.\d+)?\s+\d+(?:\.\d+)?\s+\d+(?:\.\d+)?)/i.test(
+            line,
+          ),
+      )
+      .join("\n")
+      .trim()
+  );
 }
 
 function createProcessError(operation, exitCode, output) {
   const detail = getUsefulProcessOutput(output);
-  const httpStatus = detail.match(/\bHTTP\/\S+\s+(\d{3})\b|\b(\d{3})\b/)?.[1] || detail.match(/\b(\d{3})\b/)?.[1] || null;
+  const httpStatus =
+    detail.match(/\bHTTP\/\S+\s+(\d{3})\b|\b(\d{3})\b/)?.[1] ||
+    detail.match(/\b(\d{3})\b/)?.[1] ||
+    null;
   const createDownloadError = (message) => {
     const error = new Error(message);
     error.downloadDiagnostics = {
       curlCode: Number(exitCode),
       httpStatus: httpStatus ? Number(httpStatus) : null,
-      stderr: detail
+      stderr: detail,
     };
     return error;
   };
   if (operation === "Download" && Number(exitCode) === 23) {
     return createDownloadError(
-      "The download could not be written to storage. The folder may be missing, locked, read-only, or out of space."
+      "The download could not be written to storage. The folder may be missing, locked, read-only, or out of space.",
     );
   }
-  if (operation === "Extraction" && Number(exitCode) === 127 && detail.includes("7z")) {
+  if (
+    operation === "Extraction" &&
+    Number(exitCode) === 127 &&
+    detail.includes("7z")
+  ) {
     return new Error(
-      "To install .7z or .rar mods on Linux, you must install the p7zip package (e.g. sudo apt install p7zip-full)."
+      "To install .7z or .rar mods on Linux, you must install the p7zip package (e.g. sudo apt install p7zip-full).",
     );
   }
   if (operation === "Download" && Number(exitCode) === 28) {
-    return createDownloadError("GameBanana's download server is unavailable right now. Try again in a few minutes.");
+    return createDownloadError(
+      "GameBanana's download server is unavailable right now. Try again in a few minutes.",
+    );
   }
   if (operation === "Download" && Number(exitCode) === 6) {
-    return createDownloadError("WeekBox could not find the download server. Check your DNS or connection and try again.");
+    return createDownloadError(
+      "WeekBox could not find the download server. Check your DNS or connection and try again.",
+    );
   }
   if (operation === "Download" && Number(exitCode) === 7) {
-    return createDownloadError("WeekBox could not connect to the GameBanana download server. Try again in a few minutes.");
+    return createDownloadError(
+      "WeekBox could not connect to the GameBanana download server. Try again in a few minutes.",
+    );
   }
   if (operation === "Download" && Number(exitCode) === 35) {
-    return createDownloadError("The connection to the download server was reset. Try again in a few minutes.");
+    return createDownloadError(
+      "The connection to the download server was reset. Try again in a few minutes.",
+    );
   }
   if (operation === "Download" && Number(exitCode) === 1) {
-    return createDownloadError("The download was interrupted before it finished. Try again.");
+    return createDownloadError(
+      "The download was interrupted before it finished. Try again.",
+    );
   }
   if (operation === "Download" && Number(exitCode) === 18) {
-    return createDownloadError("The download was incomplete. WeekBox will retry it.");
+    return createDownloadError(
+      "The download was incomplete. WeekBox will retry it.",
+    );
   }
   if (operation === "Download" && Number(exitCode) === -1) {
-    return createDownloadError("The download process ended unexpectedly. WeekBox will retry it.");
+    return createDownloadError(
+      "The download process ended unexpectedly. WeekBox will retry it.",
+    );
   }
   if (operation === "Download" && Number(exitCode) === 56) {
-    return createDownloadError("The connection to the download server was interrupted. Try again.");
-  }
-  if (operation === "Download" && Number(exitCode) === 22 && /\b404\b/.test(detail)) {
     return createDownloadError(
-      "This download is no longer available (404). The file may have been removed, replaced, or made private."
+      "The connection to the download server was interrupted. Try again.",
+    );
+  }
+  if (
+    operation === "Download" &&
+    Number(exitCode) === 22 &&
+    /\b404\b/.test(detail)
+  ) {
+    return createDownloadError(
+      "This download is no longer available (404). The file may have been removed, replaced, or made private.",
     );
   }
   if (operation === "Download" && Number(exitCode) === 52) {
-    return createDownloadError("The download server closed the connection without sending a file. WeekBox will retry it.");
+    return createDownloadError(
+      "The download server closed the connection without sending a file. WeekBox will retry it.",
+    );
   }
-  if (operation === "Download" && Number(exitCode) === 22 && /\b(?:408|503|504)\b/.test(detail)) {
-    return createDownloadError("The download server is temporarily unavailable. WeekBox will retry it.");
+  if (
+    operation === "Download" &&
+    Number(exitCode) === 22 &&
+    /\b(?:408|503|504)\b/.test(detail)
+  ) {
+    return createDownloadError(
+      "The download server is temporarily unavailable. WeekBox will retry it.",
+    );
   }
   if (operation === "Download" && Number(exitCode) === 22) {
-    return createDownloadError(`The download server rejected this file${httpStatus ? ` (HTTP ${httpStatus})` : ""}. Choose another download or try again later.`);
+    return createDownloadError(
+      `The download server rejected this file${httpStatus ? ` (HTTP ${httpStatus})` : ""}. Choose another download or try again later.`,
+    );
   }
   return new Error(
-    `${operation} failed with exit code ${exitCode}${detail ? `: ${detail}` : ""}`
+    `${operation} failed with exit code ${exitCode}${detail ? `: ${detail}` : ""}`,
   );
 }
 
 function isTransientDownloadError(error) {
   const code = error?.downloadDiagnostics?.curlCode;
   const httpStatus = Number(error?.downloadDiagnostics?.httpStatus);
-  return [408, 503, 504].includes(httpStatus) || [1, 6, 7, 18, 28, 35, 52, 56, -1].includes(Number(code)) || /(?:exit code|curl:\s*\()\s*(?:-1|1|6|7|18|28|35|52|56)\b/i.test(String(error?.message || error));
+  return (
+    [408, 503, 504].includes(httpStatus) ||
+    [1, 6, 7, 18, 28, 35, 52, 56, -1].includes(Number(code)) ||
+    /(?:exit code|curl:\s*\()\s*(?:-1|1|6|7|18|28|35|52|56)\b/i.test(
+      String(error?.message || error),
+    )
+  );
 }
 
 function wait(ms) {
@@ -176,11 +243,13 @@ async function getDownloadContentType(url) {
   try {
     const result = await Neutralino.os.execCommand(
       `curl --globoff -sSIL --connect-timeout 10 --max-time 30 ${quoteCommandArgument(url)}`,
-      { background: false }
+      { background: false },
     );
     if (result.exitCode !== 0) return null;
     const headers = `${result.stdOut || ""}\n${result.stdErr || ""}`;
-    const values = [...headers.matchAll(/^content-type:\s*([^;\r\n]+)/gim)].map((match) => match[1].trim());
+    const values = [...headers.matchAll(/^content-type:\s*([^;\r\n]+)/gim)].map(
+      (match) => match[1].trim(),
+    );
     return values.at(-1) || null;
   } catch {
     return null;
@@ -199,10 +268,14 @@ async function retryTransientDownload(operation, getTask, onProgress, cleanup) {
       return await operation();
     } catch (error) {
       lastError = error;
-      if (error?.downloadDiagnostics) error.downloadDiagnostics.retryCount = attempt - 1;
+      if (error?.downloadDiagnostics)
+        error.downloadDiagnostics.retryCount = attempt - 1;
       if (!isTransientDownloadError(error) || attempt === attempts) throw error;
       await cleanup?.();
-      onProgress?.(`Download server is busy. Retrying (${attempt + 1}/${attempts})...`, 2);
+      onProgress?.(
+        `Download server is busy. Retrying (${attempt + 1}/${attempts})...`,
+        2,
+      );
       await waitForRetry(1000 * 2 ** (attempt - 1), getTask);
     }
   }
@@ -212,22 +285,25 @@ async function retryTransientDownload(operation, getTask, onProgress, cleanup) {
 function isNonFatalUnzipFilenameWarning(exitCode, output) {
   if (Number(exitCode) !== 1) return false;
   const detail = String(output || "");
-  return /mismatching ["']?local["']? filename/i.test(detail) && /continuing with ["']?central["']? filename version/i.test(detail);
+  return (
+    /mismatching ["']?local["']? filename/i.test(detail) &&
+    /continuing with ["']?central["']? filename version/i.test(detail)
+  );
 }
 
 async function detectArchiveFormat(path) {
   try {
     const data = new Uint8Array(
-      await Neutralino.filesystem.readBinaryFile(path, { pos: 0, size: 560 })
+      await Neutralino.filesystem.readBinaryFile(path, { pos: 0, size: 560 }),
     );
-    const startsWith = (...bytes) => bytes.every((byte, index) => data[index] === byte);
+    const startsWith = (...bytes) =>
+      bytes.every((byte, index) => data[index] === byte);
     if (startsWith(80, 75)) return "zip";
     if (startsWith(82, 97, 114, 33, 26, 7)) return "rar";
     if (startsWith(55, 122, 188, 175, 39, 28)) return "7z";
     if (startsWith(31, 139)) return "gzip";
     if (String.fromCharCode(...data.slice(257, 262)) === "ustar") return "tar";
-  } catch {
-  }
+  } catch {}
   return "unknown";
 }
 
@@ -237,19 +313,21 @@ async function hasExtractedPayload(path) {
     for (const entry of entries) {
       if ([".", "..", ".downloading"].includes(entry.entry)) continue;
       if (entry.type === "FILE") return true;
-      if (entry.type === "DIRECTORY" && await hasExtractedPayload(`${path}/${entry.entry}`)) {
+      if (
+        entry.type === "DIRECTORY" &&
+        (await hasExtractedPayload(`${path}/${entry.entry}`))
+      ) {
         return true;
       }
     }
-  } catch {
-  }
+  } catch {}
   return false;
 }
 
 function getDownloadSegments(totalBytes, outPath) {
   const count = Math.min(
     MAX_DOWNLOAD_SEGMENTS,
-    Math.ceil(totalBytes / MIN_SEGMENTED_DOWNLOAD_BYTES)
+    Math.ceil(totalBytes / MIN_SEGMENTED_DOWNLOAD_BYTES),
   );
   const partSize = Math.ceil(totalBytes / count);
   return Array.from({ length: count }, (_, index) => {
@@ -259,22 +337,23 @@ function getDownloadSegments(totalBytes, outPath) {
       start,
       end,
       size: end - start + 1,
-      path: `${outPath}.part-${index}`
+      path: `${outPath}.part-${index}`,
     };
   });
 }
 
 async function removeParts(parts) {
   await Promise.all(
-    parts.map(
-      (part) => Neutralino.filesystem.remove(part.path).catch(() => {
-      })
-    )
+    parts.map((part) =>
+      Neutralino.filesystem.remove(part.path).catch(() => {}),
+    ),
   );
 }
 
 function buildWindowsMergeCommand(parts, outPath) {
-  const list = parts.map((part) => quoteCommandArgument(part.path.replace(/\//g, "\\"))).join("+");
+  const list = parts
+    .map((part) => quoteCommandArgument(part.path.replace(/\//g, "\\")))
+    .join("+");
   const target = quoteCommandArgument(outPath.replace(/\//g, "\\"));
   return `cmd /c copy /b /y ${list} ${target}`;
 }
@@ -285,13 +364,16 @@ function buildUnixMergeCommand(parts, outPath) {
 }
 
 async function mergeParts(parts, outPath) {
-  const command = window.NL_OS === "Windows" ? buildWindowsMergeCommand(parts, outPath) : buildUnixMergeCommand(parts, outPath);
+  const command =
+    window.NL_OS === "Windows"
+      ? buildWindowsMergeCommand(parts, outPath)
+      : buildUnixMergeCommand(parts, outPath);
   const result = await Neutralino.os.execCommand(command, {
-    background: false
+    background: false,
   });
   if (result.exitCode !== 0) {
     throw new Error(
-      `Could not merge download parts: ${result.stdErr || result.stdOut || "unknown error"}`
+      `Could not merge download parts: ${result.stdErr || result.stdOut || "unknown error"}`,
     );
   }
 }
@@ -306,14 +388,12 @@ function getPowerShellExtractCommand(archivePath, destinationPath) {
   return `powershell -NoProfile -NonInteractive -Command "Expand-Archive -Path '${safeArchive}' -DestinationPath '${safeDest}' -Force"`;
 }
 
-var NESTED_ARCHIVE_PATTERNS = [
-  /\.zip$/i,
-  /\.tar\.gz$/i,
-  /\.tgz$/i,
-  /\.tar$/i
-];
+var NESTED_ARCHIVE_PATTERNS = [/\.zip$/i, /\.tar\.gz$/i, /\.tgz$/i, /\.tar$/i];
 function isNestedArchive(entryName) {
-  return NESTED_ARCHIVE_PATTERNS.some((pattern) => pattern.test(entryName)) || window.NL_OS === "Darwin" && /\.dmg$/i.test(String(entryName));
+  return (
+    NESTED_ARCHIVE_PATTERNS.some((pattern) => pattern.test(entryName)) ||
+    (window.NL_OS === "Darwin" && /\.dmg$/i.test(String(entryName)))
+  );
 }
 
 async function collectArchiveFiles(dir) {
@@ -350,7 +430,8 @@ function getNestedExtractionCommand(archivePath, destinationPath) {
   }
   const archive = archivePath;
   const dest = destinationPath;
-  const flags = lower.endsWith(".gz") || lower.endsWith(".tgz") ? "-xzf" : "-xf";
+  const flags =
+    lower.endsWith(".gz") || lower.endsWith(".tgz") ? "-xzf" : "-xf";
   return `tar ${flags} "${archive}" -C "${dest}"`;
 }
 
@@ -371,10 +452,9 @@ async function extractNestedArchives(destinationPath, getTask, onEntry) {
           destinationPath: parentDir,
           getTask,
           onEntry,
-          extractNested: false
+          extractNested: false,
         });
-        await Neutralino.filesystem.remove(archivePath).catch(() => {
-        });
+        await Neutralino.filesystem.remove(archivePath).catch(() => {});
         continue;
       }
       const command = getNestedExtractionCommand(archivePath, parentDir);
@@ -402,32 +482,39 @@ async function extractNestedArchives(destinationPath, getTask, onEntry) {
                 createProcessError(
                   "Nested extraction",
                   event.data,
-                  processOutput
-                )
+                  processOutput,
+                ),
               );
-          }
+          },
         );
       };
       try {
         await executeNested(command);
-        await Neutralino.filesystem.remove(archivePath).catch(() => {
-        });
+        await Neutralino.filesystem.remove(archivePath).catch(() => {});
       } catch (error) {
         let recovered = false;
         if (window.NL_OS === "Windows") {
-          if (String(error).includes("resolve failed") && !command.includes("--force-local")) {
+          if (
+            String(error).includes("resolve failed") &&
+            !command.includes("--force-local")
+          ) {
             try {
-              const fallbackCommand = command.includes("tar.exe") ? command.replace("tar.exe -xf", "tar.exe --force-local -xf") : command.replace("tar ", "tar --force-local ");
+              const fallbackCommand = command.includes("tar.exe")
+                ? command.replace("tar.exe -xf", "tar.exe --force-local -xf")
+                : command.replace("tar ", "tar --force-local ");
               await executeNested(fallbackCommand);
               recovered = true;
             } catch (retryError) {
               error = retryError;
             }
           }
-          if (!recovered && String(archivePath).toLowerCase().endsWith(".zip")) {
+          if (
+            !recovered &&
+            String(archivePath).toLowerCase().endsWith(".zip")
+          ) {
             try {
               await executeNested(
-                getPowerShellExtractCommand(archivePath, parentDir)
+                getPowerShellExtractCommand(archivePath, parentDir),
               );
               recovered = true;
             } catch (psError) {
@@ -436,8 +523,7 @@ async function extractNestedArchives(destinationPath, getTask, onEntry) {
           }
         }
         if (recovered) {
-          await Neutralino.filesystem.remove(archivePath).catch(() => {
-          });
+          await Neutralino.filesystem.remove(archivePath).catch(() => {});
         } else {
           console.warn("Could not extract nested archive:", archivePath, error);
         }
@@ -460,15 +546,21 @@ function createFileProgressReader(path, totalBytes = 0) {
     const bytes = Number(stats?.size) || 0;
     const now = performance.now();
     const elapsed = Math.max(1, now - previousAt);
-    const bytesPerSecond = Math.max(0, (bytes - previousBytes) * 1000 / elapsed);
+    const bytesPerSecond = Math.max(
+      0,
+      ((bytes - previousBytes) * 1000) / elapsed,
+    );
     previousBytes = bytes;
     previousAt = now;
     const total = Number(totalBytes) || 0;
-    const progress = total > 0 ? Math.min(99, bytes / total * 100) : undefined;
-    const amount = total > 0
-      ? `${formatTransferBytes(bytes)} of ${formatTransferBytes(total)}`
-      : formatTransferBytes(bytes);
-    const speed = bytesPerSecond > 0 ? ` at ${formatTransferBytes(bytesPerSecond)}/s` : "";
+    const progress =
+      total > 0 ? Math.min(99, (bytes / total) * 100) : undefined;
+    const amount =
+      total > 0
+        ? `${formatTransferBytes(bytes)} of ${formatTransferBytes(total)}`
+        : formatTransferBytes(bytes);
+    const speed =
+      bytesPerSecond > 0 ? ` at ${formatTransferBytes(bytesPerSecond)}/s` : "";
     return { progress, status: `Downloading ${amount}${speed}...` };
   };
 }
@@ -477,23 +569,31 @@ function createPartsProgressReader(parts, totalBytes) {
   let previousBytes = 0;
   let previousAt = performance.now();
   return async () => {
-    const sizes = await Promise.all(parts.map(async (part) => {
-      try {
-        return Number((await Neutralino.filesystem.getStats(part.path)).size) || 0;
-      } catch {
-        return 0;
-      }
-    }));
+    const sizes = await Promise.all(
+      parts.map(async (part) => {
+        try {
+          return (
+            Number((await Neutralino.filesystem.getStats(part.path)).size) || 0
+          );
+        } catch {
+          return 0;
+        }
+      }),
+    );
     const bytes = sizes.reduce((total, size) => total + size, 0);
     const now = performance.now();
     const elapsed = Math.max(1, now - previousAt);
-    const bytesPerSecond = Math.max(0, (bytes - previousBytes) * 1000 / elapsed);
+    const bytesPerSecond = Math.max(
+      0,
+      ((bytes - previousBytes) * 1000) / elapsed,
+    );
     previousBytes = bytes;
     previousAt = now;
-    const speed = bytesPerSecond > 0 ? ` at ${formatTransferBytes(bytesPerSecond)}/s` : "";
+    const speed =
+      bytesPerSecond > 0 ? ` at ${formatTransferBytes(bytesPerSecond)}/s` : "";
     return {
-      progress: Math.min(99, bytes / totalBytes * 100),
-      status: `Downloading ${formatTransferBytes(bytes)} of ${formatTransferBytes(totalBytes)}${speed}...`
+      progress: Math.min(99, (bytes / totalBytes) * 100),
+      status: `Downloading ${formatTransferBytes(bytes)} of ${formatTransferBytes(totalBytes)}${speed}...`,
     };
   };
 }
@@ -503,7 +603,11 @@ async function runCurlDownload(command, getTask, onProgress, getProgress) {
   try {
     process = await spawnProcessWithShell(command);
   } catch (error) {
-    const nativeError = createProcessError("Download", -1, error?.message || error);
+    const nativeError = createProcessError(
+      "Download",
+      -1,
+      error?.message || error,
+    );
     nativeError.cause = error;
     throw nativeError;
   }
@@ -523,16 +627,18 @@ async function runCurlDownload(command, getTask, onProgress, getProgress) {
   };
   reportProgress({ status: "Download process started..." });
   let isCheckingProgress = false;
-  const progressTimer = getProgress ? setInterval(async () => {
-    if (isCheckingProgress) return;
-    isCheckingProgress = true;
-    try {
-      reportProgress(await getProgress());
-    } catch (error) {
-    } finally {
-      isCheckingProgress = false;
-    }
-  }, 180) : null;
+  const progressTimer = getProgress
+    ? setInterval(async () => {
+        if (isCheckingProgress) return;
+        isCheckingProgress = true;
+        try {
+          reportProgress(await getProgress());
+        } catch (error) {
+        } finally {
+          isCheckingProgress = false;
+        }
+      }, 180)
+    : null;
   try {
     await listenForProcess(
       process,
@@ -544,8 +650,10 @@ async function runCurlDownload(command, getTask, onProgress, getProgress) {
           if (getProgress) return;
           const matches = output.match(/(\d+\.?\d*)%/g);
           reportProgress({
-            progress: matches?.length ? Number.parseFloat(matches[matches.length - 1]) : undefined,
-            status: "Receiving download data..."
+            progress: matches?.length
+              ? Number.parseFloat(matches[matches.length - 1])
+              : undefined,
+            status: "Receiving download data...",
           });
           return;
         }
@@ -553,30 +661,41 @@ async function runCurlDownload(command, getTask, onProgress, getProgress) {
         Neutralino.events.off("spawnedProcess", handler);
         if (event.data === 0) resolve();
         else reject(createProcessError("Download", event.data, processOutput));
-      }
+      },
     );
   } finally {
     if (progressTimer) clearInterval(progressTimer);
   }
 }
 
-async function downloadSingleArchive({ url, outPath, totalBytes = 0, getTask, onProgress }) {
+async function downloadSingleArchive({
+  url,
+  outPath,
+  totalBytes = 0,
+  getTask,
+  onProgress,
+}) {
   requireValue(url, "url");
   requireValue(outPath, "outPath");
-  if (url.includes("drive.google.com") || url.includes("drive.usercontent.google.com")) {
-    const fileId = url.match(/id=([^&]+)/)?.[1] || url.match(/\/file\/d\/([^/]+)/)?.[1];
+  if (
+    url.includes("drive.google.com") ||
+    url.includes("drive.usercontent.google.com")
+  ) {
+    const fileId =
+      url.match(/id=([^&]+)/)?.[1] || url.match(/\/file\/d\/([^/]+)/)?.[1];
     if (fileId) {
       const cookiePath = outPath + ".cookie";
       onProgress?.("Authorizing Google Drive download...", 2);
       await retryTransientDownload(
-        () => runCurlDownload(
-          `curl -s -L -c ${quoteCommandArgument(cookiePath)} "https://drive.google.com/uc?export=download&id=${fileId}"`,
-          getTask,
-          () => {}
-        ),
+        () =>
+          runCurlDownload(
+            `curl -s -L -c ${quoteCommandArgument(cookiePath)} "https://drive.google.com/uc?export=download&id=${fileId}"`,
+            getTask,
+            () => {},
+          ),
         getTask,
         onProgress,
-        () => Neutralino.filesystem.remove(cookiePath).catch(() => {})
+        () => Neutralino.filesystem.remove(cookiePath).catch(() => {}),
       );
       let token = "t";
       try {
@@ -585,15 +704,16 @@ async function downloadSingleArchive({ url, outPath, totalBytes = 0, getTask, on
         if (match) token = match[1];
       } catch (e) {}
       await retryTransientDownload(
-        () => runCurlDownload(
-          `curl -# -L --fail --show-error -b ${quoteCommandArgument(cookiePath)} "https://drive.google.com/uc?export=download&id=${fileId}&confirm=${token}" -o ${quoteCommandArgument(outPath)}`,
-          getTask,
-          onProgress,
-          createFileProgressReader(outPath, totalBytes)
-        ),
+        () =>
+          runCurlDownload(
+            `curl -# -L --fail --show-error -b ${quoteCommandArgument(cookiePath)} "https://drive.google.com/uc?export=download&id=${fileId}&confirm=${token}" -o ${quoteCommandArgument(outPath)}`,
+            getTask,
+            onProgress,
+            createFileProgressReader(outPath, totalBytes),
+          ),
         getTask,
         onProgress,
-        () => Neutralino.filesystem.remove(outPath).catch(() => {})
+        () => Neutralino.filesystem.remove(outPath).catch(() => {}),
       );
       await Neutralino.filesystem.remove(cookiePath).catch(() => {});
       return;
@@ -601,20 +721,21 @@ async function downloadSingleArchive({ url, outPath, totalBytes = 0, getTask, on
   }
 
   await retryTransientDownload(
-    () => runCurlDownload(
-      // Keep curl's progress bar enabled. `runCurlDownload` consumes its
-      // percentage updates; using -s here suppressed them and left every
-      // single-connection transfer looking like it was stuck at 2%.
-      // Use a low-speed timeout instead of an absolute transfer limit so a
-      // legitimate large or slow download is not aborted after two minutes.
-      `curl --globoff -# -L --fail --show-error --connect-timeout 15 --speed-time 60 --speed-limit 1024 ${quoteCommandArgument(url)} -o ${quoteCommandArgument(outPath)}`,
-      getTask,
-      onProgress,
-      createFileProgressReader(outPath, totalBytes)
-    ),
+    () =>
+      runCurlDownload(
+        // Keep curl's progress bar enabled. `runCurlDownload` consumes its
+        // percentage updates; using -s here suppressed them and left every
+        // single-connection transfer looking like it was stuck at 2%.
+        // Use a low-speed timeout instead of an absolute transfer limit so a
+        // legitimate large or slow download is not aborted after two minutes.
+        `curl --globoff -# -L --fail --show-error --connect-timeout 15 --speed-time 60 --speed-limit 1024 ${quoteCommandArgument(url)} -o ${quoteCommandArgument(outPath)}`,
+        getTask,
+        onProgress,
+        createFileProgressReader(outPath, totalBytes),
+      ),
     getTask,
     onProgress,
-    () => Neutralino.filesystem.remove(outPath).catch(() => {})
+    () => Neutralino.filesystem.remove(outPath).catch(() => {}),
   );
 }
 
@@ -623,26 +744,30 @@ async function downloadSegmentedArchive({
   outPath,
   totalBytes,
   getTask,
-  onProgress
+  onProgress,
 }) {
   const parts = getDownloadSegments(totalBytes, outPath);
   const getProgress = createPartsProgressReader(parts, totalBytes);
   try {
     await removeParts(parts);
     onProgress?.("Opening parallel download connections...", 2);
-    const requests = parts.map(
-      (part) => `-L --range ${part.start}-${part.end} -o ${quoteCommandArgument(part.path)} ${quoteCommandArgument(url)}`
-    ).join(" --next ");
+    const requests = parts
+      .map(
+        (part) =>
+          `-L --range ${part.start}-${part.end} -o ${quoteCommandArgument(part.path)} ${quoteCommandArgument(url)}`,
+      )
+      .join(" --next ");
     await retryTransientDownload(
-      () => runCurlDownload(
-        `curl --globoff -# --fail --show-error --parallel --parallel-max ${parts.length} ${requests}`,
-        getTask,
-        onProgress,
-        getProgress
-      ),
+      () =>
+        runCurlDownload(
+          `curl --globoff -# --fail --show-error --parallel --parallel-max ${parts.length} ${requests}`,
+          getTask,
+          onProgress,
+          getProgress,
+        ),
       getTask,
       onProgress,
-      () => removeParts(parts)
+      () => removeParts(parts),
     );
     if (getTask()?.cancelled) throw new Error("Cancelled");
     const partSizes = await Promise.all(
@@ -652,7 +777,7 @@ async function downloadSegmentedArchive({
         } catch (error) {
           return 0;
         }
-      })
+      }),
     );
     if (partSizes.some((size, index) => size !== parts[index].size)) {
       throw new Error("Parallel download returned incomplete file parts");
@@ -682,19 +807,25 @@ async function waitForDownloadedArchive(outPath) {
     if (attempt < 8) await wait(attempt * 250);
   }
   throw new Error(
-    `WeekBox could not access the temporary download after it completed. ${lastError?.message || lastError || "Unknown filesystem error"}`
+    `WeekBox could not access the temporary download after it completed. ${lastError?.message || lastError || "Unknown filesystem error"}`,
   );
 }
 
 async function finalizeDownloadedArchive(partPath, outPath) {
-  if (archiveFinalizations.has(outPath)) return archiveFinalizations.get(outPath);
+  if (archiveFinalizations.has(outPath))
+    return archiveFinalizations.get(outPath);
   const finalization = (async () => {
     await wait(150); // Let curl release Windows file handles after exit.
     await waitForDownloadedArchive(partPath);
     let lastError;
     for (let attempt = 1; attempt <= 8; attempt += 1) {
       try {
-        if (await Neutralino.filesystem.getStats(outPath).then(() => true).catch(() => false)) {
+        if (
+          await Neutralino.filesystem
+            .getStats(outPath)
+            .then(() => true)
+            .catch(() => false)
+        ) {
           await Neutralino.filesystem.remove(outPath);
         }
         await Neutralino.filesystem.move(partPath, outPath);
@@ -705,17 +836,30 @@ async function finalizeDownloadedArchive(partPath, outPath) {
       }
     }
     try {
-      await Neutralino.filesystem.copy(partPath, outPath, { recursive: false, overwrite: true, skip: false });
+      await Neutralino.filesystem.copy(partPath, outPath, {
+        recursive: false,
+        overwrite: true,
+        skip: false,
+      });
       await waitForDownloadedArchive(outPath);
       await Neutralino.filesystem.remove(partPath).catch(() => {});
     } catch (copyError) {
-      const error = new Error("WeekBox could not finalize the temporary download. Close apps that may be using the WeekBox folder and try again.");
-      error.downloadDiagnostics = { stage: "finalize", code: copyError?.code || lastError?.code || "NE_FS_MOVEERR" };
+      const error = new Error(
+        "WeekBox could not finalize the temporary download. Close apps that may be using the WeekBox folder and try again.",
+      );
+      error.downloadDiagnostics = {
+        stage: "finalize",
+        code: copyError?.code || lastError?.code || "NE_FS_MOVEERR",
+      };
       throw error;
     }
   })();
   archiveFinalizations.set(outPath, finalization);
-  try { return await finalization; } finally { archiveFinalizations.delete(outPath); }
+  try {
+    return await finalization;
+  } finally {
+    archiveFinalizations.delete(outPath);
+  }
 }
 
 async function downloadArchive({
@@ -724,7 +868,7 @@ async function downloadArchive({
   getTask,
   onProgress,
   sourceType,
-  onDiagnostic
+  onDiagnostic,
 }) {
   if (!String(url || "").trim()) {
     throw new Error("This download does not have a valid link");
@@ -741,57 +885,69 @@ async function downloadArchive({
     await Neutralino.filesystem.writeFile(`${partPath}.write-check`, "");
     await Neutralino.filesystem.remove(`${partPath}.write-check`);
   } catch (error) {
-    throw new Error(`The download could not be written to storage. The destination folder is missing, locked, read-only, or out of space. (${error?.code || "write check failed"})`);
+    throw new Error(
+      `The download could not be written to storage. The destination folder is missing, locked, read-only, or out of space. (${error?.code || "write check failed"})`,
+    );
   }
   await Neutralino.filesystem.remove(partPath).catch(() => {});
   if (sourceType === "external") {
     onProgress?.("Preparing external download...", 2);
-    url = await resolveExternalDownloadUrl(
-      url,
-      (...args) => Neutralino.os.execCommand(...args)
+    url = await resolveExternalDownloadUrl(url, (...args) =>
+      Neutralino.os.execCommand(...args),
     );
-    onDiagnostic?.({ resolvedUrl: url, contentType: await getDownloadContentType(url) });
+    onDiagnostic?.({
+      resolvedUrl: url,
+      contentType: await getDownloadContentType(url),
+    });
   }
   const useMultithreadDownloads = appSettings.get("multithreadDownloads");
   let remoteFileSize = 0;
   if (useMultithreadDownloads) {
     try {
       onProgress?.("Checking download server...", 2);
-      remoteFileSize = await getRangeSupportedFileSize(
-        url,
-        (...args) => Neutralino.os.execCommand(...args)
+      remoteFileSize = await getRangeSupportedFileSize(url, (...args) =>
+        Neutralino.os.execCommand(...args),
       );
     } catch (error) {
       if (getTask()?.cancelled) throw error;
     }
   }
-  if (useMultithreadDownloads && remoteFileSize >= MIN_SEGMENTED_DOWNLOAD_BYTES) {
+  if (
+    useMultithreadDownloads &&
+    remoteFileSize >= MIN_SEGMENTED_DOWNLOAD_BYTES
+  ) {
     try {
       await downloadSegmentedArchive({
         url,
         outPath: partPath,
         totalBytes: remoteFileSize,
         getTask,
-        onProgress
+        onProgress,
       });
     } catch (error) {
       if (getTask()?.cancelled) throw error;
-      await Neutralino.filesystem.remove(partPath).catch(() => {
-      });
-      onProgress?.("Parallel download failed. Retrying with one connection...", 2);
+      await Neutralino.filesystem.remove(partPath).catch(() => {});
+      onProgress?.(
+        "Parallel download failed. Retrying with one connection...",
+        2,
+      );
       await downloadSingleArchive({
         url,
         outPath: partPath,
         totalBytes: remoteFileSize,
         getTask,
-        onProgress
+        onProgress,
       });
     }
     onProgress?.("Finalizing downloaded file...", 98);
     await finalizeDownloadedArchive(partPath, outPath);
     const stats = await Neutralino.filesystem.getStats(outPath);
     onProgress?.("Verifying downloaded archive...", 98);
-    onDiagnostic?.({ resolvedUrl: url, downloadedSize: stats.size, archiveFormat: await detectArchiveFormat(outPath) });
+    onDiagnostic?.({
+      resolvedUrl: url,
+      downloadedSize: stats.size,
+      archiveFormat: await detectArchiveFormat(outPath),
+    });
     return;
   }
   try {
@@ -801,13 +957,17 @@ async function downloadArchive({
       outPath: partPath,
       totalBytes: remoteFileSize,
       getTask,
-      onProgress
+      onProgress,
     });
     onProgress?.("Finalizing downloaded file...", 98);
     await finalizeDownloadedArchive(partPath, outPath);
     const stats = await Neutralino.filesystem.getStats(outPath);
     onProgress?.("Verifying downloaded archive...", 98);
-    onDiagnostic?.({ resolvedUrl: url, downloadedSize: stats.size, archiveFormat: await detectArchiveFormat(outPath) });
+    onDiagnostic?.({
+      resolvedUrl: url,
+      downloadedSize: stats.size,
+      archiveFormat: await detectArchiveFormat(outPath),
+    });
   } catch (error) {
     await Neutralino.filesystem.remove(partPath).catch(() => {});
     throw error;
@@ -819,12 +979,13 @@ async function extractArchive({
   destinationPath,
   getTask,
   onEntry,
-  extractNested = false
+  extractNested = false,
 }) {
   requireValue(archivePath, "archivePath");
   requireValue(destinationPath, "destinationPath");
   const reportEntry = createThrottledEntryReporter(onEntry);
-  const isDiskImage = window.NL_OS === "Darwin" && /\.dmg$/i.test(String(archivePath));
+  const isDiskImage =
+    window.NL_OS === "Darwin" && /\.dmg$/i.test(String(archivePath));
   if (isDiskImage) {
     const mountPath = `${destinationPath}/.weekbox-dmg-${Date.now()}`;
     let attached = false;
@@ -832,7 +993,7 @@ async function extractArchive({
     try {
       await Neutralino.filesystem.createDirectory(mountPath);
       const process = await spawnProcessWithShell(
-        `hdiutil attach -nobrowse -readonly -mountpoint ${quoteCommandArgument(mountPath)} ${quoteCommandArgument(archivePath)}`
+        `hdiutil attach -nobrowse -readonly -mountpoint ${quoteCommandArgument(mountPath)} ${quoteCommandArgument(archivePath)}`,
       );
       const task = getTask();
       if (task) task.pid = getOsProcessId(process);
@@ -852,15 +1013,16 @@ async function extractArchive({
               createProcessError(
                 "Mounting disk image",
                 event.data,
-                processOutput
-              )
+                processOutput,
+              ),
             );
-        }
+        },
       );
       attached = true;
       const entries = await Neutralino.filesystem.readDirectory(mountPath);
       const app = entries.find(
-        (entry) => entry.type === "DIRECTORY" && /\.app$/i.test(String(entry.entry))
+        (entry) =>
+          entry.type === "DIRECTORY" && /\.app$/i.test(String(entry.entry)),
       );
       if (!app) {
         throw new Error("The disk image does not contain a macOS application");
@@ -869,20 +1031,19 @@ async function extractArchive({
       await Neutralino.filesystem.copy(
         `${mountPath}/${app.entry}`,
         `${destinationPath}/${app.entry}`,
-        { recursive: true, overwrite: false }
+        { recursive: true, overwrite: false },
       );
     } finally {
       if (attached) {
         const result = await Neutralino.os.execCommand(
           `hdiutil detach ${quoteCommandArgument(mountPath)}`,
-          { background: false }
+          { background: false },
         );
         if (result.exitCode !== 0) {
           console.warn("Could not detach WeekBox disk image:", result.stdErr);
         }
       }
-      await Neutralino.filesystem.remove(mountPath).catch(() => {
-      });
+      await Neutralino.filesystem.remove(mountPath).catch(() => {});
     }
     return;
   }
@@ -892,14 +1053,24 @@ async function extractArchive({
   // Use the bundled extractor for ZIPs on Windows too. Windows tar can reject
   // valid archives on some systems, then the old PowerShell fallback can fail
   // before it even starts when PowerShell/AMSI is damaged.
-  if (archiveFormat === "rar" || archiveFormat === "7z" || archiveFormat === "zip") {
-    const binNames = isWindows ? (archiveFormat === "rar" ? ["7z.exe"] : ["7z.exe", "7za.exe"]) : window.NL_OS === "Darwin" ? ["7zz-mac", "7za-mac", "7zz"] : ["7zz-linux", "7za-linux", "7zzs", "7zz"];
+  if (
+    archiveFormat === "rar" ||
+    archiveFormat === "7z" ||
+    archiveFormat === "zip"
+  ) {
+    const binNames = isWindows
+      ? archiveFormat === "rar"
+        ? ["7z.exe"]
+        : ["7z.exe", "7za.exe"]
+      : window.NL_OS === "Darwin"
+        ? ["7zz-mac", "7za-mac", "7zz"]
+        : ["7zz-linux", "7za-linux", "7zzs", "7zz"];
     for (const binName of binNames) {
       const pathsToTry = [
         `${window.NL_PATH}/app/assets/bin/${binName}`,
         `${window.NL_PATH}/assets/bin/${binName}`,
         `${window.NL_CWD}/app/assets/bin/${binName}`,
-        `${window.NL_CWD}/assets/bin/${binName}`
+        `${window.NL_CWD}/assets/bin/${binName}`,
       ];
       for (const binPath of pathsToTry) {
         try {
@@ -907,13 +1078,22 @@ async function extractArchive({
             portable7z = binPath;
             break;
           }
-        } catch {
-        }
+        } catch {}
       }
       if (portable7z) break;
     }
   }
-  const command = portable7z ? `${quoteCommandArgument(portable7z)} x -y -aoa -o${quoteCommandArgument(destinationPath)} ${quoteCommandArgument(archivePath)}` : isWindows ? getWindowsExtractionCommand(archivePath, destinationPath) : archiveFormat === "tar" || archiveFormat === "gzip" ? `tar -xf ${quoteCommandArgument(archivePath)} -C ${quoteCommandArgument(destinationPath)}` : archiveFormat === "rar" || archiveFormat === "7z" ? window.NL_OS === "Darwin" ? `tar -xf ${quoteCommandArgument(archivePath)} -C ${quoteCommandArgument(destinationPath)}` : `7z x -y -aoa -o${quoteCommandArgument(destinationPath)} ${quoteCommandArgument(archivePath)}` : `unzip -oq ${quoteCommandArgument(archivePath)} -d ${quoteCommandArgument(destinationPath)}`;
+  const command = portable7z
+    ? `${quoteCommandArgument(portable7z)} x -y -aoa -o${quoteCommandArgument(destinationPath)} ${quoteCommandArgument(archivePath)}`
+    : isWindows
+      ? getWindowsExtractionCommand(archivePath, destinationPath)
+      : archiveFormat === "tar" || archiveFormat === "gzip"
+        ? `tar -xf ${quoteCommandArgument(archivePath)} -C ${quoteCommandArgument(destinationPath)}`
+        : archiveFormat === "rar" || archiveFormat === "7z"
+          ? window.NL_OS === "Darwin"
+            ? `tar -xf ${quoteCommandArgument(archivePath)} -C ${quoteCommandArgument(destinationPath)}`
+            : `7z x -y -aoa -o${quoteCommandArgument(destinationPath)} ${quoteCommandArgument(archivePath)}`
+          : `unzip -oq ${quoteCommandArgument(archivePath)} -d ${quoteCommandArgument(destinationPath)}`;
   const execute = async (cmd) => {
     const process = await spawnProcessWithShell(cmd);
     const task = getTask();
@@ -932,11 +1112,15 @@ async function extractArchive({
         }
         if (event.action !== "exit") return;
         Neutralino.events.off("spawnedProcess", handler);
-        if (event.data === 0 || !isWindows && isNonFatalUnzipFilenameWarning(event.data, processOutput))
+        if (
+          event.data === 0 ||
+          (!isWindows &&
+            isNonFatalUnzipFilenameWarning(event.data, processOutput))
+        )
           resolve();
         else
           reject(createProcessError("Extraction", event.data, processOutput));
-      }
+      },
     );
   };
   try {
@@ -945,10 +1129,14 @@ async function extractArchive({
     let recovered = false;
     if (isWindows) {
       if (await hasExtractedPayload(destinationPath)) recovered = true;
-      if (!recovered && String(error).includes("resolve failed") && !command.includes("--force-local")) {
+      if (
+        !recovered &&
+        String(error).includes("resolve failed") &&
+        !command.includes("--force-local")
+      ) {
         try {
           await execute(
-            command.replace("tar.exe -xf", "tar.exe --force-local -xf")
+            command.replace("tar.exe -xf", "tar.exe --force-local -xf"),
           );
           recovered = true;
         } catch (retryError) {
@@ -958,7 +1146,7 @@ async function extractArchive({
       if (!recovered && String(archivePath).toLowerCase().endsWith(".zip")) {
         try {
           await execute(
-            getPowerShellExtractCommand(archivePath, destinationPath)
+            getPowerShellExtractCommand(archivePath, destinationPath),
           );
           recovered = true;
         } catch (psError) {
@@ -967,11 +1155,11 @@ async function extractArchive({
       }
     } else if (archiveFormat === "unknown" || archiveFormat === "zip") {
       const fallbackCommands = [
-        `tar -xf ${quoteCommandArgument(archivePath)} -C ${quoteCommandArgument(destinationPath)}`
+        `tar -xf ${quoteCommandArgument(archivePath)} -C ${quoteCommandArgument(destinationPath)}`,
       ];
       if (window.NL_OS !== "Darwin") {
         fallbackCommands.push(
-          `7z x -y -aoa -o${quoteCommandArgument(destinationPath)} ${quoteCommandArgument(archivePath)}`
+          `7z x -y -aoa -o${quoteCommandArgument(destinationPath)} ${quoteCommandArgument(archivePath)}`,
         );
       }
       for (const fallbackCommand of fallbackCommands) {
@@ -979,13 +1167,16 @@ async function extractArchive({
           await execute(fallbackCommand);
           recovered = true;
           break;
-        } catch {
-        }
+        } catch {}
       }
     }
-    if (!recovered && window.NL_OS === "Darwin" && (archiveFormat === "rar" || archiveFormat === "7z")) {
+    if (
+      !recovered &&
+      window.NL_OS === "Darwin" &&
+      (archiveFormat === "rar" || archiveFormat === "7z")
+    ) {
       throw new Error(
-        `This ${archiveFormat.toUpperCase()} download cannot be unpacked by this version of macOS. Ask the mod author for a ZIP download.`
+        `This ${archiveFormat.toUpperCase()} download cannot be unpacked by this version of macOS. Ask the mod author for a ZIP download.`,
       );
     }
     if (!recovered) throw error;

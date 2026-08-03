@@ -4,7 +4,10 @@ import {
   createDiscoveryResult,
   normalizeDiscoveryCandidate,
 } from "../../utils/gamebanana/discovery-shapes.js";
-import { applyDiversity, rankCandidates } from "../../utils/gamebanana/discovery-ranker.js";
+import {
+  applyDiversity,
+  rankCandidates,
+} from "../../utils/gamebanana/discovery-ranker.js";
 import { DiscoverySnapshotStore } from "../../utils/gamebanana/discovery-snapshot-store.js";
 
 export class CategoryFeedService {

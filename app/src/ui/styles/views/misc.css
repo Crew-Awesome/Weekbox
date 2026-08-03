@@ -283,7 +283,9 @@ body.window-unfocused::after {
 }
 
 #popular-grid .mod-card {
-  transition: transform 240ms cubic-bezier(0.2, 0, 0, 1), box-shadow 240ms cubic-bezier(0.2, 0, 0, 1);
+  transition:
+    transform 240ms cubic-bezier(0.2, 0, 0, 1),
+    box-shadow 240ms cubic-bezier(0.2, 0, 0, 1);
 }
 
 #popular-grid .mod-card:not(.mod-card--featured):hover {
@@ -362,7 +364,9 @@ body.window-unfocused::after {
   line-height: 1.2;
   opacity: 0;
   transform: translate(-50%, -3px);
-  transition: opacity 120ms ease, transform 120ms ease;
+  transition:
+    opacity 120ms ease,
+    transform 120ms ease;
   white-space: nowrap;
 }
 
@@ -403,7 +407,9 @@ body.window-unfocused::after {
   flex-direction: row;
   height: 280px;
   overflow: hidden;
-  transition: transform 240ms cubic-bezier(0.2, 0, 0, 1), box-shadow 240ms cubic-bezier(0.2, 0, 0, 1);
+  transition:
+    transform 240ms cubic-bezier(0.2, 0, 0, 1),
+    box-shadow 240ms cubic-bezier(0.2, 0, 0, 1);
 }
 
 #popular-grid .mod-card--featured:hover {
@@ -592,8 +598,14 @@ body.window-unfocused::after {
   }
 }
 
-.mod-settings-engine { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-@media (max-width: 620px) { .mod-settings-engine { grid-template-columns: 1fr 1fr; } }
+.mod-settings-engine {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+@media (max-width: 620px) {
+  .mod-settings-engine {
+    grid-template-columns: 1fr 1fr;
+  }
+}
 
 .modal-overlay {
   position: fixed;
@@ -2121,5 +2133,11 @@ input:checked + .slider:before {
   margin-top: 16px;
 }
 
-.mod-settings-engine { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-@media (max-width: 620px) { .mod-settings-engine { grid-template-columns: 1fr 1fr; } }
+.mod-settings-engine {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+@media (max-width: 620px) {
+  .mod-settings-engine {
+    grid-template-columns: 1fr 1fr;
+  }
+}

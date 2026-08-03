@@ -1,9 +1,21 @@
-import { getOsProcessId, sameProcessId } from './spawned-process.util.js';
-import { parseWindowsProcessTree, parsePosixProcessTree, findDescendantPids } from './process-tree.util.js';
-import { appSettings } from '../../core/system/settings.service.js';
+import { getOsProcessId, sameProcessId } from "./spawned-process.util.js";
+import {
+  parseWindowsProcessTree,
+  parsePosixProcessTree,
+  findDescendantPids,
+} from "./process-tree.util.js";
+import { appSettings } from "../../core/system/settings.service.js";
 
 var ACTIVE_PROCESSES_KEY = "weekbox_active_processes";
-var WINE_COMMANDS = ["wine", "wine64", "wine-stable", "wine-devel", "wine-staging", "wine64-stable", "wine64-devel"];
+var WINE_COMMANDS = [
+  "wine",
+  "wine64",
+  "wine-stable",
+  "wine-devel",
+  "wine-staging",
+  "wine64-stable",
+  "wine64-devel",
+];
 function quoteShellArgument(value) {
   const argument = String(value ?? "").replace(/[\r\n]/g, "");
   if (window.NL_OS === "Windows") {
@@ -31,26 +43,25 @@ var _ProcessService = class _ProcessService {
   writePersistedProcesses(records) {
     try {
       localStorage.setItem(ACTIVE_PROCESSES_KEY, JSON.stringify(records));
-    } catch {
-    }
+    } catch {}
   }
   remember(key, process, metadata) {
     const records = this.readPersistedProcesses().filter(
-      (record) => record.key !== key
+      (record) => record.key !== key,
     );
     records.push({ key, id: process.id, pid: process.pid, ...metadata });
     this.writePersistedProcesses(records);
   }
   forget(key) {
     this.writePersistedProcesses(
-      this.readPersistedProcesses().filter((record) => record.key !== key)
+      this.readPersistedProcesses().filter((record) => record.key !== key),
     );
   }
   notifyStateChange(key, state) {
     document.dispatchEvent(
       new CustomEvent("weekbox-process-change", {
-        detail: { key, state }
-      })
+        detail: { key, state },
+      }),
     );
   }
   complete(key, onStateChange) {
@@ -67,20 +78,27 @@ var _ProcessService = class _ProcessService {
     this.exitWaiters.delete(key);
     waiters.forEach((resolve) => resolve());
     document.dispatchEvent(
-      new CustomEvent("weekbox-process-exit", { detail: { key } })
+      new CustomEvent("weekbox-process-exit", { detail: { key } }),
     );
     this.notifyStateChange(key, "completed");
     onStateChange?.("completed");
   }
   async watch(key, process, onStateChange) {
     const handler = async (event) => {
-      if (!sameProcessId(event.detail.id, process.id) || event.detail.action !== "exit")
+      if (
+        !sameProcessId(event.detail.id, process.id) ||
+        event.detail.action !== "exit"
+      )
         return;
       Neutralino.events.off("spawnedProcess", handler);
       this.processHandlers.delete(key);
       if (!this.closingProcesses.has(key)) {
         const descendantPid = await this.findRunningDescendant(process.pid);
-        if (descendantPid && this.activeProcesses.get(key) === process && !this.closingProcesses.has(key)) {
+        if (
+          descendantPid &&
+          this.activeProcesses.get(key) === process &&
+          !this.closingProcesses.has(key)
+        ) {
           const recovered = { ...process, pid: descendantPid, recovered: true };
           this.activeProcesses.set(key, recovered);
           this.remember(key, recovered, process.metadata || {});
@@ -115,7 +133,7 @@ var _ProcessService = class _ProcessService {
     const restored = [];
     for (const record of records) {
       const process = spawned.find(
-        (item) => String(item.pid) === String(record.pid)
+        (item) => String(item.pid) === String(record.pid),
       );
       if (process) {
         const tracked = { ...process, metadata: { ...record } };
@@ -124,7 +142,7 @@ var _ProcessService = class _ProcessService {
         restored.push(record);
         continue;
       }
-      if (!await this.isPidRunning(record.pid)) continue;
+      if (!(await this.isPidRunning(record.pid))) continue;
       this.activeProcesses.set(record.key, { ...record, recovered: true });
       this.monitor(record.key, record.pid);
       restored.push(record);
@@ -138,7 +156,7 @@ var _ProcessService = class _ProcessService {
     try {
       if (window.NL_OS === "Windows") {
         const result = await Neutralino.os.execCommand(
-          `tasklist /FI "PID eq ${safePid}" /NH`
+          `tasklist /FI "PID eq ${safePid}" /NH`,
         );
         return new RegExp(`\\b${safePid}\\b`).test(result.stdOut || "");
       }
@@ -153,10 +171,14 @@ var _ProcessService = class _ProcessService {
     if (!Number.isSafeInteger(safePid) || safePid <= 0) return null;
     try {
       const windows = window.NL_OS === "Windows";
-      const command = windows ? 'powershell -NoProfile -NonInteractive -Command "Get-CimInstance Win32_Process | Select-Object ProcessId,ParentProcessId | ConvertTo-Json -Compress"' : "ps -eo pid=,ppid=";
+      const command = windows
+        ? 'powershell -NoProfile -NonInteractive -Command "Get-CimInstance Win32_Process | Select-Object ProcessId,ParentProcessId | ConvertTo-Json -Compress"'
+        : "ps -eo pid=,ppid=";
       const result = await Neutralino.os.execCommand(command);
       if (result.exitCode !== 0) return null;
-      const processes = windows ? parseWindowsProcessTree(result.stdOut) : parsePosixProcessTree(result.stdOut);
+      const processes = windows
+        ? parseWindowsProcessTree(result.stdOut)
+        : parsePosixProcessTree(result.stdOut);
       const descendants = findDescendantPids(processes, safePid);
       for (const descendantPid of descendants.reverse()) {
         if (await this.isPidRunning(descendantPid)) return descendantPid;
@@ -186,7 +208,10 @@ var _ProcessService = class _ProcessService {
     const safePid = Number.parseInt(pid, 10);
     if (!Number.isSafeInteger(safePid) || safePid <= 0) return false;
     try {
-      const command = window.NL_OS === "Windows" ? `taskkill /PID ${safePid} /T /F` : `kill -TERM ${safePid}`;
+      const command =
+        window.NL_OS === "Windows"
+          ? `taskkill /PID ${safePid} /T /F`
+          : `kill -TERM ${safePid}`;
       const result = await Neutralino.os.execCommand(command);
       return result.exitCode === 0;
     } catch {
@@ -195,7 +220,9 @@ var _ProcessService = class _ProcessService {
   }
   async getWineInstallations() {
     if (window.NL_OS !== "Linux" && window.NL_OS !== "Darwin") return [];
-    const commands = WINE_COMMANDS.map((command) => `command -v ${command} 2>/dev/null`).join("; ");
+    const commands = WINE_COMMANDS.map(
+      (command) => `command -v ${command} 2>/dev/null`,
+    ).join("; ");
     let output = "";
     try {
       const result = await Neutralino.os.execCommand(commands);
@@ -203,23 +230,41 @@ var _ProcessService = class _ProcessService {
     } catch {
       return [];
     }
-    const paths = [...new Set(output.split(/\r?\n/).map((path) => path.trim()).filter((path) => path.startsWith("/")))];
-    const installations = await Promise.all(paths.map(async (command) => {
-      try {
-        const result = await Neutralino.os.execCommand(`${quoteShellArgument(command)} --version`);
-        if (result.exitCode !== 0) return null;
-        const version = String(result.stdOut || result.stdErr || "Wine").trim().split(/\r?\n/)[0] || "Wine";
-        return { command, version };
-      } catch {
-        return null;
-      }
-    }));
+    const paths = [
+      ...new Set(
+        output
+          .split(/\r?\n/)
+          .map((path) => path.trim())
+          .filter((path) => path.startsWith("/")),
+      ),
+    ];
+    const installations = await Promise.all(
+      paths.map(async (command) => {
+        try {
+          const result = await Neutralino.os.execCommand(
+            `${quoteShellArgument(command)} --version`,
+          );
+          if (result.exitCode !== 0) return null;
+          const version =
+            String(result.stdOut || result.stdErr || "Wine")
+              .trim()
+              .split(/\r?\n/)[0] || "Wine";
+          return { command, version };
+        } catch {
+          return null;
+        }
+      }),
+    );
     return installations.filter(Boolean);
   }
   async getWineCommand() {
     const installations = await this.getWineInstallations();
     const selected = appSettings.get("wineCommand");
-    return installations.find((wine) => wine.command === selected)?.command || installations[0]?.command || null;
+    return (
+      installations.find((wine) => wine.command === selected)?.command ||
+      installations[0]?.command ||
+      null
+    );
   }
   async launch(key, executablePath, onStateChange, args = [], metadata = {}) {
     if (this.activeProcesses.has(key)) {
@@ -239,16 +284,16 @@ var _ProcessService = class _ProcessService {
         }
         command = [
           `${quoteShellArgument(wineCommand)} ${quoteShellArgument(executablePath)}`,
-          ...args.map((arg) => quoteShellArgument(arg))
+          ...args.map((arg) => quoteShellArgument(arg)),
         ].join(" ");
       } else {
         command = [
           quoteShellArgument(executablePath),
-          ...args.map((arg) => quoteShellArgument(arg))
+          ...args.map((arg) => quoteShellArgument(arg)),
         ].join(" ");
       }
       const process = await Neutralino.os.spawnProcess(command, {
-        cwd: this.executables.getDirectory(executablePath)
+        cwd: this.executables.getDirectory(executablePath),
       });
       process.metadata = { ...metadata, executablePath };
       this.activeProcesses.set(key, process);
@@ -261,12 +306,12 @@ var _ProcessService = class _ProcessService {
       console.error("Could not launch engine", {
         executablePath,
         command,
-        error
+        error,
       });
       errorHandler.show({
         error,
         action: "Launch engine",
-        item: executablePath
+        item: executablePath,
       });
       onStateChange?.("error");
       return false;
@@ -279,12 +324,12 @@ var _ProcessService = class _ProcessService {
     this.closingProcesses.add(key);
     try {
       if (process.recovered) {
-        if (!await this.terminatePid(process.pid)) throw new Error();
+        if (!(await this.terminatePid(process.pid))) throw new Error();
         this.complete(key, onStateChange);
         return true;
       }
       if (window.NL_OS === "Windows") {
-        if (!await this.terminatePid(process.pid)) throw new Error();
+        if (!(await this.terminatePid(process.pid))) throw new Error();
         this.complete(key, onStateChange);
       } else {
         await Neutralino.os.updateSpawnedProcess(process.id, "exit");
@@ -307,13 +352,13 @@ var _ProcessService = class _ProcessService {
       this.exitWaiters.set(key, waiters);
     });
     try {
-      if (!await this.close(key, onStateChange)) throw new Error();
+      if (!(await this.close(key, onStateChange))) throw new Error();
       let timeout;
       const completed = await Promise.race([
         exited.then(() => true),
         new Promise((resolve) => {
           timeout = window.setTimeout(() => resolve(false), 1e4);
-        })
+        }),
       ]);
       window.clearTimeout(timeout);
       if (!completed) {
@@ -326,7 +371,7 @@ var _ProcessService = class _ProcessService {
       const waiters = this.exitWaiters.get(key) || [];
       this.exitWaiters.set(
         key,
-        waiters.filter((resolve) => resolve !== resolveExit)
+        waiters.filter((resolve) => resolve !== resolveExit),
       );
       onStateChange?.("error");
       return false;

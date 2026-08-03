@@ -12,14 +12,14 @@ function findDescendantPids(processes, rootPid) {
     childrenByParent.set(parentPid, children);
   }
   const descendants = [];
-  const queue = [...childrenByParent.get(root) || []];
+  const queue = [...(childrenByParent.get(root) || [])];
   const seen = /* @__PURE__ */ new Set([root]);
   while (queue.length > 0) {
     const pid = queue.shift();
     if (seen.has(pid)) continue;
     seen.add(pid);
     descendants.push(pid);
-    queue.push(...childrenByParent.get(pid) || []);
+    queue.push(...(childrenByParent.get(pid) || []));
   }
   return descendants;
 }
@@ -30,7 +30,7 @@ function parseWindowsProcessTree(output) {
     const parsed = JSON.parse(output);
     return (Array.isArray(parsed) ? parsed : [parsed]).map((process) => ({
       pid: process.ProcessId,
-      parentPid: process.ParentProcessId
+      parentPid: process.ParentProcessId,
     }));
   } catch {
     return [];
@@ -38,7 +38,11 @@ function parseWindowsProcessTree(output) {
 }
 
 function parsePosixProcessTree(output) {
-  return String(output || "").split(/\r?\n/).map((line) => line.trim().match(/^(\d+)\s+(\d+)$/)).filter(Boolean).map((match) => ({ pid: match[1], parentPid: match[2] }));
+  return String(output || "")
+    .split(/\r?\n/)
+    .map((line) => line.trim().match(/^(\d+)\s+(\d+)$/))
+    .filter(Boolean)
+    .map((match) => ({ pid: match[1], parentPid: match[2] }));
 }
 
 export { parseWindowsProcessTree, parsePosixProcessTree, findDescendantPids };

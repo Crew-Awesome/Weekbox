@@ -1,13 +1,15 @@
-import { appSettings } from './settings.service.js';
-import { networkStatus } from './network-status.service.js';
-import { startupLoader } from './startup-loader.service.js';
-import { storageBridge } from './storage-patch.util.js';
-import { syncWindowsProtocolRegistration } from './windows-protocol.util.js';
-import { disableProductionRefreshShortcuts } from './production-shortcuts.util.js';
-import { router } from '../routing/router.service.js';
-import { openWeekboxLink, openLaunchDeepLink } from '../routing/deep-links.service.js';
-import { appUpdater } from '../updates/app-updater.service.js';
-
+import { appSettings } from "./settings.service.js";
+import { networkStatus } from "./network-status.service.js";
+import { startupLoader } from "./startup-loader.service.js";
+import { storageBridge } from "./storage-patch.util.js";
+import { syncWindowsProtocolRegistration } from "./windows-protocol.util.js";
+import { disableProductionRefreshShortcuts } from "./production-shortcuts.util.js";
+import { router } from "../routing/router.service.js";
+import {
+  openWeekboxLink,
+  openLaunchDeepLink,
+} from "../routing/deep-links.service.js";
+import { appUpdater } from "../updates/app-updater.service.js";
 
 import { homeView, registerHomeView } from "../../../ui/js/index.js";
 import { registerEnginesView } from "../../../ui/js/index.js";
@@ -22,368 +24,374 @@ import { storageRecommendationModal } from "../../../ui/js/index.js";
 import { modManagerModal } from "../../../ui/js/index.js";
 import { firstRunStorageModal } from "../../../ui/js/index.js";
 
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    function clearTestToasts() {
-      document.querySelectorAll('[id^="engine-update-toast-"]').forEach((toast) => toast.remove());
-      toastDownloadMod.toasts.forEach((toast) => toast.toast.remove());
-      toastDownloadMod.toasts.clear();
-      document.getElementById("toast-system-container")?.remove();
-    }
-    
-    function testToasts() {
-      clearTestToasts();
-      engineUpdateToast.show("toast-test-progress", "Engine update");
-      engineUpdateToast.update("toast-test-progress", {
-        progress: 62,
-        status: "Downloading update"
-      });
-      engineUpdateToast.show("toast-test-complete", "Engine update");
-      engineUpdateToast.complete("toast-test-complete");
-      engineUpdateToast.info(
-        "toast-test-info",
-        "Engine update",
-        "Already up to date"
-      );
-      engineUpdateToast.offer(
-        "toast-test-offer",
-        "Engine update",
-        "exe.png",
-        () => {
-        }
-      );
-      engineUpdateToast.show("toast-test-error", "Engine update");
-      engineUpdateToast.error("toast-test-error");
-      engineUpdateToast.missingEngine(
-        "toast-test-missing",
-        "Test Engine",
-        "exe.png"
-      );
-      const showDownloadToast = (id, name, outcome) => {
-        toastDownloadMod.show(id, name);
-        toastDownloadMod.update(id, 62, "Downloading...");
-        if (outcome === "success") toastDownloadMod.success(id);
-        if (outcome === "error") toastDownloadMod.error(id, "Test failure");
-        if (outcome === "cancelled") toastDownloadMod.cancelAnim(id);
-      };
-      showDownloadToast("toast-test-download", "Download in progress");
-      showDownloadToast("toast-test-success", "Completed download", "success");
-      showDownloadToast("toast-test-error-download", "Failed download", "error");
-      showDownloadToast("toast-test-cancelled", "Cancelled download", "cancelled");
-    }
-    
-    window.weekboxDebug = {
-      clearToasts: clearTestToasts,
-      testToasts,
-      openLink: openWeekboxLink,
-      resetStorageRecommendation() {
-        appSettings.set("storageMoveRecommendationDismissed", false);
-        location.reload();
+function clearTestToasts() {
+  document
+    .querySelectorAll('[id^="engine-update-toast-"]')
+    .forEach((toast) => toast.remove());
+  toastDownloadMod.toasts.forEach((toast) => toast.toast.remove());
+  toastDownloadMod.toasts.clear();
+  document.getElementById("toast-system-container")?.remove();
+}
+
+function testToasts() {
+  clearTestToasts();
+  engineUpdateToast.show("toast-test-progress", "Engine update");
+  engineUpdateToast.update("toast-test-progress", {
+    progress: 62,
+    status: "Downloading update",
+  });
+  engineUpdateToast.show("toast-test-complete", "Engine update");
+  engineUpdateToast.complete("toast-test-complete");
+  engineUpdateToast.info(
+    "toast-test-info",
+    "Engine update",
+    "Already up to date",
+  );
+  engineUpdateToast.offer(
+    "toast-test-offer",
+    "Engine update",
+    "exe.png",
+    () => {},
+  );
+  engineUpdateToast.show("toast-test-error", "Engine update");
+  engineUpdateToast.error("toast-test-error");
+  engineUpdateToast.missingEngine(
+    "toast-test-missing",
+    "Test Engine",
+    "exe.png",
+  );
+  const showDownloadToast = (id, name, outcome) => {
+    toastDownloadMod.show(id, name);
+    toastDownloadMod.update(id, 62, "Downloading...");
+    if (outcome === "success") toastDownloadMod.success(id);
+    if (outcome === "error") toastDownloadMod.error(id, "Test failure");
+    if (outcome === "cancelled") toastDownloadMod.cancelAnim(id);
+  };
+  showDownloadToast("toast-test-download", "Download in progress");
+  showDownloadToast("toast-test-success", "Completed download", "success");
+  showDownloadToast("toast-test-error-download", "Failed download", "error");
+  showDownloadToast("toast-test-cancelled", "Cancelled download", "cancelled");
+}
+
+window.weekboxDebug = {
+  clearToasts: clearTestToasts,
+  testToasts,
+  openLink: openWeekboxLink,
+  resetStorageRecommendation() {
+    appSettings.set("storageMoveRecommendationDismissed", false);
+    location.reload();
+  },
+};
+function installGlobalErrorReporter() {
+  if (window.__weekboxErrorReporterInstalled) return;
+  window.__weekboxErrorReporterInstalled = true;
+  window.addEventListener("error", (event) => {
+    const error = event.error || event.message;
+    console.error("[WeekBox] Unhandled error", error, {
+      filename: event.filename,
+      line: event.lineno,
+      column: event.colno,
+    });
+    if (!error) return;
+    errorHandler.show({
+      error,
+      action: "Run WeekBox",
+      storagePath: FS.weekboxPath,
+    });
+  });
+  window.addEventListener("unhandledrejection", (event) => {
+    console.error("[WeekBox] Unhandled promise rejection", event.reason);
+    errorHandler.show({
+      error: event.reason,
+      action: "Run WeekBox",
+      storagePath: FS.weekboxPath,
+    });
+  });
+}
+
+async function completeFirstRunStorageSetup(defaultStoragePath, hadSettings) {
+  if (appSettings.get("firstRunStorageSetupComplete")) return;
+  if (hadSettings) {
+    appSettings.set("firstRunStorageSetupComplete", true);
+    return;
+  }
+  const choice = await firstRunStorageModal.show(defaultStoragePath);
+  let completed = choice === "default";
+  if (choice === "new" || choice === "existing") {
+    const selectedPath = await Neutralino.os.showFolderDialog(
+      choice === "existing"
+        ? "Choose an existing WeekBox folder or its parent folder"
+        : "Choose the folder that will contain WeekBox",
+      { defaultPath: FS.basePath },
+    );
+    if (selectedPath) {
+      const existing = await FS.findExistingStorage(selectedPath);
+      if (choice === "existing") {
+        if (existing) {
+          await FS.useExistingStorage(existing.basePath);
+          completed = true;
+        } else
+          await Neutralino.os.showMessageBox(
+            "WeekBox library not found",
+            "That folder does not contain a complete WeekBox library. WeekBox will keep using the current folder.",
+            "OK",
+            "WARNING",
+          );
+      } else if (!existing) {
+        await FS.moveStorageTo(selectedPath);
+        completed = true;
       }
-    };
-    function installGlobalErrorReporter() {
-      if (window.__weekboxErrorReporterInstalled) return;
-      window.__weekboxErrorReporterInstalled = true;
-      window.addEventListener("error", (event) => {
-        const error = event.error || event.message;
-        console.error("[WeekBox] Unhandled error", error, {
-          filename: event.filename,
-          line: event.lineno,
-          column: event.colno
-        });
-        if (!error) return;
-        errorHandler.show({
-          error,
-          action: "Run WeekBox",
-          storagePath: FS.weekboxPath
-        });
-      });
-      window.addEventListener("unhandledrejection", (event) => {
-        console.error("[WeekBox] Unhandled promise rejection", event.reason);
-        errorHandler.show({
-          error: event.reason,
-          action: "Run WeekBox",
-          storagePath: FS.weekboxPath
-        });
-      });
     }
-    
-    async function completeFirstRunStorageSetup(defaultStoragePath, hadSettings) {
-      if (appSettings.get("firstRunStorageSetupComplete")) return;
-      if (hadSettings) {
-        appSettings.set("firstRunStorageSetupComplete", true);
-        return;
-      }
-      const choice = await firstRunStorageModal.show(defaultStoragePath);
-      let completed = choice === "default";
-      if (choice === "new" || choice === "existing") {
-        const selectedPath = await Neutralino.os.showFolderDialog(
-          choice === "existing" ? "Choose an existing WeekBox folder or its parent folder" : "Choose the folder that will contain WeekBox",
-          { defaultPath: FS.basePath }
-        );
-        if (selectedPath) {
-          const existing = await FS.findExistingStorage(selectedPath);
-          if (choice === "existing") {
-            if (existing) {
-              await FS.useExistingStorage(existing.basePath);
-              completed = true;
-            } else
-              await Neutralino.os.showMessageBox(
-                "WeekBox library not found",
-                "That folder does not contain a complete WeekBox library. WeekBox will keep using the current folder.",
-                "OK",
-                "WARNING"
-              );
-          } else if (!existing) {
-            await FS.moveStorageTo(selectedPath);
-            completed = true;
-          }
-        }
-      }
-      if (completed) appSettings.set("firstRunStorageSetupComplete", true);
-    }
-    
-    installGlobalErrorReporter();
-    async function recommendSaferStorageLocation() {
-      if (!await FS.shouldRecommendDefaultStorage()) return;
-      const defaultPath = await FS.getDefaultStorageParentPath();
-      const choice = await storageRecommendationModal.show({
-        currentPath: FS.weekboxPath,
-        defaultPath
-      });
-      if (choice === "dismiss") {
-        appSettings.set("storageMoveRecommendationDismissed", true);
-        return;
-      }
-      if (choice !== "move") return;
-      const toastId = "weekbox-storage-recommendation";
-      const lock = document.createElement("div");
-      lock.id = "storage-move-lock";
-      lock.className = "storage-move-lock";
-      lock.setAttribute("aria-hidden", "true");
-      document.body.appendChild(lock);
-      toastSystem.show(toastId, {
-        title: "Moving WeekBox files",
-        message: "Preparing files\u2026",
-        mediaHtml: '<i class="fa-solid fa-folder-open" aria-hidden="true"></i>',
-        showPercent: true
-      });
-      try {
-        await FS.moveStorageTo(
-          defaultPath,
-          ({ progress, copiedFiles, totalFiles }) => {
-            toastSystem.update(toastId, {
-              message: `Moving files (${copiedFiles} of ${totalFiles})`,
-              progress
-            });
-          }
-        );
-        appSettings.set("storageParentPath", null);
-        toastSystem.setState(toastId, "complete", {
-          badgeHtml: '<i class="fa-solid fa-check" aria-hidden="true"></i>'
-        });
+  }
+  if (completed) appSettings.set("firstRunStorageSetupComplete", true);
+}
+
+installGlobalErrorReporter();
+async function recommendSaferStorageLocation() {
+  if (!(await FS.shouldRecommendDefaultStorage())) return;
+  const defaultPath = await FS.getDefaultStorageParentPath();
+  const choice = await storageRecommendationModal.show({
+    currentPath: FS.weekboxPath,
+    defaultPath,
+  });
+  if (choice === "dismiss") {
+    appSettings.set("storageMoveRecommendationDismissed", true);
+    return;
+  }
+  if (choice !== "move") return;
+  const toastId = "weekbox-storage-recommendation";
+  const lock = document.createElement("div");
+  lock.id = "storage-move-lock";
+  lock.className = "storage-move-lock";
+  lock.setAttribute("aria-hidden", "true");
+  document.body.appendChild(lock);
+  toastSystem.show(toastId, {
+    title: "Moving WeekBox files",
+    message: "Preparing files\u2026",
+    mediaHtml: '<i class="fa-solid fa-folder-open" aria-hidden="true"></i>',
+    showPercent: true,
+  });
+  try {
+    await FS.moveStorageTo(
+      defaultPath,
+      ({ progress, copiedFiles, totalFiles }) => {
         toastSystem.update(toastId, {
-          message: "WeekBox files moved",
-          progress: 100
+          message: `Moving files (${copiedFiles} of ${totalFiles})`,
+          progress,
         });
-        setTimeout(() => toastSystem.hide(toastId), 3600);
-      } catch (error) {
-        toastSystem.setState(toastId, "error", {
-          badgeHtml: '<i class="fa-solid fa-xmark" aria-hidden="true"></i>'
-        });
-        toastSystem.update(toastId, {
-          message: error.message || "Could not move WeekBox files.",
-          progress: 100
-        });
-      } finally {
-        lock.remove();
-      }
-    }
-    
-    async function offerNestedStorageRepair() {
-      const targetParentPath = await FS.getNestedStorageRepairTarget();
-      if (!targetParentPath) return;
-      const choice = await Neutralino.os.showMessageBox(
-        "Repair WeekBox folder location?",
-        `WeekBox found an accidental nested folder:
+      },
+    );
+    appSettings.set("storageParentPath", null);
+    toastSystem.setState(toastId, "complete", {
+      badgeHtml: '<i class="fa-solid fa-check" aria-hidden="true"></i>',
+    });
+    toastSystem.update(toastId, {
+      message: "WeekBox files moved",
+      progress: 100,
+    });
+    setTimeout(() => toastSystem.hide(toastId), 3600);
+  } catch (error) {
+    toastSystem.setState(toastId, "error", {
+      badgeHtml: '<i class="fa-solid fa-xmark" aria-hidden="true"></i>',
+    });
+    toastSystem.update(toastId, {
+      message: error.message || "Could not move WeekBox files.",
+      progress: 100,
+    });
+  } finally {
+    lock.remove();
+  }
+}
+
+async function offerNestedStorageRepair() {
+  const targetParentPath = await FS.getNestedStorageRepairTarget();
+  if (!targetParentPath) return;
+  const choice = await Neutralino.os.showMessageBox(
+    "Repair WeekBox folder location?",
+    `WeekBox found an accidental nested folder:
 ${FS.weekboxPath}
 
 It can safely move the inner files to:
 ${FS.basePath}
 
 No files will be merged because the outer folder contains only this inner WeekBox folder.`,
-        "YES_NO",
-        "QUESTION"
-      );
-      if (choice !== "YES") return;
-      const toastId = "weekbox-nested-storage-repair";
-      toastSystem.show(toastId, {
-        title: "Repairing WeekBox folder",
-        message: "Preparing files\u2026",
-        mediaHtml: '<i class="fa-solid fa-folder-open" aria-hidden="true"></i>',
-        showPercent: true
+    "YES_NO",
+    "QUESTION",
+  );
+  if (choice !== "YES") return;
+  const toastId = "weekbox-nested-storage-repair";
+  toastSystem.show(toastId, {
+    title: "Repairing WeekBox folder",
+    message: "Preparing files\u2026",
+    mediaHtml: '<i class="fa-solid fa-folder-open" aria-hidden="true"></i>',
+    showPercent: true,
+  });
+  try {
+    await FS.moveStorageTo(
+      targetParentPath,
+      ({ progress, copiedFiles, totalFiles }) => {
+        toastSystem.update(toastId, {
+          message: `Moving files (${copiedFiles} of ${totalFiles})`,
+          progress,
+        });
+      },
+    );
+    toastSystem.setState(toastId, "complete", {
+      badgeHtml: '<i class="fa-solid fa-check" aria-hidden="true"></i>',
+    });
+    toastSystem.update(toastId, {
+      message: "WeekBox folder repaired",
+      progress: 100,
+    });
+    setTimeout(() => toastSystem.hide(toastId), 3600);
+  } catch (error) {
+    toastSystem.setState(toastId, "error", {
+      badgeHtml: '<i class="fa-solid fa-xmark" aria-hidden="true"></i>',
+    });
+    toastSystem.update(toastId, {
+      message: error.message || "Could not repair WeekBox files.",
+      progress: 100,
+    });
+  }
+}
+
+async function handleStartupAppUpdate() {
+  if (!networkStatus.online) {
+    return false;
+  }
+  let update;
+  try {
+    update = await appUpdater.check();
+  } catch (error) {
+    console.warn("Could not check for a WeekBox update during startup", error);
+    return false;
+  }
+  if (update.status !== "available") return false;
+  try {
+    sessionStorage.setItem(
+      "weekbox_available_app_update",
+      JSON.stringify(update),
+    );
+  } catch {}
+  document.dispatchEvent(
+    new CustomEvent("app-update-available", { detail: update }),
+  );
+  return (await appUpdateModal.show(update)) === "updating";
+}
+
+async function startApp() {
+  let startupStep = "starting native services";
+  try {
+    startupLoader.setPhase("Starting WeekBox services\u2026", 8);
+    Neutralino.init();
+    networkStatus.init();
+    await Neutralino.window.focus().catch(() => {});
+    const setWindowFocus = (isFocused) => {
+      if (isFocused) {
+        document.body.classList.remove("window-unfocused");
+      } else if (appSettings.get("blurOutOfFocus")) {
+        document.body.classList.add("window-unfocused");
+      }
+    };
+    Neutralino.events.on("windowBlur", () => setWindowFocus(false));
+    Neutralino.events.on("windowFocus", () => setWindowFocus(true));
+    window.addEventListener("focus", () => setWindowFocus(true));
+    document.addEventListener("visibilitychange", () => {
+      if (!document.hidden) setWindowFocus(true);
+    });
+    disableProductionRefreshShortcuts();
+    Neutralino.events.on("windowClose", async () => {
+      if (document.getElementById("app-update-modal")) return;
+      await downloadEngine.cleanupAll();
+      await Neutralino.app.exit();
+    });
+    startupLoader.setPhase("Loading your preferences\u2026", 20);
+    startupStep = "restoring preferences";
+    await storageBridge.init();
+    startupStep = "finding the default storage location";
+    const defaultStoragePath = await FS.getDefaultStorageParentPath();
+    const defaultDataPath = `${defaultStoragePath}/WeekBox/data`;
+    startupStep = "reading saved settings";
+    const settingsDataPath = await appSettings.resolveDataPath(defaultDataPath);
+    const hadSettings = await FS.api.exists(
+      `${settingsDataPath}/settings.json`,
+    );
+    await appSettings.init(settingsDataPath);
+    await syncWindowsProtocolRegistration(
+      appSettings.get("registerProtocolLinks"),
+    );
+    startupLoader.setPhase("Checking for WeekBox updates…", 36);
+    if (await handleStartupAppUpdate()) return;
+    startupLoader.setPhase("Opening your WeekBox library\u2026", 42);
+    startupStep = "preparing the WeekBox library";
+    await FS.init({ deferMaintenance: true });
+    await appSettings.setDataPath(FS.dataPath);
+    try {
+      await completeFirstRunStorageSetup(defaultStoragePath, hadSettings);
+    } catch (error) {
+      console.warn("Could not finish first-run storage setup", error);
+    }
+    startupStep = "loading the WeekBox interface";
+    startupLoader.setPhase("Loading navigation and engines\u2026", 64);
+    registerHomeView();
+    registerEnginesView();
+    await router.init();
+    startupLoader.setPhase("Preparing Mod Manager\u2026", 70);
+    const modManagerReady = modManagerModal.preload();
+    startupLoader.setPhase("Loading Home content\u2026", 72);
+    const maintenance = FS.runStartupMaintenance({
+      onProgress: (message, progress) =>
+        startupLoader.setPhase(message, progress),
+    });
+    await Promise.all([homeView.ready, modManagerReady]);
+    startupLoader.setPhase("Checking your library\u2026", 89);
+    await maintenance;
+    await startupLoader.complete();
+    await offerNestedStorageRepair();
+    await openLaunchDeepLink();
+    await recommendSaferStorageLocation();
+  } catch (error) {
+    const message = error?.message || String(error);
+    const startupError = new Error(
+      `WeekBox could not finish ${startupStep}: ${message}`,
+    );
+    startupLoader.fail("Could not start WeekBox");
+    console.error("Startup error:", error);
+    try {
+      errorHandler.show({
+        error: startupError,
+        action: "Start WeekBox",
+        storagePath: FS.weekboxPath,
       });
-      try {
-        await FS.moveStorageTo(
-          targetParentPath,
-          ({ progress, copiedFiles, totalFiles }) => {
-            toastSystem.update(toastId, {
-              message: `Moving files (${copiedFiles} of ${totalFiles})`,
-              progress
-            });
-          }
-        );
-        toastSystem.setState(toastId, "complete", {
-          badgeHtml: '<i class="fa-solid fa-check" aria-hidden="true"></i>'
-        });
-        toastSystem.update(toastId, {
-          message: "WeekBox folder repaired",
-          progress: 100
-        });
-        setTimeout(() => toastSystem.hide(toastId), 3600);
-      } catch (error) {
-        toastSystem.setState(toastId, "error", {
-          badgeHtml: '<i class="fa-solid fa-xmark" aria-hidden="true"></i>'
-        });
-        toastSystem.update(toastId, {
-          message: error.message || "Could not repair WeekBox files.",
-          progress: 100
-        });
-      }
+    } catch (reportingError) {
+      console.error("Could not show startup error report:", reportingError);
     }
-    
-    async function handleStartupAppUpdate() {
-      if (!networkStatus.online) {
-        return false;
-      }
-      let update;
-      try {
-        update = await appUpdater.check();
-      } catch (error) {
-        console.warn("Could not check for a WeekBox update during startup", error);
-        return false;
-      }
-      if (update.status !== "available") return false;
-      try {
-        sessionStorage.setItem("weekbox_available_app_update", JSON.stringify(update));
-      } catch {
-      }
-      document.dispatchEvent(new CustomEvent("app-update-available", { detail: update }));
-      return await appUpdateModal.show(update) === "updating";
+    const mainContent = document.getElementById("main-content");
+    if (mainContent) {
+      mainContent.replaceChildren();
+      const errorView = document.createElement("div");
+      errorView.style.cssText = "padding: 24px; color: #ff4a4a;";
+      const heading = document.createElement("h2");
+      heading.textContent = "Load error";
+      const message2 = document.createElement("p");
+      message2.textContent =
+        error instanceof Error
+          ? error.message
+          : "See the technical details in the error report.";
+      errorView.append(heading, message2);
+      mainContent.appendChild(errorView);
     }
+  }
+}
 
-    async function startApp() {
-      let startupStep = "starting native services";
-      try {
-        startupLoader.setPhase("Starting WeekBox services\u2026", 8);
-        Neutralino.init();
-        networkStatus.init();
-        await Neutralino.window.focus().catch(() => {
-        });
-        const setWindowFocus = (isFocused) => {
-          if (isFocused) {
-            document.body.classList.remove("window-unfocused");
-          } else if (appSettings.get("blurOutOfFocus")) {
-            document.body.classList.add("window-unfocused");
-          }
-        };
-        Neutralino.events.on("windowBlur", () => setWindowFocus(false));
-        Neutralino.events.on("windowFocus", () => setWindowFocus(true));
-        window.addEventListener("focus", () => setWindowFocus(true));
-        document.addEventListener("visibilitychange", () => {
-          if (!document.hidden) setWindowFocus(true);
-        });
-        disableProductionRefreshShortcuts();
-        Neutralino.events.on("windowClose", async () => {
-          if (document.getElementById("app-update-modal")) return;
-          await downloadEngine.cleanupAll();
-          await Neutralino.app.exit();
-        });
-        startupLoader.setPhase("Loading your preferences\u2026", 20);
-        startupStep = "restoring preferences";
-        await storageBridge.init();
-        startupStep = "finding the default storage location";
-        const defaultStoragePath = await FS.getDefaultStorageParentPath();
-        const defaultDataPath = `${defaultStoragePath}/WeekBox/data`;
-        startupStep = "reading saved settings";
-        const settingsDataPath = await appSettings.resolveDataPath(defaultDataPath);
-        const hadSettings = await FS.api.exists(
-          `${settingsDataPath}/settings.json`
-        );
-        await appSettings.init(settingsDataPath);
-        await syncWindowsProtocolRegistration(
-          appSettings.get("registerProtocolLinks")
-        );
-        startupLoader.setPhase("Checking for WeekBox updates…", 36);
-        if (await handleStartupAppUpdate()) return;
-        startupLoader.setPhase("Opening your WeekBox library\u2026", 42);
-        startupStep = "preparing the WeekBox library";
-        await FS.init({ deferMaintenance: true });
-        await appSettings.setDataPath(FS.dataPath);
-        try {
-          await completeFirstRunStorageSetup(defaultStoragePath, hadSettings);
-        } catch (error) {
-          console.warn("Could not finish first-run storage setup", error);
-        }
-        startupStep = "loading the WeekBox interface";
-        startupLoader.setPhase("Loading navigation and engines\u2026", 64);
-        registerHomeView();
-        registerEnginesView();
-        await router.init();
-        startupLoader.setPhase("Preparing Mod Manager\u2026", 70);
-        const modManagerReady = modManagerModal.preload();
-        startupLoader.setPhase("Loading Home content\u2026", 72);
-        const maintenance = FS.runStartupMaintenance({
-          onProgress: (message, progress) => startupLoader.setPhase(message, progress)
-        });
-        await Promise.all([homeView.ready, modManagerReady]);
-        startupLoader.setPhase("Checking your library\u2026", 89);
-        await maintenance;
-        await startupLoader.complete();
-        await offerNestedStorageRepair();
-        await openLaunchDeepLink();
-        await recommendSaferStorageLocation();
-        console.log("WeekBox: modules loaded.");
-      } catch (error) {
-        const message = error?.message || String(error);
-        const startupError = new Error(
-          `WeekBox could not finish ${startupStep}: ${message}`
-        );
-        startupLoader.fail("Could not start WeekBox");
-        console.error("Startup error:", error);
-        try {
-          errorHandler.show({
-            error: startupError,
-            action: "Start WeekBox",
-            storagePath: FS.weekboxPath
-          });
-        } catch (reportingError) {
-          console.error("Could not show startup error report:", reportingError);
-        }
-        const mainContent = document.getElementById("main-content");
-        if (mainContent) {
-          mainContent.replaceChildren();
-          const errorView = document.createElement("div");
-          errorView.style.cssText = "padding: 24px; color: #ff4a4a;";
-          const heading = document.createElement("h2");
-          heading.textContent = "Load error";
-          const message2 = document.createElement("p");
-          message2.textContent = error instanceof Error ? error.message : "See the technical details in the error report.";
-          errorView.append(heading, message2);
-          mainContent.appendChild(errorView);
-        }
-      }
-    }
-    
-    startApp();
-  
+startApp();
 
-
-export { startApp, testToasts, clearTestToasts, installGlobalErrorReporter, completeFirstRunStorageSetup, recommendSaferStorageLocation, offerNestedStorageRepair };
+export {
+  startApp,
+  testToasts,
+  clearTestToasts,
+  installGlobalErrorReporter,
+  completeFirstRunStorageSetup,
+  recommendSaferStorageLocation,
+  offerNestedStorageRepair,
+};

@@ -22,7 +22,9 @@ function scheduleColorJob(job) {
 function getRelativeLuminance(r, g, b) {
   const linear = [r, g, b].map((value) => {
     const channel = value / 255;
-    return channel <= 0.04045 ? channel / 12.92 : ((channel + 0.055) / 1.055) ** 2.4;
+    return channel <= 0.04045
+      ? channel / 12.92
+      : ((channel + 0.055) / 1.055) ** 2.4;
   });
   return 0.2126 * linear[0] + 0.7152 * linear[1] + 0.0722 * linear[2];
 }
@@ -31,7 +33,7 @@ function applyDominantColor(img, targetElement, options = {}) {
   const {
     cssVar = "--card-color",
     alpha = 0.5,
-    fallback = "rgba(128, 128, 128, 0.3)"
+    fallback = "rgba(128, 128, 128, 0.3)",
   } = options;
   const processColor = () => {
     scheduleColorJob(() => {
@@ -61,7 +63,7 @@ function applyDominantColor(img, targetElement, options = {}) {
             r: 0,
             g: 0,
             b: 0,
-            count: 0
+            count: 0,
           };
           const weight = 0.2 + saturation ** 3 * 2;
           swatch.weight += weight;
@@ -72,16 +74,17 @@ function applyDominantColor(img, targetElement, options = {}) {
           swatches.set(key, swatch);
         }
         const strongest = [...swatches.values()].reduce(
-          (best, swatch) => !best || swatch.weight > best.weight ? swatch : best,
-          null
+          (best, swatch) =>
+            !best || swatch.weight > best.weight ? swatch : best,
+          null,
         );
         if (!strongest) {
           targetElement.style.setProperty(cssVar, fallback);
           return;
         }
-        let r = strongest.r / strongest.count * 0.76;
-        let g = strongest.g / strongest.count * 0.76;
-        let b = strongest.b / strongest.count * 0.76;
+        let r = (strongest.r / strongest.count) * 0.76;
+        let g = (strongest.g / strongest.count) * 0.76;
+        let b = (strongest.b / strongest.count) * 0.76;
         while (getRelativeLuminance(r, g, b) > 0.09) {
           r *= 0.92;
           g *= 0.92;
@@ -89,7 +92,7 @@ function applyDominantColor(img, targetElement, options = {}) {
         }
         targetElement.style.setProperty(
           cssVar,
-          `rgba(${Math.floor(r)}, ${Math.floor(g)}, ${Math.floor(b)}, ${alpha})`
+          `rgba(${Math.floor(r)}, ${Math.floor(g)}, ${Math.floor(b)}, ${alpha})`,
         );
       } catch {
         targetElement.style.setProperty(cssVar, fallback);

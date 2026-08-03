@@ -73,7 +73,9 @@
   font-size: 0.95rem;
   font-weight: 600;
   cursor: pointer;
-  transition: background-color 0.2s, color 0.2s;
+  transition:
+    background-color 0.2s,
+    color 0.2s;
   width: 100%;
   white-space: nowrap;
   overflow: hidden;
@@ -208,8 +210,16 @@
 }
 
 @keyframes marquee {
-  0% { transform: translateX(0); }
-  10% { transform: translateX(0); }
-  90% { transform: translateX(calc(-100% + 100px)); }
-  100% { transform: translateX(calc(-100% + 100px)); }
+  0% {
+    transform: translateX(0);
+  }
+  10% {
+    transform: translateX(0);
+  }
+  90% {
+    transform: translateX(calc(-100% + 100px));
+  }
+  100% {
+    transform: translateX(calc(-100% + 100px));
+  }
 }

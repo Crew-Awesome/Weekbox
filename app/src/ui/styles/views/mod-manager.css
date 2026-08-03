@@ -264,12 +264,45 @@
   gap: var(--spacing-sm);
 }
 
-.mod-manager-tools { display: flex; flex: 1; min-width: 0; align-items: center; gap: 10px; margin: 0 var(--spacing-lg); }
-.mod-manager-title-count { color: var(--text-muted); font-size: .78rem; white-space: nowrap; }
-.mod-manager-active-filters { display: flex; gap: 6px; min-width: 0; overflow: auto; }
-.mod-manager-filter-chip, .mod-settings-tag-pill { border: 1px solid var(--border-color); border-radius: 999px; background: var(--bg-panel); color: var(--text-muted); padding: 4px 8px; font: inherit; font-size: .72rem; white-space: nowrap; cursor: pointer; }
-.mod-manager-filter-chip:hover, .mod-settings-tag-pill:hover { color: var(--text-main); border-color: var(--text-muted); }
-.mod-manager-filter-chip.is-exclude { color: #ffb4b4; }
+.mod-manager-tools {
+  display: flex;
+  flex: 1;
+  min-width: 0;
+  align-items: center;
+  gap: 10px;
+  margin: 0 var(--spacing-lg);
+}
+.mod-manager-title-count {
+  color: var(--text-muted);
+  font-size: 0.78rem;
+  white-space: nowrap;
+}
+.mod-manager-active-filters {
+  display: flex;
+  gap: 6px;
+  min-width: 0;
+  overflow: auto;
+}
+.mod-manager-filter-chip,
+.mod-settings-tag-pill {
+  border: 1px solid var(--border-color);
+  border-radius: 999px;
+  background: var(--bg-panel);
+  color: var(--text-muted);
+  padding: 4px 8px;
+  font: inherit;
+  font-size: 0.72rem;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.mod-manager-filter-chip:hover,
+.mod-settings-tag-pill:hover {
+  color: var(--text-main);
+  border-color: var(--text-muted);
+}
+.mod-manager-filter-chip.is-exclude {
+  color: #ffb4b4;
+}
 
 .mod-manager-dependencies-toggle {
   display: inline-flex;
@@ -353,50 +386,316 @@
   color: var(--text-muted);
 }
 
-.mod-manager-card-tags { color: var(--text-muted); font-size: .72rem; line-height: 1.35; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.mod-manager-filter-options { display: flex; flex-wrap: wrap; gap: 8px; margin: 0; padding: 0; border: 0; }
-.mod-manager-filter-options legend { margin-bottom: 7px; color: var(--text-muted); font-size: .78rem; }
-.mod-manager-filter-options label, .mod-manager-filter-mode, .mod-manager-filter-sort { display: inline-flex; align-items: center; gap: 5px; color: var(--text-main); font-size: .78rem; }
-.mod-manager-filter-sort { margin-top: 8px; }
-.mod-manager-filter-sort select, .mod-settings-type { border: 1px solid var(--border-color); border-radius: 6px; background: var(--bg-color); color: var(--text-main); padding: 6px 8px; font: inherit; }
-.mod-manager-filter-tag-options { display: flex; flex-wrap: wrap; gap: 8px; }
-.mod-manager-filter-empty { color: var(--text-muted); font-size: .76rem; }
-.mod-manager-filter-panel .mod-manager-multi-dropdown { width: 100%; }
-.mod-manager-filter-panel .mod-manager-multi-dropdown .pill-btn { justify-content: space-between; width: 100%; min-height: 38px; border-radius: 8px; }
-.mod-manager-filter-panel .mod-manager-multi-dropdown .custom-options-container { width: 100%; max-height: 210px; }
-.mod-manager-filter-panel .mod-manager-multi-dropdown .custom-option .fa-check { opacity: 0; font-size: .68rem; }
-.mod-manager-filter-panel .mod-manager-multi-dropdown .custom-option.selected .fa-check { opacity: 1; color: var(--text-main); }
-.mod-manager-filter-panel { width: min(100%, 520px); border-radius: 12px; background: var(--bg-panel); }
-.mod-manager-filter-panel .mod-manager-filter-dropdowns { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); align-items: start; }
-.mod-manager-filter-panel .mod-manager-multi-dropdown .custom-option img { width: 18px; height: 18px; object-fit: contain; border-radius: 4px; }
-.mod-manager-filter-panel .mod-manager-multi-dropdown .custom-option .mod-manager-option-check { width: 12px; flex: 0 0 12px; }
-.mod-manager-type-mode { display: flex; align-items: center; gap: 5px; margin: 4px 4px 7px; padding: 6px 8px; border-bottom: 1px solid var(--border-color); color: var(--text-muted); font-size: .72rem; }
-.mod-manager-type-mode span { margin-right: auto; }
-.mod-manager-type-mode button { display: grid; width: 26px; height: 24px; place-items: center; border: 1px solid transparent; border-radius: 5px; background: transparent; color: var(--text-muted); cursor: pointer; }
-.mod-manager-type-mode button:hover, .mod-manager-type-mode button.selected { border-color: var(--border-color); background: var(--bg-hover); color: var(--text-main); }
-@media (max-width: 560px) { .mod-manager-filter-panel .mod-manager-filter-dropdowns { grid-template-columns: 1fr; } }
-.mod-manager-filter-panel { padding: 0; overflow: hidden; border-color: color-mix(in srgb, var(--border-color) 82%, var(--text-main)); border-radius: 14px; box-shadow: 0 24px 64px rgb(0 0 0 / 58%), inset 0 1px rgb(255 255 255 / 4%); }
-.mod-manager-filter-heading { min-height: 58px; padding: 0 18px; border-bottom: 1px solid var(--border-color); background: linear-gradient(115deg, color-mix(in srgb, var(--bg-hover) 74%, transparent), transparent); }
-.mod-manager-filter-dropdowns { gap: 16px; margin-top: 0; padding: 18px; }
-.mod-manager-filter-mode { min-height: 38px; padding: 0 11px; border: 1px solid var(--border-color); border-radius: 8px; background: var(--bg-color); color: var(--text-muted); }
-.mod-manager-filter-options { display: grid; gap: 7px; padding: 0; }
-.mod-manager-filter-options legend { padding: 0; color: var(--text-muted); font-size: .72rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; }
-.mod-manager-filter-options label { min-height: 32px; padding: 0 10px; border: 1px solid var(--border-color); border-radius: 7px; background: var(--bg-color); color: var(--text-muted); cursor: pointer; transition: border-color 140ms ease, background 140ms ease, color 140ms ease, transform 140ms ease; }
-.mod-manager-filter-options label:hover { border-color: var(--text-muted); background: var(--bg-hover); color: var(--text-main); }
-.mod-manager-filter-options input, .mod-manager-filter-mode input { appearance: none; width: 15px; height: 15px; margin: 0; border: 1px solid var(--text-muted); border-radius: 4px; background: transparent; display: grid; place-items: center; }
-.mod-manager-filter-options input:checked, .mod-manager-filter-mode input:checked { border-color: var(--accent-color); background: var(--accent-color); box-shadow: inset 0 0 0 3px var(--bg-color); }
-.mod-manager-filter-options label:has(input:checked), .mod-manager-filter-mode:has(input:checked) { border-color: var(--accent-color); background: color-mix(in srgb, var(--accent-color) 15%, var(--bg-color)); color: var(--text-main); }
-.mod-manager-filter-options label:active, .mod-manager-filter-mode:active, .mod-manager-filter-apply:active, .mod-manager-filter-reset:active { transform: scale(.96); }
-.mod-manager-filter-sort { display: grid; gap: 7px; margin: 0; color: var(--text-muted); font-size: .72rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; }
-.mod-manager-filter-sort select { min-height: 38px; padding: 0 10px; border-radius: 8px; color: var(--text-main); font-size: .82rem; font-weight: 600; letter-spacing: 0; text-transform: none; }
-.mod-manager-filter-footer { min-height: 62px; margin-top: 0; padding: 0 18px; border-top: 1px solid var(--border-color); background: color-mix(in srgb, var(--bg-color) 72%, transparent); }
-.mod-manager-filter-reset:hover, .mod-manager-filter-dismiss:hover { background: var(--bg-hover); color: var(--text-main); }
-.mod-manager-filter-apply:hover { filter: brightness(1.08); }
-.mod-manager-filter-dismiss:focus-visible, .mod-manager-filter-options input:focus-visible, .mod-manager-filter-mode input:focus-visible, .mod-manager-filter-sort select:focus-visible { outline: 2px solid var(--text-main); outline-offset: 2px; }
-.mod-settings-extra { display: grid; gap: 14px; margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--border-color); }
-.mod-settings-extra > label, .mod-settings-tags-field { display: grid; gap: 7px; color: var(--text-muted); font-size: .78rem; }
-.mod-settings-tag-editor { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; min-height: 38px; padding: 5px; border: 1px solid var(--border-color); border-radius: 7px; background: var(--bg-color); }
-.mod-settings-body .mod-settings-tag-input { box-sizing: content-box; width: auto; min-width: 150px; min-height: 28px; flex: 1; padding: 0; border: 0; border-radius: 0; outline: 0; background: transparent; color: var(--text-main); font: inherit; font-size: .82rem; }
+.mod-manager-card-tags {
+  color: var(--text-muted);
+  font-size: 0.72rem;
+  line-height: 1.35;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.mod-manager-filter-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+.mod-manager-filter-options legend {
+  margin-bottom: 7px;
+  color: var(--text-muted);
+  font-size: 0.78rem;
+}
+.mod-manager-filter-options label,
+.mod-manager-filter-mode,
+.mod-manager-filter-sort {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: var(--text-main);
+  font-size: 0.78rem;
+}
+.mod-manager-filter-sort {
+  margin-top: 8px;
+}
+.mod-manager-filter-sort select,
+.mod-settings-type {
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  background: var(--bg-color);
+  color: var(--text-main);
+  padding: 6px 8px;
+  font: inherit;
+}
+.mod-manager-filter-tag-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.mod-manager-filter-empty {
+  color: var(--text-muted);
+  font-size: 0.76rem;
+}
+.mod-manager-filter-panel .mod-manager-multi-dropdown {
+  width: 100%;
+}
+.mod-manager-filter-panel .mod-manager-multi-dropdown .pill-btn {
+  justify-content: space-between;
+  width: 100%;
+  min-height: 38px;
+  border-radius: 8px;
+}
+.mod-manager-filter-panel
+  .mod-manager-multi-dropdown
+  .custom-options-container {
+  width: 100%;
+  max-height: 210px;
+}
+.mod-manager-filter-panel .mod-manager-multi-dropdown .custom-option .fa-check {
+  opacity: 0;
+  font-size: 0.68rem;
+}
+.mod-manager-filter-panel
+  .mod-manager-multi-dropdown
+  .custom-option.selected
+  .fa-check {
+  opacity: 1;
+  color: var(--text-main);
+}
+.mod-manager-filter-panel {
+  width: min(100%, 520px);
+  border-radius: 12px;
+  background: var(--bg-panel);
+}
+.mod-manager-filter-panel .mod-manager-filter-dropdowns {
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  align-items: start;
+}
+.mod-manager-filter-panel .mod-manager-multi-dropdown .custom-option img {
+  width: 18px;
+  height: 18px;
+  object-fit: contain;
+  border-radius: 4px;
+}
+.mod-manager-filter-panel
+  .mod-manager-multi-dropdown
+  .custom-option
+  .mod-manager-option-check {
+  width: 12px;
+  flex: 0 0 12px;
+}
+.mod-manager-type-mode {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin: 4px 4px 7px;
+  padding: 6px 8px;
+  border-bottom: 1px solid var(--border-color);
+  color: var(--text-muted);
+  font-size: 0.72rem;
+}
+.mod-manager-type-mode span {
+  margin-right: auto;
+}
+.mod-manager-type-mode button {
+  display: grid;
+  width: 26px;
+  height: 24px;
+  place-items: center;
+  border: 1px solid transparent;
+  border-radius: 5px;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+}
+.mod-manager-type-mode button:hover,
+.mod-manager-type-mode button.selected {
+  border-color: var(--border-color);
+  background: var(--bg-hover);
+  color: var(--text-main);
+}
+@media (max-width: 560px) {
+  .mod-manager-filter-panel .mod-manager-filter-dropdowns {
+    grid-template-columns: 1fr;
+  }
+}
+.mod-manager-filter-panel {
+  padding: 0;
+  overflow: hidden;
+  border-color: color-mix(in srgb, var(--border-color) 82%, var(--text-main));
+  border-radius: 14px;
+  box-shadow:
+    0 24px 64px rgb(0 0 0 / 58%),
+    inset 0 1px rgb(255 255 255 / 4%);
+}
+.mod-manager-filter-heading {
+  min-height: 58px;
+  padding: 0 18px;
+  border-bottom: 1px solid var(--border-color);
+  background: linear-gradient(
+    115deg,
+    color-mix(in srgb, var(--bg-hover) 74%, transparent),
+    transparent
+  );
+}
+.mod-manager-filter-dropdowns {
+  gap: 16px;
+  margin-top: 0;
+  padding: 18px;
+}
+.mod-manager-filter-mode {
+  min-height: 38px;
+  padding: 0 11px;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  background: var(--bg-color);
+  color: var(--text-muted);
+}
+.mod-manager-filter-options {
+  display: grid;
+  gap: 7px;
+  padding: 0;
+}
+.mod-manager-filter-options legend {
+  padding: 0;
+  color: var(--text-muted);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.mod-manager-filter-options label {
+  min-height: 32px;
+  padding: 0 10px;
+  border: 1px solid var(--border-color);
+  border-radius: 7px;
+  background: var(--bg-color);
+  color: var(--text-muted);
+  cursor: pointer;
+  transition:
+    border-color 140ms ease,
+    background 140ms ease,
+    color 140ms ease,
+    transform 140ms ease;
+}
+.mod-manager-filter-options label:hover {
+  border-color: var(--text-muted);
+  background: var(--bg-hover);
+  color: var(--text-main);
+}
+.mod-manager-filter-options input,
+.mod-manager-filter-mode input {
+  appearance: none;
+  width: 15px;
+  height: 15px;
+  margin: 0;
+  border: 1px solid var(--text-muted);
+  border-radius: 4px;
+  background: transparent;
+  display: grid;
+  place-items: center;
+}
+.mod-manager-filter-options input:checked,
+.mod-manager-filter-mode input:checked {
+  border-color: var(--accent-color);
+  background: var(--accent-color);
+  box-shadow: inset 0 0 0 3px var(--bg-color);
+}
+.mod-manager-filter-options label:has(input:checked),
+.mod-manager-filter-mode:has(input:checked) {
+  border-color: var(--accent-color);
+  background: color-mix(in srgb, var(--accent-color) 15%, var(--bg-color));
+  color: var(--text-main);
+}
+.mod-manager-filter-options label:active,
+.mod-manager-filter-mode:active,
+.mod-manager-filter-apply:active,
+.mod-manager-filter-reset:active {
+  transform: scale(0.96);
+}
+.mod-manager-filter-sort {
+  display: grid;
+  gap: 7px;
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.mod-manager-filter-sort select {
+  min-height: 38px;
+  padding: 0 10px;
+  border-radius: 8px;
+  color: var(--text-main);
+  font-size: 0.82rem;
+  font-weight: 600;
+  letter-spacing: 0;
+  text-transform: none;
+}
+.mod-manager-filter-footer {
+  min-height: 62px;
+  margin-top: 0;
+  padding: 0 18px;
+  border-top: 1px solid var(--border-color);
+  background: color-mix(in srgb, var(--bg-color) 72%, transparent);
+}
+.mod-manager-filter-reset:hover,
+.mod-manager-filter-dismiss:hover {
+  background: var(--bg-hover);
+  color: var(--text-main);
+}
+.mod-manager-filter-apply:hover {
+  filter: brightness(1.08);
+}
+.mod-manager-filter-dismiss:focus-visible,
+.mod-manager-filter-options input:focus-visible,
+.mod-manager-filter-mode input:focus-visible,
+.mod-manager-filter-sort select:focus-visible {
+  outline: 2px solid var(--text-main);
+  outline-offset: 2px;
+}
+.mod-settings-extra {
+  display: grid;
+  gap: 14px;
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border-color);
+}
+.mod-settings-extra > label,
+.mod-settings-tags-field {
+  display: grid;
+  gap: 7px;
+  color: var(--text-muted);
+  font-size: 0.78rem;
+}
+.mod-settings-tag-editor {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  min-height: 38px;
+  padding: 5px;
+  border: 1px solid var(--border-color);
+  border-radius: 7px;
+  background: var(--bg-color);
+}
+.mod-settings-body .mod-settings-tag-input {
+  box-sizing: content-box;
+  width: auto;
+  min-width: 150px;
+  min-height: 28px;
+  flex: 1;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  outline: 0;
+  background: transparent;
+  color: var(--text-main);
+  font: inherit;
+  font-size: 0.82rem;
+}
 
 .mod-manager-card.is-search-hidden {
   display: none;
@@ -1052,7 +1351,9 @@
   opacity: 0;
   pointer-events: none;
   transform: translate(-50%, -3px);
-  transition: opacity 120ms ease, transform 120ms ease;
+  transition:
+    opacity 120ms ease,
+    transform 120ms ease;
   white-space: nowrap;
 }
 
@@ -1862,7 +2163,9 @@
   background: rgb(0 0 0 / 20%);
 }
 
-.mod-manager-filter-panel .mod-manager-multi-dropdown { width: 100%; }
+.mod-manager-filter-panel .mod-manager-multi-dropdown {
+  width: 100%;
+}
 .mod-manager-filter-panel .mod-manager-multi-dropdown .pill-btn {
   justify-content: space-between;
   width: 100%;
@@ -1871,63 +2174,295 @@
   border-radius: 8px;
   background: var(--bg-color);
 }
-.mod-manager-filter-panel .mod-manager-multi-dropdown .custom-options-container { border-radius: 10px; padding: 4px; box-shadow: 0 10px 25px rgb(0 0 0 / 35%); }
-.mod-manager-filter-panel .mod-manager-multi-dropdown .custom-option { min-height: 38px; padding: 10px 12px; border-radius: 6px; }
+.mod-manager-filter-panel
+  .mod-manager-multi-dropdown
+  .custom-options-container {
+  border-radius: 10px;
+  padding: 4px;
+  box-shadow: 0 10px 25px rgb(0 0 0 / 35%);
+}
+.mod-manager-filter-panel .mod-manager-multi-dropdown .custom-option {
+  min-height: 38px;
+  padding: 10px 12px;
+  border-radius: 6px;
+}
 .mod-manager-filter-panel .mod-manager-multi-dropdown.open .pill-btn {
   border-color: var(--text-main);
   background: var(--bg-hover);
   color: var(--text-main);
 }
-.mod-manager-filter-panel .mod-manager-multi-dropdown .custom-options-container { width: 100%; max-height: 210px; }
-.mod-manager-filter-panel .mod-manager-multi-dropdown .custom-options-container { min-width: 300px; max-height: 330px; }
-.mod-manager-filter-panel .mod-manager-multi-dropdown .custom-option img { width: 18px; height: 18px; object-fit: contain; border-radius: 4px; }
-.mod-manager-filter-panel .mod-manager-multi-dropdown .custom-option .mod-manager-option-check { width: 12px; flex: 0 0 12px; opacity: 0; font-size: .68rem; }
-.mod-manager-filter-panel .mod-manager-filter-option-actions button { opacity: 1; }
-.mod-manager-filter-panel .mod-manager-filter-option.is-included .mod-manager-filter-option-actions [data-action="include"],
-.mod-manager-filter-panel .mod-manager-filter-option.is-excluded .mod-manager-filter-option-actions [data-action="exclude"] { opacity: 1; border-color: var(--text-main); background: var(--text-main); color: var(--bg-color); }
-.mod-manager-type-mode { display: flex; align-items: center; gap: 5px; margin: 4px 4px 7px; padding: 6px 8px; border-bottom: 1px solid var(--border-color); color: var(--text-muted); font-size: .72rem; }
-.mod-manager-type-mode span { margin-right: auto; }
-.mod-manager-type-mode button { display: grid; width: 26px; height: 24px; place-items: center; border: 1px solid transparent; border-radius: 5px; background: transparent; color: var(--text-muted); cursor: pointer; }
-.mod-manager-type-mode button:hover, .mod-manager-type-mode button.selected { border-color: var(--border-color); background: var(--bg-hover); color: var(--text-main); }
-.mod-manager-filter-group { padding: 8px 12px 5px; color: var(--text-muted); font-size: .68rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; }
-.mod-manager-filter-option { position: relative; padding-right: 72px !important; }
-.mod-manager-filter-option-actions { position: absolute; right: 7px; display: inline-flex; gap: 3px; }
-.mod-manager-filter-option-actions button { display: grid; width: 27px; height: 27px; place-items: center; border: 1px solid transparent; border-radius: 5px; background: transparent; color: var(--text-muted); cursor: pointer; }
-.mod-manager-filter-option-actions button:hover { border-color: var(--border-color); background: var(--bg-hover); color: var(--text-main); }
+.mod-manager-filter-panel
+  .mod-manager-multi-dropdown
+  .custom-options-container {
+  width: 100%;
+  max-height: 210px;
+}
+.mod-manager-filter-panel
+  .mod-manager-multi-dropdown
+  .custom-options-container {
+  min-width: 300px;
+  max-height: 330px;
+}
+.mod-manager-filter-panel .mod-manager-multi-dropdown .custom-option img {
+  width: 18px;
+  height: 18px;
+  object-fit: contain;
+  border-radius: 4px;
+}
+.mod-manager-filter-panel
+  .mod-manager-multi-dropdown
+  .custom-option
+  .mod-manager-option-check {
+  width: 12px;
+  flex: 0 0 12px;
+  opacity: 0;
+  font-size: 0.68rem;
+}
+.mod-manager-filter-panel .mod-manager-filter-option-actions button {
+  opacity: 1;
+}
+.mod-manager-filter-panel
+  .mod-manager-filter-option.is-included
+  .mod-manager-filter-option-actions
+  [data-action="include"],
+.mod-manager-filter-panel
+  .mod-manager-filter-option.is-excluded
+  .mod-manager-filter-option-actions
+  [data-action="exclude"] {
+  opacity: 1;
+  border-color: var(--text-main);
+  background: var(--text-main);
+  color: var(--bg-color);
+}
+.mod-manager-type-mode {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin: 4px 4px 7px;
+  padding: 6px 8px;
+  border-bottom: 1px solid var(--border-color);
+  color: var(--text-muted);
+  font-size: 0.72rem;
+}
+.mod-manager-type-mode span {
+  margin-right: auto;
+}
+.mod-manager-type-mode button {
+  display: grid;
+  width: 26px;
+  height: 24px;
+  place-items: center;
+  border: 1px solid transparent;
+  border-radius: 5px;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+}
+.mod-manager-type-mode button:hover,
+.mod-manager-type-mode button.selected {
+  border-color: var(--border-color);
+  background: var(--bg-hover);
+  color: var(--text-main);
+}
+.mod-manager-filter-group {
+  padding: 8px 12px 5px;
+  color: var(--text-muted);
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.mod-manager-filter-option {
+  position: relative;
+  padding-right: 72px !important;
+}
+.mod-manager-filter-option-actions {
+  position: absolute;
+  right: 7px;
+  display: inline-flex;
+  gap: 3px;
+}
+.mod-manager-filter-option-actions button {
+  display: grid;
+  width: 27px;
+  height: 27px;
+  place-items: center;
+  border: 1px solid transparent;
+  border-radius: 5px;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+}
+.mod-manager-filter-option-actions button:hover {
+  border-color: var(--border-color);
+  background: var(--bg-hover);
+  color: var(--text-main);
+}
 .mod-manager-filter-panel .mod-manager-filter-option-actions button i.fa-check,
-.mod-manager-filter-panel .mod-manager-filter-option-actions button i.fa-xmark { display: block !important; opacity: 1 !important; visibility: visible !important; color: currentColor !important; font-size: .78rem; line-height: 1; }
-.mod-manager-filter-option.is-included [data-action="include"], .mod-manager-filter-option.is-excluded [data-action="exclude"] { border-color: var(--text-main); background: var(--text-main); color: var(--bg-color); }
-
-@media (max-width: 560px) {
-  .mod-manager-filter-panel .mod-manager-filter-dropdowns { grid-template-columns: 1fr; }
+.mod-manager-filter-panel .mod-manager-filter-option-actions button i.fa-xmark {
+  display: block !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+  color: currentColor !important;
+  font-size: 0.78rem;
+  line-height: 1;
+}
+.mod-manager-filter-option.is-included [data-action="include"],
+.mod-manager-filter-option.is-excluded [data-action="exclude"] {
+  border-color: var(--text-main);
+  background: var(--text-main);
+  color: var(--bg-color);
 }
 
-.mod-manager-filter-panel .mod-manager-multi-dropdown { position: relative; width: 100%; }
-.mod-manager-filter-panel .mod-manager-multi-dropdown .mod-manager-modal-dropdown-trigger { min-height: 40px; border-radius: 7px; background: var(--bg-color); }
-.mod-manager-filter-panel .mod-manager-multi-dropdown.open .mod-manager-modal-dropdown-trigger { border-color: var(--text-main); background: var(--bg-hover); }
-.mod-manager-filter-panel .mod-manager-multi-dropdown .mod-manager-modal-dropdown-menu { top: calc(100% + 7px); max-height: min(330px, calc(100vh - 150px)); overflow-y: auto; }
-.mod-manager-filter-panel .mod-manager-filter-option { position: relative; display: flex; align-items: center; gap: 9px; min-height: 38px; padding: 8px 72px 8px 10px; border-radius: 6px; color: var(--text-muted); cursor: default; }
-.mod-manager-filter-panel .mod-manager-filter-option:hover { background: var(--bg-hover); color: var(--text-main); }
+@media (max-width: 560px) {
+  .mod-manager-filter-panel .mod-manager-filter-dropdowns {
+    grid-template-columns: 1fr;
+  }
+}
 
-.mod-manager-search-wrap { position: relative; flex: 1; min-width: 180px; max-width: 470px; }
-.mod-manager-search-wrap .mod-manager-search { max-width: none; width: 100%; margin: 0; }
-.mod-manager-active-filters { display: none !important; }
-.mod-manager-search input[type="search"]::-webkit-search-cancel-button { filter: invert(1) grayscale(1) brightness(2); opacity: .95; }
-.mod-manager-search-suggestions, .mod-settings-tag-suggestions { position: absolute; z-index: 60; top: calc(100% + 7px); right: 0; left: 0; display: grid; gap: 3px; padding: 5px; border: 1px solid var(--border-color); border-radius: 9px; background: var(--bg-panel); box-shadow: 0 12px 28px rgb(0 0 0 / 42%); }
-.mod-manager-card.is-non-playable .mod-manager-launch-btn { display: none !important; }
-.mod-settings-engine { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-.mod-settings-extra { margin-top: 0; padding-top: 0; border-top: 0; }
-@media (max-width: 620px) { .mod-settings-engine { grid-template-columns: 1fr 1fr; } }
-.mod-manager-search-suggestions[hidden], .mod-settings-tag-suggestions[hidden] { display: none !important; }
-.mod-manager-search-suggestions button, .mod-settings-tag-suggestions button { display: flex; align-items: center; gap: 8px; width: 100%; min-height: 32px; padding: 7px 9px; border: 0; border-radius: 6px; background: transparent; color: var(--text-muted); cursor: pointer; font: inherit; font-size: .78rem; text-align: left; }
-.mod-manager-search-suggestions button:hover, .mod-settings-tag-suggestions button:hover { background: var(--bg-hover); color: var(--text-main); }
-.mod-settings-tags-field { position: relative; }
+.mod-manager-filter-panel .mod-manager-multi-dropdown {
+  position: relative;
+  width: 100%;
+}
+.mod-manager-filter-panel
+  .mod-manager-multi-dropdown
+  .mod-manager-modal-dropdown-trigger {
+  min-height: 40px;
+  border-radius: 7px;
+  background: var(--bg-color);
+}
+.mod-manager-filter-panel
+  .mod-manager-multi-dropdown.open
+  .mod-manager-modal-dropdown-trigger {
+  border-color: var(--text-main);
+  background: var(--bg-hover);
+}
+.mod-manager-filter-panel
+  .mod-manager-multi-dropdown
+  .mod-manager-modal-dropdown-menu {
+  top: calc(100% + 7px);
+  max-height: min(330px, calc(100vh - 150px));
+  overflow-y: auto;
+}
+.mod-manager-filter-panel .mod-manager-filter-option {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  min-height: 38px;
+  padding: 8px 72px 8px 10px;
+  border-radius: 6px;
+  color: var(--text-muted);
+  cursor: default;
+}
+.mod-manager-filter-panel .mod-manager-filter-option:hover {
+  background: var(--bg-hover);
+  color: var(--text-main);
+}
+
+.mod-manager-search-wrap {
+  position: relative;
+  flex: 1;
+  min-width: 180px;
+  max-width: 470px;
+}
+.mod-manager-search-wrap .mod-manager-search {
+  max-width: none;
+  width: 100%;
+  margin: 0;
+}
+.mod-manager-active-filters {
+  display: none !important;
+}
+.mod-manager-search input[type="search"]::-webkit-search-cancel-button {
+  filter: invert(1) grayscale(1) brightness(2);
+  opacity: 0.95;
+}
+.mod-manager-search-suggestions,
+.mod-settings-tag-suggestions {
+  position: absolute;
+  z-index: 60;
+  top: calc(100% + 7px);
+  right: 0;
+  left: 0;
+  display: grid;
+  gap: 3px;
+  padding: 5px;
+  border: 1px solid var(--border-color);
+  border-radius: 9px;
+  background: var(--bg-panel);
+  box-shadow: 0 12px 28px rgb(0 0 0 / 42%);
+}
+.mod-manager-card.is-non-playable .mod-manager-launch-btn {
+  display: none !important;
+}
+.mod-settings-engine {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+.mod-settings-extra {
+  margin-top: 0;
+  padding-top: 0;
+  border-top: 0;
+}
+@media (max-width: 620px) {
+  .mod-settings-engine {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+.mod-manager-search-suggestions[hidden],
+.mod-settings-tag-suggestions[hidden] {
+  display: none !important;
+}
+.mod-manager-search-suggestions button,
+.mod-settings-tag-suggestions button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  min-height: 32px;
+  padding: 7px 9px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.78rem;
+  text-align: left;
+}
+.mod-manager-search-suggestions button:hover,
+.mod-settings-tag-suggestions button:hover {
+  background: var(--bg-hover);
+  color: var(--text-main);
+}
+.mod-settings-tags-field {
+  position: relative;
+}
 
 /* Keep opened menus above the dialog instead of clipping them at its edge. */
-.mod-manager-filter-panel { overflow: visible; position: relative; z-index: 1; }
+.mod-manager-filter-panel {
+  overflow: visible;
+  position: relative;
+  z-index: 1;
+}
 .mod-manager-filter-panel .mod-manager-filter-heading,
-.mod-manager-filter-panel .mod-manager-filter-footer { overflow: hidden; }
-.mod-manager-filter-panel .mod-manager-multi-dropdown { position: relative; z-index: 4; }
-.mod-manager-filter-panel .mod-manager-multi-dropdown.open { z-index: 20; }
-.mod-manager-filter-panel .mod-manager-multi-dropdown .custom-options-container { z-index: 30; max-height: min(330px, calc(100vh - 150px)); overflow-y: auto; }
-.mod-manager-filter-overlay { overflow: visible; }
+.mod-manager-filter-panel .mod-manager-filter-footer {
+  overflow: hidden;
+}
+.mod-manager-filter-panel .mod-manager-multi-dropdown {
+  position: relative;
+  z-index: 4;
+}
+.mod-manager-filter-panel .mod-manager-multi-dropdown.open {
+  z-index: 20;
+}
+.mod-manager-filter-panel
+  .mod-manager-multi-dropdown
+  .custom-options-container {
+  z-index: 30;
+  max-height: min(330px, calc(100vh - 150px));
+  overflow-y: auto;
+}
+.mod-manager-filter-overlay {
+  overflow: visible;
+}

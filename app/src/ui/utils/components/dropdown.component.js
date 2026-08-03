@@ -4,11 +4,9 @@ function setupDropdown(trigger, container, options = {}) {
     openClass = "open",
     menuElement = null,
     // Si se provee, controlará la propiedad "hidden"
-    onToggle = null
+    onToggle = null,
   } = options;
-  if (!trigger || !container) return { close: () => {
-  }, destroy: () => {
-  } };
+  if (!trigger || !container) return { close: () => {}, destroy: () => {} };
   const close = () => {
     openDropdowns.delete(close);
     container.classList.remove(openClass);
@@ -36,7 +34,10 @@ function setupDropdown(trigger, container, options = {}) {
     toggle();
   };
   const handleOutsideClick = (e) => {
-    if (!container.contains(e.target) && container.classList.contains(openClass)) {
+    if (
+      !container.contains(e.target) &&
+      container.classList.contains(openClass)
+    ) {
       close();
     }
   };
@@ -48,7 +49,7 @@ function setupDropdown(trigger, container, options = {}) {
       close();
       trigger.removeEventListener("click", handleTriggerClick);
       document.removeEventListener("click", handleOutsideClick);
-    }
+    },
   };
 }
 

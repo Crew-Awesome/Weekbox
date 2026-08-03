@@ -1,5 +1,8 @@
 function normalizeVersion(value) {
-  return String(value || "").trim().replace(/^v/i, "").split("-")[0];
+  return String(value || "")
+    .trim()
+    .replace(/^v/i, "")
+    .split("-")[0];
 }
 function compareVersions(left, right) {
   const leftParts = normalizeVersion(left).split(".").map(Number);
@@ -11,10 +14,5 @@ function compareVersions(left, right) {
   }
   return 0;
 }
-
-    
-    
-  
-
 
 export { normalizeVersion, compareVersions };

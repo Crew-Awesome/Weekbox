@@ -9,14 +9,11 @@ function disableProductionRefreshShortcuts() {
   });
   if (isDevelopmentRun()) return;
   window.addEventListener("keydown", (event) => {
-    const isRefresh = event.key === "F5" || (event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "r";
+    const isRefresh =
+      event.key === "F5" ||
+      ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "r");
     if (isRefresh) event.preventDefault();
   });
 }
-
-    
-    
-  
-
 
 export { disableProductionRefreshShortcuts, isDevelopmentRun };

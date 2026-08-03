@@ -4,7 +4,19 @@ function sameId(left, right) {
 
 function normalizeTags(tags) {
   if (!Array.isArray(tags)) return [];
-  return [...new Set(tags.map((tag) => String(tag || "").trim().replace(/^#+/, "").replace(/\s+/g, " ").toLocaleLowerCase()).filter((tag) => tag && tag.length <= 48))].slice(0, 20);
+  return [
+    ...new Set(
+      tags
+        .map((tag) =>
+          String(tag || "")
+            .trim()
+            .replace(/^#+/, "")
+            .replace(/\s+/g, " ")
+            .toLocaleLowerCase(),
+        )
+        .filter((tag) => tag && tag.length <= 48),
+    ),
+  ].slice(0, 20);
 }
 
 var _ModRepository = class _ModRepository {
@@ -16,7 +28,7 @@ var _ModRepository = class _ModRepository {
     return `${this.getDataPath()}/installedmods.json`;
   }
   async getAll() {
-    if (!await this.api.exists(this.filePath)) return [];
+    if (!(await this.api.exists(this.filePath))) return [];
     try {
       const mods = JSON.parse(await this.api.read(this.filePath));
       return Array.isArray(mods) ? mods : [];
@@ -70,14 +82,22 @@ var _ModRepository = class _ModRepository {
     const mods = await this.getAll();
     const mod = mods.find((item) => sameId(item.id, modId));
     if (!mod) return null;
-    if (!['mod', 'dependency', 'addon'].includes(type)) throw new Error('Unknown mod type');
-    if (type === 'dependency') return this.moveToDependencies(modId);
-    if (mod.kind === 'dependency') {
-      const consumers = mods.filter((item) => Array.isArray(item.dependencies) && item.dependencies.some((dependencyId) => sameId(dependencyId, modId)));
-      if (consumers.length) throw new Error(`Remove ${consumers.map((item) => item.name).join(', ')} before changing ${mod.name}`);
+    if (!["mod", "dependency", "addon"].includes(type))
+      throw new Error("Unknown mod type");
+    if (type === "dependency") return this.moveToDependencies(modId);
+    if (mod.kind === "dependency") {
+      const consumers = mods.filter(
+        (item) =>
+          Array.isArray(item.dependencies) &&
+          item.dependencies.some((dependencyId) => sameId(dependencyId, modId)),
+      );
+      if (consumers.length)
+        throw new Error(
+          `Remove ${consumers.map((item) => item.name).join(", ")} before changing ${mod.name}`,
+        );
       delete mod.consumers;
     }
-    if (type === 'addon') mod.kind = 'addon';
+    if (type === "addon") mod.kind = "addon";
     else delete mod.kind;
     await this.saveAll(mods);
     return mod;
@@ -90,7 +110,7 @@ var _ModRepository = class _ModRepository {
       const dependency = mods.find((item) => sameId(item.id, dependencyId));
       if (!dependency) continue;
       dependency.consumers = (dependency.consumers || []).filter(
-        (consumerId) => !sameId(consumerId, modId)
+        (consumerId) => !sameId(consumerId, modId),
       );
     }
     mod.kind = "dependency";
@@ -112,7 +132,10 @@ var _ModRepository = class _ModRepository {
     const mod = mods.find((item) => sameId(item.id, modId));
     if (!mod) return null;
     if (typeof name === "string" && name.trim()) mod.name = name.trim();
-    if (arguments[1] && Object.prototype.hasOwnProperty.call(arguments[1], "folderName")) {
+    if (
+      arguments[1] &&
+      Object.prototype.hasOwnProperty.call(arguments[1], "folderName")
+    ) {
       mod.folderName = arguments[1].folderName || null;
     }
     if (coverPath !== void 0) {
@@ -139,24 +162,28 @@ var _ModRepository = class _ModRepository {
     const dependency = mods.find((mod) => sameId(mod.id, dependencyId));
     if (!dependency) return null;
     dependency.consumers = (dependency.consumers || []).filter(
-      (id) => !sameId(id, consumerId)
+      (id) => !sameId(id, consumerId),
     );
     await this.saveAll(mods);
     return dependency;
   }
   async remove(modId) {
-    if (!await this.api.exists(this.filePath)) return;
+    if (!(await this.api.exists(this.filePath))) return;
     const mods = await this.getAll();
     const remainingMods = mods.filter((mod) => !sameId(mod.id, modId));
     // A dependency can be deleted deliberately. Keep the remaining library
     // valid by removing its stale references in the same write.
     for (const mod of remainingMods) {
       if (Array.isArray(mod.dependencies)) {
-        mod.dependencies = mod.dependencies.filter((dependencyId) => !sameId(dependencyId, modId));
+        mod.dependencies = mod.dependencies.filter(
+          (dependencyId) => !sameId(dependencyId, modId),
+        );
         if (!mod.dependencies.length) delete mod.dependencies;
       }
       if (Array.isArray(mod.consumers)) {
-        mod.consumers = mod.consumers.filter((consumerId) => !sameId(consumerId, modId));
+        mod.consumers = mod.consumers.filter(
+          (consumerId) => !sameId(consumerId, modId),
+        );
         if (!mod.consumers.length) delete mod.consumers;
       }
     }

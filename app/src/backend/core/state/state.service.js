@@ -7,6 +7,4 @@ function getSelectedEngine() {
   return selectedEngine;
 }
 
-
-
 export { selectedEngine, setSelectedEngine, getSelectedEngine };

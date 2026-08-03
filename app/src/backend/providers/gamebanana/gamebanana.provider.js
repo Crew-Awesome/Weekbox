@@ -528,9 +528,7 @@ export const gameBananaApi = {
     };
     if (String(modId).startsWith("peo:")) {
       try {
-        return await peoApi.getModDetails(
-          String(modId).slice("peo:".length),
-        );
+        return await peoApi.getModDetails(String(modId).slice("peo:".length));
       } catch {
         return null;
       }
