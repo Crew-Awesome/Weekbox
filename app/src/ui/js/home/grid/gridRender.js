@@ -1,10 +1,68 @@
 import { gameBananaApi } from "../../../../backend/providers/gamebanana/gamebanana.provider.js";
 import { gridState } from "./gridState.js";
-import { createCard } from "./cardBuilder.js";
+import { createCard, createFeaturedCard } from "./cardBuilder.js";
 import { networkStatus } from "../../../../backend/core/system/network-status.service.js";
 import { t } from "../../i18n/index.js";
 
+function selectFeaturedMod(mods, featuredIds, featuredEngineIds, offset) {
+  const unseen = mods.filter((mod) => !featuredIds.has(mod.id));
+  const candidates = unseen.length ? unseen : mods;
+  const varied = candidates.filter(
+    (mod) => mod.engineId && !featuredEngineIds.has(mod.engineId),
+  );
+  const pool = varied.length ? varied : candidates;
+  return pool.length ? pool[offset % Math.min(pool.length, 6)] : null;
+}
+
 export const gridRender = {
+  ensureEngineTooltip(grid) {
+    if (!gridState.engineTooltip) {
+      gridState.engineTooltip = document.createElement("div");
+      gridState.engineTooltip.className =
+        "mod-manager-engine-tooltip home-engine-tooltip";
+      gridState.engineTooltip.setAttribute("role", "tooltip");
+      document.body.appendChild(gridState.engineTooltip);
+    }
+    if (gridState.engineTooltipGrid === grid) return;
+
+    gridState.engineTooltipGrid = grid;
+    grid.addEventListener("pointerover", (event) => {
+      const indicator = event.target.closest(".grid-engine-indicator");
+      if (!indicator || !grid.contains(indicator)) return;
+      const tooltip = gridState.engineTooltip;
+      if (!tooltip || !indicator.dataset.label) return;
+
+      tooltip.textContent = indicator.dataset.label;
+      const rect = indicator.getBoundingClientRect();
+      const halfWidth = tooltip.offsetWidth / 2;
+      const left = Math.min(
+        Math.max(rect.left + rect.width / 2, halfWidth + 8),
+        window.innerWidth - halfWidth - 8,
+      );
+      const belowTop = rect.bottom + 8;
+      const top =
+        belowTop + tooltip.offsetHeight <= window.innerHeight - 8
+          ? belowTop
+          : rect.top - tooltip.offsetHeight - 8;
+      tooltip.style.left = `${left}px`;
+      tooltip.style.top = `${Math.max(8, top)}px`;
+      tooltip.classList.toggle("is-above", top < rect.top);
+      tooltip.classList.add("is-visible");
+    });
+    grid.addEventListener("pointerout", (event) => {
+      const indicator = event.target.closest(".grid-engine-indicator");
+      if (
+        indicator &&
+        !(
+          event.relatedTarget instanceof Node &&
+          indicator.contains(event.relatedTarget)
+        )
+      ) {
+        gridState.engineTooltip?.classList.remove("is-visible");
+      }
+    });
+  },
+
   async renderGrid(isInitial = false) {
     if (gridState.isLoading) {
       if (isInitial) {
@@ -17,6 +75,7 @@ export const gridRender = {
 
     const grid = document.getElementById("popular-grid");
     if (!grid) return;
+    this.ensureEngineTooltip(grid);
     const renderVersion = ++gridState.renderVersion;
     const requestedPage = isInitial ? 1 : gridState.currentPage + 1;
 
@@ -27,6 +86,10 @@ export const gridRender = {
       gridState.currentPage = 1;
       gridState.hasMore = true;
       grid.replaceChildren();
+      gridState.featuredCandidates = [];
+      gridState.featuredIds.clear();
+      gridState.featuredEngineIds.clear();
+      gridState.featuredOffset = Math.floor(Math.random() * 3);
       grid.classList.remove("grid-empty", "grid-error");
     }
 
@@ -74,7 +137,44 @@ export const gridRender = {
         return;
       }
 
+      if (
+        isInitial &&
+        !gridState.isSearchMode &&
+        gridState.currentFilter === "popular"
+      ) {
+        gridState.featuredCandidates = mods;
+      }
+
       const cards = document.createDocumentFragment();
+      const showFeatured =
+        !gridState.isSearchMode &&
+        ((isInitial && gridState.currentFilter === "popular") ||
+          requestedPage % 3 === 0);
+      const featuredSource =
+        gridState.currentFilter === "popular" &&
+        gridState.featuredCandidates.length
+          ? gridState.featuredCandidates
+          : mods;
+      const featured = showFeatured
+        ? selectFeaturedMod(
+            featuredSource,
+            gridState.featuredIds,
+            gridState.featuredEngineIds,
+            gridState.featuredOffset,
+          )
+        : null;
+      const featuredLabel =
+        gridState.currentFilter === "updated"
+          ? "Recently updated"
+          : gridState.currentFilter === "new"
+            ? "New release"
+            : "Popular community pick";
+      if (featured) {
+        gridState.featuredIds.add(featured.id);
+        if (featured.engineId)
+          gridState.featuredEngineIds.add(featured.engineId);
+        cards.appendChild(createFeaturedCard(featured, featuredLabel));
+      }
       mods.forEach((mod, index) => cards.appendChild(createCard(mod, index)));
       grid.appendChild(cards);
       if (result.snapshotId) gridState.discoverySnapshotId = result.snapshotId;

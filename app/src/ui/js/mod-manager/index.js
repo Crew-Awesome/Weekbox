@@ -22,6 +22,7 @@ export const modManagerModal = {
   preloadPromise: null,
   preloaded: false,
   pendingInstalls: new Map(),
+  engineTooltip: null,
 
   async init() {
     if (!document.getElementById("mod-manager-modal")) {
@@ -29,6 +30,44 @@ export const modManagerModal = {
       wrapper.innerHTML = modManagerTemplates.mainModal();
       document.body.appendChild(wrapper.firstElementChild);
       i18n.apply(document.getElementById("mod-manager-modal"));
+
+      const modal = document.getElementById("mod-manager-modal");
+      this.engineTooltip = document.createElement("div");
+      this.engineTooltip.className = "mod-manager-engine-tooltip";
+      this.engineTooltip.setAttribute("role", "tooltip");
+      document.body.appendChild(this.engineTooltip);
+      modal?.addEventListener("pointerover", (event) => {
+        const indicator = event.target.closest(".mod-manager-engine-indicator");
+        if (!indicator || !this.engineTooltip) return;
+        this.engineTooltip.textContent = indicator.dataset.label || "";
+        const rect = indicator.getBoundingClientRect();
+        const halfWidth = this.engineTooltip.offsetWidth / 2;
+        const left = Math.min(
+          Math.max(rect.left + rect.width / 2, halfWidth + 8),
+          window.innerWidth - halfWidth - 8,
+        );
+        const belowTop = rect.bottom + 8;
+        const top =
+          belowTop + this.engineTooltip.offsetHeight <= window.innerHeight - 8
+            ? belowTop
+            : rect.top - this.engineTooltip.offsetHeight - 8;
+        this.engineTooltip.style.left = `${left}px`;
+        this.engineTooltip.style.top = `${Math.max(8, top)}px`;
+        this.engineTooltip.classList.toggle("is-above", top < rect.top);
+        this.engineTooltip.classList.add("is-visible");
+      });
+      modal?.addEventListener("pointerout", (event) => {
+        const indicator = event.target.closest(".mod-manager-engine-indicator");
+        if (
+          indicator &&
+          !(
+            event.relatedTarget instanceof Node &&
+            indicator.contains(event.relatedTarget)
+          )
+        ) {
+          this.engineTooltip?.classList.remove("is-visible");
+        }
+      });
 
       document
         .getElementById("mod-manager-close-btn")
@@ -210,6 +249,7 @@ export const modManagerModal = {
     modSettingsModal.close();
     const modal = document.getElementById("mod-manager-modal");
     if (!modal) return;
+    this.engineTooltip?.classList.remove("is-visible");
     sidebar.syncActive();
     modal.classList.remove("show");
     setTimeout(() => {

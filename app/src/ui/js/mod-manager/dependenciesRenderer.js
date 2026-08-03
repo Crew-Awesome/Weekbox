@@ -148,7 +148,8 @@ export const dependenciesRenderer = {
             isExecutable: false,
             installedEngines,
             onSaved: onSettingsSaved,
-            readOnly: FS.isModLockedForChanges(dependency, allMods),
+            readOnly: false,
+            fileLocked: FS.isModLockedForChanges(dependency, allMods),
           });
         } finally {
           settings.disabled = false;

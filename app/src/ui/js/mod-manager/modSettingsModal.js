@@ -21,6 +21,7 @@ export const modSettingsModal = {
     installedEngines,
     onSaved,
     readOnly = false,
+    fileLocked = false,
   }) {
     if (this.isOpening) return false;
     this.close();
@@ -43,8 +44,25 @@ export const modSettingsModal = {
     }
     if (requestId !== this.openRequestId) return false;
 
-    const controlsDisabled = readOnly || mod.engineLocked ? "disabled" : "";
+    const controlsDisabled =
+      readOnly || fileLocked || mod.engineLocked ? "disabled" : "";
     const isDependency = mod.kind === "dependency";
+    let tagSuggestions = [];
+    try {
+      const installedMods = await FS.getInstalledMods();
+      const currentTags = Array.isArray(mod.tags) ? mod.tags : [];
+      tagSuggestions = [
+        ...new Set(
+          (Array.isArray(installedMods) ? installedMods : []).flatMap((item) =>
+            Array.isArray(item.tags) ? item.tags : [],
+          ),
+        ),
+      ]
+        .filter((tag) => !currentTags.includes(tag))
+        .sort();
+    } catch {
+      tagSuggestions = [];
+    }
     overlay.innerHTML = settingsContent({
       mod,
       localCover,
@@ -57,6 +75,8 @@ export const modSettingsModal = {
       isDependency,
       isExecutable,
       readOnly,
+      fileLocked,
+      tagSuggestions,
     });
 
     const form = overlay.querySelector("form");
@@ -64,12 +84,96 @@ export const modSettingsModal = {
     const cover = overlay.querySelector(".mod-settings-cover");
     const fileInput = overlay.querySelector(".mod-settings-file");
     const status = overlay.querySelector(".mod-settings-status");
-    const dropdowns = setupModSettingsDropdowns(
-      overlay,
-      mod,
-      installedEngines,
-      isExecutable,
+    const typeSelect = overlay.querySelector(".mod-settings-type");
+    const tagInput = overlay.querySelector(".mod-settings-tag-input");
+    const tagPills = overlay.querySelector(".mod-settings-tag-pills");
+    const tagSuggestionsMenu = overlay.querySelector(
+      ".mod-settings-tag-suggestions",
     );
+    let tags = [
+      ...new Set(
+        (mod.tags || [])
+          .map((tag) =>
+            String(tag).trim().replace(/^#+/, "").toLocaleLowerCase(),
+          )
+          .filter(Boolean),
+      ),
+    ];
+    const renderTags = () => {
+      if (!tagPills) return;
+      tagPills.replaceChildren(
+        ...tags.map((tag) => {
+          const pill = document.createElement("button");
+          pill.type = "button";
+          pill.className = "mod-settings-tag-pill";
+          pill.textContent = `#${tag} ×`;
+          pill.disabled = readOnly;
+          pill.addEventListener("click", () => {
+            tags = tags.filter((item) => item !== tag);
+            renderTags();
+          });
+          return pill;
+        }),
+      );
+    };
+    const addTag = () => {
+      const tag = String(tagInput?.value || "")
+        .trim()
+        .replace(/^#+/, "")
+        .replace(/\s+/g, " ")
+        .toLocaleLowerCase();
+      if (tag && tag.length <= 48 && !tags.includes(tag) && tags.length < 20)
+        tags.push(tag);
+      if (tagInput) tagInput.value = "";
+      renderTags();
+    };
+    tagInput?.addEventListener("keydown", (event) => {
+      if (event.key === "Enter") {
+        event.preventDefault();
+        addTag();
+      }
+      if (event.key === "Escape" && tagSuggestionsMenu)
+        tagSuggestionsMenu.hidden = true;
+    });
+    tagInput?.addEventListener("blur", () =>
+      setTimeout(() => {
+        if (tagSuggestionsMenu) tagSuggestionsMenu.hidden = true;
+      }, 120),
+    );
+    tagInput?.addEventListener("focus", () => {
+      if (tagSuggestionsMenu?.children.length && tagInput.value.trim())
+        tagSuggestionsMenu.hidden = false;
+    });
+    tagInput?.addEventListener("input", () => {
+      const query = String(tagInput.value || "")
+        .replace(/^#+/, "")
+        .toLocaleLowerCase();
+      tagSuggestionsMenu
+        ?.querySelectorAll("button[data-tag]")
+        .forEach((button) => {
+          button.hidden =
+            !query ||
+            !button.dataset.tag.includes(query) ||
+            tags.includes(button.dataset.tag);
+        });
+      if (tagSuggestionsMenu)
+        tagSuggestionsMenu.hidden =
+          !query ||
+          !tagSuggestionsMenu.querySelector("button[data-tag]:not([hidden])");
+    });
+    tagSuggestionsMenu?.addEventListener("mousedown", (event) => {
+      const button = event.target.closest("button[data-tag]");
+      if (!button) return;
+      event.preventDefault();
+      if (!tags.includes(button.dataset.tag)) tags.push(button.dataset.tag);
+      if (tagInput) tagInput.value = "";
+      renderTags();
+      tagSuggestionsMenu.hidden = true;
+    });
+    renderTags();
+    const dropdowns = isExecutable
+      ? null
+      : setupModSettingsDropdowns(overlay, mod, installedEngines);
     this.dropdowns = dropdowns;
     let pendingCoverDataUrl = null;
     let pendingCoverUrl = null;
@@ -140,7 +244,7 @@ export const modSettingsModal = {
         moveButton.disabled = true;
         status.textContent = t("modSettings.movingToMods");
         try {
-          await FS.assertModChangeAllowed(mod.id);
+          if (!fileLocked) await FS.assertModChangeAllowed(mod.id);
           const movedMod = await FS.moveDependencyToMods(mod.id);
           if (!movedMod) throw new Error(t("modSettings.dependencyMoveFailed"));
           await onSaved?.();
@@ -157,8 +261,8 @@ export const modSettingsModal = {
         moveButton.disabled = true;
         status.textContent = t("modSettings.movingToDependencies");
         try {
-          await FS.assertModChangeAllowed(mod.id);
-          if (!mod.engineLocked) {
+          if (!fileLocked) await FS.assertModChangeAllowed(mod.id);
+          if (!fileLocked && !isExecutable && !mod.engineLocked && dropdowns) {
             const engineId = dropdowns.engineSelect.value || null;
             const version =
               engineId && dropdowns.versionSelect
@@ -183,8 +287,8 @@ export const modSettingsModal = {
       saveButton.disabled = true;
       status.textContent = t("modSettings.saving");
       try {
-        await FS.assertModChangeAllowed(mod.id);
-        if (!mod.engineLocked) {
+        if (!fileLocked) await FS.assertModChangeAllowed(mod.id);
+        if (!fileLocked && !isExecutable && !mod.engineLocked && dropdowns) {
           const engineId = dropdowns.engineSelect.value || null;
           const version =
             engineId && dropdowns.versionSelect
@@ -192,7 +296,23 @@ export const modSettingsModal = {
               : null;
           await FS.setModEngineCompatibility(mod.id, engineId, version);
         }
+        if (
+          !fileLocked &&
+          !isExecutable &&
+          typeSelect &&
+          typeSelect.value !== (mod.kind || "mod")
+        ) {
+          await FS.setModType(mod.id, typeSelect.value);
+        }
+        if (!(await FS.setModTags(mod.id, tags))) {
+          throw new Error(t("modSettings.saveFailed"));
+        }
         const appearance = { name };
+        if (fileLocked && !mod.folderName) {
+          appearance.folderName = mod.name
+            ? sanitizePathSegment(mod.name)
+            : null;
+        }
         if (pendingCoverDataUrl) appearance.coverDataUrl = pendingCoverDataUrl;
         else if (pendingCoverUrl) appearance.coverUrl = pendingCoverUrl;
         if (!(await FS.updateModAppearance(mod.id, appearance))) {

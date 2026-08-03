@@ -243,7 +243,8 @@ export const cardRenderer = {
             isExecutable,
             installedEngines,
             onSaved: onSettingsSaved,
-            readOnly: FS.isModLockedForChanges(mod, allMods),
+            readOnly: false,
+            fileLocked: FS.isModLockedForChanges(mod, allMods),
           });
         } finally {
           settingsBtn.disabled = false;

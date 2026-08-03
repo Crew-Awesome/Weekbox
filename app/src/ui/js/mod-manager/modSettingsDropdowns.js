@@ -25,6 +25,34 @@ export function setupModSettingsDropdowns(
   const versionSelected = overlay.querySelector(
     ".mod-settings-version-selected",
   );
+  const typeSelect = overlay.querySelector(".mod-settings-type");
+  const typeTrigger = overlay.querySelector(".mod-settings-type-trigger");
+  const typeMenu = overlay.querySelector(".mod-settings-type-menu");
+  const typeSelected = overlay.querySelector(".mod-settings-type-selected");
+
+  const typeOptions = [
+    ["mod", "Mod", "fa-layer-group"],
+    ...(mod.engineId === "codename" || mod.kind === "addon"
+      ? [["addon", "Addon", "fa-cubes"]]
+      : []),
+    ...(mod.kind === "dependency" ||
+    (mod.engineId !== "codename" && mod.kind !== "addon")
+      ? [["dependency", "Dependency", "fa-puzzle-piece"]]
+      : []),
+  ];
+
+  const renderType = () => {
+    if (!typeSelect || !typeMenu || !typeSelected) return;
+    const current =
+      typeOptions.find(([value]) => value === typeSelect.value) ||
+      typeOptions[0];
+    typeSelected.textContent = current[1];
+    typeMenu.querySelectorAll("button[data-type]").forEach((button) => {
+      const selected = button.dataset.type === typeSelect.value;
+      button.classList.toggle("selected", selected);
+      button.setAttribute("aria-selected", String(selected));
+    });
+  };
 
   const defaultLabel = isExecutable
     ? t("home.executables")
@@ -32,6 +60,22 @@ export function setupModSettingsDropdowns(
   const defaultIconHtml = isExecutable
     ? '<img src="assets/icons/exe.png" alt="">'
     : '<i class="fa-solid fa-question-circle" aria-hidden="true"></i>';
+
+  if (typeSelect && typeMenu) {
+    typeSelect.innerHTML = typeOptions
+      .map(
+        ([value, label]) =>
+          `<option value="${value}" ${value === (mod.kind || "mod") ? "selected" : ""}>${label}</option>`,
+      )
+      .join("");
+    typeMenu.innerHTML = typeOptions
+      .map(
+        ([value, label, icon]) =>
+          `<button type="button" data-type="${value}" role="option" aria-selected="${value === (mod.kind || "mod")}"><i class="fa-solid ${icon}" aria-hidden="true"></i>${label}</button>`,
+      )
+      .join("");
+    renderType();
+  }
 
   const updateVersionVisibility = (hasEngine) => {
     if (versionField) {
@@ -123,6 +167,12 @@ export function setupModSettingsDropdowns(
 
   renderEngines();
   renderVersions(mod.engineVersion || "");
+  const typeDropdown =
+    typeTrigger && typeMenu
+      ? setupDropdown(typeTrigger, typeTrigger.parentElement, {
+          menuElement: typeMenu,
+        })
+      : null;
   const engineDropdown = setupDropdown(
     engineTrigger,
     engineTrigger.parentElement,
@@ -148,6 +198,13 @@ export function setupModSettingsDropdowns(
       versionDropdown.close();
     });
   }
+  typeMenu?.addEventListener("click", (event) => {
+    const option = event.target.closest("button[data-type]");
+    if (!option || !typeSelect) return;
+    typeSelect.value = option.dataset.type;
+    renderType();
+    typeDropdown?.close();
+  });
   engineMenu.addEventListener("click", (event) => {
     const option = event.target.closest("button[data-engine-id]");
     if (!option) return;
@@ -162,9 +219,11 @@ export function setupModSettingsDropdowns(
   return {
     engineSelect,
     versionSelect,
+    typeSelect,
     destroy: () => {
       engineDropdown.destroy();
       versionDropdown?.destroy();
+      typeDropdown?.destroy();
     },
   };
 }

@@ -36,7 +36,20 @@ export function settingsContent({
   isDependency,
   isExecutable,
   readOnly,
+  fileLocked = false,
+  tagSuggestions = [],
 }) {
+  const tagsField = `
+          <label class="mod-settings-tags-field">
+            <span>Tags</span>
+            <div class="mod-settings-tag-editor">
+              <span class="mod-settings-tag-pills"></span>
+              <input class="mod-settings-tag-input" placeholder="Type a tag and press Enter" ${readOnly ? "disabled" : ""}>
+            </div>
+            <div class="mod-settings-tag-suggestions" hidden>
+              ${tagSuggestions.map((tag) => `<button type="button" data-tag="${escapeHtml(tag)}">#${escapeHtml(tag)}</button>`).join("")}
+            </div>
+          </label>`;
   return `
     <form class="mod-settings-modal">
       <header class="mod-settings-header">
@@ -55,7 +68,27 @@ export function settingsContent({
           </label>
           <input class="mod-settings-name" aria-label="${t("import.modName")}" value="${escapeHtml(mod.name)}" maxlength="120" required ${readOnly ? "disabled" : ""}>
         </div>
-        <div class="mod-settings-engine ${mod.engineId ? "has-version" : ""}" ${controlsDisabled ? 'aria-disabled="true"' : ""}>
+        ${
+          isExecutable
+            ? `
+          <div class="mod-settings-engine mod-settings-executable-type">
+            <div>
+              <span>${t("modManager.type")}</span>
+              <div class="mod-settings-executable-value"><img src="assets/icons/exe.png" alt=""><span>${t("home.executables")}</span></div>
+            </div>
+            ${tagsField}
+          </div>`
+            : `<div class="mod-settings-engine ${mod.engineId ? "has-version" : ""}" ${controlsDisabled ? 'aria-disabled="true"' : ""}>
+          <label class="mod-settings-type-field">${t("modManager.type")}
+            <span class="mod-settings-dropdown">
+              <button type="button" class="mod-settings-dropdown-trigger mod-settings-type-trigger" aria-haspopup="listbox" aria-expanded="false" ${controlsDisabled}>
+                <span class="mod-settings-select-icon"><i class="fa-solid fa-layer-group" aria-hidden="true"></i></span>
+                <span class="mod-settings-type-selected"></span><i class="fa-solid fa-chevron-down mod-settings-select-chevron" aria-hidden="true"></i>
+              </button>
+              <div class="mod-settings-dropdown-menu mod-settings-type-menu" role="listbox" aria-label="${t("modManager.type")}" hidden></div>
+              <select class="mod-settings-type" hidden></select>
+            </span>
+          </label>
           <label class="mod-settings-engine-field">${t("common.engine")}
             <span class="mod-settings-dropdown">
               <button type="button" class="mod-settings-dropdown-trigger mod-settings-engine-trigger" aria-haspopup="listbox" aria-expanded="false" ${controlsDisabled}>
@@ -76,7 +109,9 @@ export function settingsContent({
               <select class="mod-settings-version-select" hidden></select>
             </span>
           </label>
-        </div>
+          ${tagsField}
+        </div>`
+        }
         ${mod.engineLocked ? `<p class="mod-settings-note">${t("modSettings.lockedToPsychOnline")}</p>` : ""}
         ${readOnly ? `<p class="mod-settings-note">${t("modSettings.closeEngineToChange")}</p>` : ""}
       </div>

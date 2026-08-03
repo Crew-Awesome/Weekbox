@@ -18,6 +18,7 @@ export function createCard(mod, index) {
   const card = document.createElement("button");
   card.type = "button";
   card.className = "mod-card";
+  card.dataset.modId = String(mod.id);
   if (isPeo) card.classList.add("mod-card--no-author");
 
   const cardBg = document.createElement("div");
@@ -90,6 +91,8 @@ export function createCard(mod, index) {
 
   const info = document.createElement("div");
   info.className = "mod-info";
+  const details = document.createElement("div");
+  details.className = "home-card-details";
 
   const title = document.createElement("h3");
   title.className = "mod-title";
@@ -98,8 +101,8 @@ export function createCard(mod, index) {
   const author = document.createElement("p");
   author.className = "mod-author";
   author.textContent = t("home.byAuthor", { author: mod.author });
-  info.appendChild(title);
-  if (!isPeo) info.appendChild(author);
+  details.appendChild(title);
+  if (!isPeo) details.appendChild(author);
 
   const stats = document.createElement("div");
   stats.className = "mod-stats";
@@ -120,9 +123,19 @@ export function createCard(mod, index) {
     stats.appendChild(stat);
   });
 
-  info.append(stats);
+  info.append(details, stats);
   card.append(imageContainer, info);
   card.addEventListener("click", () => modModal.open(mod.id));
 
+  return card;
+}
+
+export function createFeaturedCard(mod, featuredLabel) {
+  const card = createCard(mod);
+  card.classList.add("mod-card--featured");
+  const label = document.createElement("p");
+  label.className = "home-featured-label";
+  label.textContent = featuredLabel;
+  card.querySelector(".home-card-details")?.prepend(label);
   return card;
 }
