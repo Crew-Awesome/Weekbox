@@ -861,61 +861,6 @@
   box-shadow: none;
 }
 
-.mod-manager-add-local-card {
-  position: relative;
-  display: grid;
-  min-width: 240px;
-  width: calc(33.333% - (var(--spacing-lg) * 2 / 3));
-  min-height: 218px;
-  place-items: center;
-  overflow: hidden;
-  border: 2px dashed
-    color-mix(in srgb, var(--border-color) 82%, var(--text-muted));
-  border-radius: var(--border-radius);
-  background: color-mix(in srgb, var(--bg-panel) 70%, transparent);
-  color: var(--text-muted);
-  cursor: pointer;
-  transition:
-    border-color 0.2s ease,
-    background 0.2s ease,
-    color 0.2s ease,
-    transform 0.35s cubic-bezier(0.25, 1, 0.5, 1);
-}
-
-.mod-manager-add-local-card:hover,
-.mod-manager-add-local-card:focus-visible {
-  border-color: var(--accent-color);
-  background: color-mix(in srgb, var(--accent-color) 9%, var(--bg-panel));
-  color: var(--text-main);
-  outline: none;
-  transform: translateY(-4px);
-}
-
-.mod-manager-add-local-card:disabled {
-  cursor: wait;
-  opacity: 0.7;
-}
-
-.mod-manager-add-local-content {
-  position: relative;
-  z-index: 1;
-  display: grid;
-  justify-items: center;
-  gap: 9px;
-  font-size: 0.9rem;
-  font-weight: 700;
-}
-
-.mod-manager-add-local-content i {
-  display: grid;
-  width: 38px;
-  height: 38px;
-  place-items: center;
-  border: 1px solid currentColor;
-  border-radius: 50%;
-  font-size: 1rem;
-}
-
 .mod-manager-cover-wrap {
   position: relative;
   width: 100%;
@@ -1068,40 +1013,52 @@
   text-overflow: ellipsis;
 }
 
-.mod-manager-engine-badge {
-  width: fit-content;
-  height: 24px;
-  padding: 0 9px 0 5px;
-  border: 1px solid var(--border-color);
-  border-radius: 6px;
-  background: var(--bg-panel);
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
+.mod-manager-engine-indicator {
+  position: absolute;
+  z-index: 3;
+  top: 8px;
+  left: 8px;
+  display: grid;
+  width: 32px;
+  height: 32px;
+  place-items: center;
+  border: 1px solid rgb(255 255 255 / 18%);
+  border-radius: 7px;
+  background: rgb(16 16 16 / 82%);
+  box-shadow: 0 3px 10px rgb(0 0 0 / 35%);
   color: var(--text-muted);
-  font-size: 0.75rem;
-  font-weight: 600;
-  margin: 2px 0;
+  pointer-events: auto;
 }
 
-.mod-manager-engine-badge--engine {
-  background: var(--bg-panel);
-}
-
-.mod-manager-engine-badge--executable {
-  background: var(--bg-panel);
-}
-
-.mod-manager-card:not(.is-hidden):hover .mod-manager-engine-badge {
-  background: color-mix(in srgb, var(--card-color) 18%, var(--bg-panel));
-}
-
-.mod-manager-engine-badge img {
-  width: 16px;
-  height: 16px;
+.mod-manager-engine-indicator img {
+  width: 20px;
+  height: 20px;
   object-fit: contain;
   border-radius: 4px;
-  display: block;
+}
+
+.mod-manager-engine-tooltip {
+  position: fixed;
+  z-index: 2300;
+  padding: 5px 8px;
+  border: 1px solid rgb(255 255 255 / 14%);
+  border-radius: 6px;
+  background: rgb(16 16 16 / 94%);
+  box-shadow: 0 6px 16px rgb(0 0 0 / 38%);
+  color: var(--text-main);
+  font-size: 0.72rem;
+  font-weight: 600;
+  line-height: 1.2;
+  opacity: 0;
+  pointer-events: none;
+  transform: translate(-50%, -3px);
+  transition: opacity 120ms ease, transform 120ms ease;
+  white-space: nowrap;
+}
+
+.mod-manager-engine-tooltip.is-visible {
+  opacity: 1;
+  transform: translate(-50%, 0);
 }
 
 .mod-manager-engine-compatibility-picker {
@@ -1289,52 +1246,6 @@
 .mod-manager-delete-btn:disabled {
   color: var(--text-muted);
   cursor: not-allowed;
-}
-
-/* ======================================================== */
-/* MODO LISTA (.list-view) */
-/* ======================================================== */
-.mod-manager-grid.list-view .mod-manager-card {
-  width: 100%;
-  flex-direction: row;
-  height: 110px;
-}
-
-.mod-manager-grid.list-view .mod-manager-cover-wrap {
-  width: 160px;
-  height: 100%;
-  border-right: 1px solid var(--border-color);
-  flex-shrink: 0;
-  border-radius: var(--border-radius) 0 0 var(--border-radius);
-}
-
-.mod-manager-grid.list-view .mod-manager-card-body {
-  flex-direction: row;
-  align-items: center;
-  border-radius: 0 var(--border-radius) var(--border-radius) 0;
-}
-
-.mod-manager-grid.list-view .mod-manager-info {
-  justify-content: center;
-  flex: 1 1 auto;
-  min-width: 0;
-}
-
-.mod-manager-grid.list-view .mod-manager-actions {
-  flex-direction: row;
-  margin-top: 0;
-  width: 180px;
-  flex-shrink: 0;
-}
-
-.mod-manager-grid.list-view .mod-manager-add-local-card {
-  width: 100%;
-  min-height: 110px;
-}
-
-.mod-manager-grid.list-view .mod-manager-add-local-content {
-  grid-auto-flow: column;
-  align-items: center;
 }
 
 .local-mod-import-overlay {

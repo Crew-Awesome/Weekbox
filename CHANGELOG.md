@@ -7,20 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [1.9.3] - 2026-08-02
-
-### Fixed
-
-- Startup maintenance failures no longer prevent WeekBox from opening.
-- Downloads retry busy servers with a longer, cancellable backoff.
-- Expired and temporarily unavailable GameBanana download links refresh automatically.
-- Mod installs fall back to copying when Neutralino cannot move an extracted folder.
-- Mod installation retries the copy fallback when Windows temporarily locks an extracted file.
-- Mod installs verify copied folders before removing the original download.
+## [1.10.0] - 2026-08-02
 
 ### Changed
 
-- The startup progress screen now identifies the WeekBox interface while it loads.
+- Home discovery cards now use compact engine/type icons, hover labels, and a tighter information layout.
+- Discovery periodically highlights a varied featured mod without removing it from the grid.
+- Featured cards blend artwork into a dominant-color surface with a restrained hover fade.
+- Mod Manager now stays grid-only, with local mod import available from the header plus button.
+- Mod Manager engine labels now render in a page-level tooltip so the manager window cannot clip them.
+- The asset bundler now creates its output directory directly with recursive filesystem support.
+
+### Removed
+
+- Removed unused startup compatibility code and the maintenance passthrough it replaced.
+- Removed unused carousel, chip, circle-loader, modal, and download-toast component implementations.
+- Removed the duplicate Mod Manager template, list-view code, and the old in-grid local-mod card.
+- Removed scratch archives/images and duplicate legacy stylesheet copies from the repository.
 
 ## [1.9.2] - 2026-08-01
 

@@ -10,8 +10,8 @@
           </div>
           <div class="mod-manager-header-actions">
             <button class="mod-manager-action-btn" id="mod-manager-filter-toggle" title="Filter and sort" aria-label="Filter and sort"><i class="fa-solid fa-arrow-down-wide-short" aria-hidden="true"></i></button>
-            <button class="mod-manager-action-btn" id="mod-manager-view-toggle" title="Toggle View Mode">
-              <i class="fa-solid fa-list"></i>
+            <button class="mod-manager-action-btn" id="mod-manager-add-local-btn" title="Add local mod" aria-label="Add local mod">
+              <i class="fa-solid fa-plus" aria-hidden="true"></i>
             </button>
             <button class="mod-manager-action-btn mod-manager-close-btn" id="mod-manager-close-btn" title="Close">
               <i class="fa-solid fa-xmark"></i>
@@ -23,13 +23,13 @@
     </div>
 </template>
 <template id="tpl-unassignedBadge">
-    <div class="mod-manager-engine-badge"><i class="fa-solid fa-question-circle"></i><span>Unassigned</span></div>
+    <span class="mod-manager-engine-indicator" data-label="Unassigned" role="img" aria-label="Unassigned"><i class="fa-solid fa-question-circle" aria-hidden="true"></i></span>
 </template>
 <template id="tpl-executableBadge">
-    <div class="mod-manager-engine-badge mod-manager-engine-badge--executable"><img src="assets/icons/exe.png" alt="Executable"/><span>Executable</span></div>
+    <span class="mod-manager-engine-indicator" data-label="Executable" role="img" aria-label="Executable"><img src="assets/icons/exe.png" alt=""/></span>
 </template>
 <template id="tpl-engineBadge">
-    <div class="mod-manager-engine-badge mod-manager-engine-badge--engine"><img src="assets/icons/{{icon}}" alt=""/><span>{{name}}</span></div>
+    <span class="mod-manager-engine-indicator" data-label="{{name}}" role="img" aria-label="{{name}}"><img src="assets/icons/{{icon}}" alt=""/></span>
 </template>
 <template id="tpl-engineCompatibilityPicker">
     <div class="mod-manager-engine-compatibility-picker" data-mod-id="{{modId}}" data-saved-engine-id="{{engineId}}" data-pending-engine-id="{{engineId}}" data-saved-version="{{engineVersion}}" data-pending-version="{{engineVersion}}">
@@ -68,10 +68,10 @@
         <i class="fa-solid fa-play" aria-hidden="true"></i><span>{{launchLabel}}</span>
       </button>
     </div>
+    {{engineBadgeHtml}}
     <div class="mod-manager-card-body mod-info">
         <div class="mod-manager-info">
           <h3 class="mod-title" title="{{modName}}">{{modName}}</h3>
-          {{engineBadgeHtml}}
         </div>
         <div class="mod-manager-actions">
           <button class="mod-action-btn mod-manager-vis-btn" title="Toggle Visibility">
@@ -97,14 +97,6 @@
 </template>
 <template id="tpl-emptyState">
     <div class="empty-mods-state">{{message}}</div>
-</template>
-<template id="tpl-addLocalModCard">
-    <button class="mod-manager-add-local-card" type="button" aria-label="Add local mod">
-      <span class="mod-manager-add-local-content">
-        <i class="fa-solid fa-plus" aria-hidden="true"></i>
-        <span>Add local mod</span>
-      </span>
-    </button>
 </template>
 <template id="tpl-deleteSpinner">
     <i class="fa-solid fa-spinner fa-spin"></i>
@@ -862,45 +854,6 @@
         <p style="color: var(--text-muted)">Loading mods from GameBanana...</p>
       </div>
     </section>
-  </div>
-</div>
-
-</template>
-<template id="tpl-mod-manager">
-<div class="mod-manager-overlay" id="mod-manager-modal" style="display: none">
-  <div class="mod-manager-content">
-    <header class="mod-manager-header">
-      <div class="mod-manager-title-group"><h2>Mods</h2><span class="mod-manager-title-count" id="mod-manager-title-count"></span></div>
-      <div class="mod-manager-tools">
-        <div class="mod-manager-search-wrap"><label class="mod-manager-search" for="mod-manager-search-input"><i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i><input id="mod-manager-search-input" type="search" placeholder="Search mods and tags" autocomplete="off" /></label><div class="mod-manager-search-suggestions" id="mod-manager-search-suggestions" hidden></div></div>
-        <div class="mod-manager-active-filters" id="mod-manager-active-filters" aria-label="Active filters"></div>
-      </div>
-      <div class="mod-manager-header-actions">
-        <button
-          class="mod-manager-action-btn"
-          id="mod-manager-filter-toggle"
-          title="Filter and sort"
-          aria-label="Filter and sort"
-        >
-          <i class="fa-solid fa-arrow-down-wide-short" aria-hidden="true"></i>
-        </button>
-        <button
-          class="mod-manager-action-btn"
-          id="mod-manager-view-toggle"
-          title="Toggle View Mode"
-        >
-          <i class="fa-solid fa-list"></i>
-        </button>
-        <button
-          class="mod-manager-action-btn mod-manager-close-btn"
-          id="mod-manager-close-btn"
-          title="Close"
-        >
-          <i class="fa-solid fa-xmark"></i>
-        </button>
-      </div>
-    </header>
-    <div class="mod-manager-body" id="mod-manager-modal-body"></div>
   </div>
 </div>
 

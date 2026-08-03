@@ -196,7 +196,7 @@ body.window-unfocused::after {
   background-color: transparent;
   border: none;
   border-radius: var(--border-radius);
-  overflow: hidden;
+  overflow: visible;
   cursor: pointer;
   --card-color: rgba(255, 255, 255, 0.3);
   display: flex;
@@ -209,7 +209,16 @@ body.window-unfocused::after {
   isolation: isolate;
 }
 
-.mod-card::before {
+.mod-card-bg {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  overflow: hidden;
+  z-index: -1;
+  pointer-events: none;
+}
+
+.mod-card-bg::before {
   content: "";
   position: absolute;
   top: 50%;
@@ -223,11 +232,9 @@ body.window-unfocused::after {
   transition:
     transform 0.6s cubic-bezier(0.25, 1, 0.5, 1),
     opacity 0.4s ease-out;
-  z-index: -1;
-  pointer-events: none;
 }
 
-.mod-card:hover::before {
+.mod-card:hover .mod-card-bg::before {
   transform: translate(-50%, -50%) scale(1);
   opacity: 1;
 }
@@ -239,9 +246,12 @@ body.window-unfocused::after {
 }
 
 .mod-image-container {
+  position: relative;
   width: 100%;
   height: 140px;
   background-color: #000;
+  overflow: hidden;
+  border-radius: var(--border-radius) var(--border-radius) 0 0;
 }
 
 .mod-image {
@@ -260,6 +270,27 @@ body.window-unfocused::after {
   border-radius: 0 0 var(--border-radius) var(--border-radius);
 }
 
+#popular-grid .mod-info {
+  min-height: 104px;
+  gap: 12px;
+  padding: 12px;
+}
+
+#popular-grid .mod-card,
+#popular-grid .mod-info,
+#popular-grid .mod-stats {
+  min-width: 0;
+}
+
+#popular-grid .mod-card {
+  transition: transform 240ms cubic-bezier(0.2, 0, 0, 1), box-shadow 240ms cubic-bezier(0.2, 0, 0, 1);
+}
+
+#popular-grid .mod-card:not(.mod-card--featured):hover {
+  transform: translateY(-3px);
+  box-shadow: 0 10px 24px rgb(0 0 0 / 18%);
+}
+
 .mod-title {
   font-size: 1rem;
   font-weight: 600;
@@ -276,36 +307,208 @@ body.window-unfocused::after {
   margin-bottom: 6px;
 }
 
-.grid-engine-badge {
-  margin: 2px 0;
-  position: static !important;
-  align-self: flex-start;
-  /* Keep the original translucent look without the separately composited
-     backdrop blur that makes badges lag behind while the grid scrolls. */
-  backdrop-filter: none;
-  -webkit-backdrop-filter: none;
+#popular-grid .home-card-details {
+  min-width: 0;
 }
 
-.mod-stats {
-  display: flex;
-  gap: 12px;
+#popular-grid .mod-title {
+  margin: 0;
+}
+
+#popular-grid .mod-author {
+  margin: 3px 0 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.grid-engine-indicator {
+  position: absolute;
+  z-index: 2;
+  top: 8px;
+  left: 8px;
+  display: grid;
+  width: 32px;
+  height: 32px;
+  place-items: center;
+  border: 1px solid rgb(255 255 255 / 18%);
+  border-radius: 7px;
+  background: rgb(16 16 16 / 82%);
+  box-shadow: 0 3px 10px rgb(0 0 0 / 35%);
+  color: var(--text-muted);
+  pointer-events: auto;
+}
+
+.grid-engine-indicator img {
+  width: 20px;
+  height: 20px;
+  object-fit: contain;
+  border-radius: 4px;
+}
+
+.grid-engine-indicator::after {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 50%;
+  padding: 5px 8px;
+  border: 1px solid rgb(255 255 255 / 14%);
+  border-radius: 6px;
+  background: rgb(16 16 16 / 94%);
+  box-shadow: 0 6px 16px rgb(0 0 0 / 38%);
+  color: var(--text-main);
+  content: attr(data-label);
+  font-size: 0.72rem;
+  font-weight: 600;
+  line-height: 1.2;
+  opacity: 0;
+  transform: translate(-50%, -3px);
+  transition: opacity 120ms ease, transform 120ms ease;
+  white-space: nowrap;
+}
+
+.grid-engine-indicator:hover::after {
+  opacity: 1;
+  transform: translate(-50%, 0);
+}
+
+#popular-grid .mod-stats {
+  display: grid;
+  width: fit-content;
+  grid-template-columns: auto auto auto;
+  gap: 10px;
   margin-top: auto;
   font-size: 0.75rem;
-  color: var(--text-muted);
-  flex-wrap: wrap;
-  padding-top: 12px;
+  padding: 7px 10px;
+  border-radius: 999px;
+  background: rgb(0 0 0 / 18%);
+  color: var(--text-main);
 }
 
-/* Psych Online records do not have an author line, so keep their stats next
-   to the rest of their compact metadata instead of pinning them to the row. */
-.mod-card--no-author .mod-stats {
-  margin-top: 0;
-}
-
-.mod-stats span {
+#popular-grid .mod-stats span {
   display: flex;
   align-items: center;
   gap: 4px;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+#popular-grid .mod-stats i {
+  flex: 0 0 auto;
+}
+
+#popular-grid .mod-card--featured {
+  grid-column: 1 / -1;
+  flex-direction: row;
+  height: 280px;
+  overflow: hidden;
+  transition: transform 240ms cubic-bezier(0.2, 0, 0, 1), box-shadow 240ms cubic-bezier(0.2, 0, 0, 1);
+}
+
+#popular-grid .mod-card--featured:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 12px 28px rgb(0 0 0 / 22%);
+}
+
+#popular-grid .mod-card--featured .mod-card-bg::before {
+  display: none;
+}
+
+#popular-grid .mod-card--featured .mod-card-bg {
+  background: color-mix(in srgb, var(--card-color) 20%, var(--bg-panel));
+  opacity: 0;
+  transition: opacity 360ms ease-out;
+}
+
+#popular-grid .mod-card--featured .mod-card-bg::after {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    90deg,
+    transparent 24%,
+    color-mix(in srgb, var(--card-color) 24%, transparent) 58%,
+    color-mix(in srgb, var(--card-color) 38%, transparent) 100%
+  );
+  content: "";
+}
+
+#popular-grid .mod-card--featured:hover .mod-card-bg,
+#popular-grid .mod-card--featured:focus-visible .mod-card-bg {
+  opacity: 1;
+}
+
+#popular-grid .mod-card--featured .mod-image-container {
+  width: min(55%, 680px);
+  margin-right: -13%;
+  height: auto;
+  min-height: 280px;
+  border-radius: var(--border-radius) 0 0 var(--border-radius);
+  overflow: visible;
+  z-index: 0;
+  -webkit-mask-image: linear-gradient(90deg, #000 25%, transparent);
+  mask-image: linear-gradient(90deg, #000 25%, transparent);
+}
+
+#popular-grid .mod-card--featured .mod-image {
+  border-radius: inherit;
+}
+
+#popular-grid .mod-card--featured .mod-info {
+  position: relative;
+  z-index: 1;
+  justify-content: center;
+  min-height: 0;
+  padding: 24px;
+}
+
+.home-featured-label {
+  width: fit-content;
+  margin: 0 0 6px;
+  padding: 3px 7px;
+  border: 1px solid rgb(255 255 255 / 16%);
+  border-radius: 999px;
+  background: rgb(0 0 0 / 18%);
+  color: var(--text-main);
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+#popular-grid .mod-card--featured .mod-title {
+  display: -webkit-box;
+  font-size: clamp(1.25rem, 2vw, 1.75rem);
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  white-space: normal;
+}
+
+#popular-grid .mod-card--featured .mod-stats {
+  margin-top: 16px;
+  padding: 9px 12px;
+}
+
+@media (max-width: 640px) {
+  #popular-grid .mod-card--featured {
+    flex-direction: column;
+    height: auto;
+  }
+
+  #popular-grid .mod-card--featured .mod-image-container {
+    width: 100%;
+    margin-right: 0;
+    height: 160px;
+    min-height: 0;
+    border-radius: var(--border-radius) var(--border-radius) 0 0;
+    overflow: hidden;
+    -webkit-mask-image: linear-gradient(#000 25%, transparent);
+    mask-image: linear-gradient(#000 25%, transparent);
+  }
+
+  #popular-grid .mod-card--featured .mod-info {
+    padding: 16px;
+  }
 }
 
 .chunk-loader {
@@ -1596,25 +1799,25 @@ body.window-unfocused::after {
 .grid-layout {
   display: grid;
   gap: var(--spacing-md);
-  grid-template-columns: 1fr;
+  grid-template-columns: minmax(0, 1fr);
 }
 
 @media (min-width: 480px) {
   .grid-layout {
-    grid-template-columns: repeat(2, 1fr);
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 
 @media (min-width: 1024px) {
   .grid-layout {
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: var(--spacing-lg);
   }
 }
 
 @media (min-width: 1400px) {
   .grid-layout {
-    grid-template-columns: repeat(4, 1fr);
+    grid-template-columns: repeat(4, minmax(0, 1fr));
   }
 }
 

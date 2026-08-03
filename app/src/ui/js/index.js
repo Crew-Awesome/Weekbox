@@ -23,7 +23,6 @@ const __modManagerTemplates = {
     launchButtonSwitch: () => __renderTemplate('tpl-launchButtonSwitch'),
     launchButtonDefault: (launchLabel) => __renderTemplate('tpl-launchButtonDefault', {launchLabel}),
     emptyState: (message) => __renderTemplate('tpl-emptyState', {message}),
-    addLocalModCard: () => __renderTemplate('tpl-addLocalModCard'),
     deleteSpinner: () => __renderTemplate('tpl-deleteSpinner'),
     deleteIcon: () => __renderTemplate('tpl-deleteIcon'),
     unassignedQuestionIcon: () => __renderTemplate('tpl-unassignedQuestionIcon'),
@@ -4974,6 +4973,7 @@ var modManagerModal = {
   preloadPromise: null,
   preloaded: false,
   pendingInstalls: /* @__PURE__ */ new Map(),
+  engineTooltip: null,
   async init() {
     if (!document.getElementById("mod-manager-modal")) {
       const wrapper = document.createElement("div");
@@ -4985,16 +4985,23 @@ var modManagerModal = {
       document.getElementById("mod-manager-modal").addEventListener("click", (e) => {
         if (e.target.id === "mod-manager-modal") this.close();
       });
-      const toggleBtn = document.getElementById("mod-manager-view-toggle");
-      toggleBtn.addEventListener("click", () => {
-        const grid = document.getElementById("mod-manager-grid-container");
-        if (!grid) return;
-        const isListView = grid.classList.toggle("list-view");
-        localStorage.setItem(
-          "weekbox_mod_manager_view",
-          isListView ? "list" : "grid"
-        );
-        toggleBtn.querySelector("i").className = isListView ? "fa-solid fa-table-cells-large" : "fa-solid fa-list";
+      document.getElementById("mod-manager-add-local-btn").addEventListener("click", () => localModImportModal.open({ onImported: () => this.loadInstalledMods(true) }));
+      this.engineTooltip = document.createElement("div");
+      this.engineTooltip.className = "mod-manager-engine-tooltip";
+      document.body.appendChild(this.engineTooltip);
+      modal.addEventListener("pointerover", (event) => {
+        const indicator = event.target.closest(".mod-manager-engine-indicator");
+        if (!indicator) return;
+        this.engineTooltip.textContent = indicator.dataset.label || "";
+        const rect = indicator.getBoundingClientRect();
+        const halfWidth = this.engineTooltip.offsetWidth / 2;
+        this.engineTooltip.style.left = `${Math.min(Math.max(rect.left + rect.width / 2, halfWidth + 8), window.innerWidth - halfWidth - 8)}px`;
+        this.engineTooltip.style.top = `${rect.bottom + 8}px`;
+        this.engineTooltip.classList.add("is-visible");
+      });
+      modal.addEventListener("pointerout", (event) => {
+        const indicator = event.target.closest(".mod-manager-engine-indicator");
+        if (indicator && !(event.relatedTarget instanceof Node && indicator.contains(event.relatedTarget))) this.engineTooltip.classList.remove("is-visible");
       });
       document.getElementById("mod-manager-search-input").addEventListener("input", (event) => {
         this.searchQuery = event.target.value.trim().toLocaleLowerCase();
@@ -5095,6 +5102,7 @@ var modManagerModal = {
     const modal = document.getElementById("mod-manager-modal");
     if (!modal) return;
     modal.classList.remove("show");
+    this.engineTooltip?.classList.remove("is-visible");
     setTimeout(() => {
       modal.style.display = "none";
     }, 300);
@@ -5127,12 +5135,6 @@ var modManagerModal = {
         );
       }
     }
-  },
-  syncViewToggleIcon() {
-    const grid = document.getElementById("mod-manager-grid-container");
-    const toggleIcon = document.querySelector("#mod-manager-view-toggle i");
-    if (!grid || !toggleIcon) return;
-    toggleIcon.className = grid.classList.contains("list-view") ? "fa-solid fa-table-cells-large" : "fa-solid fa-list";
   },
   applySearchFilter() {
     const grid = document.getElementById("mod-manager-grid-container");
@@ -5212,8 +5214,7 @@ var modManagerModal = {
             <p class="mod-manager-installing-status"></p>
           </div>
         </div>`;
-      const addLocalCard = grid.querySelector(".mod-manager-add-local-card");
-      grid.insertBefore(card, addLocalCard || null);
+      grid.appendChild(card);
     }
     card.querySelector(".mod-title").textContent = install.modName;
     card.querySelector(".mod-manager-installing-status").textContent = `${install.status} ${Math.round(install.progress || 0)}%`;
@@ -5288,11 +5289,6 @@ var modManagerModal = {
     const gridContainer = document.createElement("div");
     gridContainer.id = "mod-manager-grid-container";
     gridContainer.className = "mod-manager-grid";
-    const isListView = localStorage.getItem("weekbox_mod_manager_view") === "list";
-    if (isListView) gridContainer.classList.add("list-view");
-    const toggleIcon = document.querySelector("#mod-manager-view-toggle i");
-    if (toggleIcon)
-      toggleIcon.className = isListView ? "fa-solid fa-table-cells-large" : "fa-solid fa-list";
     container.appendChild(gridContainer);
     try {
       await cardRenderer.renderCards(
@@ -5313,21 +5309,6 @@ var modManagerModal = {
       );
       this.applySearchFilter();
       this.renderPendingInstallCards();
-      const addLocalCard = document.createElement("div");
-      addLocalCard.innerHTML = modManagerTemplates3.addLocalModCard();
-      const addLocalButton = addLocalCard.firstElementChild;
-      addLocalButton.addEventListener("click", async () => {
-        if (addLocalButton.disabled) return;
-        addLocalButton.disabled = true;
-        try {
-          await localModImportModal.open({
-            onImported: /* @__PURE__ */ __name(() => this.loadInstalledMods(true), "onImported")
-          });
-        } finally {
-          addLocalButton.disabled = false;
-        }
-      });
-      gridContainer.appendChild(addLocalButton);
       container.scrollTop = savedScrollTop;
       requestAnimationFrame(() => {
         container.scrollTop = savedScrollTop;
@@ -6427,7 +6408,9 @@ function createCard(mod, index) {
   const card = document.createElement("button");
   card.type = "button";
   card.className = "mod-card";
-  if (mod.source === "peo") card.classList.add("mod-card--no-author");
+  card.dataset.modId = mod.id;
+  const cardBackground = document.createElement("div");
+  cardBackground.className = "mod-card-bg";
   const imageContainer = document.createElement("div");
   imageContainer.className = "mod-image-container";
   const image = document.createElement("img");
@@ -6440,6 +6423,24 @@ function createCard(mod, index) {
     image.src = "assets/icons/launcher-icon.png";
   };
   imageContainer.appendChild(image);
+  const engine = ENGINE_DETAILS10[mod.engineId];
+  const engineLabel = engine?.name || (mod.gameId === 8694 ? "FNF Mod" : "Unassigned");
+  const engineIndicator = document.createElement("span");
+  engineIndicator.className = "grid-engine-indicator";
+  engineIndicator.dataset.label = engineLabel;
+  engineIndicator.setAttribute("role", "img");
+  engineIndicator.setAttribute("aria-label", engineLabel);
+  if (engine) {
+    const engineIcon = document.createElement("img");
+    engineIcon.src = `assets/icons/${engine.icon}`;
+    engineIcon.alt = "";
+    engineIndicator.appendChild(engineIcon);
+  } else {
+    const typeIcon = document.createElement("i");
+    typeIcon.className = "fa-solid fa-question-circle";
+    typeIcon.setAttribute("aria-hidden", "true");
+    engineIndicator.appendChild(typeIcon);
+  }
   const colorProbe = new Image();
   colorProbe.crossOrigin = "anonymous";
   colorProbe.src = mod.image;
@@ -6452,32 +6453,16 @@ function createCard(mod, index) {
   });
   const info = document.createElement("div");
   info.className = "mod-info";
+  const details = document.createElement("div");
+  details.className = "home-card-details";
   const title = document.createElement("h3");
   title.className = "mod-title";
   title.textContent = mod.title;
   const author = document.createElement("p");
   author.className = "mod-author";
   author.textContent = `by ${mod.author}`;
-  info.appendChild(title);
-  if (mod.source !== "peo") info.appendChild(author);
-  let engineBadgeHtml = `
-    <div class="home-engine-badge grid-engine-badge">
-      <i class="fa-solid fa-question-circle"></i>
-      <span>${mod.gameId === 8694 ? "FNF Mod" : "Unassigned"}</span>
-    </div>
-  `;
-  const engine = ENGINE_DETAILS10[mod.engineId];
-  if (engine) {
-    engineBadgeHtml = `
-      <div class="home-engine-badge grid-engine-badge">
-        <img src="assets/icons/${engine.icon}" alt=""/>
-         <span>${engine.name}</span>
-      </div>
-    `;
-  }
-  const badgeWrapper = document.createElement("div");
-  badgeWrapper.innerHTML = engineBadgeHtml;
-  if (badgeWrapper.firstElementChild) info.appendChild(badgeWrapper.firstElementChild);
+  details.appendChild(title);
+  if (mod.source !== "peo") details.appendChild(author);
   const stats = document.createElement("div");
   stats.className = "mod-stats";
   [
@@ -6497,12 +6482,32 @@ function createCard(mod, index) {
     stat.append(iconElement, document.createTextNode(` ${value}`));
     stats.appendChild(stat);
   });
-  info.append(stats);
-  card.append(imageContainer, info);
+  info.append(details, stats);
+  card.append(cardBackground, imageContainer, info, engineIndicator);
   card.addEventListener("click", () => modModal.open(mod.id));
   return card;
 }
 __name(createCard, "createCard");
+
+function createFeaturedCard(mod, featuredLabel) {
+  const card = createCard(mod);
+  card.classList.add("mod-card--featured");
+  const label = document.createElement("p");
+  label.className = "home-featured-label";
+  label.textContent = featuredLabel;
+  card.querySelector(".home-card-details").prepend(label);
+  return card;
+}
+__name(createFeaturedCard, "createFeaturedCard");
+
+function selectFeaturedMod(mods, featuredIds, featuredEngineIds, offset) {
+  const unseen = mods.filter((mod) => !featuredIds.has(mod.id));
+  const candidates = unseen.length ? unseen : mods;
+  const varied = candidates.filter((mod) => mod.engineId && !featuredEngineIds.has(mod.engineId));
+  const pool = varied.length ? varied : candidates;
+  return pool[offset % Math.min(pool.length, 6)];
+}
+__name(selectFeaturedMod, "selectFeaturedMod");
 
 // app/src/ui/js/home/grid/gridState.js
 var gridState = {
@@ -6517,6 +6522,10 @@ var gridState = {
   pendingInitialRender: false,
   discoverySnapshotId: null,
   discoveryController: null,
+  featuredCandidates: [],
+  featuredIds: /* @__PURE__ */ new Set(),
+  featuredEngineIds: /* @__PURE__ */ new Set(),
+  featuredOffset: 0,
   status: "ready"
 };
 
@@ -6543,6 +6552,10 @@ var gridRender = {
       gridState.discoverySnapshotId = null;
       gridState.currentPage = 1;
       gridState.hasMore = true;
+      gridState.featuredCandidates = [];
+      gridState.featuredIds.clear();
+      gridState.featuredEngineIds.clear();
+      gridState.featuredOffset = Math.floor(Math.random() * 3);
       grid.replaceChildren();
       grid.classList.remove("grid-empty", "grid-error");
     }
@@ -6581,7 +6594,17 @@ var gridRender = {
         gridState.hasMore = false;
         return;
       }
+      if (isInitial && !gridState.isSearchMode && gridState.currentFilter === "popular") gridState.featuredCandidates = mods;
       const cards = document.createDocumentFragment();
+      const showFeatured = !isInitial && !gridState.isSearchMode && requestedPage % 3 === 0;
+      const featuredSource = gridState.currentFilter === "popular" ? gridState.featuredCandidates : mods;
+      const featured = showFeatured ? selectFeaturedMod(featuredSource, gridState.featuredIds, gridState.featuredEngineIds, gridState.featuredOffset) : null;
+      const featuredLabel = gridState.currentFilter === "updated" ? "Recently updated" : gridState.currentFilter === "new" ? "New release" : "Popular community pick";
+      if (featured) {
+        gridState.featuredIds.add(featured.id);
+        if (featured.engineId) gridState.featuredEngineIds.add(featured.engineId);
+        cards.appendChild(createFeaturedCard(featured, featuredLabel));
+      }
       mods.forEach((mod, index) => cards.appendChild(createCard(mod, index)));
       grid.appendChild(cards);
       if (result.snapshotId) gridState.discoverySnapshotId = result.snapshotId;
