@@ -125,6 +125,7 @@ export const configModal = {
     this.languageDropdownController = setupDropdown(
       languageTrigger,
       languageDropdown,
+      { menuElement: languageOptions },
     );
     languageOptions?.addEventListener("click", (event) => {
       const option = event.target.closest("[data-language]");

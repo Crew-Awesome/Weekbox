@@ -1953,6 +1953,19 @@ body.window-unfocused::after {
   z-index: auto;
 }
 
+#popular-grid > .mod-card .mod-title {
+  display: block;
+  font-size: 1rem;
+  -webkit-box-orient: initial;
+  -webkit-line-clamp: initial;
+  white-space: nowrap;
+}
+
+#popular-grid > .mod-card .mod-stats {
+  margin-top: auto;
+  padding: 7px 10px;
+}
+
 #popular-grid > .mod-card .mod-image-container {
   width: 100%;
   height: auto;

@@ -207,77 +207,13 @@
 }
 
 #config-modal .setting-language-dropdown {
-  min-width: 180px;
-  padding: 0;
-  border: 0;
-  background: transparent;
+  width: 180px;
 }
 
 #config-modal .setting-language-trigger {
-  box-sizing: border-box;
-  width: 180px;
-  min-height: 42px;
-  justify-content: space-between;
-  padding: 10px 12px;
-  border: 1px solid var(--border-color);
-  border-radius: 8px;
-  background: var(--bg-color);
-  color: var(--text-main);
   font: inherit;
   font-size: 0.9rem;
   font-weight: 600;
-  cursor: pointer;
-  transition:
-    border-color 0.2s ease,
-    background-color 0.2s ease,
-    color 0.2s ease;
-}
-
-#config-modal .setting-language-trigger:hover,
-#config-modal .setting-language-dropdown.open .setting-language-trigger,
-#config-modal .setting-language-trigger:focus-visible {
-  border-color: var(--text-muted);
-  background: var(--bg-hover);
-  color: var(--text-main);
-}
-
-#config-modal .setting-language-trigger:focus-visible {
-  outline: 2px solid var(--text-main);
-  outline-offset: 2px;
-}
-
-#config-modal .setting-language-trigger i {
-  font-size: 0.75rem;
-  transition: transform 0.2s ease;
-}
-
-#config-modal .setting-language-dropdown.open .setting-language-trigger i {
-  transform: rotate(180deg);
-}
-
-#config-modal .setting-language-dropdown .custom-options-container {
-  top: calc(100% + 8px);
-  right: 0;
-  bottom: auto;
-  left: auto;
-  width: 180px;
-  min-width: 0;
-  max-height: none;
-  padding: 4px;
-  border-radius: 8px;
-  background: var(--bg-panel);
-  box-shadow: 0 10px 24px rgb(0 0 0 / 28%);
-}
-
-#config-modal .setting-language-dropdown .custom-option {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  min-height: 38px;
-  padding: 9px 10px;
-  border-radius: 6px;
-  font: inherit;
-  text-align: left;
 }
 
 #config-modal .setting-language-dropdown .custom-option.selected::after {
@@ -287,9 +223,17 @@
   font-weight: 800;
 }
 
+#config-modal #setting-language-selected {
+  display: block;
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 @media (max-width: 720px) {
-  #config-modal .setting-language-trigger,
-  #config-modal .setting-language-dropdown .custom-options-container {
+  #config-modal .setting-language-dropdown {
     width: 160px;
   }
 }

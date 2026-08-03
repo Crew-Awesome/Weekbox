@@ -21,8 +21,8 @@ Everything you install stays local. WeekBox has no account system and does not u
       <sub><b>Home</b>: browse featured and discoverable mods.</sub>
     </td>
     <td width="50%">
-      <img src="./docs/screenshots/mod-manager.png" alt="Mod Manager with installed mods" /><br/>
-      <sub><b>Mod Manager</b>: see, launch, and organize what you installed.</sub>
+      <img src="./docs/screenshots/mod-manager.png" alt="Mods with installed mods" /><br/>
+      <sub><b>Mods</b>: see, launch, and organize what you installed.</sub>
     </td>
   </tr>
   <tr>

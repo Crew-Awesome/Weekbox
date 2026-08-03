@@ -32,6 +32,7 @@ export function createCard(mod, index) {
   image.src = mod.image;
   image.alt = "";
   image.loading = "lazy";
+  image.decoding = "async";
   image.onerror = () => {
     image.onerror = null;
     image.src = "assets/icons/launcher-icon.png";

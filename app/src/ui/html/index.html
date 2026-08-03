@@ -321,12 +321,12 @@
                 </div>
                 <div class="setting-language-control">
                   <div
-                    class="setting-language-dropdown custom-dropdown"
+                    class="setting-language-dropdown mod-settings-dropdown"
                     id="setting-language-dropdown"
                   >
                     <button
                       type="button"
-                      class="setting-language-trigger custom-select-trigger"
+                      class="setting-language-trigger mod-settings-dropdown-trigger"
                       id="setting-language-trigger"
                       aria-haspopup="listbox"
                       aria-expanded="false"
@@ -335,25 +335,31 @@
                       aria-label="Language"
                     >
                       <span
+                        class="mod-settings-select-icon setting-language-icon"
+                        aria-hidden="true"
+                        ><i class="fa-solid fa-language"></i
+                      ></span>
+                      <span
                         id="setting-language-selected"
                         data-i18n="languages.english"
                         >English</span
                       >
                       <i
-                        class="fa-solid fa-chevron-down"
+                        class="fa-solid fa-chevron-down mod-settings-select-chevron"
                         aria-hidden="true"
                       ></i>
                     </button>
                     <div
-                      class="custom-options-container"
+                      class="mod-settings-dropdown-menu setting-language-menu"
                       id="setting-language-options"
                       role="listbox"
+                      hidden
                       data-i18n-attr="aria-label:settings.language"
                       aria-label="Language"
                     >
                       <button
                         type="button"
-                        class="custom-option selected"
+                        class="setting-language-option selected"
                         data-language="en"
                         data-i18n="languages.english"
                         role="option"
@@ -363,7 +369,7 @@
                       </button>
                       <button
                         type="button"
-                        class="custom-option"
+                        class="setting-language-option"
                         data-language="es"
                         data-i18n="languages.spanish"
                         role="option"
@@ -1412,7 +1418,7 @@
         </button>
         <button class="sidebar__btn" id="mod-manager-btn">
           <i class="fa-solid fa-folder-open" aria-hidden="true"></i>
-          <span data-i18n="nav.modManager">Mod Manager</span>
+          <span data-i18n="nav.modManager">Mods</span>
         </button>
         <button class="sidebar__btn" id="engine-manager-btn">
           <i class="fa-solid fa-server" aria-hidden="true"></i>
