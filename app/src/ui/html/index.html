@@ -319,17 +319,69 @@
                 <div class="setting-info">
                   <h4 data-i18n="settings.language">Language</h4>
                 </div>
-                <select
-                  id="setting-language"
-                  data-i18n-attr="aria-label:settings.language"
-                >
-                  <option value="en" data-i18n="languages.english">
-                    English
-                  </option>
-                  <option value="es" data-i18n="languages.spanish">
-                    Español
-                  </option>
-                </select>
+                <div class="setting-language-control">
+                  <div
+                    class="setting-language-dropdown custom-dropdown"
+                    id="setting-language-dropdown"
+                  >
+                    <button
+                      type="button"
+                      class="setting-language-trigger custom-select-trigger"
+                      id="setting-language-trigger"
+                      aria-haspopup="listbox"
+                      aria-expanded="false"
+                      aria-controls="setting-language-options"
+                      data-i18n-attr="aria-label:settings.language"
+                      aria-label="Language"
+                    >
+                      <span
+                        id="setting-language-selected"
+                        data-i18n="languages.english"
+                        >English</span
+                      >
+                      <i
+                        class="fa-solid fa-chevron-down"
+                        aria-hidden="true"
+                      ></i>
+                    </button>
+                    <div
+                      class="custom-options-container"
+                      id="setting-language-options"
+                      role="listbox"
+                      data-i18n-attr="aria-label:settings.language"
+                      aria-label="Language"
+                    >
+                      <button
+                        type="button"
+                        class="custom-option selected"
+                        data-language="en"
+                        data-i18n="languages.english"
+                        role="option"
+                        aria-selected="true"
+                      >
+                        English
+                      </button>
+                      <button
+                        type="button"
+                        class="custom-option"
+                        data-language="es"
+                        data-i18n="languages.spanish"
+                        role="option"
+                        aria-selected="false"
+                      >
+                        Español
+                      </button>
+                    </div>
+                  </div>
+                  <select id="setting-language" hidden>
+                    <option value="en" data-i18n="languages.english">
+                      English
+                    </option>
+                    <option value="es" data-i18n="languages.spanish">
+                      Español
+                    </option>
+                  </select>
+                </div>
               </div>
               <div class="setting-item">
                 <div class="setting-info">

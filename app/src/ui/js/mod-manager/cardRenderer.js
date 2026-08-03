@@ -13,7 +13,7 @@ import {
   replaceProcessExitListener,
   syncLaunchButton,
 } from "./processUiSync.js";
-import { i18n } from "../i18n/index.js";
+import { i18n, t } from "../i18n/index.js";
 
 export const cardRenderer = {
   async renderCards(

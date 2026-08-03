@@ -261,6 +261,7 @@ body.window-unfocused::after {
   width: 100%;
   height: 100%;
   object-fit: cover;
+  object-position: center;
   display: block;
   border-radius: var(--border-radius) var(--border-radius) 0 0;
   -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 260 140'%3E%3Cpath fill='%23000' d='M56 0 L250 0 A10 10 0 0 1 260 10 L260 140 L0 140 L0 56 A8 8 0 0 1 8 48 L40 48 A8 8 0 0 0 48 40 L48 8 A8 8 0 0 1 56 0 Z'/%3E%3C/svg%3E");
@@ -359,10 +360,28 @@ body.window-unfocused::after {
 .grid-engine-indicator img {
   width: 28px;
   height: 28px;
+  display: block;
   object-fit: contain;
   border-radius: 4px;
   filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.45));
   transition: transform 0.2s cubic-bezier(0.25, 1, 0.5, 1);
+}
+
+.grid-engine-indicator-tint {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: var(--card-color);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.4s ease-out;
+  z-index: 0;
+}
+
+.grid-engine-indicator img,
+.grid-engine-indicator i {
+  position: relative;
+  z-index: 1;
 }
 
 .grid-engine-indicator i {
@@ -383,7 +402,7 @@ body.window-unfocused::after {
   content: "";
   position: absolute;
   top: calc(100% - 2px);
-  left: 24px;
+  left: 50%;
   width: 0;
   height: 0;
   border-left: 7px solid transparent;
@@ -402,7 +421,7 @@ body.window-unfocused::after {
   content: attr(data-label);
   position: absolute;
   top: calc(100% + 5px);
-  left: 24px;
+  left: 50%;
   padding: 6px 12px;
   border-radius: 8px;
   background: rgba(36, 36, 36, 0.8);
@@ -1891,6 +1910,113 @@ body.window-unfocused::after {
   gap: var(--spacing-lg);
   grid-template-columns: repeat(auto-fill, 260px);
   justify-content: center;
+}
+
+#popular-grid.grid-layout {
+  width: 100%;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr));
+  justify-content: stretch;
+  align-items: start;
+}
+
+#popular-grid > .mod-card {
+  width: 100%;
+  min-width: 0;
+  max-width: none;
+  align-self: start;
+  grid-column: auto;
+  grid-row: auto;
+  height: auto;
+  flex-direction: column;
+  overflow: visible;
+}
+
+#popular-grid > .mod-card .mod-card-bg {
+  background: transparent;
+  opacity: 1;
+}
+
+#popular-grid > .mod-card .mod-card-bg::before {
+  display: block;
+}
+
+#popular-grid > .mod-card .mod-card-bg::after {
+  display: none;
+}
+
+#popular-grid > .mod-card .mod-info {
+  flex: 0 0 auto;
+  min-height: 104px;
+  padding: 12px;
+  background: transparent;
+  position: static;
+  z-index: auto;
+}
+
+#popular-grid > .mod-card .mod-image-container {
+  width: 100%;
+  height: auto;
+  min-height: 0;
+  margin: 0;
+  aspect-ratio: 16 / 9;
+  background: var(--surface-container);
+  overflow: visible;
+  border-radius: var(--border-radius) var(--border-radius) 0 0;
+  -webkit-mask-image: none;
+  mask-image: none;
+}
+
+#popular-grid > .mod-card .mod-image {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  -webkit-mask-image: none;
+  mask-image: none;
+  border-radius: var(--border-radius) var(--border-radius) 0 0;
+}
+
+#popular-grid > .mod-card:hover {
+  z-index: 2;
+}
+
+#popular-grid > .mod-card .grid-engine-indicator {
+  top: 0;
+  left: 0;
+  width: clamp(52px, 20%, 64px);
+  height: auto;
+  aspect-ratio: 1;
+  display: grid;
+  place-items: center;
+  background: var(--surface-container);
+  border-radius: var(--border-radius) 0 12px 0;
+  z-index: 4;
+}
+
+#popular-grid > .mod-card:hover .grid-engine-indicator-tint,
+#popular-grid > .mod-card:focus-visible .grid-engine-indicator-tint {
+  opacity: 1;
+}
+
+#popular-grid > .mod-card .grid-engine-indicator img {
+  width: clamp(32px, 70%, 42px);
+  height: clamp(32px, 70%, 42px);
+}
+
+#popular-grid > .mod-card .mod-image {
+  object-fit: cover;
+  object-position: center;
+}
+
+#popular-grid .mod-stats i {
+  display: inline-flex;
+  width: 1rem;
+  height: 1rem;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.9rem;
+  line-height: 1;
+  text-align: center;
 }
 
 /* SETTINGS LIST (SWITCHES) */

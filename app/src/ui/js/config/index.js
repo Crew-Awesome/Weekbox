@@ -1,5 +1,5 @@
 import { appSettings } from "../../../backend/core/system/settings.service.js";
-import { FS } from "../../utils/index-utils.js";
+import { FS, setupDropdown } from "../../utils/index-utils.js";
 import { downloadEngine } from "../engines/downloadEngine.js";
 import { downloadMod } from "../home/modal/downloadMod.js";
 import { appUpdater } from "../../../backend/core/updates/app-updater.service.js";
@@ -112,8 +112,27 @@ export const configModal = {
       .getElementById("setting-language")
       ?.addEventListener("change", (event) => {
         i18n.setLocale(event.target.value);
+        this.syncLanguageDropdown(i18n.locale);
         i18n.apply(document.getElementById("config-modal"));
       });
+
+    const language = document.getElementById("setting-language");
+    const languageDropdown = document.getElementById(
+      "setting-language-dropdown",
+    );
+    const languageTrigger = document.getElementById("setting-language-trigger");
+    const languageOptions = document.getElementById("setting-language-options");
+    this.languageDropdownController = setupDropdown(
+      languageTrigger,
+      languageDropdown,
+    );
+    languageOptions?.addEventListener("click", (event) => {
+      const option = event.target.closest("[data-language]");
+      if (!option || !languageOptions.contains(option) || !language) return;
+      language.value = option.dataset.language;
+      language.dispatchEvent(new Event("change", { bubbles: true }));
+      this.languageDropdownController?.close();
+    });
 
     document
       .getElementById("storage-location-path")
@@ -200,8 +219,34 @@ export const configModal = {
         });
       }
     });
+    if (language) {
+      language.value = i18n.locale;
+      this.syncLanguageDropdown(i18n.locale);
+    }
+  },
+
+  syncLanguageDropdown(locale = i18n.locale) {
     const language = document.getElementById("setting-language");
-    if (language) language.value = i18n.locale;
+    const selected = document.getElementById("setting-language-selected");
+    const options = [
+      ...document.querySelectorAll("#setting-language-options [data-language]"),
+    ];
+    const selectedOption =
+      options.find((option) => option.dataset.language === locale) ||
+      options[0];
+    if (!selectedOption) return;
+
+    if (language) language.value = selectedOption.dataset.language;
+    options.forEach((option) => {
+      const isSelected = option === selectedOption;
+      option.classList.toggle("selected", isSelected);
+      option.setAttribute("aria-selected", String(isSelected));
+    });
+    if (selected) {
+      selected.dataset.i18n = selectedOption.dataset.i18n;
+      selected.textContent =
+        t(selectedOption.dataset.i18n) || selectedOption.textContent.trim();
+    }
   },
 
   loadSettingsToUI() {

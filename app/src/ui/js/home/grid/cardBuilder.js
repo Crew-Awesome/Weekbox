@@ -51,6 +51,11 @@ export function createCard(mod, index) {
   engineIndicator.setAttribute("role", "img");
   engineIndicator.setAttribute("aria-label", engineName);
 
+  const engineIndicatorTint = document.createElement("span");
+  engineIndicatorTint.className = "grid-engine-indicator-tint";
+  engineIndicatorTint.setAttribute("aria-hidden", "true");
+  engineIndicator.appendChild(engineIndicatorTint);
+
   if (engine?.icon) {
     const engineIcon = document.createElement("img");
     engineIcon.src = `assets/icons/${engine.icon}`;
