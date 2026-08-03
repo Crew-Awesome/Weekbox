@@ -30,9 +30,13 @@ export const gridRender = {
       const indicator = event.target.closest(".grid-engine-indicator");
       if (!indicator || !grid.contains(indicator)) return;
       const tooltip = gridState.engineTooltip;
-      if (!tooltip || !indicator.dataset.label) return;
+      if (!tooltip) return;
 
-      tooltip.textContent = indicator.dataset.label;
+      const labelKey = indicator.dataset.labelKey;
+      const text = labelKey ? t(labelKey) : indicator.dataset.label;
+      if (!text) return;
+
+      tooltip.textContent = text;
       const rect = indicator.getBoundingClientRect();
       const halfWidth = tooltip.offsetWidth / 2;
       const left = Math.min(
@@ -60,6 +64,17 @@ export const gridRender = {
       ) {
         gridState.engineTooltip?.classList.remove("is-visible");
       }
+    });
+
+    document.addEventListener("locale-changed", () => {
+      grid.querySelectorAll(".grid-engine-indicator").forEach((indicator) => {
+        if (indicator.dataset.labelKey) {
+          const text = t(indicator.dataset.labelKey);
+          indicator.dataset.label = text;
+          indicator.setAttribute("aria-label", text);
+        }
+      });
+      gridState.engineTooltip?.classList.remove("is-visible");
     });
   },
 

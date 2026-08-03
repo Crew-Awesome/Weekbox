@@ -1073,6 +1073,32 @@
   transition: transform 0.35s cubic-bezier(0.25, 1, 0.5, 1);
 }
 
+.mod-manager-card.is-hidden {
+  cursor: not-allowed;
+}
+
+.mod-manager-card.is-hidden .mod-manager-cover-wrap,
+.mod-manager-card.is-hidden .mod-manager-cover,
+.mod-manager-card.is-hidden .mod-manager-card-bg {
+  cursor: not-allowed;
+}
+
+.mod-manager-card.is-hidden .mod-manager-card-body,
+.mod-manager-card.is-hidden .mod-manager-actions,
+.mod-manager-card.is-hidden .mod-manager-info,
+.mod-manager-card.is-hidden .mod-manager-engine-compatibility-picker {
+  cursor: default;
+}
+
+.mod-manager-card.is-hidden button:not(:disabled),
+.mod-manager-card.is-hidden .mod-action-btn:not(:disabled),
+.mod-manager-card.is-hidden .mod-manager-engine-pill,
+.mod-manager-card.is-hidden .mod-manager-version-pill,
+.mod-manager-card.is-hidden .mod-manager-engine-indicator {
+  cursor: pointer;
+  pointer-events: auto;
+}
+
 .mod-manager-add-local-card {
   box-sizing: border-box;
   width: 260px;
@@ -1173,6 +1199,30 @@
   overflow: hidden;
   z-index: -1;
   pointer-events: none;
+  -webkit-mask-image:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 260 140'%3E%3Cpath fill='%23000' d='M56 0 L250 0 A10 10 0 0 1 260 10 L260 140 L0 140 L0 56 A8 8 0 0 1 8 48 L40 48 A8 8 0 0 0 48 40 L48 8 A8 8 0 0 1 56 0 Z'/%3E%3C/svg%3E"),
+    linear-gradient(#000, #000);
+  mask-image:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 260 140'%3E%3Cpath fill='%23000' d='M56 0 L250 0 A10 10 0 0 1 260 10 L260 140 L0 140 L0 56 A8 8 0 0 1 8 48 L40 48 A8 8 0 0 0 48 40 L48 8 A8 8 0 0 1 56 0 Z'/%3E%3C/svg%3E"),
+    linear-gradient(#000, #000);
+  -webkit-mask-size:
+    260px 140px,
+    100% calc(100% - 139px);
+  mask-size:
+    260px 140px,
+    100% calc(100% - 139px);
+  -webkit-mask-position:
+    top left,
+    bottom left;
+  mask-position:
+    top left,
+    bottom left;
+  -webkit-mask-repeat:
+    no-repeat,
+    no-repeat;
+  mask-repeat:
+    no-repeat,
+    no-repeat;
 }
 
 .mod-manager-card-bg::before {
@@ -1214,6 +1264,12 @@
   overflow: hidden;
   background-color: transparent;
   border-radius: var(--border-radius) var(--border-radius) 0 0;
+  -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 260 140'%3E%3Cpath fill='%23000' d='M56 0 L250 0 A10 10 0 0 1 260 10 L260 140 L0 140 L0 56 A8 8 0 0 1 8 48 L40 48 A8 8 0 0 0 48 40 L48 8 A8 8 0 0 1 56 0 Z'/%3E%3C/svg%3E");
+  mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 260 140'%3E%3Cpath fill='%23000' d='M56 0 L250 0 A10 10 0 0 1 260 10 L260 140 L0 140 L0 56 A8 8 0 0 1 8 48 L40 48 A8 8 0 0 0 48 40 L48 8 A8 8 0 0 1 56 0 Z'/%3E%3C/svg%3E");
+  -webkit-mask-size: 100% 100%;
+  mask-size: 100% 100%;
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
 }
 
 .mod-manager-cover {
@@ -1251,6 +1307,12 @@
   font-weight: 700;
   opacity: 0;
   transition: opacity 0.25s ease;
+  -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 260 140'%3E%3Cpath fill='%23000' d='M56 0 L250 0 A10 10 0 0 1 260 10 L260 140 L0 140 L0 56 A8 8 0 0 1 8 48 L40 48 A8 8 0 0 0 48 40 L48 8 A8 8 0 0 1 56 0 Z'/%3E%3C/svg%3E");
+  mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 260 140'%3E%3Cpath fill='%23000' d='M56 0 L250 0 A10 10 0 0 1 260 10 L260 140 L0 140 L0 56 A8 8 0 0 1 8 48 L40 48 A8 8 0 0 0 48 40 L48 8 A8 8 0 0 1 56 0 Z'/%3E%3C/svg%3E");
+  -webkit-mask-size: 100% 100%;
+  mask-size: 100% 100%;
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
 }
 
 .mod-manager-cover-placeholder {
@@ -1686,8 +1748,56 @@
   margin-top: auto;
 }
 
+.mod-action-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 1;
+  height: 28px;
+  padding: 0;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  background: var(--bg-panel);
+  color: var(--text-muted);
+  cursor: pointer;
+  font-size: 0.85rem;
+  transition:
+    background-color 0.16s ease,
+    border-color 0.16s ease,
+    color 0.16s ease;
+}
+
+.mod-action-btn:hover:not(:disabled) {
+  background-color: var(--bg-hover);
+  color: var(--text-main);
+  border-color: #555;
+  cursor: pointer;
+}
+
 .mod-manager-card:not(.is-hidden):hover .mod-action-btn {
   background-color: color-mix(in srgb, var(--card-color) 14%, var(--bg-panel));
+}
+
+.mod-manager-card.is-hidden .mod-action-btn:hover:not(:disabled) {
+  background-color: var(--bg-hover);
+  color: var(--text-main);
+  border-color: #555;
+  cursor: pointer;
+}
+
+.mod-manager-card.is-hidden .mod-manager-delete-btn:hover:not(:disabled) {
+  color: #ff4a4a;
+  background-color: rgba(255, 74, 74, 0.1);
+  border-color: rgba(255, 74, 74, 0.3);
+  cursor: pointer;
+}
+
+.mod-manager-card.is-hidden .mod-manager-engine-pill:hover,
+.mod-manager-card.is-hidden .mod-manager-version-pill:hover {
+  border-color: #555;
+  color: var(--text-main);
+  background-color: var(--bg-hover);
+  cursor: pointer;
 }
 
 .mod-manager-card .mod-action-btn:disabled,

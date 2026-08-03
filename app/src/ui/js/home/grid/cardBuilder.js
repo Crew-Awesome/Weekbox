@@ -44,19 +44,16 @@ export function createCard(mod, index) {
   const engine = ENGINE_DETAILS[mod.engineId];
   const engineIndicator = document.createElement("span");
   engineIndicator.className = "grid-engine-indicator";
-  const engineName = engine
-    ? t(engineLabelKeys[mod.engineId]) || engine.name
+  const labelKey = engine
+    ? engineLabelKeys[mod.engineId]
     : mod.gameId === 8694
-      ? t("home.baseGame")
-      : t("import.unassigned");
+      ? "home.baseGame"
+      : "import.unassigned";
+  const engineName = labelKey ? t(labelKey) : engine?.name || "";
+  engineIndicator.dataset.labelKey = labelKey || "";
   engineIndicator.dataset.label = engineName;
   engineIndicator.setAttribute("role", "img");
   engineIndicator.setAttribute("aria-label", engineName);
-
-  const engineIndicatorTint = document.createElement("span");
-  engineIndicatorTint.className = "grid-engine-indicator-tint";
-  engineIndicatorTint.setAttribute("aria-hidden", "true");
-  engineIndicator.appendChild(engineIndicatorTint);
 
   if (engine?.icon) {
     const engineIcon = document.createElement("img");
@@ -74,7 +71,6 @@ export function createCard(mod, index) {
     defaultIcon.setAttribute("aria-hidden", "true");
     engineIndicator.appendChild(defaultIcon);
   }
-  imageContainer.appendChild(engineIndicator);
 
   // Keep the displayed image on its normal request path. A separate CORS-safe
   // image lets the canvas read the cover pixels for the hover color.
@@ -124,7 +120,7 @@ export function createCard(mod, index) {
   });
 
   info.append(details, stats);
-  card.append(imageContainer, info);
+  card.append(imageContainer, engineIndicator, info);
   card.addEventListener("click", () => modModal.open(mod.id));
 
   return card;
