@@ -1,3 +1,5 @@
+import { ENGINE_DETAILS } from "../../../backend/config/engines.config.js";
+
 export function escapeHtml(value) {
   return String(value || "")
     .replaceAll("&", "&amp;")
@@ -35,6 +37,12 @@ export function settingsContent({
   isExecutable,
   readOnly,
 }) {
+  const hasEngine = Boolean(
+    mod.engineId &&
+      mod.engineId !== "executable" &&
+      ENGINE_DETAILS[mod.engineId],
+  );
+
   return `
     <form class="mod-settings-modal">
       <header class="mod-settings-header">
@@ -53,7 +61,7 @@ export function settingsContent({
           </label>
           <input class="mod-settings-name" aria-label="Mod name" value="${escapeHtml(mod.name)}" maxlength="120" required ${readOnly ? "disabled" : ""}>
         </div>
-        <div class="mod-settings-engine ${mod.engineId ? "has-version" : ""}" ${controlsDisabled ? 'aria-disabled="true"' : ""}>
+        <div class="mod-settings-engine ${hasEngine ? "has-version" : ""}" ${controlsDisabled ? 'aria-disabled="true"' : ""}>
           <label class="mod-settings-engine-field">Engine
             <span class="mod-settings-dropdown">
               <button type="button" class="mod-settings-dropdown-trigger mod-settings-engine-trigger" aria-haspopup="listbox" aria-expanded="false" ${controlsDisabled}>
@@ -64,7 +72,7 @@ export function settingsContent({
               <select class="mod-settings-engine-select" hidden></select>
             </span>
           </label>
-          <label class="mod-settings-version-field" ${!mod.engineId ? "hidden" : ""}>Version
+          <label class="mod-settings-version-field" ${!hasEngine ? "hidden" : ""}>Version
             <span class="mod-settings-dropdown">
               <button type="button" class="mod-settings-dropdown-trigger mod-settings-version-trigger" aria-haspopup="listbox" aria-expanded="false" ${controlsDisabled}>
                 <span class="mod-settings-select-icon"><i class="fa-solid fa-code-branch" aria-hidden="true"></i></span>

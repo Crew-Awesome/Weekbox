@@ -17,6 +17,20 @@ function getBundleExecutableName(infoPlist) {
   return match?.[1]?.trim() || "";
 }
 
+export const EXCLUDED_EXECUTABLE_NAMES = new Set([
+  "fe-crashdialog.exe",
+  "fe-crashdialog",
+]);
+
+function isExcludedExecutable(fileName) {
+  if (!fileName) return true;
+  const name = String(fileName).trim().toLowerCase();
+  return (
+    EXCLUDED_EXECUTABLE_NAMES.has(name) ||
+    name.startsWith("fe-crashdialog")
+  );
+}
+
 var _ExecutableService = class _ExecutableService {
   async find(dir) {
     this.lastError = null;
@@ -46,13 +60,15 @@ var _ExecutableService = class _ExecutableService {
                 const executable = appEntries.find(
                   (appEntry) =>
                     String(appEntry.type).toUpperCase() === "FILE" &&
-                    appEntry.entry === bundleExecutable,
+                    appEntry.entry === bundleExecutable &&
+                    !isExcludedExecutable(appEntry.entry),
                 );
                 if (executable) return `${macOSDirectory}/${executable.entry}`;
                 const fallback = appEntries.find(
                   (appEntry) =>
                     String(appEntry.type).toUpperCase() === "FILE" &&
-                    !appEntry.entry.includes("."),
+                    !appEntry.entry.includes(".") &&
+                    !isExcludedExecutable(appEntry.entry),
                 );
                 if (fallback) return `${macOSDirectory}/${fallback.entry}`;
               } catch (error) {
@@ -63,10 +79,12 @@ var _ExecutableService = class _ExecutableService {
             continue;
           }
           if (
-            entry.entry.toLowerCase().endsWith(".exe") ||
+            (entry.entry.toLowerCase().endsWith(".exe") &&
+              !isExcludedExecutable(entry.entry)) ||
             (!isWindows &&
               !entry.entry.includes(".") &&
-              entry.entry !== "CodeResources")
+              entry.entry !== "CodeResources" &&
+              !isExcludedExecutable(entry.entry))
           ) {
             return fullPath;
           }
@@ -87,12 +105,16 @@ var _ExecutableService = class _ExecutableService {
           { background: false },
         );
         if (result.exitCode === 0) {
-          return (
-            (result.stdOut || "")
-              .split(/\r?\n/)
-              .map((path) => path.trim())
-              .find(Boolean) || null
-          );
+          const paths = (result.stdOut || "")
+            .split(/\r?\n/)
+            .map((path) => path.trim())
+            .filter(Boolean);
+          for (const path of paths) {
+            const fileName = path.split(/[\\/]/).pop();
+            if (!isExcludedExecutable(fileName)) {
+              return path;
+            }
+          }
         }
       } catch (error) {
         console.warn("Could not search for a Windows executable:", dir, error);

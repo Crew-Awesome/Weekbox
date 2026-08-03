@@ -89,8 +89,13 @@ export const cardRenderer = {
     );
 
     for (const mod of modsToRender) {
-      const isExecutable = standaloneModIds.has(String(mod.id));
-      const hasEngine = Boolean(mod.engineId);
+      const isExecutable =
+        standaloneModIds.has(String(mod.id)) || mod.engineId === "executable";
+      const hasEngine = Boolean(
+        mod.engineId &&
+          mod.engineId !== "executable" &&
+          ENGINE_DETAILS[mod.engineId],
+      );
       const engine = hasEngine
         ? installedEngines.find(
             (item) =>
@@ -118,7 +123,7 @@ export const cardRenderer = {
           versionLabel,
           engineInfo.icon,
         );
-      } else if (mod.engineId && ENGINE_DETAILS[mod.engineId]) {
+      } else if (hasEngine) {
         const engineInfo = ENGINE_DETAILS[mod.engineId];
         const versionLabel = formatVersionLabel(
           mod.engineVersion || engine?.version,
@@ -132,7 +137,7 @@ export const cardRenderer = {
       }
 
       const isHidden = mod.hidden;
-      const isUnassigned = !isExecutable && !mod.engineId;
+      const isUnassigned = !isExecutable && !hasEngine;
       const eyeIcon = mod.hidden ? "fa-eye-slash" : "fa-eye";
       const card = document.createElement("div");
       card.className = "mod-manager-card";
@@ -144,7 +149,7 @@ export const cardRenderer = {
         card.style.opacity = "0.5";
       }
 
-      const launchAsStandalone = isExecutable && !mod.engineId;
+      const launchAsStandalone = isExecutable && !hasEngine;
       const launchLabel =
         launchAsStandalone ||
         getEngineLaunchBehavior(mod.engineId)?.scope === "exclusive-mod"

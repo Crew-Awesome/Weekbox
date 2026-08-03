@@ -32,10 +32,16 @@ export function setupModSettingsDropdowns(
 
   const updateVersionVisibility = (hasEngine) => {
     if (versionField) {
-      versionField.hidden = !hasEngine;
+      if (hasEngine) {
+        versionField.removeAttribute("hidden");
+        versionField.hidden = false;
+      } else {
+        versionField.setAttribute("hidden", "hidden");
+        versionField.hidden = true;
+      }
     }
     if (engineContainer) {
-      engineContainer.classList.toggle("has-version", hasEngine);
+      engineContainer.classList.toggle("has-version", Boolean(hasEngine));
     }
   };
 
@@ -44,7 +50,7 @@ export function setupModSettingsDropdowns(
       return;
 
     const selectedEngineId = engineSelect.value;
-    if (!selectedEngineId) {
+    if (!selectedEngineId || selectedEngineId === "executable") {
       updateVersionVisibility(false);
       versionSelect.value = "";
       versionSelect.innerHTML = "";
@@ -96,31 +102,43 @@ export function setupModSettingsDropdowns(
     versionSelect.value = validSelectedVersion;
   };
 
+  const initialEngineId =
+    mod.engineId &&
+    mod.engineId !== "executable" &&
+    ENGINE_DETAILS[mod.engineId]
+      ? mod.engineId
+      : "";
+
   engineSelect.innerHTML = [
     `<option value="">${defaultLabel}</option>`,
     ...assignableEngines.map(
       ([id, details]) =>
-        `<option value="${id}" ${id === mod.engineId ? "selected" : ""}>${escapeHtml(details.name)}</option>`,
+        `<option value="${id}" ${id === initialEngineId ? "selected" : ""}>${escapeHtml(details.name)}</option>`,
     ),
   ].join("");
 
   const renderEngines = () => {
-    const engine = ENGINE_DETAILS[engineSelect.value];
+    const selectedEngineId = engineSelect.value;
+    const isCustomEngine =
+      selectedEngineId &&
+      selectedEngineId !== "executable" &&
+      ENGINE_DETAILS[selectedEngineId];
+    const engine = isCustomEngine ? ENGINE_DETAILS[selectedEngineId] : null;
     engineSelected.textContent = engine?.name || defaultLabel;
     engineIcon.innerHTML = engine
       ? `<img src="assets/icons/${engine.icon}" alt="">`
       : defaultIconHtml;
     engineMenu.innerHTML = [
-      `<button type="button" data-engine-id="" class="${!engineSelect.value ? "selected" : ""}" role="option" aria-selected="${!engineSelect.value}">${defaultIconHtml}${defaultLabel}</button>`,
+      `<button type="button" data-engine-id="" class="${!selectedEngineId ? "selected" : ""}" role="option" aria-selected="${!selectedEngineId}">${defaultIconHtml}${defaultLabel}</button>`,
       ...assignableEngines.map(
         ([id, details]) =>
-          `<button type="button" data-engine-id="${id}" class="${id === engineSelect.value ? "selected" : ""}" role="option" aria-selected="${id === engineSelect.value}"><img src="assets/icons/${details.icon}" alt="">${escapeHtml(details.name)}</button>`,
+          `<button type="button" data-engine-id="${id}" class="${id === selectedEngineId ? "selected" : ""}" role="option" aria-selected="${id === selectedEngineId}"><img src="assets/icons/${details.icon}" alt="">${escapeHtml(details.name)}</button>`,
       ),
     ].join("");
   };
 
   renderEngines();
-  renderVersions(mod.engineVersion || "");
+  renderVersions(initialEngineId ? mod.engineVersion || "" : "");
   const engineDropdown = setupDropdown(
     engineTrigger,
     engineTrigger.parentElement,
