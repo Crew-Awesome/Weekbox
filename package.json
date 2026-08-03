@@ -5,6 +5,7 @@
   "main": "index.js",
   "scripts": {
     "format": "node scripts/formatter.js",
+    "locales:check": "node scripts/check-locales.js",
     "assets": "node scripts/bundle.js",
     "postinstall": "npx @neutralinojs/neu update",
     "dev": "npx npm-run-all --parallel \"assets -- --watch\" neu",
@@ -28,5 +29,8 @@
     "esbuild": "^0.28.1",
     "npm-run-all": "^4.1.5",
     "prettier": "^3.9.5"
+  },
+  "dependencies": {
+    "flag-icons": "^7.5.0"
   }
 }

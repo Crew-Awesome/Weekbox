@@ -62,6 +62,7 @@ export { homeScroll } from "./home/homeScroll.js";
 export { homeSearchDropdown } from "./home/searchDropdown.js";
 export { homeSearch } from "./home/search.js";
 export { homeView, registerHomeView } from "./home/index.js";
+export { newsView, registerNewsView } from "./news.js";
 
 // Home Grid
 export { homeGrid } from "./home/grid/index.js";
@@ -100,6 +101,7 @@ export { appUpdateModal } from "./updates/appUpdateModal.js";
 
 // Root Modals & Navigation
 export { sidebar } from "./sidebar.js";
+export { i18n, t } from "./i18n/index.js";
 export { existingStorageModal } from "./existingStorageModal.js";
 export { firstRunStorageModal } from "./firstRunStorageModal.js";
 export { storageRecommendationModal } from "./storageRecommendationModal.js";

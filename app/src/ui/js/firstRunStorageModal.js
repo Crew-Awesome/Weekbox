@@ -1,3 +1,5 @@
+import { t } from "./i18n/index.js";
+
 export const firstRunStorageModal = {
   show(defaultPath) {
     const modal = document.createElement("section");
@@ -9,13 +11,13 @@ export const firstRunStorageModal = {
       <div class="diagnostic-consent-panel">
         <div class="diagnostic-consent-icon" aria-hidden="true"><i class="fa-solid fa-folder-tree"></i></div>
         <div class="diagnostic-consent-main">
-          <h2 id="first-run-storage-title">Where should WeekBox save its files?</h2>
-          <p>WeekBox keeps your mods, engines, and settings together in one library folder.</p>
+          <h2 id="first-run-storage-title">${t("storage.firstRunTitle")}</h2>
+          <p>${t("storage.firstRunSummary")}</p>
           <p class="first-run-storage-path"></p>
           <div class="first-run-storage-actions">
-            <button type="button" class="diagnostic-consent-confirm first-run-storage-default">Use default location</button>
-            <button type="button" class="error-action first-run-storage-new">Choose a different location</button>
-            <button type="button" class="error-action first-run-storage-existing">Find an existing WeekBox library</button>
+            <button type="button" class="diagnostic-consent-confirm first-run-storage-default">${t("storage.useDefaultLocation")}</button>
+            <button type="button" class="error-action first-run-storage-new">${t("storage.chooseDifferentLocation")}</button>
+            <button type="button" class="error-action first-run-storage-existing">${t("storage.findExistingLibrary")}</button>
           </div>
         </div>
       </div>`;

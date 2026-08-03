@@ -1,4 +1,5 @@
 import { getTargetPlatform } from "./utils.js";
+import { t } from "../i18n/index.js";
 
 function ensureModal() {
   let overlay = document.getElementById("engine-update-modal");
@@ -14,11 +15,11 @@ function ensureModal() {
         <img class="engine-update-mark" alt="" />
         <h2 id="engine-update-title"></h2>
       </div>
-      <p class="engine-update-copy">There's a new update detected for this engine!</p>
+      <p class="engine-update-copy">${t("engineUpdates.detected")}</p>
       <div class="engine-update-build"></div>
       <div class="engine-update-actions">
-        <button type="button" class="engine-update-later">Not now</button>
-        <button type="button" class="engine-update-confirm">Update engine <i class="fa-solid fa-arrow-right"></i></button>
+        <button type="button" class="engine-update-later">${t("storage.notNow")}</button>
+        <button type="button" class="engine-update-confirm">${t("engineUpdates.updateEngine")} <i class="fa-solid fa-arrow-right"></i></button>
       </div>
     </section>
   `;

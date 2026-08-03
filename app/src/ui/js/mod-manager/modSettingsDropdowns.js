@@ -1,6 +1,7 @@
 import { ENGINE_DETAILS } from "../../../backend/config/engines.config.js";
 import { setupDropdown } from "../../utils/index-utils.js";
 import { escapeHtml } from "./modSettingsTemplates.js";
+import { t } from "../i18n/index.js";
 
 export function setupModSettingsDropdowns(
   overlay,
@@ -24,11 +25,57 @@ export function setupModSettingsDropdowns(
   const versionSelected = overlay.querySelector(
     ".mod-settings-version-selected",
   );
+  const typeSelect = overlay.querySelector(".mod-settings-type");
+  const typeTrigger = overlay.querySelector(".mod-settings-type-trigger");
+  const typeMenu = overlay.querySelector(".mod-settings-type-menu");
+  const typeSelected = overlay.querySelector(".mod-settings-type-selected");
 
-  const defaultLabel = isExecutable ? "Executable" : "Unassigned";
+  const typeOptions = [
+    ["mod", "Mod", "fa-layer-group"],
+    ...(mod.engineId === "codename" || mod.kind === "addon"
+      ? [["addon", "Addon", "fa-cubes"]]
+      : []),
+    ...(mod.kind === "dependency" ||
+    (mod.engineId !== "codename" && mod.kind !== "addon")
+      ? [["dependency", "Dependency", "fa-puzzle-piece"]]
+      : []),
+  ];
+
+  const renderType = () => {
+    if (!typeSelect || !typeMenu || !typeSelected) return;
+    const current =
+      typeOptions.find(([value]) => value === typeSelect.value) ||
+      typeOptions[0];
+    typeSelected.textContent = current[1];
+    typeMenu.querySelectorAll("button[data-type]").forEach((button) => {
+      const selected = button.dataset.type === typeSelect.value;
+      button.classList.toggle("selected", selected);
+      button.setAttribute("aria-selected", String(selected));
+    });
+  };
+
+  const defaultLabel = isExecutable
+    ? t("home.executables")
+    : t("import.unassigned");
   const defaultIconHtml = isExecutable
     ? '<img src="assets/icons/exe.png" alt="">'
     : '<i class="fa-solid fa-question-circle" aria-hidden="true"></i>';
+
+  if (typeSelect && typeMenu) {
+    typeSelect.innerHTML = typeOptions
+      .map(
+        ([value, label]) =>
+          `<option value="${value}" ${value === (mod.kind || "mod") ? "selected" : ""}>${label}</option>`,
+      )
+      .join("");
+    typeMenu.innerHTML = typeOptions
+      .map(
+        ([value, label, icon]) =>
+          `<button type="button" data-type="${value}" role="option" aria-selected="${value === (mod.kind || "mod")}"><i class="fa-solid ${icon}" aria-hidden="true"></i>${label}</button>`,
+      )
+      .join("");
+    renderType();
+  }
 
   const updateVersionVisibility = (hasEngine) => {
     if (versionField) {
@@ -68,11 +115,9 @@ export function setupModSettingsDropdowns(
       versionTrigger.disabled = true;
       versionTrigger.setAttribute("disabled", "true");
       versionSelect.value = "";
-      versionSelect.innerHTML =
-        '<option value="">Requires installed version</option>';
-      versionMenu.innerHTML =
-        '<button type="button" data-version="" class="selected" disabled role="option" aria-selected="true"><i class="fa-solid fa-triangle-exclamation" aria-hidden="true"></i>Requires installed version</button>';
-      versionSelected.textContent = "Requires installed version";
+      versionSelect.innerHTML = `<option value="">${t("modSettings.requiresInstalledVersion")}</option>`;
+      versionMenu.innerHTML = `<button type="button" data-version="" class="selected" disabled role="option" aria-selected="true"><i class="fa-solid fa-triangle-exclamation" aria-hidden="true"></i>${t("modSettings.requiresInstalledVersion")}</button>`;
+      versionSelected.textContent = t("modSettings.requiresInstalledVersion");
       return;
     }
 
@@ -85,20 +130,21 @@ export function setupModSettingsDropdowns(
         : "";
 
     versionSelect.innerHTML = [
-      '<option value="">Any version</option>',
+      `<option value="">${t("import.anyVersion")}</option>`,
       ...versions.map(
         (version) =>
           `<option value="${escapeHtml(version)}" ${version === validSelectedVersion ? "selected" : ""}>${escapeHtml(version)}</option>`,
       ),
     ].join("");
     versionMenu.innerHTML = [
-      `<button type="button" data-version="" class="${!validSelectedVersion ? "selected" : ""}" role="option" aria-selected="${!validSelectedVersion}"><i class="fa-solid fa-code-branch" aria-hidden="true"></i>Any version</button>`,
+      `<button type="button" data-version="" class="${!validSelectedVersion ? "selected" : ""}" role="option" aria-selected="${!validSelectedVersion}"><i class="fa-solid fa-code-branch" aria-hidden="true"></i>${t("import.anyVersion")}</button>`,
       ...versions.map(
         (version) =>
           `<button type="button" data-version="${escapeHtml(version)}" class="${version === validSelectedVersion ? "selected" : ""}" role="option" aria-selected="${version === validSelectedVersion}"><i class="fa-solid fa-code-branch" aria-hidden="true"></i>${escapeHtml(version)}</button>`,
       ),
     ].join("");
-    versionSelected.textContent = validSelectedVersion || "Any version";
+    versionSelected.textContent =
+      validSelectedVersion || t("import.anyVersion");
     versionSelect.value = validSelectedVersion;
   };
 
@@ -139,6 +185,12 @@ export function setupModSettingsDropdowns(
 
   renderEngines();
   renderVersions(initialEngineId ? mod.engineVersion || "" : "");
+  const typeDropdown =
+    typeTrigger && typeMenu
+      ? setupDropdown(typeTrigger, typeTrigger.parentElement, {
+          menuElement: typeMenu,
+        })
+      : null;
   const engineDropdown = setupDropdown(
     engineTrigger,
     engineTrigger.parentElement,
@@ -164,6 +216,13 @@ export function setupModSettingsDropdowns(
       versionDropdown.close();
     });
   }
+  typeMenu?.addEventListener("click", (event) => {
+    const option = event.target.closest("button[data-type]");
+    if (!option || !typeSelect) return;
+    typeSelect.value = option.dataset.type;
+    renderType();
+    typeDropdown?.close();
+  });
   engineMenu.addEventListener("click", (event) => {
     const option = event.target.closest("button[data-engine-id]");
     if (!option) return;
@@ -178,9 +237,11 @@ export function setupModSettingsDropdowns(
   return {
     engineSelect,
     versionSelect,
+    typeSelect,
     destroy: () => {
       engineDropdown.destroy();
       versionDropdown?.destroy();
+      typeDropdown?.destroy();
     },
   };
 }

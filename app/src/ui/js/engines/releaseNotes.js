@@ -46,7 +46,7 @@ function isSafeUrl(value) {
   }
 }
 
-function sanitizeReleaseHtml(html) {
+export function sanitizeReleaseHtml(html) {
   const documentNode = new DOMParser().parseFromString(html, "text/html");
 
   documentNode.body.querySelectorAll("*").forEach((element) => {
@@ -115,8 +115,7 @@ export async function fetchAndRenderReleaseNotes(versionData, targetLink) {
   if (!notesContainer) return;
 
   notesContainer.classList.remove("release-notes-plain");
-  notesContainer.innerHTML =
-    '<p style="color: var(--text-muted);">Fetching release notes...</p>';
+  notesContainer.innerHTML = `<p style="color: var(--text-muted);">${t("engines.releaseNotesLoading")}</p>`;
 
   const link =
     targetLink || versionData.win || versionData.lin || versionData.mac || "";
@@ -125,7 +124,7 @@ export async function fetchAndRenderReleaseNotes(versionData, targetLink) {
   );
 
   if (!match) {
-    notesContainer.innerHTML = "<p><em>No release notes available.</em></p>";
+    notesContainer.innerHTML = `<p><em>${t("engines.noReleaseNotes")}</em></p>`;
     return;
   }
 
@@ -154,6 +153,7 @@ export async function fetchAndRenderReleaseNotes(versionData, targetLink) {
       showPlainTextNotes(notesContainer, text);
     }
   } catch {
-    notesContainer.innerHTML = "<p><em>Failed to fetch release notes.</em></p>";
+    notesContainer.innerHTML = `<p><em>${t("engines.releaseNotesFailed")}</em></p>`;
   }
 }
+import { t } from "../i18n/index.js";

@@ -1,6 +1,7 @@
 import { fetchAndRenderReleaseNotes } from "./releaseNotes.js";
 import { getTargetLink, extractVersionFallback } from "./utils.js";
 import { setupDropdown } from "../../utils/index-utils.js";
+import { t } from "../i18n/index.js";
 
 export const engineDropdown = {
   dropdownController: null,
@@ -18,8 +19,8 @@ export const engineDropdown = {
     optionsContainer.innerHTML = "";
 
     if (engine.versions.length === 0) {
-      selectedText.textContent = "Unknown";
-      badge.textContent = `Version: Unknown`;
+      selectedText.textContent = t("common.unknown");
+      badge.textContent = `${t("common.version")}: ${t("common.unknown")}`;
       return;
     }
 
@@ -45,7 +46,7 @@ export const engineDropdown = {
       optionDiv.addEventListener("click", (e) => {
         e.stopPropagation();
         selectedText.textContent = v.version;
-        badge.textContent = `Version: ${v.version}`;
+        badge.textContent = `${t("common.version")}: ${v.version}`;
         document
           .querySelectorAll(".custom-option")
           .forEach((opt) => opt.classList.remove("selected"));
@@ -62,7 +63,7 @@ export const engineDropdown = {
 
     const initialVersion = engine.versions[0];
     selectedText.textContent = initialVersion.version;
-    badge.textContent = `Version: ${initialVersion.version}`;
+    badge.textContent = `${t("common.version")}: ${initialVersion.version}`;
     fetchAndRenderReleaseNotes(initialVersion, getTargetLink(initialVersion));
     if (onVersionChanged) onVersionChanged(initialVersion.version);
 

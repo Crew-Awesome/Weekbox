@@ -13,6 +13,7 @@ import { appUpdater } from "../updates/app-updater.service.js";
 
 import { homeView, registerHomeView } from "../../../ui/js/index.js";
 import { registerEnginesView } from "../../../ui/js/index.js";
+import { registerNewsView } from "../../../ui/js/index.js";
 import { downloadEngine } from "../../../ui/js/index.js";
 import { engineUpdateToast } from "../../../ui/js/index.js";
 import { toastDownloadMod } from "../../../ui/js/index.js";
@@ -23,6 +24,7 @@ import { toastSystem } from "../../../ui/js/index.js";
 import { storageRecommendationModal } from "../../../ui/js/index.js";
 import { modManagerModal } from "../../../ui/js/index.js";
 import { firstRunStorageModal } from "../../../ui/js/index.js";
+import { i18n, t } from "../../../ui/js/i18n/index.js";
 
 function clearTestToasts() {
   document
@@ -120,8 +122,8 @@ async function completeFirstRunStorageSetup(defaultStoragePath, hadSettings) {
   if (choice === "new" || choice === "existing") {
     const selectedPath = await Neutralino.os.showFolderDialog(
       choice === "existing"
-        ? "Choose an existing WeekBox folder or its parent folder"
-        : "Choose the folder that will contain WeekBox",
+        ? t("storage.chooseExistingFolder")
+        : t("storage.chooseContainingFolder"),
       { defaultPath: FS.basePath },
     );
     if (selectedPath) {
@@ -132,9 +134,9 @@ async function completeFirstRunStorageSetup(defaultStoragePath, hadSettings) {
           completed = true;
         } else
           await Neutralino.os.showMessageBox(
-            "WeekBox library not found",
-            "That folder does not contain a complete WeekBox library. WeekBox will keep using the current folder.",
-            "OK",
+            t("storage.libraryNotFoundTitle"),
+            t("storage.libraryNotFoundMessage"),
+            t("common.ok"),
             "WARNING",
           );
       } else if (!existing) {
@@ -166,8 +168,8 @@ async function recommendSaferStorageLocation() {
   lock.setAttribute("aria-hidden", "true");
   document.body.appendChild(lock);
   toastSystem.show(toastId, {
-    title: "Moving WeekBox files",
-    message: "Preparing files\u2026",
+    title: t("storage.movingWeekBoxFiles"),
+    message: t("storage.preparingFiles"),
     mediaHtml: '<i class="fa-solid fa-folder-open" aria-hidden="true"></i>',
     showPercent: true,
   });
@@ -176,7 +178,10 @@ async function recommendSaferStorageLocation() {
       defaultPath,
       ({ progress, copiedFiles, totalFiles }) => {
         toastSystem.update(toastId, {
-          message: `Moving files (${copiedFiles} of ${totalFiles})`,
+          message: t("storage.movingFilesProgress", {
+            copied: copiedFiles,
+            total: totalFiles,
+          }),
           progress,
         });
       },
@@ -186,7 +191,7 @@ async function recommendSaferStorageLocation() {
       badgeHtml: '<i class="fa-solid fa-check" aria-hidden="true"></i>',
     });
     toastSystem.update(toastId, {
-      message: "WeekBox files moved",
+      message: t("storage.filesMoved"),
       progress: 100,
     });
     setTimeout(() => toastSystem.hide(toastId), 3600);
@@ -195,7 +200,7 @@ async function recommendSaferStorageLocation() {
       badgeHtml: '<i class="fa-solid fa-xmark" aria-hidden="true"></i>',
     });
     toastSystem.update(toastId, {
-      message: error.message || "Could not move WeekBox files.",
+      message: error.message || t("storage.moveFailedMessage"),
       progress: 100,
     });
   } finally {
@@ -207,22 +212,19 @@ async function offerNestedStorageRepair() {
   const targetParentPath = await FS.getNestedStorageRepairTarget();
   if (!targetParentPath) return;
   const choice = await Neutralino.os.showMessageBox(
-    "Repair WeekBox folder location?",
-    `WeekBox found an accidental nested folder:
-${FS.weekboxPath}
-
-It can safely move the inner files to:
-${FS.basePath}
-
-No files will be merged because the outer folder contains only this inner WeekBox folder.`,
+    t("storage.repairFolderTitle"),
+    t("storage.repairFolderMessage", {
+      weekboxPath: FS.weekboxPath,
+      basePath: FS.basePath,
+    }),
     "YES_NO",
     "QUESTION",
   );
   if (choice !== "YES") return;
   const toastId = "weekbox-nested-storage-repair";
   toastSystem.show(toastId, {
-    title: "Repairing WeekBox folder",
-    message: "Preparing files\u2026",
+    title: t("storage.repairingFolder"),
+    message: t("storage.preparingFiles"),
     mediaHtml: '<i class="fa-solid fa-folder-open" aria-hidden="true"></i>',
     showPercent: true,
   });
@@ -231,7 +233,10 @@ No files will be merged because the outer folder contains only this inner WeekBo
       targetParentPath,
       ({ progress, copiedFiles, totalFiles }) => {
         toastSystem.update(toastId, {
-          message: `Moving files (${copiedFiles} of ${totalFiles})`,
+          message: t("storage.movingFilesProgress", {
+            copied: copiedFiles,
+            total: totalFiles,
+          }),
           progress,
         });
       },
@@ -240,7 +245,7 @@ No files will be merged because the outer folder contains only this inner WeekBo
       badgeHtml: '<i class="fa-solid fa-check" aria-hidden="true"></i>',
     });
     toastSystem.update(toastId, {
-      message: "WeekBox folder repaired",
+      message: t("storage.folderRepaired"),
       progress: 100,
     });
     setTimeout(() => toastSystem.hide(toastId), 3600);
@@ -249,7 +254,7 @@ No files will be merged because the outer folder contains only this inner WeekBo
       badgeHtml: '<i class="fa-solid fa-xmark" aria-hidden="true"></i>',
     });
     toastSystem.update(toastId, {
-      message: error.message || "Could not repair WeekBox files.",
+      message: error.message || t("storage.repairFailed"),
       progress: 100,
     });
   }
@@ -282,7 +287,7 @@ async function handleStartupAppUpdate() {
 async function startApp() {
   let startupStep = "starting native services";
   try {
-    startupLoader.setPhase("Starting WeekBox services\u2026", 8);
+    startupLoader.setPhase(t("startup.startingServices"), 8);
     Neutralino.init();
     networkStatus.init();
     await Neutralino.window.focus().catch(() => {});
@@ -305,7 +310,7 @@ async function startApp() {
       await downloadEngine.cleanupAll();
       await Neutralino.app.exit();
     });
-    startupLoader.setPhase("Loading your preferences\u2026", 20);
+    startupLoader.setPhase(t("startup.loadingPreferences"), 20);
     startupStep = "restoring preferences";
     await storageBridge.init();
     startupStep = "finding the default storage location";
@@ -317,12 +322,13 @@ async function startApp() {
       `${settingsDataPath}/settings.json`,
     );
     await appSettings.init(settingsDataPath);
+    i18n.init();
     await syncWindowsProtocolRegistration(
       appSettings.get("registerProtocolLinks"),
     );
-    startupLoader.setPhase("Checking for WeekBox updates…", 36);
+    startupLoader.setPhase(t("startup.checkingAppUpdates"), 36);
     if (await handleStartupAppUpdate()) return;
-    startupLoader.setPhase("Opening your WeekBox library\u2026", 42);
+    startupLoader.setPhase(t("startup.openingLibrary"), 42);
     startupStep = "preparing the WeekBox library";
     await FS.init({ deferMaintenance: true });
     await appSettings.setDataPath(FS.dataPath);
@@ -332,19 +338,20 @@ async function startApp() {
       console.warn("Could not finish first-run storage setup", error);
     }
     startupStep = "loading the WeekBox interface";
-    startupLoader.setPhase("Loading navigation and engines\u2026", 64);
+    startupLoader.setPhase(t("startup.loadingNavigation"), 64);
     registerHomeView();
     registerEnginesView();
+    registerNewsView();
     await router.init();
-    startupLoader.setPhase("Preparing Mod Manager\u2026", 70);
+    startupLoader.setPhase(t("startup.preparingModManager"), 70);
     const modManagerReady = modManagerModal.preload();
-    startupLoader.setPhase("Loading Home content\u2026", 72);
+    startupLoader.setPhase(t("startup.loadingHome"), 72);
     const maintenance = FS.runStartupMaintenance({
       onProgress: (message, progress) =>
         startupLoader.setPhase(message, progress),
     });
     await Promise.all([homeView.ready, modManagerReady]);
-    startupLoader.setPhase("Checking your library\u2026", 89);
+    startupLoader.setPhase(t("startup.checkingLibrary"), 89);
     await maintenance;
     await startupLoader.complete();
     await offerNestedStorageRepair();
@@ -355,12 +362,12 @@ async function startApp() {
     const startupError = new Error(
       `WeekBox could not finish ${startupStep}: ${message}`,
     );
-    startupLoader.fail("Could not start WeekBox");
+    startupLoader.fail(t("startup.couldNotStart"));
     console.error("Startup error:", error);
     try {
       errorHandler.show({
         error: startupError,
-        action: "Start WeekBox",
+        action: t("startup.startWeekBoxAction"),
         storagePath: FS.weekboxPath,
       });
     } catch (reportingError) {
@@ -372,12 +379,10 @@ async function startApp() {
       const errorView = document.createElement("div");
       errorView.style.cssText = "padding: 24px; color: #ff4a4a;";
       const heading = document.createElement("h2");
-      heading.textContent = "Load error";
+      heading.textContent = t("startup.loadError");
       const message2 = document.createElement("p");
       message2.textContent =
-        error instanceof Error
-          ? error.message
-          : "See the technical details in the error report.";
+        error instanceof Error ? error.message : t("startup.seeErrorReport");
       errorView.append(heading, message2);
       mainContent.appendChild(errorView);
     }

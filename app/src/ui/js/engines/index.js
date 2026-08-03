@@ -8,6 +8,7 @@ import { modsMaster } from "./modsMasterClass.js";
 import { rememberInstalledEngineBuild } from "./engineUpdateService.js";
 import { engineInstallToast } from "./engineInstallToast.js";
 import { appSettings } from "../../../backend/core/system/settings.service.js";
+import { localizeProgressStatus, t } from "../i18n/index.js";
 
 export const enginesView = {
   async init() {
@@ -66,7 +67,7 @@ export const enginesView = {
       launchBtn.disabled = true;
       this.setupDownloadActions(launchBtn, downloadActions);
       if (activeTask.state === "installing")
-        launchBtn.textContent = "Installing...";
+        launchBtn.textContent = t("downloads.installing");
       this.renderDownloadProgress(activeTask.progressInfo);
       engineInstallToast.hide(this.activeInstall);
       return;
@@ -77,7 +78,7 @@ export const enginesView = {
       (v) => v.version === this.currentVersion,
     );
     if (!versionData) {
-      launchBtn.textContent = "Unavailable";
+      launchBtn.textContent = t("engines.unavailable");
       launchBtn.disabled = true;
       if (dlUI) dlUI.style.display = "none";
       return;
@@ -91,7 +92,7 @@ export const enginesView = {
     const activeBtn = document.getElementById("launch-engine-btn");
 
     if (isInstalled) {
-      activeBtn.textContent = "Launch";
+      activeBtn.textContent = t("engines.launch");
       activeBtn.disabled = false;
       if (dlUI) dlUI.style.display = "none";
       let isLaunched = FS.isEngineRunning(
@@ -102,15 +103,14 @@ export const enginesView = {
         isLaunched = true;
         activeBtn.disabled = false;
         activeBtn.classList.add("engine-running");
-        activeBtn.innerHTML =
-          '<span class="engine-launch-label">Launched</span><span class="engine-close-label">Close</span>';
+        activeBtn.innerHTML = `<span class="engine-launch-label">${t("engines.launched")}</span><span class="engine-close-label">${t("common.close")}</span>`;
       };
       if (isLaunched) showLaunched();
       activeBtn.addEventListener("click", async () => {
         if (isLaunched) {
           activeBtn.disabled = true;
           activeBtn.classList.remove("engine-running");
-          activeBtn.textContent = "Closing...";
+          activeBtn.textContent = t("engines.closing");
           await FS.closeEngine(
             this.currentEngine.id,
             this.currentVersion,
@@ -124,7 +124,7 @@ export const enginesView = {
         }
 
         activeBtn.disabled = true;
-        activeBtn.textContent = "Running...";
+        activeBtn.textContent = t("engines.running");
         await modsMaster.injectBeforeLaunch(
           this.currentEngine.id,
           this.currentVersion,
@@ -155,7 +155,7 @@ export const enginesView = {
               isLaunched = false;
               activeBtn.classList.remove("engine-running");
               activeBtn.disabled = false;
-              activeBtn.textContent = "Launch";
+              activeBtn.textContent = t("engines.launch");
               await modsMaster.cleanupAfterExit(
                 this.currentEngine.id,
                 this.currentVersion,
@@ -167,12 +167,12 @@ export const enginesView = {
     } else {
       const downloadUrl = getTargetLink(versionData);
       if (!downloadUrl) {
-        activeBtn.textContent = "Unsupported OS";
+        activeBtn.textContent = t("engines.unsupportedOs");
         activeBtn.disabled = true;
         if (dlUI) dlUI.style.display = "none";
         return;
       }
-      activeBtn.textContent = "Download";
+      activeBtn.textContent = t("common.download");
       activeBtn.disabled = false;
       activeBtn.addEventListener("click", async () => {
         activeBtn.disabled = true;
@@ -186,7 +186,7 @@ export const enginesView = {
         this.setupDownloadActions(activeBtn, downloadActions);
         this.renderDownloadProgress({
           progress: 0,
-          status: "Starting download...",
+          status: t("engines.startingDownload"),
         });
         const success = await downloadEngine.install(
           this.currentEngine.id,
@@ -197,7 +197,7 @@ export const enginesView = {
               100,
               Math.max(0, Number(progressInfo?.progress) || 0),
             );
-            const status = String(progressInfo?.status || "Working...");
+            const status = String(progressInfo?.status || t("engines.working"));
             this.downloadProgress = progress;
             this.renderDownloadProgress({ progress, status });
             if (!this.isVisible)
@@ -238,7 +238,7 @@ export const enginesView = {
               if (
                 freshBtn &&
                 !freshBtn.disabled &&
-                freshBtn.textContent === "Launch"
+                freshBtn.textContent === t("engines.launch")
               ) {
                 freshBtn.click();
               }
@@ -246,13 +246,18 @@ export const enginesView = {
           }
         } else {
           if (!this.isVisible)
-            engineInstallToast.error(finishedInstall, "Installation failed");
-          if (dlText) dlText.textContent = "0% - Download failed";
-          if (dlTextSizer) dlTextSizer.textContent = "0% - Download failed";
+            engineInstallToast.error(
+              finishedInstall,
+              t("engines.installationFailed"),
+            );
+          if (dlText)
+            dlText.textContent = `0% - ${t("engines.downloadFailed")}`;
+          if (dlTextSizer)
+            dlTextSizer.textContent = `0% - ${t("engines.downloadFailed")}`;
           if (dlTrackTextSizer)
-            dlTrackTextSizer.textContent = "0% - Download failed";
+            dlTrackTextSizer.textContent = `0% - ${t("engines.downloadFailed")}`;
           activeBtn.disabled = false;
-          activeBtn.textContent = "Retry Download";
+          activeBtn.textContent = t("engines.retryDownload");
         }
       });
     }
@@ -267,7 +272,9 @@ export const enginesView = {
       100,
       Math.max(0, Number(progressInfo?.progress) || 0),
     );
-    const status = String(progressInfo?.status || "Working...");
+    const status = localizeProgressStatus(
+      progressInfo?.status || t("engines.working"),
+    );
     const progressText = `${Math.floor(progress)}% - ${status}`;
     if (dlUI) dlUI.style.display = "block";
     if (dlText) dlText.textContent = progressText;
@@ -287,18 +294,18 @@ export const enginesView = {
       this.rollbackPromise = this.animateRollback();
       await downloadEngine.cancel(engineId, version);
     };
-    activeBtn.textContent = "Downloading...";
+    activeBtn.textContent = t("downloads.downloading");
   },
   updateInstallState(state) {
     const activeBtn = document.getElementById("launch-engine-btn");
     const cancelBtn = document.getElementById("cancel-engine-download-btn");
     if (!activeBtn) return;
     if (state === "downloading") {
-      activeBtn.textContent = "Downloading...";
+      activeBtn.textContent = t("downloads.downloading");
     } else if (state === "installing") {
-      activeBtn.textContent = "Installing...";
+      activeBtn.textContent = t("downloads.installing");
     } else if (state === "cancelled") {
-      activeBtn.textContent = "Cancelled";
+      activeBtn.textContent = t("engines.cancelled");
       if (cancelBtn) cancelBtn.disabled = true;
     }
   },
@@ -311,7 +318,7 @@ export const enginesView = {
     return new Promise((resolve) => {
       const rollback = () => {
         progress = Math.max(0, progress - Math.max(2, progress / 12));
-        const message = `${Math.ceil(progress)}% - Rolling back...`;
+        const message = `${Math.ceil(progress)}% - ${t("engines.rollingBack")}`;
         if (dlText) dlText.textContent = message;
         if (dlTextSizer) dlTextSizer.textContent = message;
         if (dlTrackTextSizer) dlTrackTextSizer.textContent = message;

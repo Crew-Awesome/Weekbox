@@ -202,6 +202,62 @@
   animation: fade-in 0.3s ease;
 }
 
+.setting-language-control {
+  flex: 0 0 auto;
+}
+
+#config-modal .setting-language-dropdown {
+  width: 180px;
+}
+
+#config-modal .setting-language-trigger {
+  font: inherit;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+#config-modal #setting-language-selected {
+  display: block;
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+#config-modal .setting-language-flag {
+  display: grid;
+  width: 18px;
+  height: 18px;
+  flex: 0 0 18px;
+  place-items: center;
+  line-height: 1;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: contain;
+}
+
+#config-modal .setting-language-flag.fi-us {
+  background-image: url("../../../../../node_modules/flag-icons/flags/4x3/us.svg");
+}
+
+#config-modal .setting-language-flag.fi-es {
+  background-image: url("../../../../../node_modules/flag-icons/flags/4x3/es.svg");
+}
+
+#config-modal .setting-language-option > span:last-child {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+@media (max-width: 720px) {
+  #config-modal .setting-language-dropdown {
+    width: 160px;
+  }
+}
+
 .wine-setting {
   flex-wrap: wrap;
 }

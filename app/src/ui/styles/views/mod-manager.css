@@ -1469,6 +1469,11 @@
   display: none;
 }
 
+.mod-manager-engine-indicator::before,
+.mod-manager-engine-indicator::after {
+  display: none;
+}
+
 .mod-manager-engine-tooltip {
   position: fixed;
   z-index: 2300;
@@ -1495,6 +1500,26 @@
 .mod-manager-engine-tooltip.is-visible {
   opacity: 1;
   transform: translate(-50%, 0);
+}
+
+.mod-manager-engine-tooltip::before {
+  content: "";
+  position: absolute;
+  top: -6px;
+  left: 50%;
+  width: 0;
+  height: 0;
+  border-right: 6px solid transparent;
+  border-bottom: 6px solid rgba(16, 16, 16, 0.8);
+  border-left: 6px solid transparent;
+  transform: translateX(-50%);
+}
+
+.mod-manager-engine-tooltip.is-above::before {
+  top: auto;
+  bottom: -6px;
+  border-top: 6px solid rgba(16, 16, 16, 0.8);
+  border-bottom: 0;
 }
 
 .mod-manager-engine-compatibility-picker {

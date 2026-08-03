@@ -13,6 +13,7 @@ import {
   replaceProcessExitListener,
   syncLaunchButton,
 } from "./processUiSync.js";
+import { i18n, t } from "../i18n/index.js";
 
 export const cardRenderer = {
   async renderCards(
@@ -56,21 +57,26 @@ export const cardRenderer = {
         // mod actions (and are not part of allMods yet).
         if (!mod) return;
         const locked = FS.isModLockedForChanges(mod, allMods);
-        const message = "Close the engine before changing this mod";
+        const message = t("modManager.closeEngineBeforeChange");
         const deleteBtn = card.querySelector(".mod-manager-delete-btn");
         const settingsBtn = card.querySelector(".mod-manager-settings-btn");
         const visibilityBtn = card.querySelector(".mod-manager-vis-btn");
         if (!deleteBtn || !settingsBtn || !visibilityBtn) return;
         deleteBtn.disabled = locked;
-        deleteBtn.title = locked ? message : "Delete Mod";
-        deleteBtn.setAttribute("aria-label", locked ? message : "Delete Mod");
+        deleteBtn.title = locked ? message : t("modManager.delete");
+        deleteBtn.setAttribute(
+          "aria-label",
+          locked ? message : t("modManager.delete"),
+        );
         settingsBtn.disabled = false;
         settingsBtn.title = locked
-          ? "Open mod settings (read-only while running)"
-          : "Mod Settings";
+          ? t("modManager.settingsReadOnly")
+          : t("modManager.settings");
         settingsBtn.setAttribute("aria-label", settingsBtn.title);
         visibilityBtn.disabled = locked;
-        visibilityBtn.title = locked ? message : "Toggle Visibility";
+        visibilityBtn.title = locked
+          ? message
+          : t("modManager.toggleVisibility");
       });
     };
 
@@ -153,8 +159,8 @@ export const cardRenderer = {
       const launchLabel =
         launchAsStandalone ||
         getEngineLaunchBehavior(mod.engineId)?.scope === "exclusive-mod"
-          ? "Launch Mod"
-          : "Launch Engine";
+          ? t("modManager.launchMod")
+          : t("modManager.launchEngine");
 
       card.innerHTML = modManagerTemplates.cardContent(
         launchAsStandalone ? "standalone" : "engine",
@@ -183,12 +189,13 @@ export const cardRenderer = {
         launchBtn.disabled = true;
         try {
           if (
-            FS.getModLaunchState(mod, engine, launchAsStandalone) === "unavailable"
+            FS.getModLaunchState(mod, engine, launchAsStandalone) ===
+            "unavailable"
           ) {
             const engineInfo = ENGINE_DETAILS[mod.engineId];
             engineUpdateToast.missingEngine(
               mod.engineId,
-              engineInfo?.name || "the assigned engine",
+              engineInfo?.name || t("engineUpdates.assignedEngine"),
               engineInfo?.icon,
             );
             return;
@@ -219,7 +226,7 @@ export const cardRenderer = {
             card.remove();
             if (gridContainer.children.length === 0) {
               gridContainer.outerHTML = modManagerTemplates.emptyState(
-                "No mods installed yet.",
+                t("modManager.noModsInstalled"),
               );
             }
           }, 300);
@@ -241,7 +248,8 @@ export const cardRenderer = {
             isExecutable,
             installedEngines,
             onSaved: onSettingsSaved,
-            readOnly: FS.isModLockedForChanges(mod, allMods),
+            readOnly: false,
+            fileLocked: FS.isModLockedForChanges(mod, allMods),
           });
         } finally {
           settingsBtn.disabled = false;
@@ -281,6 +289,7 @@ export const cardRenderer = {
     }
 
     gridContainer.appendChild(fragment);
+    i18n.apply(gridContainer);
     refreshLaunchButtons();
     refreshChangeButtons();
   },

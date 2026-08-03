@@ -1,6 +1,7 @@
 import { gameBananaApi } from "../../../backend/providers/gamebanana/gamebanana.provider.js";
 import { modModal } from "./modal/index.js";
 import { networkStatus } from "../../../backend/core/system/network-status.service.js";
+import { t } from "../i18n/index.js";
 
 export const homeCarousel = {
   currentSlideIndex: 0,
@@ -16,7 +17,7 @@ export const homeCarousel = {
     try {
       const mods = await gameBananaApi.getFeaturedCarousel();
       if (mods.length === 0) {
-        track.innerHTML = `<div style="padding: 24px; color: var(--text-muted);">No featured mods found.</div>`;
+        track.textContent = t("home.noFeaturedMods");
         return;
       }
 
@@ -41,9 +42,9 @@ export const homeCarousel = {
             <div class="carousel-content">
                 <span class="badge">${mod.label}</span>
                 <h1>${mod.title}</h1>
-                <p class="carousel-author">by ${mod.author}</p>
+                <p class="carousel-author">${t("home.byAuthor", { author: mod.author })}</p>
                 <button class="action-btn download-mod-btn">
-                    <i class="fa-solid fa-download"></i> Download
+                    <i class="fa-solid fa-download"></i> ${t("common.download")}
                 </button>
             </div>
         `;
@@ -65,7 +66,7 @@ export const homeCarousel = {
       this.startAutoSlide();
     } catch (error) {
       networkStatus.setOnline(false);
-      track.innerHTML = `<div style="padding: 24px; color: red;">Carousel error</div>`;
+      track.textContent = t("home.carouselError");
     }
   },
 
@@ -75,7 +76,7 @@ export const homeCarousel = {
     if (btnPrev) {
       const newPrev = btnPrev.cloneNode(true);
       btnPrev.parentNode.replaceChild(newPrev, btnPrev);
-      newPrev.title = "Previous featured mod - Shift-click for previous group";
+      newPrev.title = t("home.previousFeatured");
       newPrev.addEventListener("click", (event) =>
         event.shiftKey ? this.prevGroup() : this.prevSlide(),
       );
@@ -83,7 +84,7 @@ export const homeCarousel = {
     if (btnNext) {
       const newNext = btnNext.cloneNode(true);
       btnNext.parentNode.replaceChild(newNext, btnNext);
-      newNext.title = "Next featured mod - Shift-click for next group";
+      newNext.title = t("home.nextFeatured");
       newNext.addEventListener("click", (event) =>
         event.shiftKey ? this.nextGroup() : this.nextSlide(),
       );
