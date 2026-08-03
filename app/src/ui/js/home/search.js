@@ -1,5 +1,6 @@
 import { homeGrid } from "./grid/index.js";
 import { homeSearchDropdown } from "./searchDropdown.js";
+import { t } from "../i18n/index.js";
 
 export const homeSearch = {
   abortController: null,
@@ -13,8 +14,7 @@ export const homeSearch = {
     this.abortController = new AbortController();
     const { signal } = this.abortController;
     input.placeholder = "";
-    hint.textContent =
-      "Search mods, paste a GameBanana link, or enter a mod ID";
+    hint.textContent = t("home.searchHint");
 
     input.addEventListener(
       "focus",
@@ -82,11 +82,12 @@ export const homeSearch = {
       homeSearchDropdown.saveRecent(query);
       if (carousel) carousel.style.display = "none";
       if (filters) filters.style.display = "none";
-      if (sectionTitle) sectionTitle.textContent = `Results for "${query}"`;
+      if (sectionTitle)
+        sectionTitle.textContent = t("home.resultsFor", { query });
     } else {
       if (carousel) carousel.style.display = "flex";
       if (filters) filters.style.display = "flex";
-      if (sectionTitle) sectionTitle.textContent = "Mods";
+      if (sectionTitle) sectionTitle.textContent = t("common.mods");
     }
     await homeGrid.renderGrid(true);
   },

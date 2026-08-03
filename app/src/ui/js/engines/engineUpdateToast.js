@@ -1,5 +1,6 @@
 import { toastSystem } from "../toasts/toastSystem.js";
 import { ENGINE_DETAILS } from "../../../backend/config/engines.config.js";
+import { t } from "../i18n/index.js";
 
 function getToastId(engineId) {
   return `engine-update-toast-${engineId}`;
@@ -9,7 +10,7 @@ export const engineUpdateToast = {
   show(engineId, name) {
     toastSystem.show(getToastId(engineId), {
       title: name,
-      message: "Preparing update",
+      message: t("engineUpdates.preparing"),
       mediaHtml: `<img src="assets/icons/${ENGINE_DETAILS[engineId]?.icon || "exe.png"}" alt="" />`,
       showPercent: true,
     });
@@ -27,7 +28,10 @@ export const engineUpdateToast = {
     toastSystem.setState(id, "complete", {
       badgeHtml: '<i class="fa-solid fa-check"></i>',
     });
-    toastSystem.update(id, { message: "Updated", progress: 100 });
+    toastSystem.update(id, {
+      message: t("engineUpdates.updated"),
+      progress: 100,
+    });
     setTimeout(() => this.hide(engineId), 4200);
   },
 
@@ -43,8 +47,8 @@ export const engineUpdateToast = {
 
   offer(engineId, name, icon, onSelect) {
     toastSystem.show(getToastId(engineId), {
-      title: `${name} Update Available!`,
-      message: "Click to review",
+      title: t("engineUpdates.availableTitle", { name }),
+      message: t("engineUpdates.clickToReview"),
       mediaHtml: `<img src="assets/icons/${icon}" alt="" />`,
       badgeHtml: '<i class="fa-solid fa-exclamation" aria-hidden="true"></i>',
       showProgress: false,
@@ -61,17 +65,17 @@ export const engineUpdateToast = {
     toastSystem.setState(id, "error", {
       badgeHtml: '<i class="fa-solid fa-xmark"></i>',
     });
-    toastSystem.update(id, { message: "Update failed, existing engine kept" });
+    toastSystem.update(id, { message: t("engineUpdates.failedKept") });
     setTimeout(() => this.hide(engineId), 5200);
   },
 
   missingEngine(engineId, name, icon) {
     const id = getToastId(`missing-engine-${engineId || "unassigned"}`);
     toastSystem.show(id, {
-      title: "Engine missing",
+      title: t("engineUpdates.engineMissing"),
       message: engineId
-        ? `Install ${name} to launch this mod`
-        : "Assign an engine in Mod Manager",
+        ? t("engineUpdates.installToLaunch", { name })
+        : t("engineUpdates.assignInModManager"),
       mediaHtml: `<img src="assets/icons/${icon || "exe.png"}" alt="" />`,
       badgeHtml: '<i class="fa-solid fa-xmark" aria-hidden="true"></i>',
       showProgress: false,

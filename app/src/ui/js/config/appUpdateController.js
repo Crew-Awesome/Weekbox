@@ -1,3 +1,14 @@
+import { localizeProgressStatus, t } from "../i18n/index.js";
+
+function localizeUpdateStatus(message) {
+  const value = String(message || "");
+  if (value.startsWith("Verifying update")) return t("updates.verifying");
+  if (value.startsWith("Closing WeekBox")) return t("updates.closing");
+  if (value.startsWith("Installing update")) return t("updates.installing");
+  if (value.startsWith("Restarting WeekBox")) return t("updates.restarting");
+  return localizeProgressStatus(value) || t("updates.updating");
+}
+
 export class AppUpdateController {
   constructor(appUpdater) {
     this.appUpdater = appUpdater;
@@ -10,7 +21,7 @@ export class AppUpdateController {
     try {
       label.textContent = `WeekBox ${await this.appUpdater.getCurrentVersion()}`;
     } catch {
-      label.textContent = "WeekBox version unavailable";
+      label.textContent = t("updates.versionUnavailable");
     }
   }
 
@@ -19,8 +30,10 @@ export class AppUpdateController {
     const status = document.getElementById("app-update-status");
     if (!button || !status || !update?.latestVersion) return;
     this.pendingUpdate = update;
-    status.textContent = `WeekBox ${update.latestVersion} is ready to install.`;
-    button.textContent = "Install and restart";
+    status.textContent = t("updates.readyToInstall", {
+      version: update.latestVersion,
+    });
+    button.textContent = t("updates.installAndRestart");
     button.disabled = false;
   }
 
@@ -30,26 +43,28 @@ export class AppUpdateController {
     if (!button || !status) return;
     button.disabled = true;
     this.pendingUpdate = null;
-    status.textContent = "Checking for updates…";
+    status.textContent = t("settings.checkingForUpdates");
     try {
       const update = await this.appUpdater.check();
       if (update.status === "current") {
         sessionStorage.removeItem("weekbox_available_app_update");
-        status.textContent = `WeekBox ${update.currentVersion} is up to date.`;
-        button.textContent = "Up to date";
+        status.textContent = t("updates.upToDate", {
+          version: update.currentVersion,
+        });
+        button.textContent = t("updates.upToDateButton");
         button.disabled = false;
         return;
       }
       if (update.status === "unsupported") {
-        status.textContent = update.message;
-        button.textContent = "Unavailable";
+        status.textContent = t("updates.unavailable");
+        button.textContent = t("engines.unavailable");
         button.disabled = false;
         return;
       }
       this.showAvailable(update);
     } catch (error) {
-      status.textContent = error.message || "Could not check for updates.";
-      button.textContent = "Try again";
+      status.textContent = t("updates.checkFailed");
+      button.textContent = t("updates.tryAgain");
       button.disabled = false;
     }
   }
@@ -61,11 +76,11 @@ export class AppUpdateController {
     button.disabled = true;
     try {
       await this.appUpdater.install(this.pendingUpdate, (message) => {
-        status.textContent = message;
+        status.textContent = localizeUpdateStatus(message);
       });
     } catch (error) {
-      status.textContent = error.message || "Could not install the update.";
-      button.textContent = "Try again";
+      status.textContent = t("updates.installFailed");
+      button.textContent = t("updates.tryAgain");
       this.pendingUpdate = null;
       button.disabled = false;
     }

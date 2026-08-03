@@ -2,6 +2,7 @@ import {
   activateCheckoutDialog,
   deactivateCheckoutDialog,
 } from "./dialogFocus.js";
+import { t } from "../../i18n/index.js";
 
 function ensureModal() {
   let overlay = document.getElementById("download-choice-modal");
@@ -14,12 +15,12 @@ function ensureModal() {
     <section class="dependency-review-modal" role="dialog" aria-modal="true" aria-labelledby="download-choice-title">
       <div class="dependency-review-heading">
         <i class="fa-solid fa-download" aria-hidden="true"></i>
-        <div><h2 id="download-choice-title">Choose a download</h2></div>
+        <div><h2 id="download-choice-title">${t("downloads.chooseTitle")}</h2></div>
       </div>
       <div class="dependency-review-list download-choice-list"></div>
       <div class="dependency-review-actions">
-        <button type="button" class="dependency-review-cancel">Cancel</button>
-        <button type="button" class="dependency-review-confirm">Continue</button>
+        <button type="button" class="dependency-review-cancel">${t("common.cancel")}</button>
+        <button type="button" class="dependency-review-confirm">${t("common.continue")}</button>
       </div>
     </section>`;
   document.body.appendChild(overlay);
@@ -49,11 +50,11 @@ const downloadChoiceModal = {
         const meta = document.createElement("small");
         const fileDetails =
           option.type === "external"
-            ? option.fileSizeStr || "Alternate file source"
+            ? option.fileSizeStr || t("downloads.alternateSource")
             : option.fileSizeStr;
         meta.textContent = [fileDetails, option.uploadedAtLabel]
           .filter(Boolean)
-          .join(" • ");
+          .join(` ${t("common.separator")} `);
         copy.append(name, meta);
         const icon = document.createElement("i");
         icon.className =

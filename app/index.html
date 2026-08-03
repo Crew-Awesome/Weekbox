@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="es">
+<html lang="en">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -32,10 +32,17 @@
       aria-live="polite"
     >
       <div class="startup-loading-card">
-        <p id="startup-loading-title" class="startup-loading__title">Loading</p>
+        <p
+          id="startup-loading-title"
+          class="startup-loading__title"
+          data-i18n="app.loading"
+        >
+          Loading
+        </p>
         <div
           class="startup-loading__progress-container"
           role="progressbar"
+          data-i18n-attr="aria-label:app.startupProgress"
           aria-label="WeekBox startup progress"
           aria-valuemin="0"
           aria-valuemax="100"
@@ -47,7 +54,7 @@
           ></div>
         </div>
         <p id="startup-loading-label" class="startup-loading__label">
-          Starting WeekBox
+          <span data-i18n="app.starting">Starting WeekBox</span>
         </p>
       </div>
     </div>
@@ -56,7 +63,7 @@
       <div id="sidebar-container" style="display: contents"></div>
 
       <main class="app-layout__content" id="main-content">
-        <p>Loading interface...</p>
+        <p data-i18n="app.loadingInterface">Loading interface...</p>
       </main>
     </div>
 

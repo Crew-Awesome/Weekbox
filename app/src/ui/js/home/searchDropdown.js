@@ -1,5 +1,6 @@
 import { gameBananaApi } from "../../../backend/providers/gamebanana/gamebanana.provider.js";
 import { homeSearch } from "./search.js";
+import { t } from "../i18n/index.js";
 
 export const homeSearchDropdown = {
   recentSearches: [],
@@ -71,7 +72,7 @@ export const homeSearchDropdown = {
 
     if (filteredRecent.length > 0) {
       this.renderSection(
-        "Recent searches",
+        t("search.recent"),
         filteredRecent,
         "fa-clock-rotate-left",
         true,
@@ -83,14 +84,14 @@ export const homeSearchDropdown = {
 
       const relatedSection = document.createElement("div");
       relatedSection.className = "dropdown-section";
-      relatedSection.innerHTML = `<div class="dropdown-title">Related</div><div class="dropdown-item" style="cursor:default;"><i class="fa-solid fa-spinner fa-spin"></i> Loading...</div>`;
+      relatedSection.innerHTML = `<div class="dropdown-title">${t("search.related")}</div><div class="dropdown-item" style="cursor:default;"><i class="fa-solid fa-spinner fa-spin"></i> ${t("common.loading")}</div>`;
       this.dropdown.appendChild(relatedSection);
 
       this.fetchTimeout = setTimeout(async () => {
         const related = await this.fetchRelated(query);
         if (suggestionVersion !== this.suggestionVersion) return;
         if (related.length > 0) {
-          relatedSection.innerHTML = `<div class="dropdown-title">Related suggestions</div>`;
+          relatedSection.innerHTML = `<div class="dropdown-title">${t("search.relatedSuggestions")}</div>`;
           related.forEach((title) => {
             const item = document.createElement("div");
             item.className = "dropdown-item";
@@ -109,7 +110,7 @@ export const homeSearchDropdown = {
     }
 
     if (this.dropdown.innerHTML === "") {
-      this.dropdown.innerHTML = `<div class="dropdown-item empty-state">No recent searches</div>`;
+      this.dropdown.innerHTML = `<div class="dropdown-item empty-state">${t("search.noRecent")}</div>`;
     }
   },
 
@@ -144,7 +145,7 @@ export const homeSearchDropdown = {
         removeButton.type = "button";
         removeButton.setAttribute(
           "aria-label",
-          `Remove ${text} from search history`,
+          t("search.removeFromHistory", { text }),
         );
         removeButton.innerHTML = '<i class="fa-solid fa-xmark"></i>';
         removeButton.addEventListener("click", (event) => {

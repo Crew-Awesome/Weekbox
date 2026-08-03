@@ -1,3 +1,5 @@
+import { t } from "./i18n/index.js";
+
 export const existingStorageModal = {
   show({ weekboxPath }) {
     const modal = document.createElement("section");
@@ -10,15 +12,15 @@ export const existingStorageModal = {
         <div class="error-rail" aria-hidden="true"><i class="fa-solid fa-hard-drive"></i></div>
         <div class="error-main">
           <header class="error-header">
-            <div><h2 id="existing-storage-title">Use this WeekBox library?</h2></div>
-            <button type="button" class="error-close" aria-label="Cancel"><i class="fa-solid fa-xmark" aria-hidden="true"></i></button>
+            <div><h2 id="existing-storage-title">${t("storage.chooseExistingTitle")}</h2></div>
+            <button type="button" class="error-close" aria-label="${t("common.cancel")}"><i class="fa-solid fa-xmark" aria-hidden="true"></i></button>
           </header>
-          <p class="error-summary">Use the existing library as-is, or move the current library here. Replacing keeps the old library in a timestamped backup folder.</p>
+          <p class="error-summary">${t("storage.chooseExistingSummary")}</p>
           <p class="storage-recommendation-path"></p>
           <footer class="error-actions">
-            <button type="button" class="error-action existing-storage-cancel">Cancel</button>
-            <button type="button" class="error-action existing-storage-replace"><i class="fa-solid fa-right-left" aria-hidden="true"></i><span>Replace with current</span></button>
-            <button type="button" class="error-action error-settings existing-storage-use"><i class="fa-solid fa-folder-open" aria-hidden="true"></i><span>Use this library</span></button>
+            <button type="button" class="error-action existing-storage-cancel">${t("common.cancel")}</button>
+            <button type="button" class="error-action existing-storage-replace"><i class="fa-solid fa-right-left" aria-hidden="true"></i><span>${t("storage.replaceCurrent")}</span></button>
+            <button type="button" class="error-action error-settings existing-storage-use"><i class="fa-solid fa-folder-open" aria-hidden="true"></i><span>${t("storage.useExisting")}</span></button>
           </footer>
         </div>
       </div>`;

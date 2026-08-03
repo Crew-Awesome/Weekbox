@@ -6,6 +6,7 @@ import { localModImportModal } from "./localModImportModal.js";
 import { modManagerTemplates } from "./templates.js";
 import { openFilterSortModal } from "./filterSortModal.js";
 import { sidebar } from "../sidebar.js";
+import { i18n, t } from "../i18n/index.js";
 
 export const modManagerModal = {
   typeFilter: "all",
@@ -27,6 +28,7 @@ export const modManagerModal = {
       const wrapper = document.createElement("div");
       wrapper.innerHTML = modManagerTemplates.mainModal();
       document.body.appendChild(wrapper.firstElementChild);
+      i18n.apply(document.getElementById("mod-manager-modal"));
 
       document
         .getElementById("mod-manager-close-btn")
@@ -179,7 +181,7 @@ export const modManagerModal = {
       const container = document.getElementById("mod-manager-modal-body");
       if (container && !container.children.length) {
         container.innerHTML = modManagerTemplates.emptyState(
-          '<i class="fa-solid fa-spinner fa-spin" style="margin-right: 8px;"></i> Loading mods...',
+          `<i class="fa-solid fa-spinner fa-spin" style="margin-right: 8px;"></i> ${t("modManager.loadingMods")}`,
         );
       }
       await this.preload();
@@ -240,7 +242,7 @@ export const modManagerModal = {
       const container = document.getElementById("mod-manager-modal-body");
       if (container) {
         container.innerHTML = modManagerTemplates.emptyState(
-          '<i class="fa-solid fa-triangle-exclamation"></i> Error loading your mods.',
+          `<i class="fa-solid fa-triangle-exclamation"></i> ${t("modManager.errorLoadingMods")}`,
         );
       }
     }
@@ -253,12 +255,19 @@ export const modManagerModal = {
     );
     if (dependenciesToggle) {
       dependenciesToggle.setAttribute("aria-pressed", String(!isModsView));
-      const currentLabel = isModsView ? "Mods" : "Dependencies";
-      const nextLabel = isModsView ? "Dependencies" : "Mods";
+      const currentLabel = isModsView
+        ? t("common.mods")
+        : t("modManager.dependencies");
+      const nextLabel = isModsView
+        ? t("modManager.dependencies")
+        : t("common.mods");
       const label = dependenciesToggle.querySelector("span");
       label.textContent = currentLabel;
       label.dataset.hoverLabel = nextLabel;
-      dependenciesToggle.setAttribute("aria-label", `Show ${nextLabel}`);
+      dependenciesToggle.setAttribute(
+        "aria-label",
+        t("modManager.showView", { view: nextLabel }),
+      );
     }
     document
       .querySelector(".mod-manager-header-actions")
@@ -450,7 +459,7 @@ export const modManagerModal = {
         this.cachedViews.dependencies = container.firstElementChild;
       } else {
         container.innerHTML = modManagerTemplates.emptyState(
-          "No dependencies installed yet.",
+          t("modManager.noDependencies"),
         );
         this.cachedViews.dependencies = container.firstElementChild;
       }
@@ -516,7 +525,7 @@ export const modManagerModal = {
     } catch (err) {
       console.error(err);
       container.innerHTML = modManagerTemplates.emptyState(
-        '<i class="fa-solid fa-triangle-exclamation"></i> Error rendering cards.',
+        `<i class="fa-solid fa-triangle-exclamation"></i> ${t("modManager.errorRenderingCards")}`,
       );
     }
   },

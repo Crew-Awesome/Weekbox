@@ -5,6 +5,7 @@ import { modModalCarousel } from "./carousel.js";
 import { dependencyReviewModal } from "./dependencyReviewModal.js";
 import { downloadChoiceModal } from "./downloadChoiceModal.js";
 import { downloadMod } from "./downloadMod.js";
+import { t } from "../../i18n/index.js";
 import {
   ensureModal,
   hideModal,
@@ -33,7 +34,7 @@ const modModal = {
     showModal();
     resetModal();
     const titleEl = document.getElementById("modal-title");
-    if (titleEl) titleEl.textContent = "Loading info...";
+    if (titleEl) titleEl.textContent = t("modModal.loadingInfo");
     const loaderEl = document.getElementById("modal-image-loader");
     if (loaderEl) loaderEl.style.display = "block";
     let isInstalled = false;
@@ -54,7 +55,7 @@ const modModal = {
     });
     if (!data) {
       const errTitle = document.getElementById("modal-title");
-      if (errTitle) errTitle.textContent = "Error loading mod";
+      if (errTitle) errTitle.textContent = t("modModal.errorLoadingMod");
       return;
     }
     if (!hasRenderedProfile) await this.populateData(data, isInstalled);
@@ -75,7 +76,7 @@ const modModal = {
     showModal();
     resetModal();
     const titleEl = document.getElementById("modal-title");
-    if (titleEl) titleEl.textContent = "Loading info...";
+    if (titleEl) titleEl.textContent = t("modModal.loadingInfo");
     const loaderEl = document.getElementById("modal-image-loader");
     if (loaderEl) loaderEl.style.display = "block";
     const data = await gameBananaApi.getToolDetails(submission.id, {
@@ -83,7 +84,7 @@ const modModal = {
     });
     if (!data) {
       const errTitle = document.getElementById("modal-title");
-      if (errTitle) errTitle.textContent = "Error loading tool";
+      if (errTitle) errTitle.textContent = t("modModal.errorLoadingTool");
       return;
     }
     const isInstalled = await FS.isModInstalled(data.id);

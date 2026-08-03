@@ -1,13 +1,14 @@
 import { ENGINE_DETAILS } from "../../../backend/config/engines.config.js";
 import { gameBananaApi } from "../../../backend/providers/gamebanana/gamebanana.provider.js";
 import { FS } from "../../utils/index-utils.js";
+import { t } from "../i18n/index.js";
 
 function folderName(path) {
   return (
     String(path || "")
       .split(/[\\/]/)
       .filter(Boolean)
-      .pop() || "Local mod"
+      .pop() || t("import.localMod")
   );
 }
 
@@ -45,13 +46,13 @@ export const localModImportModal = {
   async chooseFolder() {
     try {
       const selectedPath = await Neutralino.os.showFolderDialog(
-        "Choose the mod folder",
+        t("import.chooseModFolder"),
       );
       if (!selectedPath || !this.overlay) return;
       this.sourcePath = selectedPath;
       this.renderFolderStep();
     } catch (error) {
-      this.setStatus("Could not open the folder picker.");
+      this.setStatus(t("import.folderPickerFailed"));
     }
   },
 
@@ -65,14 +66,14 @@ export const localModImportModal = {
     this.overlay.innerHTML = `
       <section class="local-mod-import-modal local-mod-import-modal--folder" aria-labelledby="local-mod-import-title">
         <header class="local-mod-import-header">
-          <div><h2 id="local-mod-import-title">Import local mod</h2><p>Step 1 of 2 · Choose the mod folder</p></div>
-          <button class="local-mod-import-close" type="button" aria-label="Close"><i class="fa-solid fa-xmark"></i></button>
+          <div><h2 id="local-mod-import-title">${t("import.title")}</h2><p>${t("import.stepOne")}</p></div>
+          <button class="local-mod-import-close" type="button" aria-label="${t("common.close")}"><i class="fa-solid fa-xmark"></i></button>
         </header>
         <div class="local-mod-import-body">
-          <button class="local-mod-import-folder" type="button" title="Choose mod folder"><i class="fa-solid fa-folder-open" aria-hidden="true"></i><span><strong>${this.sourcePath ? folderName(this.sourcePath) : "Choose a folder"}</strong><span>${this.sourcePath || "Click to select the folder containing the mod files."}</span></span></button>
+          <button class="local-mod-import-folder" type="button" title="${t("import.chooseModFolder")}"><i class="fa-solid fa-folder-open" aria-hidden="true"></i><span><strong>${this.sourcePath ? folderName(this.sourcePath) : t("import.chooseFolder")}</strong><span>${this.sourcePath || t("import.chooseFolderDescription")}</span></span></button>
           <p class="local-mod-import-status" role="status"></p>
         </div>
-        <footer class="local-mod-import-footer"><button class="local-mod-import-cancel" type="button">Cancel</button><button class="local-mod-import-next" type="button" ${this.sourcePath ? "" : "disabled"}>Next <i class="fa-solid fa-arrow-right"></i></button></footer>
+        <footer class="local-mod-import-footer"><button class="local-mod-import-cancel" type="button">${t("common.cancel")}</button><button class="local-mod-import-next" type="button" ${this.sourcePath ? "" : "disabled"}>${t("common.next")} <i class="fa-solid fa-arrow-right"></i></button></footer>
       </section>`;
     this.overlay.querySelector(".local-mod-import-header p")?.remove();
     this.overlay
@@ -101,19 +102,19 @@ export const localModImportModal = {
     this.overlay.innerHTML = `
       <section class="local-mod-import-modal local-mod-import-modal--details" aria-labelledby="local-mod-import-title">
         <header class="local-mod-import-header">
-          <div><h2 id="local-mod-import-title">Import local mod</h2><p>Step 2 of 2 · Add its details</p></div>
-          <button class="local-mod-import-close" type="button" aria-label="Close"><i class="fa-solid fa-xmark"></i></button>
+          <div><h2 id="local-mod-import-title">${t("import.title")}</h2><p>${t("import.stepTwo")}</p></div>
+          <button class="local-mod-import-close" type="button" aria-label="${t("common.close")}"><i class="fa-solid fa-xmark"></i></button>
         </header>
         <form class="local-mod-import-form">
           <div class="local-mod-import-body">
             <div class="local-mod-import-details-top">
-              <label class="local-mod-import-cover-picker"><input class="local-mod-import-cover-file" type="file" accept="image/*" hidden><img class="local-mod-import-cover" src="assets/icons/launcher-icon.png" alt="Mod cover"><span><i class="fa-solid fa-image"></i> Change image</span></label>
-              <input class="local-mod-import-name" aria-label="Mod name" required maxlength="120">
+              <label class="local-mod-import-cover-picker"><input class="local-mod-import-cover-file" type="file" accept="image/*" hidden><img class="local-mod-import-cover" src="assets/icons/launcher-icon.png" alt="${t("common.modCover")}"><span><i class="fa-solid fa-image"></i> ${t("import.changeImage")}</span></label>
+              <input class="local-mod-import-name" aria-label="${t("import.modName")}" required maxlength="120">
             </div>
-            <div class="local-mod-import-fields"><label>Engine<select class="local-mod-import-engine"><option value="">Unassigned</option>${engineOptions}</select></label><label>Version<select class="local-mod-import-version"><option value="">Any version</option></select></label></div>
+            <div class="local-mod-import-fields"><label>${t("common.engine")}<select class="local-mod-import-engine"><option value="">${t("import.unassigned")}</option>${engineOptions}</select></label><label>${t("common.version")}<select class="local-mod-import-version"><option value="">${t("import.anyVersion")}</option></select></label></div>
             <p class="local-mod-import-status" role="status"></p>
           </div>
-          <footer class="local-mod-import-footer"><button class="local-mod-import-back" type="button"><i class="fa-solid fa-arrow-left"></i> Back</button><button class="local-mod-import-gamebanana" type="button"><i class="fa-solid fa-cloud-arrow-down"></i> Import from GameBanana</button><button class="local-mod-import-submit" type="submit"><i class="fa-solid fa-plus"></i> Add mod</button></footer>
+          <footer class="local-mod-import-footer"><button class="local-mod-import-back" type="button"><i class="fa-solid fa-arrow-left"></i> ${t("common.back")}</button><button class="local-mod-import-gamebanana" type="button"><i class="fa-solid fa-cloud-arrow-down"></i> ${t("import.importGameBanana")}</button><button class="local-mod-import-submit" type="submit"><i class="fa-solid fa-plus"></i> ${t("import.addMod")}</button></footer>
         </form>
       </section>`;
     this.overlay.querySelector(".local-mod-import-header p")?.remove();
@@ -129,7 +130,7 @@ export const localModImportModal = {
         .filter((engine) => engine.id === engineSelect.value)
         .map((engine) => engine.version);
       versionSelect.innerHTML = [
-        '<option value="">Any version</option>',
+        `<option value="">${t("import.anyVersion")}</option>`,
         ...versions.map(
           (version) => `<option value="${version}">${version}</option>`,
         ),
@@ -189,8 +190,8 @@ export const localModImportModal = {
     overlay.className = "local-mod-gamebanana-overlay";
     overlay.innerHTML = `
       <section class="local-mod-gamebanana-modal" role="dialog" aria-modal="true" aria-labelledby="gamebanana-import-title">
-        <header><h2 id="gamebanana-import-title">Import from GameBanana</h2><button type="button" aria-label="Close"><i class="fa-solid fa-xmark"></i></button></header>
-        <form><div class="local-mod-gamebanana-body"><input aria-label="GameBanana mod ID or link" required autofocus placeholder="608074 or gamebanana.com/mods/608074"><p class="local-mod-gamebanana-status" role="status"></p></div><footer><button class="local-mod-gamebanana-cancel" type="button">Cancel</button><button type="submit">Import details</button></footer></form>
+        <header><h2 id="gamebanana-import-title">${t("import.gameBananaTitle")}</h2><button type="button" aria-label="${t("common.close")}"><i class="fa-solid fa-xmark"></i></button></header>
+        <form><div class="local-mod-gamebanana-body"><input aria-label="${t("import.gameBananaIdOrLink")}" required autofocus placeholder="${t("import.gameBananaPlaceholder")}"><p class="local-mod-gamebanana-status" role="status"></p></div><footer><button class="local-mod-gamebanana-cancel" type="button">${t("common.cancel")}</button><button type="submit">${t("import.importDetails")}</button></footer></form>
       </section>`;
     document.body.appendChild(overlay);
     requestAnimationFrame(() => overlay.classList.add("show"));
@@ -213,17 +214,16 @@ export const localModImportModal = {
       const parsed = gameBananaApi.getGameBananaSubmission(value);
       const modId = parsed?.type === "mod" ? parsed.id : Number(value);
       if (!Number.isInteger(modId) || modId <= 0) {
-        status.textContent = "Enter a GameBanana mod ID or mod link.";
+        status.textContent = t("import.invalidGameBananaInput");
         return;
       }
       submit.disabled = true;
-      status.textContent = "Loading GameBanana details…";
+      status.textContent = t("import.loadingGameBanana");
       try {
         const details = await gameBananaApi.getModDetails(modId, {
           includeRequirements: false,
         });
-        if (!details?.title)
-          throw new Error("That GameBanana mod was not found.");
+        if (!details?.title) throw new Error(t("import.gameBananaNotFound"));
         nameInput.value = details.title;
         engineSelect.value = details.engineId || "";
         updateVersions();
@@ -234,8 +234,7 @@ export const localModImportModal = {
           this.pendingCoverUrl || "assets/icons/launcher-icon.png";
         close();
       } catch (error) {
-        status.textContent =
-          error.message || "Could not import GameBanana details.";
+        status.textContent = t("import.gameBananaImportFailed");
         submit.disabled = false;
       }
     });
@@ -246,7 +245,7 @@ export const localModImportModal = {
     const submit = this.overlay?.querySelector(".local-mod-import-submit");
     if (!submit) return;
     submit.disabled = true;
-    this.setStatus("Copying mod files…");
+    this.setStatus(t("import.copyingFiles"));
     try {
       await FS.importLocalMod({
         sourcePath: this.sourcePath,
@@ -261,7 +260,7 @@ export const localModImportModal = {
       await this.onImported?.();
       this.close();
     } catch (error) {
-      this.setStatus(error.message || "Could not import that folder.");
+      this.setStatus(t("import.folderImportFailed"));
       submit.disabled = false;
     }
   },

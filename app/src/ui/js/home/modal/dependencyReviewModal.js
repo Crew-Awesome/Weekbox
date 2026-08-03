@@ -2,6 +2,7 @@ import {
   activateCheckoutDialog,
   deactivateCheckoutDialog,
 } from "./dialogFocus.js";
+import { t } from "../../i18n/index.js";
 
 function ensureModal() {
   let overlay = document.getElementById("dependency-review-modal");
@@ -14,12 +15,12 @@ function ensureModal() {
     <section class="dependency-review-modal" role="dialog" aria-modal="true" aria-labelledby="dependency-review-title">
       <div class="dependency-review-heading">
         <i class="fa-solid fa-puzzle-piece" aria-hidden="true"></i>
-        <div><h2 id="dependency-review-title">Install dependencies</h2></div>
+        <div><h2 id="dependency-review-title">${t("dependencies.installTitle")}</h2></div>
       </div>
       <div class="dependency-review-list"></div>
       <div class="dependency-review-actions">
-        <button type="button" class="dependency-review-cancel">Cancel</button>
-        <button type="button" class="dependency-review-confirm">Install selected</button>
+        <button type="button" class="dependency-review-cancel">${t("common.cancel")}</button>
+        <button type="button" class="dependency-review-confirm">${t("dependencies.installSelected")}</button>
       </div>
     </section>`;
   document.body.appendChild(overlay);
@@ -49,10 +50,10 @@ const dependencyReviewModal = {
         const open = document.createElement("button");
         open.type = "button";
         open.className = "dependency-review-open";
-        open.title = "Open on GameBanana";
+        open.title = t("home.openOnGameBanana");
         open.setAttribute(
           "aria-label",
-          `Open ${requirement.title} on GameBanana`,
+          t("dependencies.openOnGameBanana", { title: requirement.title }),
         );
         open.innerHTML =
           '<i class="fa-solid fa-arrow-up-right-from-square" aria-hidden="true"></i>';

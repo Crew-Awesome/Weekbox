@@ -1,12 +1,29 @@
 import { gridState } from "./gridState.js";
 import { gridRender } from "./gridRender.js";
 import { setupDropdown } from "../../../utils/index-utils.js";
+import { t } from "../../i18n/index.js";
+
+const labelKeys = {
+  "All engines": "home.allEngines",
+  "Base Game": "home.baseGame",
+  "Psych Engine": "home.psychEngine",
+  "Codename Engine": "home.codenameEngine",
+  Executables: "home.executables",
+  "P-Slice": "home.pSlice",
+  "FPS Plus": "home.fpsPlus",
+  "Psych Online": "home.psychOnline",
+  Ripe: "home.ripe",
+  "Discovery (NEW)": "home.discoveryNew",
+  New: "home.newest",
+  Updated: "home.updated",
+};
 
 export const filterManager = {
   filterClickHandler: null,
   filterContainer: null,
   engineDropdownCtrl: null,
   sortDropdownCtrl: null,
+  localeChangeHandler: null,
 
   setup() {
     this.remove();
@@ -22,6 +39,11 @@ export const filterManager = {
     const filters = document.getElementById("grid-filters");
     if (!filters) return;
     this.filterContainer = filters;
+    this.localeChangeHandler = () => {
+      this.syncCategoryFilter();
+      this.syncSortFilter();
+    };
+    document.addEventListener("locale-changed", this.localeChangeHandler);
 
     this.filterClickHandler = (event) => {
       const option = event.target.closest(
@@ -88,7 +110,10 @@ export const filterManager = {
       option.setAttribute("aria-selected", String(isSelected));
     });
 
-    if (selectedText) selectedText.textContent = selectedOption.dataset.label;
+    if (selectedText)
+      selectedText.textContent =
+        t(labelKeys[selectedOption.dataset.label]) ||
+        selectedOption.dataset.label;
     if (selectedIcon) {
       const icon = selectedOption.querySelector(".filter-engine-icon");
       selectedIcon.replaceChildren(
@@ -115,14 +140,21 @@ export const filterManager = {
       option.setAttribute("aria-selected", String(isSelected));
     });
 
-    if (selectedText) selectedText.textContent = selectedOption.dataset.label;
+    if (selectedText)
+      selectedText.textContent =
+        t(labelKeys[selectedOption.dataset.label]) ||
+        selectedOption.dataset.label;
   },
 
   remove() {
     this.engineDropdownCtrl?.destroy();
     this.sortDropdownCtrl?.destroy();
     this.filterContainer?.removeEventListener("click", this.filterClickHandler);
+    if (this.localeChangeHandler) {
+      document.removeEventListener("locale-changed", this.localeChangeHandler);
+    }
     this.filterContainer = null;
     this.filterClickHandler = null;
+    this.localeChangeHandler = null;
   },
 };

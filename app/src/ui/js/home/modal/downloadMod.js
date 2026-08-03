@@ -8,6 +8,7 @@ import { primeModCover } from "../../mod-manager/modImageLoader.js";
 import { downloadArchive, extractArchive } from "../../../utils/index-utils.js";
 import { toastDownloadMod } from "./toastDownloadMod.js";
 import { errorHandler } from "../../errors/errorHandler.js";
+import { t } from "../../i18n/index.js";
 
 export const downloadMod = {
   activeTasks: new Map(),
@@ -117,7 +118,7 @@ export const downloadMod = {
           document.getElementById("mod-modal")?.classList.contains("show")
         ) {
           modalBtn.disabled = false;
-          modalBtn.innerHTML = '<i class="fa-solid fa-download"></i> Download';
+          modalBtn.innerHTML = `<i class="fa-solid fa-download"></i> ${t("common.download")}`;
         }
       }, 600);
     }
@@ -161,7 +162,7 @@ export const downloadMod = {
       sourceType,
       toastThumbnail,
     );
-    this.reportInstallProgress(modId, modName, "Downloading...", 2);
+    this.reportInstallProgress(modId, modName, t("downloads.downloading"), 2);
     toastDownloadMod.show(modId, modName, () => this.cancel(modId), {
       iconHtml: toastThumbnail
         ? `<img class="toast-system-thumbnail" src="${toastThumbnail}" alt="" />`
@@ -173,7 +174,7 @@ export const downloadMod = {
       await FS.api.ensureDir(targetModFolder);
       await FS.api.write(downloadMarkerPath, "1");
       if (this.activeTasks.get(modId)?.cancelled) throw new Error("Cancelled");
-      toastDownloadMod.update(modId, 2, "Connecting...");
+      toastDownloadMod.update(modId, 2, t("downloads.connecting"));
 
       await downloadArchive({
         url: downloadUrl,
@@ -190,15 +191,24 @@ export const downloadMod = {
       if (!archiveStats.size) throw new Error("Downloaded archive is empty");
 
       if (this.activeTasks.get(modId)?.cancelled) throw new Error("Cancelled");
-      toastDownloadMod.update(modId, 98, "Extracting...");
-      this.reportInstallProgress(modId, modName, "Installing...", 98);
+      toastDownloadMod.update(modId, 98, t("downloads.extracting"));
+      this.reportInstallProgress(modId, modName, t("downloads.installing"), 98);
       const extractionStartedAt = performance.now();
       const extractionStatusTimer = setInterval(() => {
         const elapsedSeconds = Math.floor(
           (performance.now() - extractionStartedAt) / 1000,
         );
-        toastDownloadMod.update(modId, 98, `Extracting... ${elapsedSeconds}s`);
-        this.reportInstallProgress(modId, modName, "Installing...", 98);
+        toastDownloadMod.update(
+          modId,
+          98,
+          t("downloads.extractingSeconds", { seconds: elapsedSeconds }),
+        );
+        this.reportInstallProgress(
+          modId,
+          modName,
+          t("downloads.installing"),
+          98,
+        );
       }, 2000);
 
       try {
@@ -234,7 +244,7 @@ export const downloadMod = {
           ) {
             hasNestedArchive = true;
             const innerZipPath = `${targetModFolder}/${realFiles[0].entry}`;
-            toastDownloadMod.update(modId, 98, "Extracting nested archive...");
+            toastDownloadMod.update(modId, 98, t("downloads.extractingNested"));
 
             const innerTempPath = `${modsBasePath}/temp_inner_${modId}`;
             await FS.api.ensureDir(innerTempPath);
@@ -247,7 +257,7 @@ export const downloadMod = {
                 toastDownloadMod.update(
                   modId,
                   98,
-                  `Extracting nested - ${file}`,
+                  t("downloads.extractingNestedFile", { file }),
                 );
               },
             });
@@ -272,7 +282,7 @@ export const downloadMod = {
       }
 
       if (this.activeTasks.get(modId)?.cancelled) throw new Error("Cancelled");
-      toastDownloadMod.update(modId, 99, "Preparing mod folder...");
+      toastDownloadMod.update(modId, 99, t("downloads.preparingFolder"));
       const extractedEntries =
         await Neutralino.filesystem.readDirectory(targetModFolder);
       const realEntries = extractedEntries.filter(
@@ -295,7 +305,7 @@ export const downloadMod = {
       const stagingFolder = targetModFolder;
       const finalModFolder = `${modsBasePath}/${storageFolderName}`;
       if (await FS.api.exists(finalModFolder)) {
-        throw new Error("This mod is already installed");
+        throw new Error(t("downloads.alreadyInstalled"));
       }
       if (wrapper) {
         await Neutralino.filesystem.move(
@@ -315,12 +325,12 @@ export const downloadMod = {
       await FS.api.write(downloadMarkerPath, "1");
 
       if (this.activeTasks.get(modId)?.cancelled) throw new Error("Cancelled");
-      toastDownloadMod.update(modId, 99, "Deleting temp Zip...");
+      toastDownloadMod.update(modId, 99, t("downloads.deletingTemp"));
       await FS.api.remove(tempFilePath);
 
       const hasExtractedFiles = await this.hasExtractedFiles(targetModFolder);
       if (!hasExtractedFiles) {
-        throw new Error("Downloaded archive did not contain any files");
+        throw new Error(t("downloads.archiveEmpty"));
       }
       await FS.api.remove(downloadMarkerPath);
       await FS.api.write(`${targetModFolder}/mod_url.txt`, downloadUrl);
@@ -332,7 +342,12 @@ export const downloadMod = {
         ...installMetadata,
       });
 
-      this.reportInstallProgress(modId, modName, "Preparing cover...", 99);
+      this.reportInstallProgress(
+        modId,
+        modName,
+        t("downloads.preparingCover"),
+        99,
+      );
       const coverUrl = await coverUrlPromise.catch(() => null);
       const localCover = await this.cacheModCover(modId, coverUrl).catch(
         () => null,
@@ -348,7 +363,13 @@ export const downloadMod = {
         );
 
       if (this.activeTasks.get(modId)?.cancelled) throw new Error("Cancelled");
-      this.reportInstallProgress(modId, modName, "Installed", 100, localCover);
+      this.reportInstallProgress(
+        modId,
+        modName,
+        t("downloads.installed"),
+        100,
+        localCover,
+      );
       await new Promise((resolve) => setTimeout(resolve, 320));
       this.reportInstallProgress(modId, modName, "complete", 100);
       document.dispatchEvent(new CustomEvent("mods-updated"));
@@ -360,8 +381,7 @@ export const downloadMod = {
         document.getElementById("mod-modal")?.classList.contains("show")
       ) {
         modalBtn.disabled = true;
-        modalBtn.innerHTML =
-          '<i class="fa-solid fa-check"></i> Already Installed';
+        modalBtn.innerHTML = `<i class="fa-solid fa-check"></i> ${t("modModal.alreadyInstalled")}`;
       }
       this.activeTasks.delete(modId);
       return true;
@@ -369,7 +389,10 @@ export const downloadMod = {
       this.reportInstallProgress(modId, modName, "cancelled", 0);
       if (error.message !== "Cancelled") {
         await this.cleanupData(modId, tempFilePath, targetModFolder);
-        toastDownloadMod.error(modId, error.message || "Installation failed");
+        toastDownloadMod.error(
+          modId,
+          error.message || t("engines.installationFailed"),
+        );
         errorHandler.show({
           error,
           action: "Install mod",

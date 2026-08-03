@@ -1,5 +1,6 @@
 import { appSettings } from "../../../backend/core/system/settings.service.js";
 import "./wineModal.js";
+import { t } from "../i18n/index.js";
 
 const DIAGNOSTIC_REPORT_ENDPOINT =
   "https://fnfweekbox.vercel.app/api/diagnostic-report";
@@ -88,31 +89,28 @@ function describeIssue(error) {
     (lower.includes("schannel") && lower.includes("exit code 35"))
   ) {
     return {
-      title: "Windows could not verify the download certificate",
-      summary:
-        "WeekBox was blocked by Windows before the download started. Check your date and time, then try another network. A VPN, proxy, or antivirus HTTPS scanning can also block the certificate check.",
-      tag: "Windows certificate check",
+      title: t("errors.certificateTitle"),
+      summary: t("errors.certificateSummary"),
+      tag: t("errors.certificateTag"),
       reportable: false,
     };
   }
   if (lower.includes("onedrive") || lower.includes("exit code 23")) {
     return {
-      title: "Choose a local storage folder",
-      summary:
-        "WeekBox cannot safely download engines into OneDrive. Use a local folder such as C:\\WeekBoxData instead.",
-      actionLabel: "Open storage settings",
+      title: t("errors.oneDriveTitle"),
+      summary: t("errors.oneDriveSummary"),
+      actionLabel: t("errors.openStorageSettings"),
       action: "storage",
-      tag: "Storage location",
+      tag: t("errors.storageLocationTag"),
     };
   }
   if (lower.includes("access is denied") || lower.includes("permission")) {
     return {
-      title: "WeekBox cannot write to this folder",
-      summary:
-        "Check that your storage folder is local, writable, and not being used by another program.",
-      actionLabel: "Open storage settings",
+      title: t("errors.writeFolderTitle"),
+      summary: t("errors.writeFolderSummary"),
+      actionLabel: t("errors.openStorageSettings"),
       action: "storage",
-      tag: "Folder access",
+      tag: t("errors.folderAccessTag"),
     };
   }
   if (
@@ -120,20 +118,18 @@ function describeIssue(error) {
     lower.includes("filesystem error")
   ) {
     return {
-      title: "WeekBox cannot access the storage drive",
-      summary:
-        "The folder containing this engine is unavailable or cannot be read. Check that the selected drive is connected and writable.",
-      actionLabel: "Open storage settings",
+      title: t("errors.storageDriveTitle"),
+      summary: t("errors.storageDriveSummary"),
+      actionLabel: t("errors.openStorageSettings"),
       action: "storage",
-      tag: "Storage drive unavailable",
+      tag: t("errors.storageDriveTag"),
     };
   }
   if (lower.includes("exit code 22") || /\b(?:403|404)\b/.test(lower)) {
     return {
-      title: "This download is no longer available",
-      summary:
-        "The selected engine file could not be downloaded. Try another version or try again later.",
-      tag: "Download unavailable",
+      title: t("errors.downloadUnavailableTitle"),
+      summary: t("errors.downloadUnavailableSummary"),
+      tag: t("errors.downloadUnavailableTag"),
     };
   }
   if (
@@ -144,10 +140,9 @@ function describeIssue(error) {
     lower.includes("does not point to a downloadable file")
   ) {
     return {
-      title: "This download link is not usable",
-      summary:
-        "The mod page does not provide a direct file link. Choose another download or ask the mod author to replace the link.",
-      tag: "Invalid external download",
+      title: t("errors.invalidLinkTitle"),
+      summary: t("errors.invalidLinkSummary"),
+      tag: t("errors.invalidLinkTag"),
       reportable: false,
     };
   }
@@ -159,10 +154,9 @@ function describeIssue(error) {
       lower.includes("archive file"))
   ) {
     return {
-      title: "WeekBox could not unpack the download",
-      summary:
-        "The downloaded file may be incomplete or invalid. Retry the download with a local storage folder.",
-      tag: "Archive problem",
+      title: t("errors.unpackTitle"),
+      summary: t("errors.unpackSummary"),
+      tag: t("errors.archiveProblemTag"),
     };
   }
   if (
@@ -170,10 +164,9 @@ function describeIssue(error) {
     lower.includes("downloaded archive did not contain any files")
   ) {
     return {
-      title: "This download has no files to install",
-      summary:
-        "The download source provided an empty package. Nothing was installed. Try another download option or come back later; if it keeps happening, the upload needs to be fixed by its author.",
-      tag: "Empty download",
+      title: t("errors.emptyDownloadTitle"),
+      summary: t("errors.emptyDownloadSummary"),
+      tag: t("errors.emptyDownloadTag"),
       // This is a bad or empty upload, not an application failure. Do not send
       // a stack trace to diagnostics (or its webhook) for it.
       reportable: false,
@@ -181,10 +174,9 @@ function describeIssue(error) {
   }
   if (lower.includes("disk image does not contain a macos application")) {
     return {
-      title: "The macOS installer contains no app",
-      summary:
-        "WeekBox mounted the downloaded disk image but could not find an application inside it. Try another version or report this release to the engine author.",
-      tag: "Invalid macOS installer",
+      title: t("errors.invalidMacInstallerTitle"),
+      summary: t("errors.invalidMacInstallerSummary"),
+      tag: t("errors.invalidMacInstallerTag"),
     };
   }
   if (
@@ -192,24 +184,29 @@ function describeIssue(error) {
     lower.includes("cannot find zipfile directory")
   ) {
     return {
-      title: "The download was not a ZIP file",
-      summary:
-        "The download source returned something other than the expected archive, often an expired link or a server error page. WeekBox kept it from being installed. Try again later or choose another version.",
-      tag: "Invalid download file",
+      title: t("errors.notZipTitle"),
+      summary: t("errors.notZipSummary"),
+      tag: t("errors.invalidDownloadFileTag"),
     };
   }
   if (lower.includes("does not contain a runnable engine")) {
     return {
-      title: "This engine build is not supported",
-      summary: `The download finished, but WeekBox could not find a runnable ${window.NL_OS === "Darwin" ? "macOS" : window.NL_OS === "Linux" ? "Linux" : "Windows"} app file. Copy the report so we can investigate this version.`,
-      tag: "Unsupported build",
+      title: t("errors.unsupportedBuildTitle"),
+      summary: t("errors.unsupportedBuildSummary", {
+        os:
+          window.NL_OS === "Darwin"
+            ? "macOS"
+            : window.NL_OS === "Linux"
+              ? "Linux"
+              : "Windows",
+      }),
+      tag: t("errors.unsupportedBuildTag"),
     };
   }
   return {
-    title: "Something went wrong",
-    summary:
-      "WeekBox could not finish this action. Copy the error report if you need help.",
-    tag: "Unexpected error",
+    title: t("errors.unexpectedTitle"),
+    summary: t("errors.unexpectedSummary"),
+    tag: t("errors.unexpectedTag"),
   };
 }
 
@@ -296,13 +293,13 @@ export const errorHandler = {
         <div class="error-main">
           <header class="error-header">
             <div><h2 id="weekbox-error-title"></h2></div>
-            <button type="button" class="error-close" aria-label="Close error message"><i class="fa-solid fa-xmark" aria-hidden="true"></i></button>
+            <button type="button" class="error-close" aria-label="${t("errors.closeMessage")}"><i class="fa-solid fa-xmark" aria-hidden="true"></i></button>
           </header>
           <p class="error-summary"></p>
-          <details class="error-details"><summary>Technical details</summary><pre></pre></details>
+          <details class="error-details"><summary>${t("errors.technicalDetails")}</summary><pre></pre></details>
           <footer class="error-actions">
             <button type="button" class="error-action error-settings" hidden><i class="fa-solid fa-folder-open" aria-hidden="true"></i><span></span></button>
-            <button type="button" class="error-action error-copy"><i class="fa-regular fa-copy" aria-hidden="true"></i><span>Copy error report</span></button>
+            <button type="button" class="error-action error-copy"><i class="fa-regular fa-copy" aria-hidden="true"></i><span>${t("errors.copyReport")}</span></button>
           </footer>
         </div>
       </div>`;
@@ -341,10 +338,10 @@ export const errorHandler = {
     copyButton.onclick = async () => {
       const copied = await copyText(report);
       copyButton.querySelector("span").textContent = copied
-        ? "Report copied"
-        : "Copy failed";
+        ? t("errors.reportCopied")
+        : t("errors.copyFailed");
       setTimeout(() => {
-        copyButton.querySelector("span").textContent = "Copy error report";
+        copyButton.querySelector("span").textContent = t("errors.copyReport");
       }, 1600);
     };
 

@@ -5,6 +5,7 @@ import { engineUpdateToast } from "../engines/engineUpdateToast.js";
 import { applyDominantColor } from "../../utils/index-utils.js";
 import { networkStatus } from "../../../backend/core/system/network-status.service.js";
 import { sidebar } from "../sidebar.js";
+import { i18n, t } from "../i18n/index.js";
 
 export const engineManagerModal = {
   currentIndex: 0,
@@ -17,6 +18,7 @@ export const engineManagerModal = {
       const wrapper = document.createElement("div");
       wrapper.innerHTML = html;
       document.body.appendChild(wrapper.firstElementChild);
+      i18n.apply(document.getElementById("engine-manager-modal"));
       document
         .getElementById("engine-manager-close-btn")
         ?.addEventListener("click", () => this.close());
@@ -82,7 +84,7 @@ export const engineManagerModal = {
     }
     container.innerHTML = "";
     if (engines.length === 0) {
-      container.innerHTML = `<div class="empty-mods-state" style="margin: auto;">No engines installed yet.</div>`;
+      container.innerHTML = `<div class="empty-mods-state" style="margin: auto;">${t("engineManager.noEngines")}</div>`;
       return;
     }
     // 1. Agrupar los engines por ID
@@ -177,15 +179,15 @@ export const engineManagerModal = {
               (engineId === "codename" && version === "Nightly") ||
               (engineId === "psychonline" && version === "Latest")
                 ? `
-              <button class="engine-action-btn engine-update-btn" title="${updateDisabled ? "Connect to the internet to check for updates" : "Check for updates"}" aria-label="Check ${details.name} for updates" ${updateDisabled ? "disabled" : ""}>
+                <button class="engine-action-btn engine-update-btn" title="${updateDisabled ? t("engineManager.connectToCheckUpdates") : t("settings.checkForUpdates")}" aria-label="${t("engineManager.checkEngineUpdates", { name: details.name })}" ${updateDisabled ? "disabled" : ""}>
                 <i class="fa-solid fa-rotate"></i>
               </button>`
                 : ""
             }
-            <button class="engine-action-btn engine-dir-btn" title="Open Directory">
+            <button class="engine-action-btn engine-dir-btn" title="${t("engineManager.openDirectory")}" aria-label="${t("engineManager.openDirectory")}">
               <i class="fa-solid fa-folder-open"></i>
             </button>
-            <button class="engine-action-btn engine-delete-btn" title="${running ? "Close the engine before uninstalling" : "Uninstall Version"}" aria-label="${running ? "Close the engine before uninstalling" : "Uninstall Version"}" ${running ? "disabled" : ""}>
+            <button class="engine-action-btn engine-delete-btn" title="${running ? t("engineManager.closeBeforeUninstall") : t("engineManager.uninstallVersion")}" aria-label="${running ? t("engineManager.closeBeforeUninstall") : t("engineManager.uninstallVersion")}" ${running ? "disabled" : ""}>
               <i class="fa-solid fa-trash"></i>
             </button>
           </div>
@@ -203,37 +205,37 @@ export const engineManagerModal = {
             engineUpdateToast.info(
               engineId,
               details.name,
-              "Already up to date",
+              t("engineManager.alreadyUpToDate"),
             );
           } else if (result.status === "skipped") {
             engineUpdateToast.info(
               engineId,
               details.name,
-              "This update is skipped",
+              t("engineManager.updateSkipped"),
             );
           } else if (result.status === "pinned") {
             engineUpdateToast.info(
               engineId,
               details.name,
-              "This version is pinned",
+              t("engineManager.versionPinned"),
             );
           } else if (result.status === "unavailable") {
             engineUpdateToast.info(
               engineId,
               details.name,
-              "Could not check for updates",
+              t("engineManager.couldNotCheckUpdates"),
             );
           } else if (result.status === "running") {
             engineUpdateToast.info(
               engineId,
               details.name,
-              "Close the engine before updating",
+              t("engineManager.closeBeforeUpdating"),
             );
           } else if (result.status === "offline") {
             engineUpdateToast.info(
               engineId,
               details.name,
-              "Connect to the internet to check for updates",
+              t("engineManager.connectToCheckUpdates"),
             );
           }
           updateBtn.disabled = false;

@@ -11,6 +11,7 @@ import { FS } from "../utils/index-utils.js";
 import { configModal } from "./config/index.js";
 import { networkStatus } from "../../backend/core/system/network-status.service.js";
 import { appEvents } from "../../backend/core/routing/events.service.js";
+import { t } from "./i18n/index.js";
 
 export const sidebar = {
   updateEngineMarquee(button) {
@@ -19,7 +20,10 @@ export const sidebar = {
     if (!container || !label) return;
     requestAnimationFrame(() => {
       const distance = Math.max(0, label.scrollWidth - container.clientWidth);
-      label.classList.toggle("sidebar__marquee-text--overflowing", distance > 1);
+      label.classList.toggle(
+        "sidebar__marquee-text--overflowing",
+        distance > 1,
+      );
       label.style.setProperty("--marquee-distance", `${distance}px`);
       label.title = distance > 1 ? label.textContent : "";
     });
@@ -89,8 +93,11 @@ export const sidebar = {
   syncActive(viewId = router.currentViewId) {
     if (viewId === "engines") {
       const selected = getSelectedEngine();
-      const button = [...document.querySelectorAll(".sidebar__engine-btn")].find(
-        (candidate) => candidate.dataset.engineId === String(selected?.id || ""),
+      const button = [
+        ...document.querySelectorAll(".sidebar__engine-btn"),
+      ].find(
+        (candidate) =>
+          candidate.dataset.engineId === String(selected?.id || ""),
       );
       if (button) this.setActive(button);
       return;
@@ -156,11 +163,11 @@ export const sidebar = {
     networkIndicator?.classList.toggle("is-offline", !networkStatus.online);
     networkIndicator?.setAttribute(
       "aria-label",
-      networkStatus.online ? "Online" : "Offline",
+      networkStatus.online ? t("network.online") : t("network.offline"),
     );
     networkIndicator?.setAttribute(
       "title",
-      networkStatus.online ? "Online" : "Offline",
+      networkStatus.online ? t("network.online") : t("network.offline"),
     );
     await this.loadEngines();
     await this.loadStandaloneMods();
@@ -202,7 +209,7 @@ export const sidebar = {
         btn.disabled = !networkStatus.online;
         btn.title = networkStatus.online
           ? ""
-          : "Connect to the internet to browse engine releases";
+          : t("network.connectToBrowseEngines");
         btn.innerHTML = `
           <img src="${iconSrc}" class="sidebar__engine-icon" onerror="this.onerror=null; this.src='data:image/svg+xml;utf8,<svg xmlns=\\'http://www.w3.org/2000/svg\\' viewBox=\\'0 0 512 512\\'><path fill=\\'%23888\\' d=\\'M448 32H64C28.65 32 0 60.65 0 96v320c0 35.35 28.65 64 64 64h384c35.35 0 64-28.65 64-64V96C512 60.65 483.3 32 448 32zM212.7 222.7L132.7 302.7C126.4 308.9 118.2 312 110.1 312s-16.38-3.125-22.62-9.375c-12.5-12.5-12.5-32.75 0-45.25L155.3 189.3l-67.88-67.88c-12.5-12.5-12.5-32.75 0-45.25s32.75-12.5 45.25 0l102.6 102.6C247.7 191.3 247.7 210.2 212.7 222.7zM384 320c-17.67 0-32-14.33-32-32s14.33-32 32-32h32c17.67 0 32 14.33 32 32s-14.33 32-32 32H384z\\'/></svg>'">
           <div class="sidebar__marquee-container"><span class="sidebar__marquee-text">${displayName}</span></div>
@@ -213,13 +220,12 @@ export const sidebar = {
             const label = btn.querySelector(".sidebar__marquee-text");
             const container = btn.querySelector(".sidebar__marquee-container");
             const originalText = label.textContent;
-            container.innerHTML =
-              `<i class="fa-solid fa-spinner fa-spin" style="margin-right:4px;"></i> Loading...`;
+            container.innerHTML = `<i class="fa-solid fa-spinner fa-spin" style="margin-right:4px;"></i> ${t("common.loading")}`;
             const releaseVersions = await getEngineReleaseVersions(
               engineDef.versions,
             );
             if (releaseVersions.length === 0)
-              throw new Error("No compatible releases available");
+              throw new Error(t("network.noCompatibleReleases"));
             const processedVersionsData = releaseVersions.map((item) => {
               const sampleLink =
                 item.win ||
@@ -254,7 +260,7 @@ export const sidebar = {
             console.error(err);
             btn.querySelector(".sidebar__marquee-container").innerHTML =
               `<span class="sidebar__marquee-text">${displayName}</span>`;
-            alert(`Could not load version information for ${displayName}`);
+            alert(t("network.loadVersionFailed", { name: displayName }));
           }
         });
         wrapper.appendChild(btn);
@@ -262,7 +268,7 @@ export const sidebar = {
       }
     } catch (error) {
       console.error(error);
-      wrapper.innerHTML = `<p style="color:red; padding:8px; font-size:12px;">Failed to load engine router</p>`;
+      wrapper.innerHTML = `<p style="color:red; padding:8px; font-size:12px;">${t("network.engineRouterFailed")}</p>`;
     }
   },
   async loadStandaloneMods() {
@@ -290,7 +296,7 @@ export const sidebar = {
     container.appendChild(divider);
     const sectionTitle = document.createElement("p");
     sectionTitle.className = "sidebar__title";
-    sectionTitle.textContent = "Standalone Mods";
+    sectionTitle.textContent = t("sidebar.standaloneMods");
     container.appendChild(sectionTitle);
     const wrapper = document.createElement("div");
     wrapper.className = "sidebar__wrapper";
@@ -299,7 +305,8 @@ export const sidebar = {
     sidebarNav.appendChild(container);
     for (const mod of standaloneMods) {
       const btn = document.createElement("button");
-      btn.className = "sidebar__btn sidebar__engine-btn sidebar__standalone-btn";
+      btn.className =
+        "sidebar__btn sidebar__engine-btn sidebar__standalone-btn";
       const iconSrc =
         mod.icoPath ||
         "data:image/svg+xml;utf8,<svg xmlns=\\'http://www.w3.org/2000/svg\\' viewBox=\\'0 0 512 512\\'><path fill=\\'%23888\\' d=\\'M448 32H64C28.65 32 0 60.65 0 96v320c0 35.35 28.65 64 64 64h384c35.35 0 64-28.65 64-64V96C512 60.65 483.3 32 448 32zM212.7 222.7L132.7 302.7C126.4 308.9 118.2 312 110.1 312s-16.38-3.125-22.62-9.375c-12.5-12.5-12.5-32.75 0-45.25L155.3 189.3l-67.88-67.88c-12.5-12.5-12.5-32.75 0-45.25s32.75-12.5 45.25 0l102.6 102.6C247.7 191.3 247.7 210.2 212.7 222.7zM384 320c-17.67 0-32-14.33-32-32s14.33-32 32-32h32c17.67 0 32 14.33 32 32s-14.33 32-32 32H384z\\'/></svg>";
@@ -312,7 +319,7 @@ export const sidebar = {
           const process = FS.activeEngineProcesses.get(`standalone:${mod.id}`);
           if (process) {
             btn.querySelector(".sidebar__marquee-container").innerHTML =
-              `<i class="fa-solid fa-spinner fa-spin" style="margin-right:4px;"></i> Closing...`;
+              `<i class="fa-solid fa-spinner fa-spin" style="margin-right:4px;"></i> ${t("engines.closing")}`;
             Neutralino.os
               .updateSpawnedProcess(process.id, "exit")
               .catch(() => {});
@@ -320,11 +327,13 @@ export const sidebar = {
           return;
         }
         this.setActive(btn);
-        const originalText = btn.querySelector(".sidebar__marquee-text").textContent;
+        const originalText = btn.querySelector(
+          ".sidebar__marquee-text",
+        ).textContent;
         btn.querySelector(".sidebar__marquee-container").innerHTML = `
           <div style="display: flex; align-items: center; gap: 8px;">
-            <i class="fa-solid fa-stop" style="color: #ff4a4a;" title="Stop"></i>
-            <span>Launched</span>
+            <i class="fa-solid fa-stop" style="color: #ff4a4a;" title="${t("sidebar.stop")}"></i>
+            <span>${t("engines.launched")}</span>
           </div>
         `;
         btn.classList.add("running");

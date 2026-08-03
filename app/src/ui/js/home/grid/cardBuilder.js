@@ -1,6 +1,17 @@
 import { modModal } from "../modal/index.js";
 import { ENGINE_DETAILS } from "../../../../backend/config/engines.config.js";
 import { applyDominantColor } from "../../../utils/index-utils.js";
+import { t } from "../../i18n/index.js";
+
+const engineLabelKeys = {
+  vslice: "home.baseGame",
+  psych: "home.psychEngine",
+  pslice: "home.pSlice",
+  fpsplus: "home.fpsPlus",
+  psychonline: "home.psychOnline",
+  codename: "home.codenameEngine",
+  executable: "home.executables",
+};
 
 export function createCard(mod, index) {
   const isPeo = mod.source === "peo";
@@ -32,10 +43,10 @@ export function createCard(mod, index) {
   const engineIndicator = document.createElement("span");
   engineIndicator.className = "grid-engine-indicator";
   const engineName = engine
-    ? engine.name
+    ? t(engineLabelKeys[mod.engineId]) || engine.name
     : mod.gameId === 8694
-      ? "Base Game"
-      : "Unassigned";
+      ? t("home.baseGame")
+      : t("import.unassigned");
   engineIndicator.dataset.label = engineName;
   engineIndicator.setAttribute("role", "img");
   engineIndicator.setAttribute("aria-label", engineName);
@@ -80,7 +91,7 @@ export function createCard(mod, index) {
 
   const author = document.createElement("p");
   author.className = "mod-author";
-  author.textContent = `by ${mod.author}`;
+  author.textContent = t("home.byAuthor", { author: mod.author });
   info.appendChild(title);
   if (!isPeo) info.appendChild(author);
 

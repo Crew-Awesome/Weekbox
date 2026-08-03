@@ -10,6 +10,7 @@ import { existingStorageModal } from "../existingStorageModal.js";
 import { networkStatus } from "../../../backend/core/system/network-status.service.js";
 import { syncWindowsProtocolRegistration } from "../../../backend/core/system/windows-protocol.util.js";
 import { sidebar } from "../sidebar.js";
+import { i18n, t } from "../i18n/index.js";
 
 const appUpdates = new AppUpdateController(appUpdater);
 const storageMoveFeedback = new StorageMoveFeedback(toastSystem);
@@ -52,6 +53,7 @@ export const configModal = {
       const wrapper = document.createElement("div");
       wrapper.innerHTML = html;
       document.body.appendChild(wrapper.firstElementChild);
+      i18n.apply(document.getElementById("config-modal"));
 
       if (window.NL_OS !== "Windows") {
         document
@@ -86,8 +88,8 @@ export const configModal = {
       ?.addEventListener("click", () => {
         Neutralino.os
           .showMessageBox(
-            "To Oyachi",
-            "Sorry for not using your logo and art. I really loved it, and I do love you a lot. I always will.\n\n- Malloy",
+            t("credits.oyachiTitle"),
+            t("credits.oyachiMessage"),
             "OK",
             "INFO",
           )
@@ -105,6 +107,13 @@ export const configModal = {
     document
       .getElementById("cleanup-incomplete-downloads")
       ?.addEventListener("click", () => this.cleanupIncompleteDownloads());
+
+    document
+      .getElementById("setting-language")
+      ?.addEventListener("change", (event) => {
+        i18n.setLocale(event.target.value);
+        i18n.apply(document.getElementById("config-modal"));
+      });
 
     document
       .getElementById("storage-location-path")
@@ -144,8 +153,8 @@ export const configModal = {
 
         const titleElement = document.getElementById("config-section-title");
         if (titleElement) {
-          titleElement.textContent =
-            targetId.charAt(0).toUpperCase() + targetId.slice(1);
+          titleElement.dataset.i18n = `settings.${targetId}`;
+          titleElement.textContent = t(`settings.${targetId}`);
         }
       });
     });
@@ -191,6 +200,8 @@ export const configModal = {
         });
       }
     });
+    const language = document.getElementById("setting-language");
+    if (language) language.value = i18n.locale;
   },
 
   loadSettingsToUI() {
@@ -237,16 +248,16 @@ export const configModal = {
     const button = document.getElementById("cleanup-incomplete-downloads");
     if (!button) return;
     button.disabled = true;
-    button.textContent = "Cleaning…";
+    button.textContent = t("settings.cleaning");
     try {
       await FS.cleanupIncompleteDownloads();
-      button.textContent = "Cleaned up";
+      button.textContent = t("settings.cleanedUp");
     } catch {
-      button.textContent = "Cleanup failed";
+      button.textContent = t("settings.cleanupFailed");
     }
     setTimeout(() => {
       button.disabled = false;
-      button.textContent = "Clean up";
+      button.textContent = t("common.cleanUp");
     }, 1800);
   },
 
@@ -277,9 +288,9 @@ export const configModal = {
     button.disabled = !networkStatus.online;
     button.title = networkStatus.online
       ? ""
-      : "Connect to the internet to check for WeekBox updates";
+      : t("settings.connectToCheckWeekBoxUpdates");
     if (!networkStatus.online && status) {
-      status.textContent = "Connect to the internet to check for updates.";
+      status.textContent = t("settings.connectToCheckUpdates");
     }
   },
 
@@ -312,9 +323,9 @@ export const configModal = {
   async chooseStorageLocation() {
     if (FS.hasRunningProcesses() || this.hasActiveDownloads()) {
       await Neutralino.os.showMessageBox(
-        "Cannot move WeekBox files",
-        "Close all running engines and wait for downloads to finish before changing the storage location.",
-        "OK",
+        t("storage.cannotMoveTitle"),
+        t("storage.cannotMoveMessage"),
+        t("common.ok"),
         "WARNING",
       );
       return;
@@ -323,7 +334,7 @@ export const configModal = {
     const button = document.getElementById("choose-storage-location");
     try {
       const selectedPath = await Neutralino.os.showFolderDialog(
-        "Choose WeekBox's parent folder (not a folder named WeekBox)",
+        t("storage.chooseParentDialog"),
         { defaultPath: FS.basePath },
       );
       if (!selectedPath) return;
@@ -332,9 +343,9 @@ export const configModal = {
         (await isSameStoragePath(selectedPath, FS.weekboxPath))
       ) {
         await Neutralino.os.showMessageBox(
-          "Already using this location",
-          "WeekBox is already using this storage location, so there is nothing to move.",
-          "OK",
+          t("storage.alreadyUsingTitle"),
+          t("storage.alreadyUsingMessage"),
+          t("common.ok"),
           "INFO",
         );
         return;
@@ -347,8 +358,7 @@ export const configModal = {
         });
         if (choice === "replace") {
           button.disabled = true;
-          button.innerHTML =
-            '<i class="fa-solid fa-folder-open"></i> Moving files…';
+          button.innerHTML = `<i class="fa-solid fa-folder-open"></i> ${t("storage.movingFiles")}`;
           this.showStorageMoveToast();
           await FS.moveStorageTo(
             existingStorage.basePath,
@@ -362,40 +372,38 @@ export const configModal = {
         if (choice !== "use") return;
 
         button.disabled = true;
-        button.innerHTML =
-          '<i class="fa-solid fa-folder-open"></i> Switching library…';
+        button.innerHTML = `<i class="fa-solid fa-folder-open"></i> ${t("storage.switchingLibrary")}`;
         await FS.useExistingStorage(existingStorage.basePath);
         location.reload();
         return;
       }
       if (/(?:^|[\\/])weekbox[\\/]*$/i.test(selectedPath)) {
         await Neutralino.os.showMessageBox(
-          "Choose the parent folder",
-          "This WeekBox folder is incomplete. Select a parent folder instead (for example, AppData\\Local, not AppData\\Local\\WeekBox).",
-          "OK",
+          t("storage.chooseParentTitle"),
+          t("storage.chooseParentMessage"),
+          t("common.ok"),
           "WARNING",
         );
         return;
       }
       const newWeekboxPath = `${selectedPath.replace(/[\\/]+$/, "")}/WeekBox`;
       const choice = await Neutralino.os.showMessageBox(
-        "Move WeekBox files?",
-        `WeekBox will move all mods, engines, and data to:\n${await formatStoragePath(newWeekboxPath)}\n\nThis can take a while for large libraries.`,
+        t("storage.moveFilesTitle"),
+        t("storage.moveFilesMessage", {
+          path: await formatStoragePath(newWeekboxPath),
+        }),
         "YES_NO",
         "QUESTION",
       );
       if (choice !== "YES") return;
 
       if (FS.hasRunningProcesses() || this.hasActiveDownloads()) {
-        throw new Error(
-          "Close all running engines and wait for downloads to finish before moving WeekBox files.",
-        );
+        throw new Error(t("storage.cannotMoveMessage"));
       }
 
       button.disabled = true;
-      button.textContent = "Moving files…";
-      button.innerHTML =
-        '<i class="fa-solid fa-folder-open"></i> Choose folder';
+      button.textContent = t("storage.movingFiles");
+      button.innerHTML = `<i class="fa-solid fa-folder-open"></i> ${t("common.chooseFolder")}`;
       this.showStorageMoveToast();
       await FS.moveStorageTo(selectedPath, (progress) =>
         this.updateStorageMoveToast(progress),
@@ -404,20 +412,17 @@ export const configModal = {
       this.completeStorageMoveToast();
     } catch (error) {
       console.error("Could not move WeekBox storage", error);
-      this.failStorageMoveToast(
-        error.message || "Could not move WeekBox files.",
-      );
+      this.failStorageMoveToast(t("storage.moveFailedMessage"));
       await Neutralino.os.showMessageBox(
-        "Could not move WeekBox files",
-        error.message || "An unexpected error occurred while moving files.",
-        "OK",
+        t("storage.moveFailedTitle"),
+        t("storage.unexpectedMoveError"),
+        t("common.ok"),
         "ERROR",
       );
     } finally {
       if (button) {
         button.disabled = false;
-        button.innerHTML =
-          '<i class="fa-solid fa-folder-open"></i> Choose folder';
+        button.innerHTML = `<i class="fa-solid fa-folder-open"></i> ${t("common.chooseFolder")}`;
       }
     }
   },
@@ -425,9 +430,9 @@ export const configModal = {
   async useDefaultStorageLocation() {
     if (FS.hasRunningProcesses() || this.hasActiveDownloads()) {
       await Neutralino.os.showMessageBox(
-        "Cannot move WeekBox files",
-        "Close all running engines and wait for downloads to finish before changing the storage location.",
-        "OK",
+        t("storage.cannotMoveTitle"),
+        t("storage.cannotMoveMessage"),
+        t("common.ok"),
         "WARNING",
       );
       return;
@@ -439,8 +444,10 @@ export const configModal = {
       const defaultPath = await FS.getDefaultStorageParentPath();
       const defaultWeekboxPath = `${defaultPath.replace(/[\\/]+$/, "")}/WeekBox`;
       const choice = await Neutralino.os.showMessageBox(
-        "Use the default location?",
-        `WeekBox will move all mods, engines, and data to:\n${await formatStoragePath(defaultWeekboxPath)}\n\nThis can take a while for large libraries.`,
+        t("storage.useDefaultTitle"),
+        t("storage.moveFilesMessage", {
+          path: await formatStoragePath(defaultWeekboxPath),
+        }),
         "YES_NO",
         "QUESTION",
       );
@@ -448,8 +455,8 @@ export const configModal = {
 
       button.disabled = true;
       chooseButton.disabled = true;
-      button.textContent = "Moving filesâ€¦";
-      button.textContent = "Use default";
+      button.textContent = t("storage.movingFiles");
+      button.textContent = t("common.useDefault");
       this.showStorageMoveToast();
       await FS.moveStorageTo(defaultPath, (progress) =>
         this.updateStorageMoveToast(progress),
@@ -459,19 +466,17 @@ export const configModal = {
       this.completeStorageMoveToast();
     } catch (error) {
       console.error("Could not use the default WeekBox storage", error);
-      this.failStorageMoveToast(
-        error.message || "Could not move WeekBox files.",
-      );
+      this.failStorageMoveToast(t("storage.moveFailedMessage"));
       await Neutralino.os.showMessageBox(
-        "Could not move WeekBox files",
-        error.message || "An unexpected error occurred while moving files.",
-        "OK",
+        t("storage.moveFailedTitle"),
+        t("storage.unexpectedMoveError"),
+        t("common.ok"),
         "ERROR",
       );
     } finally {
       if (button) {
         button.disabled = false;
-        button.textContent = "Use default";
+        button.textContent = t("common.useDefault");
       }
       if (chooseButton) chooseButton.disabled = false;
     }
@@ -500,7 +505,9 @@ export const configModal = {
         background: false,
       });
       if (result.exitCode !== 0) {
-        throw new Error(result.stdErr || "Windows Registry command failed");
+        throw new Error(
+          result.stdErr || t("settings.startupRegistrationFailed"),
+        );
       }
       return true;
     } catch (error) {

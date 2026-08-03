@@ -5,6 +5,7 @@ import { homeSearch } from "./search.js";
 import { homeSearchDropdown } from "./searchDropdown.js";
 import { homeScroll } from "./homeScroll.js";
 import { networkStatus } from "../../../backend/core/system/network-status.service.js";
+import { t } from "../i18n/index.js";
 
 export const homeView = {
   hasVisited: false,
@@ -43,8 +44,8 @@ export const homeView = {
     panel.setAttribute("role", "status");
     panel.innerHTML = `
       <i class="fa-solid fa-wifi" aria-hidden="true"></i>
-      <h2>You are offline</h2>
-      <p>Discover, search, downloads, and engine release checks need an internet connection. Your local mods and engines are still available from their managers.</p>
+      <h2>${t("network.youAreOffline")}</h2>
+      <p>${t("network.offlineDetails")}</p>
     `;
     container.appendChild(panel);
   },

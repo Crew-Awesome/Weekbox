@@ -1,5 +1,6 @@
 import { appUpdater } from "../../../backend/core/updates/app-updater.service.js";
 import { appSettings } from "../../../backend/core/system/settings.service.js";
+import { t } from "../i18n/index.js";
 
 const appUpdateModal = {
   ensureModal() {
@@ -14,14 +15,14 @@ const appUpdateModal = {
         <div class="dependency-review-heading">
           <i class="fa-solid fa-arrow-up-from-bracket" aria-hidden="true"></i>
           <div>
-            <h2 id="app-update-title">WeekBox Update Available</h2>
-            <p id="app-update-version">A new version is ready to install.</p>
+            <h2 id="app-update-title">${t("updates.availableTitle")}</h2>
+            <p id="app-update-version">${t("updates.availableDescription")}</p>
           </div>
         </div>
         <div id="app-update-notes" class="app-update-notes"></div>
         <div class="dependency-review-actions">
-          <button type="button" class="btn secondary app-update-later">Later</button>
-          <button type="button" class="btn primary app-update-now">Update Now</button>
+          <button type="button" class="btn secondary app-update-later">${t("updates.later")}</button>
+          <button type="button" class="btn primary app-update-now">${t("updates.now")}</button>
         </div>
       </section>
     `;
@@ -37,7 +38,9 @@ const appUpdateModal = {
     const laterBtn = overlay.querySelector(".app-update-later");
 
     if (versionLabel && updateInfo?.version) {
-      versionLabel.textContent = `Version ${updateInfo.version} is available.`;
+      versionLabel.textContent = t("updates.versionAvailable", {
+        version: updateInfo.version,
+      });
     }
     if (notesContainer && updateInfo?.releaseNotes) {
       notesContainer.innerHTML = updateInfo.releaseNotes;
@@ -53,14 +56,13 @@ const appUpdateModal = {
       laterBtn.onclick = () => finish(false);
       updateBtn.onclick = async () => {
         updateBtn.disabled = true;
-        updateBtn.innerHTML =
-          '<i class="fa-solid fa-spinner fa-spin"></i> Updating...';
+        updateBtn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> ${t("updates.updating")}`;
         try {
           await appUpdater.installUpdate(updateInfo);
         } catch (error) {
           console.error("Failed to install app update:", error);
           updateBtn.disabled = false;
-          updateBtn.textContent = "Retry Update";
+          updateBtn.textContent = t("updates.retry");
         }
         finish(true);
       };

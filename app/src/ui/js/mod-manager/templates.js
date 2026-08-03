@@ -1,3 +1,5 @@
+import { t } from "../i18n/index.js";
+
 function renderTemplate(id, data = {}) {
   const tpl = document.getElementById(id);
   if (!tpl) return "";
@@ -36,6 +38,7 @@ const modManagerTemplates = {
       engineOptionsHtml,
       selectedVersion,
       versionOptionsHtml,
+      unassignedLabel: t("import.unassigned"),
     }),
   engineOption: (id, name, icon, isSelected) =>
     renderTemplate("tpl-engineOption", {
@@ -80,10 +83,10 @@ const modManagerTemplates = {
   emptyState: (message) => renderTemplate("tpl-emptyState", { message }),
   addLocalModCard: () =>
     renderTemplate("tpl-addLocalModCard") ||
-    `<button class="mod-manager-add-local-card" type="button" aria-label="Add local mod">
+    `<button class="mod-manager-add-local-card" type="button" aria-label="${t("modManager.addLocal")}">
       <span class="mod-manager-add-local-content">
         <i class="fa-solid fa-plus" aria-hidden="true"></i>
-        <span>Add local mod</span>
+        <span>${t("modManager.addLocal")}</span>
       </span>
     </button>`,
   deleteSpinner: () => renderTemplate("tpl-deleteSpinner"),

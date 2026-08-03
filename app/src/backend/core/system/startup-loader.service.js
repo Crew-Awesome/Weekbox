@@ -1,4 +1,5 @@
 var screen, bar, label, title, startupLoader;
+import { t } from "../../../ui/js/i18n/index.js";
 
 screen = document.getElementById("startup-loading-screen");
 bar = document.getElementById("startup-loading-progress");
@@ -19,13 +20,13 @@ startupLoader = {
     }
   },
   async complete() {
-    this.setPhase("Ready", 100);
+    this.setPhase(t("startup.ready"), 100);
     await new Promise((resolve) => requestAnimationFrame(resolve));
     screen?.classList.add("startup-loading--complete");
     window.setTimeout(() => screen?.remove(), 240);
   },
-  fail(message = "WeekBox could not start") {
-    if (title) title.textContent = "Startup failed";
+  fail(message = t("startup.couldNotStart")) {
+    if (title) title.textContent = t("startup.failed");
     this.setPhase(message, 100);
     screen?.classList.remove("startup-loading--complete");
     screen?.classList.add("startup-loading--failed");

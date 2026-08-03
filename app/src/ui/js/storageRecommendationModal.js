@@ -1,3 +1,5 @@
+import { t } from "./i18n/index.js";
+
 export const storageRecommendationModal = {
   ensure() {
     let modal = document.getElementById("storage-recommendation-modal");
@@ -14,15 +16,15 @@ export const storageRecommendationModal = {
         <div class="error-rail" aria-hidden="true"><i class="fa-solid fa-hard-drive"></i></div>
         <div class="error-main">
           <header class="error-header">
-            <div><h2 id="storage-recommendation-title">Move WeekBox to a safer location?</h2></div>
-            <button type="button" class="error-close" aria-label="Remind me later"><i class="fa-solid fa-xmark" aria-hidden="true"></i></button>
+            <div><h2 id="storage-recommendation-title">${t("storage.moveRecommendationTitle")}</h2></div>
+            <button type="button" class="error-close" aria-label="${t("storage.remindLater")}"><i class="fa-solid fa-xmark" aria-hidden="true"></i></button>
           </header>
           <p class="error-summary"></p>
           <p class="storage-recommendation-path"></p>
           <footer class="error-actions">
-            <button type="button" class="error-action storage-dismiss">Don't remind me</button>
-            <button type="button" class="error-action storage-later">Not now</button>
-            <button type="button" class="error-action error-settings storage-move"><i class="fa-solid fa-arrow-right" aria-hidden="true"></i><span>Move now</span></button>
+            <button type="button" class="error-action storage-dismiss">${t("storage.dontRemind")}</button>
+            <button type="button" class="error-action storage-later">${t("storage.notNow")}</button>
+            <button type="button" class="error-action error-settings storage-move"><i class="fa-solid fa-arrow-right" aria-hidden="true"></i><span>${t("storage.moveNow")}</span></button>
           </footer>
         </div>
       </div>`;
@@ -32,10 +34,14 @@ export const storageRecommendationModal = {
 
   show({ currentPath, defaultPath }) {
     const modal = this.ensure();
-    modal.querySelector(".error-summary").textContent =
-      `WeekBox is currently stored in ${currentPath}. Cloud-synced and Documents folders can cause file-locking or sync problems with engines and mods.`;
-    modal.querySelector(".storage-recommendation-path").textContent =
-      `Recommended: ${defaultPath}/WeekBox`;
+    modal.querySelector(".error-summary").textContent = t(
+      "storage.recommendationSummary",
+      { path: currentPath },
+    );
+    modal.querySelector(".storage-recommendation-path").textContent = t(
+      "storage.recommendedPath",
+      { path: `${defaultPath}/WeekBox` },
+    );
     modal.style.display = "flex";
     requestAnimationFrame(() => modal.classList.add("show"));
 

@@ -5,6 +5,7 @@ import {
   describeExtractedFiles,
   flattenEngineDirectory,
 } from "./engineInstallFiles.js";
+import { t } from "../i18n/index.js";
 
 export const downloadEngine = {
   activeTasks: new Map(),
@@ -124,7 +125,7 @@ export const downloadEngine = {
       tempFilePath,
       engineDir,
       phase: "downloading",
-      progressInfo: { status: "Preparing environment...", progress: 0 },
+      progressInfo: { status: t("engines.preparingEnvironment"), progress: 0 },
       onStateChange,
     };
     this.activeTasks.set(taskKey, task);
@@ -138,14 +139,14 @@ export const downloadEngine = {
 
     try {
       this.notifyState(task, "downloading");
-      updateProgress("Preparing environment...", 0);
+      updateProgress(t("engines.preparingEnvironment"), 0);
       await FS.api.ensureDir(enginesBasePath);
       await FS.api.ensureDir(`${enginesBasePath}/${engineId}`);
       await FS.api.ensureDir(engineDir);
 
       await FS.api.write(`${engineDir}/.downloading`, "1");
       this.throwIfCancelled(task);
-      updateProgress("Connecting...", 2);
+      updateProgress(t("downloads.connecting"), 2);
       await downloadArchive({
         url: downloadUrl,
         outPath: tempFilePath,
@@ -161,21 +162,22 @@ export const downloadEngine = {
 
       task.phase = "extracting";
       this.notifyState(task, "installing");
-      updateProgress("Download complete. Extracting archive...", 98);
+      updateProgress(t("engines.downloadCompleteExtracting"), 98);
       await extractArchive({
         archivePath: tempFilePath,
         destinationPath: engineDir,
         getTask: () => this.activeTasks.get(taskKey),
-        onEntry: (file) => updateProgress(`Extracting: ${file}`, 98),
+        onEntry: (file) =>
+          updateProgress(t("engines.extractingFile", { file }), 98),
         extractNested: true,
       });
       this.throwIfCancelled(task);
 
-      updateProgress("Extracted. Organizing engine files...", 99);
+      updateProgress(t("engines.organizingFiles"), 99);
       await this.flattenEngineDir(engineDir, () => task.cancelled);
       this.throwIfCancelled(task);
 
-      updateProgress("Checking for a runnable engine...", 99);
+      updateProgress(t("engines.checkingRunnable"), 99);
       const executablePath = await FS.findExecutable(engineDir);
       if (!executablePath) {
         const searchError = FS.getExecutableSearchError();
@@ -200,12 +202,12 @@ export const downloadEngine = {
       }
       this.throwIfCancelled(task);
 
-      updateProgress("Cleaning temporary files...", 99);
+      updateProgress(t("engines.cleaningTemporaryFiles"), 99);
       await FS.api.remove(tempFilePath).catch(() => {});
       await FS.api.remove(`${engineDir}/.downloading`).catch(() => {});
       this.throwIfCancelled(task);
 
-      updateProgress("Setting up installed mods...", 99);
+      updateProgress(t("engines.settingUpMods"), 99);
       const injectionResults = await FS.injectModsIntoEngine(engineId, version);
       this.throwIfCancelled(task);
       injectionResults
@@ -214,7 +216,7 @@ export const downloadEngine = {
           console.warn("Could not inject installed mod:", result.reason),
         );
 
-      updateProgress("Completed", 100);
+      updateProgress(t("engines.completed"), 100);
       this.notifyState(task, "completed");
       this.activeTasks.delete(taskKey);
 

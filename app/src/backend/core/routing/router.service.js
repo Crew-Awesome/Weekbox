@@ -1,6 +1,7 @@
 import { emitViewChange } from "./events.service.js";
 
 import { sidebar } from "../../../ui/js/index.js";
+import { i18n } from "../../../ui/js/i18n/index.js";
 var router;
 
 router = {
@@ -16,6 +17,7 @@ router = {
       templates.forEach((t) => document.body.appendChild(t));
       const sidebarTpl = document.getElementById("tpl-sidebar");
       if (sidebarTpl) this.sidebarContainer.innerHTML = sidebarTpl.innerHTML;
+      i18n.apply(this.sidebarContainer);
     } catch (e) {
       console.error("Failed to load templates", e);
     }
@@ -28,6 +30,7 @@ router = {
       const tpl = document.getElementById("tpl-" + viewId);
       if (tpl) {
         this.mainContent.innerHTML = tpl.innerHTML;
+        i18n.apply(this.mainContent);
         this.currentViewId = viewId;
         emitViewChange(viewId);
       } else {

@@ -2,6 +2,7 @@ import { gameBananaApi } from "../../../../backend/providers/gamebanana/gamebana
 import { gridState } from "./gridState.js";
 import { createCard } from "./cardBuilder.js";
 import { networkStatus } from "../../../../backend/core/system/network-status.service.js";
+import { t } from "../../i18n/index.js";
 
 export const gridRender = {
   async renderGrid(isInitial = false) {
@@ -57,11 +58,11 @@ export const gridRender = {
 
       if (mods.length === 0 && isInitial) {
         if (result.sourceErrors?.length) {
-          grid.textContent = "Discovery is temporarily unavailable.";
+          grid.textContent = t("home.discoveryUnavailable");
           grid.classList.add("grid-error");
           gridState.status = "error";
         } else {
-          grid.textContent = "No mods found.";
+          grid.textContent = t("home.noModsFound");
           grid.classList.add("grid-empty");
         }
         return;
@@ -91,7 +92,7 @@ export const gridRender = {
       if (error?.kind === "aborted") return false;
       networkStatus.setOnline(false);
       if (isInitial && renderVersion === gridState.renderVersion) {
-        grid.textContent = "Failed to load mods.";
+        grid.textContent = t("home.failedToLoadMods");
         grid.classList.add("grid-error");
       }
       return false;
@@ -111,8 +112,7 @@ export const gridRender = {
     loader.className = "chunk-loader";
     loader.setAttribute("role", "status");
     loader.setAttribute("aria-live", "polite");
-    loader.innerHTML =
-      '<i class="fa-solid fa-spinner fa-spin" aria-hidden="true"></i><span>Loading more mods...</span>';
+    loader.innerHTML = `<i class="fa-solid fa-spinner fa-spin" aria-hidden="true"></i><span>${t("home.loadingMoreMods")}</span>`;
     grid.appendChild(loader);
   },
 

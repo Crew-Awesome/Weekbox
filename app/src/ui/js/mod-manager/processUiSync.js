@@ -1,4 +1,6 @@
 const ownerListeners = new WeakMap();
+import { t } from "../i18n/index.js";
+import { i18n } from "../i18n/index.js";
 
 export function replaceProcessExitListener(
   owner,
@@ -36,11 +38,12 @@ export function syncLaunchButton(button, state, templates) {
   button.classList.toggle("is-switchable", canSwitchMod);
   button.setAttribute(
     "aria-label",
-    `${isRunning ? "Close" : canSwitchMod ? "Switch Mod" : button.dataset.launchLabel} ${button.dataset.modName}`,
+    `${isRunning ? t("common.close") : canSwitchMod ? t("modManager.switchMod") : button.dataset.launchLabel} ${button.dataset.modName}`,
   );
   button.innerHTML = isRunning
     ? templates.launchButtonRunning()
     : canSwitchMod
       ? templates.launchButtonSwitch()
       : templates.launchButtonDefault(button.dataset.launchLabel);
+  i18n.apply(button);
 }

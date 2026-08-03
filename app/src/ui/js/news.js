@@ -4,6 +4,7 @@ import {
   deactivateCheckoutDialog,
 } from "./home/modal/dialogFocus.js";
 import { sanitizeReleaseHtml } from "./engines/releaseNotes.js";
+import { t } from "./i18n/index.js";
 
 const NEWS_SITE_URL = "https://fnfweekbox.vercel.app";
 const NEWS_FEED_URL = `${NEWS_SITE_URL}/api/news`;
@@ -27,7 +28,9 @@ function escapeHtml(value) {
 function safeNewsUrl(value) {
   try {
     const url = new URL(String(value || "").trim(), NEWS_SITE_URL);
-    return url.protocol === "https:" || url.protocol === "http:" ? url.href : "";
+    return url.protocol === "https:" || url.protocol === "http:"
+      ? url.href
+      : "";
   } catch {
     return "";
   }
@@ -78,20 +81,32 @@ function renderNewsInline(value) {
   html = html.replace(/`([^`\n]+)`/g, (match, content) =>
     stash(`<code>${content}</code>`),
   );
-  html = html.replace(/\*\*(.+?)\*\*|__(.+?)__/g, (match, strong, underscored) =>
-    stash(`<strong>${strong || underscored}</strong>`),
+  html = html.replace(
+    /\*\*(.+?)\*\*|__(.+?)__/g,
+    (match, strong, underscored) =>
+      stash(`<strong>${strong || underscored}</strong>`),
   );
-  html = html.replace(/~~(.+?)~~/g, (match, content) => stash(`<del>${content}</del>`));
-  html = html.replace(/\*([^*\n]+)\*|_([^_\n]+)_/g, (match, italic, underscored) =>
-    stash(`<em>${italic || underscored}</em>`),
+  html = html.replace(/~~(.+?)~~/g, (match, content) =>
+    stash(`<del>${content}</del>`),
   );
-  return html.replace(/\0(\d+)\0/g, (match, index) => tokens[Number(index)] || "");
+  html = html.replace(
+    /\*([^*\n]+)\*|_([^_\n]+)_/g,
+    (match, italic, underscored) => stash(`<em>${italic || underscored}</em>`),
+  );
+  return html.replace(
+    /\0(\d+)\0/g,
+    (match, index) => tokens[Number(index)] || "",
+  );
 }
 
 function renderNewsMarkdown(value) {
   const source = String(value || "").replace(/\r\n?/g, "\n");
   if (!source.trim()) return "";
-  if (/<(?:p|h[1-6]|ul|ol|li|strong|em|a|blockquote|img|br|hr|pre|code)\b/i.test(source)) {
+  if (
+    /<(?:p|h[1-6]|ul|ol|li|strong|em|a|blockquote|img|br|hr|pre|code)\b/i.test(
+      source,
+    )
+  ) {
     return sanitizeReleaseHtml(source);
   }
   const lines = source.split("\n");
@@ -111,7 +126,9 @@ function renderNewsMarkdown(value) {
   for (const line of lines) {
     if (codeLines) {
       if (/^\s*```/.test(line)) {
-        output.push(`<pre><code>${escapeHtml(codeLines.join("\n"))}</code></pre>`);
+        output.push(
+          `<pre><code>${escapeHtml(codeLines.join("\n"))}</code></pre>`,
+        );
         codeLines = null;
       } else {
         codeLines.push(line);
@@ -161,13 +178,16 @@ function renderNewsMarkdown(value) {
     if (quote) {
       flushParagraph();
       closeList();
-      output.push(`<blockquote><p>${renderNewsInline(quote[1])}</p></blockquote>`);
+      output.push(
+        `<blockquote><p>${renderNewsInline(quote[1])}</p></blockquote>`,
+      );
       continue;
     }
     closeList();
     paragraph.push(line.trim());
   }
-  if (codeLines) output.push(`<pre><code>${escapeHtml(codeLines.join("\n"))}</code></pre>`);
+  if (codeLines)
+    output.push(`<pre><code>${escapeHtml(codeLines.join("\n"))}</code></pre>`);
   flushParagraph();
   closeList();
   return sanitizeReleaseHtml(output.join(""));
@@ -209,7 +229,9 @@ export const newsView = {
       modal = wrapper.firstElementChild;
       if (!modal) return null;
       document.body.appendChild(modal);
-      modal.querySelector("#news-detail-close")?.addEventListener("click", () => this.closeModal());
+      modal
+        .querySelector("#news-detail-close")
+        ?.addEventListener("click", () => this.closeModal());
       modal.addEventListener("click", (event) => {
         if (event.target === modal) this.closeModal();
       });
@@ -228,14 +250,22 @@ export const newsView = {
     const excerpt = modal.querySelector("#news-detail-excerpt");
     const body = modal.querySelector("#news-detail-body");
     const link = modal.querySelector("#news-detail-link");
-    title.textContent = String(post.title || "News");
+    title.textContent = String(post.title || t("nav.news"));
     meta.replaceChildren();
     const date = newsDate(post.publishedAt);
-    if (date) meta.appendChild(Object.assign(document.createElement("span"), { textContent: date }));
-    if (post.tags?.length) meta.appendChild(Object.assign(document.createElement("span"), { textContent: String(post.tags[0]) }));
+    if (date)
+      meta.appendChild(
+        Object.assign(document.createElement("span"), { textContent: date }),
+      );
+    if (post.tags?.length)
+      meta.appendChild(
+        Object.assign(document.createElement("span"), {
+          textContent: String(post.tags[0]),
+        }),
+      );
     excerpt.textContent = String(post.excerpt || "");
     excerpt.hidden = !post.excerpt;
-    body.textContent = post.excerpt || "Loading article…";
+    body.textContent = post.excerpt || t("news.loadingArticle");
     link.href = newsLink(post);
     link.onclick = (event) => {
       event.preventDefault();
@@ -263,7 +293,8 @@ export const newsView = {
         `${NEWS_SITE_URL}/api/news/${encodeURIComponent(String(post.slug))}`,
         { headers: { Accept: "application/json" }, signal: controller.signal },
       );
-      if (!response.ok) throw new Error(`News post returned ${response.status}`);
+      if (!response.ok)
+        throw new Error(`News post returned ${response.status}`);
       const payload = await response.json();
       if (!controller.signal.aborted && typeof payload?.body === "string") {
         body.innerHTML = renderNewsMarkdown(payload.body || post.excerpt || "");
@@ -271,7 +302,7 @@ export const newsView = {
     } catch (error) {
       if (!controller.signal.aborted) {
         body.innerHTML = renderNewsMarkdown(
-          post.excerpt || "This article could not be loaded.",
+          post.excerpt || t("news.articleUnavailable"),
         );
       }
     } finally {
@@ -318,11 +349,13 @@ export const newsView = {
   render(payload) {
     if (!this.grid) return;
     this.grid.replaceChildren();
-    const posts = payload.posts.filter((post) => post && post.slug && post.title);
+    const posts = payload.posts.filter(
+      (post) => post && post.slug && post.title,
+    );
     if (!posts.length) {
       const empty = document.createElement("p");
       empty.className = "news-view__empty";
-      empty.textContent = "No news yet.";
+      empty.textContent = t("news.noNews");
       this.grid.appendChild(empty);
       return;
     }
@@ -330,7 +363,10 @@ export const newsView = {
       const card = document.createElement("button");
       card.type = "button";
       card.className = "news-view__card";
-      card.setAttribute("aria-label", `Open ${post.title}`);
+      card.setAttribute(
+        "aria-label",
+        t("news.openArticle", { title: post.title }),
+      );
       card.addEventListener("click", () => void this.open(post));
       const coverUrl = safeNewsUrl(post.coverUrl);
       if (coverUrl) {
@@ -347,7 +383,10 @@ export const newsView = {
       const meta = document.createElement("div");
       meta.className = "news-view__card-meta";
       const date = newsDate(post.publishedAt);
-      if (date) meta.appendChild(Object.assign(document.createElement("span"), { textContent: date }));
+      if (date)
+        meta.appendChild(
+          Object.assign(document.createElement("span"), { textContent: date }),
+        );
       if (post.tags?.[0]) {
         meta.appendChild(
           Object.assign(document.createElement("span"), {
@@ -380,7 +419,7 @@ export const newsView = {
     if (!this.grid || !this.status) return;
     const cached = this.readCache();
     if (cached) this.render(cached);
-    else this.setStatus("Loading news…");
+    else this.setStatus(t("news.loading"));
     this.request?.abort();
     const controller = new AbortController();
     this.request = controller;
@@ -391,7 +430,8 @@ export const newsView = {
         headers: { Accept: "application/json" },
         signal: controller.signal,
       });
-      if (!response.ok) throw new Error(`News feed returned ${response.status}`);
+      if (!response.ok)
+        throw new Error(`News feed returned ${response.status}`);
       const payload = await response.json();
       if (payload?.schemaVersion !== 1 || !Array.isArray(payload.posts)) {
         throw new Error("Unsupported news feed");
@@ -401,13 +441,10 @@ export const newsView = {
       this.setStatus("");
     } catch (error) {
       if (cached) {
-        this.setStatus("Could not refresh news. Showing saved articles.", "error");
+        this.setStatus(t("news.refreshFailedCached"), "error");
       } else {
         this.render({ posts: [] });
-        this.setStatus(
-          "News is unavailable right now. Check your connection and try again.",
-          "error",
-        );
+        this.setStatus(t("news.unavailable"), "error");
       }
       console.warn("WeekBox news feed unavailable", error);
     } finally {

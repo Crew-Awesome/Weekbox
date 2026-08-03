@@ -1,3 +1,5 @@
+import { t } from "../i18n/index.js";
+
 const TOAST_ID = "weekbox-storage-move";
 
 export class StorageMoveFeedback {
@@ -14,8 +16,8 @@ export class StorageMoveFeedback {
       document.body.appendChild(lock);
     }
     this.toastSystem.show(TOAST_ID, {
-      title: "Moving WeekBox files",
-      message: "Preparing files…",
+      title: t("storage.movingFiles"),
+      message: t("storage.preparingFiles"),
       mediaHtml: '<i class="fa-solid fa-folder-open" aria-hidden="true"></i>',
       showPercent: true,
     });
@@ -23,7 +25,10 @@ export class StorageMoveFeedback {
 
   update({ progress, copiedFiles, totalFiles }) {
     this.toastSystem.update(TOAST_ID, {
-      message: `Moving files (${copiedFiles} of ${totalFiles})`,
+      message: t("storage.movingFilesProgress", {
+        copied: copiedFiles,
+        total: totalFiles,
+      }),
       progress,
     });
   }
@@ -34,7 +39,7 @@ export class StorageMoveFeedback {
       badgeHtml: '<i class="fa-solid fa-check" aria-hidden="true"></i>',
     });
     this.toastSystem.update(TOAST_ID, {
-      message: "WeekBox files moved",
+      message: t("storage.filesMoved"),
       progress: 100,
     });
     setTimeout(() => this.toastSystem.hide(TOAST_ID), 3600);

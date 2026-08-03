@@ -8,6 +8,7 @@ import {
   settingsContent,
 } from "./modSettingsTemplates.js";
 import { networkStatus } from "../../../backend/core/system/network-status.service.js";
+import { t } from "../i18n/index.js";
 
 export const modSettingsModal = {
   isOpening: false,
@@ -42,8 +43,7 @@ export const modSettingsModal = {
     }
     if (requestId !== this.openRequestId) return false;
 
-    const controlsDisabled =
-      readOnly || mod.engineLocked ? "disabled" : "";
+    const controlsDisabled = readOnly || mod.engineLocked ? "disabled" : "";
     const isDependency = mod.kind === "dependency";
     overlay.innerHTML = settingsContent({
       mod,
@@ -51,8 +51,8 @@ export const modSettingsModal = {
       controlsDisabled,
       canReset: Boolean(getGameBananaSource(mod)) && networkStatus.online,
       resetTitle: networkStatus.online
-        ? "Defaults are only available for GameBanana mods"
-        : "Connect to the internet to reset GameBanana mod information",
+        ? t("modSettings.defaultsOnlyGameBanana")
+        : t("modSettings.connectToReset"),
       canMoveToDependencies: !isExecutable && mod.kind !== "dependency",
       isDependency,
       isExecutable,
@@ -103,7 +103,7 @@ export const modSettingsModal = {
         try {
           await Neutralino.os.open(modPath);
         } catch {
-          status.textContent = "Could not open the mod folder.";
+          status.textContent = t("modSettings.openFolderFailed");
         }
       });
     overlay
@@ -111,7 +111,7 @@ export const modSettingsModal = {
       .addEventListener("click", async () => {
         const source = getGameBananaSource(mod);
         if (!source) return;
-        status.textContent = "Loading defaults…";
+        status.textContent = t("modSettings.loadingDefaults");
         try {
           const details =
             source.type === "tool"
@@ -120,7 +120,7 @@ export const modSettingsModal = {
                   includeRequirements: false,
                 });
           if (!details?.title)
-            throw new Error("GameBanana defaults are unavailable");
+            throw new Error(t("modSettings.defaultsUnavailable"));
           nameInput.value = details.title;
           pendingCoverUrl =
             source.type === "tool"
@@ -128,9 +128,9 @@ export const modSettingsModal = {
               : details.images?.[0] || null;
           pendingCoverDataUrl = null;
           cover.src = pendingCoverUrl || "assets/icons/launcher-icon.png";
-          status.textContent = "Defaults loaded. Save to apply them.";
+          status.textContent = t("modSettings.defaultsLoaded");
         } catch (error) {
-          status.textContent = error.message || "Could not load defaults.";
+          status.textContent = t("modSettings.defaultsFailed");
         }
       });
     overlay
@@ -138,15 +138,15 @@ export const modSettingsModal = {
       ?.addEventListener("click", async (event) => {
         const moveButton = event.currentTarget;
         moveButton.disabled = true;
-        status.textContent = "Moving to mods…";
+        status.textContent = t("modSettings.movingToMods");
         try {
           await FS.assertModChangeAllowed(mod.id);
           const movedMod = await FS.moveDependencyToMods(mod.id);
-          if (!movedMod) throw new Error("Dependency could not be moved");
+          if (!movedMod) throw new Error(t("modSettings.dependencyMoveFailed"));
           await onSaved?.();
           close();
         } catch (error) {
-          status.textContent = error.message || "Could not move dependency.";
+          status.textContent = t("modSettings.couldNotMoveDependency");
           moveButton.disabled = false;
         }
       });
@@ -155,7 +155,7 @@ export const modSettingsModal = {
       ?.addEventListener("click", async (event) => {
         const moveButton = event.currentTarget;
         moveButton.disabled = true;
-        status.textContent = "Moving to dependencies…";
+        status.textContent = t("modSettings.movingToDependencies");
         try {
           await FS.assertModChangeAllowed(mod.id);
           if (!mod.engineLocked) {
@@ -167,11 +167,11 @@ export const modSettingsModal = {
             await FS.setModEngineCompatibility(mod.id, engineId, version);
           }
           const movedMod = await FS.moveModToDependencies(mod.id);
-          if (!movedMod) throw new Error("Mod could not be moved");
+          if (!movedMod) throw new Error(t("modSettings.modMoveFailed"));
           await onSaved?.();
           close();
         } catch (error) {
-          status.textContent = error.message || "Could not move mod.";
+          status.textContent = t("modSettings.couldNotMoveMod");
           moveButton.disabled = false;
         }
       });
@@ -181,7 +181,7 @@ export const modSettingsModal = {
       if (!name) return;
       const saveButton = overlay.querySelector(".mod-settings-save");
       saveButton.disabled = true;
-      status.textContent = "Saving…";
+      status.textContent = t("modSettings.saving");
       try {
         await FS.assertModChangeAllowed(mod.id);
         if (!mod.engineLocked) {
@@ -196,12 +196,12 @@ export const modSettingsModal = {
         if (pendingCoverDataUrl) appearance.coverDataUrl = pendingCoverDataUrl;
         else if (pendingCoverUrl) appearance.coverUrl = pendingCoverUrl;
         if (!(await FS.updateModAppearance(mod.id, appearance))) {
-          throw new Error("Mod settings could not be saved");
+          throw new Error(t("modSettings.saveFailed"));
         }
         await onSaved?.();
         close();
       } catch (error) {
-        status.textContent = error.message || "Could not save mod settings.";
+        status.textContent = t("modSettings.couldNotSave");
         saveButton.disabled = false;
       }
     });

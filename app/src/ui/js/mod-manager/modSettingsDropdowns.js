@@ -1,6 +1,7 @@
 import { ENGINE_DETAILS } from "../../../backend/config/engines.config.js";
 import { setupDropdown } from "../../utils/index-utils.js";
 import { escapeHtml } from "./modSettingsTemplates.js";
+import { t } from "../i18n/index.js";
 
 export function setupModSettingsDropdowns(
   overlay,
@@ -25,7 +26,9 @@ export function setupModSettingsDropdowns(
     ".mod-settings-version-selected",
   );
 
-  const defaultLabel = isExecutable ? "Executable" : "Unassigned";
+  const defaultLabel = isExecutable
+    ? t("home.executables")
+    : t("import.unassigned");
   const defaultIconHtml = isExecutable
     ? '<img src="assets/icons/exe.png" alt="">'
     : '<i class="fa-solid fa-question-circle" aria-hidden="true"></i>';
@@ -62,11 +65,9 @@ export function setupModSettingsDropdowns(
       versionTrigger.disabled = true;
       versionTrigger.setAttribute("disabled", "true");
       versionSelect.value = "";
-      versionSelect.innerHTML =
-        '<option value="">Requires installed version</option>';
-      versionMenu.innerHTML =
-        '<button type="button" data-version="" class="selected" disabled role="option" aria-selected="true"><i class="fa-solid fa-triangle-exclamation" aria-hidden="true"></i>Requires installed version</button>';
-      versionSelected.textContent = "Requires installed version";
+      versionSelect.innerHTML = `<option value="">${t("modSettings.requiresInstalledVersion")}</option>`;
+      versionMenu.innerHTML = `<button type="button" data-version="" class="selected" disabled role="option" aria-selected="true"><i class="fa-solid fa-triangle-exclamation" aria-hidden="true"></i>${t("modSettings.requiresInstalledVersion")}</button>`;
+      versionSelected.textContent = t("modSettings.requiresInstalledVersion");
       return;
     }
 
@@ -79,20 +80,21 @@ export function setupModSettingsDropdowns(
         : "";
 
     versionSelect.innerHTML = [
-      '<option value="">Any version</option>',
+      `<option value="">${t("import.anyVersion")}</option>`,
       ...versions.map(
         (version) =>
           `<option value="${escapeHtml(version)}" ${version === validSelectedVersion ? "selected" : ""}>${escapeHtml(version)}</option>`,
       ),
     ].join("");
     versionMenu.innerHTML = [
-      `<button type="button" data-version="" class="${!validSelectedVersion ? "selected" : ""}" role="option" aria-selected="${!validSelectedVersion}"><i class="fa-solid fa-code-branch" aria-hidden="true"></i>Any version</button>`,
+      `<button type="button" data-version="" class="${!validSelectedVersion ? "selected" : ""}" role="option" aria-selected="${!validSelectedVersion}"><i class="fa-solid fa-code-branch" aria-hidden="true"></i>${t("import.anyVersion")}</button>`,
       ...versions.map(
         (version) =>
           `<button type="button" data-version="${escapeHtml(version)}" class="${version === validSelectedVersion ? "selected" : ""}" role="option" aria-selected="${version === validSelectedVersion}"><i class="fa-solid fa-code-branch" aria-hidden="true"></i>${escapeHtml(version)}</button>`,
       ),
     ].join("");
-    versionSelected.textContent = validSelectedVersion || "Any version";
+    versionSelected.textContent =
+      validSelectedVersion || t("import.anyVersion");
     versionSelect.value = validSelectedVersion;
   };
 

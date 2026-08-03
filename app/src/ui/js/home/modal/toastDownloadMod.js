@@ -1,4 +1,5 @@
 import { toastSystem } from "../../toasts/toastSystem.js";
+import { localizeProgressStatus, t } from "../../i18n/index.js";
 
 export const toastDownloadMod = {
   toasts: toastSystem.toasts,
@@ -6,7 +7,7 @@ export const toastDownloadMod = {
   show(downloadId, name, onCancel, { iconHtml } = {}) {
     toastSystem.show(downloadId, {
       title: name,
-      message: "Connecting",
+      message: t("downloads.connecting"),
       mediaHtml:
         iconHtml ||
         '<i class="fa-solid fa-puzzle-piece" aria-hidden="true"></i>',
@@ -17,7 +18,7 @@ export const toastDownloadMod = {
 
   update(downloadId, percent, status) {
     toastSystem.update(downloadId, {
-      message: status,
+      message: localizeProgressStatus(status),
       progress: percent,
     });
   },
@@ -26,7 +27,10 @@ export const toastDownloadMod = {
     toastSystem.setState(downloadId, "complete", {
       badgeHtml: '<i class="fa-solid fa-check"></i>',
     });
-    toastSystem.update(downloadId, { message: "Installed", progress: 100 });
+    toastSystem.update(downloadId, {
+      message: t("downloads.installed"),
+      progress: 100,
+    });
     setTimeout(() => this.hide(downloadId), 4000);
   },
 
@@ -35,7 +39,10 @@ export const toastDownloadMod = {
       badgeHtml: '<i class="fa-solid fa-xmark"></i>',
       showProgress: true,
     });
-    toastSystem.update(downloadId, { message: "Cancelling…", progress: 100 });
+    toastSystem.update(downloadId, {
+      message: t("downloads.cancelling"),
+      progress: 100,
+    });
   },
 
   error(downloadId, message) {
@@ -44,7 +51,7 @@ export const toastDownloadMod = {
       showProgress: true,
     });
     toastSystem.update(downloadId, {
-      message: `Error: ${message}`,
+      message: t("downloads.error", { message }),
       progress: 100,
     });
     setTimeout(() => this.hide(downloadId), 5000);

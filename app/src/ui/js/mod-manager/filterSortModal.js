@@ -1,9 +1,10 @@
 import { setupDropdown } from "../../utils/index-utils.js";
 import { ENGINE_DETAILS } from "../../../backend/config/engines.config.js";
+import { t } from "../i18n/index.js";
 
 const BASE_TYPE_OPTIONS = [
-  ["all", "All mods", "fa-layer-group"],
-  ["executable", "Executables", "fa-file-code", "assets/icons/exe.png"],
+  ["all", "modManager.allMods", "fa-layer-group"],
+  ["executable", "home.executables", "fa-file-code", "assets/icons/exe.png"],
 ];
 
 function getTypeOptions(engineIds) {
@@ -17,18 +18,20 @@ function getTypeOptions(engineIds) {
         ? `assets/icons/${ENGINE_DETAILS[engineId].icon}`
         : null,
     ]),
-    ["unassigned", "Unassigned", "fa-circle-question"],
+    ["unassigned", "import.unassigned", "fa-circle-question"],
   ];
 }
 
-const SORT_OPTIONS = [
-  ["added-desc", "Last added", "fa-clock"],
-  ["added-asc", "First added", "fa-clock-rotate-left"],
-  ["name-asc", "Name: A-Z", "fa-arrow-down-a-z"],
-  ["name-desc", "Name: Z-A", "fa-arrow-down-z-a"],
-  ["engine-asc", "Engine: A-Z", "fa-microchip"],
-  ["engine-desc", "Engine: Z-A", "fa-microchip"],
-];
+function getSortOptions() {
+  return [
+    ["added-desc", "modManager.lastAdded", "fa-clock"],
+    ["added-asc", "modManager.firstAdded", "fa-clock-rotate-left"],
+    ["name-asc", "modManager.nameAsc", "fa-arrow-down-a-z"],
+    ["name-desc", "modManager.nameDesc", "fa-arrow-down-z-a"],
+    ["engine-asc", "modManager.engineAsc", "fa-microchip"],
+    ["engine-desc", "modManager.engineDesc", "fa-microchip"],
+  ];
+}
 
 function createIcon(iconClass, iconPath) {
   if (iconPath) {
@@ -41,6 +44,10 @@ function createIcon(iconClass, iconPath) {
   icon.className = `fa-solid ${iconClass || "fa-filter"}`;
   icon.setAttribute("aria-hidden", "true");
   return icon;
+}
+
+function optionText(value) {
+  return value.includes(".") ? t(value) : value;
 }
 
 function createDropdown({ label, options, selected, onSelect }) {
@@ -67,7 +74,7 @@ function createDropdown({ label, options, selected, onSelect }) {
       ([optionValue]) => optionValue === value,
     );
     trigger.querySelector(".mod-manager-dropdown-value").textContent =
-      selectedOption?.[1] || "";
+      selectedOption ? optionText(selectedOption[1]) : "";
     trigger
       .querySelector("[data-selected-icon]")
       .replaceChildren(createIcon(selectedOption?.[2], selectedOption?.[3]));
@@ -88,7 +95,7 @@ function createDropdown({ label, options, selected, onSelect }) {
       createIcon(iconClass, iconPath),
       document.createElement("span"),
     );
-    option.querySelector("span").textContent = optionLabel;
+    option.querySelector("span").textContent = optionText(optionLabel);
     option.addEventListener("click", () => {
       sync(value);
       onSelect(value);
@@ -115,27 +122,27 @@ export function openFilterSortModal({ filter, sort, engineIds = [], onApply }) {
   panel.className = "mod-manager-filter-panel";
   panel.innerHTML = `
     <div class="mod-manager-filter-heading">
-      <h3 id="mod-manager-filter-title">Filter and sort</h3>
-      <button type="button" class="mod-manager-filter-dismiss" aria-label="Close filter and sort"><i class="fa-solid fa-xmark" aria-hidden="true"></i></button>
+      <h3 id="mod-manager-filter-title">${t("modManager.filterSort")}</h3>
+      <button type="button" class="mod-manager-filter-dismiss" aria-label="${t("modManager.closeFilterSort")}"><i class="fa-solid fa-xmark" aria-hidden="true"></i></button>
     </div>
     <div class="mod-manager-filter-dropdowns"></div>
     <div class="mod-manager-filter-footer">
-      <button type="button" class="mod-manager-filter-reset">Reset</button>
-      <button type="submit" class="mod-manager-filter-apply">Apply</button>
+      <button type="button" class="mod-manager-filter-reset">${t("common.reset")}</button>
+      <button type="submit" class="mod-manager-filter-apply">${t("common.apply")}</button>
     </div>`;
 
   let selectedFilter = filter;
   let selectedSort = sort;
   const controls = panel.querySelector(".mod-manager-filter-dropdowns");
   const typeDropdown = createDropdown({
-    label: "Type",
+    label: t("modManager.type"),
     options: getTypeOptions(engineIds),
     selected: filter,
     onSelect: (value) => (selectedFilter = value),
   });
   const sortDropdown = createDropdown({
-    label: "Sort by",
-    options: SORT_OPTIONS,
+    label: t("modManager.sortBy"),
+    options: getSortOptions(),
     selected: sort,
     onSelect: (value) => (selectedSort = value),
   });

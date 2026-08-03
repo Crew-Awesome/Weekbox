@@ -1,4 +1,5 @@
 const TOAST_STATES = ["complete", "error", "offer", "missing-engine"];
+import { t } from "../i18n/index.js";
 
 export const toastSystem = {
   toasts: new Map(),
@@ -38,7 +39,7 @@ export const toastSystem = {
       <div class="engine-update-toast-body">
         <div class="toast-system-heading">
           <strong>${title}</strong>${showPercent ? '<em class="toast-system-percent">0%</em>' : ""}
-          ${onCancel ? '<span class="toast-system-controls"><button type="button" class="toast-system-control toast-system-cancel" aria-label="Cancel download" title="Cancel download"><i class="fa-solid fa-xmark" aria-hidden="true"></i></button><button type="button" class="toast-system-control toast-system-collapse" aria-label="Show only progress" title="Show only progress"><i class="fa-solid fa-compress" aria-hidden="true"></i></button></span>' : ""}
+          ${onCancel ? `<span class="toast-system-controls"><button type="button" class="toast-system-control toast-system-cancel" aria-label="${t("toast.cancelDownload")}" title="${t("toast.cancelDownload")}"><i class="fa-solid fa-xmark" aria-hidden="true"></i></button><button type="button" class="toast-system-control toast-system-collapse" aria-label="${t("toast.showOnlyProgress")}" title="${t("toast.showOnlyProgress")}"><i class="fa-solid fa-compress" aria-hidden="true"></i></button></span>` : ""}
         </div>
         <span>${message}</span>
         <div class="engine-update-toast-track" ${showProgress ? "" : "hidden"}><i></i></div>
@@ -69,7 +70,7 @@ export const toastSystem = {
         event.stopPropagation();
         const compact = toast.classList.toggle("compact");
         if (compact) {
-          toast.setAttribute("aria-label", "Show full download toast");
+          toast.setAttribute("aria-label", t("toast.showFullDownload"));
           toast.tabIndex = 0;
         } else {
           toast.removeAttribute("aria-label");

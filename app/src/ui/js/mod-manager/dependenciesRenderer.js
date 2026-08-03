@@ -5,6 +5,7 @@ import { modSettingsModal } from "./modSettingsModal.js";
 import { getGameBananaSource } from "./modSettingsTemplates.js";
 import { modManagerTemplates } from "./templates.js";
 import { replaceProcessExitListener } from "./processUiSync.js";
+import { t } from "../i18n/index.js";
 
 function getDependencyUsers(dependency, allMods) {
   return allMods.filter(
@@ -16,13 +17,20 @@ function getDependencyUsers(dependency, allMods) {
 }
 
 function getDependencyDetails(dependency, users) {
-  if (users.length) return `Used by ${users.map((mod) => mod.name).join(", ")}`;
+  if (users.length) {
+    return t("dependencies.usedBy", {
+      names: users.map((mod) => mod.name).join(", "),
+    });
+  }
   if (dependency.engineId) {
-    return `For ${dependency.engineId}${dependency.engineVersion ? ` ${dependency.engineVersion}` : ""}`;
+    return t("dependencies.forEngine", {
+      engine: dependency.engineId,
+      version: dependency.engineVersion ? ` ${dependency.engineVersion}` : "",
+    });
   }
   return dependency.sourceType === "tool"
-    ? "GameBanana tool dependency"
-    : "GameBanana mod dependency";
+    ? t("dependencies.gameBananaTool")
+    : t("dependencies.gameBananaMod");
 }
 
 function loadDependencyCover(dependency, image) {
@@ -81,7 +89,7 @@ export const dependenciesRenderer = {
     dependencies.forEach((dependency) => {
       const users = getDependencyUsers(dependency, allMods);
       const locked = FS.isModLockedForChanges(dependency, allMods);
-      const lockedMessage = "Close the engine before changing this dependency";
+      const lockedMessage = t("dependencies.closeEngineBeforeChange");
       const row = document.createElement("article");
       row.className = "mod-manager-dependency";
       const cover = document.createElement("img");
@@ -112,7 +120,8 @@ export const dependenciesRenderer = {
       actions.className = "mod-manager-dependency-actions";
       const directory = document.createElement("button");
       directory.type = "button";
-      directory.title = "Open Dependency Folder";
+      directory.title = t("dependencies.openFolder");
+      directory.setAttribute("aria-label", directory.title);
       directory.innerHTML = modManagerTemplates.openDirectoryIcon();
       directory.addEventListener("click", () =>
         Neutralino.os
@@ -124,8 +133,9 @@ export const dependenciesRenderer = {
       const settings = document.createElement("button");
       settings.type = "button";
       settings.title = locked
-        ? "Open dependency settings (read-only while running)"
-        : "Dependency Settings";
+        ? t("dependencies.settingsReadonly")
+        : t("dependencies.settings");
+      settings.setAttribute("aria-label", settings.title);
       settings.innerHTML =
         '<i class="fa-solid fa-gear" aria-hidden="true"></i>';
       settings.addEventListener("click", async () => {
@@ -149,10 +159,11 @@ export const dependenciesRenderer = {
       const remove = document.createElement("button");
       remove.type = "button";
       remove.title = users.length
-        ? "Remove dependent mods first"
+        ? t("dependencies.removeDependents")
         : locked
           ? lockedMessage
-          : "Delete Dependency";
+          : t("dependencies.delete");
+      remove.setAttribute("aria-label", remove.title);
       remove.disabled = users.length > 0 || locked;
       remove.innerHTML = modManagerTemplates.deleteIcon();
       remove.addEventListener("click", async () => {
@@ -169,14 +180,16 @@ export const dependenciesRenderer = {
         const isLocked = FS.isModLockedForChanges(dependency, allMods);
         settings.disabled = false;
         settings.title = isLocked
-          ? "Open dependency settings (read-only while running)"
-          : "Dependency Settings";
+          ? t("dependencies.settingsReadonly")
+          : t("dependencies.settings");
         remove.disabled = users.length > 0 || isLocked;
         remove.title = users.length
-          ? "Remove dependent mods first"
+          ? t("dependencies.removeDependents")
           : isLocked
             ? lockedMessage
-            : "Delete Dependency";
+            : t("dependencies.delete");
+        settings.setAttribute("aria-label", settings.title);
+        remove.setAttribute("aria-label", remove.title);
       });
       actions.append(directory, settings, remove);
       row.append(cover, copy, actions);

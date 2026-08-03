@@ -6,6 +6,7 @@ import {
   deactivateCheckoutDialog,
 } from "./dialogFocus.js";
 import { modModal } from "./index.js";
+import { t } from "../../i18n/index.js";
 
 async function ensureModal(onClose) {
   if (!document.getElementById("mod-modal")) {
@@ -74,8 +75,8 @@ function resetModal() {
     if (gbImg) {
       gbImg.src = "https://images.gamebanana.com/static/img/banana.png";
     }
-    gameBananaLink.setAttribute("aria-label", "Open this mod on GameBanana");
-    gameBananaLink.title = "Open this mod on GameBanana";
+    gameBananaLink.setAttribute("aria-label", t("home.openOnGameBanana"));
+    gameBananaLink.title = t("home.openOnGameBanana");
   }
   const authorEl = document.getElementById("modal-author");
   if (authorEl) authorEl.hidden = false;
@@ -91,7 +92,7 @@ function resetModal() {
   const button = document.getElementById("modal-download-btn");
   if (button) {
     button.disabled = true;
-    button.innerHTML = '<i class="fa-solid fa-download"></i> Download';
+    button.innerHTML = `<i class="fa-solid fa-download"></i> ${t("common.download")}`;
     button.onclick = null;
   }
   const engineBadge = document.getElementById("modal-engine-badge");
@@ -141,12 +142,12 @@ function enhanceDescriptionGameBananaLinks(description) {
     const reference = document.createElement("button");
     reference.type = "button";
     reference.className = "modal-description-submission-link";
-    reference.title = "Loading GameBanana details";
+    reference.title = t("modModal.loadingGameBananaDetails");
     const icon = document.createElement("img");
     icon.src = "https://images.gamebanana.com/static/img/banana.png";
     icon.alt = "";
     const label = document.createElement("span");
-    label.textContent = "Loading GameBanana details…";
+    label.textContent = t("modModal.loadingGameBananaDetails");
     reference.append(icon, label);
     reference.addEventListener("click", async () => {
       try {
@@ -177,13 +178,14 @@ function enhanceDescriptionGameBananaLinks(description) {
         const title =
           details?.title || link.textContent.trim() || `GameBanana ${kind}`;
         label.textContent = title;
-        reference.title = `Open ${title} details`;
+        reference.title = t("modModal.openSubmissionDetails", { title });
       })
       .catch(() => {
         if (!description.isConnected || version !== descriptionReferenceVersion)
           return;
-        label.textContent = link.textContent.trim() || "GameBanana submission";
-        reference.title = "Open GameBanana submission details";
+        label.textContent =
+          link.textContent.trim() || t("modModal.gameBananaSubmission");
+        reference.title = t("modModal.openGameBananaSubmission");
       });
   });
 }
@@ -193,7 +195,9 @@ function showModData(data, isInstalled, onDownload) {
   if (titleEl) titleEl.textContent = data.title;
   const author = document.getElementById("modal-author");
   if (author) {
-    author.textContent = data.author ? `by ${data.author}` : "";
+    author.textContent = data.author
+      ? t("home.byAuthor", { author: data.author })
+      : "";
     author.hidden = Boolean(data.hideAuthor);
   }
   const timeEl = document.getElementById("modal-time");
@@ -237,9 +241,11 @@ function showModData(data, isInstalled, onDownload) {
       if (gbImg) gbImg.src = "assets/icons/psychonline.png";
       gameBananaLink.setAttribute(
         "aria-label",
-        `Open ${data.title} on Psych Online`,
+        t("modModal.openOnPsychOnline", { title: data.title }),
       );
-      gameBananaLink.title = `Open ${data.title} on Psych Online`;
+      gameBananaLink.title = t("modModal.openOnPsychOnline", {
+        title: data.title,
+      });
     }
     gameBananaLink.onclick = (event) => {
       event.preventDefault();
@@ -270,17 +276,16 @@ function updateDownloadStatus(data, isInstalled, onDownload) {
   if (!button) return;
   if (isInstalled) {
     button.disabled = true;
-    button.innerHTML = '<i class="fa-solid fa-check"></i> Already Installed';
+    button.innerHTML = `<i class="fa-solid fa-check"></i> ${t("modModal.alreadyInstalled")}`;
   } else if (data.loadingDownloads) {
     button.disabled = true;
-    button.innerHTML =
-      '<i class="fa-solid fa-spinner fa-spin"></i> Checking downloads…';
+    button.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> ${t("modModal.checkingDownloads")}`;
   } else if (data.downloadOptions?.length) {
     button.disabled = false;
     button.innerHTML =
       data.downloadOptions.length > 1
-        ? '<i class="fa-solid fa-list"></i> Choose Download'
-        : `<i class="fa-solid fa-download"></i> ${data.downloadButtonLabel || "Download"}`;
+        ? `<i class="fa-solid fa-list"></i> ${t("modModal.chooseDownload")}`
+        : `<i class="fa-solid fa-download"></i> ${data.downloadButtonLabel || t("common.download")}`;
     button.onclick = onDownload;
   }
 }

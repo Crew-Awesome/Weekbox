@@ -101,6 +101,7 @@ export { appUpdateModal } from "./updates/appUpdateModal.js";
 
 // Root Modals & Navigation
 export { sidebar } from "./sidebar.js";
+export { i18n, t } from "./i18n/index.js";
 export { existingStorageModal } from "./existingStorageModal.js";
 export { firstRunStorageModal } from "./firstRunStorageModal.js";
 export { storageRecommendationModal } from "./storageRecommendationModal.js";
