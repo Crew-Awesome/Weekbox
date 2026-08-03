@@ -4,6 +4,7 @@ import { engineUpdateService } from "../engines/engineUpdateService.js";
 import { engineUpdateToast } from "../engines/engineUpdateToast.js";
 import { applyDominantColor } from "../../utils/index-utils.js";
 import { networkStatus } from "../../../backend/core/system/network-status.service.js";
+import { sidebar } from "../sidebar.js";
 
 export const engineManagerModal = {
   currentIndex: 0,
@@ -49,6 +50,7 @@ export const engineManagerModal = {
     if (!FS.isInitialized) await FS.init();
     const modal = document.getElementById("engine-manager-modal");
     if (!modal) return;
+    sidebar.setActive(sidebar.engineManagerBtn);
     modal.style.display = "flex";
     requestAnimationFrame(() => modal.classList.add("show"));
     await this.loadInstalledEngines();
@@ -56,6 +58,7 @@ export const engineManagerModal = {
   close() {
     const modal = document.getElementById("engine-manager-modal");
     if (!modal) return;
+    sidebar.syncActive();
     modal.classList.remove("show");
     setTimeout(() => {
       modal.style.display = "none";

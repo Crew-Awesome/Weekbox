@@ -83,6 +83,7 @@
 }
 
 .sidebar__btn:hover,
+.sidebar__btn.active,
 .sidebar__btn--active {
   background: var(--secondary-container);
   color: var(--on-secondary-container);

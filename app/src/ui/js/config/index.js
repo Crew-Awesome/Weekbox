@@ -9,6 +9,7 @@ import { StorageMoveFeedback } from "./storageMoveFeedback.js";
 import { existingStorageModal } from "../existingStorageModal.js";
 import { networkStatus } from "../../../backend/core/system/network-status.service.js";
 import { syncWindowsProtocolRegistration } from "../../../backend/core/system/windows-protocol.util.js";
+import { sidebar } from "../sidebar.js";
 
 const appUpdates = new AppUpdateController(appUpdater);
 const storageMoveFeedback = new StorageMoveFeedback(toastSystem);
@@ -513,6 +514,7 @@ export const configModal = {
     const modal = document.getElementById("config-modal");
     if (!modal) return;
 
+    sidebar.setActive(sidebar.configBtn);
     /**
      * Visually loads current configuration values into the UI.
      */
@@ -526,6 +528,7 @@ export const configModal = {
     const modal = document.getElementById("config-modal");
     if (!modal) return;
 
+    sidebar.syncActive();
     modal.classList.remove("show");
     setTimeout(() => {
       modal.style.display = "none";

@@ -62,6 +62,7 @@ export { homeScroll } from "./home/homeScroll.js";
 export { homeSearchDropdown } from "./home/searchDropdown.js";
 export { homeSearch } from "./home/search.js";
 export { homeView, registerHomeView } from "./home/index.js";
+export { newsView, registerNewsView } from "./news.js";
 
 // Home Grid
 export { homeGrid } from "./home/grid/index.js";

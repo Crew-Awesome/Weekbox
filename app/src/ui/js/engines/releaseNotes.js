@@ -46,7 +46,7 @@ function isSafeUrl(value) {
   }
 }
 
-function sanitizeReleaseHtml(html) {
+export function sanitizeReleaseHtml(html) {
   const documentNode = new DOMParser().parseFromString(html, "text/html");
 
   documentNode.body.querySelectorAll("*").forEach((element) => {

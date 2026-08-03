@@ -3,10 +3,11 @@ import { ENGINE_DETAILS } from "../../../../backend/config/engines.config.js";
 import { applyDominantColor } from "../../../utils/index-utils.js";
 
 export function createCard(mod, index) {
+  const isPeo = mod.source === "peo";
   const card = document.createElement("button");
   card.type = "button";
   card.className = "mod-card";
-  if (mod.source === "sniro") card.classList.add("mod-card--no-author");
+  if (isPeo) card.classList.add("mod-card--no-author");
 
   const cardBg = document.createElement("div");
   cardBg.className = "mod-card-bg";
@@ -81,7 +82,7 @@ export function createCard(mod, index) {
   author.className = "mod-author";
   author.textContent = `by ${mod.author}`;
   info.appendChild(title);
-  if (mod.source !== "sniro") info.appendChild(author);
+  if (!isPeo) info.appendChild(author);
 
   const stats = document.createElement("div");
   stats.className = "mod-stats";
@@ -90,10 +91,8 @@ export function createCard(mod, index) {
     ["fa-regular fa-clock", mod.timeAgo],
     ["fa-solid fa-heart", Number(mod.likes).toLocaleString()],
     [
-      mod.source === "sniro" ? "fa-solid fa-download" : "fa-solid fa-eye",
-      Number(
-        mod.source === "sniro" ? mod.downloads : mod.views,
-      ).toLocaleString(),
+      isPeo ? "fa-solid fa-download" : "fa-solid fa-eye",
+      Number(isPeo ? mod.downloads : mod.views).toLocaleString(),
     ],
   ].forEach(([icon, value]) => {
     const stat = document.createElement("span");

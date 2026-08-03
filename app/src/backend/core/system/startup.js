@@ -13,6 +13,7 @@ import { appUpdater } from "../updates/app-updater.service.js";
 
 import { homeView, registerHomeView } from "../../../ui/js/index.js";
 import { registerEnginesView } from "../../../ui/js/index.js";
+import { registerNewsView } from "../../../ui/js/index.js";
 import { downloadEngine } from "../../../ui/js/index.js";
 import { engineUpdateToast } from "../../../ui/js/index.js";
 import { toastDownloadMod } from "../../../ui/js/index.js";
@@ -335,6 +336,7 @@ async function startApp() {
     startupLoader.setPhase("Loading navigation and engines\u2026", 64);
     registerHomeView();
     registerEnginesView();
+    registerNewsView();
     await router.init();
     startupLoader.setPhase("Preparing Mod Manager\u2026", 70);
     const modManagerReady = modManagerModal.preload();

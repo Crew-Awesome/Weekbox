@@ -5,6 +5,7 @@ import { modSettingsModal } from "./modSettingsModal.js";
 import { localModImportModal } from "./localModImportModal.js";
 import { modManagerTemplates } from "./templates.js";
 import { openFilterSortModal } from "./filterSortModal.js";
+import { sidebar } from "../sidebar.js";
 
 export const modManagerModal = {
   typeFilter: "all",
@@ -169,6 +170,7 @@ export const modManagerModal = {
     const modal = document.getElementById("mod-manager-modal");
     if (!modal) return;
 
+    sidebar.setActive(sidebar.modManagerBtn);
     modal.style.display = "flex";
     requestAnimationFrame(() => modal.classList.add("show"));
     this.renderPendingInstallCards();
@@ -206,6 +208,7 @@ export const modManagerModal = {
     modSettingsModal.close();
     const modal = document.getElementById("mod-manager-modal");
     if (!modal) return;
+    sidebar.syncActive();
     modal.classList.remove("show");
     setTimeout(() => {
       modal.style.display = "none";

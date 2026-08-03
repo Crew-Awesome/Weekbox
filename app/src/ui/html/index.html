@@ -1102,6 +1102,37 @@
     </section>
   </div>
 </template>
+<template id="tpl-news">
+  <section class="news-view" aria-labelledby="news-view-title">
+    <header class="news-view__header">
+      <h1 id="news-view-title">News</h1>
+      <button class="news-view__refresh" type="button" data-news-refresh>
+        <i class="fa-solid fa-rotate" aria-hidden="true"></i> Refresh
+      </button>
+    </header>
+    <div class="news-view__status" data-news-status role="status" aria-live="polite">Loading news…</div>
+    <div class="grid-layout news-view__grid" data-news-grid></div>
+  </section>
+</template>
+<template id="tpl-news-modal">
+  <div class="modal-overlay news-detail-modal" id="news-detail-modal" style="display: none">
+    <section class="modal-content news-detail-modal__content" role="dialog" aria-modal="true" aria-labelledby="news-detail-title">
+      <div class="news-detail-modal__media">
+        <img id="news-detail-image" src="" alt="" />
+      </div>
+      <article class="news-detail-modal__body">
+        <button class="modal-close-btn" id="news-detail-close" type="button" aria-label="Close news article">
+          <i class="fa-solid fa-xmark" aria-hidden="true"></i>
+        </button>
+        <div class="news-detail-modal__meta" id="news-detail-meta"></div>
+        <h2 id="news-detail-title"></h2>
+        <p class="news-detail-modal__excerpt" id="news-detail-excerpt"></p>
+        <div class="news-detail-modal__text markdown-body" id="news-detail-body"></div>
+        <a class="news-detail-modal__link" id="news-detail-link" href="" rel="noreferrer">Open on website <i class="fa-solid fa-arrow-up-right-from-square" aria-hidden="true"></i></a>
+      </article>
+    </section>
+  </div>
+</template>
 <template id="tpl-sidebar">
   <aside class="sidebar" id="sidebar">
     <div class="sidebar__top">
@@ -1119,14 +1150,17 @@
           />
           <span>WeekBox</span>
         </button>
-        <button class="sidebar__btn sidebar__btn--active" data-tab="home">
-          <i class="fa-solid fa-house"></i> <span>Home</span>
+        <button class="sidebar__btn active" data-tab="home">
+          <i class="fa-solid fa-house" aria-hidden="true"></i> <span>Home</span>
+        </button>
+        <button class="sidebar__btn" data-tab="news">
+          <i class="fa-solid fa-newspaper" aria-hidden="true"></i> <span>News</span>
         </button>
         <button class="sidebar__btn" id="mod-manager-btn">
-          <i class="fa-solid fa-folder-open"></i> <span>Mod Manager</span>
+          <i class="fa-solid fa-folder-open" aria-hidden="true"></i> <span>Mod Manager</span>
         </button>
         <button class="sidebar__btn" id="engine-manager-btn">
-          <i class="fa-solid fa-server"></i> <span>Engine Manager</span>
+          <i class="fa-solid fa-server" aria-hidden="true"></i> <span>Engine Manager</span>
         </button>
         <div class="sidebar__divider"></div>
         <div id="engines-container" class="sidebar__list">
@@ -1136,7 +1170,7 @@
       </nav>
     </div>
     <button class="sidebar__btn sidebar__btn--config" id="config-btn">
-      <i class="fa-solid fa-gear"></i> <span>Config</span>
+      <i class="fa-solid fa-gear" aria-hidden="true"></i> <span>Config</span>
     </button>
     <div class="sidebar__resizer" id="sidebar-resizer"></div>
   </aside>
