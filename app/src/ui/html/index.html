@@ -335,9 +335,9 @@
                       aria-label="Language"
                     >
                       <span
-                        class="mod-settings-select-icon setting-language-icon"
+                        id="setting-language-selected-flag"
+                        class="mod-settings-select-icon setting-language-flag fi fi-us"
                         aria-hidden="true"
-                        ><i class="fa-solid fa-language"></i
                       ></span>
                       <span
                         id="setting-language-selected"
@@ -361,21 +361,29 @@
                         type="button"
                         class="setting-language-option selected"
                         data-language="en"
-                        data-i18n="languages.english"
+                        data-flag="us"
                         role="option"
                         aria-selected="true"
                       >
-                        English
+                        <span
+                          class="setting-language-flag fi fi-us"
+                          aria-hidden="true"
+                        ></span>
+                        <span data-i18n="languages.english">English</span>
                       </button>
                       <button
                         type="button"
                         class="setting-language-option"
                         data-language="es"
-                        data-i18n="languages.spanish"
+                        data-flag="es"
                         role="option"
                         aria-selected="false"
                       >
-                        Español
+                        <span
+                          class="setting-language-flag fi fi-es"
+                          aria-hidden="true"
+                        ></span>
+                        <span data-i18n="languages.spanish">Español</span>
                       </button>
                     </div>
                   </div>

@@ -228,6 +228,9 @@ export const configModal = {
 
   syncLanguageDropdown(locale = i18n.locale) {
     const language = document.getElementById("setting-language");
+    const selectedFlag = document.getElementById(
+      "setting-language-selected-flag",
+    );
     const selected = document.getElementById("setting-language-selected");
     const options = [
       ...document.querySelectorAll("#setting-language-options [data-language]"),
@@ -238,15 +241,24 @@ export const configModal = {
     if (!selectedOption) return;
 
     if (language) language.value = selectedOption.dataset.language;
+    if (selectedFlag) {
+      selectedFlag.className = `mod-settings-select-icon setting-language-flag fi fi-${selectedOption.dataset.flag || "xx"}`;
+    }
     options.forEach((option) => {
       const isSelected = option === selectedOption;
       option.classList.toggle("selected", isSelected);
       option.setAttribute("aria-selected", String(isSelected));
     });
     if (selected) {
-      selected.dataset.i18n = selectedOption.dataset.i18n;
-      selected.textContent =
-        t(selectedOption.dataset.i18n) || selectedOption.textContent.trim();
+      const label = selectedOption.querySelector("[data-i18n]");
+      const labelKey = label?.dataset.i18n;
+      if (labelKey) {
+        selected.dataset.i18n = labelKey;
+        selected.textContent = t(labelKey) || label.textContent.trim();
+      } else {
+        delete selected.dataset.i18n;
+        selected.textContent = selectedOption.textContent.trim();
+      }
     }
   },
 

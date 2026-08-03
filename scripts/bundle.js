@@ -15,7 +15,9 @@ async function buildAssets(watch = false) {
   fs.mkdirSync(outDir, { recursive: true });
 
   const jsOptions = {
-    entryPoints: [path.resolve(__dirname, "../app/src/backend/core/index-core.js")],
+    entryPoints: [
+      path.resolve(__dirname, "../app/src/backend/core/index-core.js"),
+    ],
     bundle: true,
     outfile: path.resolve(outDir, "bundle.js"),
     format: "esm",
@@ -28,6 +30,8 @@ async function buildAssets(watch = false) {
     entryPoints: [path.resolve(__dirname, "../app/src/ui/styles/styles.css")],
     bundle: true,
     outfile: path.resolve(outDir, "bundle.css"),
+    loader: { ".svg": "file" },
+    assetNames: "flags/[name]-[hash]",
     minify: !watch,
   };
 
