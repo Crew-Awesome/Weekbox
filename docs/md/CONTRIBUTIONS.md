@@ -163,9 +163,9 @@ body {
   --color-exito: #28a745;
   --color-advertencia: #ffc107;
   
-  --color-texto-primario: #1a1a1a;
-  --color-texto-secundario: #666666;
-  --color-texto-invertido: #ffffff;
+  --text-main: #1a1a1a;
+  --text-muted: #666666;
+  --on-primary: #ffffff;
   
   --color-fondo: #ffffff;
   --color-fondo-secundario: #f5f5f5;
@@ -188,8 +188,8 @@ body {
    VARIABLES GLOBALES - TIPOGRAFÍA
    ============================================ */
 :root {
-  --fuente-principal: 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif;
-  --fuente-monoespaciada: 'Courier New', monospace;
+  --font-primary: 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-mono: 'Courier New', monospace;
   
   --tamaño-xs: 12px;
   --tamaño-sm: 14px;
@@ -232,9 +232,9 @@ body {
    VARIABLES GLOBALES - TRANSICIONES
    ============================================ */
 :root {
-  --transicion-rapida: all 0.15s ease-out;
-  --transicion-normal: all 0.3s ease-out;
-  --transicion-lenta: all 0.5s ease-out;
+  --transition-fast: transform 0.15s ease-out, background-color 0.15s ease-out, color 0.15s ease-out;
+  --transition-normal: transform 0.3s ease-out, background-color 0.3s ease-out, color 0.3s ease-out;
+  --transition-slow: transform 0.5s ease-out, background-color 0.5s ease-out, color 0.5s ease-out;
 }
 ```
 
