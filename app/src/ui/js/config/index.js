@@ -186,7 +186,6 @@ export const configModal = {
       "checkUpdatesOnStartup",
       "checkUpdatesInBackground",
       "checkAppUpdatesOnStartup",
-      "diagnosticReportingEnabled",
     ];
 
     toggleIds.forEach((settingKey) => {
@@ -266,7 +265,6 @@ export const configModal = {
       "checkUpdatesOnStartup",
       "checkUpdatesInBackground",
       "checkAppUpdatesOnStartup",
-      "diagnosticReportingEnabled",
     ];
 
     toggleIds.forEach((settingKey) => {

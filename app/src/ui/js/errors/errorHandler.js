@@ -1,4 +1,3 @@
-import { appSettings } from "../../../backend/core/system/settings.service.js";
 import "./wineModal.js";
 import { t } from "../i18n/index.js";
 
@@ -8,23 +7,6 @@ const DIAGNOSTIC_REPORT_ENDPOINT =
 function nonEmptyString(value, fallback = "Unknown") {
   const text = String(value ?? "").trim();
   return text || fallback;
-}
-
-function sanitizeDiagnosticText(value) {
-  return nonEmptyString(value, "No details available")
-    .replace(
-      /https?:\/\/(?:canary\.)?discord(?:app)?\.com\/api\/webhooks\/\d+\/[^\s"']+/gi,
-      "[REDACTED DISCORD WEBHOOK]",
-    )
-    .replace(
-      /\b(?:authorization|cookie|set-cookie|token|api[_-]?key|secret|password)\s*[:=]\s*(?:bearer\s+)?[^\s,;]+/gi,
-      "[REDACTED SECRET]",
-    )
-    .replace(/\bbearer\s+[a-z0-9._~-]+/gi, "[REDACTED SECRET]")
-    .replace(/[a-z]:\\users\\[^\\\r\n]+/gi, "[REDACTED WINDOWS PATH]")
-    .replace(/\/(?:users|home)\/[^\s\r\n:)}\]]+/gi, "[REDACTED USER PATH]")
-    .replace(/\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b/gi, "[REDACTED EMAIL]")
-    .slice(0, 12000);
 }
 
 function getNativeErrorDetails(error) {
@@ -230,22 +212,17 @@ function createReport({ error, action, item, version, storagePath, issue }) {
     `Action: ${action || "Unknown"}`,
     item ? `Item: ${item}` : null,
     version ? `Version: ${version}` : null,
-    storagePath ? `Storage path: ${sanitizeDiagnosticText(storagePath)}` : null,
+    storagePath ? `Storage path: ${storagePath}` : null,
     `Issue: ${issue.tag}`,
     `What happened: ${issue.summary}`,
+    `Error: ${getDiagnosticErrorMessage(error)}`,
+    `Stack trace:\n${getDiagnosticStackTrace(error)}`,
   ]
     .filter(Boolean)
     .join("\n");
 }
 
 async function submitDiagnosticReport(context, issue) {
-  if (
-    !appSettings.get("diagnosticReportingConsentAnswered") ||
-    !appSettings.get("diagnosticReportingEnabled")
-  ) {
-    return;
-  }
-
   const errorMessage = getDiagnosticErrorMessage(context.error);
   const stackTrace = getDiagnosticStackTrace(context.error);
   const [operatingSystem, architecture] = await Promise.all([
@@ -257,11 +234,18 @@ async function submitDiagnosticReport(context, issue) {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       appVersion: nonEmptyString(window.NL_APPVERSION),
-      operatingSystem: sanitizeDiagnosticText(operatingSystem),
-      architecture: sanitizeDiagnosticText(architecture),
-      action: sanitizeDiagnosticText(context.action || issue.tag),
-      errorMessage: sanitizeDiagnosticText(errorMessage),
-      stackTrace: sanitizeDiagnosticText(stackTrace),
+      operatingSystem,
+      architecture,
+      action: context.action || issue.tag,
+      item: context.item || "",
+      version: context.version || "",
+      storagePath: context.storagePath || "",
+      issue: issue.tag,
+      title: issue.title,
+      summary: issue.summary,
+      errorMessage,
+      stackTrace,
+      reportedAt: new Date().toISOString(),
     }),
   });
 
