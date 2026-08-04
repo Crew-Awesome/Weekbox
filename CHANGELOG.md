@@ -9,6 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [2.0.3] - 2026-08-04
 
+### Added
+
+- Added a right-click menu with Copy, Paste, and Inspect.
+
 ### Changed
 
 - Reports now include the full error and stack trace.
@@ -20,6 +24,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Reports now reach the webhook.
 - Download bars now use the known file size.
+- Fixed the Inspect action causing Neutralino token errors.
 
 ## [2.0.2] - 2026-08-04
 

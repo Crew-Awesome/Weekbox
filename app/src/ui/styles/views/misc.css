@@ -2149,3 +2149,51 @@ input:checked + .slider:before {
     grid-template-columns: 1fr;
   }
 }
+.weekbox-context-menu {
+  position: fixed;
+  z-index: 4000;
+  min-width: 148px;
+  padding: 5px;
+  border: 1px solid var(--border-color);
+  border-radius: 9px;
+  background: var(--bg-panel);
+  box-shadow: 0 14px 34px rgba(0, 0, 0, 0.42);
+  opacity: 0;
+  transform: translateY(-4px) scale(0.98);
+  transition:
+    opacity 120ms ease,
+    transform 120ms ease;
+}
+
+.weekbox-context-menu.is-open {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+}
+
+.weekbox-context-menu button {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  width: 100%;
+  padding: 8px 10px;
+  border: 0;
+  border-radius: 6px;
+  color: var(--text-main);
+  background: transparent;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.weekbox-context-menu button:hover,
+.weekbox-context-menu button:focus-visible {
+  color: var(--text-main);
+  background: var(--bg-hover);
+  outline: none;
+}
+
+.weekbox-context-menu button:disabled {
+  color: var(--text-muted);
+  opacity: 0.45;
+  cursor: default;
+}
