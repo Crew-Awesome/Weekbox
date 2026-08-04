@@ -1,6 +1,6 @@
 import { setupDropdown } from "../../utils/index-utils.js";
 import { ENGINE_DETAILS } from "../../../backend/config/engines.config.js";
-import { t } from "../i18n/index.js";
+import { getEngineLabel, t } from "../i18n/index.js";
 
 const BASE_TYPE_OPTIONS = [
   ["all", "modManager.allMods", "fa-layer-group"],
@@ -12,7 +12,7 @@ function getTypeOptions(engineIds) {
     ...BASE_TYPE_OPTIONS,
     ...engineIds.map((engineId) => [
       `engine:${engineId}`,
-      ENGINE_DETAILS[engineId]?.name || engineId,
+      getEngineLabel(engineId, ENGINE_DETAILS[engineId]?.name || engineId),
       "fa-microchip",
       ENGINE_DETAILS[engineId]
         ? `assets/icons/${ENGINE_DETAILS[engineId].icon}`

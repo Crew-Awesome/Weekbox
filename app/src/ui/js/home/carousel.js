@@ -1,7 +1,7 @@
 import { gameBananaApi } from "../../../backend/providers/gamebanana/gamebanana.provider.js";
 import { modModal } from "./modal/index.js";
 import { networkStatus } from "../../../backend/core/system/network-status.service.js";
-import { t } from "../i18n/index.js";
+import { getEngineLabel, getEngineLabelKey, t } from "../i18n/index.js";
 
 const featuredLabelKeys = {
   "best of today": "home.bestOfToday",
@@ -46,10 +46,12 @@ export const homeCarousel = {
       this.totalSlides = mods.length;
 
       mods.forEach((mod, index) => {
+        const engineName = getEngineLabel(mod.engineId, mod.engine?.name);
+        const engineLabelKey = getEngineLabelKey(mod.engineId);
         const engineBadgeHtml = `
-          <div class="home-engine-badge" title="${mod.category.name}">
+          <div class="home-engine-badge" title="${engineName}">
               <img src="assets/icons/${mod.engine.icon}" alt=""/>
-              <span>${mod.engine.name}</span>
+              <span class="home-engine-name"${engineLabelKey ? ` data-i18n="${engineLabelKey}"` : ""}>${engineName}</span>
           </div>
         `;
 

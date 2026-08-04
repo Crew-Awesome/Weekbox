@@ -13,7 +13,7 @@ import {
   replaceProcessExitListener,
   syncLaunchButton,
 } from "./processUiSync.js";
-import { i18n, t } from "../i18n/index.js";
+import { getEngineLabel, i18n, t } from "../i18n/index.js";
 
 export const cardRenderer = {
   async renderCards(
@@ -99,8 +99,8 @@ export const cardRenderer = {
         standaloneModIds.has(String(mod.id)) || mod.engineId === "executable";
       const hasEngine = Boolean(
         mod.engineId &&
-          mod.engineId !== "executable" &&
-          ENGINE_DETAILS[mod.engineId],
+        mod.engineId !== "executable" &&
+        ENGINE_DETAILS[mod.engineId],
       );
       const engine = hasEngine
         ? installedEngines.find(
@@ -195,7 +195,10 @@ export const cardRenderer = {
             const engineInfo = ENGINE_DETAILS[mod.engineId];
             engineUpdateToast.missingEngine(
               mod.engineId,
-              engineInfo?.name || t("engineUpdates.assignedEngine"),
+              getEngineLabel(
+                mod.engineId,
+                engineInfo?.name || t("engineUpdates.assignedEngine"),
+              ),
               engineInfo?.icon,
             );
             return;
@@ -225,7 +228,10 @@ export const cardRenderer = {
           setTimeout(() => {
             if (!card.isConnected || !gridContainer.isConnected) return;
             card.remove();
-            if (gridContainer.children.length === 0 && gridContainer.parentNode) {
+            if (
+              gridContainer.children.length === 0 &&
+              gridContainer.parentNode
+            ) {
               gridContainer.outerHTML = modManagerTemplates.emptyState(
                 t("modManager.noModsInstalled"),
               );

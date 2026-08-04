@@ -7,7 +7,7 @@ import {
 import { enhanceContentLinks } from "../../contentLinks.js";
 import { setModalBackdrop } from "./modalBackdrop.js";
 import { modModal } from "./index.js";
-import { t } from "../../i18n/index.js";
+import { getEngineLabel, t } from "../../i18n/index.js";
 
 async function ensureModal(onClose) {
   if (!document.getElementById("mod-modal")) {
@@ -218,7 +218,8 @@ function showModData(data, isInstalled, onDownload) {
       engineIcon.src = `assets/icons/${engine.icon}`;
       engineIcon.alt = "";
     }
-    if (engineName) engineName.textContent = engine.name;
+    if (engineName)
+      engineName.textContent = getEngineLabel(data.engineId, engine.name);
     if (engineBadge) engineBadge.hidden = false;
   } else if (engineBadge) {
     engineBadge.hidden = true;

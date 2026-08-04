@@ -5,6 +5,15 @@ import { appSettings } from "../../../backend/core/system/settings.service.js";
 
 const catalogs = { en, es, de };
 const fallbackLocale = "en";
+const engineLabelKeys = {
+  vslice: "home.baseGame",
+  psych: "home.psychEngine",
+  pslice: "home.pSlice",
+  fpsplus: "home.fpsPlus",
+  psychonline: "home.psychOnline",
+  codename: "home.codenameEngine",
+  executable: "home.executables",
+};
 
 function interpolate(value, variables = {}) {
   return String(value).replace(/\{\{\s*([\w.-]+)\s*\}\}/g, (_, name) =>
@@ -76,6 +85,15 @@ export const i18n = {
 };
 
 export const t = (key, variables) => i18n.t(key, variables);
+
+export function getEngineLabelKey(engineId) {
+  return engineLabelKeys[engineId] || "";
+}
+
+export function getEngineLabel(engineId, fallback = engineId) {
+  const key = getEngineLabelKey(engineId);
+  return key ? i18n.t(key) : fallback;
+}
 
 export function localizeProgressStatus(status) {
   const value = String(status || "");

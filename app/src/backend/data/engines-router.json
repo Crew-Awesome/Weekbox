@@ -1,32 +1,20 @@
 [
   {
-    "name": "V-Slice",
-    "icon": "vslice.png",
     "versions": "vslice"
   },
   {
-    "name": "Codename",
-    "icon": "codename.png",
     "versions": "codename"
   },
   {
-    "name": "Psych Engine",
-    "icon": "psych.png",
     "versions": "psych"
   },
   {
-    "name": "P-Slice",
-    "icon": "pslice.png",
     "versions": "pslice"
   },
   {
-    "name": "FPS Plus",
-    "icon": "fpsplus.png",
     "versions": "fpsplus"
   },
   {
-    "name": "Psych Online",
-    "icon": "psychonline.png",
     "versions": "psychonline"
   }
 ]

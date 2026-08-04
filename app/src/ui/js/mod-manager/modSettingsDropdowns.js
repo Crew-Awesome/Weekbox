@@ -1,7 +1,7 @@
 import { ENGINE_DETAILS } from "../../../backend/config/engines.config.js";
 import { setupDropdown } from "../../utils/index-utils.js";
 import { escapeHtml } from "./modSettingsTemplates.js";
-import { t } from "../i18n/index.js";
+import { getEngineLabel, t } from "../i18n/index.js";
 
 export function setupModSettingsDropdowns(
   overlay,
@@ -159,7 +159,7 @@ export function setupModSettingsDropdowns(
     `<option value="">${defaultLabel}</option>`,
     ...assignableEngines.map(
       ([id, details]) =>
-        `<option value="${id}" ${id === initialEngineId ? "selected" : ""}>${escapeHtml(details.name)}</option>`,
+        `<option value="${id}" ${id === initialEngineId ? "selected" : ""}>${escapeHtml(getEngineLabel(id, details.name))}</option>`,
     ),
   ].join("");
 
@@ -170,7 +170,9 @@ export function setupModSettingsDropdowns(
       selectedEngineId !== "executable" &&
       ENGINE_DETAILS[selectedEngineId];
     const engine = isCustomEngine ? ENGINE_DETAILS[selectedEngineId] : null;
-    engineSelected.textContent = engine?.name || defaultLabel;
+    engineSelected.textContent = engine
+      ? getEngineLabel(selectedEngineId, engine.name)
+      : defaultLabel;
     engineIcon.innerHTML = engine
       ? `<img src="assets/icons/${engine.icon}" alt="">`
       : defaultIconHtml;
@@ -178,7 +180,7 @@ export function setupModSettingsDropdowns(
       `<button type="button" data-engine-id="" class="${!selectedEngineId ? "selected" : ""}" role="option" aria-selected="${!selectedEngineId}">${defaultIconHtml}${defaultLabel}</button>`,
       ...assignableEngines.map(
         ([id, details]) =>
-          `<button type="button" data-engine-id="${id}" class="${id === selectedEngineId ? "selected" : ""}" role="option" aria-selected="${id === selectedEngineId}"><img src="assets/icons/${details.icon}" alt="">${escapeHtml(details.name)}</button>`,
+          `<button type="button" data-engine-id="${id}" class="${id === selectedEngineId ? "selected" : ""}" role="option" aria-selected="${id === selectedEngineId}"><img src="assets/icons/${details.icon}" alt="">${escapeHtml(getEngineLabel(id, details.name))}</button>`,
       ),
     ].join("");
   };

@@ -5,7 +5,7 @@ import { engineUpdateToast } from "../engines/engineUpdateToast.js";
 import { applyDominantColor } from "../../utils/index-utils.js";
 import { networkStatus } from "../../../backend/core/system/network-status.service.js";
 import { sidebar } from "../sidebar.js";
-import { i18n, t } from "../i18n/index.js";
+import { getEngineLabel, getEngineLabelKey, i18n, t } from "../i18n/index.js";
 import { errorHandler } from "../errors/errorHandler.js";
 
 export const engineManagerModal = {
@@ -142,6 +142,7 @@ export const engineManagerModal = {
         name: engineId,
         icon: "exe.png",
       };
+      const displayName = getEngineLabel(engineId, details.name);
       const card = document.createElement("div");
       card.className = "engine-column";
       card.addEventListener("click", () => {
@@ -153,9 +154,14 @@ export const engineManagerModal = {
       const header = document.createElement("div");
       header.className = "engine-column-header";
       header.innerHTML = `
-        <img src="assets/icons/${details.icon}" alt="${details.name}" class="engine-col-icon" crossorigin="Anonymous" onerror="this.src='assets/icons/exe.png'"/>
-        <span class="engine-col-name">${details.name}</span>
+        <img src="assets/icons/${details.icon}" alt="${displayName}" class="engine-col-icon" crossorigin="Anonymous" onerror="this.src='assets/icons/exe.png'"/>
+        <span class="engine-col-name">${displayName}</span>
       `;
+      const engineNameElement = header.querySelector(".engine-col-name");
+      const engineLabelKey = getEngineLabelKey(engineId);
+      if (engineNameElement && engineLabelKey) {
+        engineNameElement.dataset.i18n = engineLabelKey;
+      }
       card.appendChild(header);
 
       // Aplicar color extraído con la nueva utilidad y opciones personalizadas
@@ -180,7 +186,7 @@ export const engineManagerModal = {
               (engineId === "codename" && version === "Nightly") ||
               (engineId === "psychonline" && version === "Latest")
                 ? `
-                <button class="engine-action-btn engine-update-btn" title="${updateDisabled ? t("engineManager.connectToCheckUpdates") : t("settings.checkForUpdates")}" aria-label="${t("engineManager.checkEngineUpdates", { name: details.name })}" ${updateDisabled ? "disabled" : ""}>
+                <button class="engine-action-btn engine-update-btn" title="${updateDisabled ? t("engineManager.connectToCheckUpdates") : t("settings.checkForUpdates")}" aria-label="${t("engineManager.checkEngineUpdates", { name: displayName })}" ${updateDisabled ? "disabled" : ""}>
                 <i class="fa-solid fa-rotate"></i>
               </button>`
                 : ""
@@ -205,37 +211,37 @@ export const engineManagerModal = {
           if (result.status === "current") {
             engineUpdateToast.info(
               engineId,
-              details.name,
+              displayName,
               t("engineManager.alreadyUpToDate"),
             );
           } else if (result.status === "skipped") {
             engineUpdateToast.info(
               engineId,
-              details.name,
+              displayName,
               t("engineManager.updateSkipped"),
             );
           } else if (result.status === "pinned") {
             engineUpdateToast.info(
               engineId,
-              details.name,
+              displayName,
               t("engineManager.versionPinned"),
             );
           } else if (result.status === "unavailable") {
             engineUpdateToast.info(
               engineId,
-              details.name,
+              displayName,
               t("engineManager.couldNotCheckUpdates"),
             );
           } else if (result.status === "running") {
             engineUpdateToast.info(
               engineId,
-              details.name,
+              displayName,
               t("engineManager.closeBeforeUpdating"),
             );
           } else if (result.status === "offline") {
             engineUpdateToast.info(
               engineId,
-              details.name,
+              displayName,
               t("engineManager.connectToCheckUpdates"),
             );
           }
@@ -266,7 +272,10 @@ export const engineManagerModal = {
                   : `rm -rf "${targetPath}"`,
                 { background: false },
               );
-              if (Number(result?.exitCode) !== 0 && (await FS.api.exists(targetPath))) {
+              if (
+                Number(result?.exitCode) !== 0 &&
+                (await FS.api.exists(targetPath))
+              ) {
                 await FS.api.remove(targetPath).catch(() => {});
               }
               if (await FS.api.exists(targetPath)) {
@@ -284,7 +293,7 @@ export const engineManagerModal = {
             errorHandler.show({
               error,
               action: "Uninstall engine",
-              item: details.name,
+              item: displayName,
               version,
               storagePath: FS.weekboxPath,
             });
@@ -299,7 +308,7 @@ export const engineManagerModal = {
       indexIcon.className = "em-index-icon";
       indexIcon.src = `assets/icons/${details.icon}`;
       indexIcon.onerror = () => (indexIcon.src = "assets/icons/exe.png");
-      indexIcon.title = details.name;
+      indexIcon.title = displayName;
       indexIcon.addEventListener("click", () => {
         this.currentIndex = idx;
         updateCarousel();

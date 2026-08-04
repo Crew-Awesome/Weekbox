@@ -7,6 +7,7 @@ import { engineUpdateModal } from "./engineUpdateModal.js";
 import { engineUpdateToast } from "./engineUpdateToast.js";
 import { appSettings } from "../../../backend/core/system/settings.service.js";
 import { networkStatus } from "../../../backend/core/system/network-status.service.js";
+import { getEngineLabel } from "../i18n/index.js";
 
 const SKIP_PREFIX = "weekbox-engine-update-skip-";
 const UPDATE_STATE_FILE = "engineupdatestate.json";
@@ -141,7 +142,10 @@ export const engineUpdateService = {
 
       const update = await findAvailableUpdate(engineId, installedVersion);
       if (update.status !== "available") continue;
-      const name = ENGINE_DETAILS[engineId]?.name || engineId;
+      const name = getEngineLabel(
+        engineId,
+        ENGINE_DETAILS[engineId]?.name || engineId,
+      );
       engineUpdateToast.offer(
         engineId,
         name,
@@ -155,7 +159,10 @@ export const engineUpdateService = {
     if (FS.isEngineRunning(engineId, installedVersion)) {
       return { status: "running" };
     }
-    const name = ENGINE_DETAILS[engineId]?.name || engineId;
+    const name = getEngineLabel(
+      engineId,
+      ENGINE_DETAILS[engineId]?.name || engineId,
+    );
     const choice = await engineUpdateModal.confirm({
       engineId,
       name,

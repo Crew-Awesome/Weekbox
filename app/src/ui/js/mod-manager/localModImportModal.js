@@ -1,7 +1,7 @@
 import { ENGINE_DETAILS } from "../../../backend/config/engines.config.js";
 import { gameBananaApi } from "../../../backend/providers/gamebanana/gamebanana.provider.js";
 import { FS } from "../../utils/index-utils.js";
-import { t } from "../i18n/index.js";
+import { getEngineLabel, t } from "../i18n/index.js";
 
 function folderName(path) {
   return (
@@ -97,7 +97,10 @@ export const localModImportModal = {
     if (!this.overlay) return;
     const engineOptions = Object.entries(ENGINE_DETAILS)
       .filter(([id]) => id !== "executable")
-      .map(([id, engine]) => `<option value="${id}">${engine.name}</option>`)
+      .map(
+        ([id, engine]) =>
+          `<option value="${id}">${getEngineLabel(id, engine.name)}</option>`,
+      )
       .join("");
     this.overlay.innerHTML = `
       <section class="local-mod-import-modal local-mod-import-modal--details" aria-labelledby="local-mod-import-title">
