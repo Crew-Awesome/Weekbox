@@ -97,7 +97,7 @@ export const gridRender = {
     });
   },
 
-  async renderGrid(isInitial = false) {
+  async renderGrid(isInitial = false, pagesToLoad = isInitial ? 1 : 2) {
     if (gridState.isLoading) {
       if (isInitial) {
         gridState.discoveryController?.abort();
@@ -111,7 +111,6 @@ export const gridRender = {
     if (!grid) return;
     this.ensureEngineTooltip(grid);
     const renderVersion = ++gridState.renderVersion;
-    const requestedPage = isInitial ? 1 : gridState.currentPage + 1;
 
     if (isInitial) {
       gridState.discoveryController?.abort();
@@ -130,106 +129,116 @@ export const gridRender = {
     if (!isInitial) this.showLoadMoreIndicator(grid);
 
     try {
-      const response = gridState.isSearchMode
-        ? await gameBananaApi.searchMods(
-            gridState.searchQuery,
-            requestedPage,
-            12,
-          )
-        : await gameBananaApi.getGridMods(
-            gridState.currentFilter,
-            requestedPage,
-            gridState.currentCategoryId,
-            {
-              snapshotId: gridState.discoverySnapshotId,
-              signal: gridState.discoveryController?.signal,
-            },
-          );
-      const result = Array.isArray(response)
-        ? { mods: response, exhausted: response.length < 12 }
-        : response;
-      const mods = result.mods;
+      let pagesLoaded = 0;
+      while (pagesLoaded < pagesToLoad) {
+        if (renderVersion !== gridState.renderVersion) break;
+        if (!gridState.hasMore && !isInitial) break;
 
-      if (renderVersion !== gridState.renderVersion) return;
+        const requestedPage = isInitial ? 1 : gridState.currentPage + 1;
+        const response = gridState.isSearchMode
+          ? await gameBananaApi.searchMods(
+              gridState.searchQuery,
+              requestedPage,
+              12,
+            )
+          : await gameBananaApi.getGridMods(
+              gridState.currentFilter,
+              requestedPage,
+              gridState.currentCategoryId,
+              {
+                snapshotId: gridState.discoverySnapshotId,
+                signal: gridState.discoveryController?.signal,
+              },
+            );
+        const result = Array.isArray(response)
+          ? { mods: response, exhausted: response.length < 12 }
+          : response;
+        const mods = result.mods;
 
-      if (mods.length === 0 && isInitial) {
-        if (result.sourceErrors?.length) {
-          grid.textContent = t("home.discoveryUnavailable");
-          grid.classList.add("grid-error");
-          gridState.status = "error";
-        } else {
-          grid.textContent = t("home.noModsFound");
-          grid.classList.add("grid-empty");
+        if (renderVersion !== gridState.renderVersion) return;
+
+        if (mods.length === 0 && isInitial) {
+          if (result.sourceErrors?.length) {
+            grid.textContent = t("home.discoveryUnavailable");
+            grid.classList.add("grid-error");
+            gridState.status = "error";
+          } else {
+            grid.textContent = t("home.noModsFound");
+            grid.classList.add("grid-empty");
+          }
+          return;
         }
-        return;
-      }
 
-      grid.classList.remove("grid-empty", "grid-error");
-      if (mods.length === 0) {
-        gridState.hasMore = false;
-        return;
-      }
+        grid.classList.remove("grid-empty", "grid-error");
+        if (mods.length === 0) {
+          gridState.hasMore = false;
+          break;
+        }
 
-      if (
-        isInitial &&
-        !gridState.isSearchMode &&
-        gridState.currentFilter === "popular"
-      ) {
-        gridState.featuredCandidates = mods;
-      }
+        if (
+          isInitial &&
+          !gridState.isSearchMode &&
+          gridState.currentFilter === "popular"
+        ) {
+          gridState.featuredCandidates = mods;
+        }
 
-      const cards = document.createDocumentFragment();
-      const showFeatured =
-        !gridState.isSearchMode &&
-        Math.random() < 0.5 &&
-        ((isInitial && gridState.currentFilter === "popular") ||
-          requestedPage % 3 === 0);
-      const featuredSource =
-        gridState.currentFilter === "popular" &&
-        gridState.featuredCandidates.length
-          ? gridState.featuredCandidates
-          : mods;
-      const featured = showFeatured
-        ? selectFeaturedMod(
-            featuredSource,
-            gridState.featuredIds,
-            gridState.featuredEngineIds,
-          )
-        : null;
-      const featuredPosition = featured
-        ? selectFeaturedPosition(grid, mods.length)
-        : null;
-      const featuredLabelKey =
-        gridState.currentFilter === "updated"
-          ? "home.recentlyUpdated"
-          : gridState.currentFilter === "new"
-            ? "home.newRelease"
-            : "home.popularCommunityPick";
-      if (featured && featuredPosition !== null) {
-        gridState.featuredIds.add(featured.id);
-        if (featured.engineId)
-          gridState.featuredEngineIds.add(featured.engineId);
+        const cards = document.createDocumentFragment();
+        const showFeatured =
+          !gridState.isSearchMode &&
+          Math.random() < 0.5 &&
+          ((isInitial && gridState.currentFilter === "popular") ||
+            requestedPage % 3 === 0);
+        const featuredSource =
+          gridState.currentFilter === "popular" &&
+          gridState.featuredCandidates.length
+            ? gridState.featuredCandidates
+            : mods;
+        const featured = showFeatured
+          ? selectFeaturedMod(
+              featuredSource,
+              gridState.featuredIds,
+              gridState.featuredEngineIds,
+            )
+          : null;
+        const featuredPosition = featured
+          ? selectFeaturedPosition(grid, mods.length)
+          : null;
+        const featuredLabelKey =
+          gridState.currentFilter === "updated"
+            ? "home.recentlyUpdated"
+            : gridState.currentFilter === "new"
+              ? "home.newRelease"
+              : "home.popularCommunityPick";
+        if (featured && featuredPosition !== null) {
+          gridState.featuredIds.add(featured.id);
+          if (featured.engineId)
+            gridState.featuredEngineIds.add(featured.engineId);
+        }
+        const cardElements = mods.map((mod, index) => createCard(mod, index));
+        if (featured && featuredPosition !== null) {
+          cardElements.splice(
+            featuredPosition,
+            0,
+            createFeaturedCard(featured, featuredLabelKey),
+          );
+        }
+        cards.append(...cardElements);
+        grid.appendChild(cards);
+        if (result.snapshotId) gridState.discoverySnapshotId = result.snapshotId;
+        gridState.currentPage = requestedPage;
+        gridState.hasMore = !result.exhausted && mods.length === 12;
+        gridState.status = result.stale
+          ? "stale"
+          : result.partial
+            ? "partial"
+            : result.exhausted
+              ? "exhausted"
+              : "ready";
+
+        pagesLoaded++;
+        if (isInitial) break;
       }
-      const cardElements = mods.map((mod, index) => createCard(mod, index));
-      if (featured && featuredPosition !== null) {
-        cardElements.splice(
-          featuredPosition,
-          0,
-          createFeaturedCard(featured, featuredLabelKey),
-        );
-      }
-      cards.append(...cardElements);
-      grid.appendChild(cards);
-      if (result.snapshotId) gridState.discoverySnapshotId = result.snapshotId;
-      gridState.currentPage = requestedPage;
-      gridState.hasMore = !result.exhausted && mods.length === 12;
-      gridState.status = result.stale
-        ? "stale"
-        : result.partial
-          ? "partial"
-          : result.exhausted
-            ? "exhausted"
-            : "ready";
       return true;
     } catch (error) {
       if (error?.kind === "aborted") return false;

@@ -30,14 +30,25 @@ export function createCard(mod, index) {
 
   const image = document.createElement("img");
   image.className = "mod-image";
-  image.src = mod.image;
+  image.src = "assets/img/placeholder-mini.jpg";
   image.alt = "";
   image.loading = "lazy";
   image.decoding = "async";
   image.onerror = () => {
     image.onerror = null;
-    image.src = "assets/icons/launcher-icon.png";
+    image.src = "assets/img/placeholder-mini.jpg";
   };
+
+  if (mod.image && mod.image !== "assets/img/placeholder-mini.jpg") {
+    const preloader = new Image();
+    preloader.onload = () => {
+      image.src = mod.image;
+    };
+    preloader.onerror = () => {
+      image.src = "assets/img/placeholder-mini.jpg";
+    };
+    preloader.src = mod.image;
+  }
   imageContainer.appendChild(image);
 
   // Engine / category indicator at top-left
@@ -76,7 +87,7 @@ export function createCard(mod, index) {
   // image lets the canvas read the cover pixels for the hover color.
   const colorProbe = new Image();
   colorProbe.crossOrigin = "anonymous";
-  colorProbe.src = mod.image;
+  colorProbe.src = mod.image || "assets/img/placeholder-mini.jpg";
   colorProbe.addEventListener("error", () => {
     card.style.setProperty("--card-color", "rgba(255, 255, 255, 0.2)");
   });

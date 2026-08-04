@@ -18,7 +18,8 @@ export const modModalCarousel = {
       thumb.className = `thumbnail-wrapper ${index === 0 ? "active" : ""}`;
       thumb.onclick = () => this.goToSlide(index);
 
-      thumb.innerHTML = `<img src="${imgSrc}">`;
+      const src = imgSrc || "assets/img/placeholder-mini.jpg";
+      thumb.innerHTML = `<img src="${src}" onerror="this.onerror=null;this.src='assets/img/placeholder-mini.jpg'">`;
       thumbsContainer.appendChild(thumb);
     });
 
@@ -32,13 +33,18 @@ export const modModalCarousel = {
 
   updateMainImage() {
     const mainImg = document.getElementById("modal-main-image");
-    setModalBackdrop(document.getElementById("mod-modal"), this.images[this.currentIndex]);
+    const imageSrc = this.images[this.currentIndex] || "assets/img/placeholder-mini.jpg";
+    setModalBackdrop(document.getElementById("mod-modal"), imageSrc);
 
     mainImg.classList.remove("fade-anim");
     void mainImg.offsetWidth;
     mainImg.classList.add("fade-anim");
 
-    mainImg.src = this.images[this.currentIndex];
+    mainImg.onerror = () => {
+      mainImg.onerror = null;
+      mainImg.src = "assets/img/placeholder-mini.jpg";
+    };
+    mainImg.src = imageSrc;
 
     const thumbsContainer = document.getElementById("modal-thumbnails");
     const thumbs = thumbsContainer.querySelectorAll(".thumbnail-wrapper");

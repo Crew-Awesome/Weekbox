@@ -8,8 +8,8 @@
     "locales:check": "node scripts/check-locales.js --strict",
     "assets": "node scripts/bundle.js",
     "postinstall": "npx @neutralinojs/neu update",
-    "dev": "npm run assets && npx npm-run-all --parallel \"assets -- --watch\" \"npx @neutralinojs/neu run\"",
-    "neu": "npm run assets && npx @neutralinojs/neu run",
+    "dev": "npm run assets && npm-run-all --parallel \"assets -- --watch\" neu",
+    "neu": "npx @neutralinojs/neu run",
     "build": "npm run assets && npx @neutralinojs/neu build"
   },
   "repository": {

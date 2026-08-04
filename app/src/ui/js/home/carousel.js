@@ -57,7 +57,17 @@ export const homeCarousel = {
 
         const slide = document.createElement("div");
         slide.className = "carousel-slide";
-        slide.style.backgroundImage = `url('${mod.image}')`;
+        slide.style.backgroundImage = "url('assets/img/placeholder-mini.jpg')";
+        if (mod.image) {
+          const preloader = new Image();
+          preloader.onload = () => {
+            slide.style.backgroundImage = `url('${mod.image}')`;
+          };
+          preloader.onerror = () => {
+            slide.style.backgroundImage = "url('assets/img/placeholder-mini.jpg')";
+          };
+          preloader.src = mod.image;
+        }
         slide.innerHTML = `
             <div class="carousel-overlay"></div>
             ${engineBadgeHtml}

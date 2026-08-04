@@ -678,6 +678,125 @@ async function runCurlDownload(command, getTask, onProgress, getProgress) {
   }
 }
 
+async function downloadGoogleDriveArchive({
+  fileId,
+  outPath,
+  totalBytes = 0,
+  getTask,
+  onProgress,
+}) {
+  const cookiePath = `${outPath}.cookie`;
+  const probePath = `${outPath}.probe`;
+  try {
+    onProgress?.("Authorizing Google Drive download...", 2);
+    const initialUrl = `https://drive.usercontent.google.com/download?id=${encodeURIComponent(fileId)}&export=download`;
+    
+    // Request download with cookie jar
+    await retryTransientDownload(
+      () =>
+        runCurlDownload(
+          `curl --globoff -s -L -c ${quoteCommandArgument(cookiePath)} ${quoteCommandArgument(initialUrl)} -o ${quoteCommandArgument(probePath)}`,
+          getTask,
+          () => {},
+        ),
+      getTask,
+      onProgress,
+      () => Neutralino.filesystem.remove(probePath).catch(() => {}),
+    );
+
+    let isHtml = false;
+    let htmlContent = "";
+    try {
+      const stats = await Neutralino.filesystem.getStats(probePath);
+      if (stats.size > 0 && stats.size < 500 * 1024) {
+        htmlContent = await Neutralino.filesystem.readFile(probePath);
+        if (
+          htmlContent.includes("<!DOCTYPE html") ||
+          htmlContent.includes("<!doctype html") ||
+          htmlContent.includes("<html") ||
+          htmlContent.includes("<form")
+        ) {
+          isHtml = true;
+        }
+      }
+    } catch {}
+
+    if (isHtml) {
+      // Check for Google Drive error pages
+      if (
+        htmlContent.includes("Quota exceeded") ||
+        htmlContent.includes("uc-error-caption") ||
+        htmlContent.includes("Too many users have viewed or downloaded this file recently")
+      ) {
+        throw new Error(
+          "Google Drive: Este archivo ha superado su cuota de descargas porque demasiados usuarios lo han descargado recientemente. Inténtalo más tarde o prueba con otro enlace de descarga.",
+        );
+      }
+      if (
+        htmlContent.includes("Access denied") ||
+        htmlContent.includes("You need access") ||
+        htmlContent.includes("Sign in to continue")
+      ) {
+        throw new Error(
+          "Google Drive: Este archivo requiere permisos de acceso o inicio de sesión en Google.",
+        );
+      }
+      if (
+        htmlContent.includes("File not found") ||
+        htmlContent.includes("Sorry, the file you have requested does not exist")
+      ) {
+        throw new Error(
+          "Google Drive: El archivo no existe o fue eliminado de Google Drive.",
+        );
+      }
+
+      // Check if there is a download confirmation form
+      const formActionMatch = htmlContent.match(/<form[^>]+action="([^"]+)"/i);
+      let actionUrl = formActionMatch
+        ? formActionMatch[1].replaceAll("&amp;", "&")
+        : "https://drive.usercontent.google.com/download";
+      if (!actionUrl.startsWith("http")) {
+        actionUrl = `https://drive.usercontent.google.com${actionUrl.startsWith("/") ? "" : "/"}${actionUrl}`;
+      }
+
+      const formParams = new URLSearchParams();
+      formParams.set("id", fileId);
+      formParams.set("export", "download");
+      formParams.set("confirm", "t");
+
+      const inputRegex = /<input[^>]+(?:name="([^"]+)"[^>]+value="([^"]*)"|value="([^"]*)"[^>]+name="([^"]+)")/gi;
+      let match;
+      while ((match = inputRegex.exec(htmlContent)) !== null) {
+        const name = match[1] || match[4];
+        const value = match[2] || match[3] || "";
+        if (name) formParams.set(name, value);
+      }
+
+      const confirmedDownloadUrl = `${actionUrl}${actionUrl.includes("?") ? "&" : "?"}${formParams.toString()}`;
+
+      await Neutralino.filesystem.remove(probePath).catch(() => {});
+      onProgress?.("Downloading mod from Google Drive...", 5);
+      await retryTransientDownload(
+        () =>
+          runCurlDownload(
+            `curl --globoff -# -L --fail --show-error -b ${quoteCommandArgument(cookiePath)} --connect-timeout 15 --speed-time 60 --speed-limit 1024 ${quoteCommandArgument(confirmedDownloadUrl)} -o ${quoteCommandArgument(outPath)}`,
+            getTask,
+            onProgress,
+            createFileProgressReader(outPath, totalBytes),
+          ),
+        getTask,
+        onProgress,
+        () => Neutralino.filesystem.remove(outPath).catch(() => {}),
+      );
+    } else {
+      await Neutralino.filesystem.move(probePath, outPath);
+    }
+  } finally {
+    await Neutralino.filesystem.remove(cookiePath).catch(() => {});
+    await Neutralino.filesystem.remove(probePath).catch(() => {});
+  }
+}
+
 async function downloadSingleArchive({
   url,
   outPath,
@@ -694,38 +813,13 @@ async function downloadSingleArchive({
     const fileId =
       url.match(/id=([^&]+)/)?.[1] || url.match(/\/file\/d\/([^/]+)/)?.[1];
     if (fileId) {
-      const cookiePath = outPath + ".cookie";
-      onProgress?.("Authorizing Google Drive download...", 2);
-      await retryTransientDownload(
-        () =>
-          runCurlDownload(
-            `curl -s -L -c ${quoteCommandArgument(cookiePath)} "https://drive.google.com/uc?export=download&id=${fileId}"`,
-            getTask,
-            () => {},
-          ),
+      await downloadGoogleDriveArchive({
+        fileId,
+        outPath,
+        totalBytes,
         getTask,
         onProgress,
-        () => Neutralino.filesystem.remove(cookiePath).catch(() => {}),
-      );
-      let token = "t";
-      try {
-        const cookieStr = await Neutralino.filesystem.readFile(cookiePath);
-        const match = cookieStr.match(/download_warning_([^\s]+)/);
-        if (match) token = match[1];
-      } catch (e) {}
-      await retryTransientDownload(
-        () =>
-          runCurlDownload(
-            `curl -# -L --fail --show-error -b ${quoteCommandArgument(cookiePath)} "https://drive.google.com/uc?export=download&id=${fileId}&confirm=${token}" -o ${quoteCommandArgument(outPath)}`,
-            getTask,
-            onProgress,
-            createFileProgressReader(outPath, totalBytes),
-          ),
-        getTask,
-        onProgress,
-        () => Neutralino.filesystem.remove(outPath).catch(() => {}),
-      );
-      await Neutralino.filesystem.remove(cookiePath).catch(() => {});
+      });
       return;
     }
   }
@@ -953,6 +1047,7 @@ async function downloadArchive({
     await finalizeDownloadedArchive(partPath, outPath);
     const stats = await waitForDownloadedArchive(outPath);
     onProgress?.("Verifying downloaded archive...", 98);
+    await verifyDownloadedArchiveContent(outPath);
     onDiagnostic?.({
       resolvedUrl: url,
       downloadedSize: stats.size,
@@ -973,6 +1068,7 @@ async function downloadArchive({
     await finalizeDownloadedArchive(partPath, outPath);
     const stats = await waitForDownloadedArchive(outPath);
     onProgress?.("Verifying downloaded archive...", 98);
+    await verifyDownloadedArchiveContent(outPath);
     onDiagnostic?.({
       resolvedUrl: url,
       downloadedSize: stats.size,
@@ -982,6 +1078,45 @@ async function downloadArchive({
   } catch (error) {
     await Neutralino.filesystem.remove(partPath).catch(() => {});
     throw error;
+  }
+}
+
+async function verifyDownloadedArchiveContent(archivePath) {
+  const stats = await Neutralino.filesystem.getStats(archivePath);
+  if (stats.size === 0) {
+    throw new Error("The downloaded archive is empty (0 bytes).");
+  }
+  if (stats.size < 500 * 1024) {
+    try {
+      const sample = await Neutralino.filesystem.readFile(archivePath);
+      if (
+        sample.includes("<!DOCTYPE html") ||
+        sample.includes("<!doctype html") ||
+        sample.includes("<html") ||
+        sample.includes("<HTML")
+      ) {
+        if (
+          sample.includes("Quota exceeded") ||
+          sample.includes("uc-error-caption") ||
+          sample.includes("Too many users have viewed or downloaded this file recently")
+        ) {
+          throw new Error(
+            "Google Drive: Este archivo ha superado la cuota de descargas porque demasiados usuarios lo han descargado recientemente. Inténtalo más tarde o prueba con otro enlace.",
+          );
+        }
+        const titleMatch = sample.match(/<title[^>]*>([^<]+)<\/title>/i);
+        const headingMatch = sample.match(/<h1[^>]*>([^<]+)<\/h1>/i);
+        const pMatch = sample.match(/<p[^>]*class="[^"]*error[^"]*"[^>]*>([^<]+)<\/p>/i);
+        const errorReason = pMatch?.[1]?.trim() || headingMatch?.[1]?.trim() || titleMatch?.[1]?.trim() || "Web page returned";
+        throw new Error(
+          `La descarga falló: El servidor devolvió una página web ('${errorReason}') en lugar de un archivo de mod.`,
+        );
+      }
+    } catch (e) {
+      if (e.message?.includes("Google Drive:") || e.message?.includes("La descarga falló:") || e.message?.includes("The downloaded archive is empty")) {
+        throw e;
+      }
+    }
   }
 }
 
@@ -1061,38 +1196,27 @@ async function extractArchive({
   const isWindows = window.NL_OS === "Windows";
   const archiveFormat = await detectArchiveFormat(archivePath);
   let portable7z = null;
-  // Use the bundled extractor for ZIPs on Windows too. Windows tar can reject
-  // valid archives on some systems, then the old PowerShell fallback can fail
-  // before it even starts when PowerShell/AMSI is damaged.
-  if (
-    archiveFormat === "rar" ||
-    archiveFormat === "7z" ||
-    archiveFormat === "zip"
-  ) {
-    const binNames = isWindows
-      ? archiveFormat === "rar"
-        ? ["7z.exe"]
-        : ["7z.exe", "7za.exe"]
-      : window.NL_OS === "Darwin"
-        ? ["7zz-mac", "7za-mac", "7zz"]
-        : ["7zz-linux", "7za-linux", "7zzs", "7zz"];
-    for (const binName of binNames) {
-      const pathsToTry = [
-        `${window.NL_PATH}/app/assets/bin/${binName}`,
-        `${window.NL_PATH}/assets/bin/${binName}`,
-        `${window.NL_CWD}/app/assets/bin/${binName}`,
-        `${window.NL_CWD}/assets/bin/${binName}`,
-      ];
-      for (const binPath of pathsToTry) {
-        try {
-          if ((await Neutralino.filesystem.getStats(binPath)).isFile) {
-            portable7z = binPath;
-            break;
-          }
-        } catch {}
-      }
-      if (portable7z) break;
+  const binNames = isWindows
+    ? ["7za.exe", "7z.exe"]
+    : window.NL_OS === "Darwin"
+      ? ["7zz-mac", "7za-mac", "7zz"]
+      : ["7zz-linux", "7za-linux", "7zzs", "7zz"];
+  for (const binName of binNames) {
+    const pathsToTry = [
+      `${window.NL_PATH}/app/assets/bin/${binName}`,
+      `${window.NL_PATH}/assets/bin/${binName}`,
+      `${window.NL_CWD}/app/assets/bin/${binName}`,
+      `${window.NL_CWD}/assets/bin/${binName}`,
+    ];
+    for (const binPath of pathsToTry) {
+      try {
+        if ((await Neutralino.filesystem.getStats(binPath)).isFile) {
+          portable7z = binPath;
+          break;
+        }
+      } catch {}
     }
+    if (portable7z) break;
   }
   const command = portable7z
     ? `${quoteCommandArgument(portable7z)} x -y -aoa -o${quoteCommandArgument(destinationPath)} ${quoteCommandArgument(archivePath)}`
@@ -1140,21 +1264,29 @@ async function extractArchive({
     let recovered = false;
     if (isWindows) {
       if (await hasExtractedPayload(destinationPath)) recovered = true;
-      if (
-        !recovered &&
-        String(error).includes("resolve failed") &&
-        !command.includes("--force-local")
-      ) {
+      if (!recovered) {
         try {
-          await execute(
-            command.replace("tar.exe -xf", "tar.exe --force-local -xf"),
-          );
+          await execute(getWindowsExtractionCommand(archivePath, destinationPath));
           recovered = true;
-        } catch (retryError) {
-          error = retryError;
+        } catch (tarError) {
+          if (
+            String(tarError).includes("resolve failed")
+          ) {
+            try {
+              await execute(
+                getWindowsExtractionCommand(archivePath, destinationPath).replace(
+                  "tar.exe -xf",
+                  "tar.exe --force-local -xf",
+                ),
+              );
+              recovered = true;
+            } catch (retryError) {
+              error = retryError;
+            }
+          }
         }
       }
-      if (!recovered && String(archivePath).toLowerCase().endsWith(".zip")) {
+      if (!recovered && (String(archivePath).toLowerCase().endsWith(".zip") || archiveFormat === "zip")) {
         try {
           await execute(
             getPowerShellExtractCommand(archivePath, destinationPath),

@@ -33,6 +33,7 @@ async function buildAssets(watch = false) {
     outfile: path.resolve(outDir, "bundle.css"),
     loader: { ".svg": "file" },
     assetNames: "flags/[name]-[hash]",
+    external: ["assets/*", "/assets/*", "../assets/*"],
     minify: !watch,
   };
 

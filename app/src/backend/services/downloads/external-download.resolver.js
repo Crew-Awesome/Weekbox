@@ -24,7 +24,10 @@ async function resolveExternalDownloadUrl(url, executeCommand) {
     throw new Error("This external download link is not supported");
   }
   const hostname = parsed.hostname.toLowerCase();
-  if (hostname === "drive.google.com") {
+  if (
+    hostname === "drive.google.com" ||
+    hostname === "drive.usercontent.google.com"
+  ) {
     const fileId = getGoogleDriveFileId(parsed);
     if (!fileId) {
       throw new Error(

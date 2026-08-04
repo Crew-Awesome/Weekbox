@@ -14,11 +14,11 @@ export const scrollManager = {
       this.scrollFrame = null;
       if (
         mainContent.scrollTop + mainContent.clientHeight >=
-          mainContent.scrollHeight - 300 &&
+          mainContent.scrollHeight - 400 &&
         !gridState.isLoading &&
         gridState.hasMore
       ) {
-        gridRender.renderGrid(false);
+        gridRender.renderGrid(false, 2);
       }
     };
     this.scrollHandler = () => {

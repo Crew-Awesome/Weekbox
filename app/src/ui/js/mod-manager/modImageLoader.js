@@ -23,7 +23,7 @@ export async function getModCover(modId, fetchDetails) {
       includeRequirements: false,
     });
     const imageUrl = details?.images?.[0];
-    return imageUrl === "assets/icons/launcher-icon.png" ? null : imageUrl;
+    return imageUrl === "assets/icons/launcher-icon.png" || imageUrl === "assets/img/placeholder-mini.jpg" ? null : imageUrl;
   });
   primeModCover(modId, cover);
   return cover;

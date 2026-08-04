@@ -35,13 +35,13 @@ export const homeGrid = {
     filterManager.setup();
     await gridRender.renderGrid(true);
     if (prefetchNextPage && gridState.hasMore) {
-      await gridRender.renderGrid(false);
+      gridRender.renderGrid(false).catch(() => {});
     }
     scrollManager.setup();
   },
 
-  renderGrid(isInitial) {
-    return gridRender.renderGrid(isInitial);
+  renderGrid(isInitial, pagesToLoad) {
+    return gridRender.renderGrid(isInitial, pagesToLoad);
   },
 
   destroy() {

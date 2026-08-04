@@ -290,9 +290,15 @@ async function startApp() {
       onProgress: (message, progress) =>
         startupLoader.setPhase(message, progress),
     });
-    await Promise.all([homeView.ready, modManagerReady]);
+    await Promise.race([
+      Promise.all([homeView.ready, modManagerReady]),
+      new Promise((resolve) => setTimeout(resolve, 8000)),
+    ]);
     startupLoader.setPhase(t("startup.checkingLibrary"), 89);
-    await maintenance;
+    await Promise.race([
+      maintenance,
+      new Promise((resolve) => setTimeout(resolve, 5000)),
+    ]);
     await startupLoader.complete();
     await offerNestedStorageRepair();
     await openLaunchDeepLink();

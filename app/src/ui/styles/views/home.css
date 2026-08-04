@@ -231,6 +231,7 @@
 .carousel-slide {
   min-width: 100%;
   position: relative;
+  background: #1e1e1e url("../assets/img/placeholder-mini.jpg") center / cover no-repeat;
   background-size: cover;
   background-position: center;
   display: flex;
