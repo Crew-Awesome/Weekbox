@@ -13,7 +13,6 @@ export const gridState = {
   featuredCandidates: [],
   featuredIds: new Set(),
   featuredEngineIds: new Set(),
-  featuredOffset: 0,
   engineTooltip: null,
   engineTooltipGrid: null,
   status: "ready",

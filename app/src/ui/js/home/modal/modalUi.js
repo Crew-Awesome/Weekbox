@@ -1,10 +1,11 @@
 import { ENGINE_DETAILS } from "../../../../backend/config/engines.config.js";
-import { gameBananaApi } from "../../../../backend/providers/gamebanana/gamebanana.provider.js";
 import { errorHandler } from "../../errors/errorHandler.js";
 import {
   activateCheckoutDialog,
   deactivateCheckoutDialog,
 } from "./dialogFocus.js";
+import { enhanceContentLinks } from "../../contentLinks.js";
+import { setModalBackdrop } from "./modalBackdrop.js";
 import { modModal } from "./index.js";
 import { t } from "../../i18n/index.js";
 
@@ -51,6 +52,7 @@ function hideModal() {
 }
 
 function resetModal() {
+  setModalBackdrop(document.getElementById("mod-modal"), "");
   ["modal-title", "modal-author", "modal-description"].forEach((id) => {
     const el = document.getElementById(id);
     if (el) el.textContent = "";
@@ -101,9 +103,7 @@ function resetModal() {
   if (engineName) engineName.textContent = "";
 }
 
-let descriptionReferenceVersion = 0;
-
-function linkifyDescriptionGameBananaUrls(content) {
+function linkifyDescriptionSubmissionUrls(content) {
   const textNodes = [];
   const walker = document.createTreeWalker(content, NodeFilter.SHOW_TEXT);
   while (walker.nextNode()) {
@@ -112,10 +112,10 @@ function linkifyDescriptionGameBananaUrls(content) {
       textNodes.push(textNode);
     }
   }
-  const gameBananaUrl =
-    /https?:\/\/(?:www\.)?gamebanana\.com\/(?:mods|tools)\/\d+(?:[/?#][^\s<]*)?/gi;
+  const submissionUrl =
+    /https?:\/\/(?:www\.)?gamebanana\.com\/(?:mods|tools)\/\d+(?:[/?#][^\s<]*)?|https?:\/\/(?:[\w-]+\.)*sniro\.boo\/mod\/[^\s<]+/gi;
   textNodes.forEach((textNode) => {
-    const matches = [...textNode.textContent.matchAll(gameBananaUrl)];
+    const matches = [...textNode.textContent.matchAll(submissionUrl)];
     if (!matches.length) return;
     const fragment = document.createDocumentFragment();
     let cursor = 0;
@@ -131,62 +131,6 @@ function linkifyDescriptionGameBananaUrls(content) {
     });
     fragment.append(textNode.textContent.slice(cursor));
     textNode.replaceWith(fragment);
-  });
-}
-
-function enhanceDescriptionGameBananaLinks(description) {
-  const version = ++descriptionReferenceVersion;
-  description.querySelectorAll("a[href]").forEach((link) => {
-    const submission = gameBananaApi.getGameBananaSubmission(link.href);
-    if (!submission) return;
-    const reference = document.createElement("button");
-    reference.type = "button";
-    reference.className = "modal-description-submission-link";
-    reference.title = t("modModal.loadingGameBananaDetails");
-    const icon = document.createElement("img");
-    icon.src = "https://images.gamebanana.com/static/img/banana.png";
-    icon.alt = "";
-    const label = document.createElement("span");
-    label.textContent = t("modModal.loadingGameBananaDetails");
-    reference.append(icon, label);
-    reference.addEventListener("click", async () => {
-      try {
-        await modModal.openSubmission(submission);
-      } catch (error) {
-        console.warn("Could not open GameBanana submission reference", error);
-        errorHandler.show({
-          error,
-          action: "Open GameBanana reference",
-          item: reference.title,
-        });
-      }
-    });
-    link.replaceWith(reference);
-    const getDetails =
-      submission.type === "tool"
-        ? gameBananaApi.getToolDetails(submission.id, {
-            requireDownload: false,
-          })
-        : gameBananaApi.getModDetails(submission.id, {
-            includeRequirements: false,
-          });
-    getDetails
-      .then((details) => {
-        if (!description.isConnected || version !== descriptionReferenceVersion)
-          return;
-        const kind = submission.type === "tool" ? "tool" : "mod";
-        const title =
-          details?.title || link.textContent.trim() || `GameBanana ${kind}`;
-        label.textContent = title;
-        reference.title = t("modModal.openSubmissionDetails", { title });
-      })
-      .catch(() => {
-        if (!description.isConnected || version !== descriptionReferenceVersion)
-          return;
-        label.textContent =
-          link.textContent.trim() || t("modModal.gameBananaSubmission");
-        reference.title = t("modModal.openGameBananaSubmission");
-      });
   });
 }
 
@@ -222,9 +166,22 @@ function showModData(data, isInstalled, onDownload) {
         "img, picture, video, audio, iframe, embed, object, source",
       )
       .forEach((element) => element.remove());
-    linkifyDescriptionGameBananaUrls(content.content);
+    linkifyDescriptionSubmissionUrls(content.content);
     description.replaceChildren(content.content);
-    enhanceDescriptionGameBananaLinks(description);
+    enhanceContentLinks(description, {
+      onGameBanana: async (submission, reference) => {
+        try {
+          await modModal.openSubmission(submission);
+        } catch (error) {
+          console.warn("Could not open GameBanana submission reference", error);
+          errorHandler.show({
+            error,
+            action: "Open GameBanana reference",
+            item: reference.title,
+          });
+        }
+      },
+    });
   }
   const imgLoader = document.getElementById("modal-image-loader");
   if (imgLoader) imgLoader.style.display = "none";

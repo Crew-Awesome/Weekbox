@@ -4,14 +4,33 @@ import { createCard, createFeaturedCard } from "./cardBuilder.js";
 import { networkStatus } from "../../../../backend/core/system/network-status.service.js";
 import { t } from "../../i18n/index.js";
 
-function selectFeaturedMod(mods, featuredIds, featuredEngineIds, offset) {
+function selectFeaturedMod(mods, featuredIds, featuredEngineIds) {
   const unseen = mods.filter((mod) => !featuredIds.has(mod.id));
   const candidates = unseen.length ? unseen : mods;
   const varied = candidates.filter(
     (mod) => mod.engineId && !featuredEngineIds.has(mod.engineId),
   );
   const pool = varied.length ? varied : candidates;
-  return pool.length ? pool[offset % Math.min(pool.length, 6)] : null;
+  return pool.length ? pool[Math.floor(Math.random() * pool.length)] : null;
+}
+
+function selectFeaturedPosition(grid, cardCount) {
+  const columns = Math.max(
+    1,
+    getComputedStyle(grid).gridTemplateColumns.split(/\s+/).filter(Boolean)
+      .length,
+  );
+  const existingCardCount = [...grid.children].filter((child) =>
+    child.matches(".mod-card:not(.mod-card--featured)"),
+  ).length;
+  const positions = [];
+  for (let position = 0; position <= cardCount; position++) {
+    const total = existingCardCount + position;
+    if (total > 0 && total % columns === 0) positions.push(position);
+  }
+  return positions.length
+    ? positions[Math.floor(Math.random() * positions.length)]
+    : null;
 }
 
 export const gridRender = {
@@ -89,7 +108,6 @@ export const gridRender = {
       gridState.featuredCandidates = [];
       gridState.featuredIds.clear();
       gridState.featuredEngineIds.clear();
-      gridState.featuredOffset = Math.floor(Math.random() * 3);
       grid.classList.remove("grid-empty", "grid-error");
     }
 
@@ -148,6 +166,7 @@ export const gridRender = {
       const cards = document.createDocumentFragment();
       const showFeatured =
         !gridState.isSearchMode &&
+        Math.random() < 0.5 &&
         ((isInitial && gridState.currentFilter === "popular") ||
           requestedPage % 3 === 0);
       const featuredSource =
@@ -160,8 +179,10 @@ export const gridRender = {
             featuredSource,
             gridState.featuredIds,
             gridState.featuredEngineIds,
-            gridState.featuredOffset,
           )
+        : null;
+      const featuredPosition = featured
+        ? selectFeaturedPosition(grid, mods.length)
         : null;
       const featuredLabel =
         gridState.currentFilter === "updated"
@@ -169,13 +190,20 @@ export const gridRender = {
           : gridState.currentFilter === "new"
             ? "New release"
             : "Popular community pick";
-      if (featured) {
+      if (featured && featuredPosition !== null) {
         gridState.featuredIds.add(featured.id);
         if (featured.engineId)
           gridState.featuredEngineIds.add(featured.engineId);
-        cards.appendChild(createFeaturedCard(featured, featuredLabel));
       }
-      mods.forEach((mod, index) => cards.appendChild(createCard(mod, index)));
+      const cardElements = mods.map((mod, index) => createCard(mod, index));
+      if (featured && featuredPosition !== null) {
+        cardElements.splice(
+          featuredPosition,
+          0,
+          createFeaturedCard(featured, featuredLabel),
+        );
+      }
+      cards.append(...cardElements);
       grid.appendChild(cards);
       if (result.snapshotId) gridState.discoverySnapshotId = result.snapshotId;
       gridState.currentPage = requestedPage;

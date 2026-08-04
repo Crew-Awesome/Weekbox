@@ -702,15 +702,52 @@ body.window-unfocused::after {
 .modal-overlay {
   position: fixed;
   inset: 0;
-  background-color: rgba(0, 0, 0, 0.85);
+  background-color: transparent;
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
   z-index: 1000;
   display: flex;
   align-items: center;
   justify-content: center;
+  overflow: hidden;
+  isolation: isolate;
   opacity: 0;
   transition: opacity 0.3s ease;
+}
+
+.modal-overlay::before {
+  position: absolute;
+  inset: -32px;
+  z-index: -1;
+  background-image: var(--modal-backdrop-image);
+  background-position: center;
+  background-size: cover;
+  content: "";
+  filter: blur(26px);
+  opacity: 0;
+  transform: scale(1.08);
+}
+
+.modal-overlay::after {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  background-color: rgb(0 0 0 / 82%);
+  content: "";
+  pointer-events: none;
+}
+
+.modal-overlay.has-backdrop::before {
+  opacity: 0.78;
+}
+
+.modal-overlay.has-backdrop::after {
+  background-color: rgb(0 0 0 / 50%);
+}
+
+.modal-overlay > .modal-content {
+  position: relative;
+  z-index: 1;
 }
 
 .modal-overlay.show {
@@ -1524,7 +1561,6 @@ body.window-unfocused::after {
 .mod-settings-cancel,
 .mod-settings-save,
 .mod-settings-reset,
-.mod-settings-move-to-dependencies,
 .mod-settings-move-to-mods {
   min-height: 34px;
   padding: 0 11px;
@@ -1540,7 +1576,6 @@ body.window-unfocused::after {
 .mod-settings-open-folder:hover,
 .mod-settings-cancel:hover,
 .mod-settings-reset:hover:not(:disabled),
-.mod-settings-move-to-dependencies:hover:not(:disabled),
 .mod-settings-move-to-mods:hover:not(:disabled) {
   border-color: var(--text-muted);
   color: var(--text-main);
@@ -1829,7 +1864,6 @@ body.window-unfocused::after {
 
 .mod-settings-save:disabled,
 .mod-settings-reset:disabled,
-.mod-settings-move-to-dependencies:disabled,
 .mod-settings-move-to-mods:disabled {
   cursor: not-allowed;
   opacity: 0.5;

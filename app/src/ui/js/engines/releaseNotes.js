@@ -15,6 +15,7 @@ const ALLOWED_TAGS = new Set([
   "h6",
   "hr",
   "img",
+  "input",
   "li",
   "ol",
   "p",
@@ -34,6 +35,7 @@ const ALLOWED_TAGS = new Set([
 const ALLOWED_ATTRIBUTES = {
   a: new Set(["href", "title"]),
   img: new Set(["alt", "height", "src", "title", "width"]),
+  input: new Set(["checked", "disabled", "type"]),
   ol: new Set(["start"]),
 };
 

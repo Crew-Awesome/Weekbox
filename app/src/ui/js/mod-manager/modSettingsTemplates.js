@@ -33,7 +33,6 @@ export function settingsContent({
   controlsDisabled,
   canReset,
   resetTitle,
-  canMoveToDependencies,
   isDependency,
   isExecutable,
   readOnly,
@@ -124,7 +123,7 @@ export function settingsContent({
       </div>
       <footer class="mod-settings-footer">
         <button type="button" class="mod-settings-reset" ${canReset && !readOnly ? "" : `disabled title="${escapeHtml(readOnly ? t("modSettings.closeEngineToChangeShort") : resetTitle)}"`}>${t("common.reset")}</button>
-        ${isDependency ? `<button type="button" class="mod-settings-move-to-mods" ${readOnly ? "disabled" : ""}>${t("modSettings.moveToMods")}</button>` : canMoveToDependencies ? `<button type="button" class="mod-settings-move-to-dependencies" ${readOnly ? "disabled" : ""}>${t("modSettings.moveToDependencies")}</button>` : ""}
+        ${isDependency ? `<button type="button" class="mod-settings-move-to-mods" ${readOnly ? "disabled" : ""}>${t("modSettings.moveToMods")}</button>` : ""}
         <span class="mod-settings-status" role="status"></span>
         <button type="button" class="mod-settings-cancel">${t("common.cancel")}</button>
         <button type="submit" class="mod-settings-save" ${readOnly ? "disabled" : ""}>${t("common.save")}</button>

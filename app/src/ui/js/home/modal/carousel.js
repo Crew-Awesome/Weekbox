@@ -1,3 +1,5 @@
+import { setModalBackdrop } from "./modalBackdrop.js";
+
 export const modModalCarousel = {
   slideInterval: null,
   images: [],
@@ -30,6 +32,7 @@ export const modModalCarousel = {
 
   updateMainImage() {
     const mainImg = document.getElementById("modal-main-image");
+    setModalBackdrop(document.getElementById("mod-modal"), this.images[this.currentIndex]);
 
     mainImg.classList.remove("fade-anim");
     void mainImg.offsetWidth;

@@ -1,8 +1,12 @@
 import { appEvents } from "../../backend/core/routing/events.service.js";
+import { enhanceContentLinks } from "./contentLinks.js";
+import { Marked } from "marked";
 import {
   activateCheckoutDialog,
   deactivateCheckoutDialog,
 } from "./home/modal/dialogFocus.js";
+import { setModalBackdrop } from "./home/modal/modalBackdrop.js";
+import { modModal } from "./home/modal/index.js";
 import { sanitizeReleaseHtml } from "./engines/releaseNotes.js";
 import { t } from "./i18n/index.js";
 
@@ -10,20 +14,6 @@ const NEWS_SITE_URL = "https://fnfweekbox.vercel.app";
 const NEWS_FEED_URL = `${NEWS_SITE_URL}/api/news`;
 const NEWS_CACHE_KEY = "weekbox_news_feed_v1";
 const NEWS_REQUEST_TIMEOUT = 8000;
-
-function escapeHtml(value) {
-  return String(value ?? "").replace(
-    /[&<>\"']/g,
-    (character) =>
-      ({
-        "&": "&amp;",
-        "<": "&lt;",
-        ">": "&gt;",
-        '"': "&quot;",
-        "'": "&#39;",
-      })[character],
-  );
-}
 
 function safeNewsUrl(value) {
   try {
@@ -47,150 +37,18 @@ function newsLink(post) {
   return `${NEWS_SITE_URL}/news/${encodeURIComponent(String(post.slug || ""))}`;
 }
 
-function renderNewsInline(value) {
-  const tokens = [];
-  const stash = (html) => {
-    const token = `\0${tokens.length}\0`;
-    tokens.push(html);
-    return token;
-  };
-  let source = String(value || "");
-  source = source.replace(
-    /!\[([^\]]*)\]\(([^)\s]+)(?:\s+"([^"]*)")?\)/g,
-    (match, alt, url, title) => {
-      const src = safeNewsUrl(url);
-      return src
-        ? stash(
-            `<img src="${escapeHtml(src)}" alt="${escapeHtml(alt)}"${title ? ` title="${escapeHtml(title)}"` : ""}>`,
-          )
-        : alt;
-    },
-  );
-  source = source.replace(
-    /\[([^\]]+)\]\(([^)\s]+)(?:\s+"([^"]*)")?\)/g,
-    (match, label, url, title) => {
-      const href = safeNewsUrl(url);
-      return href
-        ? stash(
-            `<a href="${escapeHtml(href)}"${title ? ` title="${escapeHtml(title)}"` : ""}>${escapeHtml(label)}</a>`,
-          )
-        : label;
-    },
-  );
-  let html = escapeHtml(source);
-  html = html.replace(/`([^`\n]+)`/g, (match, content) =>
-    stash(`<code>${content}</code>`),
-  );
-  html = html.replace(
-    /\*\*(.+?)\*\*|__(.+?)__/g,
-    (match, strong, underscored) =>
-      stash(`<strong>${strong || underscored}</strong>`),
-  );
-  html = html.replace(/~~(.+?)~~/g, (match, content) =>
-    stash(`<del>${content}</del>`),
-  );
-  html = html.replace(
-    /\*([^*\n]+)\*|_([^_\n]+)_/g,
-    (match, italic, underscored) => stash(`<em>${italic || underscored}</em>`),
-  );
-  return html.replace(
-    /\0(\d+)\0/g,
-    (match, index) => tokens[Number(index)] || "",
-  );
-}
+const newsMarkdown = new Marked({ gfm: true, breaks: false });
 
 function renderNewsMarkdown(value) {
   const source = String(value || "").replace(/\r\n?/g, "\n");
   if (!source.trim()) return "";
-  if (
-    /<(?:p|h[1-6]|ul|ol|li|strong|em|a|blockquote|img|br|hr|pre|code)\b/i.test(
-      source,
-    )
-  ) {
-    return sanitizeReleaseHtml(source);
-  }
-  const lines = source.split("\n");
-  const output = [];
-  const paragraph = [];
-  let listType = "";
-  let codeLines = null;
-  const flushParagraph = () => {
-    if (!paragraph.length) return;
-    output.push(`<p>${renderNewsInline(paragraph.join(" "))}</p>`);
-    paragraph.length = 0;
-  };
-  const closeList = () => {
-    if (listType) output.push(`</${listType}>`);
-    listType = "";
-  };
-  for (const line of lines) {
-    if (codeLines) {
-      if (/^\s*```/.test(line)) {
-        output.push(
-          `<pre><code>${escapeHtml(codeLines.join("\n"))}</code></pre>`,
-        );
-        codeLines = null;
-      } else {
-        codeLines.push(line);
-      }
-      continue;
-    }
-    if (/^\s*```/.test(line)) {
-      flushParagraph();
-      closeList();
-      codeLines = [];
-      continue;
-    }
-    if (!line.trim()) {
-      flushParagraph();
-      closeList();
-      continue;
-    }
-    const heading = line.match(/^\s{0,3}(#{1,6})\s+(.+?)\s*#*\s*$/);
-    if (heading) {
-      flushParagraph();
-      closeList();
-      output.push(
-        `<h${heading[1].length}>${renderNewsInline(heading[2])}</h${heading[1].length}>`,
-      );
-      continue;
-    }
-    if (/^\s{0,3}([-*_])(?:\s*\1){2,}\s*$/.test(line)) {
-      flushParagraph();
-      closeList();
-      output.push("<hr>");
-      continue;
-    }
-    const unordered = line.match(/^\s{0,3}[-*+]\s+(.+)$/);
-    const ordered = line.match(/^\s{0,3}\d+[.]\s+(.+)$/);
-    if (unordered || ordered) {
-      flushParagraph();
-      const nextListType = ordered ? "ol" : "ul";
-      if (listType !== nextListType) {
-        closeList();
-        listType = nextListType;
-        output.push(`<${listType}>`);
-      }
-      output.push(`<li>${renderNewsInline((ordered || unordered)[1])}</li>`);
-      continue;
-    }
-    const quote = line.match(/^\s{0,3}>\s?(.*)$/);
-    if (quote) {
-      flushParagraph();
-      closeList();
-      output.push(
-        `<blockquote><p>${renderNewsInline(quote[1])}</p></blockquote>`,
-      );
-      continue;
-    }
-    closeList();
-    paragraph.push(line.trim());
-  }
-  if (codeLines)
-    output.push(`<pre><code>${escapeHtml(codeLines.join("\n"))}</code></pre>`);
-  flushParagraph();
-  closeList();
-  return sanitizeReleaseHtml(output.join(""));
+  const html = newsMarkdown.parse(source, {
+    walkTokens(token) {
+      if (token.type !== "link" && token.type !== "image") return;
+      token.href = token.href ? safeNewsUrl(token.href) : "";
+    },
+  });
+  return sanitizeReleaseHtml(html);
 }
 
 export const newsView = {
@@ -250,6 +108,12 @@ export const newsView = {
     const excerpt = modal.querySelector("#news-detail-excerpt");
     const body = modal.querySelector("#news-detail-body");
     const link = modal.querySelector("#news-detail-link");
+    const renderBody = (value) => {
+      body.innerHTML = renderNewsMarkdown(value);
+      enhanceContentLinks(body, {
+        onGameBanana: (submission) => modModal.openSubmission(submission),
+      });
+    };
     title.textContent = String(post.title || t("nav.news"));
     meta.replaceChildren();
     const date = newsDate(post.publishedAt);
@@ -275,6 +139,7 @@ export const newsView = {
     image.hidden = !coverUrl;
     image.src = coverUrl;
     image.alt = post.title ? `${post.title} cover` : "";
+    setModalBackdrop(modal, coverUrl);
     modal.style.display = "flex";
     requestAnimationFrame(() => {
       modal.classList.add("show");
@@ -297,13 +162,11 @@ export const newsView = {
         throw new Error(`News post returned ${response.status}`);
       const payload = await response.json();
       if (!controller.signal.aborted && typeof payload?.body === "string") {
-        body.innerHTML = renderNewsMarkdown(payload.body || post.excerpt || "");
+        renderBody(payload.body || post.excerpt || "");
       }
     } catch (error) {
       if (!controller.signal.aborted) {
-        body.innerHTML = renderNewsMarkdown(
-          post.excerpt || t("news.articleUnavailable"),
-        );
+        renderBody(post.excerpt || t("news.articleUnavailable"));
       }
     } finally {
       clearTimeout(timeout);

@@ -31,6 +31,7 @@
     "prettier": "^3.9.5"
   },
   "dependencies": {
-    "flag-icons": "^7.5.0"
+    "flag-icons": "^7.5.0",
+    "marked": "^18.0.7"
   }
 }

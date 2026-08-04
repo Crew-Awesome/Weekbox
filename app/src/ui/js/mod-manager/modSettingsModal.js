@@ -71,7 +71,6 @@ export const modSettingsModal = {
       resetTitle: networkStatus.online
         ? t("modSettings.defaultsOnlyGameBanana")
         : t("modSettings.connectToReset"),
-      canMoveToDependencies: !isExecutable && mod.kind !== "dependency",
       isDependency,
       isExecutable,
       readOnly,
@@ -251,31 +250,6 @@ export const modSettingsModal = {
           close();
         } catch (error) {
           status.textContent = t("modSettings.couldNotMoveDependency");
-          moveButton.disabled = false;
-        }
-      });
-    overlay
-      .querySelector(".mod-settings-move-to-dependencies")
-      ?.addEventListener("click", async (event) => {
-        const moveButton = event.currentTarget;
-        moveButton.disabled = true;
-        status.textContent = t("modSettings.movingToDependencies");
-        try {
-          if (!fileLocked) await FS.assertModChangeAllowed(mod.id);
-          if (!fileLocked && !isExecutable && !mod.engineLocked && dropdowns) {
-            const engineId = dropdowns.engineSelect.value || null;
-            const version =
-              engineId && dropdowns.versionSelect
-                ? dropdowns.versionSelect.value || null
-                : null;
-            await FS.setModEngineCompatibility(mod.id, engineId, version);
-          }
-          const movedMod = await FS.moveModToDependencies(mod.id);
-          if (!movedMod) throw new Error(t("modSettings.modMoveFailed"));
-          await onSaved?.();
-          close();
-        } catch (error) {
-          status.textContent = t("modSettings.couldNotMoveMod");
           moveButton.disabled = false;
         }
       });
