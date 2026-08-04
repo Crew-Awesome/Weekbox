@@ -22,6 +22,7 @@ const ALLOWED_TAGS = new Set([
   "pre",
   "strong",
   "summary",
+  "span",
   "table",
   "tt",
   "tbody",
@@ -37,6 +38,7 @@ const ALLOWED_ATTRIBUTES = {
   img: new Set(["alt", "height", "src", "title", "width"]),
   input: new Set(["checked", "disabled", "type"]),
   ol: new Set(["start"]),
+  span: new Set(["style"]),
 };
 
 function isSafeUrl(value) {
@@ -66,6 +68,16 @@ export function sanitizeReleaseHtml(html) {
 
     const allowedAttributes = ALLOWED_ATTRIBUTES[tagName] || new Set();
     [...element.attributes].forEach((attribute) => {
+      if (
+        tagName === "span" &&
+        attribute.name.toLowerCase() === "style"
+      ) {
+        const color = element.style.color;
+        element.removeAttribute("style");
+        if (color && CSS.supports("color", color))
+          element.style.setProperty("color", color);
+        return;
+      }
       if (!allowedAttributes.has(attribute.name.toLowerCase())) {
         element.removeAttribute(attribute.name);
       }

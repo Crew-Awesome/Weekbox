@@ -114,7 +114,11 @@ appSettings = {
       if (!fileExists) this.migrateLegacySettings(legacyKeys);
       await this.write();
       this.removeLegacySettings(legacyKeys);
-      await Neutralino.storage.setData(SETTINGS_PATH_KEY, dataPath);
+      await Neutralino.storage
+        .setData(SETTINGS_PATH_KEY, dataPath)
+        .catch((error) =>
+          console.warn("WeekBox settings: native path storage unavailable.", error),
+        );
       this.initialized = true;
     } catch (error) {
       console.warn("WeekBox settings: file storage is unavailable.", error);
@@ -124,7 +128,11 @@ appSettings = {
     if (!dataPath || this.path === `${dataPath}/${SETTINGS_FILE_NAME}`) return;
     this.path = `${dataPath}/${SETTINGS_FILE_NAME}`;
     await this.write();
-    await Neutralino.storage.setData(SETTINGS_PATH_KEY, dataPath);
+    await Neutralino.storage
+      .setData(SETTINGS_PATH_KEY, dataPath)
+      .catch((error) =>
+        console.warn("WeekBox settings: native path storage unavailable.", error),
+      );
   },
   getLegacyKeys() {
     return Array.from({ length: localStorage.length }, (_, index) =>

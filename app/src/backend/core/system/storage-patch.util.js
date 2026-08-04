@@ -6,7 +6,8 @@ storageBridge = {
     if (!isNeutralino) return;
     try {
       const keys = await Neutralino.storage.getKeys();
-      for (const key of keys) {
+      for (const key of Array.isArray(keys) ? keys : []) {
+        if (typeof key !== "string" || !key) continue;
         try {
           const value = await Neutralino.storage.getData(key);
           Storage.prototype.setItem.call(window.localStorage, key, value);
@@ -24,14 +25,14 @@ storageBridge = {
     const isNativeStorageKey = (key) => /^[a-zA-Z-_0-9]{1,50}$/.test(key);
     window.localStorage.setItem = function (key, value) {
       originalSet.call(window.localStorage, key, value);
-      if (!isNativeStorageKey(key)) return;
+      if (!isNativeStorageKey(String(key || ""))) return;
       Neutralino.storage
         .setData(key, String(value))
         .catch((e) => console.warn(e));
     };
     window.localStorage.removeItem = function (key) {
       originalRemove.call(window.localStorage, key);
-      if (!isNativeStorageKey(key)) return;
+      if (!isNativeStorageKey(String(key || ""))) return;
       Neutralino.storage.removeData(key).catch((e) => console.warn(e));
     };
     window.localStorage.clear = function () {
@@ -39,7 +40,9 @@ storageBridge = {
       Neutralino.storage
         .getKeys()
         .then((keys) => {
-          keys.forEach((k) => Neutralino.storage.removeData(k));
+          (Array.isArray(keys) ? keys : [])
+            .filter((key) => typeof key === "string" && key)
+            .forEach((key) => Neutralino.storage.removeData(key));
         })
         .catch((e) => console.warn(e));
     };

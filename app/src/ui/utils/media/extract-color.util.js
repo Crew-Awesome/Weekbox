@@ -35,6 +35,7 @@ function applyDominantColor(img, targetElement, options = {}) {
     alpha = 0.5,
     fallback = "rgba(128, 128, 128, 0.3)",
   } = options;
+  const setFallback = () => targetElement.style.setProperty(cssVar, fallback);
   const processColor = () => {
     scheduleColorJob(() => {
       try {
@@ -99,8 +100,13 @@ function applyDominantColor(img, targetElement, options = {}) {
       }
     });
   };
-  if (img.complete) processColor();
-  else img.addEventListener("load", processColor, { once: true });
+  if (img.complete) {
+    if (img.naturalWidth) processColor();
+    else setFallback();
+  } else {
+    img.addEventListener("load", processColor, { once: true });
+    img.addEventListener("error", setFallback, { once: true });
+  }
 }
 
 export { applyDominantColor };

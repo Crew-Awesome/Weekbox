@@ -245,6 +245,10 @@
   background-image: url("../../../../../node_modules/flag-icons/flags/4x3/es.svg");
 }
 
+#config-modal .setting-language-flag.fi-de {
+  background-image: url("../../../../../node_modules/flag-icons/flags/4x3/de.svg");
+}
+
 #config-modal .setting-language-option > span:last-child {
   min-width: 0;
   overflow: hidden;

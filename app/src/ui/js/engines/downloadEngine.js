@@ -147,7 +147,7 @@ export const downloadEngine = {
       await FS.api.write(`${engineDir}/.downloading`, "1");
       this.throwIfCancelled(task);
       updateProgress(t("downloads.connecting"), 2);
-      await downloadArchive({
+      const archiveStats = await downloadArchive({
         url: downloadUrl,
         outPath: tempFilePath,
         getTask: () => this.activeTasks.get(taskKey),
@@ -155,7 +155,6 @@ export const downloadEngine = {
       });
       this.throwIfCancelled(task);
 
-      const archiveStats = await Neutralino.filesystem.getStats(tempFilePath);
       if (!archiveStats.size) {
         throw new Error("Download finished without creating an archive file");
       }

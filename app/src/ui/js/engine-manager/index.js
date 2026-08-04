@@ -6,6 +6,7 @@ import { applyDominantColor } from "../../utils/index-utils.js";
 import { networkStatus } from "../../../backend/core/system/network-status.service.js";
 import { sidebar } from "../sidebar.js";
 import { i18n, t } from "../i18n/index.js";
+import { errorHandler } from "../errors/errorHandler.js";
 
 export const engineManagerModal = {
   currentIndex: 0,
@@ -258,20 +259,36 @@ export const engineManagerModal = {
           deleteBtn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i>`;
           const targetPath = `${FS.enginesPath}/${engineId}/${version}`;
           try {
-            if (window.NL_OS === "Windows") {
-              await Neutralino.os
-                .execCommand(
-                  `rmdir /S /Q "${targetPath.replace(/\//g, "\\")}"`,
-                  { background: false },
-                )
-                .catch(() => {});
-            } else {
-              await Neutralino.os
-                .execCommand(`rm -rf "${targetPath}"`, { background: false })
-                .catch(() => {});
+            if (await FS.api.exists(targetPath)) {
+              const result = await Neutralino.os.execCommand(
+                window.NL_OS === "Windows"
+                  ? `rmdir /S /Q "${targetPath.replace(/\//g, "\\")}"`
+                  : `rm -rf "${targetPath}"`,
+                { background: false },
+              );
+              if (Number(result?.exitCode) !== 0 && (await FS.api.exists(targetPath))) {
+                await FS.api.remove(targetPath).catch(() => {});
+              }
+              if (await FS.api.exists(targetPath)) {
+                throw new Error(
+                  result?.stdErr ||
+                    result?.stdOut ||
+                    "The engine folder could not be removed. Close the engine and try again.",
+                );
+              }
             }
-          } catch (e) {}
-          await this.loadInstalledEngines(); // Recarga automatica
+            await this.loadInstalledEngines();
+          } catch (error) {
+            deleteBtn.disabled = false;
+            deleteBtn.innerHTML = '<i class="fa-solid fa-trash"></i>';
+            errorHandler.show({
+              error,
+              action: "Uninstall engine",
+              item: details.name,
+              version,
+              storagePath: FS.weekboxPath,
+            });
+          }
         });
         versionsList.appendChild(item);
       });

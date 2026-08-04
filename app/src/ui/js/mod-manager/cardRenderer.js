@@ -223,8 +223,9 @@ export const cardRenderer = {
           card.style.transform = "scale(0.8) translateY(10px)";
           card.style.opacity = "0";
           setTimeout(() => {
+            if (!card.isConnected || !gridContainer.isConnected) return;
             card.remove();
-            if (gridContainer.children.length === 0) {
+            if (gridContainer.children.length === 0 && gridContainer.parentNode) {
               gridContainer.outerHTML = modManagerTemplates.emptyState(
                 t("modManager.noModsInstalled"),
               );

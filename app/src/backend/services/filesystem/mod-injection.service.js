@@ -27,12 +27,14 @@ var _ModInjectionService = class _ModInjectionService {
     modRepository,
     getEnginesPath,
     getModsPath,
+    isEngineRunning,
   }) {
     this.api = api;
     this.executables = executables;
     this.modRepository = modRepository;
     this.getEnginesPath = getEnginesPath;
     this.getModsPath = getModsPath;
+    this.isEngineRunning = isEngineRunning;
   }
   getLegacyModsPath(engineId, version) {
     return `${this.getEnginesPath()}/${engineId}/${version}/mods`;
@@ -234,12 +236,23 @@ var _ModInjectionService = class _ModInjectionService {
       let lastError;
       for (let attempt = 1; attempt <= 3; attempt += 1) {
         try {
+          if (this.isEngineRunning?.(engineId, version)) {
+            throw new Error(
+              `Close the ${engineId} engine before removing ${mod.name}.`,
+            );
+          }
           if (isCopiedLink) {
-            await this.api.remove(linkPath);
+            await this.api.remove(linkPath).catch(async () => {
+              if (window.NL_OS !== "Windows") throw new Error("Could not remove copied mod link");
+              await Neutralino.os.execCommand(
+                `rmdir /S /Q "${linkPath.replace(/\//g, "\\")}"`,
+                { background: false },
+              );
+            });
           } else {
             const command =
               window.NL_OS === "Windows"
-                ? `cmd /c rmdir "${linkPath.replace(/\//g, "\\")}"`
+                ? `cmd /c rmdir /S /Q "${linkPath.replace(/\//g, "\\")}"`
                 : window.NL_OS === "Darwin"
                   ? `rm -f "${linkPath}"`
                   : `rm -rf "${linkPath}"`;

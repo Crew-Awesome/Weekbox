@@ -47,6 +47,7 @@ var _FileSystemService = class _FileSystemService {
     this.modsPath = "";
     this.dataPath = "";
     this.isInitialized = false;
+    this.initPromise = null;
     this.startupMaintenancePromise = null;
     this.isStorageMoveInProgress = false;
     this.activeDownload = null;
@@ -75,6 +76,8 @@ var _FileSystemService = class _FileSystemService {
       modRepository: this.mods,
       getEnginesPath: () => this.enginesPath,
       getModsPath: () => this.modsPath,
+      isEngineRunning: (engineId, version) =>
+        this.isEngineRunning(engineId, version),
     });
     this.maintenance = new LibraryMaintenanceService({
       api: this.api,
@@ -90,11 +93,20 @@ var _FileSystemService = class _FileSystemService {
       findExecutable: (path) => this.findExecutable(path),
     });
   }
-  async init({ deferMaintenance = false } = {}) {
+  async init(options = {}) {
     if (this.isInitialized) {
-      if (!deferMaintenance) await this.runStartupMaintenance();
+      if (!options.deferMaintenance) await this.runStartupMaintenance();
       return;
     }
+    if (this.initPromise) return this.initPromise;
+    this.initPromise = this._init(options);
+    try {
+      return await this.initPromise;
+    } finally {
+      this.initPromise = null;
+    }
+  }
+  async _init({ deferMaintenance = false } = {}) {
     if (typeof Neutralino !== "undefined") {
       const defaultStoragePath = await this.getDefaultStorageParentPath();
       const savedPath = appSettings.get("storageParentPath");
@@ -209,18 +221,34 @@ var _FileSystemService = class _FileSystemService {
   }
   async getDefaultStorageParentPath() {
     if (window.NL_OS === "Windows") {
-      const localAppDataPath = await Neutralino.os.getEnv("LOCALAPPDATA");
+      const localAppDataPath = await Neutralino.os
+        .getEnv("LOCALAPPDATA")
+        .catch(() => "");
       if (localAppDataPath) return localAppDataPath;
     }
-    const documentsPath = await Neutralino.os.getPath("documents");
+    const documentsPath = await Neutralino.os
+      .getPath("documents")
+      .catch(() => "");
     if (window.NL_OS === "Darwin" && isICloudPath(documentsPath)) {
-      const homePath = await Neutralino.os.getEnv("HOME");
+      const homePath = await Neutralino.os
+        .getEnv("HOME")
+        .catch(() => "");
       if (homePath) return homePath;
     }
-    return documentsPath;
+    if (documentsPath) return documentsPath;
+    const fallbackKey = window.NL_OS === "Windows" ? "USERPROFILE" : "HOME";
+    const fallbackPath = await Neutralino.os
+      .getEnv(fallbackKey)
+      .catch(() => "");
+    if (fallbackPath) return fallbackPath;
+    throw new Error("WeekBox could not find a writable storage location");
   }
   setStoragePaths(basePath) {
-    this.basePath = String(basePath).replace(/[\\/]+$/, "");
+    const normalizedBasePath = String(basePath || "").trim().replace(/[\\/]+$/, "");
+    if (!normalizedBasePath || /^(?:undefined|null)$/i.test(normalizedBasePath)) {
+      throw new Error("WeekBox could not find a writable storage location");
+    }
+    this.basePath = normalizedBasePath;
     this.weekboxPath = `${this.basePath}/WeekBox`;
     this.enginesPath = `${this.weekboxPath}/engines`;
     this.modsPath = `${this.weekboxPath}/mods`;

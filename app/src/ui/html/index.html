@@ -341,7 +341,6 @@
                       ></span>
                       <span
                         id="setting-language-selected"
-                        data-i18n="languages.english"
                         >English</span
                       >
                       <i
@@ -369,7 +368,7 @@
                           class="setting-language-flag fi fi-us"
                           aria-hidden="true"
                         ></span>
-                        <span data-i18n="languages.english">English</span>
+                        <span>English</span>
                       </button>
                       <button
                         type="button"
@@ -383,16 +382,33 @@
                           class="setting-language-flag fi fi-es"
                           aria-hidden="true"
                         ></span>
-                        <span data-i18n="languages.spanish">Español</span>
+                        <span>Español</span>
+                      </button>
+                      <button
+                        type="button"
+                        class="setting-language-option"
+                        data-language="de"
+                        data-flag="de"
+                        role="option"
+                        aria-selected="false"
+                      >
+                        <span
+                          class="setting-language-flag fi fi-de"
+                          aria-hidden="true"
+                        ></span>
+                        <span>Deutsch</span>
                       </button>
                     </div>
                   </div>
                   <select id="setting-language" hidden>
-                    <option value="en" data-i18n="languages.english">
+                    <option value="en">
                       English
                     </option>
-                    <option value="es" data-i18n="languages.spanish">
+                    <option value="es">
                       Español
+                    </option>
+                    <option value="de">
+                      Deutsch
                     </option>
                   </select>
                 </div>

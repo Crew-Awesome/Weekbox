@@ -9,6 +9,7 @@ import { setModalBackdrop } from "./home/modal/modalBackdrop.js";
 import { modModal } from "./home/modal/index.js";
 import { sanitizeReleaseHtml } from "./engines/releaseNotes.js";
 import { t } from "./i18n/index.js";
+import { applyDominantColor } from "../utils/index-utils.js";
 
 const NEWS_SITE_URL = "https://fnfweekbox.vercel.app";
 const NEWS_FEED_URL = `${NEWS_SITE_URL}/api/news`;
@@ -136,10 +137,20 @@ export const newsView = {
       Neutralino.os.open(link.href).catch(() => {});
     };
     const coverUrl = safeNewsUrl(post.coverUrl);
+    modal.style.setProperty("--card-color", "rgba(255, 255, 255, 0.08)");
     image.hidden = !coverUrl;
     image.src = coverUrl;
     image.alt = post.title ? `${post.title} cover` : "";
     setModalBackdrop(modal, coverUrl);
+    if (coverUrl) {
+      const colorProbe = new Image();
+      colorProbe.crossOrigin = "anonymous";
+      colorProbe.src = coverUrl;
+      applyDominantColor(colorProbe, modal, {
+        alpha: 0.2,
+        fallback: "rgba(255, 255, 255, 0.08)",
+      });
+    }
     modal.style.display = "flex";
     requestAnimationFrame(() => {
       modal.classList.add("show");
@@ -240,6 +251,14 @@ export const newsView = {
         image.loading = "lazy";
         image.addEventListener("error", () => image.remove(), { once: true });
         card.appendChild(image);
+
+        const colorProbe = new Image();
+        colorProbe.crossOrigin = "anonymous";
+        colorProbe.src = coverUrl;
+        applyDominantColor(colorProbe, card, {
+          alpha: 0.28,
+          fallback: "rgba(255, 255, 255, 0.08)",
+        });
       }
       const body = document.createElement("div");
       body.className = "news-view__card-body";

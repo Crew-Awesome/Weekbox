@@ -176,7 +176,7 @@ export const downloadMod = {
       if (this.activeTasks.get(modId)?.cancelled) throw new Error("Cancelled");
       toastDownloadMod.update(modId, 2, t("downloads.connecting"));
 
-      await downloadArchive({
+      const archiveStats = await downloadArchive({
         url: downloadUrl,
         sourceType,
         outPath: tempFilePath,
@@ -187,7 +187,6 @@ export const downloadMod = {
         },
       });
 
-      const archiveStats = await Neutralino.filesystem.getStats(tempFilePath);
       if (!archiveStats.size) throw new Error("Downloaded archive is empty");
 
       if (this.activeTasks.get(modId)?.cancelled) throw new Error("Cancelled");

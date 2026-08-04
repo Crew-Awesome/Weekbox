@@ -180,6 +180,11 @@ function createProcessError(operation, exitCode, output) {
       "The connection to the download server was interrupted. Try again.",
     );
   }
+  if (operation === "Download" && Number(exitCode) === 60) {
+    return createDownloadError(
+      "The download server certificate could not be trusted. Check the system date, network, VPN, proxy, and antivirus HTTPS inspection settings.",
+    );
+  }
   if (
     operation === "Download" &&
     Number(exitCode) === 22 &&
@@ -208,8 +213,13 @@ function createProcessError(operation, exitCode, output) {
       `The download server rejected this file${httpStatus ? ` (HTTP ${httpStatus})` : ""}. Choose another download or try again later.`,
     );
   }
+  if (operation === "Extraction" && !detail && window.NL_OS === "Linux") {
+    return new Error(
+      `WeekBox could not extract this archive on Linux (exit code ${exitCode}). Install unzip or p7zip and try again.`,
+    );
+  }
   return new Error(
-    `${operation} failed with exit code ${exitCode}${detail ? `: ${detail}` : ""}`,
+    `${operation} failed with exit code ${exitCode}${detail ? `: ${detail}` : ": no native error output was returned"}`,
   );
 }
 
@@ -941,14 +951,14 @@ async function downloadArchive({
     }
     onProgress?.("Finalizing downloaded file...", 98);
     await finalizeDownloadedArchive(partPath, outPath);
-    const stats = await Neutralino.filesystem.getStats(outPath);
+    const stats = await waitForDownloadedArchive(outPath);
     onProgress?.("Verifying downloaded archive...", 98);
     onDiagnostic?.({
       resolvedUrl: url,
       downloadedSize: stats.size,
       archiveFormat: await detectArchiveFormat(outPath),
     });
-    return;
+    return stats;
   }
   try {
     onProgress?.("Connecting to download server...", 2);
@@ -961,13 +971,14 @@ async function downloadArchive({
     });
     onProgress?.("Finalizing downloaded file...", 98);
     await finalizeDownloadedArchive(partPath, outPath);
-    const stats = await Neutralino.filesystem.getStats(outPath);
+    const stats = await waitForDownloadedArchive(outPath);
     onProgress?.("Verifying downloaded archive...", 98);
     onDiagnostic?.({
       resolvedUrl: url,
       downloadedSize: stats.size,
       archiveFormat: await detectArchiveFormat(outPath),
     });
+    return stats;
   } catch (error) {
     await Neutralino.filesystem.remove(partPath).catch(() => {});
     throw error;

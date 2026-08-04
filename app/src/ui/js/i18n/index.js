@@ -1,8 +1,9 @@
 import en from "../../locales/en.json";
 import es from "../../locales/es.json";
+import de from "../../locales/de.json";
 import { appSettings } from "../../../backend/core/system/settings.service.js";
 
-const catalogs = { en, es };
+const catalogs = { en, es, de };
 const fallbackLocale = "en";
 
 function interpolate(value, variables = {}) {

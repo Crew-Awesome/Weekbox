@@ -109,7 +109,16 @@ var APIneuFileSystem = {
     if (typeof path !== "string" || !path.trim()) return;
     const exists = await this.exists(path);
     if (exists) {
-      await Neutralino.filesystem.remove(path);
+      try {
+        await Neutralino.filesystem.remove(path);
+      } catch (error) {
+        // A concurrent cleanup may remove the path between exists() and remove().
+        if (
+          (await this.exists(path)) ||
+          /access|permission|denied/i.test(String(error?.message || error))
+        )
+          throw error;
+      }
     }
   },
 };

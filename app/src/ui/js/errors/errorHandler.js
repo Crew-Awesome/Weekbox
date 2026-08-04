@@ -27,6 +27,19 @@ function sanitizeDiagnosticText(value) {
     .slice(0, 12000);
 }
 
+function getNativeErrorDetails(error) {
+  if (!error || typeof error !== "object") return "";
+  const fields = ["message", "code", "error", "stdErr", "stdOut", "reason"]
+    .map((key) => String(error[key] ?? "").trim())
+    .filter(Boolean);
+  if (fields.length) return [...new Set(fields)].join(" | ");
+  try {
+    return JSON.stringify(error, null, 2);
+  } catch {
+    return String(error);
+  }
+}
+
 async function getOperatingSystem() {
   try {
     const info = await Neutralino.computer.getOSInfo();
@@ -48,21 +61,14 @@ function getMessage(error) {
   if (error instanceof Error) return error.stack || error.message;
   if (typeof error === "string") return error;
   if (error && typeof error === "object") {
-    try {
-      return JSON.stringify(error, null, 2);
-    } catch {
-      return error.message || "An unexpected error occurred";
-    }
+    return getNativeErrorDetails(error) || "An unexpected error occurred";
   }
   return String(error || "An unexpected error occurred");
 }
 
 function getDiagnosticErrorMessage(error) {
   if (error instanceof Error) return error.message || "An unexpected error";
-  if (error && typeof error === "object" && error.message) {
-    return String(error.message);
-  }
-  return getMessage(error);
+  return getNativeErrorDetails(error) || getMessage(error);
 }
 
 function getDiagnosticStackTrace(error) {
@@ -73,9 +79,7 @@ function getDiagnosticStackTrace(error) {
 
   let nativeDetails = "No extra native error details were provided.";
   if (error && typeof error === "object") {
-    try {
-      nativeDetails = JSON.stringify(error, null, 2);
-    } catch {}
+    nativeDetails = getNativeErrorDetails(error) || nativeDetails;
   }
   return `No JavaScript stack trace was provided by Neutralino.\nNative error details:\n${nativeDetails}`;
 }
@@ -86,7 +90,10 @@ function describeIssue(error) {
 
   if (
     lower.includes("crypt_e_no_revocation_check") ||
-    (lower.includes("schannel") && lower.includes("exit code 35"))
+    (lower.includes("schannel") && lower.includes("exit code 35")) ||
+    lower.includes("exit code 60") ||
+    lower.includes("certificate could not be trusted") ||
+    lower.includes("untrusted_root")
   ) {
     return {
       title: t("errors.certificateTitle"),
@@ -104,7 +111,12 @@ function describeIssue(error) {
       tag: t("errors.storageLocationTag"),
     };
   }
-  if (lower.includes("access is denied") || lower.includes("permission")) {
+  if (
+    lower.includes("access is denied") ||
+    lower.includes("permission") ||
+    lower.includes("file is in use") ||
+    lower.includes("directory is not empty")
+  ) {
     return {
       title: t("errors.writeFolderTitle"),
       summary: t("errors.writeFolderSummary"),
