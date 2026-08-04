@@ -123,10 +123,6 @@ async function fetchLatestRelease() {
   const timeout = setTimeout(() => controller.abort(), UPDATE_REQUEST_TIMEOUT);
   try {
     const response = await fetch(RELEASES_API, {
-      headers: {
-        Accept: "application/vnd.github+json",
-        "X-GitHub-Api-Version": "2026-03-10",
-      },
       signal: controller.signal,
       cache: "no-store",
     });
