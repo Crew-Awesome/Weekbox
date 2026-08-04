@@ -24,6 +24,7 @@ import { toastSystem } from "../../../ui/js/index.js";
 import { storageRecommendationModal } from "../../../ui/js/index.js";
 import { modManagerModal } from "../../../ui/js/index.js";
 import { firstRunStorageModal } from "../../../ui/js/index.js";
+import { firstRunLanguageModal } from "../../../ui/js/index.js";
 import { i18n, t } from "../../../ui/js/i18n/index.js";
 
 function clearTestToasts() {
@@ -323,6 +324,9 @@ async function startApp() {
     );
     await appSettings.init(settingsDataPath);
     i18n.init();
+    if (!appSettings.get("firstRunLanguageSetupComplete")) {
+      await firstRunLanguageModal.show();
+    }
     await syncWindowsProtocolRegistration(
       appSettings.get("registerProtocolLinks"),
     );

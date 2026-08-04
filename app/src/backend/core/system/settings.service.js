@@ -48,6 +48,7 @@ LEGACY_PREFIX = "weekbox_setting_";
 SETTINGS_PATH_KEY = "weekbox-settings-data-path";
 settingDefinitions = {
   language: { type: "string", defaultValue: "en" },
+  firstRunLanguageSetupComplete: { type: "boolean", defaultValue: false },
   launchOnStartup: { type: "boolean", defaultValue: false },
   registerProtocolLinks: { type: "boolean", defaultValue: true },
   blurOutOfFocus: { type: "boolean", defaultValue: true },

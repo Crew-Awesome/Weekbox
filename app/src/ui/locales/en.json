@@ -32,6 +32,8 @@
   "languages.english": "English",
   "languages.spanish": "Español",
   "languages.german": "Deutsch",
+  "languageSetup.title": "What language do you speak?",
+  "languageSetup.optionsLabel": "Languages",
   "nav.home": "Home",
   "nav.news": "Newsletter",
   "nav.modManager": "Mods",

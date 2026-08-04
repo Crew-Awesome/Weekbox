@@ -104,4 +104,5 @@ export { sidebar } from "./sidebar.js";
 export { i18n, t } from "./i18n/index.js";
 export { existingStorageModal } from "./existingStorageModal.js";
 export { firstRunStorageModal } from "./firstRunStorageModal.js";
+export { firstRunLanguageModal } from "./firstRunLanguageModal.js";
 export { storageRecommendationModal } from "./storageRecommendationModal.js";
