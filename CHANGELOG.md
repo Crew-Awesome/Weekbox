@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.0.2] - 2026-08-04
+
+### Fixed
+
+- Fixed WeekBox update checks getting stuck behind a browser preflight request.
+- Fixed stalled update requests so startup can continue when GitHub is unreachable.
+
 ## [2.0.1] - 2026-08-04
 
 ### Fixed
