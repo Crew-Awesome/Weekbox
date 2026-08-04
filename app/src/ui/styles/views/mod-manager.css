@@ -1414,7 +1414,6 @@
   gap: var(--spacing-md);
   border: none;
   border-radius: 0 0 var(--border-radius) var(--border-radius);
-  transition: all 0.35s cubic-bezier(0.25, 1, 0.5, 1);
 }
 
 .mod-manager-info {

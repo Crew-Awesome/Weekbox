@@ -13,6 +13,7 @@ const fs = require("fs");
 async function buildAssets(watch = false) {
   const outDir = path.resolve(__dirname, "../app/dist");
   fs.mkdirSync(outDir, { recursive: true });
+  fs.rmSync(path.join(outDir, "flags"), { recursive: true, force: true });
 
   const jsOptions = {
     entryPoints: [

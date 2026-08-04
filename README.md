@@ -27,8 +27,8 @@ Everything you install stays local. WeekBox has no account system and does not u
   </tr>
   <tr>
     <td width="50%">
-      <img src="./docs/screenshots/engine-manager.png" alt="Engine Manager with installed engines" /><br/>
-      <sub><b>Engine Manager</b>: install and switch between engines.</sub>
+      <img src="./docs/screenshots/engine-manager.png" alt="Installed engines" /><br/>
+      <sub><b>Engines</b>: install and switch between engines.</sub>
     </td>
     <td width="50%">
       <img src="./docs/screenshots/settings.png" alt="Settings" /><br/>

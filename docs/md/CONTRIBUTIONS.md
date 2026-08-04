@@ -37,14 +37,12 @@ app/src/
 
 ### MAIN DIRECTORIES
 
-- **`app/ui/js/`**: JavaScript logic, controllers, and handlers
-- **`app/ui/css/`**: Modular styles organized hierarchically
-- **`app/ui/html/`**: HTML templates
-- **`app/ui/utils/componentes/`**: Reusable Web Components
-- **`app/ui/utils/helpers/`**: Helper and transformation functions
-- **`app/backend/api/`**: API services and endpoints
-- **`app/backend/config/`**: Engine, source, and discovery configuration
-- **`app/backend/native/`**: Operating-system-specific integrations (PC, Mac, Linux)
+- **`app/src/ui/js/`**: JavaScript logic, controllers, and handlers
+- **`app/src/ui/styles/`**: Modular styles organized by base, component, layout, and view
+- **`app/src/ui/html/`**: HTML templates
+- **`app/src/ui/utils/`**: Shared UI helpers and services
+- **`app/src/backend/`**: Native/backend services
+- **`app/config/`**: App configuration
 
 ---
 
@@ -119,64 +117,37 @@ We use a modular, safe approach to styling, organized hierarchically by responsi
 Styles are organized into topic-based directories, each representing a related group of features, for example:
 
 ```
-app/src/ui/css/
-├── variables.css           # Variables globales (colores, espaciado, tipografía)
-├── index.css               # Entry point - imports de estructuras principales y estilos globales
-├── reset/
-│   ├── reset.css
-│   └── normalize.css
-├── base/
-│   ├── base.css
-│   └── tipografia.css
-├── menu/
-│   ├── menu.css            # Import principal del menú
-│   ├── grid.css            # Grid específica del menú
-│   ├── navegacion.css
-│   └── responsive.css
-├── modal/
-│   ├── modal.css
-│   ├── animaciones.css
-│   └── variantes.css
-├── componentes/
-│   ├── boton.css
-│   ├── formulario.css
-│   └── tarjeta.css
-└── utilidades/
-    ├── espaciado.css
-    ├── tipografia.css
-    └── animaciones.css
+app/src/ui/styles/
+├── styles.css              # Entry point
+├── variables.css
+├── base/                   # Base, markdown, and shared animations
+├── components/             # Buttons, dropdowns, progress, and toasts
+├── layout/                 # Sidebar and layout imports
+└── views/                  # Home, News, Mods, Engines, settings, and overlays
 ```
 
 ### CSS IMPORT FLOW
 
 **Rule**: Each layer imports only what it needs, from the bottom up.
 
-#### 1. `app/ui/css/index.css` (Entry Point)
+#### 1. `app/src/ui/styles/styles.css` (Entry Point)
 
 ```css
-/* Imports de configuración y estilos globales */
-@import url('./variables.css');
-@import url('./reset/reset.css');
-@import url('./base/base.css');
-
-/* Imports de estructuras principales */
-@import url('./menu/menu.css');
-@import url('./modal/modal.css');
-@import url('./componentes/boton.css');
-@import url('./utilidades/espaciado.css');
-
-* {
-  box-sizing: border-box;
-}
+@import "./variables.css";
+@import "./base/index-module.css";
+@import "./layout/index-module.css";
+@import "./components/index-module.css";
+@import "./views/index-module.css";
+/* View and component files are imported by their index modules. */
 
 body {
-  font-family: var(--fuente-principal);
-  color: var(--color-texto-primario);
-  background-color: var(--color-fondo);
+  font-family: var(--font-primary);
+  color: var(--text-main);
+  background-color: var(--bg-color);
 }
 ```
 
-#### 2. `app/ui/css/variables.css` (Variables Globales)
+#### 2. `app/src/ui/styles/variables.css` (Variables Globales)
 
 ```css
 /* ============================================
@@ -267,7 +238,7 @@ body {
 }
 ```
 
-#### 3. `app/ui/css/menu/menu.css` (Estructura Compleja)
+#### 3. Example view stylesheet (BEM structure)
 
 ```css
 /* Menu - Import principal que agrupa submódulos */
@@ -307,7 +278,7 @@ body {
 }
 ```
 
-#### 4. `app/ui/css/menu/grid.css` (Submódulo)
+#### 4. Example grid submodule
 
 ```css
 /* Menu - Sistema de Grid */
@@ -330,7 +301,7 @@ body {
 }
 ```
 
-#### 5. `app/ui/css/menu/navegacion.css` (Submódulo)
+#### 5. Example navigation submodule
 
 ```css
 /* Menu - Navegación */
@@ -350,7 +321,7 @@ body {
 }
 ```
 
-#### 6. `app/ui/css/menu/responsive.css` (Submódulo)
+#### 6. Example responsive submodule
 
 ```css
 /* Menu - Diseño Responsivo */
@@ -468,7 +439,7 @@ const html = `
 `;
 element.innerHTML = html;
 
-/* ✓ CORRECTO: Usar templates en app/ui/html/ */
+/* ✓ CORRECTO: Usar templates en app/src/ui/html/ */
 // Ver sección "Estructura de Componentes - Templates HTML"
 ```
 
@@ -502,7 +473,7 @@ All UI components should be **Web Components** _(or mostly so)_.
 Each component must have this structure:
 
 ```
-app/ui/utils/components/
+app/src/ui/utils/components/
 ├── componente-nombre/
 │   ├── componente-nombre.js      # Lógica del componente
 │   ├── componente-nombre.css     # Estilos scoped
@@ -621,7 +592,7 @@ class ComponenteBoton extends HTMLElement {
    * @returns {Promise<HTMLTemplateElement>}
    */
   async loadTemplate() {
-    const response = await fetch('/app/ui/utils/componentes/componente-boton/componente-boton.html');
+    const response = await fetch('/app/src/ui/utils/components/componente-boton/componente-boton.html');
     const html = await response.text();
     const template = document.createElement('template');
     template.innerHTML = html;
@@ -634,7 +605,7 @@ class ComponenteBoton extends HTMLElement {
    */
   async applyStyles() {
     const style = document.createElement('style');
-    const css = await fetch('/app/ui/utils/componentes/componente-boton/componente-boton.css')
+    const css = await fetch('/app/src/ui/utils/components/componente-boton/componente-boton.css')
       .then(res => res.text());
     style.textContent = css;
     this.shadowRoot.appendChild(style);
@@ -782,7 +753,7 @@ customElements.define('componente-boton', ComponenteBoton);
 
 ```css
 /* ✓ Importar variables globales en cada componente */
-@import url('../../css/variables.css');
+@import url('../../styles/variables.css');
 
 /* Estilos scoped del componente boton */
 :host {
@@ -1056,7 +1027,7 @@ Utilidades (Helpers)
 
 ### EXAMPLE: DOWNLOAD MANAGER
 
-#### 1. API LAYER: `app/backend/api/servicio-descarga.js`
+#### 1. API LAYER: `app/src/backend/api/servicio-descarga.js`
 
 ```javascript
 /**
@@ -1091,7 +1062,7 @@ export async function iniciarDescarga(urlArchivo, nombreArchivo) {
 }
 ```
 
-#### 2. LOGIC LAYER: `app/ui/js/gestor-descargas.js`
+#### 2. LOGIC LAYER: `app/src/ui/js/gestor-descargas.js`
 
 ```javascript
 /**
@@ -1140,7 +1111,7 @@ function guardarArchivoLocal(blob, nombreArchivo) {
 }
 ```
 
-#### 3. UI LAYER: `app/ui/utils/componentes/componente-descarga/componente-descarga.js`
+#### 3. UI LAYER: `app/src/ui/utils/components/componente-descarga/componente-descarga.js`
 
 ```javascript
 /**
@@ -1195,7 +1166,7 @@ class ComponenteDescarga extends HTMLElement {
 customElements.define('componente-descarga', ComponenteDescarga);
 ```
 
-#### 4. UTILITIES: `app/ui/utils/helpers/descarga-toast.js`
+#### 4. UTILITIES: `app/src/ui/utils/helpers/descarga-toast.js`
 
 ```javascript
 /**
@@ -1449,7 +1420,7 @@ Before opening a pull request, verify the following:
 
 ### CSS
 - [ ] My CSS is split by responsibility
-- [ ] I used variables from `app/ui/css/variables.css` in all my styles
+- [ ] I used variables from `app/src/ui/styles/variables.css` in all my styles
 - [ ] My complex CSS is split into separate files using `@import`
 - [ ] CSS styles use BEM and are scoped
 - [ ] I have no unjustified `!important` declarations

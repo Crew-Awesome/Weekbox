@@ -1,7 +1,5 @@
 export { setupDropdown } from "./components/dropdown.component.js";
 
-// Re-export Media
-export { getBase64FromUrl } from "./media/base64-transformer.util.js";
 export { applyDominantColor } from "./media/extract-color.util.js";
 
 // Re-export backend services originally in this file for backwards compatibility

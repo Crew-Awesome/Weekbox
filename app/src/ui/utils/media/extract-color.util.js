@@ -54,6 +54,10 @@ function applyDominantColor(img, targetElement, options = {}) {
         ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
         const data = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
         const swatches = /* @__PURE__ */ new Map();
+        let accentR = 0;
+        let accentG = 0;
+        let accentB = 0;
+        let accentWeight = 0;
         for (let index = 0; index < data.length; index += 64) {
           const r2 = data[index];
           const g2 = data[index + 1];
@@ -62,6 +66,13 @@ function applyDominantColor(img, targetElement, options = {}) {
           const min = Math.min(r2, g2, b2);
           const luma = 0.299 * r2 + 0.587 * g2 + 0.114 * b2;
           const saturation = max ? (max - min) / max : 0;
+          if (luma >= 35 && luma <= 225 && saturation >= 0.18) {
+            const weight = 0.35 + saturation;
+            accentR += r2 * weight;
+            accentG += g2 * weight;
+            accentB += b2 * weight;
+            accentWeight += weight;
+          }
           if (luma < 35 || luma > 225 || saturation < 0.18) continue;
           const key = `${Math.floor(r2 / 32)}:${Math.floor(g2 / 32)}:${Math.floor(b2 / 32)}`;
           const swatch = swatches.get(key) || {
@@ -105,9 +116,12 @@ function applyDominantColor(img, targetElement, options = {}) {
         );
         if (accentVar) {
           const lighten = 0.42;
+          const accentSourceR = accentWeight ? accentR / accentWeight : sourceR;
+          const accentSourceG = accentWeight ? accentG / accentWeight : sourceG;
+          const accentSourceB = accentWeight ? accentB / accentWeight : sourceB;
           targetElement.style.setProperty(
             accentVar,
-            `rgb(${Math.round(sourceR + (255 - sourceR) * lighten)}, ${Math.round(sourceG + (255 - sourceG) * lighten)}, ${Math.round(sourceB + (255 - sourceB) * lighten)})`,
+            `rgb(${Math.round(accentSourceR + (255 - accentSourceR) * lighten)}, ${Math.round(accentSourceG + (255 - accentSourceG) * lighten)}, ${Math.round(accentSourceB + (255 - accentSourceB) * lighten)})`,
           );
         }
       } catch {
