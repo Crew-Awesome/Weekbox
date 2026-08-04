@@ -13,7 +13,7 @@ const labelKeys = {
   "FPS Plus": "home.fpsPlus",
   "Psych Online": "home.psychOnline",
   Ripe: "home.ripe",
-  "Discovery (NEW)": "home.discoveryNew",
+  Discovery: "home.discovery",
   New: "home.newest",
   Updated: "home.updated",
 };

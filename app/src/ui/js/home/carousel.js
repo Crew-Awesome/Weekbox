@@ -3,6 +3,26 @@ import { modModal } from "./modal/index.js";
 import { networkStatus } from "../../../backend/core/system/network-status.service.js";
 import { t } from "../i18n/index.js";
 
+const featuredLabelKeys = {
+  "best of today": "home.bestOfToday",
+  "best of this week": "home.bestOfThisWeek",
+  "best of this month": "home.bestOfThisMonth",
+  "best of 3 months": "home.bestOfThreeMonths",
+  "best of 6 months": "home.bestOfSixMonths",
+  "best of this year": "home.bestOfThisYear",
+  "best of all time": "home.bestOfAllTime",
+};
+
+function getFeaturedLabelKey(label) {
+  return (
+    featuredLabelKeys[
+      String(label || "")
+        .trim()
+        .toLowerCase()
+    ] || ""
+  );
+}
+
 export const homeCarousel = {
   currentSlideIndex: 0,
   slideInterval: null,
@@ -48,6 +68,18 @@ export const homeCarousel = {
                 </button>
             </div>
         `;
+
+        const badge = slide.querySelector(".badge");
+        const labelKey = getFeaturedLabelKey(mod.label);
+        if (badge && labelKey) {
+          badge.dataset.i18n = labelKey;
+          badge.textContent = t(labelKey);
+        }
+        const author = slide.querySelector(".carousel-author");
+        if (author) {
+          author.dataset.i18n = "home.byAuthor";
+          author.dataset.i18nVars = JSON.stringify({ author: mod.author });
+        }
 
         const downloadBtn = slide.querySelector(".download-mod-btn");
         downloadBtn.addEventListener("click", () => {

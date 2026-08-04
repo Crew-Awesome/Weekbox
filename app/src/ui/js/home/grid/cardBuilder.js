@@ -96,6 +96,8 @@ export function createCard(mod, index) {
 
   const author = document.createElement("p");
   author.className = "mod-author";
+  author.dataset.i18n = "home.byAuthor";
+  author.dataset.i18nVars = JSON.stringify({ author: mod.author });
   author.textContent = t("home.byAuthor", { author: mod.author });
   details.appendChild(title);
   if (!isPeo) details.appendChild(author);
@@ -126,12 +128,13 @@ export function createCard(mod, index) {
   return card;
 }
 
-export function createFeaturedCard(mod, featuredLabel) {
+export function createFeaturedCard(mod, featuredLabelKey) {
   const card = createCard(mod);
   card.classList.add("mod-card--featured");
   const label = document.createElement("p");
   label.className = "home-featured-label";
-  label.textContent = featuredLabel;
+  label.dataset.i18n = featuredLabelKey;
+  label.textContent = t(featuredLabelKey);
   card.querySelector(".home-card-details")?.prepend(label);
   return card;
 }

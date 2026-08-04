@@ -199,12 +199,12 @@ export const gridRender = {
       const featuredPosition = featured
         ? selectFeaturedPosition(grid, mods.length)
         : null;
-      const featuredLabel =
+      const featuredLabelKey =
         gridState.currentFilter === "updated"
-          ? "Recently updated"
+          ? "home.recentlyUpdated"
           : gridState.currentFilter === "new"
-            ? "New release"
-            : "Popular community pick";
+            ? "home.newRelease"
+            : "home.popularCommunityPick";
       if (featured && featuredPosition !== null) {
         gridState.featuredIds.add(featured.id);
         if (featured.engineId)
@@ -215,7 +215,7 @@ export const gridRender = {
         cardElements.splice(
           featuredPosition,
           0,
-          createFeaturedCard(featured, featuredLabel),
+          createFeaturedCard(featured, featuredLabelKey),
         );
       }
       cards.append(...cardElements);
