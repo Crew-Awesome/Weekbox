@@ -7,6 +7,61 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.0.0] - 2026-08-04
+
+### Added
+
+- Added the News page and newsletter-style article pages.
+- Added news cards, article modals, and image-based colors.
+- Added German translations and improved English and Spanish translations.
+- Added a first-run language picker with country flags.
+- Added translated engine names, discovery labels, and best-of time ranges.
+- Added the public Credits page with crew groups, profile links, and avatars.
+- Added responsive Home and News grids.
+- Added animated card hover, color, and movement effects.
+- Added better featured-mod rotation and featured-card colors.
+- Added safer download, install, engine, and startup error details.
+
+### Changed
+
+- Changed the Home grid so cards fill rows correctly when the window is resized.
+- Changed the News grid to use the same card behavior as Home.
+- Changed the crew box to show three people at a time with fade transitions and dots.
+- Changed Settings so its Credits button opens the public Credits page in a browser.
+- Changed the app labels to use shorter names such as Mods, Engines, and Base Game.
+- Changed engine badges and card text to update when the language changes.
+- Changed the app layout, grid code, card code, and settings code into smaller modules.
+- Changed the development command to build frontend assets before Neutralino starts.
+- Changed the asset bundler to create its output folder when needed.
+- Changed Mod Manager to use a grid layout and a header button for local mods.
+- Changed engine labels to use a page-level tooltip so they are not clipped.
+- Changed downloads and updates to keep clearer file and error information.
+
+### Fixed
+
+- Fixed cards leaving empty spaces after resizing from large to small windows.
+- Fixed cards being placed in the wrong column after repeated resizes.
+- Fixed News cards not moving and fading smoothly.
+- Fixed card colors and text colors not matching the artwork.
+- Fixed translations staying in the old language after switching languages.
+- Fixed missing translations for engine names, discovery, and best-of labels.
+- Fixed missing or broken cover images and image loading states.
+- Fixed downloads, temporary files, retries, and archive extraction errors.
+- Fixed mod links that could remain after deleting a mod.
+- Fixed engine uninstall and update failures with clearer errors.
+- Fixed startup failures caused by missing storage folders or frontend bundles.
+- Fixed several old crashes caused by missing templates, unknown engines, or empty data.
+
+### Removed
+
+- Removed the old embedded Credits page from Settings.
+- Removed unused startup compatibility code and its maintenance passthrough.
+- Removed unused carousel, chip, loader, modal, and download-toast code.
+- Removed the duplicate Mod Manager template and old list-view code.
+- Removed the old in-grid local-mod card.
+- Removed duplicate legacy styles, scratch files, and unused images.
+- Removed outdated engine and settings labels that were repeated in multiple places.
+
 ## [1.10.0] - 2026-08-02
 
 ### Changed

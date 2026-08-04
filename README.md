@@ -46,6 +46,10 @@ npm install
 npm run dev
 ```
 
+`neu run` by itself does not bundle the frontend. If it reports a missing
+`/app/dist/bundle.css`, run `npm run dev` (or `npm run assets` before
+`npx @neutralinojs/neu run`).
+
 Build release binaries:
 
 ```bash

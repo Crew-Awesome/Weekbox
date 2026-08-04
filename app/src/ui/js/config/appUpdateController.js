@@ -15,16 +15,6 @@ export class AppUpdateController {
     this.pendingUpdate = null;
   }
 
-  async updateVersionLabel() {
-    const label = document.getElementById("weekbox-app-version");
-    if (!label) return;
-    try {
-      label.textContent = `WeekBox ${await this.appUpdater.getCurrentVersion()}`;
-    } catch {
-      label.textContent = t("updates.versionUnavailable");
-    }
-  }
-
   showAvailable(update) {
     const button = document.getElementById("check-app-update");
     const status = document.getElementById("app-update-status");

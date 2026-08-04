@@ -84,19 +84,6 @@ export const configModal = {
       });
     });
     document
-      .querySelector('[data-credit-message="Oyachi"]')
-      ?.addEventListener("click", () => {
-        Neutralino.os
-          .showMessageBox(
-            t("credits.oyachiTitle"),
-            t("credits.oyachiMessage"),
-            "OK",
-            "INFO",
-          )
-          .catch(() => {});
-      });
-
-    document
       .getElementById("choose-storage-location")
       ?.addEventListener("click", () => this.chooseStorageLocation());
 
@@ -288,7 +275,6 @@ export const configModal = {
       }
     });
     this.updateStorageLocationLabel();
-    this.updateAppVersionLabel();
     this.updateNetworkAvailability();
     try {
       const update = JSON.parse(
@@ -328,10 +314,6 @@ export const configModal = {
     await Neutralino.os.open(FS.weekboxPath).catch((error) => {
       console.warn("Could not open the WeekBox storage folder", error);
     });
-  },
-
-  async updateAppVersionLabel() {
-    return appUpdates.updateVersionLabel();
   },
 
   showAvailableAppUpdate(update) {
