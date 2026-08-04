@@ -30,6 +30,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Changed Settings so its Credits button opens the public Credits page in a browser.
 - Changed the app labels to use shorter names such as Mods, Engines, and Base Game.
 - Changed engine badges and card text to update when the language changes.
+- Changed Mod Settings tag labels and hints to use the selected language.
+- Changed internal modules to use direct imports and shared formatting code.
 - Changed the app layout, grid code, card code, and settings code into smaller modules.
 - Changed the development command to build frontend assets before Neutralino starts.
 - Changed the asset bundler to create its output folder when needed.
@@ -45,6 +47,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Fixed card colors and text colors not matching the artwork.
 - Fixed translations staying in the old language after switching languages.
 - Fixed missing translations for engine names, discovery, and best-of labels.
+- Fixed the Mod Settings tag input showing an English-only placeholder.
 - Fixed missing or broken cover images and image loading states.
 - Fixed downloads, temporary files, retries, and archive extraction errors.
 - Fixed mod links that could remain after deleting a mod.
@@ -59,7 +62,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Removed unused carousel, chip, loader, modal, and download-toast code.
 - Removed the duplicate Mod Manager template and old list-view code.
 - Removed the old in-grid local-mod card.
-- Removed duplicate legacy styles, scratch files, and unused images.
+- Removed unused startup debug tools and compatibility wrappers.
+- Removed the unused Psych Online banner image.
+- Removed duplicate legacy styles and scratch files.
 - Removed outdated engine and settings labels that were repeated in multiple places.
 
 ## [1.10.0] - 2026-08-02

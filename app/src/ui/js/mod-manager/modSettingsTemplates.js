@@ -47,10 +47,10 @@ export function settingsContent({
 
   const tagsField = `
           <label class="mod-settings-tags-field">
-            <span>Tags</span>
+            <span>${t("modSettings.tags")}</span>
             <div class="mod-settings-tag-editor">
               <span class="mod-settings-tag-pills"></span>
-              <input class="mod-settings-tag-input" placeholder="Type a tag and press Enter" ${readOnly ? "disabled" : ""}>
+              <input class="mod-settings-tag-input" placeholder="${escapeHtml(t("modSettings.tagPlaceholder"))}" ${readOnly ? "disabled" : ""}>
             </div>
             <div class="mod-settings-tag-suggestions" hidden>
               ${tagSuggestions.map((tag) => `<button type="button" data-tag="${escapeHtml(tag)}">#${escapeHtml(tag)}</button>`).join("")}

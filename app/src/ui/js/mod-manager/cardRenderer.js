@@ -1,10 +1,10 @@
-import { FS } from "../../utils/index-utils.js";
+import { FS } from "../../../backend/services/filesystem.js";
 import { gameBananaApi } from "../../../backend/providers/gamebanana/gamebanana.provider.js";
 import {
   ENGINE_DETAILS,
   getEngineLaunchBehavior,
 } from "../../../backend/config/engines.config.js";
-import { applyDominantColor } from "../../utils/index-utils.js";
+import { applyDominantColor } from "../../utils/media/extract-color.util.js";
 import { engineUpdateToast } from "../engines/engineUpdateToast.js";
 import { modManagerTemplates } from "./templates.js";
 import { loadModCardImage } from "./modImageLoader.js";

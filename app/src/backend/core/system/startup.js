@@ -5,86 +5,22 @@ import { storageBridge } from "./storage-patch.util.js";
 import { syncWindowsProtocolRegistration } from "./windows-protocol.util.js";
 import { disableProductionRefreshShortcuts } from "./production-shortcuts.util.js";
 import { router } from "../routing/router.service.js";
-import {
-  openWeekboxLink,
-  openLaunchDeepLink,
-} from "../routing/deep-links.service.js";
+import { openLaunchDeepLink } from "../routing/deep-links.service.js";
 import { appUpdater } from "../updates/app-updater.service.js";
 
-import { homeView, registerHomeView } from "../../../ui/js/index.js";
-import { registerEnginesView } from "../../../ui/js/index.js";
-import { registerNewsView } from "../../../ui/js/index.js";
-import { downloadEngine } from "../../../ui/js/index.js";
-import { engineUpdateToast } from "../../../ui/js/index.js";
-import { toastDownloadMod } from "../../../ui/js/index.js";
-import { FS } from "../../../ui/utils/index-utils.js";
-import { errorHandler } from "../../../ui/js/index.js";
-import { appUpdateModal } from "../../../ui/js/index.js";
-import { toastSystem } from "../../../ui/js/index.js";
-import { storageRecommendationModal } from "../../../ui/js/index.js";
-import { modManagerModal } from "../../../ui/js/index.js";
-import { firstRunStorageModal } from "../../../ui/js/index.js";
-import { firstRunLanguageModal } from "../../../ui/js/index.js";
+import { homeView, registerHomeView } from "../../../ui/js/home/index.js";
+import { registerEnginesView } from "../../../ui/js/engines/index.js";
+import { registerNewsView } from "../../../ui/js/news.js";
+import { downloadEngine } from "../../../ui/js/engines/downloadEngine.js";
+import { FS } from "../../services/filesystem.js";
+import { errorHandler } from "../../../ui/js/errors/errorHandler.js";
+import { appUpdateModal } from "../../../ui/js/updates/appUpdateModal.js";
+import { toastSystem } from "../../../ui/js/toasts/toastSystem.js";
+import { storageRecommendationModal } from "../../../ui/js/storageRecommendationModal.js";
+import { modManagerModal } from "../../../ui/js/mod-manager/index.js";
+import { firstRunStorageModal } from "../../../ui/js/firstRunStorageModal.js";
+import { firstRunLanguageModal } from "../../../ui/js/firstRunLanguageModal.js";
 import { i18n, t } from "../../../ui/js/i18n/index.js";
-
-function clearTestToasts() {
-  document
-    .querySelectorAll('[id^="engine-update-toast-"]')
-    .forEach((toast) => toast.remove());
-  toastDownloadMod.toasts.forEach((toast) => toast.toast.remove());
-  toastDownloadMod.toasts.clear();
-  document.getElementById("toast-system-container")?.remove();
-}
-
-function testToasts() {
-  clearTestToasts();
-  engineUpdateToast.show("toast-test-progress", "Engine update");
-  engineUpdateToast.update("toast-test-progress", {
-    progress: 62,
-    status: "Downloading update",
-  });
-  engineUpdateToast.show("toast-test-complete", "Engine update");
-  engineUpdateToast.complete("toast-test-complete");
-  engineUpdateToast.info(
-    "toast-test-info",
-    "Engine update",
-    "Already up to date",
-  );
-  engineUpdateToast.offer(
-    "toast-test-offer",
-    "Engine update",
-    "exe.png",
-    () => {},
-  );
-  engineUpdateToast.show("toast-test-error", "Engine update");
-  engineUpdateToast.error("toast-test-error");
-  engineUpdateToast.missingEngine(
-    "toast-test-missing",
-    "Test Engine",
-    "exe.png",
-  );
-  const showDownloadToast = (id, name, outcome) => {
-    toastDownloadMod.show(id, name);
-    toastDownloadMod.update(id, 62, "Downloading...");
-    if (outcome === "success") toastDownloadMod.success(id);
-    if (outcome === "error") toastDownloadMod.error(id, "Test failure");
-    if (outcome === "cancelled") toastDownloadMod.cancelAnim(id);
-  };
-  showDownloadToast("toast-test-download", "Download in progress");
-  showDownloadToast("toast-test-success", "Completed download", "success");
-  showDownloadToast("toast-test-error-download", "Failed download", "error");
-  showDownloadToast("toast-test-cancelled", "Cancelled download", "cancelled");
-}
-
-window.weekboxDebug = {
-  clearToasts: clearTestToasts,
-  testToasts,
-  openLink: openWeekboxLink,
-  resetStorageRecommendation() {
-    appSettings.set("storageMoveRecommendationDismissed", false);
-    location.reload();
-  },
-};
 function installGlobalErrorReporter() {
   if (window.__weekboxErrorReporterInstalled) return;
   window.__weekboxErrorReporterInstalled = true;
@@ -393,12 +329,8 @@ async function startApp() {
   }
 }
 
-startApp();
-
 export {
   startApp,
-  testToasts,
-  clearTestToasts,
   installGlobalErrorReporter,
   completeFirstRunStorageSetup,
   recommendSaferStorageLocation,

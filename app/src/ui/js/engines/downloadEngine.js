@@ -1,5 +1,8 @@
-import { FS } from "../../utils/index-utils.js";
-import { downloadArchive, extractArchive } from "../../utils/index-utils.js";
+import { FS } from "../../../backend/services/filesystem.js";
+import {
+  downloadArchive,
+  extractArchive,
+} from "../../../backend/services/downloads/archive-transfer.service.js";
 import { errorHandler } from "../errors/errorHandler.js";
 import {
   describeExtractedFiles,

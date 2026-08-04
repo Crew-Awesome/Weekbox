@@ -1,8 +1,8 @@
-import { FS } from "../../utils/index-utils.js";
+import { FS } from "../../../backend/services/filesystem.js";
 import { ENGINE_DETAILS } from "../../../backend/config/engines.config.js";
 import { engineUpdateService } from "../engines/engineUpdateService.js";
 import { engineUpdateToast } from "../engines/engineUpdateToast.js";
-import { applyDominantColor } from "../../utils/index-utils.js";
+import { applyDominantColor } from "../../utils/media/extract-color.util.js";
 import { networkStatus } from "../../../backend/core/system/network-status.service.js";
 import { sidebar } from "../sidebar.js";
 import { getEngineLabel, getEngineLabelKey, i18n, t } from "../i18n/index.js";

@@ -1,4 +1,4 @@
-import { FS } from "../../utils/index-utils.js";
+import { FS } from "../../../backend/services/filesystem.js";
 import { dependenciesRenderer } from "./dependenciesRenderer.js";
 import { cardRenderer } from "./cardRenderer.js";
 import { modSettingsModal } from "./modSettingsModal.js";

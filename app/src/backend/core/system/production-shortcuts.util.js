@@ -16,4 +16,4 @@ function disableProductionRefreshShortcuts() {
   });
 }
 
-export { disableProductionRefreshShortcuts, isDevelopmentRun };
+export { disableProductionRefreshShortcuts };

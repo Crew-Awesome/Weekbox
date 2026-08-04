@@ -1,5 +1,6 @@
 import { appSettings } from "../../../backend/core/system/settings.service.js";
-import { FS, setupDropdown } from "../../utils/index-utils.js";
+import { FS } from "../../../backend/services/filesystem.js";
+import { setupDropdown } from "../../utils/components/dropdown.component.js";
 import { downloadEngine } from "../engines/downloadEngine.js";
 import { downloadMod } from "../home/modal/downloadMod.js";
 import { appUpdater } from "../../../backend/core/updates/app-updater.service.js";

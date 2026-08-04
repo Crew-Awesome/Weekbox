@@ -1,4 +1,4 @@
-import { appSettings } from "../../core/index-core.js";
+import { appSettings } from "../../core/system/settings.service.js";
 import {
   getOsProcessId,
   sameProcessId,

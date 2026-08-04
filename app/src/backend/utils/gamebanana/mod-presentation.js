@@ -1,3 +1,8 @@
+import {
+  formatBytes as formatByteValue,
+  formatTimeAgo,
+} from "../formatters.js";
+
 const FALLBACK_IMAGE = "assets/icons/launcher-icon.png";
 
 export function getImageUrl(mod) {
@@ -13,26 +18,11 @@ export function getImageUrl(mod) {
 
 export function getTimeAgo(timestamp) {
   if (!timestamp) return "N/A";
-  const seconds = Math.floor(Date.now() / 1000) - timestamp;
-  const units = [
-    [31536000, "y"],
-    [2592000, "mo"],
-    [86400, "d"],
-    [3600, "h"],
-    [60, "m"],
-  ];
-  const match = units.find(([duration]) => seconds / duration > 1);
-  return match
-    ? `${Math.floor(seconds / match[0])}${match[1]}`
-    : `${Math.floor(seconds)}s`;
+  return formatTimeAgo(Date.now() / 1000 - timestamp, "N/A", false);
 }
 
 export function formatBytes(bytes, decimals = 2) {
-  if (!+bytes) return "0 Bytes";
-  const precision = decimals < 0 ? 0 : decimals;
-  const units = ["Bytes", "KB", "MB", "GB", "TB"];
-  const index = Math.floor(Math.log(bytes) / Math.log(1024));
-  return `${parseFloat((bytes / 1024 ** index).toFixed(precision))} ${units[index]}`;
+  return formatByteValue(bytes, decimals, "0 Bytes");
 }
 
 export function toGridMod(mod, getEngineId) {

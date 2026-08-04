@@ -209,6 +209,8 @@
   "modSettings.loading": "Cargando configuración del mod…",
   "modSettings.settings": "Configuración del mod",
   "modSettings.dependencySettings": "Configuración de la dependencia",
+  "modSettings.tags": "Etiquetas",
+  "modSettings.tagPlaceholder": "Escribe una etiqueta y pulsa Enter",
   "modSettings.openDependencyFolder": "Abrir carpeta de dependencias",
   "modSettings.openModFolder": "Abrir carpeta del mod",
   "modSettings.changesUnavailable": "Los cambios no están disponibles mientras el mod está en ejecución",

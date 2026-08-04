@@ -6,7 +6,7 @@ import {
 } from "./release-assets.util.js";
 import { normalizeVersion, compareVersions } from "./versioning.util.js";
 
-import { downloadArchive } from "../../../ui/utils/index-utils.js";
+import { downloadArchive } from "../../services/downloads/archive-transfer.service.js";
 function toHex(buffer) {
   return [...new Uint8Array(buffer)]
     .map((byte) => byte.toString(16).padStart(2, "0"))

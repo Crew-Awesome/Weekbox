@@ -1,6 +1,6 @@
 import { gridState } from "./gridState.js";
 import { gridRender } from "./gridRender.js";
-import { setupDropdown } from "../../../utils/index-utils.js";
+import { setupDropdown } from "../../../utils/components/dropdown.component.js";
 import { t } from "../../i18n/index.js";
 
 const labelKeys = {

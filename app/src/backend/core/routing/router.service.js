@@ -1,6 +1,6 @@
 import { emitViewChange } from "./events.service.js";
 
-import { sidebar } from "../../../ui/js/index.js";
+import { sidebar } from "../../../ui/js/sidebar.js";
 import { i18n } from "../../../ui/js/i18n/index.js";
 var router;
 

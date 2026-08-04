@@ -1,6 +1,6 @@
 import { modModal } from "../modal/index.js";
 import { ENGINE_DETAILS } from "../../../../backend/config/engines.config.js";
-import { applyDominantColor } from "../../../utils/index-utils.js";
+import { applyDominantColor } from "../../../utils/media/extract-color.util.js";
 import { t } from "../../i18n/index.js";
 
 const engineLabelKeys = {

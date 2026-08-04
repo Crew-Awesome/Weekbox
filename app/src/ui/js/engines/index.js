@@ -2,7 +2,7 @@ import { appEvents } from "../../../backend/core/routing/events.service.js";
 import { getSelectedEngine } from "../../../backend/core/state/state.service.js";
 import { engineDropdown } from "./dropdown.js";
 import { getTargetLink } from "./utils.js";
-import { FS } from "../../utils/index-utils.js";
+import { FS } from "../../../backend/services/filesystem.js";
 import { downloadEngine } from "./downloadEngine.js";
 import { modsMaster } from "./modsMasterClass.js";
 import { rememberInstalledEngineBuild } from "./engineUpdateService.js";

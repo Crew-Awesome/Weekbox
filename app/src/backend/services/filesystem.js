@@ -5,7 +5,7 @@ import { ModCoverService } from "./filesystem/mod-cover.service.js";
 import { ModInjectionService } from "./filesystem/mod-injection.service.js";
 import { ModRepository } from "./filesystem/mod-repository.service.js";
 import { ProcessService } from "./processes/process.service.js";
-import { appSettings } from "../core/index-core.js";
+import { appSettings } from "../core/system/settings.service.js";
 import {
   getParentPath,
   sanitizePathSegment,

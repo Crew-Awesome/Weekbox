@@ -1,25 +1,14 @@
+import {
+  formatBytes as formatByteValue,
+  formatTimeAgo,
+} from "../formatters.js";
+
 export function formatBytes(bytes) {
-  const value = Number(bytes);
-  if (!value) return "Unknown size";
-  const units = ["Bytes", "KB", "MB", "GB", "TB"];
-  const index = Math.floor(Math.log(value) / Math.log(1024));
-  return `${Number((value / 1024 ** index).toFixed(2))} ${units[index]}`;
+  return formatByteValue(bytes, 2, "Unknown size");
 }
 
 export function timeAgo(value) {
-  const seconds = Math.max(
-    0,
-    Math.floor((Date.now() - Date.parse(value)) / 1000),
-  );
-  const units = [
-    [31536000, "y"],
-    [2592000, "mo"],
-    [86400, "d"],
-    [3600, "h"],
-    [60, "m"],
-  ];
-  const match = units.find(([amount]) => seconds >= amount);
-  return match ? `${Math.floor(seconds / match[0])}${match[1]}` : `${seconds}s`;
+  return formatTimeAgo((Date.now() - Date.parse(value)) / 1000, "N/A");
 }
 
 export function escapeHtml(value) {

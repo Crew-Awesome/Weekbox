@@ -209,6 +209,8 @@
   "modSettings.loading": "Loading mod settings…",
   "modSettings.settings": "Mod settings",
   "modSettings.dependencySettings": "Dependency settings",
+  "modSettings.tags": "Tags",
+  "modSettings.tagPlaceholder": "Type a tag and press Enter",
   "modSettings.openDependencyFolder": "Open dependency folder",
   "modSettings.openModFolder": "Open mod folder",
   "modSettings.changesUnavailable": "Changes are unavailable while the mod is running",

@@ -1,8 +1,8 @@
 import { router } from "./router.service.js";
 import { gameBananaApi } from "../../providers/gamebanana/gamebanana.provider.js";
 
-import { modModal } from "../../../ui/js/index.js";
-import { sidebar as sidebar2 } from "../../../ui/js/index.js";
+import { modModal } from "../../../ui/js/home/modal/index.js";
+import { sidebar as sidebar2 } from "../../../ui/js/sidebar.js";
 function parseWeekboxLink(value) {
   const directMatch = String(value || "")
     .trim()

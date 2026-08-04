@@ -1,5 +1,5 @@
 import { ENGINE_DETAILS } from "../../../backend/config/engines.config.js";
-import { setupDropdown } from "../../utils/index-utils.js";
+import { setupDropdown } from "../../utils/components/dropdown.component.js";
 import { escapeHtml } from "./modSettingsTemplates.js";
 import { getEngineLabel, t } from "../i18n/index.js";
 

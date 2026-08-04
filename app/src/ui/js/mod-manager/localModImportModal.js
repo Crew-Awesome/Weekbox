@@ -1,6 +1,6 @@
 import { ENGINE_DETAILS } from "../../../backend/config/engines.config.js";
 import { gameBananaApi } from "../../../backend/providers/gamebanana/gamebanana.provider.js";
-import { FS } from "../../utils/index-utils.js";
+import { FS } from "../../../backend/services/filesystem.js";
 import { getEngineLabel, t } from "../i18n/index.js";
 
 function folderName(path) {

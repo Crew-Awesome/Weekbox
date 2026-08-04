@@ -1,6 +1,6 @@
 import { gameBananaApi } from "../../../../backend/providers/gamebanana/gamebanana.provider.js";
 import { sidebar } from "../../sidebar.js";
-import { FS } from "../../../utils/index-utils.js";
+import { FS } from "../../../../backend/services/filesystem.js";
 import { modModalCarousel } from "./carousel.js";
 import { dependencyReviewModal } from "./dependencyReviewModal.js";
 import { downloadChoiceModal } from "./downloadChoiceModal.js";

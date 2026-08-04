@@ -209,6 +209,8 @@
   "modSettings.loading": "Lade Mod-Einstellungen…",
   "modSettings.settings": "Mod-Einstellungen",
   "modSettings.dependencySettings": "Abhängigkeitseinstellungen",
+  "modSettings.tags": "Tags",
+  "modSettings.tagPlaceholder": "Tag eingeben und Enter drücken",
   "modSettings.openDependencyFolder": "Öffne Abhängigkeitsordner",
   "modSettings.openModFolder": "Öffne Mod-Ordner",
   "modSettings.changesUnavailable": "Änderungen sind nicht verfügbar, während die Mod läuft",

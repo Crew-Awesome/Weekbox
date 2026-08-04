@@ -9,7 +9,7 @@ import { setModalBackdrop } from "./home/modal/modalBackdrop.js";
 import { modModal } from "./home/modal/index.js";
 import { sanitizeReleaseHtml } from "./engines/releaseNotes.js";
 import { t } from "./i18n/index.js";
-import { applyDominantColor } from "../utils/index-utils.js";
+import { applyDominantColor } from "../utils/media/extract-color.util.js";
 
 const NEWS_SITE_URL = "https://fnfweekbox.vercel.app";
 const NEWS_FEED_URL = `${NEWS_SITE_URL}/api/news`;
