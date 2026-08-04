@@ -119,17 +119,26 @@ async function getCurrentVersion() {
   return config.version || "0.0.0";
 }
 async function fetchLatestRelease() {
-  const response = await fetch(RELEASES_API, {
-    headers: {
-      Accept: "application/vnd.github+json",
-      "X-GitHub-Api-Version": "2026-03-10",
-    },
-  });
-  if (!response.ok)
-    throw new Error(`Update check failed: GitHub returned ${response.status}`);
-  return response.json();
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), UPDATE_REQUEST_TIMEOUT);
+  try {
+    const response = await fetch(RELEASES_API, {
+      headers: {
+        Accept: "application/vnd.github+json",
+        "X-GitHub-Api-Version": "2026-03-10",
+      },
+      signal: controller.signal,
+      cache: "no-store",
+    });
+    if (!response.ok)
+      throw new Error(`Update check failed: GitHub returned ${response.status}`);
+    return response.json();
+  } finally {
+    clearTimeout(timeout);
+  }
 }
 var RELEASES_API, RELEASES_PAGE, UPDATE_DIRECTORY, appUpdater;
+const UPDATE_REQUEST_TIMEOUT = 8000;
 
 RELEASES_API =
   "https://api.github.com/repos/Crew-Awesome/Weekbox/releases/latest";
