@@ -156,6 +156,10 @@ export const configModal = {
     const tabBtns = document.querySelectorAll(".config-tab-btn");
     tabBtns.forEach((btn) => {
       btn.addEventListener("click", () => {
+        if (btn.dataset.externalUrl) {
+          void Neutralino.os.open(btn.dataset.externalUrl).catch(() => {});
+          return;
+        }
         tabBtns.forEach((b) => b.classList.remove("active"));
         btn.classList.add("active");
 

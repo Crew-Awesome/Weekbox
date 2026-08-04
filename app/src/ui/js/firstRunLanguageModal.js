@@ -29,6 +29,10 @@ export const firstRunLanguageModal = {
               )
               .join("")}
           </div>
+          <button type="button" class="language-picker-continue" aria-label="${t("common.continue")}" disabled>
+            <span>${t("common.continue")}</span>
+            <i class="fa-solid fa-arrow-right" aria-hidden="true"></i>
+          </button>
         </div>
       </div>`;
 
@@ -38,21 +42,40 @@ export const firstRunLanguageModal = {
     requestAnimationFrame(() => modal.classList.add("show"));
 
     const options = [...modal.querySelectorAll(".language-picker-option")];
+    const continueButton = modal.querySelector(".language-picker-continue");
+    let resolveSelection;
+    let selectedLocale = null;
     const finish = (locale) => {
       i18n.setLocale(locale);
       appSettings.set("firstRunLanguageSetupComplete", true);
       app?.removeAttribute("inert");
       modal.remove();
       previousFocus?.focus?.();
+      resolveSelection?.(locale);
     };
 
     options.forEach((option) => {
-      option.addEventListener("click", () => finish(option.dataset.language));
+      option.addEventListener("click", () => {
+        selectedLocale = option.dataset.language;
+        options.forEach((item) =>
+          item.classList.toggle("is-selected", item === option),
+        );
+        continueButton.disabled = false;
+        continueButton.classList.add("is-ready");
+        continueButton.focus();
+      });
+    });
+    continueButton.addEventListener("click", () => {
+      if (selectedLocale) finish(selectedLocale);
     });
     modal.addEventListener("keydown", (event) => {
-      if (event.key !== "Tab" || options.length === 0) return;
-      const first = options[0];
-      const last = options.at(-1);
+      if (event.key !== "Tab") return;
+      const focusable = options
+        .concat(continueButton)
+        .filter((item) => !item.disabled);
+      if (focusable.length === 0) return;
+      const first = focusable[0];
+      const last = focusable.at(-1);
       if (event.shiftKey && document.activeElement === first) {
         event.preventDefault();
         last.focus();
@@ -64,13 +87,7 @@ export const firstRunLanguageModal = {
     options[0]?.focus();
 
     return new Promise((resolve) => {
-      options.forEach((option) =>
-        option.addEventListener(
-          "click",
-          () => resolve(option.dataset.language),
-          { once: true },
-        ),
-      );
+      resolveSelection = resolve;
     });
   },
 };
