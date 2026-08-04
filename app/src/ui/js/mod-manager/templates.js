@@ -81,14 +81,6 @@ const modManagerTemplates = {
   launchButtonDefault: (launchLabel) =>
     renderTemplate("tpl-launchButtonDefault", { launchLabel }),
   emptyState: (message) => renderTemplate("tpl-emptyState", { message }),
-  addLocalModCard: () =>
-    renderTemplate("tpl-addLocalModCard") ||
-    `<button class="mod-manager-add-local-card" type="button" aria-label="${t("modManager.addLocal")}">
-      <span class="mod-manager-add-local-content">
-        <i class="fa-solid fa-plus" aria-hidden="true"></i>
-        <span>${t("modManager.addLocal")}</span>
-      </span>
-    </button>`,
   deleteSpinner: () => renderTemplate("tpl-deleteSpinner"),
   deleteIcon: () => renderTemplate("tpl-deleteIcon"),
   unassignedQuestionIcon: () => renderTemplate("tpl-unassignedQuestionIcon"),

@@ -384,8 +384,7 @@ export const modManagerModal = {
             <p class="mod-manager-installing-status"></p>
           </div>
         </div>`;
-      const addLocalCard = grid.querySelector(".mod-manager-add-local-card");
-      grid.insertBefore(card, addLocalCard || null);
+      grid.appendChild(card);
     }
 
     card.querySelector(".mod-title").textContent = install.modName;
@@ -540,23 +539,6 @@ export const modManagerModal = {
       );
       this.applySearchFilter();
       this.renderPendingInstallCards();
-      const addLocalCard = document.createElement("div");
-      addLocalCard.innerHTML = modManagerTemplates.addLocalModCard();
-      const addLocalButton = addLocalCard.firstElementChild;
-      if (addLocalButton) {
-        addLocalButton.addEventListener("click", async () => {
-          if (addLocalButton.disabled) return;
-          addLocalButton.disabled = true;
-          try {
-            await localModImportModal.open({
-              onImported: () => this.loadInstalledMods(true),
-            });
-          } finally {
-            addLocalButton.disabled = false;
-          }
-        });
-        gridContainer.appendChild(addLocalButton);
-      }
       this.cachedViews.mods = gridContainer;
       container.scrollTop = savedScrollTop;
       requestAnimationFrame(() => {

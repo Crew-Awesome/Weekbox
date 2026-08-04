@@ -1099,49 +1099,6 @@
   pointer-events: auto;
 }
 
-.mod-manager-add-local-card {
-  box-sizing: border-box;
-  width: 260px;
-  min-width: 260px;
-  max-width: 260px;
-  min-height: 240px;
-  border: 2px dashed var(--border-color);
-  border-radius: var(--border-radius);
-  background: transparent;
-  color: var(--text-muted);
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font: inherit;
-  transition:
-    border-color 0.2s ease,
-    background-color 0.2s ease,
-    color 0.2s ease,
-    transform 0.2s ease;
-}
-
-.mod-manager-add-local-card:hover {
-  border-color: var(--accent-color);
-  color: var(--text-main);
-  background: var(--bg-hover);
-  transform: translateY(-4px);
-}
-
-.mod-manager-add-local-content {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 10px;
-  font-size: 0.88rem;
-  font-weight: 650;
-}
-
-.mod-manager-add-local-content i {
-  font-size: 1.6rem;
-  color: var(--accent-color);
-}
-
 .mod-manager-installing-card {
   min-height: 218px;
   overflow: hidden;
