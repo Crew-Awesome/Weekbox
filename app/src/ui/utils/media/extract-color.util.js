@@ -34,8 +34,13 @@ function applyDominantColor(img, targetElement, options = {}) {
     cssVar = "--card-color",
     alpha = 0.5,
     fallback = "rgba(128, 128, 128, 0.3)",
+    accentVar = "",
+    accentFallback = "var(--primary)",
   } = options;
-  const setFallback = () => targetElement.style.setProperty(cssVar, fallback);
+  const setFallback = () => {
+    targetElement.style.setProperty(cssVar, fallback);
+    if (accentVar) targetElement.style.setProperty(accentVar, accentFallback);
+  };
   const processColor = () => {
     scheduleColorJob(() => {
       try {
@@ -80,12 +85,15 @@ function applyDominantColor(img, targetElement, options = {}) {
           null,
         );
         if (!strongest) {
-          targetElement.style.setProperty(cssVar, fallback);
+          setFallback();
           return;
         }
-        let r = (strongest.r / strongest.count) * 0.76;
-        let g = (strongest.g / strongest.count) * 0.76;
-        let b = (strongest.b / strongest.count) * 0.76;
+        const sourceR = strongest.r / strongest.count;
+        const sourceG = strongest.g / strongest.count;
+        const sourceB = strongest.b / strongest.count;
+        let r = sourceR * 0.76;
+        let g = sourceG * 0.76;
+        let b = sourceB * 0.76;
         while (getRelativeLuminance(r, g, b) > 0.09) {
           r *= 0.92;
           g *= 0.92;
@@ -95,8 +103,15 @@ function applyDominantColor(img, targetElement, options = {}) {
           cssVar,
           `rgba(${Math.floor(r)}, ${Math.floor(g)}, ${Math.floor(b)}, ${alpha})`,
         );
+        if (accentVar) {
+          const lighten = 0.42;
+          targetElement.style.setProperty(
+            accentVar,
+            `rgb(${Math.round(sourceR + (255 - sourceR) * lighten)}, ${Math.round(sourceG + (255 - sourceG) * lighten)}, ${Math.round(sourceB + (255 - sourceB) * lighten)})`,
+          );
+        }
       } catch {
-        targetElement.style.setProperty(cssVar, fallback);
+        setFallback();
       }
     });
   };

@@ -138,6 +138,7 @@ export const newsView = {
     };
     const coverUrl = safeNewsUrl(post.coverUrl);
     modal.style.setProperty("--card-color", "rgba(255, 255, 255, 0.08)");
+    modal.style.setProperty("--news-accent", "var(--primary)");
     image.hidden = !coverUrl;
     image.src = coverUrl;
     image.alt = post.title ? `${post.title} cover` : "";
@@ -149,6 +150,7 @@ export const newsView = {
       applyDominantColor(colorProbe, modal, {
         alpha: 0.2,
         fallback: "rgba(255, 255, 255, 0.08)",
+        accentVar: "--news-accent",
       });
     }
     modal.style.display = "flex";
@@ -258,6 +260,7 @@ export const newsView = {
         applyDominantColor(colorProbe, card, {
           alpha: 0.28,
           fallback: "rgba(255, 255, 255, 0.08)",
+          accentVar: "--news-accent",
         });
       }
       const body = document.createElement("div");
