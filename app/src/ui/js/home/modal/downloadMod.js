@@ -159,7 +159,8 @@ export const downloadMod = {
       targetModFolder,
     });
 
-    const { toastThumbnail, sourceType, ...installMetadata } = metadata;
+    const { toastThumbnail, sourceType, fileSize, ...installMetadata } =
+      metadata;
     const coverUrlPromise = this.fetchModCoverUrl(
       modId,
       sourceType,
@@ -183,6 +184,7 @@ export const downloadMod = {
         url: downloadUrl,
         sourceType,
         outPath: tempFilePath,
+        expectedSize: fileSize,
         getTask: () => this.activeTasks.get(modId),
         onProgress: (status, progress) => {
           toastDownloadMod.update(modId, progress, status);

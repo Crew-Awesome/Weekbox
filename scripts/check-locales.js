@@ -29,7 +29,10 @@ if (invalidEnglish.length) {
 }
 const files = fs
   .readdirSync(localeDir)
-  .filter((file) => file.endsWith(".json") && file !== "en.json")
+  .filter(
+    (file) =>
+      file.endsWith(".json") && file !== "en.json" && file !== "shared.json",
+  )
   .sort();
 let failed = false;
 

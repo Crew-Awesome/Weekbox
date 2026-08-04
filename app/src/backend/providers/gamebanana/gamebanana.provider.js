@@ -419,6 +419,7 @@ export const gameBananaApi = {
         timeAgo: this.getTimeAgo(data._tsDateAdded),
         images,
         downloadUrl: file?._sDownloadUrl || "",
+        fileSize: Number(file?._nFilesize || 0),
         fileSizeStr: file
           ? this.formatBytes(file._nFilesize || 0)
           : "No download available",
@@ -456,6 +457,7 @@ export const gameBananaApi = {
       type: "mod",
       title: mod.title,
       downloadUrl: mod.downloadUrl,
+      fileSize: mod.fileSize,
       fileSizeStr: mod.fileSizeStr,
       thumbnail: mod.images?.[0] || null,
       gameBananaUrl: mod.gameBananaUrl,
@@ -570,6 +572,7 @@ export const gameBananaApi = {
                 ? this.formatBytes(preferredDownload.fileSize)
                 : "Unknown size"
               : "No download available",
+          fileSize: preferredDownload?.fileSize || 0,
           downloadUrl: preferredDownload?.downloadUrl || "",
           downloadType: preferredDownload?.type || null,
           downloadButtonLabel,

@@ -11,13 +11,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- Diagnostic reports now send the full raw error details and stack trace.
-- Diagnostic reporting is now enabled by default with no consent settings.
-- Diagnostic reports now work from every app version.
+- Reports now include the full error and stack trace.
+- Reports are always on.
+- Reports work on all app versions.
+- Shared words are stored once.
 
 ### Fixed
 
-- Fixed diagnostic reports stopping before they reached the webhook.
+- Reports now reach the webhook.
+- Download bars now use the known file size.
 
 ## [2.0.2] - 2026-08-04
 

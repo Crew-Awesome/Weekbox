@@ -7,6 +7,7 @@ import {
   resolveExternalDownloadUrl,
   getRangeSupportedFileSize,
 } from "./external-download.resolver.js";
+import { formatBytes } from "../../utils/formatters.js";
 
 function formatArchiveEntry(output) {
   const lines = output.trim().split("\n");
@@ -543,9 +544,7 @@ async function extractNestedArchives(destinationPath, getTask, onEntry) {
 }
 
 function formatTransferBytes(bytes) {
-  const value = Number(bytes) || 0;
-  if (value < 1024 * 1024) return `${Math.max(0, Math.round(value / 1024))} KB`;
-  return `${(value / (1024 * 1024)).toFixed(value >= 100 * 1024 * 1024 ? 0 : 1)} MB`;
+  return formatBytes(bytes, 2, "0 Bytes");
 }
 
 function createFileProgressReader(path, totalBytes = 0) {
@@ -973,6 +972,7 @@ async function downloadArchive({
   onProgress,
   sourceType,
   onDiagnostic,
+  expectedSize = 0,
 }) {
   if (!String(url || "").trim()) {
     throw new Error("This download does not have a valid link");
@@ -1005,13 +1005,14 @@ async function downloadArchive({
     });
   }
   const useMultithreadDownloads = appSettings.get("multithreadDownloads");
-  let remoteFileSize = 0;
+  let remoteFileSize = Number(expectedSize) || 0;
   if (useMultithreadDownloads) {
     try {
       onProgress?.("Checking download server...", 2);
-      remoteFileSize = await getRangeSupportedFileSize(url, (...args) =>
+      const detectedSize = await getRangeSupportedFileSize(url, (...args) =>
         Neutralino.os.execCommand(...args),
       );
+      if (detectedSize > 0) remoteFileSize = detectedSize;
     } catch (error) {
       if (getTask()?.cancelled) throw error;
     }

@@ -1,6 +1,7 @@
 import en from "../../locales/en.json";
 import es from "../../locales/es.json";
 import de from "../../locales/de.json";
+import shared from "../../locales/shared.json";
 import { appSettings } from "../../../backend/core/system/settings.service.js";
 
 const catalogs = { en, es, de };
@@ -25,6 +26,7 @@ export const i18n = {
   locale: fallbackLocale,
   fallbackLocale,
   catalogs,
+  shared,
 
   init() {
     const savedLocale = appSettings.get("language");
@@ -46,8 +48,14 @@ export const i18n = {
 
   t(key, variables) {
     const translated = this.catalogs[this.locale]?.[key];
+    const common = this.shared[key];
     const fallback = this.catalogs[this.fallbackLocale]?.[key];
-    const value = typeof translated === "string" ? translated : fallback;
+    const value =
+      typeof translated === "string"
+        ? translated
+        : typeof common === "string"
+          ? common
+          : fallback;
     return typeof value === "string" ? interpolate(value, variables) : "";
   },
 

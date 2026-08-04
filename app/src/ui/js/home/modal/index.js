@@ -119,6 +119,7 @@ const modModal = {
         {
           kind: "dependency",
           sourceType: dependency.downloadType || dependency.type,
+          fileSize: dependency.fileSize,
           toastThumbnail: dependency.thumbnail,
         },
       );
@@ -133,6 +134,7 @@ const modModal = {
         dependencies: selected.map((dependency) => dependency.dependencyId),
         toastThumbnail: data.images?.[0],
         sourceType: selectedDownload.type,
+        fileSize: selectedDownload.fileSize,
         source: data.source || "gamebanana",
         image: data.images?.[0] || null,
         sourceUrl: data.sourceUrl || data.gameBananaUrl || null,
