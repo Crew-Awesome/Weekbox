@@ -245,6 +245,10 @@
   background-image: url("../../../../../node_modules/flag-icons/flags/4x3/mx.svg");
 }
 
+.language-flag.fi-es {
+  background-image: url("../../../../../node_modules/flag-icons/flags/4x3/es.svg");
+}
+
 .language-flag.fi-de {
   background-image: url("../../../../../node_modules/flag-icons/flags/4x3/de.svg");
 }

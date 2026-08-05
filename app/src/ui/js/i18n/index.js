@@ -1,5 +1,6 @@
 import en from "../../locales/en.json";
 import es from "../../locales/es.json";
+import esES from "../../locales/es-ES.json";
 import de from "../../locales/de.json";
 import id from "../../locales/id.json";
 import it from "../../locales/it.json";
@@ -8,11 +9,12 @@ import fr from "../../locales/fr.json";
 import shared from "../../locales/shared.json";
 import { appSettings } from "../../../backend/core/system/settings.service.js";
 
-const catalogs = { en, es, de, id, it, pt, fr };
+const catalogs = { en, es, "es-ES": esES, de, id, it, pt, fr };
 const fallbackLocale = "en";
 export const LANGUAGES = [
   { id: "en", flag: "us", name: "English (United States)" },
   { id: "es", flag: "mx", name: "Espa\u00f1ol (Latinoam\u00e9rica)" },
+  { id: "es-ES", flag: "es", name: "Espa\u00f1ol (Espa\u00f1a)" },
   { id: "de", flag: "de", name: "Deutsch (Deutschland)" },
   { id: "id", flag: "id", name: "Bahasa Indonesia" },
   { id: "it", flag: "it", name: "Italiano (Italia)" },
