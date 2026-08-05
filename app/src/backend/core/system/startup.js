@@ -243,7 +243,7 @@ async function startApp() {
     });
     disableProductionRefreshShortcuts();
     Neutralino.events.on("windowClose", async () => {
-      if (!document.getElementById("app-update-modal")?.hidden) return;
+      if (document.getElementById("app-update-modal")?.hidden === false) return;
       await downloadEngine.cleanupAll();
       await Neutralino.app.exit();
     });
