@@ -677,6 +677,12 @@ async function runCurlDownload(command, getTask, onProgress, getProgress) {
   }
 }
 
+const BROWSER_USER_AGENT =
+  "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36";
+
+/**
+ * @fix 2026-08-05T03:31:10.964Z - Fix Google Drive quota detection and confirmation handling
+ */
 async function downloadGoogleDriveArchive({
   fileId,
   outPath,
@@ -690,11 +696,11 @@ async function downloadGoogleDriveArchive({
     onProgress?.("Authorizing Google Drive download...", 2);
     const initialUrl = `https://drive.usercontent.google.com/download?id=${encodeURIComponent(fileId)}&export=download`;
     
-    // Request download with cookie jar
+    // Request download with cookie jar and browser user agent
     await retryTransientDownload(
       () =>
         runCurlDownload(
-          `curl --globoff -s -L -c ${quoteCommandArgument(cookiePath)} ${quoteCommandArgument(initialUrl)} -o ${quoteCommandArgument(probePath)}`,
+          `curl --globoff -s -L -A ${quoteCommandArgument(BROWSER_USER_AGENT)} -H "Accept-Language: en-US,en;q=0.9" -c ${quoteCommandArgument(cookiePath)} ${quoteCommandArgument(initialUrl)} -o ${quoteCommandArgument(probePath)}`,
           getTask,
           () => {},
         ),
@@ -749,7 +755,7 @@ async function downloadGoogleDriveArchive({
         );
       }
 
-      // Check if there is a download confirmation form
+      // Check if there is a download confirmation form or direct link
       const formActionMatch = htmlContent.match(/<form[^>]+action="([^"]+)"/i);
       let actionUrl = formActionMatch
         ? formActionMatch[1].replaceAll("&amp;", "&")
@@ -771,6 +777,11 @@ async function downloadGoogleDriveArchive({
         if (name) formParams.set(name, value);
       }
 
+      const uuidMatch = htmlContent.match(/name="uuid"\s+value="([^"]+)"/i) || htmlContent.match(/uuid=([^&"'\s]+)/i);
+      if (uuidMatch && !formParams.get("uuid")) {
+        formParams.set("uuid", uuidMatch[1]);
+      }
+
       const confirmedDownloadUrl = `${actionUrl}${actionUrl.includes("?") ? "&" : "?"}${formParams.toString()}`;
 
       await Neutralino.filesystem.remove(probePath).catch(() => {});
@@ -778,7 +789,7 @@ async function downloadGoogleDriveArchive({
       await retryTransientDownload(
         () =>
           runCurlDownload(
-            `curl --globoff -# -L --fail --show-error -b ${quoteCommandArgument(cookiePath)} --connect-timeout 15 --speed-time 60 --speed-limit 1024 ${quoteCommandArgument(confirmedDownloadUrl)} -o ${quoteCommandArgument(outPath)}`,
+            `curl --globoff -# -L --fail --show-error -A ${quoteCommandArgument(BROWSER_USER_AGENT)} -H "Accept-Language: en-US,en;q=0.9" -b ${quoteCommandArgument(cookiePath)} --connect-timeout 15 --speed-time 60 --speed-limit 1024 ${quoteCommandArgument(confirmedDownloadUrl)} -o ${quoteCommandArgument(outPath)}`,
             getTask,
             onProgress,
             createFileProgressReader(outPath, totalBytes),
@@ -788,7 +799,7 @@ async function downloadGoogleDriveArchive({
         () => Neutralino.filesystem.remove(outPath).catch(() => {}),
       );
     } else {
-      await Neutralino.filesystem.move(probePath, outPath);
+      await finalizeDownloadedArchive(probePath, outPath);
     }
   } finally {
     await Neutralino.filesystem.remove(cookiePath).catch(() => {});

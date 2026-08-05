@@ -126,6 +126,22 @@ function describeIssue(error) {
       tag: t("errors.downloadUnavailableTag"),
     };
   }
+  /**
+   * @fix 2026-08-05T03:31:10.964Z - Fix Google Drive download quota exceeded error reporting
+   */
+  if (
+    lower.includes("google drive:") ||
+    lower.includes("cuota de descarga") ||
+    lower.includes("quota exceeded") ||
+    lower.includes("too many users have viewed or downloaded")
+  ) {
+    return {
+      title: t("errors.quotaExceededTitle"),
+      summary: t("errors.quotaExceededSummary"),
+      tag: t("errors.quotaExceededTag"),
+      reportable: false,
+    };
+  }
   if (
     lower.includes("download link is missing") ||
     lower.includes("download link is invalid") ||

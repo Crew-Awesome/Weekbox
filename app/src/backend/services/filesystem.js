@@ -1214,6 +1214,9 @@ var _FileSystemService = class _FileSystemService {
     );
     return Boolean(mod && (await this.hasModFiles(mod)));
   }
+  /**
+   * @fix 2026-08-05T03:31:10.964Z - Fix NE_FS_MOVEERR during mod folder flattening
+   */
   async flattenModFolder(targetDir) {
     if (!this.isInitialized) return;
     try {
@@ -1226,12 +1229,12 @@ var _FileSystemService = class _FileSystemService {
         await Neutralino.filesystem.readDirectory(sourceDir),
       );
       for (const entry of nestedEntries) {
-        await Neutralino.filesystem.move(
+        await this.api.move(
           `${sourceDir}/${entry.entry}`,
           `${targetDir}/${entry.entry}`,
         );
       }
-      await Neutralino.filesystem.remove(sourceDir);
+      await this.api.remove(sourceDir);
     } catch (error) {}
   }
 };

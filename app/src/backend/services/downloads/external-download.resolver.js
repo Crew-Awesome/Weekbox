@@ -11,6 +11,12 @@ function getGoogleDriveFileId(url) {
   );
 }
 
+const BROWSER_USER_AGENT =
+  "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36";
+
+/**
+ * @fix 2026-08-05T03:31:10.964Z - Fix external download link resolution with browser User-Agent
+ */
 async function resolveExternalDownloadUrl(url, executeCommand) {
   const value = String(url || "").trim();
   if (!value) throw new Error("This download link is missing");
@@ -38,7 +44,7 @@ async function resolveExternalDownloadUrl(url, executeCommand) {
   }
   if (hostname === "mediafire.com" || hostname === "www.mediafire.com") {
     const result = await executeCommand(
-      `curl --globoff -fsSL --connect-timeout 10 --max-time 30 ${quoteCommandArgument(value)}`,
+      `curl --globoff -fsSL -A ${quoteCommandArgument(BROWSER_USER_AGENT)} --connect-timeout 10 --max-time 30 ${quoteCommandArgument(value)}`,
       { background: false },
     );
     if (result.exitCode !== 0) {

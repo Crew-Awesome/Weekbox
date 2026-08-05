@@ -39,10 +39,27 @@ export async function flattenEngineDirectory({
     for (const file of files) {
       throwIfCancelled(isCancelled);
       if (file.entry === "." || file.entry === "..") continue;
-      await filesystem.move(
-        `${executableDir}/${file.entry}`,
-        `${normalizedEngineDir}/${file.entry}`,
-      );
+      const src = `${executableDir}/${file.entry}`;
+      const dest = `${normalizedEngineDir}/${file.entry}`;
+      /**
+       * @fix 2026-08-05T03:31:10.964Z - Fix NE_FS_MOVEERR during engine directory flattening
+       */
+      let moved = false;
+      for (let attempt = 1; attempt <= 4; attempt += 1) {
+        try {
+          await filesystem.move(src, dest);
+          moved = true;
+          break;
+        } catch {
+          if (attempt < 4) await new Promise((r) => setTimeout(r, attempt * 100));
+        }
+      }
+      if (!moved) {
+        try {
+          await filesystem.copy(src, dest, { recursive: true, overwrite: true, skip: false });
+          await filesystem.remove(src).catch(() => {});
+        } catch {}
+      }
     }
     throwIfCancelled(isCancelled);
 

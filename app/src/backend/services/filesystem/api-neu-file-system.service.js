@@ -121,6 +121,79 @@ var APIneuFileSystem = {
       }
     }
   },
+  /**
+   * @fix 2026-08-05T03:31:10.964Z - Fix NE_FS_MOVEERR during folder/file move
+   */
+  async move(sourcePath, destinationPath, options = {}) {
+    if (typeof sourcePath !== "string" || !sourcePath.trim()) {
+      throw new Error("WeekBox could not move storage data because the source path is missing.");
+    }
+    if (typeof destinationPath !== "string" || !destinationPath.trim()) {
+      throw new Error("WeekBox could not move storage data because the destination path is missing.");
+    }
+    const normalizedSource = String(sourcePath).replace(/\\/g, "/");
+    const normalizedDest = String(destinationPath).replace(/\\/g, "/");
+
+    if (!(await this.exists(normalizedSource))) {
+      if (await this.exists(normalizedDest)) return;
+      throw new Error(`WeekBox could not move ${normalizedSource} because it does not exist.`);
+    }
+
+    const maxAttempts = options.maxAttempts || 5;
+    let lastError = null;
+    for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+      try {
+        await Neutralino.filesystem.move(normalizedSource, normalizedDest);
+        return;
+      } catch (error) {
+        lastError = error;
+        if (attempt < maxAttempts) {
+          await new Promise((resolve) => setTimeout(resolve, attempt * 150));
+        }
+      }
+    }
+
+    try {
+      let isDirectory = false;
+      try {
+        const stats = await Neutralino.filesystem.getStats(normalizedSource);
+        isDirectory = Boolean(stats?.isDirectory || stats?.type === "DIRECTORY");
+      } catch {
+        try {
+          await Neutralino.filesystem.readDirectory(normalizedSource);
+          isDirectory = true;
+        } catch {
+          isDirectory = false;
+        }
+      }
+
+      if (isDirectory) {
+        await this.ensureDir(normalizedDest);
+        await Neutralino.filesystem.copy(normalizedSource, normalizedDest, {
+          recursive: true,
+          overwrite: true,
+          skip: false,
+        });
+      } else {
+        const separator = normalizedDest.lastIndexOf("/");
+        if (separator > 0) {
+          await this.ensureDir(normalizedDest.slice(0, separator));
+        }
+        await Neutralino.filesystem.copy(normalizedSource, normalizedDest, {
+          recursive: false,
+          overwrite: true,
+          skip: false,
+        });
+      }
+
+      if (await this.exists(normalizedDest)) {
+        await this.remove(normalizedSource).catch(() => {});
+        return;
+      }
+    } catch (fallbackError) {
+      throw lastError || fallbackError;
+    }
+  },
 };
 
 export { APIneuFileSystem };

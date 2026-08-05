@@ -49,7 +49,10 @@ export const downloadMod = {
     return FS.ensureModCover(modId, async () => coverUrl);
   },
 
-  async moveEntries(entries, sourceDir, destinationDir, concurrency = 8) {
+  /**
+   * @fix 2026-08-05T03:31:10.964Z - Fix NE_FS_MOVEERR during mod entries move on Windows
+   */
+  async moveEntries(entries, sourceDir, destinationDir, concurrency = 4) {
     const queue = entries.filter(
       (entry) => entry.entry !== "." && entry.entry !== "..",
     );
@@ -58,7 +61,7 @@ export const downloadMod = {
       while (nextIndex < queue.length) {
         const entry = queue[nextIndex];
         nextIndex += 1;
-        await Neutralino.filesystem.move(
+        await FS.api.move(
           `${sourceDir}/${entry.entry}`,
           `${destinationDir}/${entry.entry}`,
         );
@@ -112,7 +115,12 @@ export const downloadMod = {
       }
       toastDownloadMod.cancelAnim(modId);
       setTimeout(() => {
-        this.cleanupData(modId, task.tempFilePath, task.targetModFolder);
+        this.cleanupData(
+          modId,
+          task.tempFilePath,
+          task.targetModFolder,
+          task.finalModFolder,
+        );
         this.activeTasks.delete(modId);
         toastDownloadMod.hide(modId);
         const modalBtn = document.getElementById("modal-download-btn");
@@ -127,12 +135,25 @@ export const downloadMod = {
     }
   },
 
-  async cleanupData(modId, tempFilePath, targetModFolder) {
+  /**
+   * @fix 2026-08-05T03:32:55.361Z - Fix stale folder retention on failed installation
+   */
+  async cleanupData(
+    modId,
+    tempFilePath,
+    targetModFolder,
+    finalModFolder = null,
+  ) {
     try {
       if (tempFilePath) await FS.api.remove(tempFilePath);
     } catch (error) {}
     try {
       if (targetModFolder) await FS.api.remove(targetModFolder);
+    } catch (error) {}
+    try {
+      if (finalModFolder && finalModFolder !== targetModFolder) {
+        await FS.api.remove(finalModFolder);
+      }
     } catch (error) {}
     try {
       await FS.removeInstalledMod(modId);
@@ -308,11 +329,27 @@ export const downloadMod = {
 
       const stagingFolder = targetModFolder;
       const finalModFolder = `${modsBasePath}/${storageFolderName}`;
+      const activeTask = this.activeTasks.get(modId);
+      if (activeTask) activeTask.finalModFolder = finalModFolder;
+
+      /**
+       * @fix 2026-08-05T03:32:55.361Z - Fix "This mod is already installed" false positive on unindexed/stale folder
+       */
+      const isAlreadyRegistered = await FS.isModInstalled(modId);
       if (await FS.api.exists(finalModFolder)) {
-        throw new Error(t("downloads.alreadyInstalled"));
+        if (isAlreadyRegistered) {
+          throw new Error(t("downloads.alreadyInstalled"));
+        } else {
+          await FS.api.remove(finalModFolder).catch(() => {});
+        }
       }
+
+      await new Promise((resolve) => setTimeout(resolve, 150));
+      /**
+       * @fix 2026-08-05T03:31:10.964Z - Fix NE_FS_MOVEERR during folder move
+       */
       if (wrapper) {
-        await Neutralino.filesystem.move(
+        await FS.api.move(
           `${stagingFolder}/${wrapper.entry}`,
           finalModFolder,
         );
@@ -323,7 +360,6 @@ export const downloadMod = {
       await FS.api.remove(stagingFolder).catch(() => {});
       targetModFolder = finalModFolder;
       downloadMarkerPath = `${targetModFolder}/.downloading`;
-      const activeTask = this.activeTasks.get(modId);
       if (activeTask) activeTask.targetModFolder = targetModFolder;
       await FS.api.ensureDir(targetModFolder);
       await FS.api.write(downloadMarkerPath, "1");
@@ -392,7 +428,13 @@ export const downloadMod = {
     } catch (error) {
       this.reportInstallProgress(modId, modName, "cancelled", 0);
       if (error.message !== "Cancelled") {
-        await this.cleanupData(modId, tempFilePath, targetModFolder);
+        const task = this.activeTasks.get(modId);
+        await this.cleanupData(
+          modId,
+          tempFilePath,
+          targetModFolder,
+          task?.finalModFolder || finalModFolder,
+        );
         toastDownloadMod.error(
           modId,
           error.message || t("engines.installationFailed"),
