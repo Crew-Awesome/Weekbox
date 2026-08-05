@@ -36,7 +36,13 @@ export const firstRunLanguageModal = {
     const options = [...modal.querySelectorAll(".language-picker-option")];
     const continueButton = modal.querySelector(".language-picker-continue");
     let resolveSelection;
-    let selectedLocale = null;
+    let selectedLocale = i18n.locale;
+    const currentOption = options.find(
+      (option) => option.dataset.language === selectedLocale,
+    );
+    currentOption?.classList.add("is-selected");
+    continueButton.disabled = !currentOption;
+    continueButton.classList.toggle("is-ready", Boolean(currentOption));
     const finish = (locale) => {
       i18n.setLocale(locale);
       if (markComplete) appSettings.set("firstRunLanguageSetupComplete", true);
@@ -52,6 +58,8 @@ export const firstRunLanguageModal = {
         options.forEach((item) =>
           item.classList.toggle("is-selected", item === option),
         );
+        i18n.setLocale(selectedLocale);
+        i18n.apply(modal);
         continueButton.disabled = false;
         continueButton.classList.add("is-ready");
         continueButton.focus();
