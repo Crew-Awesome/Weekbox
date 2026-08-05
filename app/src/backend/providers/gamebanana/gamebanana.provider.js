@@ -130,6 +130,7 @@ export const gameBananaApi = {
     if (!this.categoryResolver) {
       this.categoryResolver = new GameBananaCategoryResolver({
         engineCategories: this.engineCategories,
+        modKindCategories: this.modKindCategories,
         legacyEngineCategories: this.legacyEngineCategories,
         excludedCategoryIds: this.excludedCategoryIds,
       });

@@ -129,7 +129,9 @@ export class GameBananaCategoryResolver {
       if (kind) detected.push(kind);
       pending.push(...RELATED_CATEGORY_FIELDS.map((field) => category[field]));
     }
-    return detected.includes("addon")
+    return detected.includes("addon") ||
+      (detected.includes("dependency") &&
+        this.getEngineIdForCategories(...categories) === "codename")
       ? "addon"
       : detected.includes("dependency")
         ? "dependency"

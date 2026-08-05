@@ -403,7 +403,6 @@ export const localModImportModal = {
           <p class="mod-settings-status local-mod-gamebanana-status" role="status"></p>
         </div>
         <footer class="mod-settings-footer">
-          <span></span>
           <button type="button" class="mod-settings-cancel local-mod-gamebanana-cancel">${t("common.cancel")}</button>
           <button type="submit" class="mod-settings-save"><i class="fa-solid fa-cloud-arrow-down" aria-hidden="true"></i> ${t("import.importDetails")}</button>
         </footer>

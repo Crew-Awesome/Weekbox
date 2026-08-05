@@ -796,6 +796,18 @@ var _FileSystemService = class _FileSystemService {
   async getInstalledMods() {
     if (!this.isInitialized) return [];
     const mods = await this.mods.getAll();
+    let migrated = false;
+    for (const mod of mods) {
+      if (
+        mod.kind === "dependency" &&
+        mod.engineId === "codename" &&
+        !mod.consumers?.length
+      ) {
+        mod.kind = "addon";
+        migrated = true;
+      }
+    }
+    if (migrated) await this.mods.saveAll(mods);
     let validFolders = /* @__PURE__ */ new Set();
     try {
       const entries = await Neutralino.filesystem.readDirectory(this.modsPath);

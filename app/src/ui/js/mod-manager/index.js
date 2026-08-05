@@ -9,7 +9,7 @@ import { sidebar } from "../sidebar.js";
 import { i18n, t } from "../i18n/index.js";
 
 export const modManagerModal = {
-  typeFilter: "all",
+  typeFilters: { include: [], exclude: [] },
   sortMode: "added-desc",
   searchQuery: "",
   activeView: "mods",
@@ -129,17 +129,28 @@ export const modManagerModal = {
       if (filterToggle) {
         filterToggle.addEventListener("click", () => {
           openFilterSortModal({
-            filter: this.typeFilter,
+            filters: this.typeFilters,
             sort: this.sortMode,
             engineIds: [
               ...new Set(
                 (this.cachedMods || [])
-                  .filter((mod) => mod.kind !== "dependency" && mod.engineId)
+                  .filter((mod) => mod.engineId && mod.engineId !== "executable")
                   .map((mod) => mod.engineId),
               ),
             ],
-            onApply: ({ filter, sort }) => {
-              this.typeFilter = filter;
+            hasMods: (this.cachedMods || []).some(
+              (mod) =>
+                !["dependency", "addon"].includes(mod.kind) &&
+                !(this.cachedStandaloneMods || []).some(
+                  (standalone) => String(standalone.id) === String(mod.id),
+                ),
+            ),
+            hasDependencies: (this.cachedMods || []).some((mod) => mod.kind === "dependency"),
+            hasAddons: (this.cachedMods || []).some((mod) => mod.kind === "addon"),
+            hasExecutables: (this.cachedStandaloneMods || []).length > 0,
+            hasUnassigned: (this.cachedMods || []).some((mod) => !mod.engineId),
+            onApply: ({ filters, sort }) => {
+              this.typeFilters = filters;
               this.sortMode = sort;
               this.render(
                 this.cachedMods || [],
@@ -352,6 +363,30 @@ export const modManagerModal = {
     });
   },
 
+  renderActiveFilters() {
+    const container = document.getElementById("mod-manager-active-filters");
+    if (!container) return;
+    container.replaceChildren();
+    const filters = this.typeFilters || { include: [], exclude: [] };
+    [
+      ["include", filters.include || []],
+      ["exclude", filters.exclude || []],
+    ].forEach(([mode, values]) =>
+      values.forEach((value) => {
+        const chip = document.createElement("button");
+        chip.type = "button";
+        chip.className = `mod-manager-filter-chip ${mode === "exclude" ? "is-exclude" : ""}`;
+        chip.textContent = `${mode === "exclude" ? "− " : ""}${value.replace(/^kind:/, "")}`;
+        chip.title = "Remove filter";
+        chip.addEventListener("click", () => {
+          this.typeFilters[mode] = this.typeFilters[mode].filter((item) => item !== value);
+          this.render(this.cachedMods || [], this.cachedStandaloneMods || [], this.cachedInstalledEngines || []);
+        });
+        container.append(chip);
+      }),
+    );
+  },
+
   updatePendingInstallCard(install) {
     const modal = document.getElementById("mod-manager-modal");
     const grid = document.getElementById("mod-manager-grid-container");
@@ -423,25 +458,36 @@ export const modManagerModal = {
     const savedScrollTop = container.scrollTop;
 
     const dependencies = mods.filter((mod) => mod.kind === "dependency");
-    const playableMods = mods.filter((mod) => mod.kind !== "dependency");
+    const selectedFilters = this.typeFilters || { include: [], exclude: [] };
+    const dependencyFilterSelected = [
+      ...(selectedFilters.include || []),
+      ...(selectedFilters.exclude || []),
+    ].includes("kind:dependency");
+    const playableMods = dependencyFilterSelected
+      ? mods
+      : mods.filter((mod) => mod.kind !== "dependency");
 
     this.syncActiveView();
     const standaloneModIds = new Set(standaloneMods.map((m) => String(m.id)));
     const modOrder = new Map(
       playableMods.map((mod, index) => [String(mod.id), index]),
     );
+    const filterMatches = (mod, filter) => {
+      const isExecutable = standaloneModIds.has(String(mod.id));
+      if (filter.startsWith("engine:")) return mod.engineId === filter.slice("engine:".length);
+      if (filter === "kind:mod") return !["dependency", "addon"].includes(mod.kind) && !isExecutable;
+      if (filter === "kind:dependency") return mod.kind === "dependency";
+      if (filter === "kind:addon") return mod.kind === "addon";
+      if (filter === "executable") return isExecutable;
+      if (filter === "unassigned") return !mod.engineId && !isExecutable;
+      return false;
+    };
     const filteredMods = playableMods
       .filter((mod) => {
-        const isExecutable = standaloneModIds.has(String(mod.id));
-        if (
-          this.typeFilter.startsWith("engine:") &&
-          mod.engineId !== this.typeFilter.slice("engine:".length)
-        )
-          return false;
-        if (this.typeFilter === "executable" && !isExecutable) return false;
-        if (this.typeFilter === "unassigned" && (mod.engineId || isExecutable))
-          return false;
-        return true;
+        const included = selectedFilters.include || [];
+        const excluded = selectedFilters.exclude || [];
+        return !excluded.some((filter) => filterMatches(mod, filter)) &&
+          (!included.length || included.some((filter) => filterMatches(mod, filter)));
       })
       .sort((left, right) => {
         if (this.sortMode === "name-asc")
@@ -464,6 +510,8 @@ export const modManagerModal = {
           modOrder.get(String(left.id)) - modOrder.get(String(right.id));
         return this.sortMode === "added-asc" ? difference : -difference;
       });
+
+    this.renderActiveFilters();
 
     if (!preserveOtherView) {
       this.cachedViews = { mods: null, dependencies: null };

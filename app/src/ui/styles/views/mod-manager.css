@@ -2215,9 +2215,9 @@
 .mod-settings-modal.local-mod-import-form {
   flex: 0 1 auto;
   align-self: center;
-  width: min(560px, calc(100vw - (var(--spacing-lg) * 2)));
+  width: min(700px, calc(100vw - (var(--spacing-lg) * 2)));
   box-sizing: border-box;
-  min-height: min(560px, calc(100vh - (var(--spacing-lg) * 2)));
+  min-height: 0;
 }
 
 .local-mod-import-body {
@@ -2296,17 +2296,36 @@
 }
 
 .local-mod-import-form .local-mod-import-footer {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: center;
 }
 
 .local-mod-import-footer .mod-settings-status {
-  min-width: 100px;
-  flex: 1 1 160px;
+  grid-column: 1 / -1;
+  grid-row: 2;
+  min-width: 0;
+  justify-self: start;
+}
+
+.local-mod-import-footer .local-mod-import-back {
+  grid-column: 1;
+  grid-row: 1;
+  margin-right: 0;
+  justify-self: start;
+}
+
+.local-mod-import-footer .local-mod-import-gamebanana {
+  grid-column: 2;
+  grid-row: 1;
+  justify-self: center;
 }
 
 .local-mod-import-footer .local-mod-import-submit {
-  order: 5;
+  grid-column: 3;
+  grid-row: 1;
+  order: 0;
+  justify-self: end;
 }
 
 .local-mod-import-footer .local-mod-import-back {
@@ -2317,8 +2336,9 @@
   z-index: 2300;
 }
 
-.local-mod-gamebanana-modal {
-  width: min(470px, 100%);
+.mod-settings-modal.local-mod-gamebanana-modal {
+  width: min(470px, calc(100vw - (var(--spacing-lg) * 2)));
+  box-sizing: border-box;
 }
 
 .local-mod-gamebanana-body label {
@@ -2328,6 +2348,20 @@
 }
 
 @media (max-width: 540px) {
+  .local-mod-import-form .local-mod-import-footer {
+    display: flex;
+    flex-wrap: wrap;
+  }
+
+  .local-mod-import-footer .mod-settings-status {
+    order: 5;
+    flex: 1 1 100%;
+  }
+
+  .local-mod-import-footer .local-mod-import-back {
+    margin-right: auto;
+  }
+
   .mod-settings-modal.local-mod-import-form {
     min-height: 0;
   }

@@ -133,6 +133,7 @@ const modModal = {
       {
         dependencies: selected.map((dependency) => dependency.dependencyId),
         kind: data.kind || "mod",
+        categoryId: data.categoryId || null,
         toastThumbnail: data.images?.[0],
         sourceType: selectedDownload.type,
         fileSize: selectedDownload.fileSize,
