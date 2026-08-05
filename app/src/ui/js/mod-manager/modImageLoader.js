@@ -54,6 +54,11 @@ export function loadModCardImage({
         if (!card.isConnected) return;
         image.src = localCover;
         image.hidden = false;
+        image.onerror = () => {
+          image.hidden = true;
+          image.removeAttribute("src");
+          finishLoading(false);
+        };
         applyDominantColor(image, card);
         requestAnimationFrame(() => finishLoading(true));
       });

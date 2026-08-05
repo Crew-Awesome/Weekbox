@@ -1278,7 +1278,7 @@
   width: 100%;
   height: 100%;
   display: block;
-  background: #1e1e1e url("assets/img/placeholder-mini.jpg") center / cover no-repeat;
+  background: #1e1e1e url("../assets/img/placeholder-mini.jpg") center / cover no-repeat;
   border-radius: var(--border-radius) var(--border-radius) 0 0;
   -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 260 140'%3E%3Cpath fill='%23000' d='M56 0 L250 0 A10 10 0 0 1 260 10 L260 140 L0 140 L0 56 A8 8 0 0 1 8 48 L40 48 A8 8 0 0 0 48 40 L48 8 A8 8 0 0 1 56 0 Z'/%3E%3C/svg%3E");
   mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 260 140'%3E%3Cpath fill='%23000' d='M56 0 L250 0 A10 10 0 0 1 260 10 L260 140 L0 140 L0 56 A8 8 0 0 1 8 48 L40 48 A8 8 0 0 0 48 40 L48 8 A8 8 0 0 1 56 0 Z'/%3E%3C/svg%3E");
