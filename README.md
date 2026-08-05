@@ -63,6 +63,7 @@ The launcher icon, window icon, and Credits icon all come from the same source a
 WeekBox is made by [ImMalloy](https://github.com/ImMalloy) and [Britex](https://github.com/expertyeti).
 
 It is built with [Neutralinojs](https://neutralino.js.org/) and uses [GameBanana](https://gamebanana.com/) and Sniro (Psych Online Site) for mod data.
+The rest of the credits can be found [here on WeekBox's website](https://fnfweekbox.vercel.app/credits).
 
 ## Project policies
 
