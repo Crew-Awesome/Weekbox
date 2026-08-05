@@ -150,6 +150,10 @@ export const cardRenderer = {
       card.dataset.modId = String(mod.id);
       card.dataset.modSearch = String(mod.name || "").toLocaleLowerCase();
       card.classList.toggle("is-hidden", Boolean(mod.hidden));
+      card.classList.toggle(
+        "is-non-playable",
+        mod.kind === "dependency" || mod.kind === "addon",
+      );
       card.classList.toggle("is-unassigned", isUnassigned);
       if (mod.hidden) {
         card.style.opacity = "0.5";

@@ -7,6 +7,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.0.5] - 2026-08-05
+
+### Added
+
+- Added category-aware local mod and GameBanana imports.
+- Added 1.10-style multi-select mod filters and sorting.
+
+### Changed
+
+- Codename addons are no longer treated as playable mods.
+- Addon and dependency cards no longer show launch or switch controls.
+- Added placeholder artwork for mods without valid images.
+
+### Fixed
+
+- Fixed Codename addon classification and duplicate Executables filters.
+- Fixed local import modal sizing, metadata, covers, and settings controls.
+
 ## [2.0.4] - 2026-08-04
 
 ### Fixed
