@@ -14,6 +14,11 @@ import { appEvents } from "../../backend/core/routing/events.service.js";
 import { getEngineLabel, getEngineLabelKey, t } from "./i18n/index.js";
 import { ENGINE_DETAILS } from "../../backend/config/engines.config.js";
 
+const SIDEBAR_WIDTH_KEY = "weekbox_sidebar_width";
+const SIDEBAR_COLLAPSED_KEY = "weekbox_sidebar_collapsed";
+const MIN_SIDEBAR_WIDTH = 200;
+const MAX_SIDEBAR_WIDTH = 500;
+
 export const sidebar = {
   updateEngineMarquee(button) {
     const container = button.querySelector(".sidebar__marquee-container");
@@ -37,6 +42,8 @@ export const sidebar = {
   async init() {
     this.sidebar = document.getElementById("sidebar");
     this.resizer = document.getElementById("sidebar-resizer");
+    this.collapseBtn = document.getElementById("sidebar-collapse-btn");
+    this.sidebarNav = document.querySelector(".sidebar__nav");
     this.tabButtons = document.querySelectorAll(".sidebar__btn[data-tab]");
     this.modManagerBtn = document.getElementById("mod-manager-btn");
     this.engineManagerBtn = document.getElementById("engine-manager-btn");
@@ -44,6 +51,9 @@ export const sidebar = {
     this.brandBtn = document.getElementById("sidebar-brand-btn");
     this.isResizing = false;
     if (!this.sidebar) return;
+    this.applySavedWidth();
+    this.setupCollapse();
+    this.setupCollapsibleSections();
     this.setupResizer();
     this.setupNavigation();
     this.viewChangeListener = (event) => this.syncActive(event.detail);
@@ -57,26 +67,201 @@ export const sidebar = {
   },
   setupResizer() {
     if (!this.resizer) return;
-    this.resizer.addEventListener("mousedown", () => {
+    const stopResizing = () => {
+      if (!this.isResizing) return;
+      this.isResizing = false;
+      document.body.style.cursor = "";
+      this.sidebar.classList.remove("sidebar--resizing");
+      this.resizer.classList.remove("sidebar__resizer--resizing");
+    };
+    this.resizer.addEventListener("pointerdown", (event) => {
+      if (event.button !== 0) return;
+      event.preventDefault();
       this.isResizing = true;
       document.body.style.cursor = "ew-resize";
+      this.sidebar.classList.add("sidebar--resizing");
       this.resizer.classList.add("sidebar__resizer--resizing");
+      this.resizer.setPointerCapture?.(event.pointerId);
     });
-    document.addEventListener("mousemove", (e) => {
+    document.addEventListener("pointermove", (event) => {
       if (!this.isResizing) return;
-      let newWidth = e.clientX;
-      if (newWidth < 200) newWidth = 200;
-      if (newWidth > 500) newWidth = 500;
-      this.sidebar.style.width = `${newWidth}px`;
+      this.setWidth(event.clientX);
+    });
+    document.addEventListener("pointerup", stopResizing);
+    document.addEventListener("pointercancel", stopResizing);
+    this.resizer.addEventListener("dblclick", () => this.setWidth(280));
+    this.resizer.addEventListener("keydown", (event) => {
+      const step = event.shiftKey ? 40 : 16;
+      if (event.key === "ArrowLeft") this.setWidth(this.getWidth() - step);
+      else if (event.key === "ArrowRight")
+        this.setWidth(this.getWidth() + step);
+      else if (event.key === "Home") this.setWidth(MIN_SIDEBAR_WIDTH);
+      else if (event.key === "End") this.setWidth(MAX_SIDEBAR_WIDTH);
+      else return;
+      event.preventDefault();
+    });
+  },
+  getWidth() {
+    return this.sidebar.getBoundingClientRect().width;
+  },
+  setWidth(width) {
+    const newWidth = Math.min(
+      MAX_SIDEBAR_WIDTH,
+      Math.max(MIN_SIDEBAR_WIDTH, Math.round(width)),
+    );
+    this.sidebar.style.width = `${newWidth}px`;
+    this.resizer?.setAttribute("aria-valuenow", String(newWidth));
+    try {
+      localStorage.setItem(SIDEBAR_WIDTH_KEY, String(newWidth));
+    } catch {}
+    this.refreshEngineMarquees();
+  },
+  applySavedWidth() {
+    let savedWidth = 280;
+    try {
+      savedWidth =
+        Number(localStorage.getItem(SIDEBAR_WIDTH_KEY)) || savedWidth;
+    } catch {}
+    this.setWidth(savedWidth);
+  },
+  setupCollapse() {
+    if (!this.collapseBtn) return;
+    let collapsed = false;
+    try {
+      collapsed = localStorage.getItem(SIDEBAR_COLLAPSED_KEY) === "true";
+    } catch {}
+    this.setCollapsed(collapsed);
+    this.collapseBtn.addEventListener("click", () =>
+      this.setCollapsed(!this.sidebar.classList.contains("sidebar--collapsed")),
+    );
+  },
+  setCollapsed(collapsed) {
+    this.sidebar.classList.toggle("sidebar--collapsed", collapsed);
+    this.collapseBtn?.setAttribute("aria-expanded", String(!collapsed));
+    if (this.collapseBtn) {
+      const label = t(collapsed ? "sidebar.expand" : "sidebar.collapse");
+      this.collapseBtn.setAttribute("aria-label", label);
+      this.collapseBtn.title = label;
+      this.collapseBtn.innerHTML = `<i class="fa-solid fa-angles-${collapsed ? "right" : "left"}" aria-hidden="true"></i>`;
+    }
+    this.updateCollapsedTooltips();
+    try {
+      localStorage.setItem(SIDEBAR_COLLAPSED_KEY, String(collapsed));
+    } catch {}
+  },
+  updateCollapsedTooltips() {
+    if (!this.sidebar) return;
+    const collapsed = this.sidebar.classList.contains("sidebar--collapsed");
+    this.sidebar.querySelectorAll(".sidebar__btn").forEach((button) => {
+      if (button.dataset.defaultTitle === undefined) {
+        button.dataset.defaultTitle = button.title;
+      }
+      if (!collapsed) {
+        button.title = button.dataset.defaultTitle;
+        return;
+      }
+      const label =
+        button.querySelector(".sidebar__marquee-text")?.textContent?.trim() ||
+        button.querySelector(":scope > span")?.textContent?.trim();
+      if (label) button.title = label;
+    });
+  },
+  setupCollapsibleSections(root = this.sidebar) {
+    const sections = [];
+    if (root?.matches?.(".sidebar__section[data-section-key]")) {
+      sections.push(root);
+    }
+    root
+      ?.querySelectorAll?.(".sidebar__section[data-section-key]")
+      .forEach((section) => sections.push(section));
+    sections.forEach((section) => {
+      if (section.dataset.sectionReady) return;
+      section.dataset.sectionReady = "true";
+      const key = `weekbox_sidebar_section_${section.dataset.sectionKey}`;
+      try {
+        const saved = localStorage.getItem(key);
+        if (saved !== null) section.open = saved === "true";
+      } catch {}
+      section.addEventListener("toggle", () => {
+        try {
+          localStorage.setItem(key, String(section.open));
+        } catch {}
+      });
+    });
+  },
+  setupSectionResizer(handle) {
+    if (!handle || handle.dataset.sectionResizerReady) return;
+    const before = document.getElementById(handle.dataset.before);
+    const after = document.getElementById(handle.dataset.after);
+    if (!before || !after) return;
+    handle.dataset.sectionResizerReady = "true";
+    const storageKey = `weekbox_sidebar_section_height_${before.id}`;
+    try {
+      const savedHeight = Number(localStorage.getItem(storageKey));
+      if (savedHeight > 0) before.style.flex = `0 0 ${savedHeight}px`;
+    } catch {}
+    const syncAvailability = () => {
+      const disabled = !before.open || !after.open;
+      const availableHeight =
+        before.getBoundingClientRect().height +
+        after.getBoundingClientRect().height;
+      handle.classList.toggle("is-disabled", disabled);
+      handle.setAttribute("aria-disabled", String(disabled));
+      handle.setAttribute(
+        "aria-valuemax",
+        String(Math.max(96, Math.round(availableHeight - 96))),
+      );
+      handle.setAttribute(
+        "aria-valuenow",
+        String(Math.round(before.getBoundingClientRect().height)),
+      );
+    };
+    before.addEventListener("toggle", syncAvailability);
+    after.addEventListener("toggle", syncAvailability);
+    syncAvailability();
+    handle.addEventListener("pointerdown", (event) => {
+      if (handle.classList.contains("is-disabled") || event.button !== 0)
+        return;
+      event.preventDefault();
+      this.sectionResize = {
+        after,
+        before,
+        handle,
+        startHeight: before.getBoundingClientRect().height,
+        startY: event.clientY,
+      };
+      handle.classList.add("sidebar__section-resizer--resizing");
+      document.body.style.cursor = "ns-resize";
+      handle.setPointerCapture?.(event.pointerId);
+    });
+    const stopSectionResize = () => {
+      if (!this.sectionResize) return;
+      this.sectionResize.handle.classList.remove(
+        "sidebar__section-resizer--resizing",
+      );
+      this.sectionResize = null;
+      document.body.style.cursor = "";
+    };
+    document.addEventListener("pointermove", (event) => {
+      const resize = this.sectionResize;
+      if (!resize) return;
+      const available =
+        resize.before.getBoundingClientRect().height +
+        resize.after.getBoundingClientRect().height;
+      const minHeight = 96;
+      const height = Math.min(
+        available - minHeight,
+        Math.max(minHeight, resize.startHeight + event.clientY - resize.startY),
+      );
+      resize.before.style.flex = `0 0 ${height}px`;
+      resize.handle.setAttribute("aria-valuenow", String(Math.round(height)));
+      try {
+        localStorage.setItem(storageKey, String(Math.round(height)));
+      } catch {}
       this.refreshEngineMarquees();
     });
-    document.addEventListener("mouseup", () => {
-      if (this.isResizing) {
-        this.isResizing = false;
-        document.body.style.cursor = "default";
-        this.resizer.classList.remove("sidebar__resizer--resizing");
-      }
-    });
+    document.addEventListener("pointerup", stopSectionResize);
+    document.addEventListener("pointercancel", stopSectionResize);
   },
   setActive(button) {
     const buttons = [
@@ -271,6 +456,7 @@ export const sidebar = {
         });
         wrapper.appendChild(btn);
         this.updateEngineMarquee(btn);
+        this.updateCollapsedTooltips();
       }
     } catch (error) {
       console.error(error);
@@ -283,6 +469,7 @@ export const sidebar = {
       "standalone-mods-container",
     );
     if (existingContainer) existingContainer.remove();
+    document.getElementById("standalone-mods-resizer")?.remove();
     const existingWrapper = document.getElementById("standalone-mods-wrapper");
     const existingDivider = document.getElementById("standalone-mods-divider");
     const existingTitle = document.getElementById("standalone-mods-title");
@@ -294,21 +481,39 @@ export const sidebar = {
     if (standaloneMods.length === 0) return;
     const sidebarNav = document.querySelector(".sidebar__nav");
     if (!sidebarNav) return;
-    const container = document.createElement("div");
-    container.className = "sidebar__list";
+    const container = document.createElement("details");
+    container.className = "sidebar__section sidebar__list";
     container.id = "standalone-mods-container";
+    container.dataset.sectionKey = "standalone-mods";
+    container.open = true;
     const divider = document.createElement("div");
     divider.className = "sidebar__divider";
     container.appendChild(divider);
-    const sectionTitle = document.createElement("p");
-    sectionTitle.className = "sidebar__title";
-    sectionTitle.textContent = t("sidebar.standaloneMods");
-    container.appendChild(sectionTitle);
+    const sectionToggle = document.createElement("summary");
+    sectionToggle.className = "sidebar__section-toggle";
+    sectionToggle.innerHTML = `
+      <span><i class="fa-solid fa-puzzle-piece" aria-hidden="true"></i><span>${t("sidebar.standaloneMods")}</span></span>
+      <i class="fa-solid fa-chevron-down" aria-hidden="true"></i>
+    `;
+    container.appendChild(sectionToggle);
     const wrapper = document.createElement("div");
     wrapper.className = "sidebar__wrapper";
     wrapper.id = "standalone-mods-wrapper";
     container.appendChild(wrapper);
+    const sectionResizer = document.createElement("div");
+    sectionResizer.className = "sidebar__section-resizer";
+    sectionResizer.id = "standalone-mods-resizer";
+    sectionResizer.dataset.before = "engines-container";
+    sectionResizer.dataset.after = "standalone-mods-container";
+    sectionResizer.setAttribute("role", "separator");
+    sectionResizer.setAttribute("aria-orientation", "horizontal");
+    sectionResizer.setAttribute("aria-valuemin", "96");
+    sectionResizer.setAttribute("aria-label", t("sidebar.resize"));
+    sectionResizer.title = t("sidebar.resize");
+    sidebarNav.appendChild(sectionResizer);
     sidebarNav.appendChild(container);
+    this.setupCollapsibleSections(container);
+    this.setupSectionResizer(sectionResizer);
     for (const mod of standaloneMods) {
       const btn = document.createElement("button");
       btn.className =
@@ -353,6 +558,7 @@ export const sidebar = {
       });
       wrapper.appendChild(btn);
       this.updateEngineMarquee(btn);
+      this.updateCollapsedTooltips();
     }
   },
 };

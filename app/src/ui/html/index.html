@@ -281,7 +281,10 @@
           >
             <i class="fa-solid fa-heart"></i>
             <span data-i18n="settings.credits">Credits</span>
-            <i class="fa-solid fa-arrow-up-right-from-square" aria-hidden="true"></i>
+            <i
+              class="fa-solid fa-arrow-up-right-from-square"
+              aria-hidden="true"
+            ></i>
           </button>
         </nav>
       </aside>
@@ -636,7 +639,6 @@
               </div>
             </div>
           </div>
-
         </div>
       </main>
     </div>
@@ -1240,20 +1242,32 @@
   <aside class="sidebar" id="sidebar">
     <div class="sidebar__top">
       <nav class="sidebar__nav">
-        <button
-          class="sidebar__brand"
-          id="sidebar-brand-btn"
-          type="button"
-          data-i18n-attr="aria-label:app.spinIcon"
-          aria-label="Spin the WeekBox icon"
-        >
-          <img
-            class="sidebar__brand-icon"
-            src="assets/icons/launcher-icon.png"
-            alt=""
-          />
-          <span>WeekBox</span>
-        </button>
+        <div class="sidebar__brand-row">
+          <button
+            class="sidebar__brand"
+            id="sidebar-brand-btn"
+            type="button"
+            data-i18n-attr="aria-label:app.spinIcon"
+            aria-label="Spin the WeekBox icon"
+          >
+            <img
+              class="sidebar__brand-icon"
+              src="assets/icons/launcher-icon.png"
+              alt=""
+            />
+            <span>WeekBox</span>
+          </button>
+          <button
+            class="sidebar__collapse-btn"
+            id="sidebar-collapse-btn"
+            type="button"
+            aria-expanded="true"
+            aria-label="Collapse sidebar"
+            title="Collapse sidebar"
+          >
+            <i class="fa-solid fa-angles-left" aria-hidden="true"></i>
+          </button>
+        </div>
         <button class="sidebar__btn active" data-tab="home">
           <i class="fa-solid fa-house" aria-hidden="true"></i>
           <span data-i18n="nav.home">Home</span>
@@ -1270,17 +1284,40 @@
           <i class="fa-solid fa-server" aria-hidden="true"></i>
           <span data-i18n="nav.engineManager">Engines</span>
         </button>
-        <div class="sidebar__divider"></div>
-        <div id="engines-container" class="sidebar__list">
-          <p class="sidebar__title" data-i18n="nav.engineManager">Engines</p>
+        <details
+          id="engines-container"
+          class="sidebar__section sidebar__list"
+          data-section-key="engines"
+          open
+        >
+          <div class="sidebar__divider"></div>
+          <summary class="sidebar__section-toggle">
+            <span>
+              <i class="fa-solid fa-server" aria-hidden="true"></i>
+              <span data-i18n="nav.engineManager">Engines</span>
+            </span>
+            <i class="fa-solid fa-chevron-down" aria-hidden="true"></i>
+          </summary>
           <div class="sidebar__wrapper" id="engines-wrapper"></div>
-        </div>
+        </details>
       </nav>
     </div>
     <button class="sidebar__btn sidebar__btn--config" id="config-btn">
       <i class="fa-solid fa-gear" aria-hidden="true"></i>
       <span data-i18n="nav.config">Config</span>
     </button>
-    <div class="sidebar__resizer" id="sidebar-resizer"></div>
+    <div
+      class="sidebar__resizer"
+      id="sidebar-resizer"
+      role="separator"
+      aria-orientation="vertical"
+      aria-valuemin="200"
+      aria-valuemax="500"
+      aria-valuenow="280"
+      data-i18n-attr="aria-label:sidebar.resize,title:sidebar.resize"
+      aria-label="Resize sidebar"
+      title="Resize sidebar"
+      tabindex="0"
+    ></div>
   </aside>
 </template>
