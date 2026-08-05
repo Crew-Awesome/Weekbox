@@ -142,6 +142,21 @@ function describeIssue(error) {
       reportable: false,
     };
   }
+  /**
+   * @fix 2026-08-05T03:47:55.251Z - Fix "This mod is already installed" unexpected error dialog
+   */
+  if (
+    lower.includes("already installed") ||
+    lower.includes("ya está instalado") ||
+    lower.includes("bereits installiert")
+  ) {
+    return {
+      title: t("modModal.alreadyInstalled"),
+      summary: t("downloads.alreadyInstalled"),
+      tag: t("modModal.alreadyInstalled"),
+      reportable: false,
+    };
+  }
   if (
     lower.includes("download link is missing") ||
     lower.includes("download link is invalid") ||

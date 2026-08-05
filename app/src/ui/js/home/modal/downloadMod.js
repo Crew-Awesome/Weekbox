@@ -160,9 +160,32 @@ export const downloadMod = {
     } catch (error) {}
   },
 
+  /**
+   * @fix 2026-08-05T03:47:55.251Z - Fix "This mod is already installed" unexpected error popup when mod is already installed
+   */
   async install(modId, modName, downloadUrl, engineId = null, metadata = {}) {
     if (!FS.isInitialized) await FS.init();
     FS.assertStorageUnlocked();
+
+    if (await FS.isModInstalled(modId)) {
+      this.reportInstallProgress(
+        modId,
+        modName,
+        t("downloads.installed"),
+        100,
+      );
+      toastDownloadMod.success(modId);
+      const modalBtn = document.getElementById("modal-download-btn");
+      if (
+        modalBtn &&
+        document.getElementById("mod-modal")?.classList.contains("show")
+      ) {
+        modalBtn.disabled = true;
+        modalBtn.innerHTML = `<i class="fa-solid fa-check"></i> ${t("modModal.alreadyInstalled")}`;
+      }
+      return true;
+    }
+
     const modsBasePath = FS.modsPath;
     const taskKey = String(modId).replace(/[^a-z0-9_-]/gi, "_");
     const fallbackFolderName = sanitizeModFolderName(modName, `Mod-${taskKey}`);
@@ -333,15 +356,10 @@ export const downloadMod = {
       if (activeTask) activeTask.finalModFolder = finalModFolder;
 
       /**
-       * @fix 2026-08-05T03:32:55.361Z - Fix "This mod is already installed" false positive on unindexed/stale folder
+       * @fix 2026-08-05T03:47:55.251Z - Fix "This mod is already installed" false positive on unindexed/stale folder
        */
-      const isAlreadyRegistered = await FS.isModInstalled(modId);
       if (await FS.api.exists(finalModFolder)) {
-        if (isAlreadyRegistered) {
-          throw new Error(t("downloads.alreadyInstalled"));
-        } else {
-          await FS.api.remove(finalModFolder).catch(() => {});
-        }
+        await FS.api.remove(finalModFolder).catch(() => {});
       }
 
       await new Promise((resolve) => setTimeout(resolve, 150));

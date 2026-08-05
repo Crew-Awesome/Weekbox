@@ -122,7 +122,7 @@ var APIneuFileSystem = {
     }
   },
   /**
-   * @fix 2026-08-05T03:31:10.964Z - Fix NE_FS_MOVEERR during folder/file move
+   * @fix 2026-08-05T03:42:17.113Z - Fix NE_FS_MOVEERR during folder/file move
    */
   async move(sourcePath, destinationPath, options = {}) {
     if (typeof sourcePath !== "string" || !sourcePath.trim()) {
