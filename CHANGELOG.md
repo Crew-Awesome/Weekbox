@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.0.4] - 2026-08-04
+
+### Fixed
+
+- Fixed WeekBox update prompts being hidden behind the startup screen.
+- Fixed startup checking WeekBox updates when the setting is disabled.
+- Fixed WeekBox refusing to close after an update prompt was dismissed.
+
 ## [2.0.3] - 2026-08-04
 
 ### Added

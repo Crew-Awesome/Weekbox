@@ -243,7 +243,7 @@ async function startApp() {
     });
     disableProductionRefreshShortcuts();
     Neutralino.events.on("windowClose", async () => {
-      if (document.getElementById("app-update-modal")) return;
+      if (!document.getElementById("app-update-modal")?.hidden) return;
       await downloadEngine.cleanupAll();
       await Neutralino.app.exit();
     });
@@ -266,8 +266,10 @@ async function startApp() {
     await syncWindowsProtocolRegistration(
       appSettings.get("registerProtocolLinks"),
     );
-    startupLoader.setPhase(t("startup.checkingAppUpdates"), 36);
-    if (await handleStartupAppUpdate()) return;
+    if (appSettings.get("checkAppUpdatesOnStartup")) {
+      startupLoader.setPhase(t("startup.checkingAppUpdates"), 36);
+      if (await handleStartupAppUpdate()) return;
+    }
     startupLoader.setPhase(t("startup.openingLibrary"), 42);
     startupStep = "preparing the WeekBox library";
     await FS.init({ deferMaintenance: true });
