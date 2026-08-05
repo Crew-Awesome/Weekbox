@@ -11,13 +11,13 @@ import { appSettings } from "../../../backend/core/system/settings.service.js";
 const catalogs = { en, es, de, id, it, pt, fr };
 const fallbackLocale = "en";
 export const LANGUAGES = [
-  { id: "en", flag: "us", name: "English" },
-  { id: "es", flag: "es", name: "Espa\u00f1ol" },
-  { id: "de", flag: "de", name: "Deutsch" },
+  { id: "en", flag: "us", name: "English (United States)" },
+  { id: "es", flag: "mx", name: "Espa\u00f1ol (Latinoam\u00e9rica)" },
+  { id: "de", flag: "de", name: "Deutsch (Deutschland)" },
   { id: "id", flag: "id", name: "Bahasa Indonesia" },
-  { id: "it", flag: "it", name: "Italiano" },
-  { id: "pt", flag: "pt", name: "Portugu\u00eas" },
-  { id: "fr", flag: "fr", name: "Fran\u00e7ais" },
+  { id: "it", flag: "it", name: "Italiano (Italia)" },
+  { id: "pt", flag: "br", name: "Portugu\u00eas (Brasil)" },
+  { id: "fr", flag: "fr", name: "Fran\u00e7ais (France)" },
 ];
 const engineLabelKeys = {
   vslice: "home.baseGame",

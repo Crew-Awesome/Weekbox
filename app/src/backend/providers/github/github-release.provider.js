@@ -4,6 +4,10 @@ const CACHE_PREFIX = "weekbox-engine-releases-v2-";
 const CACHE_FRESH_MS = 3 * 60 * 60 * 1000;
 const NIGHTLY_CACHE_PREFIX = "weekbox-engine-nightly-";
 const NIGHTLY_CACHE_MS = 3 * 60 * 60 * 1000;
+const GITHUB_API_HEADERS = {
+  Accept: "application/vnd.github+json",
+  "User-Agent": "WeekBox",
+};
 const nightlyCache = new Map();
 
 function getCacheKey(engineId) {
@@ -157,7 +161,7 @@ async function getLatestSuccessfulRun(source, artifact) {
   const branch = encodeURIComponent(source.nightly.branch);
   const response = await fetch(
     `https://api.github.com/repos/${source.repository}/actions/workflows/${workflow}/runs?branch=${branch}&status=success&per_page=1`,
-    { headers: { Accept: "application/vnd.github+json" } },
+    { headers: GITHUB_API_HEADERS },
   );
   if (!response.ok) throw new Error("GitHub workflow runs request failed");
   return (await response.json()).workflow_runs?.[0] || null;
@@ -248,7 +252,7 @@ async function fetchAllReleases(source, etag) {
   let responseEtag = null;
 
   while (url) {
-    const headers = { Accept: "application/vnd.github+json" };
+    const headers = { ...GITHUB_API_HEADERS };
     if (firstResponse && etag) headers["If-None-Match"] = etag;
     const response = await fetch(url, { headers });
     if (response.status === 304) return { notModified: true };
@@ -266,7 +270,7 @@ async function fetchAllReleases(source, etag) {
 async function getLatestRelease(source) {
   const response = await fetch(
     `https://api.github.com/repos/${source.repository}/releases/latest`,
-    { headers: { Accept: "application/vnd.github+json" } },
+    { headers: GITHUB_API_HEADERS },
   );
   if (!response.ok) throw new Error("GitHub latest release request failed");
   return normalizeRelease(await response.json(), source);
