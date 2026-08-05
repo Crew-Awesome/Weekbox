@@ -38,6 +38,30 @@ function isWeekBoxFolder(path) {
   return /(?:^|[\\/])weekbox$/i.test(String(path).replace(/[\\/]+$/, ""));
 }
 
+const LOCAL_MOD_COVER_FILES = [
+  "cover.png",
+  "cover.jpg",
+  "cover.jpeg",
+  "thumbnail.png",
+  "thumbnail.jpg",
+  "thumbnail.jpeg",
+  "icon.png",
+  "icon.jpg",
+  "icon.jpeg",
+  "images/icon.png",
+  "images/icon.jpg",
+  "images/icon.jpeg",
+];
+
+function getDataUrlMimeType(path) {
+  const extension = String(path || "").split(".").pop()?.toLocaleLowerCase();
+  return extension === "jpg" || extension === "jpeg"
+    ? "image/jpeg"
+    : extension === "webp"
+      ? "image/webp"
+      : "image/png";
+}
+
 var RETIRED_ENGINE_IDS = /* @__PURE__ */ new Set(["alepsych"]);
 var _FileSystemService = class _FileSystemService {
   constructor() {
@@ -679,6 +703,38 @@ var _FileSystemService = class _FileSystemService {
       return launch();
     return false;
   }
+  async inspectLocalMod(sourcePath) {
+    const normalizedSource = String(sourcePath || "")
+      .replace(/\\/g, "/")
+      .replace(/\/+$/, "");
+    if (!normalizedSource) return {};
+
+    const sourceParts = normalizedSource.split("/");
+    const parentFolder = sourceParts.at(-2)?.toLocaleLowerCase();
+    const metadata = {
+      name: sourceParts.at(-1) || "Local Mod",
+      kind: parentFolder === "addons" ? "addon" : "mod",
+      engineId: null,
+      engineVersion: "",
+      coverDataUrl: null,
+    };
+
+    for (const relativePath of LOCAL_MOD_COVER_FILES) {
+      const coverPath = `${normalizedSource}/${relativePath}`;
+      if (!(await this.api.exists(coverPath))) continue;
+      try {
+        const binary = await this.api.read(coverPath, true);
+        if (binary) {
+          const value = String(binary);
+          metadata.coverDataUrl = value.startsWith("data:")
+            ? value
+            : `data:${getDataUrlMimeType(coverPath)};base64,${value}`;
+        }
+      } catch {}
+      break;
+    }
+    return metadata;
+  }
   async getInstalledEngines() {
     if (!this.isInitialized) return [];
     try {
@@ -895,6 +951,8 @@ var _FileSystemService = class _FileSystemService {
     name,
     engineId,
     engineVersion,
+    kind = "mod",
+    tags = [],
     coverDataUrl,
     coverUrl,
   }) {
@@ -922,6 +980,12 @@ var _FileSystemService = class _FileSystemService {
       throw new Error("The selected path is not a folder");
     }
     const modId = `local-${crypto.randomUUID()}`;
+    const requestedKind = ["mod", "addon", "dependency"].includes(kind)
+      ? kind
+      : "mod";
+    if (requestedKind === "addon" && engineId !== "codename") {
+      throw new Error("Addons are only available for Codename Engine mods");
+    }
     const folderName = await this.getAvailableLocalModFolderName(modName);
     const destinationPath = `${this.modsPath}/${folderName}`;
     try {
@@ -937,6 +1001,10 @@ var _FileSystemService = class _FileSystemService {
         engineVersion: engineId ? engineVersion || null : null,
         source: "local",
       });
+      if (requestedKind !== "mod") {
+        await this.setModType(modId, requestedKind);
+      }
+      await this.setModTags(modId, tags);
       if (coverDataUrl || coverUrl) {
         await this.updateModAppearance(modId, { coverDataUrl, coverUrl });
       }

@@ -73,22 +73,9 @@ var _ModCoverService = class _ModCoverService {
     return this.saveBlob(modId, await response.blob());
   }
   async saveNoImagePlaceholder(modId) {
-    const canvas = document.createElement("canvas");
-    canvas.width = 960;
-    canvas.height = 540;
-    const context = canvas.getContext("2d");
-    context.fillStyle = "#4b4b4b";
-    context.fillRect(0, 0, canvas.width, canvas.height);
-    context.fillStyle = "#ffffff";
-    context.font = "800 48px Arial, sans-serif";
-    context.textAlign = "center";
-    context.textBaseline = "middle";
-    context.fillText("NO IMAGE ASSIGNED", canvas.width / 2, canvas.height / 2);
-    const image = await new Promise((resolve) =>
-      canvas.toBlob(resolve, "image/webp", 0.84),
-    );
-    if (!image) throw new Error("Could not create the fallback mod image");
-    return this.saveBlob(modId, image);
+    const response = await fetch("assets/img/placeholder-mini.jpg");
+    if (!response.ok) throw new Error("Could not load the fallback mod image");
+    return this.saveBlob(modId, await response.blob());
   }
   async remove(modId) {
     await this.api.remove(this.getCoverPath(modId));

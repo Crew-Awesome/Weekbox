@@ -30,6 +30,7 @@ import {
   ENGINE_CATEGORY_IDS,
   ENGINE_CATEGORY_ROOTS,
   EXCLUDED_MOD_CATEGORY_IDS,
+  MOD_KIND_CATEGORY_IDS,
 } from "../../config/engines.config.js";
 
 const EXCLUDED_ENGINE_SUBMISSIONS = new Map([
@@ -65,6 +66,7 @@ export const gameBananaApi = {
   categoryRoots: ENGINE_CATEGORY_ROOTS,
   excludedCategoryIds: new Set(EXCLUDED_MOD_CATEGORY_IDS),
   engineCategories: ENGINE_CATEGORY_IDS,
+  modKindCategories: MOD_KIND_CATEGORY_IDS,
   legacyEngineCategories: {
     43774: "vslice", // Originals / Full Mods (Base)
   },
@@ -118,6 +120,10 @@ export const gameBananaApi = {
 
   getEngineIdForCategories(...categories) {
     return this.getCategoryResolver().getEngineIdForCategories(...categories);
+  },
+
+  getModKindForCategories(...categories) {
+    return this.getCategoryResolver().getModKindForCategories(...categories);
   },
 
   getCategoryResolver() {
@@ -405,7 +411,7 @@ export const gameBananaApi = {
       const images = (data._aPreviewMedia?._aImages || []).map(
         (image) => `${image._sBaseUrl}/${image._sFile}`,
       );
-      if (!images.length) images.push("assets/icons/launcher-icon.png");
+      if (!images.length) images.push("assets/img/placeholder-mini.jpg");
       const id = `tool:${data._idRow}`;
       return {
         id,
@@ -544,7 +550,7 @@ export const gameBananaApi = {
           (img) => `${img._sBaseUrl}/${img._sFile}`,
         );
       }
-      if (images.length === 0) images.push("assets/icons/launcher-icon.png");
+      if (images.length === 0) images.push("assets/img/placeholder-mini.jpg");
       const buildDetails = (
         downloadOptions = [],
         requirements = [],
@@ -584,6 +590,14 @@ export const gameBananaApi = {
           gameId: Number(data._aGame?._idRow || data._idGame || 0),
           isDeleted: this.isDeletedMod(data),
           categoryId: this.getCategoryId(data._aCategory),
+          kind:
+            this.getModKindForCategories(
+              data._aCategory,
+              data._aSuperCategory,
+              data._aRootCategory,
+              data._aSubCategory,
+              data._idCategory,
+            ) || "mod",
           engineId: this.getEngineIdForCategories(
             data._aCategory,
             data._aSuperCategory,

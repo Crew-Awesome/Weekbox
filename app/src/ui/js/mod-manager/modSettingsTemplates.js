@@ -68,7 +68,7 @@ export function settingsContent({
       <div class="mod-settings-body">
         <div class="mod-settings-identity">
           <label class="mod-settings-cover-picker" title="${readOnly ? t("modSettings.changesUnavailable") : t("modSettings.changeCoverImage")}">
-            <img class="mod-settings-cover" src="${escapeHtml(localCover || "assets/icons/launcher-icon.png")}" alt="${t("modSettings.currentCover")}">
+            <img class="mod-settings-cover" src="${escapeHtml(localCover || "assets/img/placeholder-mini.jpg")}" alt="${t("modSettings.currentCover")}">
             <span><i class="fa-solid fa-image" aria-hidden="true"></i> ${t("modSettings.changeImage")}</span>
             <input class="mod-settings-file" type="file" accept="image/*" ${readOnly ? "disabled" : ""}>
           </label>

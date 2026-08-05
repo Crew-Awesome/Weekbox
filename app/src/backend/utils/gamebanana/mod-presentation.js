@@ -3,7 +3,7 @@ import {
   formatTimeAgo,
 } from "../formatters.js";
 
-const FALLBACK_IMAGE = "assets/icons/launcher-icon.png";
+const FALLBACK_IMAGE = "assets/img/placeholder-mini.jpg";
 
 export function getImageUrl(mod) {
   const screenshot = mod?._aPreviewContent?.screenshot;

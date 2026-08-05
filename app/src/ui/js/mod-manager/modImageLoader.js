@@ -1,6 +1,7 @@
 import { FS } from "../../../backend/services/filesystem.js";
 
 const modCoverCache = new Map();
+const PLACEHOLDER_IMAGE = "assets/img/placeholder-mini.jpg";
 
 export function primeModCover(modId, coverUrl) {
   if (coverUrl) modCoverCache.set(String(modId), coverUrl);
@@ -23,7 +24,14 @@ export async function getModCover(modId, fetchDetails) {
       includeRequirements: false,
     });
     const imageUrl = details?.images?.[0];
-    return imageUrl === "assets/icons/launcher-icon.png" || imageUrl === "assets/img/placeholder-mini.jpg" ? null : imageUrl;
+    if (
+      !imageUrl ||
+      imageUrl === "assets/icons/launcher-icon.png" ||
+      imageUrl === PLACEHOLDER_IMAGE
+    ) {
+      return PLACEHOLDER_IMAGE;
+    }
+    return imageUrl;
   });
   primeModCover(modId, cover);
   return cover;

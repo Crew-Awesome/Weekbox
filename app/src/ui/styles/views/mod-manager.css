@@ -1069,6 +1069,7 @@
   width: 260px;
   min-width: 260px;
   max-width: 260px;
+  --card-image-height: 140px;
   --card-color: rgba(255, 255, 255, 0.3);
   transition: transform 0.35s cubic-bezier(0.25, 1, 0.5, 1);
 }
@@ -1174,12 +1175,8 @@
   mask-position:
     top left,
     bottom left;
-  -webkit-mask-repeat:
-    no-repeat,
-    no-repeat;
-  mask-repeat:
-    no-repeat,
-    no-repeat;
+  -webkit-mask-repeat: no-repeat, no-repeat;
+  mask-repeat: no-repeat, no-repeat;
 }
 
 .mod-manager-card-bg::before {
@@ -1278,7 +1275,8 @@
   width: 100%;
   height: 100%;
   display: block;
-  background: #1e1e1e url("../assets/img/placeholder-mini.jpg") center / cover no-repeat;
+  background: #1e1e1e url("../assets/img/placeholder-mini.jpg") center / cover
+    no-repeat;
   border-radius: var(--border-radius) var(--border-radius) 0 0;
   -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 260 140'%3E%3Cpath fill='%23000' d='M56 0 L250 0 A10 10 0 0 1 260 10 L260 140 L0 140 L0 56 A8 8 0 0 1 8 48 L40 48 A8 8 0 0 0 48 40 L48 8 A8 8 0 0 1 56 0 Z'/%3E%3C/svg%3E");
   mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 260 140'%3E%3Cpath fill='%23000' d='M56 0 L250 0 A10 10 0 0 1 260 10 L260 140 L0 140 L0 56 A8 8 0 0 1 8 48 L40 48 A8 8 0 0 0 48 40 L48 8 A8 8 0 0 1 56 0 Z'/%3E%3C/svg%3E");
@@ -1989,7 +1987,6 @@
 .local-mod-import-form {
   display: flex;
   min-height: 0;
-  flex: 1;
   flex-direction: column;
 }
 
@@ -2197,6 +2194,155 @@
     flex-basis: 120px;
   }
   .local-mod-import-fields {
+    grid-template-columns: 1fr;
+  }
+}
+
+.local-mod-import-overlay {
+  z-index: 2200;
+}
+
+.local-mod-import-modal {
+  display: flex;
+  min-height: 0;
+  overflow: visible;
+}
+
+.local-mod-import-modal--folder {
+  width: min(620px, 100%);
+}
+
+.mod-settings-modal.local-mod-import-form {
+  flex: 0 1 auto;
+  align-self: center;
+  width: min(560px, calc(100vw - (var(--spacing-lg) * 2)));
+  box-sizing: border-box;
+  min-height: min(560px, calc(100vh - (var(--spacing-lg) * 2)));
+}
+
+.local-mod-import-body {
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.local-mod-import-form .local-mod-import-body {
+  overflow: visible;
+}
+
+.local-mod-import-form [hidden] {
+  display: none !important;
+}
+
+.local-mod-import-folder {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  min-height: 76px;
+  gap: 12px;
+  padding: 14px;
+  border: 1px solid var(--border-color);
+  border-radius: 9px;
+  background: var(--bg-color);
+  color: var(--text-main);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.local-mod-import-folder:hover,
+.local-mod-import-folder:focus-visible {
+  border-color: var(--accent-color);
+  outline: none;
+}
+
+.local-mod-import-folder > i:first-child {
+  color: var(--accent-color);
+  font-size: 1.25rem;
+}
+
+.local-mod-import-folder > span {
+  display: grid;
+  min-width: 0;
+  flex: 1;
+  gap: 4px;
+}
+
+.local-mod-import-folder small {
+  overflow: hidden;
+  color: var(--text-muted);
+  font-size: 0.78rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.local-mod-import-folder-chevron {
+  color: var(--text-muted);
+  font-size: 0.75rem;
+}
+
+.local-mod-import-name-field {
+  display: grid;
+  align-content: center;
+  min-width: 0;
+  flex: 1;
+  gap: 6px;
+  color: var(--text-muted);
+  font-size: 0.8rem;
+  font-weight: 650;
+}
+
+.local-mod-import-name-field .local-mod-import-name {
+  width: 100%;
+}
+
+.local-mod-import-form .local-mod-import-footer {
+  display: flex;
+  flex-wrap: wrap;
+}
+
+.local-mod-import-footer .mod-settings-status {
+  min-width: 100px;
+  flex: 1 1 160px;
+}
+
+.local-mod-import-footer .local-mod-import-submit {
+  order: 5;
+}
+
+.local-mod-import-footer .local-mod-import-back {
+  margin-right: auto;
+}
+
+.local-mod-gamebanana-overlay {
+  z-index: 2300;
+}
+
+.local-mod-gamebanana-modal {
+  width: min(470px, 100%);
+}
+
+.local-mod-gamebanana-body label {
+  color: var(--text-muted);
+  font-size: 0.8rem;
+  font-weight: 650;
+}
+
+@media (max-width: 540px) {
+  .mod-settings-modal.local-mod-import-form {
+    min-height: 0;
+  }
+
+  .local-mod-import-form .mod-settings-identity {
+    align-items: stretch;
+  }
+
+  .local-mod-import-form .mod-settings-cover-picker {
+    width: 120px;
+    height: 90px;
+    flex-basis: 120px;
+  }
+
+  .local-mod-import-form .mod-settings-engine {
     grid-template-columns: 1fr;
   }
 }

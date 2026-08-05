@@ -230,7 +230,7 @@ export const modSettingsModal = {
               ? details?.thumbnail || null
               : details.images?.[0] || null;
           pendingCoverDataUrl = null;
-          cover.src = pendingCoverUrl || "assets/icons/launcher-icon.png";
+          cover.src = pendingCoverUrl || "assets/img/placeholder-mini.jpg";
           status.textContent = t("modSettings.defaultsLoaded");
         } catch (error) {
           status.textContent = t("modSettings.defaultsFailed");

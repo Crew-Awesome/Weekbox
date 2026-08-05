@@ -30,19 +30,24 @@ export function setupModSettingsDropdowns(
   const typeMenu = overlay.querySelector(".mod-settings-type-menu");
   const typeSelected = overlay.querySelector(".mod-settings-type-selected");
 
-  const typeOptions = [
+  const getTypeOptions = () => [
     ["mod", "Mod", "fa-layer-group"],
-    ...(mod.engineId === "codename" || mod.kind === "addon"
+    ...(engineSelect.value === "codename" ||
+    mod.engineId === "codename" ||
+    mod.kind === "addon"
       ? [["addon", "Addon", "fa-cubes"]]
       : []),
     ...(mod.kind === "dependency" ||
-    (mod.engineId !== "codename" && mod.kind !== "addon")
+    (engineSelect.value !== "codename" &&
+      mod.engineId !== "codename" &&
+      mod.kind !== "addon")
       ? [["dependency", "Dependency", "fa-puzzle-piece"]]
       : []),
   ];
 
   const renderType = () => {
     if (!typeSelect || !typeMenu || !typeSelected) return;
+    const typeOptions = getTypeOptions();
     const current =
       typeOptions.find(([value]) => value === typeSelect.value) ||
       typeOptions[0];
@@ -61,7 +66,11 @@ export function setupModSettingsDropdowns(
     ? '<img src="assets/icons/exe.png" alt="">'
     : '<i class="fa-solid fa-question-circle" aria-hidden="true"></i>';
 
-  if (typeSelect && typeMenu) {
+  const renderTypeOptions = () => {
+    if (!typeSelect || !typeMenu) return;
+    const typeOptions = getTypeOptions();
+    if (!typeOptions.some(([value]) => value === typeSelect.value))
+      typeSelect.value = "mod";
     typeSelect.innerHTML = typeOptions
       .map(
         ([value, label]) =>
@@ -74,8 +83,7 @@ export function setupModSettingsDropdowns(
           `<button type="button" data-type="${value}" role="option" aria-selected="${value === (mod.kind || "mod")}"><i class="fa-solid ${icon}" aria-hidden="true"></i>${label}</button>`,
       )
       .join("");
-    renderType();
-  }
+  };
 
   const updateVersionVisibility = (hasEngine) => {
     if (versionField) {
@@ -162,6 +170,8 @@ export function setupModSettingsDropdowns(
         `<option value="${id}" ${id === initialEngineId ? "selected" : ""}>${escapeHtml(getEngineLabel(id, details.name))}</option>`,
     ),
   ].join("");
+  renderTypeOptions();
+  renderType();
 
   const renderEngines = () => {
     const selectedEngineId = engineSelect.value;
@@ -229,6 +239,8 @@ export function setupModSettingsDropdowns(
     const option = event.target.closest("button[data-engine-id]");
     if (!option) return;
     engineSelect.value = option.dataset.engineId;
+    renderTypeOptions();
+    renderType();
     renderEngines();
     renderVersions(
       mod.engineId === engineSelect.value ? mod.engineVersion || "" : "",
@@ -240,6 +252,14 @@ export function setupModSettingsDropdowns(
     engineSelect,
     versionSelect,
     typeSelect,
+    refresh: ({ engineId, version, type } = {}) => {
+      if (engineId !== undefined) engineSelect.value = engineId || "";
+      if (type !== undefined && typeSelect) typeSelect.value = type;
+      renderTypeOptions();
+      renderType();
+      renderEngines();
+      renderVersions(version ?? "");
+    },
     destroy: () => {
       engineDropdown.destroy();
       versionDropdown?.destroy();

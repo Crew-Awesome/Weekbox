@@ -10,10 +10,12 @@ export class GameBananaCategoryResolver {
   constructor({
     engineCategories,
     legacyEngineCategories,
+    modKindCategories,
     excludedCategoryIds,
   }) {
     this.engineCategories = engineCategories;
     this.legacyEngineCategories = legacyEngineCategories;
+    this.modKindCategories = modKindCategories || {};
     this.excludedCategoryIds = excludedCategoryIds;
   }
 
@@ -29,6 +31,10 @@ export class GameBananaCategoryResolver {
   getEngineIdForCategory(categoryId) {
     const id = Number(categoryId);
     return this.engineCategories[id] || this.legacyEngineCategories[id] || null;
+  }
+
+  getModKindForCategory(categoryId) {
+    return this.modKindCategories[Number(categoryId)] || null;
   }
 
   getEngineIdForCategoryName(...categories) {
@@ -104,5 +110,29 @@ export class GameBananaCategoryResolver {
     return detected.includes("psychonline")
       ? "psychonline"
       : detected[0] || null;
+  }
+
+  getModKindForCategories(...categories) {
+    const pending = categories.filter((category) => category != null);
+    const seen = new Set();
+    const detected = [];
+    while (pending.length) {
+      const category = pending.shift();
+      if (typeof category === "number" || typeof category === "string") {
+        const kind = this.getModKindForCategory(category);
+        if (kind) detected.push(kind);
+        continue;
+      }
+      if (typeof category !== "object" || seen.has(category)) continue;
+      seen.add(category);
+      const kind = this.getModKindForCategory(this.getCategoryId(category));
+      if (kind) detected.push(kind);
+      pending.push(...RELATED_CATEGORY_FIELDS.map((field) => category[field]));
+    }
+    return detected.includes("addon")
+      ? "addon"
+      : detected.includes("dependency")
+        ? "dependency"
+        : null;
   }
 }

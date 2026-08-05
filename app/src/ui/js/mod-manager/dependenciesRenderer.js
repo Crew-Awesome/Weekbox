@@ -94,11 +94,11 @@ export const dependenciesRenderer = {
       row.className = "mod-manager-dependency";
       const cover = document.createElement("img");
       cover.className = "mod-manager-dependency-cover";
-      cover.src = "assets/icons/launcher-icon.png";
+      cover.src = "assets/img/placeholder-mini.jpg";
       cover.alt = "";
       cover.loading = "lazy";
       cover.addEventListener("error", () => {
-        cover.src = "assets/icons/launcher-icon.png";
+        cover.src = "assets/img/placeholder-mini.jpg";
       });
       loadDependencyCover(dependency, cover);
       FS.getModCover(dependency.id)
