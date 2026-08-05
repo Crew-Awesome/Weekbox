@@ -11,7 +11,7 @@ import { existingStorageModal } from "../existingStorageModal.js";
 import { networkStatus } from "../../../backend/core/system/network-status.service.js";
 import { syncWindowsProtocolRegistration } from "../../../backend/core/system/windows-protocol.util.js";
 import { sidebar } from "../sidebar.js";
-import { getLocaleCoverage, i18n, t } from "../i18n/index.js";
+import { getLocaleCoverage, i18n, LANGUAGES, t } from "../i18n/index.js";
 import { firstRunLanguageModal } from "../firstRunLanguageModal.js";
 
 const appUpdates = new AppUpdateController(appUpdater);
@@ -55,6 +55,7 @@ export const configModal = {
       const wrapper = document.createElement("div");
       wrapper.innerHTML = html;
       document.body.appendChild(wrapper.firstElementChild);
+      this.renderLanguageOptions();
       i18n.apply(document.getElementById("config-modal"));
 
       if (window.NL_OS !== "Windows") {
@@ -70,6 +71,36 @@ export const configModal = {
         this.updateNetworkAvailability(),
       );
     }
+  },
+
+  renderLanguageOptions() {
+    const container = document.getElementById("setting-language-options");
+    const select = document.getElementById("setting-language");
+    if (!container || !select) return;
+    container.replaceChildren();
+    select.replaceChildren();
+    LANGUAGES.forEach(({ id, flag, name }) => {
+      const option = document.createElement("button");
+      option.type = "button";
+      option.className = "setting-language-option";
+      option.dataset.language = id;
+      option.dataset.flag = flag;
+      option.dataset.languageName = name;
+      option.setAttribute("role", "option");
+      option.setAttribute("aria-selected", "false");
+      const flagElement = document.createElement("span");
+      flagElement.className = `language-flag setting-language-flag fi fi-${flag}`;
+      flagElement.setAttribute("aria-hidden", "true");
+      const label = document.createElement("span");
+      label.textContent = name;
+      option.append(flagElement, label);
+      container.append(option);
+
+      const selectOption = document.createElement("option");
+      selectOption.value = id;
+      selectOption.textContent = name;
+      select.append(selectOption);
+    });
   },
 
   bindEvents() {
@@ -240,13 +271,13 @@ export const configModal = {
 
     if (language) language.value = selectedOption.dataset.language;
     if (selectedFlag) {
-      selectedFlag.className = `mod-settings-select-icon setting-language-flag fi fi-${selectedOption.dataset.flag || "xx"}`;
+      selectedFlag.className = `mod-settings-select-icon language-flag setting-language-flag fi fi-${selectedOption.dataset.flag || "xx"}`;
     }
     options.forEach((option) => {
       const isSelected = option === selectedOption;
       option.classList.toggle("selected", isSelected);
       option.setAttribute("aria-selected", String(isSelected));
-      const name = option.querySelector("[data-language-name]")?.dataset.languageName ||
+      const name = option.dataset.languageName ||
         option.querySelector("span:last-child")?.textContent.trim() ||
         option.dataset.language;
       option.title = `${name} (${getLocaleCoverage(option.dataset.language)}%)`;

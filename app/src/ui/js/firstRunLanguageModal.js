@@ -1,15 +1,5 @@
-import { getLocaleCoverage, i18n, t } from "./i18n/index.js";
+import { getLocaleCoverage, i18n, LANGUAGES, t } from "./i18n/index.js";
 import { appSettings } from "../../backend/core/system/settings.service.js";
-
-const languages = [
-  { id: "en", flag: "us", name: "English" },
-  { id: "es", flag: "es", name: "Español" },
-  { id: "de", flag: "de", name: "Deutsch" },
-  { id: "id", flag: "id", name: "Bahasa Indonesia" },
-  { id: "it", flag: "it", name: "Italiano" },
-  { id: "pt", flag: "pt", name: "Português" },
-  { id: "fr", flag: "fr", name: "Français" },
-];
 
 export const firstRunLanguageModal = {
   show({ markComplete = true } = {}) {
@@ -24,14 +14,12 @@ export const firstRunLanguageModal = {
         <div class="language-picker-main">
           <h2 id="first-run-language-title">${t("languageSetup.title")}</h2>
           <div class="language-picker-options" role="group" aria-label="${t("languageSetup.optionsLabel")}">
-            ${languages
-              .map(
-                ({ id, flag, name }) => `
-                  <button type="button" class="language-picker-option" data-language="${id}" data-language-name="${name} (${getLocaleCoverage(id)}%)" aria-label="${name} (${getLocaleCoverage(id)}%)">
-                    <span class="language-picker-flag fi fi-${flag}" aria-hidden="true"></span>
-                  </button>`,
-              )
-              .join("")}
+            ${LANGUAGES.map(
+              ({ id, flag, name }) => `
+                <button type="button" class="language-picker-option" data-language="${id}" data-language-name="${name} (${getLocaleCoverage(id)}%)" aria-label="${name} (${getLocaleCoverage(id)}%)">
+                  <span class="language-flag language-picker-flag fi fi-${flag}" aria-hidden="true"></span>
+                </button>`,
+            ).join("")}
           </div>
           <button type="button" class="language-picker-continue" aria-label="${t("common.continue")}" disabled>
             <span>${t("common.continue")}</span>
@@ -77,7 +65,7 @@ export const firstRunLanguageModal = {
       const focusable = options
         .concat(continueButton)
         .filter((item) => !item.disabled);
-      if (focusable.length === 0) return;
+      if (!focusable.length) return;
       const first = focusable[0];
       const last = focusable.at(-1);
       if (event.shiftKey && document.activeElement === first) {

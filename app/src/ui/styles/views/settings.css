@@ -237,31 +237,31 @@
   background-size: contain;
 }
 
-#config-modal .setting-language-flag.fi-us {
+.language-flag.fi-us {
   background-image: url("../../../../../node_modules/flag-icons/flags/4x3/us.svg");
 }
 
-#config-modal .setting-language-flag.fi-es {
+.language-flag.fi-es {
   background-image: url("../../../../../node_modules/flag-icons/flags/4x3/es.svg");
 }
 
-#config-modal .setting-language-flag.fi-de {
+.language-flag.fi-de {
   background-image: url("../../../../../node_modules/flag-icons/flags/4x3/de.svg");
 }
 
-#config-modal .setting-language-flag.fi-id {
+.language-flag.fi-id {
   background-image: url("../../../../../node_modules/flag-icons/flags/4x3/id.svg");
 }
 
-#config-modal .setting-language-flag.fi-it {
+.language-flag.fi-it {
   background-image: url("../../../../../node_modules/flag-icons/flags/4x3/it.svg");
 }
 
-#config-modal .setting-language-flag.fi-pt {
+.language-flag.fi-pt {
   background-image: url("../../../../../node_modules/flag-icons/flags/4x3/pt.svg");
 }
 
-#config-modal .setting-language-flag.fi-fr {
+.language-flag.fi-fr {
   background-image: url("../../../../../node_modules/flag-icons/flags/4x3/fr.svg");
 }
 

@@ -420,34 +420,6 @@
   transform: scale(1.04);
 }
 
-.language-picker-flag.fi-us {
-  background-image: url("../../../../../node_modules/flag-icons/flags/4x3/us.svg");
-}
-
-.language-picker-flag.fi-es {
-  background-image: url("../../../../../node_modules/flag-icons/flags/4x3/es.svg");
-}
-
-.language-picker-flag.fi-de {
-  background-image: url("../../../../../node_modules/flag-icons/flags/4x3/de.svg");
-}
-
-.language-picker-flag.fi-id {
-  background-image: url("../../../../../node_modules/flag-icons/flags/4x3/id.svg");
-}
-
-.language-picker-flag.fi-it {
-  background-image: url("../../../../../node_modules/flag-icons/flags/4x3/it.svg");
-}
-
-.language-picker-flag.fi-pt {
-  background-image: url("../../../../../node_modules/flag-icons/flags/4x3/pt.svg");
-}
-
-.language-picker-flag.fi-fr {
-  background-image: url("../../../../../node_modules/flag-icons/flags/4x3/fr.svg");
-}
-
 .language-picker-option::after {
   position: absolute;
   bottom: calc(100% + 9px);
