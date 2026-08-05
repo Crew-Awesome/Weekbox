@@ -209,6 +209,7 @@ function describeIssue(error) {
     };
   }
   if (
+    lower.includes("web page instead of an archive") ||
     lower.includes("end-of-central-directory signature not found") ||
     lower.includes("cannot find zipfile directory")
   ) {

@@ -294,6 +294,10 @@ export const enginesView = {
     downloadActions.hidden = false;
     const cancelBtn = document.getElementById("cancel-engine-download-btn");
     const { engineId, version } = this.activeInstall;
+    if (!cancelBtn) {
+      activeBtn.textContent = t("downloads.downloading");
+      return;
+    }
     cancelBtn.onclick = async () => {
       cancelBtn.disabled = true;
       this.cancelledInstall = `${engineId}:${version}`;

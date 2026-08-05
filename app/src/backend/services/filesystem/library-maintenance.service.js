@@ -89,7 +89,7 @@ var _LibraryMaintenanceService = class _LibraryMaintenanceService {
         return await this.api.exists(destinationPath);
       if (await this.api.exists(destinationPath)) return false;
       try {
-        await Neutralino.filesystem.move(sourcePath, destinationPath);
+        await this.api.move(sourcePath, destinationPath);
         return true;
       } catch (error) {
         lastError = error;

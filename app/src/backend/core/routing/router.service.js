@@ -8,6 +8,11 @@ router = {
   async init() {
     this.mainContent = document.getElementById("main-content");
     this.sidebarContainer = document.getElementById("sidebar-container");
+    if (!this.mainContent || !this.sidebarContainer) {
+      throw new Error(
+        "WeekBox startup interface is missing required containers.",
+      );
+    }
     try {
       const response = await fetch("src/ui/html/index.html");
       const html = await response.text();
@@ -27,6 +32,8 @@ router = {
   async loadComponent(container, path) {},
   async navigate(viewId) {
     try {
+      if (!this.mainContent)
+        throw new Error("Main content container is missing.");
       const tpl = document.getElementById("tpl-" + viewId);
       if (tpl) {
         this.mainContent.innerHTML = tpl.innerHTML;

@@ -81,7 +81,7 @@ var _ModInjectionService = class _ModInjectionService {
       const destinationPath = `${bundleModsPath}/${entry.entry}`;
       if (await this.api.exists(destinationPath)) continue;
       try {
-        await Neutralino.filesystem.move(sourcePath, destinationPath);
+        await this.api.move(sourcePath, destinationPath);
       } catch (error) {
         console.warn("Could not migrate macOS engine mod:", sourcePath, error);
       }
@@ -243,7 +243,8 @@ var _ModInjectionService = class _ModInjectionService {
           }
           if (isCopiedLink) {
             await this.api.remove(linkPath).catch(async () => {
-              if (window.NL_OS !== "Windows") throw new Error("Could not remove copied mod link");
+              if (window.NL_OS !== "Windows")
+                throw new Error("Could not remove copied mod link");
               await Neutralino.os.execCommand(
                 `rmdir /S /Q "${linkPath.replace(/\//g, "\\")}"`,
                 { background: false },

@@ -54,7 +54,10 @@ const LOCAL_MOD_COVER_FILES = [
 ];
 
 function getDataUrlMimeType(path) {
-  const extension = String(path || "").split(".").pop()?.toLocaleLowerCase();
+  const extension = String(path || "")
+    .split(".")
+    .pop()
+    ?.toLocaleLowerCase();
   return extension === "jpg" || extension === "jpeg"
     ? "image/jpeg"
     : extension === "webp"
@@ -254,9 +257,7 @@ var _FileSystemService = class _FileSystemService {
       .getPath("documents")
       .catch(() => "");
     if (window.NL_OS === "Darwin" && isICloudPath(documentsPath)) {
-      const homePath = await Neutralino.os
-        .getEnv("HOME")
-        .catch(() => "");
+      const homePath = await Neutralino.os.getEnv("HOME").catch(() => "");
       if (homePath) return homePath;
     }
     if (documentsPath) return documentsPath;
@@ -268,8 +269,13 @@ var _FileSystemService = class _FileSystemService {
     throw new Error("WeekBox could not find a writable storage location");
   }
   setStoragePaths(basePath) {
-    const normalizedBasePath = String(basePath || "").trim().replace(/[\\/]+$/, "");
-    if (!normalizedBasePath || /^(?:undefined|null)$/i.test(normalizedBasePath)) {
+    const normalizedBasePath = String(basePath || "")
+      .trim()
+      .replace(/[\\/]+$/, "");
+    if (
+      !normalizedBasePath ||
+      /^(?:undefined|null)$/i.test(normalizedBasePath)
+    ) {
       throw new Error("WeekBox could not find a writable storage location");
     }
     this.basePath = normalizedBasePath;
@@ -391,10 +397,7 @@ var _FileSystemService = class _FileSystemService {
           .replace("T", "_")
           .replace("Z", "");
         replacedStorageBackupPath = `${destinationBasePath}/WeekBox-backup-${timestamp}`;
-        await Neutralino.filesystem.move(
-          destinationWeekboxPath,
-          replacedStorageBackupPath,
-        );
+        await this.api.move(destinationWeekboxPath, replacedStorageBackupPath);
       }
       if (!canRepairNestedStorage && !replacedStorageBackupPath) {
         await Neutralino.filesystem.remove(destinationWeekboxPath);
@@ -420,7 +423,7 @@ var _FileSystemService = class _FileSystemService {
       } catch (error) {
         if (replacedStorageBackupPath) {
           await this.api.remove(destinationWeekboxPath).catch(() => {});
-          await Neutralino.filesystem
+          await this.api
             .move(replacedStorageBackupPath, destinationWeekboxPath)
             .catch(() => {});
         }

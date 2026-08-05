@@ -32,7 +32,7 @@ export const homeCarousel = {
   async init() {
     const track = document.getElementById("carousel-track");
     const dotsContainer = document.getElementById("carousel-dots");
-    if (!track) return;
+    if (!track || !dotsContainer) return;
 
     try {
       const mods = await gameBananaApi.getFeaturedCarousel();
@@ -64,7 +64,8 @@ export const homeCarousel = {
             slide.style.backgroundImage = `url('${mod.image}')`;
           };
           preloader.onerror = () => {
-            slide.style.backgroundImage = "url('assets/img/placeholder-mini.jpg')";
+            slide.style.backgroundImage =
+              "url('assets/img/placeholder-mini.jpg')";
           };
           preloader.src = mod.image;
         }
@@ -94,7 +95,7 @@ export const homeCarousel = {
         }
 
         const downloadBtn = slide.querySelector(".download-mod-btn");
-        downloadBtn.addEventListener("click", () => {
+        downloadBtn?.addEventListener("click", () => {
           modModal.open(mod.id);
         });
         track.appendChild(slide);
@@ -151,10 +152,10 @@ export const homeCarousel = {
       offset++
     ) {
       const dotIndex = groupStart + offset;
-      dots[dotIndex].style.display = "block";
-      dots[dotIndex].style.order = offset + 1;
+      dots[dotIndex]?.style.setProperty("display", "block");
+      dots[dotIndex]?.style.setProperty("order", String(offset + 1));
     }
-    dots[this.currentSlideIndex].classList.add("active");
+    dots[this.currentSlideIndex]?.classList.add("active");
   },
 
   goToSlide(index) {

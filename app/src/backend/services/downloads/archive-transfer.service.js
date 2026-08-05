@@ -8,6 +8,10 @@ import {
   getRangeSupportedFileSize,
 } from "./external-download.resolver.js";
 import { formatBytes } from "../../utils/formatters.js";
+import {
+  getHtmlResponseError,
+  looksLikeHtmlResponse,
+} from "./download-validation.util.cjs";
 
 function formatArchiveEntry(output) {
   const lines = output.trim().split("\n");
@@ -82,7 +86,8 @@ function spawnProcessWithShell(command) {
   if (window.NL_OS === "Windows") {
     return Neutralino.os.spawnProcess(command);
   }
-  return Neutralino.os.spawnProcess(`sh -c ${quoteCommandArgument(command)}`);
+  const shellCommand = `'${String(command).replaceAll("'", "'\\''")}'`;
+  return Neutralino.os.spawnProcess(`sh -c ${shellCommand}`);
 }
 
 function appendProcessOutput(output, data) {
@@ -230,14 +235,19 @@ function createProcessError(operation, exitCode, output) {
 async function ensureDirectoryExists(dir) {
   const normalized = String(dir || "").replace(/\\/g, "/");
   const parts = normalized.split("/");
-  let current = "";
-  for (let i = 0; i < parts.length; i += 1) {
-    if (i === 0 && parts[0].includes(":")) {
-      current = parts[0];
-      continue;
-    }
-    current = current ? `${current}/${parts[i]}` : parts[i];
-    if (!current) continue;
+  let current = normalized.startsWith("//")
+    ? "//"
+    : normalized.startsWith("/")
+      ? "/"
+      : "";
+  for (const part of parts) {
+    if (!part) continue;
+    current =
+      current === "/" || current === "//"
+        ? `${current}${part}`
+        : current
+          ? `${current}/${part}`
+          : part;
     try {
       await Neutralino.filesystem.createDirectory(current);
     } catch {}
@@ -715,7 +725,7 @@ async function downloadGoogleDriveArchive({
   try {
     onProgress?.("Authorizing Google Drive download...", 2);
     const initialUrl = `https://drive.usercontent.google.com/download?id=${encodeURIComponent(fileId)}&export=download`;
-    
+
     // Request download with cookie jar and browser user agent
     await retryTransientDownload(
       () =>
@@ -733,25 +743,28 @@ async function downloadGoogleDriveArchive({
     let htmlContent = "";
     try {
       const stats = await Neutralino.filesystem.getStats(probePath);
-      if (stats.size > 0 && stats.size < 500 * 1024) {
-        htmlContent = await Neutralino.filesystem.readFile(probePath);
-        if (
-          htmlContent.includes("<!DOCTYPE html") ||
-          htmlContent.includes("<!doctype html") ||
-          htmlContent.includes("<html") ||
-          htmlContent.includes("<form")
-        ) {
-          isHtml = true;
-        }
+      if (stats.size > 0) {
+        htmlContent = new TextDecoder().decode(
+          await Neutralino.filesystem.readBinaryFile(probePath, {
+            pos: 0,
+            size: 8192,
+          }),
+        );
+        isHtml = looksLikeHtmlResponse(htmlContent);
       }
     } catch {}
 
     if (isHtml) {
-      // Check for Google Drive error pages
+      const htmlError = getHtmlResponseError(htmlContent);
+      if (htmlError && !htmlError.message.startsWith("The download server")) {
+        throw htmlError;
+      }
       if (
         htmlContent.includes("Quota exceeded") ||
         htmlContent.includes("uc-error-caption") ||
-        htmlContent.includes("Too many users have viewed or downloaded this file recently")
+        htmlContent.includes(
+          "Too many users have viewed or downloaded this file recently",
+        )
       ) {
         throw new Error(
           "Google Drive: Este archivo ha superado su cuota de descargas porque demasiados usuarios lo han descargado recientemente. Inténtalo más tarde o prueba con otro enlace de descarga.",
@@ -768,7 +781,9 @@ async function downloadGoogleDriveArchive({
       }
       if (
         htmlContent.includes("File not found") ||
-        htmlContent.includes("Sorry, the file you have requested does not exist")
+        htmlContent.includes(
+          "Sorry, the file you have requested does not exist",
+        )
       ) {
         throw new Error(
           "Google Drive: El archivo no existe o fue eliminado de Google Drive.",
@@ -789,7 +804,8 @@ async function downloadGoogleDriveArchive({
       formParams.set("export", "download");
       formParams.set("confirm", "t");
 
-      const inputRegex = /<input[^>]+(?:name="([^"]+)"[^>]+value="([^"]*)"|value="([^"]*)"[^>]+name="([^"]+)")/gi;
+      const inputRegex =
+        /<input[^>]+(?:name="([^"]+)"[^>]+value="([^"]*)"|value="([^"]*)"[^>]+name="([^"]+)")/gi;
       let match;
       while ((match = inputRegex.exec(htmlContent)) !== null) {
         const name = match[1] || match[4];
@@ -797,7 +813,9 @@ async function downloadGoogleDriveArchive({
         if (name) formParams.set(name, value);
       }
 
-      const uuidMatch = htmlContent.match(/name="uuid"\s+value="([^"]+)"/i) || htmlContent.match(/uuid=([^&"'\s]+)/i);
+      const uuidMatch =
+        htmlContent.match(/name="uuid"\s+value="([^"]+)"/i) ||
+        htmlContent.match(/uuid=([^&"'\s]+)/i);
       if (uuidMatch && !formParams.get("uuid")) {
         formParams.set("uuid", uuidMatch[1]);
       }
@@ -1020,12 +1038,16 @@ async function downloadArchive({
   await ensureDirectoryExists(destinationDir);
   try {
     await Neutralino.filesystem.writeFile(`${partPath}.write-check`, "");
-    await Neutralino.filesystem.remove(`${partPath}.write-check`).catch(() => {});
+    await Neutralino.filesystem
+      .remove(`${partPath}.write-check`)
+      .catch(() => {});
   } catch (error) {
     try {
       await ensureDirectoryExists(destinationDir);
       await Neutralino.filesystem.writeFile(`${partPath}.write-check`, "");
-      await Neutralino.filesystem.remove(`${partPath}.write-check`).catch(() => {});
+      await Neutralino.filesystem
+        .remove(`${partPath}.write-check`)
+        .catch(() => {});
     } catch (retryError) {
       throw new Error(
         `The download could not be written to storage. The destination folder is missing, locked, read-only, or out of space. (${retryError?.code || error?.code || "write check failed"})`,
@@ -1126,6 +1148,14 @@ async function verifyDownloadedArchiveContent(archivePath) {
   if (stats.size === 0) {
     throw new Error("The downloaded archive is empty (0 bytes).");
   }
+  const sample = new TextDecoder().decode(
+    await Neutralino.filesystem.readBinaryFile(archivePath, {
+      pos: 0,
+      size: 8192,
+    }),
+  );
+  const htmlError = getHtmlResponseError(sample);
+  if (htmlError) throw htmlError;
   if (stats.size < 500 * 1024) {
     try {
       const sample = await Neutralino.filesystem.readFile(archivePath);
@@ -1138,7 +1168,9 @@ async function verifyDownloadedArchiveContent(archivePath) {
         if (
           sample.includes("Quota exceeded") ||
           sample.includes("uc-error-caption") ||
-          sample.includes("Too many users have viewed or downloaded this file recently")
+          sample.includes(
+            "Too many users have viewed or downloaded this file recently",
+          )
         ) {
           throw new Error(
             "Google Drive: Este archivo ha superado la cuota de descargas porque demasiados usuarios lo han descargado recientemente. Inténtalo más tarde o prueba con otro enlace.",
@@ -1146,14 +1178,24 @@ async function verifyDownloadedArchiveContent(archivePath) {
         }
         const titleMatch = sample.match(/<title[^>]*>([^<]+)<\/title>/i);
         const headingMatch = sample.match(/<h1[^>]*>([^<]+)<\/h1>/i);
-        const pMatch = sample.match(/<p[^>]*class="[^"]*error[^"]*"[^>]*>([^<]+)<\/p>/i);
-        const errorReason = pMatch?.[1]?.trim() || headingMatch?.[1]?.trim() || titleMatch?.[1]?.trim() || "Web page returned";
+        const pMatch = sample.match(
+          /<p[^>]*class="[^"]*error[^"]*"[^>]*>([^<]+)<\/p>/i,
+        );
+        const errorReason =
+          pMatch?.[1]?.trim() ||
+          headingMatch?.[1]?.trim() ||
+          titleMatch?.[1]?.trim() ||
+          "Web page returned";
         throw new Error(
           `La descarga falló: El servidor devolvió una página web ('${errorReason}') en lugar de un archivo de mod.`,
         );
       }
     } catch (e) {
-      if (e.message?.includes("Google Drive:") || e.message?.includes("La descarga falló:") || e.message?.includes("The downloaded archive is empty")) {
+      if (
+        e.message?.includes("Google Drive:") ||
+        e.message?.includes("La descarga falló:") ||
+        e.message?.includes("The downloaded archive is empty")
+      ) {
         throw e;
       }
     }
@@ -1306,18 +1348,18 @@ async function extractArchive({
       if (await hasExtractedPayload(destinationPath)) recovered = true;
       if (!recovered) {
         try {
-          await execute(getWindowsExtractionCommand(archivePath, destinationPath));
+          await execute(
+            getWindowsExtractionCommand(archivePath, destinationPath),
+          );
           recovered = true;
         } catch (tarError) {
-          if (
-            String(tarError).includes("resolve failed")
-          ) {
+          if (String(tarError).includes("resolve failed")) {
             try {
               await execute(
-                getWindowsExtractionCommand(archivePath, destinationPath).replace(
-                  "tar.exe -xf",
-                  "tar.exe --force-local -xf",
-                ),
+                getWindowsExtractionCommand(
+                  archivePath,
+                  destinationPath,
+                ).replace("tar.exe -xf", "tar.exe --force-local -xf"),
               );
               recovered = true;
             } catch (retryError) {
@@ -1326,7 +1368,11 @@ async function extractArchive({
           }
         }
       }
-      if (!recovered && (String(archivePath).toLowerCase().endsWith(".zip") || archiveFormat === "zip")) {
+      if (
+        !recovered &&
+        (String(archivePath).toLowerCase().endsWith(".zip") ||
+          archiveFormat === "zip")
+      ) {
         try {
           await execute(
             getPowerShellExtractCommand(archivePath, destinationPath),
