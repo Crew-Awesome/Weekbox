@@ -11,7 +11,8 @@ import { existingStorageModal } from "../existingStorageModal.js";
 import { networkStatus } from "../../../backend/core/system/network-status.service.js";
 import { syncWindowsProtocolRegistration } from "../../../backend/core/system/windows-protocol.util.js";
 import { sidebar } from "../sidebar.js";
-import { i18n, t } from "../i18n/index.js";
+import { getLocaleCoverage, i18n, t } from "../i18n/index.js";
+import { firstRunLanguageModal } from "../firstRunLanguageModal.js";
 
 const appUpdates = new AppUpdateController(appUpdater);
 const storageMoveFeedback = new StorageMoveFeedback(toastSystem);
@@ -115,6 +116,12 @@ export const configModal = {
       languageDropdown,
       { menuElement: languageOptions },
     );
+    languageTrigger?.addEventListener("click", async (event) => {
+      event.stopImmediatePropagation();
+      this.languageDropdownController?.close();
+      await firstRunLanguageModal.show({ markComplete: false });
+      this.syncLanguageDropdown(i18n.locale);
+    });
     languageOptions?.addEventListener("click", (event) => {
       const option = event.target.closest("[data-language]");
       if (!option || !languageOptions.contains(option) || !language) return;
@@ -239,6 +246,10 @@ export const configModal = {
       const isSelected = option === selectedOption;
       option.classList.toggle("selected", isSelected);
       option.setAttribute("aria-selected", String(isSelected));
+      const name = option.querySelector("[data-language-name]")?.dataset.languageName ||
+        option.querySelector("span:last-child")?.textContent.trim() ||
+        option.dataset.language;
+      option.title = `${name} (${getLocaleCoverage(option.dataset.language)}%)`;
     });
     if (selected) {
       const label = selectedOption.querySelector("[data-i18n]");

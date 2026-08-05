@@ -2,10 +2,13 @@ import en from "../../locales/en.json";
 import es from "../../locales/es.json";
 import de from "../../locales/de.json";
 import id from "../../locales/id.json";
+import it from "../../locales/it.json";
+import pt from "../../locales/pt.json";
+import fr from "../../locales/fr.json";
 import shared from "../../locales/shared.json";
 import { appSettings } from "../../../backend/core/system/settings.service.js";
 
-const catalogs = { en, es, de, id };
+const catalogs = { en, es, de, id, it, pt, fr };
 const fallbackLocale = "en";
 const engineLabelKeys = {
   vslice: "home.baseGame",
@@ -94,6 +97,19 @@ export const i18n = {
 };
 
 export const t = (key, variables) => i18n.t(key, variables);
+
+export function getLocaleCoverage(locale) {
+  if (locale === fallbackLocale) return 100;
+  const englishKeys = Object.keys(en);
+  const catalog = catalogs[locale] || {};
+  const translated = englishKeys.filter(
+    (key) =>
+      typeof catalog[key] === "string" &&
+      catalog[key].trim() &&
+      catalog[key] !== en[key],
+  ).length;
+  return Number(((translated / englishKeys.length) * 100).toFixed(1));
+}
 
 export function getEngineLabelKey(engineId) {
   return engineLabelKeys[engineId] || "";

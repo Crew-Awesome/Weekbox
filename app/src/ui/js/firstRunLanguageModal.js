@@ -1,4 +1,4 @@
-import { i18n, t } from "./i18n/index.js";
+import { getLocaleCoverage, i18n, t } from "./i18n/index.js";
 import { appSettings } from "../../backend/core/system/settings.service.js";
 
 const languages = [
@@ -6,10 +6,13 @@ const languages = [
   { id: "es", flag: "es", name: "Español" },
   { id: "de", flag: "de", name: "Deutsch" },
   { id: "id", flag: "id", name: "Bahasa Indonesia" },
+  { id: "it", flag: "it", name: "Italiano" },
+  { id: "pt", flag: "pt", name: "Português" },
+  { id: "fr", flag: "fr", name: "Français" },
 ];
 
 export const firstRunLanguageModal = {
-  show() {
+  show({ markComplete = true } = {}) {
     const previousFocus = document.activeElement;
     const modal = document.createElement("section");
     modal.className = "language-picker-overlay";
@@ -24,7 +27,7 @@ export const firstRunLanguageModal = {
             ${languages
               .map(
                 ({ id, flag, name }) => `
-                  <button type="button" class="language-picker-option" data-language="${id}" data-language-name="${name}" aria-label="${name}">
+                  <button type="button" class="language-picker-option" data-language="${id}" data-language-name="${name} (${getLocaleCoverage(id)}%)" aria-label="${name} (${getLocaleCoverage(id)}%)">
                     <span class="language-picker-flag fi fi-${flag}" aria-hidden="true"></span>
                   </button>`,
               )
@@ -48,7 +51,7 @@ export const firstRunLanguageModal = {
     let selectedLocale = null;
     const finish = (locale) => {
       i18n.setLocale(locale);
-      appSettings.set("firstRunLanguageSetupComplete", true);
+      if (markComplete) appSettings.set("firstRunLanguageSetupComplete", true);
       app?.removeAttribute("inert");
       modal.remove();
       previousFocus?.focus?.();

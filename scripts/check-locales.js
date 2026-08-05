@@ -48,6 +48,13 @@ for (const file of files) {
       key in english &&
       placeholders(locale[key]) !== placeholders(english[key]),
   );
+  const translated = Object.keys(english).filter(
+    (key) =>
+      typeof locale[key] === "string" &&
+      locale[key].trim() &&
+      locale[key] !== english[key],
+  ).length;
+  const coverage = ((translated / Object.keys(english).length) * 100).toFixed(1);
   if (extra.length) {
     failed = true;
     console.error(`${file}: unknown keys: ${extra.join(", ")}`);
@@ -69,8 +76,10 @@ for (const file of files) {
       console.warn(message);
     }
   }
-  if (!extra.length && !mismatched.length && !missing.length)
-    console.log(`${file}: complete`);
+  console.log(
+    `${file}: ${coverage}% translated (${translated}/${Object.keys(english).length})` +
+      (missing.length ? `; ${missing.length} missing` : ""),
+  );
 }
 
 if (!files.length) console.log("No additional locale files found.");

@@ -5,7 +5,9 @@
   "main": "index.js",
   "scripts": {
     "format": "prettier --write \"app/**/*.{js,css,html,json}\"",
-    "locales:check": "node scripts/check-locales.js --strict",
+    "locales:check": "node scripts/check-locales.js",
+    "locales:check:strict": "node scripts/check-locales.js --strict",
+    "locales:sync": "node scripts/sync-locales.js",
     "assets": "node scripts/bundle.js",
     "postinstall": "npx @neutralinojs/neu update",
     "dev": "npm run assets && npm-run-all --parallel \"assets -- --watch\" neu",
