@@ -224,13 +224,33 @@ function createProcessError(operation, exitCode, output) {
   );
 }
 
+/**
+ * @fix 2026-08-05T04:49:46.409Z - Fix download could not be written to storage error
+ */
+async function ensureDirectoryExists(dir) {
+  const normalized = String(dir || "").replace(/\\/g, "/");
+  const parts = normalized.split("/");
+  let current = "";
+  for (let i = 0; i < parts.length; i += 1) {
+    if (i === 0 && parts[0].includes(":")) {
+      current = parts[0];
+      continue;
+    }
+    current = current ? `${current}/${parts[i]}` : parts[i];
+    if (!current) continue;
+    try {
+      await Neutralino.filesystem.createDirectory(current);
+    } catch {}
+  }
+}
+
 function isTransientDownloadError(error) {
   const code = error?.downloadDiagnostics?.curlCode;
   const httpStatus = Number(error?.downloadDiagnostics?.httpStatus);
   return (
     [408, 503, 504].includes(httpStatus) ||
-    [1, 6, 7, 18, 28, 35, 52, 56, -1].includes(Number(code)) ||
-    /(?:exit code|curl:\s*\()\s*(?:-1|1|6|7|18|28|35|52|56)\b/i.test(
+    [1, 6, 7, 18, 23, 28, 35, 52, 56, -1].includes(Number(code)) ||
+    /(?:exit code|curl:\s*\()\s*(?:-1|1|6|7|18|23|28|35|52|56)\b/i.test(
       String(error?.message || error),
     )
   );
@@ -994,15 +1014,23 @@ async function downloadArchive({
   const destinationDir = getParentPath(outPath);
   requireValue(destinationDir, "download destination folder");
   const partPath = `${outPath}.part`;
-  onProgress?.("Preparing download destination...", 1);
-  await Neutralino.filesystem.createDirectory(destinationDir).catch(() => {});
+  /**
+   * @fix 2026-08-05T04:49:46.409Z - Fix download could not be written to storage error
+   */
+  await ensureDirectoryExists(destinationDir);
   try {
     await Neutralino.filesystem.writeFile(`${partPath}.write-check`, "");
-    await Neutralino.filesystem.remove(`${partPath}.write-check`);
+    await Neutralino.filesystem.remove(`${partPath}.write-check`).catch(() => {});
   } catch (error) {
-    throw new Error(
-      `The download could not be written to storage. The destination folder is missing, locked, read-only, or out of space. (${error?.code || "write check failed"})`,
-    );
+    try {
+      await ensureDirectoryExists(destinationDir);
+      await Neutralino.filesystem.writeFile(`${partPath}.write-check`, "");
+      await Neutralino.filesystem.remove(`${partPath}.write-check`).catch(() => {});
+    } catch (retryError) {
+      throw new Error(
+        `The download could not be written to storage. The destination folder is missing, locked, read-only, or out of space. (${retryError?.code || error?.code || "write check failed"})`,
+      );
+    }
   }
   await Neutralino.filesystem.remove(partPath).catch(() => {});
   if (sourceType === "external") {

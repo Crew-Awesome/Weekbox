@@ -93,11 +93,15 @@ function describeIssue(error) {
       tag: t("errors.storageLocationTag"),
     };
   }
+  /**
+   * @fix 2026-08-05T04:49:46.409Z - Fix download could not be written to storage error
+   */
   if (
     lower.includes("access is denied") ||
     lower.includes("permission") ||
     lower.includes("file is in use") ||
-    lower.includes("directory is not empty")
+    lower.includes("directory is not empty") ||
+    lower.includes("could not be written to storage")
   ) {
     return {
       title: t("errors.writeFolderTitle"),

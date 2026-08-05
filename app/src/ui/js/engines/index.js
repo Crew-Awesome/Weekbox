@@ -87,9 +87,14 @@ export const enginesView = {
       this.currentEngine.id,
       this.currentVersion,
     );
-    const newBtn = launchBtn.cloneNode(true);
-    launchBtn.parentNode.replaceChild(newBtn, launchBtn);
-    const activeBtn = document.getElementById("launch-engine-btn");
+    /**
+     * @fix 2026-08-05T04:31:52.365Z - Fix TypeError Cannot read properties of null (reading 'replaceChild') in updateButtonState
+     */
+    const currentBtn = document.getElementById("launch-engine-btn");
+    if (!currentBtn || !currentBtn.parentNode) return;
+    const newBtn = currentBtn.cloneNode(true);
+    currentBtn.parentNode.replaceChild(newBtn, currentBtn);
+    const activeBtn = newBtn;
 
     if (isInstalled) {
       activeBtn.textContent = t("engines.launch");
