@@ -241,7 +241,7 @@
   "search.relatedSuggestions": "Ähnliche Vorschläge",
   "search.noRecent": "Keine letzten Suchanfragen",
   "search.removeFromHistory": "Entferne {{text}} aus dem Suchverlauf",
-  "news.closeArticle": "Schließe Artikel",
+  "news.closeArticle": "Artikel schließen",
   "sidebar.standaloneMods": "Standalone Mods",
   "sidebar.stop": "Stop",
   "network.online": "Online",
