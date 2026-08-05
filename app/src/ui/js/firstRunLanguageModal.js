@@ -12,7 +12,7 @@ export const firstRunLanguageModal = {
     modal.innerHTML = `
       <div class="language-picker-panel">
         <div class="language-picker-main">
-          <h2 id="first-run-language-title">${t("languageSetup.title")}</h2>
+          <h2 id="first-run-language-title" data-i18n="languageSetup.title">${t("languageSetup.title")}</h2>
           <div class="language-picker-options" role="group" aria-label="${t("languageSetup.optionsLabel")}">
             ${LANGUAGES.map(
               ({ id, flag, name }) => `
@@ -22,7 +22,7 @@ export const firstRunLanguageModal = {
             ).join("")}
           </div>
           <button type="button" class="language-picker-continue" aria-label="${t("common.continue")}" disabled>
-            <span>${t("common.continue")}</span>
+            <span data-i18n="common.continue">${t("common.continue")}</span>
             <i class="fa-solid fa-arrow-right" aria-hidden="true"></i>
           </button>
         </div>
