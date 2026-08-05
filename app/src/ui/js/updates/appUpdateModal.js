@@ -1,5 +1,4 @@
 import { appUpdater } from "../../../backend/core/updates/app-updater.service.js";
-import { appSettings } from "../../../backend/core/system/settings.service.js";
 import { t } from "../i18n/index.js";
 
 const appUpdateModal = {
@@ -8,7 +7,7 @@ const appUpdateModal = {
     if (overlay) return overlay;
     overlay = document.createElement("div");
     overlay.id = "app-update-modal";
-    overlay.className = "dependency-review-overlay";
+    overlay.className = "dependency-review-overlay app-update-overlay";
     overlay.hidden = true;
     overlay.innerHTML = `
       <section class="dependency-review-modal app-update-dialog" role="dialog" aria-modal="true" aria-labelledby="app-update-title">
@@ -37,9 +36,9 @@ const appUpdateModal = {
     const updateBtn = overlay.querySelector(".app-update-now");
     const laterBtn = overlay.querySelector(".app-update-later");
 
-    if (versionLabel && updateInfo?.version) {
+    if (versionLabel && updateInfo?.latestVersion) {
       versionLabel.textContent = t("updates.versionAvailable", {
-        version: updateInfo.version,
+        version: updateInfo.latestVersion,
       });
     }
     if (notesContainer && updateInfo?.releaseNotes) {
@@ -58,13 +57,13 @@ const appUpdateModal = {
         updateBtn.disabled = true;
         updateBtn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> ${t("updates.updating")}`;
         try {
-          await appUpdater.installUpdate(updateInfo);
+          await appUpdater.install(updateInfo);
+          finish(true);
         } catch (error) {
           console.error("Failed to install app update:", error);
           updateBtn.disabled = false;
           updateBtn.textContent = t("updates.retry");
         }
-        finish(true);
       };
 
       overlay.hidden = false;

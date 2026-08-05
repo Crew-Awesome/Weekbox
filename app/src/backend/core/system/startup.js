@@ -218,7 +218,7 @@ async function handleStartupAppUpdate() {
   document.dispatchEvent(
     new CustomEvent("app-update-available", { detail: update }),
   );
-  return (await appUpdateModal.show(update)) === "updating";
+  return await appUpdateModal.show(update);
 }
 
 async function startApp() {
