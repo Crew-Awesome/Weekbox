@@ -432,6 +432,10 @@
   background-image: url("../../../../../node_modules/flag-icons/flags/4x3/de.svg");
 }
 
+.language-picker-flag.fi-id {
+  background-image: url("../../../../../node_modules/flag-icons/flags/4x3/id.svg");
+}
+
 .language-picker-option::after {
   position: absolute;
   bottom: calc(100% + 9px);

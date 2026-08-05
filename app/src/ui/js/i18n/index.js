@@ -1,10 +1,11 @@
 import en from "../../locales/en.json";
 import es from "../../locales/es.json";
 import de from "../../locales/de.json";
+import id from "../../locales/id.json";
 import shared from "../../locales/shared.json";
 import { appSettings } from "../../../backend/core/system/settings.service.js";
 
-const catalogs = { en, es, de };
+const catalogs = { en, es, de, id };
 const fallbackLocale = "en";
 const engineLabelKeys = {
   vslice: "home.baseGame",

@@ -5,6 +5,7 @@ const languages = [
   { id: "en", flag: "us", name: "English" },
   { id: "es", flag: "es", name: "Español" },
   { id: "de", flag: "de", name: "Deutsch" },
+  { id: "id", flag: "id", name: "Bahasa Indonesia" },
 ];
 
 export const firstRunLanguageModal = {
