@@ -18,7 +18,7 @@ export const scrollManager = {
         !gridState.isLoading &&
         gridState.hasMore
       ) {
-        gridRender.renderGrid(false, 2);
+        gridRender.renderGrid(false);
       }
     };
     this.scrollHandler = () => {

@@ -81,8 +81,14 @@ async function getRangeSupportedFileSize(url, executeCommand) {
   }
   const headers = `${result.stdOut || ""}
 ${result.stdErr || ""}`;
-  const match = headers.match(/content-range:\s*bytes\s+0-0\/(\d+)/i);
-  return match ? Number(match[1]) : 0;
+  const ranges = [
+    ...headers.matchAll(/content-range:\s*bytes\s+0-0\/(\d+)/gi),
+  ];
+  const rangeSize = Number(ranges.at(-1)?.[1]);
+  if (rangeSize > 0) return rangeSize;
+  const lengths = [...headers.matchAll(/content-length:\s*(\d+)/gi)];
+  const length = Number(lengths.at(-1)?.[1]);
+  return length > 0 ? length : 0;
 }
 
 export {

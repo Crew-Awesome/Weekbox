@@ -1,7 +1,11 @@
 import { getEngineUpdateCandidate } from "../../../backend/providers/github/github-release.provider.js";
 import { ENGINE_DETAILS } from "../../../backend/config/engines.config.js";
 import { FS } from "../../../backend/services/filesystem.js";
-import { getTargetLink, getTargetPlatform } from "./utils.js";
+import {
+  getTargetLink,
+  getTargetPlatform,
+  getTargetSize,
+} from "./utils.js";
 import { downloadEngine } from "./downloadEngine.js";
 import { engineUpdateModal } from "./engineUpdateModal.js";
 import { engineUpdateToast } from "./engineUpdateToast.js";
@@ -181,6 +185,8 @@ export const engineUpdateService = {
       installedVersion,
       update.url,
       (progress) => engineUpdateToast.update(engineId, progress),
+      undefined,
+      { expectedSize: getTargetSize(update.candidate) },
     );
     if (updated) {
       await rememberInstalledEngineBuild(

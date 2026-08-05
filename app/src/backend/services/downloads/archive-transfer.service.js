@@ -1045,7 +1045,7 @@ async function downloadArchive({
   }
   const useMultithreadDownloads = appSettings.get("multithreadDownloads");
   let remoteFileSize = Number(expectedSize) || 0;
-  if (useMultithreadDownloads) {
+  if (useMultithreadDownloads || !remoteFileSize) {
     try {
       onProgress?.("Checking download server...", 2);
       const detectedSize = await getRangeSupportedFileSize(url, (...args) =>

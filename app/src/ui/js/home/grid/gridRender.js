@@ -97,7 +97,7 @@ export const gridRender = {
     });
   },
 
-  async renderGrid(isInitial = false, pagesToLoad = isInitial ? 1 : 2) {
+  async renderGrid(isInitial = false, pagesToLoad = 1) {
     if (gridState.isLoading) {
       if (isInitial) {
         gridState.discoveryController?.abort();
@@ -111,6 +111,11 @@ export const gridRender = {
     if (!grid) return;
     this.ensureEngineTooltip(grid);
     const renderVersion = ++gridState.renderVersion;
+    const pageSize =
+      !gridState.isSearchMode &&
+      ["ripe", "new", "updated"].includes(gridState.currentFilter)
+        ? 24
+        : 12;
 
     if (isInitial) {
       gridState.discoveryController?.abort();
@@ -148,10 +153,11 @@ export const gridRender = {
               {
                 snapshotId: gridState.discoverySnapshotId,
                 signal: gridState.discoveryController?.signal,
+                pageSize,
               },
             );
         const result = Array.isArray(response)
-          ? { mods: response, exhausted: response.length < 12 }
+          ? { mods: response, exhausted: response.length < pageSize }
           : response;
         const mods = result.mods;
 
@@ -227,7 +233,7 @@ export const gridRender = {
         grid.appendChild(cards);
         if (result.snapshotId) gridState.discoverySnapshotId = result.snapshotId;
         gridState.currentPage = requestedPage;
-        gridState.hasMore = !result.exhausted && mods.length === 12;
+        gridState.hasMore = !result.exhausted && mods.length === pageSize;
         gridState.status = result.stale
           ? "stale"
           : result.partial

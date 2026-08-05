@@ -101,7 +101,14 @@ export const downloadEngine = {
     return describeExtractedFiles({ directory, limit });
   },
 
-  async install(engineId, version, downloadUrl, onProgress, onStateChange) {
+  async install(
+    engineId,
+    version,
+    downloadUrl,
+    onProgress,
+    onStateChange,
+    { expectedSize = 0 } = {},
+  ) {
     if (!FS.isInitialized) await FS.init();
     FS.assertStorageUnlocked();
 
@@ -153,6 +160,7 @@ export const downloadEngine = {
       const archiveStats = await downloadArchive({
         url: downloadUrl,
         outPath: tempFilePath,
+        expectedSize,
         getTask: () => this.activeTasks.get(taskKey),
         onProgress: updateProgress,
       });
@@ -259,7 +267,14 @@ export const downloadEngine = {
     }
   },
 
-  async update(engineId, version, downloadUrl, onProgress, onStateChange) {
+  async update(
+    engineId,
+    version,
+    downloadUrl,
+    onProgress,
+    onStateChange,
+    options,
+  ) {
     const updateVersion = `.update-${Date.now()}`;
     const engineRoot = `${FS.enginesPath}/${engineId}`;
     const currentDir = `${engineRoot}/${version}`;
@@ -270,6 +285,7 @@ export const downloadEngine = {
       downloadUrl,
       onProgress,
       onStateChange,
+      options,
     );
     if (!installed) return false;
     let backupReady = false;

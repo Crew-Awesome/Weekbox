@@ -651,7 +651,7 @@ export const gameBananaApi = {
       };
       this.ripeFeedCache.set(cacheKey, feed);
 
-      const pageSize = 12;
+      const pageSize = Math.max(1, Number(options.pageSize) || 12);
       const requiredMods = Math.max(1, Number(page) || 1) * pageSize;
       while (!feed.complete && feed.mods.length < requiredMods) {
         const params = new URLSearchParams({
@@ -758,7 +758,7 @@ export const gameBananaApi = {
       state.peoMods = await peoApi.listAll("", peoSort).catch(() => []);
     }
 
-    const pageSize = 12;
+    const pageSize = Math.max(1, Number(options.pageSize) || 12);
     const required = Math.max(1, Number(page) || 1) * pageSize;
     while (!state.exhausted && state.gameBananaMods.length < required) {
       const result =

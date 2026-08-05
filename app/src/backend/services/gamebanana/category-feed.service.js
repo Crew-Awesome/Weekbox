@@ -178,13 +178,22 @@ export class CategoryFeedService {
     if (filter === "popular")
       return this.getDiscovery(page, categoryId, options);
     try {
+      const pageSize = Math.max(
+        1,
+        Number(options.pageSize) || this.config.pageSize,
+      );
       const sort =
         {
           new: "Generic_Newest",
           updated: "Generic_LatestUpdated",
         }[filter] || "Generic_Newest";
-      return (await this.getCategoryRecords({ page, sort, categoryId }))
-        .slice(0, this.config.pageSize)
+      return (await this.getCategoryRecords({
+        page,
+        perPage: pageSize,
+        sort,
+        categoryId,
+      }))
+        .slice(0, pageSize)
         .map(this.toGridMod);
     } catch (error) {
       return [];

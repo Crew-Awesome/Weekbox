@@ -95,7 +95,11 @@ function selectAsset(assets, patterns, exclude = [], platform) {
 function normalizeRelease(release, source) {
   if (release.draft || !release.tag_name) return null;
   const version = release.tag_name.replace(/^v/i, "");
-  const result = { version, releasedAt: release.published_at || null };
+  const result = {
+    version,
+    releasedAt: release.published_at || null,
+    assetSizes: {},
+  };
   for (const [platform, patterns] of Object.entries(source.assets)) {
     const asset = selectAsset(
       release.assets || [],
@@ -103,11 +107,15 @@ function normalizeRelease(release, source) {
       source.exclude,
       platform,
     );
-    if (asset?.browser_download_url)
+    if (asset?.browser_download_url) {
       result[platform] = asset.browser_download_url;
+      const size = Number(asset.size);
+      if (size > 0) result.assetSizes[platform] = size;
+    }
   }
   return Object.keys(result).some(
-    (key) => key !== "version" && key !== "releasedAt",
+    (key) =>
+      key !== "version" && key !== "releasedAt" && key !== "assetSizes",
   )
     ? result
     : null;

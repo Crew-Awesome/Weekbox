@@ -1,7 +1,7 @@
 import { appEvents } from "../../../backend/core/routing/events.service.js";
 import { getSelectedEngine } from "../../../backend/core/state/state.service.js";
 import { engineDropdown } from "./dropdown.js";
-import { getTargetLink } from "./utils.js";
+import { getTargetLink, getTargetSize } from "./utils.js";
 import { FS } from "../../../backend/services/filesystem.js";
 import { downloadEngine } from "./downloadEngine.js";
 import { modsMaster } from "./modsMasterClass.js";
@@ -212,6 +212,7 @@ export const enginesView = {
               });
           },
           (state) => this.updateInstallState(state),
+          { expectedSize: getTargetSize(versionData) },
         );
         const wasCancelled = this.cancelledInstall === installKey;
         if (wasCancelled && this.rollbackPromise) await this.rollbackPromise;

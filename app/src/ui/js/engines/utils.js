@@ -31,6 +31,12 @@ export function getTargetLink(versionData) {
   return platform ? versionData[platform] || null : null;
 }
 
+export function getTargetSize(versionData) {
+  const platform = getTargetPlatform(versionData);
+  const size = Number(versionData?.assetSizes?.[platform]);
+  return size > 0 ? size : 0;
+}
+
 export function extractVersionFallback(url) {
   if (!url) return "Unknown";
   const githubMatch = url.match(/\/download\/(v?([^\/]+))\//);
