@@ -45,7 +45,13 @@ export function getPreferredDownloadOption(options) {
           .toLowerCase()
           .endsWith("mediafire.com"),
     ) ||
+    options.find(
+      (option) =>
+        option.type === "external" &&
+        new URL(option.downloadUrl).hostname.toLowerCase() === "github.com",
+    ) ||
     options.find((option) => option.type === "external") ||
     null
   );
 }
+

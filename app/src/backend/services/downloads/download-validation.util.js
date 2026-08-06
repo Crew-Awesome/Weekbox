@@ -25,7 +25,7 @@ function getHtmlResponseError(sample) {
     lower.includes("ha superado su cuota")
   ) {
     return new Error(
-      "Google Drive download quota exceeded. Try another download link or try again later.",
+      "Google Drive: Este archivo ha superado la cuota de descargas de Google Drive debido a un alto volumen de descargas recientes. Por favor, selecciona otro enlace de descarga disponible para este mod (como MediaFire o GitHub) o inténtalo más tarde.",
     );
   }
   if (
@@ -34,7 +34,7 @@ function getHtmlResponseError(sample) {
     lower.includes("sign in to continue")
   ) {
     return new Error(
-      "Google Drive denied access to this file. Check its sharing permissions or use another download link.",
+      "Google Drive: Este archivo requiere permisos especiales de acceso o inicio de sesión en Google. Prueba con otro enlace de descarga.",
     );
   }
   if (
@@ -42,7 +42,7 @@ function getHtmlResponseError(sample) {
     lower.includes("sorry, the file you have requested does not exist")
   ) {
     return new Error(
-      "Google Drive could not find this file. It may have been deleted.",
+      "Google Drive: El archivo no existe o fue eliminado de Google Drive. Prueba con otro enlace de descarga.",
     );
   }
   const title = html
@@ -50,8 +50,8 @@ function getHtmlResponseError(sample) {
     ?.replace(/\s+/g, " ")
     .trim();
   return new Error(
-    `The download server returned a web page instead of an archive${title ? ` (${title})` : ""}. Choose another download or try again later.`,
+    `El servidor de descarga devolvió una página web en lugar del archivo${title ? ` (${title})` : ""}. Selecciona otro enlace de descarga disponible.`,
   );
 }
 
-module.exports = { looksLikeHtmlResponse, getHtmlResponseError };
+export { looksLikeHtmlResponse, getHtmlResponseError };

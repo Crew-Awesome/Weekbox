@@ -2,6 +2,7 @@ import {
   activateCheckoutDialog,
   deactivateCheckoutDialog,
 } from "./dialogFocus.js";
+import { getPreferredDownloadOption } from "../../../../backend/utils/gamebanana/download-options.js";
 import { t } from "../../i18n/index.js";
 
 function ensureModal() {
@@ -30,11 +31,12 @@ function ensureModal() {
 const downloadChoiceModal = {
   choose(options) {
     if (options.length === 1) return Promise.resolve(options[0]);
+    const preferredOption = getPreferredDownloadOption(options);
+    const selectedId = preferredOption?.id || options[0]?.id;
     const overlay = ensureModal();
     const list = overlay.querySelector(".download-choice-list");
-    const selectedId = options[0]?.id;
     list.replaceChildren(
-      ...options.map((option, index) => {
+      ...options.map((option) => {
         const row = document.createElement("label");
         row.className = "dependency-review-item";
         row.title = option.name;
@@ -42,7 +44,7 @@ const downloadChoiceModal = {
         input.type = "radio";
         input.name = "download-choice";
         input.value = option.id;
-        input.checked = index === 0;
+        input.checked = option.id === selectedId;
         const copy = document.createElement("span");
         copy.className = "dependency-review-copy";
         const name = document.createElement("strong");

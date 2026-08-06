@@ -12,7 +12,7 @@ import { formatBytes } from "../../utils/formatters.js";
 import {
   getHtmlResponseError,
   looksLikeHtmlResponse,
-} from "./download-validation.util.cjs";
+} from "./download-validation.util.js";
 
 function formatArchiveEntry(output) {
   const lines = String(output || "").trim().split(/[\r\n]+/);
@@ -738,7 +738,22 @@ async function runCurlDownload(command, getTask, onProgress, getProgress) {
 }
 
 const BROWSER_USER_AGENT =
-  "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36";
+  "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36";
+
+const GDRIVE_CURL_HEADERS = [
+  `-A ${quoteCommandArgument(BROWSER_USER_AGENT)}`,
+  `-H ${quoteCommandArgument("Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8")}`,
+  `-H ${quoteCommandArgument("Accept-Language: en-US,en;q=0.9")}`,
+  `-H ${quoteCommandArgument('Sec-Ch-Ua: "Google Chrome";v="125", "Chromium";v="125", "Not.A/Brand";v="24"')}`,
+  `-H ${quoteCommandArgument("Sec-Ch-Ua-Mobile: ?0")}`,
+  `-H ${quoteCommandArgument('Sec-Ch-Ua-Platform: "Windows"')}`,
+  `-H ${quoteCommandArgument("Sec-Fetch-Dest: document")}`,
+  `-H ${quoteCommandArgument("Sec-Fetch-Mode: navigate")}`,
+  `-H ${quoteCommandArgument("Sec-Fetch-Site: same-origin")}`,
+  `-H ${quoteCommandArgument("Sec-Fetch-User: ?1")}`,
+  `-H ${quoteCommandArgument("Upgrade-Insecure-Requests: 1")}`,
+  `-H ${quoteCommandArgument("Referer: https://drive.usercontent.google.com/")}`,
+].join(" ");
 
 /**
  * @fix 2026-08-05T03:31:10.964Z - Fix Google Drive quota detection and confirmation handling
@@ -756,11 +771,11 @@ async function downloadGoogleDriveArchive({
     onProgress?.("Authorizing Google Drive download...", 2);
     const initialUrl = `https://drive.usercontent.google.com/download?id=${encodeURIComponent(fileId)}&export=download`;
 
-    // Request download with cookie jar and browser user agent
+    // Request download with cookie jar and browser headers
     await retryTransientDownload(
       () =>
         runCurlDownload(
-          `curl --globoff -s -L -A ${quoteCommandArgument(BROWSER_USER_AGENT)} -H "Accept-Language: en-US,en;q=0.9" -c ${quoteCommandArgument(cookiePath)} -b ${quoteCommandArgument(cookiePath)} ${quoteCommandArgument(initialUrl)} -o ${quoteCommandArgument(probePath)}`,
+          `curl --globoff -s -L ${GDRIVE_CURL_HEADERS} -c ${quoteCommandArgument(cookiePath)} -b ${quoteCommandArgument(cookiePath)} ${quoteCommandArgument(initialUrl)} -o ${quoteCommandArgument(probePath)}`,
           getTask,
           () => {},
         ),
@@ -787,7 +802,7 @@ async function downloadGoogleDriveArchive({
 
     if (isHtml) {
       const htmlError = getHtmlResponseError(htmlContent);
-      if (htmlError && !htmlError.message.startsWith("The download server")) {
+      if (htmlError && !htmlError.message.startsWith("The download server") && !htmlError.message.startsWith("El servidor de descarga")) {
         throw htmlError;
       }
 
@@ -894,7 +909,7 @@ async function downloadGoogleDriveArchive({
       await retryTransientDownload(
         () =>
           runCurlDownload(
-            `curl --globoff -# -L --fail --show-error -A ${quoteCommandArgument(BROWSER_USER_AGENT)} -H "Accept-Language: en-US,en;q=0.9" -b ${quoteCommandArgument(cookiePath)} -c ${quoteCommandArgument(cookiePath)} --connect-timeout 15 --speed-time 60 --speed-limit 1024 ${quoteCommandArgument(confirmedDownloadUrl)} -o ${quoteCommandArgument(outPath)}`,
+            `curl --globoff -# -L --fail --show-error ${GDRIVE_CURL_HEADERS} -b ${quoteCommandArgument(cookiePath)} -c ${quoteCommandArgument(cookiePath)} --connect-timeout 15 --speed-time 60 --speed-limit 1024 ${quoteCommandArgument(confirmedDownloadUrl)} -o ${quoteCommandArgument(outPath)}`,
             getTask,
             onProgress,
             createFileProgressReader(outPath, totalBytes),
@@ -1127,14 +1142,23 @@ async function downloadArchive({
     url = await resolveExternalDownloadUrl(url, (...args) =>
       Neutralino.os.execCommand(...args),
     );
+  }
+
+  const isGoogleDriveUrl =
+    url.includes("drive.google.com") ||
+    url.includes("drive.usercontent.google.com") ||
+    url.includes("docs.google.com");
+
+  if (sourceType === "external" && !isGoogleDriveUrl) {
     onDiagnostic?.({
       resolvedUrl: url,
       contentType: await getDownloadContentType(url),
     });
   }
+
   const useMultithreadDownloads = appSettings.get("multithreadDownloads");
   let remoteFileSize = Number(expectedSize) || 0;
-  if (useMultithreadDownloads || !remoteFileSize) {
+  if (!isGoogleDriveUrl && (useMultithreadDownloads || !remoteFileSize)) {
     try {
       onProgress?.("Checking download server...", 2);
       const detectedSize = await getRangeSupportedFileSize(url, (...args) =>
@@ -1145,8 +1169,10 @@ async function downloadArchive({
       if (getTask()?.cancelled) throw error;
     }
   }
+
   if (
     useMultithreadDownloads &&
+    !isGoogleDriveUrl &&
     remoteFileSize >= MIN_SEGMENTED_DOWNLOAD_BYTES
   ) {
     try {
