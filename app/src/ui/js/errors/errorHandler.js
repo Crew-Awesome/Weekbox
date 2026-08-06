@@ -146,6 +146,20 @@ function describeIssue(error) {
       reportable: false,
     };
   }
+  if (
+    lower.includes("mediafire:") ||
+    lower.includes("no se encuentra disponible en mediafire") ||
+    lower.includes("este archivo fue eliminado") ||
+    lower.includes("this mediafire link could not be opened") ||
+    lower.includes("this mediafire link is not supported")
+  ) {
+    return {
+      title: t("errors.downloadUnavailableTitle"),
+      summary: t("errors.downloadUnavailableSummary"),
+      tag: t("errors.downloadUnavailableTag"),
+      reportable: false,
+    };
+  }
   /**
    * @fix 2026-08-05T03:47:55.251Z - Fix "This mod is already installed" unexpected error dialog
    */

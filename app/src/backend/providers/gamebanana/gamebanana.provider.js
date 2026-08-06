@@ -32,6 +32,10 @@ import {
   EXCLUDED_MOD_CATEGORY_IDS,
   MOD_KIND_CATEGORY_IDS,
 } from "../../config/engines.config.js";
+import {
+  extractMediaFireDirectUrl,
+  getGoogleDriveFileId,
+} from "../../services/downloads/external-download.resolver.js";
 
 const EXCLUDED_ENGINE_SUBMISSIONS = new Map([
   ["mods:309789", "psych"],
@@ -50,30 +54,6 @@ function quoteCommandArgument(value) {
   return `'${argument.replaceAll("'", "'\\''")}'`;
 }
 
-function getGoogleDriveFileId(url) {
-  if (!url) return null;
-  const str = String(url instanceof URL ? url.href : url).trim();
-  const directMatch =
-    str.match(/\/file\/d\/([a-zA-Z0-9_-]+)/i) ||
-    str.match(/[?&]id=([a-zA-Z0-9_-]+)/i) ||
-    str.match(/\/d\/([a-zA-Z0-9_-]+)/i) ||
-    str.match(/\/folders\/([a-zA-Z0-9_-]+)/i) ||
-    str.match(/drive\.google\.com\/open\?id=([a-zA-Z0-9_-]+)/i);
-  if (directMatch && directMatch[1]) {
-    return directMatch[1];
-  }
-  try {
-    const parsed = url instanceof URL ? url : new URL(str);
-    return (
-      parsed.searchParams.get("id") ||
-      parsed.pathname.match(/\/file\/d\/([^/]+)/)?.[1] ||
-      parsed.pathname.match(/\/d\/([^/]+)/)?.[1] ||
-      null
-    );
-  } catch {
-    return null;
-  }
-}
 
 function setBoundedCache(map, key, value, maxSize = 100) {
   if (!map || !key) return;
@@ -301,15 +281,11 @@ export const gameBananaApi = {
         };
       } else if (["mediafire.com", "www.mediafire.com"].includes(hostname)) {
         const page = await Neutralino.os.execCommand(
-          `curl -fsSL -A ${quoteCommandArgument(BROWSER_USER_AGENT)} --connect-timeout 5 --max-time 12 ${quoteCommandArgument(url)}`,
+          `curl -sSL -A ${quoteCommandArgument(BROWSER_USER_AGENT)} -H "Accept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8" -H "Accept-Language: en-US,en;q=0.9" --connect-timeout 5 --max-time 12 ${quoteCommandArgument(url)}`,
           { background: false },
         );
-        if (page.exitCode !== 0) return { filename: null, size: 0 };
-        downloadUrl = (page.stdOut || "")
-          .replaceAll("&amp;", "&")
-          .match(
-            /https?:\/\/download[^"'\s<>]+\.mediafire\.com[^"'\s<>]*/i,
-          )?.[0];
+        if (page.exitCode !== 0 && !page.stdOut) return { filename: null, size: 0 };
+        downloadUrl = extractMediaFireDirectUrl(page.stdOut || "");
         if (!downloadUrl) return { filename: null, size: 0 };
       } else if (hostname !== "github.com") {
         return { filename: null, size: 0 };
@@ -349,7 +325,8 @@ export const gameBananaApi = {
       ];
       const status = Number(statuses.at(-1)?.[1]);
       if (!Number.isFinite(status)) return null;
-      const available = status < 400;
+      const isErrorPage = `${result.stdOut || ""}`.toLowerCase().includes("location: /error.php");
+      const available = status < 400 && !isErrorPage;
       setBoundedCache(this.downloadAvailabilityCache, cacheKey, {
         available,
         expiresAt: Date.now() + 5 * 60 * 1000,

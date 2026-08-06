@@ -776,9 +776,12 @@ body.window-unfocused::after {
 
 .modal-content {
   display: flex;
-  width: 90%;
-  max-width: 1200px;
-  height: 85vh;
+  width: min(90vw, 1200px);
+  height: min(85vh, 800px);
+  max-height: 85vh;
+  min-height: 480px;
+  min-width: 0;
+  box-sizing: border-box;
   background-color: var(--bg-panel);
   border-radius: 16px;
   border: 1px solid var(--border-color);
@@ -786,6 +789,7 @@ body.window-unfocused::after {
   transform: scale(0.95) translateY(20px);
   transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
   box-shadow: 0 20px 50px rgba(0, 0, 0, 0.8);
+  flex-shrink: 0;
 }
 
 .modal-overlay.show .modal-content {
@@ -793,7 +797,9 @@ body.window-unfocused::after {
 }
 
 .modal-main {
-  flex: 1;
+  flex: 1 1 0;
+  min-width: 0;
+  min-height: 0;
   display: flex;
   flex-direction: column;
   background-color: #050505;
@@ -802,7 +808,11 @@ body.window-unfocused::after {
 }
 
 .modal-main-image-wrapper {
-  flex: 1;
+  flex: 1 1 0;
+  min-width: 0;
+  min-height: 0;
+  width: 100%;
+  height: 100%;
   position: relative;
   display: flex;
   align-items: center;
@@ -813,6 +823,8 @@ body.window-unfocused::after {
 #modal-main-image {
   max-width: 100%;
   max-height: 100%;
+  width: 100%;
+  height: 100%;
   object-fit: contain;
   opacity: 1;
 }
@@ -917,7 +929,11 @@ body.window-unfocused::after {
 }
 
 .modal-aside {
+  flex: 0 0 380px;
   width: 380px;
+  min-width: 380px;
+  max-width: 380px;
+  min-height: 0;
   background-color: var(--bg-color);
   border-left: 1px solid var(--border-color);
   display: flex;

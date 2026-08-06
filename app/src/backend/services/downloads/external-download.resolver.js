@@ -30,6 +30,92 @@ function getGoogleDriveFileId(url) {
 const BROWSER_USER_AGENT =
   "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36";
 
+function extractMediaFireDirectUrl(html) {
+  if (!html) return null;
+  const decoded = String(html).replaceAll("&amp;", "&").replaceAll("\\/", "/");
+
+  // 1. Direct download button id
+  const buttonMatch =
+    decoded.match(/id=["']downloadButton["'][^>]*href=["']([^"']+)["']/i) ||
+    decoded.match(/href=["']([^"']+)["'][^>]*id=["']downloadButton["']/i);
+  if (buttonMatch && /^https?:\/\//i.test(buttonMatch[1])) {
+    return buttonMatch[1];
+  }
+
+  // 2. aria-label="Download file"
+  const ariaMatch =
+    decoded.match(/aria-label=["']Download file["'][^>]*href=["']([^"']+)["']/i) ||
+    decoded.match(/href=["']([^"']+)["'][^>]*aria-label=["']Download file["']/i);
+  if (ariaMatch && /^https?:\/\//i.test(ariaMatch[1])) {
+    return ariaMatch[1];
+  }
+
+  // 3. Class popsok or download_link
+  const classMatch =
+    decoded.match(
+      /class=["'][^"']*(?:popsok|download_link)[^"']*["'][^>]*href=["']([^"']+)["']/i,
+    ) ||
+    decoded.match(
+      /href=["']([^"']+)["'][^>]*class=["'][^"']*(?:popsok|download_link)[^"']*["']/i,
+    );
+  if (classMatch && /^https?:\/\//i.test(classMatch[1])) {
+    return classMatch[1];
+  }
+
+  // 4. Look for direct download server hostnames: download*.mediafire.com or d*.mediafire.com
+  const directDomainMatch = decoded.match(
+    /https?:\/\/(?:download\d*|d\d*)\.mediafire\.com\/[a-zA-Z0-9_-]+\/[a-zA-Z0-9_-]+\/[^"'\s<>\\]+/i,
+  );
+  if (directDomainMatch) {
+    return directDomainMatch[0];
+  }
+
+  // 5. JavaScript assignment variable
+  const jsMatch = decoded.match(
+    /(?:kNO|window\.location\.href)\s*=\s*["'](https?:\/\/(?:download\d*|d\d*)\.mediafire\.com\/[^"']+)["']/i,
+  );
+  if (jsMatch && jsMatch[1]) {
+    return jsMatch[1];
+  }
+
+  return null;
+}
+
+function getMediaFirePageError(html) {
+  const decoded = String(html || "")
+    .replaceAll("&amp;", "&")
+    .replaceAll("\\/", "/");
+  const lower = decoded.toLowerCase();
+
+  if (
+    lower.includes("unknown or invalid quickkey") ||
+    lower.includes("the key you provided for file download was invalid") ||
+    lower.includes("the file you requested has been deleted") ||
+    lower.includes("the file you attempted to download was removed") ||
+    lower.includes("file removed") ||
+    lower.includes("dangerous file blocked") ||
+    lower.includes("file sharing and storage made simple") ||
+    /errno=320/i.test(decoded) ||
+    lower.includes("404 not found") ||
+    lower.includes("error 404")
+  ) {
+    return "MediaFire: El archivo fue eliminado o ya no se encuentra disponible en MediaFire. Selecciona otro enlace de descarga.";
+  }
+
+  if (
+    lower.includes("this file is password protected") ||
+    /id=["']password_download["']/i.test(decoded)
+  ) {
+    return "MediaFire: Este archivo está protegido por contraseña y no se puede descargar automáticamente.";
+  }
+
+  if (lower.includes("blocked") || lower.includes("terms of service")) {
+    return "MediaFire: Este archivo fue bloqueado por MediaFire.";
+  }
+
+  return "MediaFire: No se pudo obtener el enlace directo de descarga. Selecciona otro enlace de descarga.";
+}
+
 /**
  * @fix 2026-08-05T03:31:10.964Z - Fix external download link resolution with browser User-Agent
  */
@@ -61,25 +147,17 @@ async function resolveExternalDownloadUrl(url, executeCommand) {
   }
   if (hostname === "mediafire.com" || hostname === "www.mediafire.com") {
     const result = await executeCommand(
-      `curl --globoff -fsSL -A ${quoteCommandArgument(BROWSER_USER_AGENT)} --connect-timeout 10 --max-time 30 ${quoteCommandArgument(value)}`,
+      `curl --globoff -sSL -A ${quoteCommandArgument(BROWSER_USER_AGENT)} -H "Accept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8" -H "Accept-Language: en-US,en;q=0.9" --connect-timeout 10 --max-time 30 ${quoteCommandArgument(value)}`,
       { background: false },
     );
-    if (result.exitCode !== 0) {
+    if (result.exitCode !== 0 && !result.stdOut) {
       throw new Error(
-        "This MediaFire link could not be opened. Choose another download link.",
+        "MediaFire: No se pudo acceder al enlace de MediaFire. Comprueba tu conexión o selecciona otro enlace de descarga.",
       );
     }
-    const page = (result.stdOut || "")
-      .replaceAll("&amp;", "&")
-      .replaceAll("\\/", "/");
-    const directUrl =
-      page.match(
-        /https?:\/\/(?:download\d*|[a-z0-9-]+)\.mediafire\.com[^"'\s<>\\]+/i,
-      )?.[0] || page.match(/https?:\/\/[^"'\s<>]+\/download\/[^"'\s<>]+/i)?.[0];
+    const directUrl = extractMediaFireDirectUrl(result.stdOut || "");
     if (!directUrl) {
-      throw new Error(
-        "This MediaFire link is not supported. Choose another download link.",
-      );
+      throw new Error(getMediaFirePageError(result.stdOut || ""));
     }
     return directUrl;
   }
@@ -110,6 +188,8 @@ ${result.stdErr || ""}`;
 
 export {
   getGoogleDriveFileId,
+  extractMediaFireDirectUrl,
+  getMediaFirePageError,
   resolveExternalDownloadUrl,
   getRangeSupportedFileSize,
 };

@@ -15,27 +15,54 @@ import {
 } from "./download-validation.util.cjs";
 
 function formatArchiveEntry(output) {
-  const lines = output.trim().split("\n");
-  let name = lines[lines.length - 1]
-    .trim()
-    .replace(/^x\s+/, "")
-    .replace(/^inflating:\s+/, "")
-    .replace(/^extracting:\s+/, "")
-    .replace(/^creating:\s+/, "")
-    .trim();
-  const parts = name.split(/[/\\]/);
-  if (parts.length > 2) name = `.../${parts.slice(-2).join("/")}`;
-  return name;
+  const lines = String(output || "").trim().split(/[\r\n]+/);
+  for (let i = lines.length - 1; i >= 0; i--) {
+    let line = lines[i].trim();
+    if (!line) continue;
+    let name = line
+      .replace(/^Extracting\s+archive:.*$/i, "")
+      .replace(/^Extracting:\s+/i, "")
+      .replace(/^Extracting\s+/i, "")
+      .replace(/^inflating:\s+/i, "")
+      .replace(/^creating:\s+/i, "")
+      .replace(/^x\s+/i, "")
+      .replace(/^-+\s*/, "")
+      .trim();
+    if (
+      !name ||
+      name.startsWith("Path =") ||
+      name.startsWith("Type =") ||
+      name.startsWith("Physical Size =") ||
+      name.startsWith("Headers Size =") ||
+      name.startsWith("7-Zip") ||
+      name.startsWith("Everything is Ok") ||
+      name.startsWith("Folders:") ||
+      name.startsWith("Files:") ||
+      name.startsWith("Size:") ||
+      name.startsWith("Compressed:")
+    ) {
+      continue;
+    }
+    const parts = name.split(/[/\\]/);
+    if (parts.length > 2) name = `.../${parts.slice(-2).join("/")}`;
+    return name;
+  }
+  let fallback = lines[lines.length - 1].trim();
+  const parts = fallback.split(/[/\\]/);
+  if (parts.length > 2) fallback = `.../${parts.slice(-2).join("/")}`;
+  return fallback;
 }
 
-function createThrottledEntryReporter(onEntry, intervalMs = 500) {
+function createThrottledEntryReporter(onEntry, intervalMs = 120) {
   let lastReportedAt = 0;
   return (output) => {
     if (!onEntry) return;
     const now = performance.now();
     if (now - lastReportedAt < intervalMs) return;
+    const entry = formatArchiveEntry(output);
+    if (!entry) return;
     lastReportedAt = now;
-    onEntry(formatArchiveEntry(output));
+    onEntry(entry);
   };
 }
 
@@ -584,7 +611,7 @@ function createFileProgressReader(path, totalBytes = 0) {
   let previousBytes = 0;
   let previousAt = performance.now();
   return async () => {
-    const stats = await Neutralino.filesystem.getStats(path);
+    const stats = await Neutralino.filesystem.getStats(path).catch(() => null);
     const bytes = Number(stats?.size) || 0;
     const now = performance.now();
     const elapsed = Math.max(1, now - previousAt);
@@ -596,7 +623,7 @@ function createFileProgressReader(path, totalBytes = 0) {
     previousAt = now;
     const total = Number(totalBytes) || 0;
     const progress =
-      total > 0 ? Math.min(99, (bytes / total) * 100) : undefined;
+      total > 0 ? Math.min(100, (bytes / total) * 100) : undefined;
     const amount =
       total > 0
         ? `${formatTransferBytes(bytes)} of ${formatTransferBytes(total)}`
@@ -634,7 +661,7 @@ function createPartsProgressReader(parts, totalBytes) {
     const speed =
       bytesPerSecond > 0 ? ` at ${formatTransferBytes(bytesPerSecond)}/s` : "";
     return {
-      progress: Math.min(99, (bytes / totalBytes) * 100),
+      progress: Math.min(100, (bytes / totalBytes) * 100),
       status: `Downloading ${formatTransferBytes(bytes)} of ${formatTransferBytes(totalBytes)}${speed}...`,
     };
   };
@@ -665,7 +692,7 @@ async function runCurlDownload(command, getTask, onProgress, getProgress) {
     const status = details.status || "Downloading...";
     if (status === lastStatus && Number.isNaN(percent)) return;
     lastStatus = status;
-    onProgress?.(status, 2 + maxPercent * 0.96);
+    onProgress?.(status, Math.min(98, 2 + maxPercent * 0.96));
   };
   reportProgress({ status: "Download process started..." });
   let isCheckingProgress = false;
@@ -920,7 +947,7 @@ async function downloadSingleArchive({
         // single-connection transfer looking like it was stuck at 2%.
         // Use a low-speed timeout instead of an absolute transfer limit so a
         // legitimate large or slow download is not aborted after two minutes.
-        `curl --globoff -# -L --fail --show-error --connect-timeout 15 --speed-time 60 --speed-limit 1024 ${quoteCommandArgument(url)} -o ${quoteCommandArgument(outPath)}`,
+        `curl --globoff -# -L --fail --show-error -A ${quoteCommandArgument(BROWSER_USER_AGENT)} -H "Accept-Language: en-US,en;q=0.9" --connect-timeout 15 --speed-time 60 --speed-limit 1024 ${quoteCommandArgument(url)} -o ${quoteCommandArgument(outPath)}`,
         getTask,
         onProgress,
         createFileProgressReader(outPath, totalBytes),

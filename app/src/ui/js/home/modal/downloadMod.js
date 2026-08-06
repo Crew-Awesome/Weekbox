@@ -278,33 +278,20 @@ export const downloadMod = {
       if (this.activeTasks.get(modId)?.cancelled) throw new Error("Cancelled");
       toastDownloadMod.update(modId, 98, t("downloads.extracting"));
       this.reportInstallProgress(modId, modName, t("downloads.installing"), 98);
-      const extractionStartedAt = performance.now();
-      const extractionStatusTimer = setInterval(() => {
-        const elapsedSeconds = Math.floor(
-          (performance.now() - extractionStartedAt) / 1000,
-        );
-        toastDownloadMod.update(
-          modId,
-          98,
-          t("downloads.extractingSeconds", { seconds: elapsedSeconds }),
-        );
-        this.reportInstallProgress(
-          modId,
-          modName,
-          t("downloads.installing"),
-          98,
-        );
-      }, 2000);
 
-      try {
-        await extractArchive({
-          archivePath: tempFilePath,
-          destinationPath: targetModFolder,
-          getTask: () => this.activeTasks.get(modId),
-        });
-      } finally {
-        clearInterval(extractionStatusTimer);
-      }
+      await extractArchive({
+        archivePath: tempFilePath,
+        destinationPath: targetModFolder,
+        getTask: () => this.activeTasks.get(modId),
+        onEntry: (file) => {
+          if (file) {
+            const entryText =
+              t("engines.extractingFile", { file }) || `Extracting: ${file}`;
+            toastDownloadMod.update(modId, 98, entryText);
+            this.reportInstallProgress(modId, modName, entryText, 98);
+          }
+        },
+      });
 
       if (this.activeTasks.get(modId)?.cancelled) throw new Error("Cancelled");
 
