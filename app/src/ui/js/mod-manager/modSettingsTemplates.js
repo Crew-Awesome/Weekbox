@@ -9,10 +9,6 @@ export function escapeHtml(value) {
     .replaceAll('"', "&quot;");
 }
 
-export function getGameBananaId(mod) {
-  return getGameBananaSource(mod)?.id || null;
-}
-
 export function getGameBananaSource(mod) {
   const match = String(mod?.id || "").match(/^(?:(mod|tool):)?(\d+)$/);
   if (!match) return null;

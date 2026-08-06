@@ -8,7 +8,6 @@ function isDevelopmentRun() {
 
 let contextMenu;
 let contextTarget;
-let inspectorOpened = false;
 
 function isEditable(element) {
   return (
@@ -65,8 +64,7 @@ function createContextMenu() {
   contextMenu.hidden = true;
   contextMenu.innerHTML = `
     <button type="button" role="menuitem" data-action="copy"><i class="fa-regular fa-copy" aria-hidden="true"></i><span>${t("common.copy")}</span></button>
-    <button type="button" role="menuitem" data-action="paste"><i class="fa-regular fa-clipboard" aria-hidden="true"></i><span>${t("common.paste")}</span></button>
-    <button type="button" role="menuitem" data-action="inspect"><i class="fa-solid fa-code" aria-hidden="true"></i><span>${t("common.inspect")}</span></button>`;
+    <button type="button" role="menuitem" data-action="paste"><i class="fa-regular fa-clipboard" aria-hidden="true"></i><span>${t("common.paste")}</span></button>`;
   contextMenu.addEventListener("click", async (event) => {
     const action = event.target.closest("button")?.dataset.action;
     if (!action) return;
@@ -88,28 +86,6 @@ function createContextMenu() {
         } else {
           document.execCommand("insertText", false, value);
         }
-      }
-    }
-    if (action === "inspect") {
-      if (inspectorOpened) {
-        hideContextMenu();
-        return;
-      }
-      inspectorOpened = true;
-      try {
-        await Neutralino.window.create("/", {
-          title: "WeekBox Inspector",
-          enableInspector: true,
-          hidden: true,
-          processArgs: "--window-open-inspector-on-startup=true",
-          width: Math.max(800, Math.round(window.innerWidth * 0.9)),
-          height: Math.max(600, Math.round(window.innerHeight * 0.9)),
-          center: true,
-          exitProcessOnClose: false,
-        });
-      } catch (error) {
-        inspectorOpened = false;
-        console.error("WeekBox: unable to open inspector window", error);
       }
     }
     hideContextMenu();
@@ -134,8 +110,6 @@ function showContextMenu(event) {
     t("common.copy");
   menu.querySelector('[data-action="paste"] span').textContent =
     t("common.paste");
-  menu.querySelector('[data-action="inspect"] span').textContent =
-    t("common.inspect");
   const copy = menu.querySelector('[data-action="copy"]');
   const paste = menu.querySelector('[data-action="paste"]');
   copy.disabled = !selectedText();

@@ -366,7 +366,6 @@
 }
 
 .mod-manager-search:focus-within {
-  border-color: var(--text-muted);
   background: var(--bg-hover);
   box-shadow: 0 0 0 2px rgb(255 255 255 / 12%);
 }
@@ -2788,6 +2787,12 @@
   background: var(--bg-panel);
   box-shadow: 0 12px 28px rgb(0 0 0 / 42%);
 }
+.mod-manager-search-suggestions {
+  top: calc(100% + 4px);
+  padding: 4px;
+  border-radius: 7px;
+  background: var(--bg-color);
+}
 .mod-manager-card.is-non-playable .mod-manager-launch-btn {
   display: none !important;
 }
@@ -2832,6 +2837,15 @@
 .mod-settings-tag-suggestions button:hover {
   background: var(--bg-hover);
   color: var(--text-main);
+}
+.mod-manager-search-suggestions button {
+  min-height: 34px;
+  padding: 0 10px;
+  border-radius: 4px;
+}
+.mod-manager-search-suggestions button:focus-visible {
+  outline: 2px solid var(--text-main);
+  outline-offset: -2px;
 }
 .mod-settings-tags-field {
   position: relative;

@@ -148,7 +148,13 @@ export const cardRenderer = {
       const card = document.createElement("div");
       card.className = "mod-manager-card";
       card.dataset.modId = String(mod.id);
-      card.dataset.modSearch = String(mod.name || "").toLocaleLowerCase();
+      card.dataset.modSearch = [
+        mod.name,
+        ...(Array.isArray(mod.tags) ? mod.tags.map((tag) => `#${tag}`) : []),
+      ]
+        .filter(Boolean)
+        .join(" ")
+        .toLocaleLowerCase();
       card.classList.toggle("is-hidden", Boolean(mod.hidden));
       card.classList.toggle(
         "is-non-playable",

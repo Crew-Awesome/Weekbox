@@ -118,10 +118,71 @@ export const modManagerModal = {
       }
 
       const searchInput = document.getElementById("mod-manager-search-input");
+      const searchSuggestions = document.getElementById(
+        "mod-manager-search-suggestions",
+      );
       if (searchInput) {
+        searchInput.setAttribute("aria-autocomplete", "list");
+        searchInput.setAttribute(
+          "aria-controls",
+          "mod-manager-search-suggestions",
+        );
+        searchInput.setAttribute("aria-expanded", "false");
         searchInput.addEventListener("input", (event) => {
           this.searchQuery = event.target.value.trim().toLocaleLowerCase();
           this.applySearchFilter();
+        });
+        searchInput.addEventListener("focus", () =>
+          this.updateSearchSuggestions(),
+        );
+        searchInput.addEventListener("keydown", (event) => {
+          if (event.key === "Escape") {
+            this.hideSearchSuggestions();
+            return;
+          }
+          if (event.key !== "ArrowDown") return;
+          const firstSuggestion = searchSuggestions?.querySelector("button");
+          if (!firstSuggestion) return;
+          event.preventDefault();
+          firstSuggestion.focus();
+        });
+        searchInput.addEventListener("focusout", () => {
+          setTimeout(() => {
+            if (!searchSuggestions?.contains(document.activeElement))
+              this.hideSearchSuggestions();
+          }, 0);
+        });
+      }
+      if (searchSuggestions && searchInput) {
+        searchSuggestions.setAttribute("role", "listbox");
+        searchSuggestions.addEventListener("mousedown", (event) => {
+          if (event.target.closest("button[data-tag]")) event.preventDefault();
+        });
+        searchSuggestions.addEventListener("click", (event) => {
+          const button = event.target.closest("button[data-tag]");
+          if (!button) return;
+          searchInput.value = button.dataset.tag || "";
+          this.searchQuery = searchInput.value.toLocaleLowerCase();
+          this.applySearchFilter();
+          this.hideSearchSuggestions();
+          searchInput.focus();
+        });
+        searchSuggestions.addEventListener("keydown", (event) => {
+          const buttons = [
+            ...searchSuggestions.querySelectorAll("button[data-tag]"),
+          ];
+          const currentIndex = buttons.indexOf(document.activeElement);
+          if (event.key === "Escape") {
+            this.hideSearchSuggestions();
+            searchInput.focus();
+          } else if (event.key === "ArrowDown" && buttons.length) {
+            event.preventDefault();
+            buttons[(currentIndex + 1) % buttons.length].focus();
+          } else if (event.key === "ArrowUp") {
+            event.preventDefault();
+            if (currentIndex <= 0) searchInput.focus();
+            else buttons[currentIndex - 1].focus();
+          }
         });
       }
 
@@ -358,9 +419,65 @@ export const modManagerModal = {
       card.classList.toggle(
         "is-search-hidden",
         Boolean(this.searchQuery) &&
-          !card.dataset.modSearch.includes(this.searchQuery),
+        !card.dataset.modSearch.includes(this.searchQuery),
       );
     });
+    this.updateSearchSuggestions();
+  },
+
+  hideSearchSuggestions() {
+    const input = document.getElementById("mod-manager-search-input");
+    const suggestions = document.getElementById(
+      "mod-manager-search-suggestions",
+    );
+    if (!suggestions) return;
+    suggestions.hidden = true;
+    input?.setAttribute("aria-expanded", "false");
+  },
+
+  updateSearchSuggestions() {
+    const input = document.getElementById("mod-manager-search-input");
+    const suggestions = document.getElementById(
+      "mod-manager-search-suggestions",
+    );
+    if (!input || !suggestions) return;
+
+    const query = input.value.trim().toLocaleLowerCase().replace(/^#+/, "");
+    const tagCounts = new Map();
+    (this.cachedMods || []).forEach((mod) => {
+      (Array.isArray(mod.tags) ? mod.tags : []).forEach((tag) => {
+        const normalized = String(tag || "")
+          .trim()
+          .replace(/^#+/, "")
+          .toLocaleLowerCase();
+        if (normalized)
+          tagCounts.set(normalized, (tagCounts.get(normalized) || 0) + 1);
+      });
+    });
+
+    const matches = [...tagCounts.entries()]
+      .filter(([tag]) => !query || tag.includes(query))
+      .sort(
+        ([tagA, countA], [tagB, countB]) =>
+          countB - countA || tagA.localeCompare(tagB),
+      )
+      .slice(0, 8);
+    suggestions.replaceChildren(
+      ...matches.map(([tag]) => {
+        const button = document.createElement("button");
+        button.type = "button";
+        button.dataset.tag = `#${tag}`;
+        button.setAttribute("role", "option");
+        button.innerHTML = '<i class="fa-solid fa-hashtag" aria-hidden="true"></i>';
+        const label = document.createElement("span");
+        label.textContent = `#${tag}`;
+        button.append(label);
+        return button;
+      }),
+    );
+    const visible = document.activeElement === input && matches.length > 0;
+    suggestions.hidden = !visible;
+    input.setAttribute("aria-expanded", String(visible));
   },
 
   renderActiveFilters() {

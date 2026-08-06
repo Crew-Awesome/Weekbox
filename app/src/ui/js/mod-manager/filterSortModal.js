@@ -11,14 +11,6 @@ const SORT_OPTIONS = [
   ["engine-desc", "modManager.engineDesc", "fa-microchip"],
 ];
 
-function createIcon(iconClass, iconPath) {
-  if (iconPath) return Object.assign(document.createElement("img"), { src: iconPath, alt: "" });
-  const icon = document.createElement("i");
-  icon.className = `fa-solid ${iconClass || "fa-filter"}`;
-  icon.setAttribute("aria-hidden", "true");
-  return icon;
-}
-
 function text(value) {
   return value.includes(".") ? t(value) : value;
 }

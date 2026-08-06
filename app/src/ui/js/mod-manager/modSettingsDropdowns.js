@@ -7,7 +7,6 @@ export function setupModSettingsDropdowns(
   overlay,
   mod,
   installedEngines,
-  isExecutable = false,
 ) {
   const assignableEngines = Object.entries(ENGINE_DETAILS).filter(
     ([id]) => id !== "executable",
@@ -59,12 +58,9 @@ export function setupModSettingsDropdowns(
     });
   };
 
-  const defaultLabel = isExecutable
-    ? t("home.executables")
-    : t("import.unassigned");
-  const defaultIconHtml = isExecutable
-    ? '<img src="assets/icons/exe.png" alt="">'
-    : '<i class="fa-solid fa-question-circle" aria-hidden="true"></i>';
+  const defaultLabel = t("import.unassigned");
+  const defaultIconHtml =
+    '<i class="fa-solid fa-question-circle" aria-hidden="true"></i>';
 
   const renderTypeOptions = () => {
     if (!typeSelect || !typeMenu) return;

@@ -14,6 +14,8 @@ export const modSettingsModal = {
   isOpening: false,
   openRequestId: 0,
   dropdowns: null,
+  activeModId: null,
+  savingModId: null,
 
   async open({
     mod,
@@ -23,8 +25,14 @@ export const modSettingsModal = {
     readOnly = false,
     fileLocked = false,
   }) {
-    if (this.isOpening) return false;
+    if (
+      this.isOpening ||
+      this.savingModId !== null ||
+      this.activeModId === mod.id
+    )
+      return false;
     this.close();
+    this.activeModId = mod.id;
     this.isOpening = true;
     const requestId = ++this.openRequestId;
     const overlay = document.createElement("div");
@@ -257,6 +265,8 @@ export const modSettingsModal = {
       event.preventDefault();
       const name = nameInput.value.trim();
       if (!name) return;
+      if (this.savingModId !== null) return;
+      this.savingModId = mod.id;
       const saveButton = overlay.querySelector(".mod-settings-save");
       saveButton.disabled = true;
       status.textContent = t("modSettings.saving");
@@ -268,7 +278,12 @@ export const modSettingsModal = {
             engineId && dropdowns.versionSelect
               ? dropdowns.versionSelect.value || null
               : null;
-          await FS.setModEngineCompatibility(mod.id, engineId, version);
+          if (
+            engineId !== (mod.engineId || null) ||
+            version !== (mod.engineVersion || null)
+          ) {
+            await FS.setModEngineCompatibility(mod.id, engineId, version);
+          }
         }
         if (
           !fileLocked &&
@@ -295,8 +310,14 @@ export const modSettingsModal = {
         await onSaved?.();
         close();
       } catch (error) {
+        console.error("Could not save mod settings", {
+          modId: mod.id,
+          error,
+        });
         status.textContent = t("modSettings.couldNotSave");
         saveButton.disabled = false;
+      } finally {
+        if (this.savingModId === mod.id) this.savingModId = null;
       }
     });
     return true;
@@ -304,6 +325,7 @@ export const modSettingsModal = {
 
   close() {
     this.openRequestId += 1;
+    this.activeModId = null;
     this.dropdowns?.destroy();
     this.dropdowns = null;
     document.querySelector(".mod-settings-overlay")?.remove();
