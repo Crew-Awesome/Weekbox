@@ -896,10 +896,9 @@ body.window-unfocused::after {
   border-top: 1px solid var(--border-color);
 }
 
-.modal-thumbnails/* Removed scrollbar */
-
 .thumbnail-wrapper {
   position: relative;
+  padding: 0;
   width: 120px;
   height: 70px;
   border-radius: 6px;
@@ -911,6 +910,7 @@ body.window-unfocused::after {
     opacity 0.3s,
     transform 0.2s;
   border: 2px solid transparent;
+  background: transparent;
 }
 
 .thumbnail-wrapper:hover {
@@ -920,6 +920,11 @@ body.window-unfocused::after {
 .thumbnail-wrapper.active {
   opacity: 1;
   border-color: var(--text-main);
+}
+
+.thumbnail-wrapper:focus-visible {
+  outline: 2px solid var(--text-main);
+  outline-offset: 3px;
 }
 
 .thumbnail-wrapper img {

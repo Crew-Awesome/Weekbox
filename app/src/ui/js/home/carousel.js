@@ -28,32 +28,36 @@ export const homeCarousel = {
   slideInterval: null,
   totalSlides: 0,
   featuredGroupSize: 5,
+  loadToken: 0,
 
   async init() {
     const track = document.getElementById("carousel-track");
     const dotsContainer = document.getElementById("carousel-dots");
     if (!track || !dotsContainer) return;
+    const controls = document.querySelector(".carousel-controls");
+    const loadToken = ++this.loadToken;
+    this.stopAutoSlide();
+    this.currentSlideIndex = 0;
+    this.totalSlides = 0;
+    track.style.transform = "";
+    dotsContainer.replaceChildren();
+    if (controls) controls.hidden = true;
 
     try {
       const mods = await gameBananaApi.getFeaturedCarousel();
+      if (loadToken !== this.loadToken) return;
       if (mods.length === 0) {
         track.textContent = t("home.noFeaturedMods");
         return;
       }
 
       track.innerHTML = "";
-      dotsContainer.innerHTML = "";
       this.totalSlides = mods.length;
+      if (controls) controls.hidden = false;
 
       mods.forEach((mod, index) => {
         const engineName = getEngineLabel(mod.engineId, mod.engine?.name);
         const engineLabelKey = getEngineLabelKey(mod.engineId);
-        const engineBadgeHtml = `
-          <div class="home-engine-badge" title="${engineName}">
-              <img src="assets/icons/${mod.engine.icon}" alt=""/>
-              <span class="home-engine-name"${engineLabelKey ? ` data-i18n="${engineLabelKey}"` : ""}>${engineName}</span>
-          </div>
-        `;
 
         const slide = document.createElement("div");
         slide.className = "carousel-slide";
@@ -74,25 +78,45 @@ export const homeCarousel = {
         }
         slide.innerHTML = `
             <div class="carousel-overlay"></div>
-            ${engineBadgeHtml}
+            <div class="home-engine-badge">
+              <img alt="" />
+              <span class="home-engine-name"></span>
+            </div>
             <div class="carousel-content">
-                <span class="badge">${mod.label}</span>
-                <h1>${mod.title}</h1>
-                <p class="carousel-author">${t("home.byAuthor", { author: mod.author })}</p>
-                <button class="action-btn download-mod-btn">
+                <span class="badge"></span>
+                <h1></h1>
+                <p class="carousel-author"></p>
+                <button class="action-btn download-mod-btn" type="button">
                     <i class="fa-solid fa-download"></i> ${t("common.download")}
                 </button>
             </div>
         `;
 
+        const engineBadge = slide.querySelector(".home-engine-badge");
+        const engineIcon = engineBadge?.querySelector("img");
+        const engineNameEl = engineBadge?.querySelector(".home-engine-name");
+        if (engineNameEl) {
+          engineNameEl.textContent = engineName;
+          if (engineLabelKey) engineNameEl.dataset.i18n = engineLabelKey;
+        }
+        if (engineBadge) engineBadge.title = engineName;
+        if (engineIcon && mod.engine?.icon) {
+          engineIcon.src = `assets/icons/${mod.engine.icon}`;
+        }
+        if (engineBadge && !engineName && !mod.engine?.icon) {
+          engineBadge.hidden = true;
+        }
         const badge = slide.querySelector(".badge");
         const labelKey = getFeaturedLabelKey(mod.label);
-        if (badge && labelKey) {
-          badge.dataset.i18n = labelKey;
-          badge.textContent = t(labelKey);
+        if (badge) {
+          badge.textContent = labelKey ? t(labelKey) : mod.label || "";
+          if (labelKey) badge.dataset.i18n = labelKey;
         }
+        const title = slide.querySelector("h1");
+        if (title) title.textContent = mod.title || "";
         const author = slide.querySelector(".carousel-author");
         if (author) {
+          author.textContent = t("home.byAuthor", { author: mod.author });
           author.dataset.i18n = "home.byAuthor";
           author.dataset.i18nVars = JSON.stringify({ author: mod.author });
         }
@@ -113,7 +137,9 @@ export const homeCarousel = {
       this.updateDots();
       this.startAutoSlide();
     } catch (error) {
+      if (loadToken !== this.loadToken) return;
       networkStatus.setOnline(false);
+      this.stopAutoSlide();
       track.textContent = t("home.carouselError");
     }
   },
@@ -140,7 +166,9 @@ export const homeCarousel = {
   },
 
   updateDots() {
-    const dots = document.querySelectorAll(".dot");
+    const dots = document
+      .getElementById("carousel-dots")
+      ?.querySelectorAll(".dot") || [];
     if (dots.length === 0) return;
     dots.forEach((d) => {
       d.classList.remove("active");
@@ -163,8 +191,11 @@ export const homeCarousel = {
 
   goToSlide(index) {
     const track = document.getElementById("carousel-track");
-    if (!track) return;
-    this.currentSlideIndex = index;
+    if (!track || this.totalSlides === 0) return;
+    this.currentSlideIndex = Math.max(
+      0,
+      Math.min(Number(index) || 0, this.totalSlides - 1),
+    );
     track.style.transform = `translateX(-${this.currentSlideIndex * 100}%)`;
     this.updateDots();
     this.startAutoSlide();
@@ -199,10 +230,12 @@ export const homeCarousel = {
 
   startAutoSlide() {
     this.stopAutoSlide();
+    if (this.totalSlides <= 1) return;
     this.slideInterval = setInterval(() => this.nextSlide(), 5000);
   },
 
   stopAutoSlide() {
     if (this.slideInterval) clearInterval(this.slideInterval);
+    this.slideInterval = null;
   },
 };

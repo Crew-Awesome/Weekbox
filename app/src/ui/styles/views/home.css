@@ -215,7 +215,7 @@
 .carousel-container {
   position: relative;
   width: 100%;
-  min-height: 380px;
+  min-height: clamp(280px, 42vw, 380px);
   border-radius: var(--border-radius);
   background-color: var(--bg-panel);
   overflow: hidden;
@@ -224,12 +224,17 @@
 
 .carousel-track {
   display: flex;
+  flex: 0 0 100%;
+  min-width: 0;
+  min-height: inherit;
   width: 100%;
   transition: transform 0.5s cubic-bezier(0.25, 1, 0.5, 1);
 }
 
 .carousel-slide {
-  min-width: 100%;
+  flex: 0 0 100%;
+  min-width: 0;
+  min-height: inherit;
   position: relative;
   background: #1e1e1e url("../assets/img/placeholder-mini.jpg") center / cover no-repeat;
   background-size: cover;
@@ -257,6 +262,8 @@
   padding-bottom: var(--spacing-xl);
   max-width: 800px;
   width: 100%;
+  box-sizing: border-box;
+  overflow-wrap: anywhere;
 }
 
 .carousel-content h1 {
@@ -264,6 +271,7 @@
   margin-bottom: var(--spacing-xs);
   color: var(--text-main);
   text-shadow: 0px 4px 10px rgba(0, 0, 0, 0.8);
+  overflow-wrap: anywhere;
 }
 
 .carousel-author {
@@ -336,6 +344,11 @@
   align-items: center;
   justify-content: center;
   transition: background 0.2s;
+}
+
+.carousel-btn:focus-visible {
+  outline: 2px solid var(--text-main);
+  outline-offset: 3px;
 }
 
 .carousel-btn:hover {
