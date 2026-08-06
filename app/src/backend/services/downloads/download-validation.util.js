@@ -11,7 +11,7 @@ function getHtmlResponseError(sample) {
 
   // If this is a Google Drive download confirmation page, it is not an error
   const hasConfirmationForm =
-    /<form[^>]+action="[^"]*(?:download|uc\?)[^"]*"/i.test(html) ||
+    /<form[^>]+action\s*=\s*["'][^"']*(?:download|uc\?)[^"']*["']/i.test(html) ||
     /id=["'](?:download-form|downloadForm|uc-download-link)["']/i.test(html) ||
     /name=["'](?:confirm|uuid)["']/i.test(html);
   if (hasConfirmationForm) {

@@ -801,11 +801,6 @@ async function downloadGoogleDriveArchive({
     } catch {}
 
     if (isHtml) {
-      const htmlError = getHtmlResponseError(htmlContent);
-      if (htmlError && !htmlError.message.startsWith("The download server") && !htmlError.message.startsWith("El servidor de descarga")) {
-        throw htmlError;
-      }
-
       // Check if there is a direct download link or confirmation form
       let confirmedDownloadUrl = null;
 
@@ -864,7 +859,7 @@ async function downloadGoogleDriveArchive({
       }
 
       const hasFormOrLink = Boolean(
-        /<form[^>]+action="[^"]*(?:download|uc\?)[^"]*"/i.test(htmlContent) ||
+        /<form[^>]+action=["'][^"']*(?:download|uc\?)[^"']*["']/i.test(htmlContent) ||
         /id=["'](?:download-form|downloadForm|uc-download-link)["']/i.test(htmlContent) ||
         /name=["'](?:confirm|uuid)["']/i.test(htmlContent) ||
         directLinkMatch
@@ -903,6 +898,9 @@ async function downloadGoogleDriveArchive({
           );
         }
       }
+
+      const htmlError = getHtmlResponseError(htmlContent);
+      if (!hasFormOrLink && htmlError) throw htmlError;
 
       await Neutralino.filesystem.remove(probePath).catch(() => {});
       onProgress?.("Downloading mod from Google Drive...", 5);
