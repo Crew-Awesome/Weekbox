@@ -1,5 +1,9 @@
 import "./wineModal.js";
 import { t } from "../i18n/index.js";
+import {
+  activateCheckoutDialog,
+  deactivateCheckoutDialog,
+} from "../home/modal/dialogFocus.js";
 
 const DIAGNOSTIC_REPORT_ENDPOINT =
   "https://fnfweekbox.vercel.app/api/diagnostic-report";
@@ -397,13 +401,19 @@ export const errorHandler = {
     modal.style.display = "flex";
     requestAnimationFrame(() => {
       modal.classList.add("show");
-      modal.querySelector(".error-close")?.focus();
+      activateCheckoutDialog(
+        modal,
+        modal.querySelector(".error-content"),
+        modal.querySelector(".error-close"),
+        () => this.close(),
+      );
     });
   },
 
   close() {
     const modal = document.getElementById("weekbox-error-modal");
     if (!modal) return;
+    deactivateCheckoutDialog(modal);
     modal.classList.remove("show");
     setTimeout(() => {
       modal.style.display = "none";

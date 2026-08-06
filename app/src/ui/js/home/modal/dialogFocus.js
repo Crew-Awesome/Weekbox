@@ -38,13 +38,27 @@ function activateCheckoutDialog(overlay, dialog, initialFocus, onEscape) {
       first.focus();
     }
   };
+  const onFocusIn = (event) => {
+    if (!dialog.contains(event.target) && !overlay.contains(event.target)) {
+      (initialFocus || getCheckoutDialogFocusables(dialog)[0])?.focus();
+    }
+  };
+  const onWindowFocus = () => {
+    if (!dialog.contains(document.activeElement)) {
+      (initialFocus || getCheckoutDialogFocusables(dialog)[0])?.focus();
+    }
+  };
   checkoutDialogStates.set(overlay, {
     background,
     onKeydown,
+    onFocusIn,
+    onWindowFocus,
     previousFocus: document.activeElement,
     wasInert,
   });
   document.addEventListener("keydown", onKeydown);
+  document.addEventListener("focusin", onFocusIn);
+  window.addEventListener("focus", onWindowFocus);
   (initialFocus || getCheckoutDialogFocusables(dialog)[0])?.focus();
 }
 
@@ -52,6 +66,8 @@ function deactivateCheckoutDialog(overlay, restoreFocus = true) {
   const state = checkoutDialogStates.get(overlay);
   if (!state) return;
   document.removeEventListener("keydown", state.onKeydown);
+  document.removeEventListener("focusin", state.onFocusIn);
+  window.removeEventListener("focus", state.onWindowFocus);
   state.background.forEach(([element, wasInert]) => (element.inert = wasInert));
   overlay.inert = state.wasInert;
   checkoutDialogStates.delete(overlay);

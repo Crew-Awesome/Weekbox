@@ -46,18 +46,20 @@ export const engineUpdateToast = {
   },
 
   offer(engineId, name, icon, onSelect) {
-    toastSystem.show(getToastId(engineId), {
+    const id = getToastId(engineId);
+    toastSystem.show(id, {
       title: t("engineUpdates.availableTitle", { name }),
       message: t("engineUpdates.clickToReview"),
       mediaHtml: `<img src="assets/icons/${icon}" alt="" />`,
       badgeHtml: '<i class="fa-solid fa-exclamation" aria-hidden="true"></i>',
       showProgress: false,
+      duration: 10000,
       onSelect: () => {
         this.hide(engineId);
         onSelect();
       },
     });
-    toastSystem.setState(getToastId(engineId), "offer");
+    toastSystem.setState(id, "offer");
   },
 
   error(engineId) {

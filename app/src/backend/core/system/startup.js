@@ -227,6 +227,7 @@ async function startApp() {
   try {
     startupLoader.setPhase(t("startup.startingServices"), 8);
     Neutralino.init();
+    void startupLoader.initVersion();
     networkStatus.init();
     await Neutralino.window.focus().catch(() => {});
     const setWindowFocus = (isFocused) => {

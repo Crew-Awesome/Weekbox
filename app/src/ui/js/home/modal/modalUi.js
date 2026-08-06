@@ -7,6 +7,7 @@ import {
 import { enhanceContentLinks } from "../../contentLinks.js";
 import { setModalBackdrop } from "./modalBackdrop.js";
 import { modModal } from "./index.js";
+import { homeCarousel } from "../carousel.js";
 import { getEngineLabel, t } from "../../i18n/index.js";
 
 async function ensureModal(onClose) {
@@ -28,6 +29,7 @@ async function ensureModal(onClose) {
 }
 
 function showModal() {
+  homeCarousel.stopAutoSlide();
   const modal = document.getElementById("mod-modal");
   modal.style.display = "flex";
   requestAnimationFrame(() => {
@@ -42,6 +44,7 @@ function showModal() {
 }
 
 function hideModal() {
+  homeCarousel.startAutoSlide();
   const modal = document.getElementById("mod-modal");
   if (!modal) return;
   deactivateCheckoutDialog(modal);
@@ -229,14 +232,24 @@ function showModData(data, isInstalled, onDownload) {
 
 function updateDownloadStatus(data, isInstalled, onDownload) {
   const fileSizeEl = document.getElementById("modal-filesize");
-  if (fileSizeEl) fileSizeEl.textContent = data.fileSizeStr;
+  if (fileSizeEl) {
+    if (data.loadingDownloads) {
+      fileSizeEl.textContent = t("modModal.checkingDownloads");
+    } else if (data.downloadOptions?.length) {
+      fileSizeEl.textContent = data.fileSizeStr || "--";
+    } else {
+      fileSizeEl.textContent = t("modModal.noDownloadAvailable");
+    }
+  }
   const button = document.getElementById("modal-download-btn");
   if (!button) return;
   if (isInstalled) {
     button.disabled = true;
+    button.onclick = null;
     button.innerHTML = `<i class="fa-solid fa-check"></i> ${t("modModal.alreadyInstalled")}`;
   } else if (data.loadingDownloads) {
     button.disabled = true;
+    button.onclick = null;
     button.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> ${t("modModal.checkingDownloads")}`;
   } else if (data.downloadOptions?.length) {
     button.disabled = false;
@@ -245,6 +258,21 @@ function updateDownloadStatus(data, isInstalled, onDownload) {
         ? `<i class="fa-solid fa-list"></i> ${t("modModal.chooseDownload")}`
         : `<i class="fa-solid fa-download"></i> ${data.downloadButtonLabel || t("common.download")}`;
     button.onclick = onDownload;
+  } else {
+    const sourceUrl =
+      data.source === "peo" ? data.sourceUrl : data.gameBananaUrl;
+    button.disabled = !sourceUrl;
+    const isPsych = data.source === "peo";
+    const label = isPsych
+      ? t("modModal.openOnPsychOnline", { title: data.title || "" })
+      : t("modModal.downloadOnGameBanana");
+    button.innerHTML = `<i class="fa-solid fa-arrow-up-right-from-square"></i> ${label}`;
+    button.onclick = (event) => {
+      event.preventDefault();
+      if (sourceUrl && window.Neutralino?.os?.open) {
+        Neutralino.os.open(sourceUrl).catch(() => {});
+      }
+    };
   }
 }
 

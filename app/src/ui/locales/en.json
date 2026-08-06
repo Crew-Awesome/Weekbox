@@ -192,6 +192,8 @@
   "modModal.alreadyInstalled": "Already installed",
   "modModal.checkingDownloads": "Checking downloads…",
   "modModal.chooseDownload": "Choose download",
+  "modModal.noDownloadAvailable": "No download available",
+  "modModal.downloadOnGameBanana": "Download on GameBanana",
   "modModal.openOnPsychOnline": "Open {{title}} on Psych Online",
   "modModal.preview": "Mod preview",
   "wine.title": "Wine is missing",

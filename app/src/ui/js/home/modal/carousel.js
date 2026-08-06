@@ -77,10 +77,12 @@ export const modModalCarousel = {
     const activeThumb = thumbs[this.currentIndex];
     if (activeThumb) {
       activeThumb.classList.add("active");
-      activeThumb.scrollIntoView({
+      const targetLeft =
+        activeThumb.offsetLeft -
+        (thumbsContainer.clientWidth - activeThumb.clientWidth) / 2;
+      thumbsContainer.scrollTo({
+        left: Math.max(0, targetLeft),
         behavior: "smooth",
-        block: "nearest",
-        inline: "center",
       });
     }
 
