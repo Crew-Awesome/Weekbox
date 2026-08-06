@@ -420,12 +420,14 @@ async function mergeParts(parts, outPath) {
 }
 
 function getWindowsExtractionCommand(archivePath, destinationPath) {
-  return `tar.exe -xf ${quoteCommandArgument(archivePath)} -C ${quoteCommandArgument(destinationPath)}`;
+  const normArchive = String(archivePath || "").replace(/\//g, "\\");
+  const normDest = String(destinationPath || "").replace(/\//g, "\\");
+  return `tar.exe --force-local -xf "${normArchive}" -C "${normDest}"`;
 }
 
 function getPowerShellExtractCommand(archivePath, destinationPath) {
-  const safeArchive = String(archivePath).replace(/'/g, "''");
-  const safeDest = String(destinationPath).replace(/'/g, "''");
+  const safeArchive = String(archivePath || "").replace(/\//g, "\\").replace(/'/g, "''");
+  const safeDest = String(destinationPath || "").replace(/\//g, "\\").replace(/'/g, "''");
   return `powershell -NoProfile -NonInteractive -Command "Expand-Archive -Path '${safeArchive}' -DestinationPath '${safeDest}' -Force"`;
 }
 
@@ -1287,8 +1289,11 @@ async function extractArchive({
     const pathsToTry = [
       `${window.NL_PATH}/app/assets/bin/${binName}`,
       `${window.NL_PATH}/assets/bin/${binName}`,
+      `${window.NL_PATH}/resources/app/assets/bin/${binName}`,
       `${window.NL_CWD}/app/assets/bin/${binName}`,
       `${window.NL_CWD}/assets/bin/${binName}`,
+      `app/assets/bin/${binName}`,
+      `assets/bin/${binName}`,
     ];
     for (const binPath of pathsToTry) {
       try {
@@ -1300,8 +1305,11 @@ async function extractArchive({
     }
     if (portable7z) break;
   }
+  const normWinPath = (p) => String(p || "").replace(/\//g, "\\");
   const command = portable7z
-    ? `${quoteCommandArgument(portable7z)} x -y -aoa -o${quoteCommandArgument(destinationPath)} ${quoteCommandArgument(archivePath)}`
+    ? isWindows
+      ? `"${normWinPath(portable7z)}" x -y -aoa "-o${normWinPath(destinationPath)}" "${normWinPath(archivePath)}"`
+      : `${quoteCommandArgument(portable7z)} x -y -aoa -o${quoteCommandArgument(destinationPath)} ${quoteCommandArgument(archivePath)}`
     : isWindows
       ? getWindowsExtractionCommand(archivePath, destinationPath)
       : archiveFormat === "tar" || archiveFormat === "gzip"

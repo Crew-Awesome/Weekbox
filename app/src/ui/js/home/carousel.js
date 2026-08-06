@@ -62,10 +62,13 @@ export const homeCarousel = {
           const preloader = new Image();
           preloader.onload = () => {
             slide.style.backgroundImage = `url('${mod.image}')`;
+            preloader.onload = null;
+            preloader.onerror = null;
           };
           preloader.onerror = () => {
-            slide.style.backgroundImage =
-              "url('assets/img/placeholder-mini.jpg')";
+            slide.style.backgroundImage = "url('assets/img/placeholder-mini.jpg')";
+            preloader.onload = null;
+            preloader.onerror = null;
           };
           preloader.src = mod.image;
         }

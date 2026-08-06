@@ -135,6 +135,35 @@ export const downloadMod = {
     }
   },
 
+  async cleanupAll() {
+    const tasks = [...this.activeTasks.entries()];
+    for (const [modId, task] of tasks) {
+      task.cancelled = true;
+      if (task.pid) {
+        try {
+          if (window.NL_OS === "Windows") {
+            await Neutralino.os
+              .execCommand(`taskkill /T /F /PID ${task.pid}`)
+              .catch(() => {});
+          } else {
+            await Neutralino.os
+              .execCommand(`kill -9 ${task.pid}`)
+              .catch(() => {});
+          }
+        } catch {}
+      }
+      try {
+        await this.cleanupData(
+          modId,
+          task.tempFilePath,
+          task.targetModFolder,
+          task.finalModFolder,
+        );
+      } catch {}
+    }
+    this.activeTasks.clear();
+  },
+
   /**
    * @fix 2026-08-05T03:32:55.361Z - Fix stale folder retention on failed installation
    */
@@ -192,7 +221,14 @@ export const downloadMod = {
     let storageFolderName = `${fallbackFolderName}--${taskKey}`;
     let engineFolderName = fallbackFolderName;
     let targetModFolder = `${modsBasePath}/.extract_${taskKey}`;
-    const tempFilePath = `${modsBasePath}/temp_${taskKey}.zip`;
+    let finalModFolder = null;
+    let archiveExt = ".zip";
+    const lowerUrl = String(downloadUrl || "").toLowerCase();
+    if (lowerUrl.includes(".rar")) archiveExt = ".rar";
+    else if (lowerUrl.includes(".7z")) archiveExt = ".7z";
+    else if (lowerUrl.includes(".tar.gz") || lowerUrl.includes(".tgz")) archiveExt = ".tar.gz";
+    else if (lowerUrl.includes(".tar")) archiveExt = ".tar";
+    const tempFilePath = `${modsBasePath}/temp_${taskKey}${archiveExt}`;
     let downloadMarkerPath = `${targetModFolder}/.downloading`;
 
     this.activeTasks.set(modId, {
@@ -201,6 +237,7 @@ export const downloadMod = {
       modName,
       tempFilePath,
       targetModFolder,
+      finalModFolder,
     });
 
     const { toastThumbnail, sourceType, fileSize, ...installMetadata } =
@@ -351,7 +388,7 @@ export const downloadMod = {
       }
 
       const stagingFolder = targetModFolder;
-      const finalModFolder = `${modsBasePath}/${storageFolderName}`;
+      finalModFolder = `${modsBasePath}/${storageFolderName}`;
       const activeTask = this.activeTasks.get(modId);
       if (activeTask) activeTask.finalModFolder = finalModFolder;
 

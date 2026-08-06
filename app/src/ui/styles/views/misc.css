@@ -10,7 +10,7 @@ body.window-unfocused::after {
   background: rgba(0, 0, 0, 0.24);
   backdrop-filter: blur(7px);
   -webkit-backdrop-filter: blur(7px);
-  pointer-events: auto;
+  pointer-events: none;
 }
 
 .content {
@@ -211,6 +211,8 @@ body.window-unfocused::after {
   min-width: 0;
   max-width: 100%;
   --card-image-height: 145px;
+  content-visibility: auto;
+  contain-intrinsic-size: 260px 220px;
 }
 
 .mod-card-bg {

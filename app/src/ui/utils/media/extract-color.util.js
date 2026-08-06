@@ -1,5 +1,26 @@
 var colorJobs = [];
 var colorJobScheduled = false;
+var MAX_COLOR_CACHE_SIZE = 500;
+var dominantColorCache = new Map();
+
+function getCachedDominantColor(url) {
+  if (!url) return null;
+  return dominantColorCache.get(url) || null;
+}
+
+function hasCachedDominantColor(url) {
+  return Boolean(url && dominantColorCache.has(url));
+}
+
+function setCachedDominantColor(url, colorData) {
+  if (!url || !colorData) return;
+  if (dominantColorCache.size >= MAX_COLOR_CACHE_SIZE) {
+    const firstKey = dominantColorCache.keys().next().value;
+    if (firstKey) dominantColorCache.delete(firstKey);
+  }
+  dominantColorCache.set(url, colorData);
+}
+
 function scheduleNextColorJob() {
   colorJobScheduled = true;
   const runNextJob = () => {
@@ -29,6 +50,29 @@ function getRelativeLuminance(r, g, b) {
   return 0.2126 * linear[0] + 0.7152 * linear[1] + 0.0722 * linear[2];
 }
 
+function applyColorToElement(targetElement, colorData, options = {}) {
+  const {
+    cssVar = "--card-color",
+    alpha = 0.5,
+    accentVar = "",
+  } = options;
+  const { r, g, b, accentR, accentG, accentB } = colorData;
+  targetElement.style.setProperty(
+    cssVar,
+    `rgba(${Math.floor(r)}, ${Math.floor(g)}, ${Math.floor(b)}, ${alpha})`,
+  );
+  if (accentVar) {
+    const lighten = 0.42;
+    const finalAccentR = Math.round(accentR + (255 - accentR) * lighten);
+    const finalAccentG = Math.round(accentG + (255 - accentG) * lighten);
+    const finalAccentB = Math.round(accentB + (255 - accentB) * lighten);
+    targetElement.style.setProperty(
+      accentVar,
+      `rgb(${finalAccentR}, ${finalAccentG}, ${finalAccentB})`,
+    );
+  }
+}
+
 function applyDominantColor(img, targetElement, options = {}) {
   const {
     cssVar = "--card-color",
@@ -41,10 +85,22 @@ function applyDominantColor(img, targetElement, options = {}) {
     targetElement.style.setProperty(cssVar, fallback);
     if (accentVar) targetElement.style.setProperty(accentVar, accentFallback);
   };
+
+  const src = img?.src || "";
+  if (src && dominantColorCache.has(src)) {
+    applyColorToElement(targetElement, dominantColorCache.get(src), options);
+    return;
+  }
+
   const processColor = () => {
     scheduleColorJob(() => {
+      let canvas = null;
       try {
-        const canvas = document.createElement("canvas");
+        if (src && dominantColorCache.has(src)) {
+          applyColorToElement(targetElement, dominantColorCache.get(src), options);
+          return;
+        }
+        canvas = document.createElement("canvas");
         const ctx = canvas.getContext("2d", { willReadFrequently: true });
         const sourceWidth = img.naturalWidth || 64;
         const sourceHeight = img.naturalHeight || 64;
@@ -110,22 +166,28 @@ function applyDominantColor(img, targetElement, options = {}) {
           g *= 0.92;
           b *= 0.92;
         }
-        targetElement.style.setProperty(
-          cssVar,
-          `rgba(${Math.floor(r)}, ${Math.floor(g)}, ${Math.floor(b)}, ${alpha})`,
-        );
-        if (accentVar) {
-          const lighten = 0.42;
-          const accentSourceR = accentWeight ? accentR / accentWeight : sourceR;
-          const accentSourceG = accentWeight ? accentG / accentWeight : sourceG;
-          const accentSourceB = accentWeight ? accentB / accentWeight : sourceB;
-          targetElement.style.setProperty(
-            accentVar,
-            `rgb(${Math.round(accentSourceR + (255 - accentSourceR) * lighten)}, ${Math.round(accentSourceG + (255 - accentSourceG) * lighten)}, ${Math.round(accentSourceB + (255 - accentSourceB) * lighten)})`,
-          );
+        const accentSourceR = accentWeight ? accentR / accentWeight : sourceR;
+        const accentSourceG = accentWeight ? accentG / accentWeight : sourceG;
+        const accentSourceB = accentWeight ? accentB / accentWeight : sourceB;
+        const colorData = {
+          r,
+          g,
+          b,
+          accentR: accentSourceR,
+          accentG: accentSourceG,
+          accentB: accentSourceB,
+        };
+        if (src) {
+          setCachedDominantColor(src, colorData);
         }
+        applyColorToElement(targetElement, colorData, options);
       } catch {
         setFallback();
+      } finally {
+        if (canvas) {
+          canvas.width = 0;
+          canvas.height = 0;
+        }
       }
     });
   };
@@ -138,4 +200,4 @@ function applyDominantColor(img, targetElement, options = {}) {
   }
 }
 
-export { applyDominantColor };
+export { applyDominantColor, getCachedDominantColor, hasCachedDominantColor };

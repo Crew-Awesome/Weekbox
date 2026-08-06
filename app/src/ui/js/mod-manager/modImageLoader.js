@@ -1,10 +1,18 @@
 import { FS } from "../../../backend/services/filesystem.js";
+import { hasCachedDominantColor } from "../../utils/media/extract-color.util.js";
 
+const MAX_MOD_COVER_CACHE = 200;
 const modCoverCache = new Map();
 const PLACEHOLDER_IMAGE = "assets/img/placeholder-mini.jpg";
 
 export function primeModCover(modId, coverUrl) {
-  if (coverUrl) modCoverCache.set(String(modId), coverUrl);
+  if (coverUrl) {
+    if (modCoverCache.size >= MAX_MOD_COVER_CACHE) {
+      const oldestKey = modCoverCache.keys().next().value;
+      if (oldestKey !== undefined) modCoverCache.delete(oldestKey);
+    }
+    modCoverCache.set(String(modId), coverUrl);
+  }
 }
 
 export async function getModCover(modId, fetchDetails) {
@@ -57,8 +65,17 @@ export function loadModCardImage({
         finishLoading(false);
         return;
       }
+      if (hasCachedDominantColor(localCover)) {
+        image.src = localCover;
+        image.hidden = false;
+        applyDominantColor(image, card);
+        finishLoading(true);
+        return;
+      }
       const preload = new Image();
-      preload.addEventListener("load", () => {
+      const onLoad = () => {
+        preload.removeEventListener("load", onLoad);
+        preload.removeEventListener("error", onError);
         if (!card.isConnected) return;
         image.src = localCover;
         image.hidden = false;
@@ -69,9 +86,16 @@ export function loadModCardImage({
         };
         applyDominantColor(image, card);
         requestAnimationFrame(() => finishLoading(true));
-      });
-      preload.addEventListener("error", () => finishLoading(false));
+      };
+      const onError = () => {
+        preload.removeEventListener("load", onLoad);
+        preload.removeEventListener("error", onError);
+        finishLoading(false);
+      };
+      preload.addEventListener("load", onLoad);
+      preload.addEventListener("error", onError);
       preload.src = localCover;
     })
     .catch(() => finishLoading(false));
 }
+

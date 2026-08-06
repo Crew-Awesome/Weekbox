@@ -59,6 +59,15 @@ function getGoogleDriveFileId(url) {
   );
 }
 
+function setBoundedCache(map, key, value, maxSize = 100) {
+  if (!map || !key) return;
+  if (map.size >= maxSize) {
+    const oldestKey = map.keys().next().value;
+    if (oldestKey !== undefined) map.delete(oldestKey);
+  }
+  map.set(key, value);
+}
+
 export const gameBananaApi = {
   baseUrl: "https://gamebanana.com/apiv11",
   subfeedBaseUrl: "https://gamebanana.com/apiv12",
@@ -161,7 +170,7 @@ export const gameBananaApi = {
       .then(async (response) => {
         if (!response.ok) return null;
         const profile = await response.json();
-        this.modProfileCache.set(id, profile);
+        setBoundedCache(this.modProfileCache, id, profile, 100);
         return profile;
       })
       .catch(() => null)
@@ -311,10 +320,10 @@ export const gameBananaApi = {
       const status = Number(statuses.at(-1)?.[1]);
       if (!Number.isFinite(status)) return null;
       const available = status < 400;
-      this.downloadAvailabilityCache.set(cacheKey, {
+      setBoundedCache(this.downloadAvailabilityCache, cacheKey, {
         available,
         expiresAt: Date.now() + 5 * 60 * 1000,
-      });
+      }, 100);
       return available;
     } catch {
       // A blocked or unsupported HEAD request does not prove the download is
@@ -664,7 +673,7 @@ export const gameBananaApi = {
         modIds: new Set(),
         complete: false,
       };
-      this.ripeFeedCache.set(cacheKey, feed);
+      setBoundedCache(this.ripeFeedCache, cacheKey, feed, 20);
 
       const pageSize = Math.max(1, Number(options.pageSize) || 12);
       const requiredMods = Math.max(1, Number(page) || 1) * pageSize;
@@ -761,7 +770,7 @@ export const gameBananaApi = {
       snapshotId: null,
       peoMods: null,
     };
-    this.psychOnlineFeedCache.set(cacheKey, state);
+    setBoundedCache(this.psychOnlineFeedCache, cacheKey, state, 20);
     if (!state.peoMods) {
       const peoSort =
         {

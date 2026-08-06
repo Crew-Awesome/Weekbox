@@ -12,6 +12,7 @@ import { homeView, registerHomeView } from "../../../ui/js/home/index.js";
 import { registerEnginesView } from "../../../ui/js/engines/index.js";
 import { registerNewsView } from "../../../ui/js/news.js";
 import { downloadEngine } from "../../../ui/js/engines/downloadEngine.js";
+import { downloadMod } from "../../../ui/js/home/modal/downloadMod.js";
 import { FS } from "../../services/filesystem.js";
 import { errorHandler } from "../../../ui/js/errors/errorHandler.js";
 import { appUpdateModal } from "../../../ui/js/updates/appUpdateModal.js";
@@ -238,14 +239,45 @@ async function startApp() {
     Neutralino.events.on("windowBlur", () => setWindowFocus(false));
     Neutralino.events.on("windowFocus", () => setWindowFocus(true));
     window.addEventListener("focus", () => setWindowFocus(true));
+    window.addEventListener("focusin", () => setWindowFocus(true), {
+      passive: true,
+    });
+    window.addEventListener("pointerdown", () => setWindowFocus(true), {
+      capture: true,
+      passive: true,
+    });
+    window.addEventListener("keydown", () => setWindowFocus(true), {
+      capture: true,
+      passive: true,
+    });
     document.addEventListener("visibilitychange", () => {
       if (!document.hidden) setWindowFocus(true);
     });
     disableProductionRefreshShortcuts();
+
+    const handleAppExit = async () => {
+      try {
+        await Promise.race([
+          Promise.allSettled([
+            downloadEngine.cleanupAll?.(),
+            downloadMod.cleanupAll?.(),
+          ]),
+          new Promise((resolve) => setTimeout(resolve, 1500)),
+        ]);
+      } catch {}
+      try {
+        await Neutralino.app.exit();
+      } catch {}
+    };
+
+    window.addEventListener("beforeunload", () => {
+      downloadEngine.cleanupAll?.().catch(() => {});
+      downloadMod.cleanupAll?.().catch(() => {});
+    });
+
     Neutralino.events.on("windowClose", async () => {
       if (document.getElementById("app-update-modal")?.hidden === false) return;
-      await downloadEngine.cleanupAll();
-      await Neutralino.app.exit();
+      await handleAppExit();
     });
     startupLoader.setPhase(t("startup.loadingPreferences"), 20);
     startupStep = "restoring preferences";

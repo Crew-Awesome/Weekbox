@@ -1,6 +1,9 @@
 import { modModal } from "../modal/index.js";
 import { ENGINE_DETAILS } from "../../../../backend/config/engines.config.js";
-import { applyDominantColor } from "../../../utils/media/extract-color.util.js";
+import {
+  applyDominantColor,
+  hasCachedDominantColor,
+} from "../../../utils/media/extract-color.util.js";
 import { t } from "../../i18n/index.js";
 
 const engineLabelKeys = {
@@ -30,7 +33,8 @@ export function createCard(mod, index) {
 
   const image = document.createElement("img");
   image.className = "mod-image";
-  image.src = "assets/img/placeholder-mini.jpg";
+  const targetImgSrc = mod.image || "assets/img/placeholder-mini.jpg";
+  image.src = targetImgSrc;
   image.alt = "";
   image.loading = "lazy";
   image.decoding = "async";
@@ -38,17 +42,6 @@ export function createCard(mod, index) {
     image.onerror = null;
     image.src = "assets/img/placeholder-mini.jpg";
   };
-
-  if (mod.image && mod.image !== "assets/img/placeholder-mini.jpg") {
-    const preloader = new Image();
-    preloader.onload = () => {
-      image.src = mod.image;
-    };
-    preloader.onerror = () => {
-      image.src = "assets/img/placeholder-mini.jpg";
-    };
-    preloader.src = mod.image;
-  }
   imageContainer.appendChild(image);
 
   // Engine / category indicator at top-left
@@ -83,18 +76,21 @@ export function createCard(mod, index) {
     engineIndicator.appendChild(defaultIcon);
   }
 
-  // Keep the displayed image on its normal request path. A separate CORS-safe
-  // image lets the canvas read the cover pixels for the hover color.
-  const colorProbe = new Image();
-  colorProbe.crossOrigin = "anonymous";
-  colorProbe.src = mod.image || "assets/img/placeholder-mini.jpg";
-  colorProbe.addEventListener("error", () => {
-    card.style.setProperty("--card-color", "rgba(255, 255, 255, 0.2)");
-  });
-  applyDominantColor(colorProbe, card, {
-    alpha: 0.5,
-    fallback: "rgba(255, 255, 255, 0.08)",
-  });
+  // Use color cache if available, or lightweight CORS color probe if not yet cached
+  if (hasCachedDominantColor(targetImgSrc)) {
+    applyDominantColor({ src: targetImgSrc }, card, {
+      alpha: 0.5,
+      fallback: "rgba(255, 255, 255, 0.08)",
+    });
+  } else {
+    const colorProbe = new Image();
+    colorProbe.crossOrigin = "anonymous";
+    colorProbe.src = targetImgSrc;
+    applyDominantColor(colorProbe, card, {
+      alpha: 0.5,
+      fallback: "rgba(255, 255, 255, 0.08)",
+    });
+  }
 
   const info = document.createElement("div");
   info.className = "mod-info";

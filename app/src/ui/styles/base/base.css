@@ -89,7 +89,7 @@ body.window-unfocused::after {
   opacity: 0.24;
   backdrop-filter: blur(7px);
   -webkit-backdrop-filter: blur(7px);
-  pointer-events: auto;
+  pointer-events: none;
 }
 
 .app-layout__content {

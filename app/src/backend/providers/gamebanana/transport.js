@@ -36,6 +36,10 @@ export class GameBananaTransport {
     if (this.inFlight.has(url)) return this.inFlight.get(url);
     const request = this.request(url, signal)
       .then((data) => {
+        if (this.cache.size >= 100) {
+          const oldestKey = this.cache.keys().next().value;
+          if (oldestKey) this.cache.delete(oldestKey);
+        }
         this.cache.set(url, { at: Date.now(), data });
         return data;
       })

@@ -342,6 +342,9 @@ export const errorHandler = {
     modal.addEventListener("click", (event) => {
       if (event.target === modal) this.close();
     });
+    modal.addEventListener("keydown", (event) => {
+      if (event.key === "Escape") this.close();
+    });
     return modal;
   },
 
@@ -378,7 +381,10 @@ export const errorHandler = {
     };
 
     modal.style.display = "flex";
-    requestAnimationFrame(() => modal.classList.add("show"));
+    requestAnimationFrame(() => {
+      modal.classList.add("show");
+      modal.querySelector(".error-close")?.focus();
+    });
   },
 
   close() {

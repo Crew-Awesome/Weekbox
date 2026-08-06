@@ -33,7 +33,7 @@
       "minHeight": 500,
       "center": true,
       "enableInspector": true,
-      "openInspectorOnStartup": false,
+      "openInspectorOnStartup": true,
       "resizable": true,
       "exitProcessOnClose": true,
       "webviewArgs": "--autoplay-policy=no-user-gesture-required --disable-features=PreloadMediaEngagementData,MediaEngagementBypassAutoplayPolicies"
