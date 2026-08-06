@@ -74,7 +74,7 @@ async function completeFirstRunStorageSetup(defaultStoragePath, hadSettings) {
           await Neutralino.os.showMessageBox(
             t("storage.libraryNotFoundTitle"),
             t("storage.libraryNotFoundMessage"),
-            t("common.ok"),
+            "OK",
             "WARNING",
           );
       } else if (!existing) {

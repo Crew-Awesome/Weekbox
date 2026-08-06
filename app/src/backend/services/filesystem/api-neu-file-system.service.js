@@ -20,8 +20,12 @@ var APIneuFileSystem = {
         "WeekBox could not create a storage folder because its path is missing.",
       );
     }
-    const normalizedPath = path.replace(/\\/g, "/");
+    const normalizedPath = path.replace(/\\/g, "/").replace(/\/+$/, "");
     if (await this.exists(normalizedPath)) return;
+    const separator = normalizedPath.lastIndexOf("/");
+    if (separator > 0 && !/^[a-zA-Z]:$/.test(normalizedPath.slice(0, separator))) {
+      await this.ensureDir(normalizedPath.slice(0, separator));
+    }
     try {
       await Neutralino.filesystem.createDirectory(normalizedPath);
     } catch (error) {

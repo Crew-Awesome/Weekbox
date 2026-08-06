@@ -51,12 +51,28 @@ function quoteCommandArgument(value) {
 }
 
 function getGoogleDriveFileId(url) {
-  const parsed = new URL(url);
-  return (
-    parsed.searchParams.get("id") ||
-    parsed.pathname.match(/\/file\/d\/([^/]+)/)?.[1] ||
-    null
-  );
+  if (!url) return null;
+  const str = String(url instanceof URL ? url.href : url).trim();
+  const directMatch =
+    str.match(/\/file\/d\/([a-zA-Z0-9_-]+)/i) ||
+    str.match(/[?&]id=([a-zA-Z0-9_-]+)/i) ||
+    str.match(/\/d\/([a-zA-Z0-9_-]+)/i) ||
+    str.match(/\/folders\/([a-zA-Z0-9_-]+)/i) ||
+    str.match(/drive\.google\.com\/open\?id=([a-zA-Z0-9_-]+)/i);
+  if (directMatch && directMatch[1]) {
+    return directMatch[1];
+  }
+  try {
+    const parsed = url instanceof URL ? url : new URL(str);
+    return (
+      parsed.searchParams.get("id") ||
+      parsed.pathname.match(/\/file\/d\/([^/]+)/)?.[1] ||
+      parsed.pathname.match(/\/d\/([^/]+)/)?.[1] ||
+      null
+    );
+  } catch {
+    return null;
+  }
 }
 
 function setBoundedCache(map, key, value, maxSize = 100) {
@@ -207,6 +223,8 @@ export const gameBananaApi = {
   getExternalDownloadFiles(data) {
     const supportedHosts = new Set([
       "drive.google.com",
+      "drive.usercontent.google.com",
+      "docs.google.com",
       "mediafire.com",
       "www.mediafire.com",
       "github.com",
@@ -217,7 +235,12 @@ export const gameBananaApi = {
         const url = new URL(value);
         const hostname = url.hostname.toLowerCase();
         if (!supportedHosts.has(hostname)) return;
-        if (hostname === "drive.google.com" && !getGoogleDriveFileId(url)) {
+        if (
+          (hostname === "drive.google.com" ||
+            hostname === "drive.usercontent.google.com" ||
+            hostname === "docs.google.com") &&
+          !getGoogleDriveFileId(url)
+        ) {
           return;
         }
         if (
@@ -265,30 +288,37 @@ export const gameBananaApi = {
       const parsed = new URL(url);
       const hostname = parsed.hostname.toLowerCase();
       let downloadUrl = url;
-      if (hostname === "drive.google.com") {
+      if (
+        hostname === "drive.google.com" ||
+        hostname === "drive.usercontent.google.com" ||
+        hostname === "docs.google.com"
+      ) {
         const fileId = getGoogleDriveFileId(url);
         if (!fileId) return null;
-        downloadUrl = `https://drive.usercontent.google.com/download?id=${encodeURIComponent(fileId)}&export=download&confirm=t`;
+        return {
+          filename: null,
+          size: 0,
+        };
       } else if (["mediafire.com", "www.mediafire.com"].includes(hostname)) {
         const page = await Neutralino.os.execCommand(
-          `curl -fsSL --connect-timeout 5 --max-time 12 ${quoteCommandArgument(url)}`,
+          `curl -fsSL -A ${quoteCommandArgument(BROWSER_USER_AGENT)} --connect-timeout 5 --max-time 12 ${quoteCommandArgument(url)}`,
           { background: false },
         );
-        if (page.exitCode !== 0) return null;
+        if (page.exitCode !== 0) return { filename: null, size: 0 };
         downloadUrl = (page.stdOut || "")
           .replaceAll("&amp;", "&")
           .match(
             /https?:\/\/download[^"'\s<>]+\.mediafire\.com[^"'\s<>]*/i,
           )?.[0];
-        if (!downloadUrl) return null;
+        if (!downloadUrl) return { filename: null, size: 0 };
       } else if (hostname !== "github.com") {
-        return null;
+        return { filename: null, size: 0 };
       }
       const result = await Neutralino.os.execCommand(
-        `curl -fsSIL --connect-timeout 5 --max-time 12 ${quoteCommandArgument(downloadUrl)}`,
+        `curl -fsSIL -A ${quoteCommandArgument(BROWSER_USER_AGENT)} --connect-timeout 5 --max-time 12 ${quoteCommandArgument(downloadUrl)}`,
         { background: false },
       );
-      if (result.exitCode !== 0) return null;
+      if (result.exitCode !== 0) return { filename: null, size: 0 };
       const header = `${result.stdOut || ""}\n${result.stdErr || ""}`;
       const filename = header.match(
         /content-disposition:[^\r\n]*filename\*?=(?:UTF-8''|"?)([^";\r\n]+)/i,
@@ -296,11 +326,11 @@ export const gameBananaApi = {
       const sizes = [...header.matchAll(/content-length:\s*(\d+)/gi)];
       const size = Number(sizes.at(-1)?.[1] || 0);
       return {
-        filename: filename ? decodeURIComponent(filename.trim()) : null,
+        filename: filename ? decodeURIComponent(filename.trim().replace(/^"+|"+$/g, "")) : null,
         size: Number.isFinite(size) ? size : 0,
       };
     } catch (error) {
-      return null;
+      return { filename: null, size: 0 };
     }
   },
 
@@ -310,7 +340,7 @@ export const gameBananaApi = {
     if (cached && cached.expiresAt > Date.now()) return cached.available;
     try {
       const result = await Neutralino.os.execCommand(
-        `curl -sSIL --connect-timeout 3 --max-time 5 ${quoteCommandArgument(url)}`,
+        `curl -sSIL -A ${quoteCommandArgument(BROWSER_USER_AGENT)} --connect-timeout 3 --max-time 5 ${quoteCommandArgument(url)}`,
         { background: false },
       );
       if (result.exitCode !== 0) return null;
@@ -374,14 +404,12 @@ export const gameBananaApi = {
             const details = await this.getExternalFileDetails(
               option.downloadUrl,
             );
-            if (!details) {
-              option.unavailable = true;
-              return;
-            }
-            if (details.filename) option.name = details.filename;
-            if (details.size > 0) {
-              option.fileSize = details.size;
-              option.fileSizeStr = `${this.getExternalDownloadLabel(option.downloadUrl)} • ${this.formatBytes(details.size)}`;
+            if (details) {
+              if (details.filename) option.name = details.filename;
+              if (details.size > 0) {
+                option.fileSize = details.size;
+                option.fileSizeStr = `${this.getExternalDownloadLabel(option.downloadUrl)} • ${this.formatBytes(details.size)}`;
+              }
             }
           }),
       );

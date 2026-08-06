@@ -3,12 +3,28 @@ function quoteCommandArgument(value) {
 }
 
 function getGoogleDriveFileId(url) {
-  const parsed = url instanceof URL ? url : new URL(url);
-  return (
-    parsed.searchParams.get("id") ||
-    parsed.pathname.match(/\/file\/d\/([^/]+)/)?.[1] ||
-    null
-  );
+  if (!url) return null;
+  const str = String(url instanceof URL ? url.href : url).trim();
+  const directMatch =
+    str.match(/\/file\/d\/([a-zA-Z0-9_-]+)/i) ||
+    str.match(/[?&]id=([a-zA-Z0-9_-]+)/i) ||
+    str.match(/\/d\/([a-zA-Z0-9_-]+)/i) ||
+    str.match(/\/folders\/([a-zA-Z0-9_-]+)/i) ||
+    str.match(/drive\.google\.com\/open\?id=([a-zA-Z0-9_-]+)/i);
+  if (directMatch && directMatch[1]) {
+    return directMatch[1];
+  }
+  try {
+    const parsed = url instanceof URL ? url : new URL(str);
+    return (
+      parsed.searchParams.get("id") ||
+      parsed.pathname.match(/\/file\/d\/([^/]+)/)?.[1] ||
+      parsed.pathname.match(/\/d\/([^/]+)/)?.[1] ||
+      null
+    );
+  } catch {
+    return null;
+  }
 }
 
 const BROWSER_USER_AGENT =
@@ -32,7 +48,8 @@ async function resolveExternalDownloadUrl(url, executeCommand) {
   const hostname = parsed.hostname.toLowerCase();
   if (
     hostname === "drive.google.com" ||
-    hostname === "drive.usercontent.google.com"
+    hostname === "drive.usercontent.google.com" ||
+    hostname === "docs.google.com"
   ) {
     const fileId = getGoogleDriveFileId(parsed);
     if (!fileId) {

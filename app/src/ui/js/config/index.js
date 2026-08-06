@@ -410,7 +410,7 @@ export const configModal = {
       await Neutralino.os.showMessageBox(
         t("storage.cannotMoveTitle"),
         t("storage.cannotMoveMessage"),
-        t("common.ok"),
+        "OK",
         "WARNING",
       );
       return;
@@ -430,7 +430,7 @@ export const configModal = {
         await Neutralino.os.showMessageBox(
           t("storage.alreadyUsingTitle"),
           t("storage.alreadyUsingMessage"),
-          t("common.ok"),
+          "OK",
           "INFO",
         );
         return;
@@ -466,7 +466,7 @@ export const configModal = {
         await Neutralino.os.showMessageBox(
           t("storage.chooseParentTitle"),
           t("storage.chooseParentMessage"),
-          t("common.ok"),
+          "OK",
           "WARNING",
         );
         return;
@@ -500,8 +500,8 @@ export const configModal = {
       this.failStorageMoveToast(t("storage.moveFailedMessage"));
       await Neutralino.os.showMessageBox(
         t("storage.moveFailedTitle"),
-        t("storage.unexpectedMoveError"),
-        t("common.ok"),
+        error?.message || t("storage.unexpectedMoveError"),
+        "OK",
         "ERROR",
       );
     } finally {
@@ -517,7 +517,7 @@ export const configModal = {
       await Neutralino.os.showMessageBox(
         t("storage.cannotMoveTitle"),
         t("storage.cannotMoveMessage"),
-        t("common.ok"),
+        "OK",
         "WARNING",
       );
       return;
@@ -554,8 +554,8 @@ export const configModal = {
       this.failStorageMoveToast(t("storage.moveFailedMessage"));
       await Neutralino.os.showMessageBox(
         t("storage.moveFailedTitle"),
-        t("storage.unexpectedMoveError"),
-        t("common.ok"),
+        error?.message || t("storage.unexpectedMoveError"),
+        "OK",
         "ERROR",
       );
     } finally {

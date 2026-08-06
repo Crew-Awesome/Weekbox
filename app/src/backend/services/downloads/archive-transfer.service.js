@@ -5,6 +5,7 @@ import {
 } from "../processes/spawned-process.util.js";
 import {
   resolveExternalDownloadUrl,
+  getGoogleDriveFileId,
   getRangeSupportedFileSize,
 } from "./external-download.resolver.js";
 import { formatBytes } from "../../utils/formatters.js";
@@ -732,7 +733,7 @@ async function downloadGoogleDriveArchive({
     await retryTransientDownload(
       () =>
         runCurlDownload(
-          `curl --globoff -s -L -A ${quoteCommandArgument(BROWSER_USER_AGENT)} -H "Accept-Language: en-US,en;q=0.9" -c ${quoteCommandArgument(cookiePath)} ${quoteCommandArgument(initialUrl)} -o ${quoteCommandArgument(probePath)}`,
+          `curl --globoff -s -L -A ${quoteCommandArgument(BROWSER_USER_AGENT)} -H "Accept-Language: en-US,en;q=0.9" -c ${quoteCommandArgument(cookiePath)} -b ${quoteCommandArgument(cookiePath)} ${quoteCommandArgument(initialUrl)} -o ${quoteCommandArgument(probePath)}`,
           getTask,
           () => {},
         ),
@@ -746,10 +747,11 @@ async function downloadGoogleDriveArchive({
     try {
       const stats = await Neutralino.filesystem.getStats(probePath);
       if (stats.size > 0) {
+        const readSize = Math.min(stats.size, 131072);
         htmlContent = new TextDecoder().decode(
           await Neutralino.filesystem.readBinaryFile(probePath, {
             pos: 0,
-            size: 8192,
+            size: readSize,
           }),
         );
         isHtml = looksLikeHtmlResponse(htmlContent);
@@ -761,75 +763,111 @@ async function downloadGoogleDriveArchive({
       if (htmlError && !htmlError.message.startsWith("The download server")) {
         throw htmlError;
       }
-      if (
-        htmlContent.includes("Quota exceeded") ||
-        htmlContent.includes("uc-error-caption") ||
-        htmlContent.includes(
-          "Too many users have viewed or downloaded this file recently",
-        )
-      ) {
-        throw new Error(
-          "Google Drive: Este archivo ha superado su cuota de descargas porque demasiados usuarios lo han descargado recientemente. Inténtalo más tarde o prueba con otro enlace de descarga.",
-        );
-      }
-      if (
-        htmlContent.includes("Access denied") ||
-        htmlContent.includes("You need access") ||
-        htmlContent.includes("Sign in to continue")
-      ) {
-        throw new Error(
-          "Google Drive: Este archivo requiere permisos de acceso o inicio de sesión en Google.",
-        );
-      }
-      if (
-        htmlContent.includes("File not found") ||
-        htmlContent.includes(
-          "Sorry, the file you have requested does not exist",
-        )
-      ) {
-        throw new Error(
-          "Google Drive: El archivo no existe o fue eliminado de Google Drive.",
-        );
+
+      // Check if there is a direct download link or confirmation form
+      let confirmedDownloadUrl = null;
+
+      const directLinkMatch =
+        htmlContent.match(/<a[^>]+id=["']uc-download-link["'][^>]+href=["']([^"']+)["']/i) ||
+        htmlContent.match(/<a[^>]+href=["']([^"']*(?:export=download|drive\.usercontent\.google\.com\/download)[^"']*)["']/i);
+
+      if (directLinkMatch) {
+        let linkHref = directLinkMatch[1].replaceAll("&amp;", "&");
+        if (linkHref.startsWith("/")) {
+          linkHref = `https://drive.google.com${linkHref}`;
+        }
+        confirmedDownloadUrl = linkHref;
       }
 
-      // Check if there is a download confirmation form or direct link
-      const formActionMatch = htmlContent.match(/<form[^>]+action="([^"]+)"/i);
-      let actionUrl = formActionMatch
-        ? formActionMatch[1].replaceAll("&amp;", "&")
-        : "https://drive.usercontent.google.com/download";
-      if (!actionUrl.startsWith("http")) {
-        actionUrl = `https://drive.usercontent.google.com${actionUrl.startsWith("/") ? "" : "/"}${actionUrl}`;
+      if (!confirmedDownloadUrl) {
+        const formActionMatch =
+          htmlContent.match(/<form[^>]+action=["']([^"']+)["']/i) ||
+          htmlContent.match(/action=["']([^"']*(?:download|uc)[^"']*)["']/i);
+        let actionUrl = formActionMatch
+          ? formActionMatch[1].replaceAll("&amp;", "&")
+          : "https://drive.usercontent.google.com/download";
+        if (!actionUrl.startsWith("http")) {
+          actionUrl = `https://drive.usercontent.google.com${actionUrl.startsWith("/") ? "" : "/"}${actionUrl}`;
+        }
+
+        const formParams = new URLSearchParams();
+        formParams.set("id", fileId);
+        formParams.set("export", "download");
+        formParams.set("confirm", "t");
+
+        const inputRegex =
+          /<input[^>]+(?:name=["']([^"']+)["'][^>]+value=["']([^"']*)["']|value=["']([^"']*)["'][^>]+name=["']([^"']+)["'])/gi;
+        let match;
+        while ((match = inputRegex.exec(htmlContent)) !== null) {
+          const name = match[1] || match[4];
+          const value = match[2] || match[3] || "";
+          if (name) formParams.set(name, value);
+        }
+
+        const uuidMatch =
+          htmlContent.match(/name=["']uuid["']\s+value=["']([^"']+)["']/i) ||
+          htmlContent.match(/uuid=([^&"'\s<]+)/i);
+        if (uuidMatch && !formParams.get("uuid")) {
+          formParams.set("uuid", uuidMatch[1]);
+        }
+
+        const atMatch =
+          htmlContent.match(/name=["']at["']\s+value=["']([^"']+)["']/i) ||
+          htmlContent.match(/at=([^&"'\s<]+)/i);
+        if (atMatch && !formParams.get("at")) {
+          formParams.set("at", atMatch[1]);
+        }
+
+        confirmedDownloadUrl = `${actionUrl}${actionUrl.includes("?") ? "&" : "?"}${formParams.toString()}`;
       }
 
-      const formParams = new URLSearchParams();
-      formParams.set("id", fileId);
-      formParams.set("export", "download");
-      formParams.set("confirm", "t");
+      const hasFormOrLink = Boolean(
+        /<form[^>]+action="[^"]*(?:download|uc\?)[^"]*"/i.test(htmlContent) ||
+        /id=["'](?:download-form|downloadForm|uc-download-link)["']/i.test(htmlContent) ||
+        /name=["'](?:confirm|uuid)["']/i.test(htmlContent) ||
+        directLinkMatch
+      );
 
-      const inputRegex =
-        /<input[^>]+(?:name="([^"]+)"[^>]+value="([^"]*)"|value="([^"]*)"[^>]+name="([^"]+)")/gi;
-      let match;
-      while ((match = inputRegex.exec(htmlContent)) !== null) {
-        const name = match[1] || match[4];
-        const value = match[2] || match[3] || "";
-        if (name) formParams.set(name, value);
+      if (!hasFormOrLink) {
+        if (
+          htmlContent.includes("Quota exceeded") ||
+          htmlContent.includes(
+            "Too many users have viewed or downloaded this file recently",
+          ) ||
+          htmlContent.includes("ha superado la cuota") ||
+          htmlContent.includes("ha superado su cuota")
+        ) {
+          throw new Error(
+            "Google Drive: Este archivo ha superado su cuota de descargas porque demasiados usuarios lo han descargado recientemente. Inténtalo más tarde o prueba con otro enlace de descarga.",
+          );
+        }
+        if (
+          htmlContent.includes("Access denied") ||
+          htmlContent.includes("You need access") ||
+          htmlContent.includes("Sign in to continue")
+        ) {
+          throw new Error(
+            "Google Drive: Este archivo requiere permisos de acceso o inicio de sesión en Google.",
+          );
+        }
+        if (
+          htmlContent.includes("File not found") ||
+          htmlContent.includes(
+            "Sorry, the file you have requested does not exist",
+          )
+        ) {
+          throw new Error(
+            "Google Drive: El archivo no existe o fue eliminado de Google Drive.",
+          );
+        }
       }
-
-      const uuidMatch =
-        htmlContent.match(/name="uuid"\s+value="([^"]+)"/i) ||
-        htmlContent.match(/uuid=([^&"'\s]+)/i);
-      if (uuidMatch && !formParams.get("uuid")) {
-        formParams.set("uuid", uuidMatch[1]);
-      }
-
-      const confirmedDownloadUrl = `${actionUrl}${actionUrl.includes("?") ? "&" : "?"}${formParams.toString()}`;
 
       await Neutralino.filesystem.remove(probePath).catch(() => {});
       onProgress?.("Downloading mod from Google Drive...", 5);
       await retryTransientDownload(
         () =>
           runCurlDownload(
-            `curl --globoff -# -L --fail --show-error -A ${quoteCommandArgument(BROWSER_USER_AGENT)} -H "Accept-Language: en-US,en;q=0.9" -b ${quoteCommandArgument(cookiePath)} --connect-timeout 15 --speed-time 60 --speed-limit 1024 ${quoteCommandArgument(confirmedDownloadUrl)} -o ${quoteCommandArgument(outPath)}`,
+            `curl --globoff -# -L --fail --show-error -A ${quoteCommandArgument(BROWSER_USER_AGENT)} -H "Accept-Language: en-US,en;q=0.9" -b ${quoteCommandArgument(cookiePath)} -c ${quoteCommandArgument(cookiePath)} --connect-timeout 15 --speed-time 60 --speed-limit 1024 ${quoteCommandArgument(confirmedDownloadUrl)} -o ${quoteCommandArgument(outPath)}`,
             getTask,
             onProgress,
             createFileProgressReader(outPath, totalBytes),
@@ -858,10 +896,10 @@ async function downloadSingleArchive({
   requireValue(outPath, "outPath");
   if (
     url.includes("drive.google.com") ||
-    url.includes("drive.usercontent.google.com")
+    url.includes("drive.usercontent.google.com") ||
+    url.includes("docs.google.com")
   ) {
-    const fileId =
-      url.match(/id=([^&]+)/)?.[1] || url.match(/\/file\/d\/([^/]+)/)?.[1];
+    const fileId = getGoogleDriveFileId(url);
     if (fileId) {
       await downloadGoogleDriveArchive({
         fileId,
@@ -1169,10 +1207,10 @@ async function verifyDownloadedArchiveContent(archivePath) {
       ) {
         if (
           sample.includes("Quota exceeded") ||
-          sample.includes("uc-error-caption") ||
           sample.includes(
             "Too many users have viewed or downloaded this file recently",
-          )
+          ) ||
+          sample.includes("ha superado la cuota")
         ) {
           throw new Error(
             "Google Drive: Este archivo ha superado la cuota de descargas porque demasiados usuarios lo han descargado recientemente. Inténtalo más tarde o prueba con otro enlace.",

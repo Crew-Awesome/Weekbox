@@ -8,12 +8,21 @@ function getHtmlResponseError(sample) {
   const html = String(sample || "");
   if (!looksLikeHtmlResponse(html)) return null;
   const lower = html.toLowerCase();
+
+  // If this is a Google Drive download confirmation page, it is not an error
+  const hasConfirmationForm =
+    /<form[^>]+action="[^"]*(?:download|uc\?)[^"]*"/i.test(html) ||
+    /id=["'](?:download-form|downloadForm|uc-download-link)["']/i.test(html) ||
+    /name=["'](?:confirm|uuid)["']/i.test(html);
+  if (hasConfirmationForm) {
+    return null;
+  }
+
   if (
     lower.includes("quota exceeded") ||
-    lower.includes("uc-error-caption") ||
-    lower.includes(
-      "too many users have viewed or downloaded this file recently",
-    )
+    lower.includes("too many users have viewed or downloaded this file recently") ||
+    lower.includes("ha superado la cuota") ||
+    lower.includes("ha superado su cuota")
   ) {
     return new Error(
       "Google Drive download quota exceeded. Try another download link or try again later.",

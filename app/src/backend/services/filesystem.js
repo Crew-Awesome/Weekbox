@@ -419,8 +419,9 @@ var _FileSystemService = class _FileSystemService {
           destinationWeekboxPath,
           onProgress,
         );
-        await Neutralino.filesystem.remove(this.weekboxPath);
+        await this.api.remove(this.weekboxPath);
       } catch (error) {
+        console.error("Could not move storage directory:", error);
         if (replacedStorageBackupPath) {
           await this.api.remove(destinationWeekboxPath).catch(() => {});
           await this.api
@@ -433,7 +434,7 @@ var _FileSystemService = class _FileSystemService {
           ),
         ).catch(() => {});
         throw new Error(
-          "Could not move WeekBox files. The original location was kept.",
+          `Could not move WeekBox files: ${error?.message || error}. The original location was kept.`,
         );
       }
       this.setStoragePaths(destinationBasePath);
