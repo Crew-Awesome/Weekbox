@@ -8,6 +8,7 @@ function isDevelopmentRun() {
 
 let contextMenu;
 let contextTarget;
+let inspectorOpened = false;
 
 function isEditable(element) {
   return (
@@ -90,6 +91,11 @@ function createContextMenu() {
       }
     }
     if (action === "inspect") {
+      if (inspectorOpened) {
+        hideContextMenu();
+        return;
+      }
+      inspectorOpened = true;
       try {
         await Neutralino.window.create("/", {
           title: "WeekBox Inspector",
@@ -102,6 +108,7 @@ function createContextMenu() {
           exitProcessOnClose: false,
         });
       } catch (error) {
+        inspectorOpened = false;
         console.error("WeekBox: unable to open inspector window", error);
       }
     }

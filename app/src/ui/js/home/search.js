@@ -14,7 +14,6 @@ export const homeSearch = {
     this.abortController = new AbortController();
     const { signal } = this.abortController;
     input.placeholder = "";
-    hint.textContent = t("home.searchHint");
 
     input.addEventListener(
       "focus",
