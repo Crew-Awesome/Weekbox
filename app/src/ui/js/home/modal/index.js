@@ -16,12 +16,15 @@ import {
 } from "./modalUi.js";
 
 const modModal = {
+  requestId: 0,
+
   async init() {
     try {
       await ensureModal(() => this.close());
     } catch (error) {}
   },
   async open(modId) {
+    const requestId = ++this.requestId;
     const engineId = gameBananaApi.getEngineIdForSubmission("mods", modId);
     if (engineId) {
       sidebar.openEngine(engineId);
@@ -30,8 +33,12 @@ const modModal = {
     if (!document.getElementById("mod-modal")) {
       await this.init();
     }
+    if (requestId !== this.requestId) return;
     if (!document.getElementById("mod-modal")) return;
     showModal();
+    modModalCarousel.stopAutoPlay();
+    modModalCarousel.images = [];
+    modModalCarousel.currentIndex = 0;
     resetModal();
     const titleEl = document.getElementById("modal-title");
     if (titleEl) titleEl.textContent = t("modModal.loadingInfo");
@@ -40,6 +47,7 @@ const modModal = {
     let isInstalled = false;
     let hasRenderedProfile = false;
     const showProgress = async (data2) => {
+      if (requestId !== this.requestId) return;
       if (!hasRenderedProfile) {
         isInstalled = await FS.isModInstalled(data2.id);
         await this.populateData(data2, isInstalled);
@@ -53,9 +61,16 @@ const modModal = {
     const data = await gameBananaApi.getModDetails(modId, {
       onProgress: showProgress,
     });
+    if (requestId !== this.requestId) return;
     if (!data) {
       const errTitle = document.getElementById("modal-title");
       if (errTitle) errTitle.textContent = t("modModal.errorLoadingMod");
+      document.getElementById("modal-image-loader")?.style.setProperty("display", "none");
+      const downloadButton = document.getElementById("modal-download-btn");
+      if (downloadButton) {
+        downloadButton.disabled = true;
+        downloadButton.onclick = null;
+      }
       return;
     }
     if (!hasRenderedProfile) await this.populateData(data, isInstalled);
@@ -65,6 +80,7 @@ const modModal = {
       );
   },
   async openSubmission(submission) {
+    const requestId = ++this.requestId;
     if (submission.type !== "tool") {
       await this.open(submission.id);
       return;
@@ -72,8 +88,12 @@ const modModal = {
     if (!document.getElementById("mod-modal")) {
       await this.init();
     }
+    if (requestId !== this.requestId) return;
     if (!document.getElementById("mod-modal")) return;
     showModal();
+    modModalCarousel.stopAutoPlay();
+    modModalCarousel.images = [];
+    modModalCarousel.currentIndex = 0;
     resetModal();
     const titleEl = document.getElementById("modal-title");
     if (titleEl) titleEl.textContent = t("modModal.loadingInfo");
@@ -82,15 +102,18 @@ const modModal = {
     const data = await gameBananaApi.getToolDetails(submission.id, {
       requireDownload: false,
     });
+    if (requestId !== this.requestId) return;
     if (!data) {
       const errTitle = document.getElementById("modal-title");
       if (errTitle) errTitle.textContent = t("modModal.errorLoadingTool");
+      document.getElementById("modal-image-loader")?.style.setProperty("display", "none");
       return;
     }
     const isInstalled = await FS.isModInstalled(data.id);
     await this.populateData(data, isInstalled);
   },
   close() {
+    this.requestId += 1;
     modModalCarousel.stopAutoPlay();
     hideModal();
   },

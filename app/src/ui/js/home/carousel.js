@@ -1,6 +1,5 @@
 import { gameBananaApi } from "../../../backend/providers/gamebanana/gamebanana.provider.js";
 import { modModal } from "./modal/index.js";
-import { networkStatus } from "../../../backend/core/system/network-status.service.js";
 import { getEngineLabel, getEngineLabelKey, t } from "../i18n/index.js";
 
 const featuredLabelKeys = {
@@ -37,21 +36,26 @@ export const homeCarousel = {
     const controls = document.querySelector(".carousel-controls");
     const loadToken = ++this.loadToken;
     this.stopAutoSlide();
-    this.currentSlideIndex = 0;
-    this.totalSlides = 0;
-    track.style.transform = "";
-    dotsContainer.replaceChildren();
-    if (controls) controls.hidden = true;
+    if (!track.querySelector(".carousel-slide") && controls) {
+      controls.hidden = true;
+    }
 
     try {
       const mods = await gameBananaApi.getFeaturedCarousel();
       if (loadToken !== this.loadToken) return;
       if (mods.length === 0) {
+        this.currentSlideIndex = 0;
+        this.totalSlides = 0;
+        track.style.transform = "";
+        dotsContainer.replaceChildren();
+        if (controls) controls.hidden = true;
         track.textContent = t("home.noFeaturedMods");
         return;
       }
 
       track.innerHTML = "";
+      dotsContainer.replaceChildren();
+      this.currentSlideIndex = 0;
       this.totalSlides = mods.length;
       if (controls) controls.hidden = false;
 
@@ -138,8 +142,22 @@ export const homeCarousel = {
       this.startAutoSlide();
     } catch (error) {
       if (loadToken !== this.loadToken) return;
-      networkStatus.setOnline(false);
-      this.stopAutoSlide();
+      const slideCount = track.querySelectorAll(".carousel-slide").length;
+      if (slideCount) {
+        this.totalSlides = slideCount;
+        this.currentSlideIndex = Math.min(
+          this.currentSlideIndex,
+          slideCount - 1,
+        );
+        if (controls) controls.hidden = false;
+        this.updateDots();
+        this.startAutoSlide();
+        return;
+      }
+      this.currentSlideIndex = 0;
+      this.totalSlides = 0;
+      dotsContainer.replaceChildren();
+      if (controls) controls.hidden = true;
       track.textContent = t("home.carouselError");
     }
   },

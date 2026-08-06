@@ -1,7 +1,6 @@
 import { gameBananaApi } from "../../../../backend/providers/gamebanana/gamebanana.provider.js";
 import { gridState } from "./gridState.js";
 import { createCard, createFeaturedCard } from "./cardBuilder.js";
-import { networkStatus } from "../../../../backend/core/system/network-status.service.js";
 import { t } from "../../i18n/index.js";
 
 function selectFeaturedMod(mods, featuredIds, featuredEngineIds) {
@@ -248,7 +247,6 @@ export const gridRender = {
       return true;
     } catch (error) {
       if (error?.kind === "aborted") return false;
-      networkStatus.setOnline(false);
       if (isInitial && renderVersion === gridState.renderVersion) {
         grid.textContent = t("home.failedToLoadMods");
         grid.classList.add("grid-error");
