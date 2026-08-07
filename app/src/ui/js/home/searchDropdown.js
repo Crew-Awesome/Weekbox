@@ -7,6 +7,7 @@ export const homeSearchDropdown = {
   maxRecent: 5,
   fetchTimeout: null,
   suggestionVersion: 0,
+  abortController: null,
 
   init() {
     this.loadRecent();
@@ -14,14 +15,30 @@ export const homeSearchDropdown = {
     this.dropdown = document.getElementById("search-dropdown");
     if (!this.input || !this.dropdown) return;
 
-    this.input.addEventListener("focus", () => this.showDropdown());
-    this.input.addEventListener("input", () => this.updateDropdown());
+    this.destroy();
+    this.abortController = new AbortController();
+    const { signal } = this.abortController;
 
-    document.addEventListener("click", (e) => {
-      if (!e.target.closest(".search-container")) {
-        this.hideDropdown();
-      }
+    this.input.addEventListener("focus", () => this.showDropdown(), { signal });
+    this.input.addEventListener("input", () => this.updateDropdown(), {
+      signal,
     });
+
+    document.addEventListener(
+      "click",
+      (e) => {
+        if (!e.target.closest(".search-container")) {
+          this.hideDropdown();
+        }
+      },
+      { signal },
+    );
+  },
+
+  destroy() {
+    if (!this.abortController) return;
+    this.abortController.abort();
+    this.abortController = null;
   },
 
   loadRecent() {

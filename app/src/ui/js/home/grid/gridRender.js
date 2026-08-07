@@ -44,56 +44,85 @@ export const gridRender = {
     if (gridState.engineTooltipGrid === grid) return;
 
     gridState.engineTooltipGrid = grid;
-    grid.addEventListener("pointerover", (event) => {
-      const indicator = event.target.closest(".grid-engine-indicator");
-      if (!indicator || !grid.contains(indicator)) return;
-      const tooltip = gridState.engineTooltip;
-      if (!tooltip) return;
+    if (gridState.engineTooltipAbort) gridState.engineTooltipAbort.abort();
+    const abortController = new AbortController();
+    gridState.engineTooltipAbort = abortController;
+    const { signal } = abortController;
 
-      const labelKey = indicator.dataset.labelKey;
-      const text = labelKey ? t(labelKey) : indicator.dataset.label;
-      if (!text) return;
+    grid.addEventListener(
+      "pointerover",
+      (event) => {
+        const indicator = event.target.closest(".grid-engine-indicator");
+        if (!indicator || !grid.contains(indicator)) return;
+        const tooltip = gridState.engineTooltip;
+        if (!tooltip) return;
 
-      tooltip.textContent = text;
-      const rect = indicator.getBoundingClientRect();
-      const halfWidth = tooltip.offsetWidth / 2;
-      const left = Math.min(
-        Math.max(rect.left + rect.width / 2, halfWidth + 8),
-        window.innerWidth - halfWidth - 8,
-      );
-      const belowTop = rect.bottom + 8;
-      const top =
-        belowTop + tooltip.offsetHeight <= window.innerHeight - 8
-          ? belowTop
-          : rect.top - tooltip.offsetHeight - 8;
-      tooltip.style.left = `${left}px`;
-      tooltip.style.top = `${Math.max(8, top)}px`;
-      tooltip.classList.toggle("is-above", top < rect.top);
-      tooltip.classList.add("is-visible");
-    });
-    grid.addEventListener("pointerout", (event) => {
-      const indicator = event.target.closest(".grid-engine-indicator");
-      if (
-        indicator &&
-        !(
-          event.relatedTarget instanceof Node &&
-          indicator.contains(event.relatedTarget)
-        )
-      ) {
-        gridState.engineTooltip?.classList.remove("is-visible");
-      }
-    });
+        const labelKey = indicator.dataset.labelKey;
+        const text = labelKey ? t(labelKey) : indicator.dataset.label;
+        if (!text) return;
 
-    document.addEventListener("locale-changed", () => {
-      grid.querySelectorAll(".grid-engine-indicator").forEach((indicator) => {
-        if (indicator.dataset.labelKey) {
-          const text = t(indicator.dataset.labelKey);
-          indicator.dataset.label = text;
-          indicator.setAttribute("aria-label", text);
+        tooltip.textContent = text;
+        const rect = indicator.getBoundingClientRect();
+        const halfWidth = tooltip.offsetWidth / 2;
+        const left = Math.min(
+          Math.max(rect.left + rect.width / 2, halfWidth + 8),
+          window.innerWidth - halfWidth - 8,
+        );
+        const belowTop = rect.bottom + 8;
+        const top =
+          belowTop + tooltip.offsetHeight <= window.innerHeight - 8
+            ? belowTop
+            : rect.top - tooltip.offsetHeight - 8;
+        tooltip.style.left = `${left}px`;
+        tooltip.style.top = `${Math.max(8, top)}px`;
+        tooltip.classList.toggle("is-above", top < rect.top);
+        tooltip.classList.add("is-visible");
+      },
+      { signal },
+    );
+    grid.addEventListener(
+      "pointerout",
+      (event) => {
+        const indicator = event.target.closest(".grid-engine-indicator");
+        if (
+          indicator &&
+          !(
+            event.relatedTarget instanceof Node &&
+            indicator.contains(event.relatedTarget)
+          )
+        ) {
+          gridState.engineTooltip?.classList.remove("is-visible");
         }
-      });
-      gridState.engineTooltip?.classList.remove("is-visible");
-    });
+      },
+      { signal },
+    );
+
+    document.addEventListener(
+      "locale-changed",
+      () => {
+        grid.querySelectorAll(".grid-engine-indicator").forEach((indicator) => {
+          if (indicator.dataset.labelKey) {
+            const text = t(indicator.dataset.labelKey);
+            indicator.dataset.label = text;
+            indicator.setAttribute("aria-label", text);
+          }
+        });
+        gridState.engineTooltip?.classList.remove("is-visible");
+      },
+      { signal },
+    );
+  },
+
+  destroyEngineTooltip() {
+    if (gridState.engineTooltipAbort) {
+      gridState.engineTooltipAbort.abort();
+      gridState.engineTooltipAbort = null;
+    }
+    gridState.engineTooltipGrid = null;
+    if (gridState.engineTooltip) {
+      gridState.engineTooltip.remove();
+      gridState.engineTooltip = null;
+    }
   },
 
   async renderGrid(isInitial = false, pagesToLoad = 1) {

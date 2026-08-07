@@ -15,5 +15,6 @@ export const gridState = {
   featuredEngineIds: new Set(),
   engineTooltip: null,
   engineTooltipGrid: null,
+  engineTooltipAbort: null,
   status: "ready",
 };

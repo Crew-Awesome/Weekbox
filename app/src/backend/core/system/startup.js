@@ -13,6 +13,7 @@ import { registerEnginesView } from "../../../ui/js/engines/index.js";
 import { registerNewsView } from "../../../ui/js/news.js";
 import { downloadEngine } from "../../../ui/js/engines/downloadEngine.js";
 import { downloadMod } from "../../../ui/js/home/modal/downloadMod.js";
+import { engineUpdateService } from "../../../ui/js/engines/engineUpdateService.js";
 import { FS } from "../../services/filesystem.js";
 import { errorHandler } from "../../../ui/js/errors/errorHandler.js";
 import { appUpdateModal } from "../../../ui/js/updates/appUpdateModal.js";
@@ -203,16 +204,22 @@ async function handleStartupAppUpdate() {
     return false;
   }
   let update;
+  let timeoutHandle;
   try {
     update = await Promise.race([
       appUpdater.check(),
-      new Promise((_, reject) =>
-        setTimeout(() => reject(new Error("Update check timeout")), 3500),
-      ),
+      new Promise((_, reject) => {
+        timeoutHandle = setTimeout(
+          () => reject(new Error("Update check timeout")),
+          3500,
+        );
+      }),
     ]);
   } catch (error) {
     console.warn("Could not check for a WeekBox update during startup", error);
     return false;
+  } finally {
+    if (timeoutHandle) clearTimeout(timeoutHandle);
   }
   if (update?.status !== "available") return false;
   try {
@@ -262,21 +269,28 @@ async function startApp() {
     disableProductionRefreshShortcuts();
 
     const handleAppExit = async () => {
+      engineUpdateService.stopScheduledChecks();
+      let timeoutHandle;
       try {
         await Promise.race([
           Promise.allSettled([
             downloadEngine.cleanupAll?.(),
             downloadMod.cleanupAll?.(),
           ]),
-          new Promise((resolve) => setTimeout(resolve, 1500)),
+          new Promise((resolve) => {
+            timeoutHandle = setTimeout(resolve, 1500);
+          }),
         ]);
-      } catch {}
+      } catch {} finally {
+        if (timeoutHandle) clearTimeout(timeoutHandle);
+      }
       try {
         await Neutralino.app.exit();
       } catch {}
     };
 
     window.addEventListener("beforeunload", () => {
+      engineUpdateService.stopScheduledChecks();
       downloadEngine.cleanupAll?.().catch(() => {});
       downloadMod.cleanupAll?.().catch(() => {});
     });
@@ -287,10 +301,17 @@ async function startApp() {
     });
     startupLoader.setPhase(t("startup.loadingPreferences"), 20);
     startupStep = "restoring preferences";
-    await Promise.race([
-      storageBridge.init(),
-      new Promise((resolve) => setTimeout(resolve, 2000)),
-    ]);
+    {
+      let timeoutHandle;
+      await Promise.race([
+        storageBridge.init(),
+        new Promise((resolve) => {
+          timeoutHandle = setTimeout(resolve, 2000);
+        }),
+      ]).finally(() => {
+        if (timeoutHandle) clearTimeout(timeoutHandle);
+      });
+    }
     startupStep = "finding the default storage location";
     const defaultStoragePath = await FS.getDefaultStorageParentPath();
     const defaultDataPath = `${defaultStoragePath}/WeekBox/data`;
@@ -333,15 +354,29 @@ async function startApp() {
       onProgress: (message, progress) =>
         startupLoader.setPhase(message, progress),
     });
-    await Promise.race([
-      Promise.all([homeView.ready, modManagerReady]),
-      new Promise((resolve) => setTimeout(resolve, 8000)),
-    ]);
+    {
+      let timeoutHandle;
+      await Promise.race([
+        Promise.all([homeView.ready, modManagerReady]),
+        new Promise((resolve) => {
+          timeoutHandle = setTimeout(resolve, 8000);
+        }),
+      ]).finally(() => {
+        if (timeoutHandle) clearTimeout(timeoutHandle);
+      });
+    }
     startupLoader.setPhase(t("startup.checkingLibrary"), 89);
-    await Promise.race([
-      maintenance,
-      new Promise((resolve) => setTimeout(resolve, 5000)),
-    ]);
+    {
+      let timeoutHandle;
+      await Promise.race([
+        maintenance,
+        new Promise((resolve) => {
+          timeoutHandle = setTimeout(resolve, 5000);
+        }),
+      ]).finally(() => {
+        if (timeoutHandle) clearTimeout(timeoutHandle);
+      });
+    }
     await startupLoader.complete();
     await offerNestedStorageRepair();
     await openLaunchDeepLink();
