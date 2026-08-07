@@ -7,6 +7,37 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.0.6] - 2026-08-07
+
+### Added
+
+- Added a new loading screen with progress, artwork, version info, and engine update buttons.
+- Added a menu for choosing between mod download links.
+- Added engine release notes and clearer error reports.
+- Added more languages: French, Italian, Portuguese, Russian, Spanish (Spain), and Indonesian.
+- Added updates to the Home page, News page, Mod Manager, sidebar, search, carousel, menus, and popups.
+
+### Changed
+
+- WeekBox now opens faster while background checks keep running.
+- Improved page layouts, cards, filters, sorting, search, and offline pages.
+- Improved engine updates, settings, popups, messages, and translations.
+- Improved ZIP, 7Z, and RAR downloads, progress bars, extraction, retries, and file cleanup.
+- Improved GameBanana, Google Drive, and MediaFire link and file-size checks.
+
+### Fixed
+
+- Fixed Google Drive downloads falsely saying "quota exceeded."
+- Fixed large Google Drive downloads, confirmation pages, links, redirects, and cookies.
+- Fixed MediaFire links, downloads, extraction delays, and missing file sizes.
+- Fixed broken or incomplete archives, retries, temporary files, and Windows file errors.
+- Fixed engine updates, startup errors, the inspector, popups, carousel movement, sidebar layout, images, and memory problems.
+- Fixed language names, flags, search hints, and translated labels.
+
+### Removed
+
+- Removed unused helpers, old settings, duplicate menus, and old code paths.
+
 ## [2.0.5] - 2026-08-05
 
 ### Added
