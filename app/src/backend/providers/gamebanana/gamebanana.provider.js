@@ -311,10 +311,13 @@ export const gameBananaApi = {
         if (page.exitCode !== 0 && !page.stdOut) return { filename: null, size: 0 };
         pageSize = parseHumanFileSize(
           page.stdOut?.match(/File size:\s*<span>\s*([^<]+)<\/span>/i)?.[1] ||
-            page.stdOut?.match(/Download\s*\(([^)]+)\)/i)?.[1],
+            page.stdOut?.match(/Download\s*\(([^)]+)\)/i)?.[1] ||
+            page.stdOut?.match(
+              /(?:File size|Download)[\s\S]{0,80}?([\d.,]+\s*(?:B|KB|MB|GB|TB|K|M|G|T)\b)/i,
+            )?.[1],
         );
         downloadUrl = extractMediaFireDirectUrl(page.stdOut || "");
-        if (!downloadUrl) return { filename: null, size: 0 };
+        if (!downloadUrl) return { filename: null, size: pageSize };
       } else if (hostname !== "github.com") {
         return { filename: null, size: 0 };
       }
