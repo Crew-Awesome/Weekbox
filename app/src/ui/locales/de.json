@@ -248,7 +248,7 @@
   "sidebar.stop": "Stop",
   "sidebar.collapse": "Seitenleiste einklappen",
   "sidebar.expand": "Seitenleiste ausklappen",
-  "sidebar.resize": "Seitenleiste vergrlängern/verkürzen",
+  "sidebar.resize": "Größe der Seitenleiste verändern",
   "network.online": "Online",
   "network.offline": "Offline",
   "network.connectToBrowseEngines": "Mit dem Internet verbinden, um nach Engine-Releases zu suchen",
