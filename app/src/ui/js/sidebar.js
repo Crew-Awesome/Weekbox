@@ -18,12 +18,12 @@ const SIDEBAR_WIDTH_KEY = "weekbox_sidebar_width";
 const SIDEBAR_COLLAPSED_KEY = "weekbox_sidebar_collapsed";
 const MIN_SIDEBAR_WIDTH = 200;
 const MAX_SIDEBAR_WIDTH = 500;
+const sectionResizerControllers = new WeakMap();
 
 export const sidebar = {
   updateEngineMarquee(button) {
     const container = button.querySelector(".sidebar__marquee-container");
-    const label = button.querySelector(".sidebar__marquee-text");
-    if (!container || !label) return;
+    const label = button.querySelector(".sidebar__marquee-text");    if (!container || !label) return;
     requestAnimationFrame(() => {
       const distance = Math.max(0, label.scrollWidth - container.clientWidth);
       label.classList.toggle(
@@ -206,6 +206,8 @@ export const sidebar = {
     const after = document.getElementById(handle.dataset.after);
     if (!before || !after) return;
     handle.dataset.sectionResizerReady = "true";
+    const abortController = new AbortController();
+    sectionResizerControllers.set(handle, abortController);
     const storageKey = `weekbox_sidebar_section_height_${before.id}`;
     try {
       const savedHeight = Number(localStorage.getItem(storageKey));
@@ -250,29 +252,46 @@ export const sidebar = {
       this.sectionResize.handle.classList.remove(
         "sidebar__section-resizer--resizing",
       );
+      if (this.sectionResize.lastHeight != null) {
+        try {
+          localStorage.setItem(
+            storageKey,
+            String(Math.round(this.sectionResize.lastHeight)),
+          );
+        } catch {}
+      }
       this.sectionResize = null;
       document.body.style.cursor = "";
     };
-    document.addEventListener("pointermove", (event) => {
-      const resize = this.sectionResize;
-      if (!resize) return;
-      const available =
-        resize.before.getBoundingClientRect().height +
-        resize.after.getBoundingClientRect().height;
-      const minHeight = 96;
-      const height = Math.min(
-        available - minHeight,
-        Math.max(minHeight, resize.startHeight + event.clientY - resize.startY),
-      );
-      resize.before.style.flex = `0 0 ${height}px`;
-      resize.handle.setAttribute("aria-valuenow", String(Math.round(height)));
-      try {
-        localStorage.setItem(storageKey, String(Math.round(height)));
-      } catch {}
-      this.refreshEngineMarquees();
+    document.addEventListener(
+      "pointermove",
+      (event) => {
+        const resize = this.sectionResize;
+        if (!resize) return;
+        const available =
+          resize.before.getBoundingClientRect().height +
+          resize.after.getBoundingClientRect().height;
+        const minHeight = 96;
+        const height = Math.min(
+          available - minHeight,
+          Math.max(
+            minHeight,
+            resize.startHeight + event.clientY - resize.startY,
+          ),
+        );
+        resize.before.style.flex = `0 0 ${height}px`;
+        resize.handle.setAttribute("aria-valuenow", String(Math.round(height)));
+        resize.lastHeight = height;
+        this.refreshEngineMarquees();
+      },
+      { signal: abortController.signal },
+    );
+    document.addEventListener("pointerup", stopSectionResize, {
+      signal: abortController.signal,
     });
-    document.addEventListener("pointerup", stopSectionResize);
-    document.addEventListener("pointercancel", stopSectionResize);
+    document.addEventListener("pointercancel", stopSectionResize, {
+      signal: abortController.signal,
+    });
   },
   setActive(button) {
     const buttons = [

@@ -190,6 +190,8 @@ var _ProcessService = class _ProcessService {
   }
   monitor(key, pid) {
     const trackedProcess = this.activeProcesses.get(key);
+    const previous = this.processMonitors.get(key);
+    if (previous) window.clearInterval(previous);
     let checking = false;
     const monitor = window.setInterval(async () => {
       if (checking || this.activeProcesses.get(key) !== trackedProcess) return;
@@ -298,6 +300,7 @@ var _ProcessService = class _ProcessService {
       process.metadata = { ...metadata, executablePath };
       this.activeProcesses.set(key, process);
       this.remember(key, process, process.metadata);
+      args.length = 0;
       this.notifyStateChange(key, "launched");
       await this.watchOrMonitor(key, process, onStateChange);
       onStateChange?.("launched");

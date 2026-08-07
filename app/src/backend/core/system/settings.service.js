@@ -180,10 +180,16 @@ appSettings = {
     if (!this.path) return;
     const contents = `${JSON.stringify(this.document, null, 2)}
 `;
-    this.writeQueue = this.writeQueue
+    const previous = this.writeQueue;
+    const next = previous
       .catch(() => {})
       .then(() => Neutralino.filesystem.writeFile(this.path, contents));
-    return this.writeQueue;
+    const settled = next.catch(() => {});
+    this.writeQueue = settled;
+    settled.finally(() => {
+      if (this.writeQueue === settled) this.writeQueue = Promise.resolve();
+    });
+    return next;
   },
 };
 

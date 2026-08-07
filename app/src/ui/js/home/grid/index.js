@@ -47,5 +47,6 @@ export const homeGrid = {
   destroy() {
     scrollManager.remove();
     filterManager.remove();
+    gridRender.destroyEngineTooltip();
   },
 };

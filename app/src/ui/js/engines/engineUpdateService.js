@@ -124,10 +124,17 @@ export const engineUpdateService = {
       void this.checkForUpdatesInBackground();
     }
     scheduledCheck = setInterval(() => {
+      if (!networkStatus.online) return;
       if (appSettings.get("checkUpdatesInBackground")) {
         void this.checkForUpdatesInBackground();
       }
     }, AUTO_CHECK_INTERVAL_MS);
+  },
+
+  stopScheduledChecks() {
+    if (!scheduledCheck) return;
+    clearInterval(scheduledCheck);
+    scheduledCheck = null;
   },
 
   async checkForUpdatesInBackground() {
