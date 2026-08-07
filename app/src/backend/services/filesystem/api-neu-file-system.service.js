@@ -111,17 +111,45 @@ var APIneuFileSystem = {
    */
   async remove(path) {
     if (typeof path !== "string" || !path.trim()) return;
-    const exists = await this.exists(path);
-    if (exists) {
+    const normalizedPath = String(path).replace(/\\/g, "/");
+    const exists = await this.exists(normalizedPath);
+    if (!exists) return;
+
+    try {
+      await Neutralino.filesystem.remove(normalizedPath);
+      return;
+    } catch (error) {
+      // Native remove can fail if path is a non-empty directory
+    }
+
+    if (await this.exists(normalizedPath)) {
       try {
-        await Neutralino.filesystem.remove(path);
+        const isWin = window.NL_OS === "Windows";
+        const command = isWin
+          ? `cmd /c rmdir /S /Q "${normalizedPath.replace(/\//g, "\\")}"`
+          : `rm -rf "${normalizedPath}"`;
+        const result = await Neutralino.os.execCommand(command, {
+          background: false,
+        });
+        if (result?.exitCode === 0 || !(await this.exists(normalizedPath))) {
+          return;
+        }
+      } catch (cmdError) {
+        console.warn("Recursive removal fallback failed:", cmdError);
+      }
+    }
+
+    if (await this.exists(normalizedPath)) {
+      await new Promise((r) => setTimeout(r, 200));
+      try {
+        await Neutralino.filesystem.remove(normalizedPath);
       } catch (error) {
-        // A concurrent cleanup may remove the path between exists() and remove().
         if (
-          (await this.exists(path)) ||
+          (await this.exists(normalizedPath)) ||
           /access|permission|denied/i.test(String(error?.message || error))
-        )
+        ) {
           throw error;
+        }
       }
     }
   },

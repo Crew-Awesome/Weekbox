@@ -264,11 +264,21 @@ export const gridRender = {
 
   showLoadMoreIndicator(grid) {
     if (grid.querySelector(".chunk-loader")) return;
+    const tpl = document.getElementById("tpl-grid-chunk-loader");
+    if (tpl) {
+      grid.appendChild(tpl.content.cloneNode(true));
+      return;
+    }
     const loader = document.createElement("div");
     loader.className = "chunk-loader";
     loader.setAttribute("role", "status");
     loader.setAttribute("aria-live", "polite");
-    loader.innerHTML = `<i class="fa-solid fa-spinner fa-spin" aria-hidden="true"></i><span>${t("home.loadingMoreMods")}</span>`;
+    const icon = document.createElement("i");
+    icon.className = "fa-solid fa-spinner fa-spin";
+    icon.setAttribute("aria-hidden", "true");
+    const span = document.createElement("span");
+    span.textContent = t("home.loadingMoreMods");
+    loader.append(icon, span);
     grid.appendChild(loader);
   },
 

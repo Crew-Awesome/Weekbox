@@ -1,3 +1,5 @@
+import { i18n } from "../i18n/index.js";
+
 const ALLOWED_TAGS = new Set([
   "a",
   "b",

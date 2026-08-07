@@ -8,7 +8,7 @@ import { modsMaster } from "./modsMasterClass.js";
 import { rememberInstalledEngineBuild } from "./engineUpdateService.js";
 import { engineInstallToast } from "./engineInstallToast.js";
 import { appSettings } from "../../../backend/core/system/settings.service.js";
-import { localizeProgressStatus, t } from "../i18n/index.js";
+import { i18n, localizeProgressStatus, t } from "../i18n/index.js";
 
 export const enginesView = {
   async init() {

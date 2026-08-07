@@ -227,11 +227,110 @@ async function handleStartupAppUpdate() {
   return await appUpdateModal.show(update);
 }
 
+function patchNeutralinoMessageBox() {
+  if (typeof Neutralino === "undefined" || !Neutralino.os?.showMessageBox) return;
+  if (Neutralino.os._origShowMessageBox) return;
+  Neutralino.os._origShowMessageBox = Neutralino.os.showMessageBox;
+  Neutralino.os.showMessageBox = async function (
+    title,
+    content,
+    choice = "OK",
+    icon = "INFO",
+  ) {
+    let normalizedChoice = String(choice || "OK").toUpperCase().trim();
+    let normalizedIcon = String(icon || "INFO").toUpperCase().trim();
+
+    const choiceMap = {
+      ACEPTAR: "OK",
+      OK: "OK",
+      SI: "YES_NO",
+      SÍ: "YES_NO",
+      YES: "YES_NO",
+      CANCELAR: "OK_CANCEL",
+      CANCEL: "OK_CANCEL",
+      ERROR: "OK",
+      INFO: "OK",
+      WARNING: "OK",
+      WARN: "OK",
+      QUESTION: "YES_NO",
+    };
+
+    if (choiceMap[normalizedChoice]) {
+      if (
+        ["ERROR", "INFO", "WARNING", "WARN", "QUESTION"].includes(
+          normalizedChoice,
+        )
+      ) {
+        normalizedIcon =
+          normalizedChoice === "WARN" ? "WARNING" : normalizedChoice;
+      }
+      normalizedChoice = choiceMap[normalizedChoice];
+    }
+
+    const validChoices = new Set([
+      "OK",
+      "OK_CANCEL",
+      "YES_NO",
+      "YES_NO_CANCEL",
+      "RETRY_CANCEL",
+      "ABORT_RETRY_IGNORE",
+    ]);
+    if (!validChoices.has(normalizedChoice)) {
+      normalizedChoice = "OK";
+    }
+
+    const validIcons = new Set([
+      "INFO",
+      "WARN",
+      "WARNING",
+      "ERROR",
+      "QUESTION",
+    ]);
+    if (!validIcons.has(normalizedIcon)) {
+      normalizedIcon = "INFO";
+    }
+
+    try {
+      return await Neutralino.os._origShowMessageBox.call(
+        Neutralino.os,
+        String(title ?? ""),
+        String(content ?? ""),
+        normalizedChoice,
+        normalizedIcon,
+      );
+    } catch (err) {
+      console.warn("Neutralino.os.showMessageBox fallback to alert/confirm:", err);
+      if (typeof window !== "undefined") {
+        if (
+          normalizedChoice === "YES_NO" ||
+          normalizedChoice === "OK_CANCEL"
+        ) {
+          const res = window.confirm(
+            `${title ? title + "\n\n" : ""}${content}`,
+          );
+          return res
+            ? normalizedChoice === "YES_NO"
+              ? "YES"
+              : "OK"
+            : normalizedChoice === "YES_NO"
+              ? "NO"
+              : "CANCEL";
+        } else {
+          window.alert(`${title ? title + "\n\n" : ""}${content}`);
+          return "OK";
+        }
+      }
+      return "OK";
+    }
+  };
+}
+
 async function startApp() {
   let startupStep = "starting native services";
   try {
     startupLoader.setPhase(t("startup.startingServices"), 8);
     Neutralino.init();
+    patchNeutralinoMessageBox();
     void startupLoader.initVersion();
     networkStatus.init();
     await Neutralino.window.focus().catch(() => {});
@@ -325,7 +424,12 @@ async function startApp() {
     registerHomeView();
     registerEnginesView();
     registerNewsView();
-    await router.init();
+    await Promise.race([
+      router.init(),
+      new Promise((_, reject) =>
+        setTimeout(() => reject(new Error("Loading navigation interface timed out")), 8000),
+      ),
+    ]);
     startupLoader.setPhase(t("startup.preparingModManager"), 70);
     const modManagerReady = modManagerModal.preload();
     startupLoader.setPhase(t("startup.loadingHome"), 72);

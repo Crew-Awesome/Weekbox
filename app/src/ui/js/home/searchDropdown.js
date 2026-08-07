@@ -61,7 +61,7 @@ export const homeSearchDropdown = {
     if (!this.input || !this.dropdown) return;
     const suggestionVersion = ++this.suggestionVersion;
     const query = this.input.value.trim().toLowerCase();
-    this.dropdown.innerHTML = "";
+    this.dropdown.replaceChildren();
 
     let filteredRecent = this.recentSearches;
     if (query) {
@@ -84,18 +84,53 @@ export const homeSearchDropdown = {
 
       const relatedSection = document.createElement("div");
       relatedSection.className = "dropdown-section";
-      relatedSection.innerHTML = `<div class="dropdown-title">${t("search.related")}</div><div class="dropdown-item" style="cursor:default;"><i class="fa-solid fa-spinner fa-spin"></i> ${t("common.loading")}</div>`;
+      const relTitle = document.createElement("div");
+      relTitle.className = "dropdown-title";
+      relTitle.textContent = t("search.related");
+      const loadingTpl = document.getElementById("tpl-search-loading-item");
+      let loadingItem;
+      if (loadingTpl) {
+        loadingItem = loadingTpl.content.firstElementChild.cloneNode(true);
+      } else {
+        loadingItem = document.createElement("div");
+        loadingItem.className = "dropdown-item";
+        loadingItem.style.cursor = "default";
+        const spinIcon = document.createElement("i");
+        spinIcon.className = "fa-solid fa-spinner fa-spin";
+        const loadingText = document.createTextNode(" " + t("common.loading"));
+        loadingItem.append(spinIcon, loadingText);
+      }
+      relatedSection.append(relTitle, loadingItem);
       this.dropdown.appendChild(relatedSection);
 
       this.fetchTimeout = setTimeout(async () => {
         const related = await this.fetchRelated(query);
         if (suggestionVersion !== this.suggestionVersion) return;
         if (related.length > 0) {
-          relatedSection.innerHTML = `<div class="dropdown-title">${t("search.relatedSuggestions")}</div>`;
+          relatedSection.replaceChildren();
+          const suggestionsTitle = document.createElement("div");
+          suggestionsTitle.className = "dropdown-title";
+          suggestionsTitle.textContent = t("search.relatedSuggestions");
+          relatedSection.appendChild(suggestionsTitle);
+
+          const itemTpl = document.getElementById("tpl-search-item");
           related.forEach((title) => {
-            const item = document.createElement("div");
-            item.className = "dropdown-item";
-            item.innerHTML = `<i class="fa-solid fa-magnifying-glass"></i> <span>${title}</span>`;
+            let item;
+            if (itemTpl) {
+              item = itemTpl.content.firstElementChild.cloneNode(true);
+              const iconEl = item.querySelector("i");
+              if (iconEl) iconEl.className = "fa-solid fa-magnifying-glass";
+              const textSpan = item.querySelector(".search-item-text") || item.querySelector("span");
+              if (textSpan) textSpan.textContent = title;
+            } else {
+              item = document.createElement("div");
+              item.className = "dropdown-item";
+              const iconEl = document.createElement("i");
+              iconEl.className = "fa-solid fa-magnifying-glass";
+              const textSpan = document.createElement("span");
+              textSpan.textContent = title;
+              item.append(iconEl, document.createTextNode(" "), textSpan);
+            }
             item.addEventListener("click", () => {
               this.input.value = title;
               this.hideDropdown();
@@ -109,8 +144,17 @@ export const homeSearchDropdown = {
       }, 500);
     }
 
-    if (this.dropdown.innerHTML === "") {
-      this.dropdown.innerHTML = `<div class="dropdown-item empty-state">${t("search.noRecent")}</div>`;
+    if (!this.dropdown.hasChildNodes()) {
+      const emptyTpl = document.getElementById("tpl-search-empty-state");
+      if (emptyTpl) {
+        this.dropdown.appendChild(emptyTpl.content.cloneNode(true));
+      } else {
+        const emptyItem = document.createElement("div");
+        emptyItem.className = "dropdown-item empty-state";
+        emptyItem.dataset.i18n = "search.noRecent";
+        emptyItem.textContent = t("search.noRecent");
+        this.dropdown.appendChild(emptyItem);
+      }
     }
   },
 
@@ -128,26 +172,54 @@ export const homeSearchDropdown = {
   renderSection(title, items, icon, removable = false) {
     const section = document.createElement("div");
     section.className = "dropdown-section";
-    section.innerHTML = `<div class="dropdown-title">${title}</div>`;
+    const titleEl = document.createElement("div");
+    titleEl.className = "dropdown-title";
+    titleEl.textContent = title;
+    section.appendChild(titleEl);
+
+    const itemTpl = document.getElementById("tpl-search-item");
+    const removeBtnTpl = document.getElementById("tpl-search-remove-btn");
 
     items.forEach((text) => {
-      const item = document.createElement("div");
-      item.className = "dropdown-item";
-      item.innerHTML = `<i class="fa-solid ${icon}"></i> <span>${text}</span>`;
+      let item;
+      if (itemTpl) {
+        item = itemTpl.content.firstElementChild.cloneNode(true);
+        const iconEl = item.querySelector("i");
+        if (iconEl) iconEl.className = `fa-solid ${icon}`;
+        const textSpan = item.querySelector(".search-item-text") || item.querySelector("span");
+        if (textSpan) textSpan.textContent = text;
+      } else {
+        item = document.createElement("div");
+        item.className = "dropdown-item";
+        const iconEl = document.createElement("i");
+        iconEl.className = `fa-solid ${icon}`;
+        const textSpan = document.createElement("span");
+        textSpan.textContent = text;
+        item.append(iconEl, document.createTextNode(" "), textSpan);
+      }
+
       item.addEventListener("click", () => {
         this.input.value = text;
         this.hideDropdown();
         homeSearch.executeSearch(text);
       });
+
       if (removable) {
-        const removeButton = document.createElement("button");
-        removeButton.className = "history-remove";
-        removeButton.type = "button";
+        let removeButton;
+        if (removeBtnTpl) {
+          removeButton = removeBtnTpl.content.firstElementChild.cloneNode(true);
+        } else {
+          removeButton = document.createElement("button");
+          removeButton.className = "history-remove";
+          removeButton.type = "button";
+          const xIcon = document.createElement("i");
+          xIcon.className = "fa-solid fa-xmark";
+          removeButton.appendChild(xIcon);
+        }
         removeButton.setAttribute(
           "aria-label",
           t("search.removeFromHistory", { text }),
         );
-        removeButton.innerHTML = '<i class="fa-solid fa-xmark"></i>';
         removeButton.addEventListener("click", (event) => {
           event.stopPropagation();
           this.removeRecent(text);

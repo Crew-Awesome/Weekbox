@@ -7,8 +7,6 @@
   width: 100%;
   position: relative;
   text-align: left;
-  mask-image: linear-gradient(to right, black 85%, transparent 100%);
-  -webkit-mask-image: linear-gradient(to right, black 85%, transparent 100%);
 }
 
 .marquee-text {

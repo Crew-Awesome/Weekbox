@@ -32,13 +32,25 @@ function isExcludedExecutable(fileName) {
 }
 
 var _ExecutableService = class _ExecutableService {
+  constructor() {
+    this.cache = new Map();
+  }
+
   async find(dir) {
+    if (!dir) return null;
+    const normalizedDir = String(dir).replace(/\\/g, "/").replace(/\/+$/, "");
+    if (this.cache.has(normalizedDir)) {
+      return this.cache.get(normalizedDir);
+    }
+
     this.lastError = null;
     const isWindows = window.NL_OS === "Windows";
     const isMacOS = window.NL_OS === "Darwin";
-    const directories = [dir];
-    while (directories.length > 0) {
-      const currentDir = directories.pop();
+    const queue = [{ path: normalizedDir, depth: 0 }];
+    const MAX_DEPTH = 3;
+
+    while (queue.length > 0) {
+      const { path: currentDir, depth } = queue.shift();
       try {
         const entries = getRealEntries(
           await Neutralino.filesystem.readDirectory(currentDir),
@@ -63,19 +75,29 @@ var _ExecutableService = class _ExecutableService {
                     appEntry.entry === bundleExecutable &&
                     !isExcludedExecutable(appEntry.entry),
                 );
-                if (executable) return `${macOSDirectory}/${executable.entry}`;
+                if (executable) {
+                  const result = `${macOSDirectory}/${executable.entry}`;
+                  this.cache.set(normalizedDir, result);
+                  return result;
+                }
                 const fallback = appEntries.find(
                   (appEntry) =>
                     String(appEntry.type).toUpperCase() === "FILE" &&
                     !appEntry.entry.includes(".") &&
                     !isExcludedExecutable(appEntry.entry),
                 );
-                if (fallback) return `${macOSDirectory}/${fallback.entry}`;
+                if (fallback) {
+                  const result = `${macOSDirectory}/${fallback.entry}`;
+                  this.cache.set(normalizedDir, result);
+                  return result;
+                }
               } catch (error) {
                 this.lastError = describeFileSystemError(error);
               }
             }
-            directories.push(fullPath);
+            if (depth < MAX_DEPTH) {
+              queue.push({ path: fullPath, depth: depth + 1 });
+            }
             continue;
           }
           if (
@@ -86,25 +108,25 @@ var _ExecutableService = class _ExecutableService {
               entry.entry !== "CodeResources" &&
               !isExcludedExecutable(entry.entry))
           ) {
+            this.cache.set(normalizedDir, fullPath);
             return fullPath;
           }
         }
       } catch (error) {
         this.lastError = describeFileSystemError(error);
-        console.warn(
-          "Could not inspect engine directory:",
-          currentDir,
-          this.lastError,
-        );
       }
     }
     if (isWindows) {
       try {
-        const result = await Neutralino.os.execCommand(
-          `where.exe /r "${dir.replace(/\//g, "\\")}" *.exe`,
+        const cmdPromise = Neutralino.os.execCommand(
+          `where.exe /r "${normalizedDir.replace(/\//g, "\\")}" *.exe`,
           { background: false },
         );
-        if (result.exitCode === 0) {
+        const result = await Promise.race([
+          cmdPromise,
+          new Promise((resolve) => setTimeout(() => resolve(null), 1500)),
+        ]);
+        if (result && result.exitCode === 0) {
           const paths = (result.stdOut || "")
             .split(/\r?\n/)
             .map((path) => path.trim())
@@ -112,7 +134,9 @@ var _ExecutableService = class _ExecutableService {
           for (const path of paths) {
             const fileName = path.split(/[\\/]/).pop();
             if (!isExcludedExecutable(fileName)) {
-              return path;
+              const res = path.replace(/\\/g, "/");
+              this.cache.set(normalizedDir, res);
+              return res;
             }
           }
         }
@@ -120,6 +144,7 @@ var _ExecutableService = class _ExecutableService {
         console.warn("Could not search for a Windows executable:", dir, error);
       }
     }
+    this.cache.set(normalizedDir, null);
     return null;
   }
   getLastError() {

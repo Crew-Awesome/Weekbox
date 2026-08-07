@@ -54,6 +54,7 @@ export const sidebar = {
     this.applySavedWidth();
     this.setupCollapse();
     this.setupCollapsibleSections();
+    this.setupSectionResizer(document.getElementById("standalone-mods-resizer"));
     this.setupResizer();
     this.setupNavigation();
     this.viewChangeListener = (event) => this.syncActive(event.detail);
@@ -187,6 +188,16 @@ export const sidebar = {
           localStorage.setItem(key, String(section.open));
         } catch {}
       });
+      section.addEventListener(
+        "wheel",
+        (e) => {
+          const wrapper = section.querySelector(".sidebar__wrapper");
+          if (wrapper && !wrapper.contains(e.target)) {
+            wrapper.scrollTop += e.deltaY;
+          }
+        },
+        { passive: true },
+      );
     });
   },
   setupSectionResizer(handle) {
@@ -355,8 +366,8 @@ export const sidebar = {
       "title",
       networkStatus.online ? t("network.online") : t("network.offline"),
     );
-    await this.loadEngines();
-    await this.loadStandaloneMods();
+    await this.loadEngines().catch((e) => console.warn("Could not load engines", e));
+    void this.loadStandaloneMods().catch((e) => console.warn("Could not load standalone mods", e));
     if (networkStatus.online) engineUpdateService.startScheduledChecks();
     if (!networkStatus.online && router.currentViewId === "engines") {
       await router.navigate("home");
@@ -465,62 +476,33 @@ export const sidebar = {
   },
   async loadStandaloneMods() {
     if (!FS.isInitialized) return;
-    const existingContainer = document.getElementById(
-      "standalone-mods-container",
-    );
-    if (existingContainer) existingContainer.remove();
-    document.getElementById("standalone-mods-resizer")?.remove();
-    const existingWrapper = document.getElementById("standalone-mods-wrapper");
-    const existingDivider = document.getElementById("standalone-mods-divider");
-    const existingTitle = document.getElementById("standalone-mods-title");
-    if (existingWrapper) existingWrapper.remove();
-    if (existingDivider) existingDivider.remove();
-    if (existingTitle) existingTitle.remove();
+    const container = document.getElementById("standalone-mods-container");
+    const wrapper = document.getElementById("standalone-mods-wrapper");
+    const resizer = document.getElementById("standalone-mods-resizer");
+    if (!container || !wrapper) return;
+
+    wrapper.innerHTML = "";
     const allStandaloneMods = await FS.getStandaloneMods();
     const standaloneMods = allStandaloneMods.filter((mod) => !mod.hidden);
-    if (standaloneMods.length === 0) return;
-    const sidebarNav = document.querySelector(".sidebar__nav");
-    if (!sidebarNav) return;
-    const container = document.createElement("details");
-    container.className = "sidebar__section sidebar__list";
-    container.id = "standalone-mods-container";
-    container.dataset.sectionKey = "standalone-mods";
-    container.open = true;
-    const divider = document.createElement("div");
-    divider.className = "sidebar__divider";
-    container.appendChild(divider);
-    const sectionToggle = document.createElement("summary");
-    sectionToggle.className = "sidebar__section-toggle";
-    sectionToggle.innerHTML = `
-      <span><i class="fa-solid fa-puzzle-piece" aria-hidden="true"></i><span>${t("sidebar.standaloneMods")}</span></span>
-      <i class="fa-solid fa-chevron-down" aria-hidden="true"></i>
-    `;
-    container.appendChild(sectionToggle);
-    const wrapper = document.createElement("div");
-    wrapper.className = "sidebar__wrapper";
-    wrapper.id = "standalone-mods-wrapper";
-    container.appendChild(wrapper);
-    const sectionResizer = document.createElement("div");
-    sectionResizer.className = "sidebar__section-resizer";
-    sectionResizer.id = "standalone-mods-resizer";
-    sectionResizer.dataset.before = "engines-container";
-    sectionResizer.dataset.after = "standalone-mods-container";
-    sectionResizer.setAttribute("role", "separator");
-    sectionResizer.setAttribute("aria-orientation", "horizontal");
-    sectionResizer.setAttribute("aria-valuemin", "96");
-    sectionResizer.setAttribute("aria-label", t("sidebar.resize"));
-    sectionResizer.title = t("sidebar.resize");
-    sidebarNav.appendChild(sectionResizer);
-    sidebarNav.appendChild(container);
+
+    if (standaloneMods.length === 0) {
+      container.style.display = "none";
+      if (resizer) resizer.style.display = "none";
+      return;
+    }
+
+    container.style.display = "";
+    if (resizer) resizer.style.display = "";
     this.setupCollapsibleSections(container);
-    this.setupSectionResizer(sectionResizer);
+    if (resizer) this.setupSectionResizer(resizer);
+
     for (const mod of standaloneMods) {
       const btn = document.createElement("button");
       btn.className =
         "sidebar__btn sidebar__engine-btn sidebar__standalone-btn";
       const iconSrc =
         mod.icoPath ||
-        "data:image/svg+xml;utf8,<svg xmlns=\\'http://www.w3.org/2000/svg\\' viewBox=\\'0 0 512 512\\'><path fill=\\'%23888\\' d=\\'M448 32H64C28.65 32 0 60.65 0 96v320c0 35.35 28.65 64 64 64h384c35.35 0 64-28.65 64-64V96C512 60.65 483.3 32 448 32zM212.7 222.7L132.7 302.7C126.4 308.9 118.2 312 110.1 312s-16.38-3.125-22.62-9.375c-12.5-12.5-12.5-32.75 0-45.25L155.3 189.3l-67.88-67.88c-12.5-12.5-12.5-32.75 0-45.25s32.75-12.5 45.25 0l102.6 102.6C247.7 191.3 247.7 210.2 212.7 222.7zM384 320c-17.67 0-32-14.33-32-32s14.33-32 32-32h32c17.67 0 32 14.33 32 32s-14.33 32-32 32H384z\\'/></svg>";
+        "data:image/svg+xml;utf8,<svg xmlns=\\'http://www.w3.org/2000/svg\\' viewBox=\\'0 0 512 512\\'><path fill=\\'%23888\\' d=\\'M448 32H64C28.65 32 0 60.65 0 96v320c0 35.35 28.65 64 64 64h384c35.35 0 64-28.65 64-64V96C512 60.65 483.3 32 448 32zM212.7 222.7L132.7 302.7C126.4 308.9 118.2 312 110.1 312s-16.38-3.125-22.62-9.375c-12.5-12.5-12.5-32.75 0-45.25L155.3 189.3l-67.88-67.88c-12.5-12.5-12.5-32.75 0-45.25s32.75-32.75 45.25 0l102.6 102.6C247.7 191.3 247.7 210.2 212.7 222.7zM384 320c-17.67 0-32-14.33-32-32s14.33-32 32-32h32c17.67 0 32 14.33 32 32s-14.33 32-32 32H384z\\'/></svg>";
       btn.innerHTML = `
         <img src="${iconSrc}" class="sidebar__engine-icon" onerror="this.onerror=null; this.src='data:image/svg+xml;utf8,<svg xmlns=\\'http://www.w3.org/2000/svg\\' viewBox=\\'0 0 512 512\\'><path fill=\\'%23888\\' d=\\'M448 32H64C28.65 32 0 60.65 0 96v320c0 35.35 28.65 64 64 64h384c35.35 0 64-28.65 64-64V96C512 60.65 483.3 32 448 32zM212.7 222.7L132.7 302.7C126.4 308.9 118.2 312 110.1 312s-16.38-3.125-22.62-9.375c-12.5-12.5-12.5-32.75 0-45.25L155.3 189.3l-67.88-67.88c-12.5-12.5-12.5-32.75 0-45.25s32.75-32.75 45.25 0l102.6 102.6C247.7 191.3 247.7 210.2 212.7 222.7zM384 320c-17.67 0-32-14.33-32-32s14.33-32 32-32h32c17.67 0 32 14.33 32 32s-14.33 32-32 32H384z\\'/></svg>'">
         <div class="sidebar__marquee-container"><span class="sidebar__marquee-text">${mod.name}</span></div>

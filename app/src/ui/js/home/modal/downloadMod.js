@@ -13,6 +13,14 @@ import { toastDownloadMod } from "./toastDownloadMod.js";
 import { errorHandler } from "../../errors/errorHandler.js";
 import { t } from "../../i18n/index.js";
 
+function setModalButtonState(btn, iconClass, text, disabled) {
+  if (!btn) return;
+  btn.disabled = disabled;
+  const icon = document.createElement("i");
+  icon.className = iconClass;
+  btn.replaceChildren(icon, document.createTextNode(" " + text));
+}
+
 export const downloadMod = {
   activeTasks: new Map(),
 
@@ -128,8 +136,12 @@ export const downloadMod = {
           modalBtn &&
           document.getElementById("mod-modal")?.classList.contains("show")
         ) {
-          modalBtn.disabled = false;
-          modalBtn.innerHTML = `<i class="fa-solid fa-download"></i> ${t("common.download")}`;
+          setModalButtonState(
+            modalBtn,
+            "fa-solid fa-download",
+            t("common.download"),
+            false,
+          );
         }
       }, 600);
     }
@@ -209,8 +221,12 @@ export const downloadMod = {
         modalBtn &&
         document.getElementById("mod-modal")?.classList.contains("show")
       ) {
-        modalBtn.disabled = true;
-        modalBtn.innerHTML = `<i class="fa-solid fa-check"></i> ${t("modModal.alreadyInstalled")}`;
+        setModalButtonState(
+          modalBtn,
+          "fa-solid fa-check",
+          t("modModal.alreadyInstalled"),
+          true,
+        );
       }
       return true;
     }
@@ -462,8 +478,12 @@ export const downloadMod = {
         modalBtn &&
         document.getElementById("mod-modal")?.classList.contains("show")
       ) {
-        modalBtn.disabled = true;
-        modalBtn.innerHTML = `<i class="fa-solid fa-check"></i> ${t("modModal.alreadyInstalled")}`;
+        setModalButtonState(
+          modalBtn,
+          "fa-solid fa-check",
+          t("modModal.alreadyInstalled"),
+          true,
+        );
       }
       this.activeTasks.delete(modId);
       return true;

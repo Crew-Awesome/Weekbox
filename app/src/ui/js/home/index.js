@@ -5,7 +5,7 @@ import { homeSearch } from "./search.js";
 import { homeSearchDropdown } from "./searchDropdown.js";
 import { homeScroll } from "./homeScroll.js";
 import { networkStatus } from "../../../backend/core/system/network-status.service.js";
-import { t } from "../i18n/index.js";
+import { i18n, t } from "../i18n/index.js";
 
 export const homeView = {
   hasVisited: false,
@@ -39,14 +39,25 @@ export const homeView = {
     const container = document.querySelector(".home-container");
     if (!container) return;
     container.replaceChildren();
+    const tpl = document.getElementById("tpl-home-offline-panel");
+    if (tpl) {
+      container.appendChild(tpl.content.cloneNode(true));
+      i18n.apply(container);
+      return;
+    }
     const panel = document.createElement("section");
     panel.className = "home-offline-panel";
     panel.setAttribute("role", "status");
-    panel.innerHTML = `
-      <i class="fa-solid fa-wifi" aria-hidden="true"></i>
-      <h2>${t("network.youAreOffline")}</h2>
-      <p>${t("network.offlineDetails")}</p>
-    `;
+    const icon = document.createElement("i");
+    icon.className = "fa-solid fa-wifi";
+    icon.setAttribute("aria-hidden", "true");
+    const h2 = document.createElement("h2");
+    h2.dataset.i18n = "network.youAreOffline";
+    h2.textContent = t("network.youAreOffline");
+    const p = document.createElement("p");
+    p.dataset.i18n = "network.offlineDetails";
+    p.textContent = t("network.offlineDetails");
+    panel.append(icon, h2, p);
     container.appendChild(panel);
   },
 

@@ -10,15 +10,19 @@ import { modModal } from "./index.js";
 import { homeCarousel } from "../carousel.js";
 import { getEngineLabel, t } from "../../i18n/index.js";
 
+function setModalDownloadButton(button, iconClass, text, disabled = false) {
+  if (!button) return;
+  button.disabled = disabled;
+  const icon = document.createElement("i");
+  icon.className = iconClass;
+  button.replaceChildren(icon, document.createTextNode(" " + text));
+}
+
 async function ensureModal(onClose) {
   if (!document.getElementById("mod-modal")) {
     const tpl = document.getElementById("tpl-modal");
     if (!tpl) throw new Error("Could not load mod modal");
-    const wrapper = document.createElement("div");
-    wrapper.innerHTML = tpl.innerHTML;
-    const modalRoot = wrapper.firstElementChild;
-    if (!modalRoot) throw new Error("Could not create mod modal");
-    document.body.appendChild(modalRoot);
+    document.body.appendChild(tpl.content.cloneNode(true));
   }
   const modal = document.getElementById("mod-modal");
   const closeBtn = document.getElementById("modal-close-btn");
@@ -96,9 +100,8 @@ function resetModal() {
   }
   const button = document.getElementById("modal-download-btn");
   if (button) {
-    button.disabled = true;
-    button.innerHTML = `<i class="fa-solid fa-download"></i> ${t("common.download")}`;
     button.onclick = null;
+    setModalDownloadButton(button, "fa-solid fa-download", t("common.download"), true);
   }
   const engineBadge = document.getElementById("modal-engine-badge");
   if (engineBadge) engineBadge.hidden = true;
@@ -162,15 +165,14 @@ function showModData(data, isInstalled, onDownload) {
   }
   const description = document.getElementById("modal-description");
   if (description) {
-    const content = document.createElement("template");
-    content.innerHTML = data.description;
-    content.content
+    const doc = new DOMParser().parseFromString(data.description || "", "text/html");
+    doc.body
       .querySelectorAll(
         "img, picture, video, audio, iframe, embed, object, source",
       )
       .forEach((element) => element.remove());
-    linkifyDescriptionSubmissionUrls(content.content);
-    description.replaceChildren(content.content);
+    linkifyDescriptionSubmissionUrls(doc.body);
+    description.replaceChildren(...doc.body.childNodes);
     enhanceContentLinks(description, {
       onGameBanana: async (submission, reference) => {
         try {
@@ -244,29 +246,51 @@ function updateDownloadStatus(data, isInstalled, onDownload) {
   const button = document.getElementById("modal-download-btn");
   if (!button) return;
   if (isInstalled) {
-    button.disabled = true;
     button.onclick = null;
-    button.innerHTML = `<i class="fa-solid fa-check"></i> ${t("modModal.alreadyInstalled")}`;
+    setModalDownloadButton(
+      button,
+      "fa-solid fa-check",
+      t("modModal.alreadyInstalled"),
+      true,
+    );
   } else if (data.loadingDownloads) {
-    button.disabled = true;
     button.onclick = null;
-    button.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> ${t("modModal.checkingDownloads")}`;
+    setModalDownloadButton(
+      button,
+      "fa-solid fa-spinner fa-spin",
+      t("modModal.checkingDownloads"),
+      true,
+    );
   } else if (data.downloadOptions?.length) {
-    button.disabled = false;
-    button.innerHTML =
-      data.downloadOptions.length > 1
-        ? `<i class="fa-solid fa-list"></i> ${t("modModal.chooseDownload")}`
-        : `<i class="fa-solid fa-download"></i> ${data.downloadButtonLabel || t("common.download")}`;
+    if (data.downloadOptions.length > 1) {
+      setModalDownloadButton(
+        button,
+        "fa-solid fa-list",
+        t("modModal.chooseDownload"),
+        false,
+      );
+    } else {
+      setModalDownloadButton(
+        button,
+        "fa-solid fa-download",
+        data.downloadButtonLabel || t("common.download"),
+        false,
+      );
+    }
     button.onclick = onDownload;
   } else {
     const sourceUrl =
       data.source === "peo" ? data.sourceUrl : data.gameBananaUrl;
-    button.disabled = !sourceUrl;
     const isPsych = data.source === "peo";
     const label = isPsych
       ? t("modModal.openOnPsychOnline", { title: data.title || "" })
       : t("modModal.downloadOnGameBanana");
-    button.innerHTML = `<i class="fa-solid fa-arrow-up-right-from-square"></i> ${label}`;
+    setModalDownloadButton(
+      button,
+      "fa-solid fa-arrow-up-right-from-square",
+      label,
+      !sourceUrl,
+    );
     button.onclick = (event) => {
       event.preventDefault();
       if (sourceUrl && window.Neutralino?.os?.open) {

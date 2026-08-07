@@ -3,27 +3,55 @@ import {
   deactivateCheckoutDialog,
 } from "./dialogFocus.js";
 import { getPreferredDownloadOption } from "../../../../backend/utils/gamebanana/download-options.js";
-import { t } from "../../i18n/index.js";
+import { i18n, t } from "../../i18n/index.js";
 
 function ensureModal() {
   let overlay = document.getElementById("download-choice-modal");
   if (overlay) return overlay;
+  const tpl = document.getElementById("tpl-download-choice-modal");
+  if (tpl) {
+    document.body.appendChild(tpl.content.cloneNode(true));
+    overlay = document.getElementById("download-choice-modal");
+    if (overlay) {
+      i18n.apply(overlay);
+      return overlay;
+    }
+  }
   overlay = document.createElement("div");
   overlay.id = "download-choice-modal";
   overlay.className = "dependency-review-overlay";
   overlay.hidden = true;
-  overlay.innerHTML = `
-    <section class="dependency-review-modal" role="dialog" aria-modal="true" aria-labelledby="download-choice-title">
-      <div class="dependency-review-heading">
-        <i class="fa-solid fa-download" aria-hidden="true"></i>
-        <div><h2 id="download-choice-title">${t("downloads.chooseTitle")}</h2></div>
-      </div>
-      <div class="dependency-review-list download-choice-list"></div>
-      <div class="dependency-review-actions">
-        <button type="button" class="dependency-review-cancel">${t("common.cancel")}</button>
-        <button type="button" class="dependency-review-confirm">${t("common.continue")}</button>
-      </div>
-    </section>`;
+  const section = document.createElement("section");
+  section.className = "dependency-review-modal";
+  section.setAttribute("role", "dialog");
+  section.setAttribute("aria-modal", "true");
+  section.setAttribute("aria-labelledby", "download-choice-title");
+  const heading = document.createElement("div");
+  heading.className = "dependency-review-heading";
+  const hIcon = document.createElement("i");
+  hIcon.className = "fa-solid fa-download";
+  hIcon.setAttribute("aria-hidden", "true");
+  const hDiv = document.createElement("div");
+  const h2 = document.createElement("h2");
+  h2.id = "download-choice-title";
+  h2.textContent = t("downloads.chooseTitle");
+  hDiv.appendChild(h2);
+  heading.append(hIcon, hDiv);
+  const list = document.createElement("div");
+  list.className = "dependency-review-list download-choice-list";
+  const actions = document.createElement("div");
+  actions.className = "dependency-review-actions";
+  const cancelBtn = document.createElement("button");
+  cancelBtn.type = "button";
+  cancelBtn.className = "dependency-review-cancel";
+  cancelBtn.textContent = t("common.cancel");
+  const confirmBtn = document.createElement("button");
+  confirmBtn.type = "button";
+  confirmBtn.className = "dependency-review-confirm";
+  confirmBtn.textContent = t("common.continue");
+  actions.append(cancelBtn, confirmBtn);
+  section.append(heading, list, actions);
+  overlay.appendChild(section);
   document.body.appendChild(overlay);
   return overlay;
 }
