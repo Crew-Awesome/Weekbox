@@ -1322,3 +1322,86 @@
     ></div>
   </aside>
 </template>
+<template id="tpl-context-menu">
+  <div class="weekbox-context-menu" role="menu" hidden>
+    <button type="button" role="menuitem" data-action="copy">
+      <i class="fa-regular fa-copy" aria-hidden="true"></i>
+      <span data-i18n="common.copy">Copy</span>
+    </button>
+    <button type="button" role="menuitem" data-action="paste">
+      <i class="fa-regular fa-clipboard" aria-hidden="true"></i>
+      <span data-i18n="common.paste">Paste</span>
+    </button>
+  </div>
+</template>
+<template id="tpl-engine-manager-empty">
+  <div class="empty-mods-state" style="margin: auto;" data-i18n="engineManager.noEngines">No engines installed</div>
+</template>
+<template id="tpl-engine-manager-carousel">
+  <div class="em-carousel-viewport">
+    <div class="em-carousel-track"></div>
+    <button class="em-nav-btn left" type="button" aria-label="Previous">
+      <i class="fa-solid fa-chevron-left" aria-hidden="true"></i>
+    </button>
+    <button class="em-nav-btn right" type="button" aria-label="Next">
+      <i class="fa-solid fa-chevron-right" aria-hidden="true"></i>
+    </button>
+  </div>
+  <div class="em-carousel-index"></div>
+</template>
+<template id="tpl-engine-column-header">
+  <div class="engine-column-header">
+    <img src="assets/icons/exe.png" alt="" class="engine-col-icon" crossorigin="anonymous" onerror="this.src='assets/icons/exe.png'" />
+    <span class="engine-col-name"></span>
+  </div>
+</template>
+<template id="tpl-engine-version-item">
+  <div class="version-item">
+    <span class="version-text"></span>
+    <div class="version-actions">
+      <button class="engine-action-btn engine-update-btn" type="button">
+        <i class="fa-solid fa-rotate" aria-hidden="true"></i>
+      </button>
+      <button class="engine-action-btn engine-dir-btn" type="button">
+        <i class="fa-solid fa-folder-open" aria-hidden="true"></i>
+      </button>
+      <button class="engine-action-btn engine-delete-btn" type="button">
+        <i class="fa-solid fa-trash" aria-hidden="true"></i>
+      </button>
+    </div>
+  </div>
+</template>
+<template id="tpl-engine-update-modal">
+  <div id="engine-update-modal" class="engine-update-overlay" hidden>
+    <section class="engine-update-modal" role="dialog" aria-modal="true" aria-labelledby="engine-update-title">
+      <div class="engine-update-heading">
+        <img class="engine-update-mark" alt="" />
+        <h2 id="engine-update-title"></h2>
+      </div>
+      <p class="engine-update-copy" data-i18n="engineUpdates.detected">An update is available for this engine.</p>
+      <div class="engine-update-build"></div>
+      <div class="engine-update-actions">
+        <button type="button" class="engine-update-later" data-i18n="storage.notNow">Not now</button>
+        <button type="button" class="engine-update-confirm">
+          <span data-i18n="engineUpdates.updateEngine">Update engine</span>
+          <i class="fa-solid fa-arrow-right" aria-hidden="true"></i>
+        </button>
+      </div>
+    </section>
+  </div>
+</template>
+<template id="tpl-engine-launch-running">
+  <span class="engine-launch-label" data-i18n="engines.launched">Launched</span>
+  <span class="engine-close-label" data-i18n="common.close">Close</span>
+</template>
+<template id="tpl-release-notes-loading">
+  <p style="color: var(--text-muted);" data-i18n="engines.releaseNotesLoading">Loading release notes...</p>
+</template>
+<template id="tpl-release-notes-empty">
+  <p><em data-i18n="engines.noReleaseNotes">No release notes available</em></p>
+</template>
+<template id="tpl-release-notes-failed">
+  <p><em data-i18n="engines.releaseNotesFailed">Failed to load release notes</em></p>
+</template>
+
+

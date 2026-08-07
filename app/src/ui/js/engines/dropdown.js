@@ -16,7 +16,7 @@ export const engineDropdown = {
     trigger = newTrigger;
 
     const selectedText = document.getElementById("engine-version-selected");
-    optionsContainer.innerHTML = "";
+    optionsContainer.replaceChildren();
 
     if (engine.versions.length === 0) {
       selectedText.textContent = t("common.unknown");

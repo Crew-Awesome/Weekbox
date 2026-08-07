@@ -15,10 +15,7 @@ export const engineManagerModal = {
     if (!document.getElementById("engine-manager-modal")) {
       const tpl = document.getElementById("tpl-engine-manager");
       if (!tpl) return;
-      const html = tpl.innerHTML;
-      const wrapper = document.createElement("div");
-      wrapper.innerHTML = html;
-      document.body.appendChild(wrapper.firstElementChild);
+      document.body.appendChild(tpl.content.cloneNode(true));
       i18n.apply(document.getElementById("engine-manager-modal"));
       document
         .getElementById("engine-manager-close-btn")
@@ -83,9 +80,20 @@ export const engineManagerModal = {
       this.resizeObserver.disconnect();
       this.resizeObserver = null;
     }
-    container.innerHTML = "";
+    container.replaceChildren();
     if (engines.length === 0) {
-      container.innerHTML = `<div class="empty-mods-state" style="margin: auto;">${t("engineManager.noEngines")}</div>`;
+      const emptyTpl = document.getElementById("tpl-engine-manager-empty");
+      if (emptyTpl) {
+        container.appendChild(emptyTpl.content.cloneNode(true));
+        i18n.apply(container);
+      } else {
+        const empty = document.createElement("div");
+        empty.className = "empty-mods-state";
+        empty.style.margin = "auto";
+        empty.dataset.i18n = "engineManager.noEngines";
+        empty.textContent = t("engineManager.noEngines");
+        container.appendChild(empty);
+      }
       return;
     }
     // 1. Agrupar los engines por ID
@@ -118,23 +126,47 @@ export const engineManagerModal = {
       this.currentIndex = Math.max(0, sortedEngineEntries.length - 1);
     }
     // 3. Crear elementos del layout del carrusel
-    const viewport = document.createElement("div");
-    viewport.className = "em-carousel-viewport";
-    const track = document.createElement("div");
-    track.className = "em-carousel-track";
-    const btnPrev = document.createElement("button");
-    btnPrev.className = "em-nav-btn left";
-    btnPrev.innerHTML = '<i class="fa-solid fa-chevron-left"></i>';
-    const btnNext = document.createElement("button");
-    btnNext.className = "em-nav-btn right";
-    btnNext.innerHTML = '<i class="fa-solid fa-chevron-right"></i>';
-    const indexContainer = document.createElement("div");
-    indexContainer.className = "em-carousel-index";
-    viewport.appendChild(track);
-    viewport.appendChild(btnPrev);
-    viewport.appendChild(btnNext);
-    container.appendChild(viewport);
-    container.appendChild(indexContainer);
+    const carouselTpl = document.getElementById("tpl-engine-manager-carousel");
+    let viewport, track, btnPrev, btnNext, indexContainer;
+    if (carouselTpl) {
+      const fragment = carouselTpl.content.cloneNode(true);
+      viewport = fragment.querySelector(".em-carousel-viewport");
+      track = fragment.querySelector(".em-carousel-track");
+      btnPrev = fragment.querySelector(".em-nav-btn.left");
+      btnNext = fragment.querySelector(".em-nav-btn.right");
+      indexContainer = fragment.querySelector(".em-carousel-index");
+      container.appendChild(fragment);
+    } else {
+      viewport = document.createElement("div");
+      viewport.className = "em-carousel-viewport";
+      track = document.createElement("div");
+      track.className = "em-carousel-track";
+      btnPrev = document.createElement("button");
+      btnPrev.className = "em-nav-btn left";
+      btnPrev.type = "button";
+      const iconPrev = document.createElement("i");
+      iconPrev.className = "fa-solid fa-chevron-left";
+      btnPrev.appendChild(iconPrev);
+      btnNext = document.createElement("button");
+      btnNext.className = "em-nav-btn right";
+      btnNext.type = "button";
+      const iconNext = document.createElement("i");
+      iconNext.className = "fa-solid fa-chevron-right";
+      btnNext.appendChild(iconNext);
+      indexContainer = document.createElement("div");
+      indexContainer.className = "em-carousel-index";
+      viewport.append(track, btnPrev, btnNext);
+      container.append(viewport, indexContainer);
+    }
+
+    const setButtonIcon = (btn, iconClass) => {
+      let icon = btn.querySelector("i");
+      if (!icon) {
+        icon = document.createElement("i");
+        btn.appendChild(icon);
+      }
+      icon.className = iconClass;
+    };
 
     // 4. Generar las tarjetas y los iconos del índice
     sortedEngineEntries.forEach(([engineId, versions], idx) => {
@@ -151,12 +183,33 @@ export const engineManagerModal = {
           updateCarousel();
         }
       });
-      const header = document.createElement("div");
-      header.className = "engine-column-header";
-      header.innerHTML = `
-        <img src="assets/icons/${details.icon}" alt="${displayName}" class="engine-col-icon" crossorigin="Anonymous" onerror="this.src='assets/icons/exe.png'"/>
-        <span class="engine-col-name">${displayName}</span>
-      `;
+
+      const headerTpl = document.getElementById("tpl-engine-column-header");
+      let header;
+      if (headerTpl) {
+        header = headerTpl.content.firstElementChild.cloneNode(true);
+        const img = header.querySelector(".engine-col-icon");
+        img.src = `assets/icons/${details.icon}`;
+        img.alt = displayName;
+        const nameSpan = header.querySelector(".engine-col-name");
+        nameSpan.textContent = displayName;
+      } else {
+        header = document.createElement("div");
+        header.className = "engine-column-header";
+        const img = document.createElement("img");
+        img.src = `assets/icons/${details.icon}`;
+        img.alt = displayName;
+        img.className = "engine-col-icon";
+        img.crossOrigin = "anonymous";
+        img.onerror = () => {
+          img.src = "assets/icons/exe.png";
+        };
+        const nameSpan = document.createElement("span");
+        nameSpan.className = "engine-col-name";
+        nameSpan.textContent = displayName;
+        header.append(img, nameSpan);
+      }
+
       const engineNameElement = header.querySelector(".engine-col-name");
       const engineLabelKey = getEngineLabelKey(engineId);
       if (engineNameElement && engineLabelKey) {
@@ -175,35 +228,106 @@ export const engineManagerModal = {
       const versionsList = document.createElement("div");
       versionsList.className = "engine-versions-list";
       versions.forEach((version) => {
-        const item = document.createElement("div");
-        item.className = "version-item";
         const updateDisabled = !networkStatus.online;
         const running = FS.isEngineRunning(engineId, version);
-        item.innerHTML = `
-          <span class="version-text">${version}</span>
-          <div class="version-actions">
-            ${
-              (engineId === "codename" && version === "Nightly") ||
-              (engineId === "psychonline" && version === "Latest")
-                ? `
-                <button class="engine-action-btn engine-update-btn" title="${updateDisabled ? t("engineManager.connectToCheckUpdates") : t("settings.checkForUpdates")}" aria-label="${t("engineManager.checkEngineUpdates", { name: displayName })}" ${updateDisabled ? "disabled" : ""}>
-                <i class="fa-solid fa-rotate"></i>
-              </button>`
-                : ""
-            }
-            <button class="engine-action-btn engine-dir-btn" title="${t("engineManager.openDirectory")}" aria-label="${t("engineManager.openDirectory")}">
-              <i class="fa-solid fa-folder-open"></i>
-            </button>
-            <button class="engine-action-btn engine-delete-btn" title="${running ? t("engineManager.closeBeforeUninstall") : t("engineManager.uninstallVersion")}" aria-label="${running ? t("engineManager.closeBeforeUninstall") : t("engineManager.uninstallVersion")}" ${running ? "disabled" : ""}>
-              <i class="fa-solid fa-trash"></i>
-            </button>
-          </div>
-        `;
+        const hasUpdate =
+          (engineId === "codename" && version === "Nightly") ||
+          (engineId === "psychonline" && version === "Latest");
+
+        const itemTpl = document.getElementById("tpl-engine-version-item");
+        let item;
+        if (itemTpl) {
+          item = itemTpl.content.firstElementChild.cloneNode(true);
+          item.querySelector(".version-text").textContent = version;
+          const updateBtn = item.querySelector(".engine-update-btn");
+          if (!hasUpdate && updateBtn) {
+            updateBtn.remove();
+          } else if (updateBtn) {
+            updateBtn.title = updateDisabled
+              ? t("engineManager.connectToCheckUpdates")
+              : t("settings.checkForUpdates");
+            updateBtn.setAttribute(
+              "aria-label",
+              t("engineManager.checkEngineUpdates", { name: displayName }),
+            );
+            updateBtn.disabled = updateDisabled;
+          }
+          const dirBtn = item.querySelector(".engine-dir-btn");
+          dirBtn.title = t("engineManager.openDirectory");
+          dirBtn.setAttribute("aria-label", t("engineManager.openDirectory"));
+          const deleteBtn = item.querySelector(".engine-delete-btn");
+          deleteBtn.title = running
+            ? t("engineManager.closeBeforeUninstall")
+            : t("engineManager.uninstallVersion");
+          deleteBtn.setAttribute(
+            "aria-label",
+            running
+              ? t("engineManager.closeBeforeUninstall")
+              : t("engineManager.uninstallVersion"),
+          );
+          deleteBtn.disabled = running;
+        } else {
+          item = document.createElement("div");
+          item.className = "version-item";
+          const versionText = document.createElement("span");
+          versionText.className = "version-text";
+          versionText.textContent = version;
+          const actions = document.createElement("div");
+          actions.className = "version-actions";
+
+          if (hasUpdate) {
+            const updateBtn = document.createElement("button");
+            updateBtn.className = "engine-action-btn engine-update-btn";
+            updateBtn.type = "button";
+            updateBtn.title = updateDisabled
+              ? t("engineManager.connectToCheckUpdates")
+              : t("settings.checkForUpdates");
+            updateBtn.setAttribute(
+              "aria-label",
+              t("engineManager.checkEngineUpdates", { name: displayName }),
+            );
+            updateBtn.disabled = updateDisabled;
+            const updateIcon = document.createElement("i");
+            updateIcon.className = "fa-solid fa-rotate";
+            updateBtn.appendChild(updateIcon);
+            actions.appendChild(updateBtn);
+          }
+
+          const dirBtn = document.createElement("button");
+          dirBtn.className = "engine-action-btn engine-dir-btn";
+          dirBtn.type = "button";
+          dirBtn.title = t("engineManager.openDirectory");
+          dirBtn.setAttribute("aria-label", t("engineManager.openDirectory"));
+          const dirIcon = document.createElement("i");
+          dirIcon.className = "fa-solid fa-folder-open";
+          dirBtn.appendChild(dirIcon);
+
+          const deleteBtn = document.createElement("button");
+          deleteBtn.className = "engine-action-btn engine-delete-btn";
+          deleteBtn.type = "button";
+          deleteBtn.title = running
+            ? t("engineManager.closeBeforeUninstall")
+            : t("engineManager.uninstallVersion");
+          deleteBtn.setAttribute(
+            "aria-label",
+            running
+              ? t("engineManager.closeBeforeUninstall")
+              : t("engineManager.uninstallVersion"),
+          );
+          deleteBtn.disabled = running;
+          const deleteIcon = document.createElement("i");
+          deleteIcon.className = "fa-solid fa-trash";
+          deleteBtn.appendChild(deleteIcon);
+
+          actions.append(dirBtn, deleteBtn);
+          item.append(versionText, actions);
+        }
+
         const updateBtn = item.querySelector(".engine-update-btn");
         updateBtn?.addEventListener("click", async (e) => {
           e.stopPropagation();
           updateBtn.disabled = true;
-          updateBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
+          setButtonIcon(updateBtn, "fa-solid fa-spinner fa-spin");
           const result = await engineUpdateService.checkEngineUpdate(
             engineId,
             version,
@@ -246,23 +370,25 @@ export const engineManagerModal = {
             );
           }
           updateBtn.disabled = false;
-          updateBtn.innerHTML = '<i class="fa-solid fa-rotate"></i>';
+          setButtonIcon(updateBtn, "fa-solid fa-rotate");
         });
+
         item
           .querySelector(".engine-dir-btn")
-          .addEventListener("click", async (e) => {
+          ?.addEventListener("click", async (e) => {
             e.stopPropagation();
             const targetPath = `${FS.enginesPath}/${engineId}/${version}`;
             try {
               await Neutralino.os.open(targetPath);
             } catch (e) {}
           });
+
         const deleteBtn = item.querySelector(".engine-delete-btn");
-        deleteBtn.addEventListener("click", async (e) => {
+        deleteBtn?.addEventListener("click", async (e) => {
           e.stopPropagation();
           if (FS.isEngineRunning(engineId, version)) return;
           deleteBtn.disabled = true;
-          deleteBtn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i>`;
+          setButtonIcon(deleteBtn, "fa-solid fa-spinner fa-spin");
           const targetPath = `${FS.enginesPath}/${engineId}/${version}`;
           try {
             if (await FS.api.exists(targetPath)) {
@@ -289,7 +415,7 @@ export const engineManagerModal = {
             await this.loadInstalledEngines();
           } catch (error) {
             deleteBtn.disabled = false;
-            deleteBtn.innerHTML = '<i class="fa-solid fa-trash"></i>';
+            setButtonIcon(deleteBtn, "fa-solid fa-trash");
             errorHandler.show({
               error,
               action: "Uninstall engine",

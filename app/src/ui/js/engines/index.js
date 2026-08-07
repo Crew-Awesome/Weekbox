@@ -108,7 +108,19 @@ export const enginesView = {
         isLaunched = true;
         activeBtn.disabled = false;
         activeBtn.classList.add("engine-running");
-        activeBtn.innerHTML = `<span class="engine-launch-label">${t("engines.launched")}</span><span class="engine-close-label">${t("common.close")}</span>`;
+        const tpl = document.getElementById("tpl-engine-launch-running");
+        if (tpl) {
+          activeBtn.replaceChildren(tpl.content.cloneNode(true));
+          i18n.apply(activeBtn);
+        } else {
+          const launchSpan = document.createElement("span");
+          launchSpan.className = "engine-launch-label";
+          launchSpan.textContent = t("engines.launched");
+          const closeSpan = document.createElement("span");
+          closeSpan.className = "engine-close-label";
+          closeSpan.textContent = t("common.close");
+          activeBtn.replaceChildren(launchSpan, closeSpan);
+        }
       };
       if (isLaunched) showLaunched();
       activeBtn.addEventListener("click", async () => {

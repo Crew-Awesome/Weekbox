@@ -58,13 +58,42 @@ async function clipboardRead() {
 
 function createContextMenu() {
   if (contextMenu) return contextMenu;
-  contextMenu = document.createElement("div");
-  contextMenu.className = "weekbox-context-menu";
-  contextMenu.setAttribute("role", "menu");
-  contextMenu.hidden = true;
-  contextMenu.innerHTML = `
-    <button type="button" role="menuitem" data-action="copy"><i class="fa-regular fa-copy" aria-hidden="true"></i><span>${t("common.copy")}</span></button>
-    <button type="button" role="menuitem" data-action="paste"><i class="fa-regular fa-clipboard" aria-hidden="true"></i><span>${t("common.paste")}</span></button>`;
+  const tpl = document.getElementById("tpl-context-menu");
+  if (tpl) {
+    const fragment = tpl.content.cloneNode(true);
+    contextMenu = fragment.firstElementChild;
+  } else {
+    contextMenu = document.createElement("div");
+    contextMenu.className = "weekbox-context-menu";
+    contextMenu.setAttribute("role", "menu");
+    contextMenu.hidden = true;
+
+    const copyBtn = document.createElement("button");
+    copyBtn.type = "button";
+    copyBtn.setAttribute("role", "menuitem");
+    copyBtn.dataset.action = "copy";
+    const copyIcon = document.createElement("i");
+    copyIcon.className = "fa-regular fa-copy";
+    copyIcon.setAttribute("aria-hidden", "true");
+    const copySpan = document.createElement("span");
+    copySpan.dataset.i18n = "common.copy";
+    copySpan.textContent = t("common.copy");
+    copyBtn.append(copyIcon, copySpan);
+
+    const pasteBtn = document.createElement("button");
+    pasteBtn.type = "button";
+    pasteBtn.setAttribute("role", "menuitem");
+    pasteBtn.dataset.action = "paste";
+    const pasteIcon = document.createElement("i");
+    pasteIcon.className = "fa-regular fa-clipboard";
+    pasteIcon.setAttribute("aria-hidden", "true");
+    const pasteSpan = document.createElement("span");
+    pasteSpan.dataset.i18n = "common.paste";
+    pasteSpan.textContent = t("common.paste");
+    pasteBtn.append(pasteIcon, pasteSpan);
+
+    contextMenu.append(copyBtn, pasteBtn);
+  }
   contextMenu.addEventListener("click", async (event) => {
     const action = event.target.closest("button")?.dataset.action;
     if (!action) return;

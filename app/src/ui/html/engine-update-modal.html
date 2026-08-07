@@ -1,0 +1,19 @@
+<template id="tpl-engine-update-modal">
+  <div id="engine-update-modal" class="engine-update-overlay" hidden>
+    <section class="engine-update-modal" role="dialog" aria-modal="true" aria-labelledby="engine-update-title">
+      <div class="engine-update-heading">
+        <img class="engine-update-mark" alt="" />
+        <h2 id="engine-update-title"></h2>
+      </div>
+      <p class="engine-update-copy" data-i18n="engineUpdates.detected">An update is available for this engine.</p>
+      <div class="engine-update-build"></div>
+      <div class="engine-update-actions">
+        <button type="button" class="engine-update-later" data-i18n="storage.notNow">Not now</button>
+        <button type="button" class="engine-update-confirm">
+          <span data-i18n="engineUpdates.updateEngine">Update engine</span>
+          <i class="fa-solid fa-arrow-right" aria-hidden="true"></i>
+        </button>
+      </div>
+    </section>
+  </div>
+</template>

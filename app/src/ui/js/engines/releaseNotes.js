@@ -50,7 +50,7 @@ function isSafeUrl(value) {
   }
 }
 
-export function sanitizeReleaseHtml(html) {
+export function sanitizeReleaseDom(html) {
   const documentNode = new DOMParser().parseFromString(html, "text/html");
 
   documentNode.body.querySelectorAll("*").forEach((element) => {
@@ -96,32 +96,52 @@ export function sanitizeReleaseHtml(html) {
     }
   });
 
-  return documentNode.body.innerHTML;
+  return documentNode.body;
+}
+
+export function parseSanitizedReleaseHtml(html) {
+  const body = sanitizeReleaseDom(html);
+  return [...body.childNodes];
+}
+
+export function sanitizeReleaseHtml(html) {
+  const body = sanitizeReleaseDom(html);
+  return body.innerHTML;
 }
 
 function renderMarkdownLinks(text) {
-  const documentNode = new DOMParser().parseFromString("", "text/html");
+  const fragment = document.createDocumentFragment();
   const pattern = /\[([^\]]+)]\((https?:\/\/[^\s)]+)\)/g;
   let cursor = 0;
   let match;
 
   while ((match = pattern.exec(text))) {
-    documentNode.body.append(
-      documentNode.createTextNode(text.slice(cursor, match.index)),
-    );
-    const link = documentNode.createElement("a");
+    fragment.append(document.createTextNode(text.slice(cursor, match.index)));
+    const link = document.createElement("a");
     link.href = match[2];
     link.textContent = match[1];
-    documentNode.body.append(link);
+    link.target = "_blank";
+    link.rel = "noopener noreferrer";
+    fragment.append(link);
     cursor = match.index + match[0].length;
   }
-  documentNode.body.append(documentNode.createTextNode(text.slice(cursor)));
-  return sanitizeReleaseHtml(documentNode.body.innerHTML);
+  fragment.append(document.createTextNode(text.slice(cursor)));
+  return fragment;
 }
 
 function showPlainTextNotes(container, text) {
   container.classList.add("release-notes-plain");
-  container.innerHTML = renderMarkdownLinks(text);
+  container.replaceChildren(renderMarkdownLinks(text));
+}
+
+function renderNotesStatus(container, templateId, fallbackFn) {
+  const tpl = document.getElementById(templateId);
+  if (tpl) {
+    container.replaceChildren(tpl.content.cloneNode(true));
+    i18n.apply(container);
+  } else if (fallbackFn) {
+    container.replaceChildren(fallbackFn());
+  }
 }
 
 export async function fetchAndRenderReleaseNotes(versionData, targetLink) {
@@ -129,7 +149,12 @@ export async function fetchAndRenderReleaseNotes(versionData, targetLink) {
   if (!notesContainer) return;
 
   notesContainer.classList.remove("release-notes-plain");
-  notesContainer.innerHTML = `<p style="color: var(--text-muted);">${t("engines.releaseNotesLoading")}</p>`;
+  renderNotesStatus(notesContainer, "tpl-release-notes-loading", () => {
+    const p = document.createElement("p");
+    p.style.color = "var(--text-muted)";
+    p.textContent = t("engines.releaseNotesLoading");
+    return p;
+  });
 
   const link =
     targetLink || versionData.win || versionData.lin || versionData.mac || "";
@@ -138,7 +163,13 @@ export async function fetchAndRenderReleaseNotes(versionData, targetLink) {
   );
 
   if (!match) {
-    notesContainer.innerHTML = `<p><em>${t("engines.noReleaseNotes")}</em></p>`;
+    renderNotesStatus(notesContainer, "tpl-release-notes-empty", () => {
+      const p = document.createElement("p");
+      const em = document.createElement("em");
+      em.textContent = t("engines.noReleaseNotes");
+      p.appendChild(em);
+      return p;
+    });
     return;
   }
 
@@ -160,14 +191,21 @@ export async function fetchAndRenderReleaseNotes(versionData, targetLink) {
     const release = await response.json();
     const text = release.body || "No description.";
 
-    const html = sanitizeReleaseHtml(release.body_html || "");
-    if (html) {
-      notesContainer.innerHTML = html;
+    const nodes = release.body_html
+      ? parseSanitizedReleaseHtml(release.body_html)
+      : [];
+    if (nodes.length > 0) {
+      notesContainer.replaceChildren(...nodes);
     } else {
       showPlainTextNotes(notesContainer, text);
     }
   } catch {
-    notesContainer.innerHTML = `<p><em>${t("engines.releaseNotesFailed")}</em></p>`;
+    renderNotesStatus(notesContainer, "tpl-release-notes-failed", () => {
+      const p = document.createElement("p");
+      const em = document.createElement("em");
+      em.textContent = t("engines.releaseNotesFailed");
+      p.appendChild(em);
+      return p;
+    });
   }
 }
-import { t } from "../i18n/index.js";

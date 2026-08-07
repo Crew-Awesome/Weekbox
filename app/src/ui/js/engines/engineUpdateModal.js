@@ -1,29 +1,68 @@
 import { getTargetPlatform } from "./utils.js";
-import { t } from "../i18n/index.js";
+import { i18n, t } from "../i18n/index.js";
 
 function ensureModal() {
   let overlay = document.getElementById("engine-update-modal");
   if (overlay) return overlay;
 
-  overlay = document.createElement("div");
-  overlay.id = "engine-update-modal";
-  overlay.className = "engine-update-overlay";
-  overlay.hidden = true;
-  overlay.innerHTML = `
-    <section class="engine-update-modal" role="dialog" aria-modal="true" aria-labelledby="engine-update-title">
-      <div class="engine-update-heading">
-        <img class="engine-update-mark" alt="" />
-        <h2 id="engine-update-title"></h2>
-      </div>
-      <p class="engine-update-copy">${t("engineUpdates.detected")}</p>
-      <div class="engine-update-build"></div>
-      <div class="engine-update-actions">
-        <button type="button" class="engine-update-later">${t("storage.notNow")}</button>
-        <button type="button" class="engine-update-confirm">${t("engineUpdates.updateEngine")} <i class="fa-solid fa-arrow-right"></i></button>
-      </div>
-    </section>
-  `;
+  const tpl = document.getElementById("tpl-engine-update-modal");
+  if (tpl) {
+    const fragment = tpl.content.cloneNode(true);
+    overlay = fragment.firstElementChild;
+  } else {
+    overlay = document.createElement("div");
+    overlay.id = "engine-update-modal";
+    overlay.className = "engine-update-overlay";
+    overlay.hidden = true;
+
+    const section = document.createElement("section");
+    section.className = "engine-update-modal";
+    section.setAttribute("role", "dialog");
+    section.setAttribute("aria-modal", "true");
+    section.setAttribute("aria-labelledby", "engine-update-title");
+
+    const heading = document.createElement("div");
+    heading.className = "engine-update-heading";
+    const mark = document.createElement("img");
+    mark.className = "engine-update-mark";
+    mark.alt = "";
+    const title = document.createElement("h2");
+    title.id = "engine-update-title";
+    heading.append(mark, title);
+
+    const copy = document.createElement("p");
+    copy.className = "engine-update-copy";
+    copy.dataset.i18n = "engineUpdates.detected";
+    copy.textContent = t("engineUpdates.detected");
+
+    const build = document.createElement("div");
+    build.className = "engine-update-build";
+
+    const actions = document.createElement("div");
+    actions.className = "engine-update-actions";
+    const laterBtn = document.createElement("button");
+    laterBtn.type = "button";
+    laterBtn.className = "engine-update-later";
+    laterBtn.dataset.i18n = "storage.notNow";
+    laterBtn.textContent = t("storage.notNow");
+
+    const confirmBtn = document.createElement("button");
+    confirmBtn.type = "button";
+    confirmBtn.className = "engine-update-confirm";
+    const confirmSpan = document.createElement("span");
+    confirmSpan.dataset.i18n = "engineUpdates.updateEngine";
+    confirmSpan.textContent = t("engineUpdates.updateEngine");
+    const confirmIcon = document.createElement("i");
+    confirmIcon.className = "fa-solid fa-arrow-right";
+    confirmBtn.append(confirmSpan, confirmIcon);
+
+    actions.append(laterBtn, confirmBtn);
+    section.append(heading, copy, build, actions);
+    overlay.append(section);
+  }
+
   document.body.appendChild(overlay);
+  i18n.apply(overlay);
   return overlay;
 }
 
