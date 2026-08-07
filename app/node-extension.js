@@ -6,7 +6,10 @@ class NodeExtension {
         let data = { function: func, parameter: param };
         if (this.debug) console.log("OUT: ", JSON.stringify(data));
         
-        // ¡Aquí estaba el error! Ahora apunta a 'extNode'
+        /*
+            sta mierda tiene quue apuntar a extNode para que se conecte y 
+            se dispece a la extensiob del backend de node de neu 
+        */
         window.Neutralino.extensions.dispatch('extNode', 'runNode', data);
     }
     stop() {
