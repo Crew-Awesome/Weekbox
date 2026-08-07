@@ -204,12 +204,17 @@ async function handleStartupAppUpdate() {
   }
   let update;
   try {
-    update = await appUpdater.check();
+    update = await Promise.race([
+      appUpdater.check(),
+      new Promise((_, reject) =>
+        setTimeout(() => reject(new Error("Update check timeout")), 3500),
+      ),
+    ]);
   } catch (error) {
     console.warn("Could not check for a WeekBox update during startup", error);
     return false;
   }
-  if (update.status !== "available") return false;
+  if (update?.status !== "available") return false;
   try {
     sessionStorage.setItem(
       "weekbox_available_app_update",
@@ -282,7 +287,10 @@ async function startApp() {
     });
     startupLoader.setPhase(t("startup.loadingPreferences"), 20);
     startupStep = "restoring preferences";
-    await storageBridge.init();
+    await Promise.race([
+      storageBridge.init(),
+      new Promise((resolve) => setTimeout(resolve, 2000)),
+    ]);
     startupStep = "finding the default storage location";
     const defaultStoragePath = await FS.getDefaultStorageParentPath();
     const defaultDataPath = `${defaultStoragePath}/WeekBox/data`;
@@ -296,9 +304,9 @@ async function startApp() {
     if (!appSettings.get("firstRunLanguageSetupComplete")) {
       await firstRunLanguageModal.show();
     }
-    await syncWindowsProtocolRegistration(
+    syncWindowsProtocolRegistration(
       appSettings.get("registerProtocolLinks"),
-    );
+    ).catch(() => {});
     if (appSettings.get("checkAppUpdatesOnStartup")) {
       startupLoader.setPhase(t("startup.checkingAppUpdates"), 36);
       if (await handleStartupAppUpdate()) return;

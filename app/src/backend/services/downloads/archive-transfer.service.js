@@ -450,7 +450,76 @@ async function mergeParts(parts, outPath) {
 function getWindowsExtractionCommand(archivePath, destinationPath) {
   const normArchive = String(archivePath || "").replace(/\//g, "\\");
   const normDest = String(destinationPath || "").replace(/\//g, "\\");
-  return `tar.exe --force-local -xf "${normArchive}" -C "${normDest}"`;
+  return `tar.exe -xf "${normArchive}" -C "${normDest}"`;
+}
+
+function get7zExtractionCommand(binaryPath, archivePath, destinationPath) {
+  const isWindows = window.NL_OS === "Windows";
+  if (isWindows) {
+    const normBin = String(binaryPath || "").replace(/\//g, "\\");
+    const normArchive = String(archivePath || "").replace(/\//g, "\\");
+    const normDest = String(destinationPath || "").replace(/\//g, "\\");
+    return `"${normBin}" x -y -aoa "-o${normDest}" "${normArchive}"`;
+  }
+  return `${quoteCommandArgument(binaryPath)} x -y -aoa -o${quoteCommandArgument(destinationPath)} ${quoteCommandArgument(archivePath)}`;
+}
+
+async function find7zBinary() {
+  const isWindows = window.NL_OS === "Windows";
+  const isDarwin = window.NL_OS === "Darwin";
+  const binNames = isWindows
+    ? ["7za.exe", "7z.exe"]
+    : isDarwin
+      ? ["7zz-mac", "7za-mac", "7zz"]
+      : ["7zz-linux", "7za-linux", "7zzs", "7zz"];
+
+  const candidateDirs = new Set();
+  if (window.NL_PATH) {
+    candidateDirs.add(window.NL_PATH);
+    candidateDirs.add(`${window.NL_PATH}/..`);
+  }
+  if (window.NL_CWD) {
+    candidateDirs.add(window.NL_CWD);
+    candidateDirs.add(`${window.NL_CWD}/..`);
+  }
+  if (window.NL_ARGS?.[0]) {
+    const exeDir = window.NL_ARGS[0].replace(/[/\\][^/\\]+$/, "");
+    candidateDirs.add(exeDir);
+    candidateDirs.add(`${exeDir}/..`);
+  }
+
+  const pathsToTry = [];
+  for (const dir of candidateDirs) {
+    for (const bin of binNames) {
+      pathsToTry.push(
+        `${dir}/app/assets/bin/${bin}`,
+        `${dir}/assets/bin/${bin}`,
+        `${dir}/resources/app/assets/bin/${bin}`,
+        `${dir}/resources/assets/bin/${bin}`,
+        `${dir}/bin/${bin}`,
+      );
+    }
+  }
+  for (const bin of binNames) {
+    pathsToTry.push(`app/assets/bin/${bin}`, `assets/bin/${bin}`);
+  }
+  if (isWindows) {
+    pathsToTry.push(
+      "C:/Program Files/7-Zip/7z.exe",
+      "C:/Program Files (x86)/7-Zip/7z.exe",
+    );
+  }
+
+  for (const rawPath of pathsToTry) {
+    const normalized = rawPath.replace(/\\/g, "/");
+    try {
+      const stats = await Neutralino.filesystem.getStats(normalized);
+      if (stats?.isFile || stats?.type === "FILE") {
+        return normalized;
+      }
+    } catch {}
+  }
+  return null;
 }
 
 function getPowerShellExtractCommand(archivePath, destinationPath) {
@@ -459,7 +528,14 @@ function getPowerShellExtractCommand(archivePath, destinationPath) {
   return `powershell -NoProfile -NonInteractive -Command "Expand-Archive -Path '${safeArchive}' -DestinationPath '${safeDest}' -Force"`;
 }
 
-var NESTED_ARCHIVE_PATTERNS = [/\.zip$/i, /\.tar\.gz$/i, /\.tgz$/i, /\.tar$/i];
+var NESTED_ARCHIVE_PATTERNS = [
+  /\.zip$/i,
+  /\.tar\.gz$/i,
+  /\.tgz$/i,
+  /\.tar$/i,
+  /\.7z$/i,
+  /\.rar$/i,
+];
 function isNestedArchive(entryName) {
   return (
     NESTED_ARCHIVE_PATTERNS.some((pattern) => pattern.test(entryName)) ||
@@ -1368,37 +1444,10 @@ async function extractArchive({
   }
   const isWindows = window.NL_OS === "Windows";
   const archiveFormat = await detectArchiveFormat(archivePath);
-  let portable7z = null;
-  const binNames = isWindows
-    ? ["7za.exe", "7z.exe"]
-    : window.NL_OS === "Darwin"
-      ? ["7zz-mac", "7za-mac", "7zz"]
-      : ["7zz-linux", "7za-linux", "7zzs", "7zz"];
-  for (const binName of binNames) {
-    const pathsToTry = [
-      `${window.NL_PATH}/app/assets/bin/${binName}`,
-      `${window.NL_PATH}/assets/bin/${binName}`,
-      `${window.NL_PATH}/resources/app/assets/bin/${binName}`,
-      `${window.NL_CWD}/app/assets/bin/${binName}`,
-      `${window.NL_CWD}/assets/bin/${binName}`,
-      `app/assets/bin/${binName}`,
-      `assets/bin/${binName}`,
-    ];
-    for (const binPath of pathsToTry) {
-      try {
-        if ((await Neutralino.filesystem.getStats(binPath)).isFile) {
-          portable7z = binPath;
-          break;
-        }
-      } catch {}
-    }
-    if (portable7z) break;
-  }
-  const normWinPath = (p) => String(p || "").replace(/\//g, "\\");
+  const portable7z = await find7zBinary();
+
   const command = portable7z
-    ? isWindows
-      ? `"${normWinPath(portable7z)}" x -y -aoa "-o${normWinPath(destinationPath)}" "${normWinPath(archivePath)}"`
-      : `${quoteCommandArgument(portable7z)} x -y -aoa -o${quoteCommandArgument(destinationPath)} ${quoteCommandArgument(archivePath)}`
+    ? get7zExtractionCommand(portable7z, archivePath, destinationPath)
     : isWindows
       ? getWindowsExtractionCommand(archivePath, destinationPath)
       : archiveFormat === "tar" || archiveFormat === "gzip"
@@ -1408,6 +1457,7 @@ async function extractArchive({
             ? `tar -xf ${quoteCommandArgument(archivePath)} -C ${quoteCommandArgument(destinationPath)}`
             : `7z x -y -aoa -o${quoteCommandArgument(destinationPath)} ${quoteCommandArgument(archivePath)}`
           : `unzip -oq ${quoteCommandArgument(archivePath)} -d ${quoteCommandArgument(destinationPath)}`;
+
   const execute = async (cmd) => {
     const process = await spawnProcessWithShell(cmd);
     const task = getTask();
@@ -1437,49 +1487,79 @@ async function extractArchive({
       },
     );
   };
+
+  let primarySucceeded = false;
+  let primaryError = null;
   try {
     await execute(command);
+    if (await hasExtractedPayload(destinationPath)) {
+      primarySucceeded = true;
+    }
   } catch (error) {
+    primaryError = error;
+  }
+
+  if (!primarySucceeded) {
     let recovered = false;
-    if (isWindows) {
-      if (await hasExtractedPayload(destinationPath)) recovered = true;
+    if (await hasExtractedPayload(destinationPath)) {
+      recovered = true;
+    }
+
+    if (!recovered && isWindows) {
+      // If portable7z wasn't used or failed, try system 7z if available
+      if (!portable7z) {
+        for (const sys7z of [
+          "7z",
+          "7za",
+          "C:\\Program Files\\7-Zip\\7z.exe",
+          "C:\\Program Files (x86)\\7-Zip\\7z.exe",
+        ]) {
+          try {
+            await execute(
+              get7zExtractionCommand(sys7z, archivePath, destinationPath),
+            );
+            if (await hasExtractedPayload(destinationPath)) {
+              recovered = true;
+              break;
+            }
+          } catch {}
+        }
+      }
+
+      // Try native tar
       if (!recovered) {
         try {
           await execute(
             getWindowsExtractionCommand(archivePath, destinationPath),
           );
-          recovered = true;
-        } catch (tarError) {
-          if (String(tarError).includes("resolve failed")) {
-            try {
-              await execute(
-                getWindowsExtractionCommand(
-                  archivePath,
-                  destinationPath,
-                ).replace("tar.exe -xf", "tar.exe --force-local -xf"),
-              );
-              recovered = true;
-            } catch (retryError) {
-              error = retryError;
-            }
+          if (await hasExtractedPayload(destinationPath)) {
+            recovered = true;
           }
-        }
+        } catch {}
       }
+
+      // Try PowerShell Expand-Archive for zip/unknown archives
       if (
         !recovered &&
         (String(archivePath).toLowerCase().endsWith(".zip") ||
-          archiveFormat === "zip")
+          archiveFormat === "zip" ||
+          archiveFormat === "unknown")
       ) {
         try {
           await execute(
             getPowerShellExtractCommand(archivePath, destinationPath),
           );
-          recovered = true;
+          if (await hasExtractedPayload(destinationPath)) {
+            recovered = true;
+          }
         } catch (psError) {
-          error = psError;
+          primaryError = psError;
         }
       }
-    } else if (archiveFormat === "unknown" || archiveFormat === "zip") {
+    } else if (
+      !recovered &&
+      (archiveFormat === "unknown" || archiveFormat === "zip")
+    ) {
       const fallbackCommands = [
         `tar -xf ${quoteCommandArgument(archivePath)} -C ${quoteCommandArgument(destinationPath)}`,
       ];
@@ -1491,11 +1571,14 @@ async function extractArchive({
       for (const fallbackCommand of fallbackCommands) {
         try {
           await execute(fallbackCommand);
-          recovered = true;
-          break;
+          if (await hasExtractedPayload(destinationPath)) {
+            recovered = true;
+            break;
+          }
         } catch {}
       }
     }
+
     if (
       !recovered &&
       window.NL_OS === "Darwin" &&
@@ -1505,7 +1588,15 @@ async function extractArchive({
         `This ${archiveFormat.toUpperCase()} download cannot be unpacked by this version of macOS. Ask the mod author for a ZIP download.`,
       );
     }
-    if (!recovered) throw error;
+
+    if (!recovered) {
+      throw (
+        primaryError ||
+        new Error(
+          "WeekBox could not extract the downloaded archive files to storage.",
+        )
+      );
+    }
   }
   if (extractNested) {
     await extractNestedArchives(destinationPath, getTask, onEntry);

@@ -214,7 +214,7 @@
 .diagnostic-consent-overlay {
   position: fixed;
   inset: 0;
-  z-index: 2300;
+  z-index: 12000;
   display: grid;
   place-items: center;
   padding: 24px;
@@ -315,7 +315,7 @@
 .language-picker-overlay {
   position: fixed;
   inset: 0;
-  z-index: 2400;
+  z-index: 12000;
   display: grid;
   place-items: center;
   padding: 24px;
@@ -558,7 +558,7 @@
 .app-update-overlay {
   position: fixed;
   inset: 0;
-  z-index: 2300;
+  z-index: 12000;
   display: grid;
   place-items: center;
   padding: 24px;
