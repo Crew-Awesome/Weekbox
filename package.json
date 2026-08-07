@@ -1,0 +1,21 @@
+{
+  "name": "weekbox-root",
+  "version": "1.0.0",
+  "description": "Orquestador de Weekbox",
+  "main": "index.js",
+  "scripts": {
+    "build:frontend": "cd frontend && npm run build",
+    "watch:frontend": "cd frontend && npm run build -- --watch",
+    "start:neu": "neu run",
+    "dev": "npm run build:frontend && concurrently \"npm run watch:frontend\" \"npm run start:neu\""
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  },
+  "dependencies": {
+    "ws": "^8.21.2"
+  }
+}

@@ -1,0 +1,40 @@
+INFO 2026-08-07 04:50:02,066 Auth info was exported to ./.tmp/auth_info.json api\debug\debug.cpp:17 leive@DESKTOP-ESCKB7T
+ERROR 2026-08-07 04:51:03,135 NE_RS_UNBLDRE: Unable to load application resource file /app/index.html api\debug\debug.cpp:20 leive@DESKTOP-ESCKB7T
+INFO 2026-08-07 05:03:28,784 Auth info was exported to ./.tmp/auth_info.json api\debug\debug.cpp:17 leive@DESKTOP-ESCKB7T
+ERROR 2026-08-07 05:04:14,856 NE_RS_UNBLDRE: Unable to load application resource file /app/index.html api\debug\debug.cpp:20 leive@DESKTOP-ESCKB7T
+INFO 2026-08-07 05:14:32,153 Auth info was exported to ./.tmp/auth_info.json api\debug\debug.cpp:17 leive@DESKTOP-ESCKB7T
+INFO 2026-08-07 05:26:48,133 Auth info was exported to ./.tmp/auth_info.json api\debug\debug.cpp:17 leive@DESKTOP-ESCKB7T
+ERROR 2026-08-07 05:26:55,239 NE_RS_UNBLDRE: Unable to load application resource file /app/neutralino.js api\debug\debug.cpp:20 leive@DESKTOP-ESCKB7T
+ERROR 2026-08-07 05:26:55,248 NE_RS_UNBLDRE: Unable to load application resource file /app/node-extension.js api\debug\debug.cpp:20 leive@DESKTOP-ESCKB7T
+INFO 2026-08-07 05:36:56,688 Auth info was exported to ./.tmp/auth_info.json api\debug\debug.cpp:17 leive@DESKTOP-ESCKB7T
+ERROR 2026-08-07 05:37:49,528 NE_RS_UNBLDRE: Unable to load application resource file /app/index.html api\debug\debug.cpp:20 leive@DESKTOP-ESCKB7T
+INFO 2026-08-07 05:40:11,718 Auth info was exported to ./.tmp/auth_info.json api\debug\debug.cpp:17 leive@DESKTOP-ESCKB7T
+ERROR 2026-08-07 05:42:14,370 NE_RS_UNBLDRE: Unable to load application resource file /app/assets/index-DGNrK5qb.css api\debug\debug.cpp:20 leive@DESKTOP-ESCKB7T
+ERROR 2026-08-07 05:42:17,935 NE_RS_UNBLDRE: Unable to load application resource file /app/.well-known/appspecific/com.chrome.devtools.json api\debug\debug.cpp:20 leive@DESKTOP-ESCKB7T
+ERROR 2026-08-07 05:42:18,769 NE_RS_UNBLDRE: Unable to load application resource file /app/favicon.svg api\debug\debug.cpp:20 leive@DESKTOP-ESCKB7T
+INFO 2026-08-07 05:45:39,195 Auth info was exported to ./.tmp/auth_info.json api\debug\debug.cpp:17 leive@DESKTOP-ESCKB7T
+ERROR 2026-08-07 05:47:17,894 NE_RS_UNBLDRE: Unable to load application resource file /app/.well-known/appspecific/com.chrome.devtools.json api\debug\debug.cpp:20 leive@DESKTOP-ESCKB7T
+ERROR 2026-08-07 05:47:34,915 NE_RS_UNBLDRE: Unable to load application resource file /app/.well-known/appspecific/com.chrome.devtools.json api\debug\debug.cpp:20 leive@DESKTOP-ESCKB7T
+ERROR 2026-08-07 05:47:37,884 NE_RS_UNBLDRE: Unable to load application resource file /app/.well-known/appspecific/com.chrome.devtools.json api\debug\debug.cpp:20 leive@DESKTOP-ESCKB7T
+ERROR 2026-08-07 05:47:42,163 NE_RS_UNBLDRE: Unable to load application resource file /app/.well-known/appspecific/com.chrome.devtools.json api\debug\debug.cpp:20 leive@DESKTOP-ESCKB7T
+ERROR 2026-08-07 05:47:42,916 NE_RS_UNBLDRE: Unable to load application resource file /app/.well-known/appspecific/com.chrome.devtools.json api\debug\debug.cpp:20 leive@DESKTOP-ESCKB7T
+INFO 2026-08-07 05:49:50,661 Auth info was exported to ./.tmp/auth_info.json api\debug\debug.cpp:17 leive@DESKTOP-ESCKB7T
+ERROR 2026-08-07 05:50:06,272 NE_RS_UNBLDRE: Unable to load application resource file /app/.well-known/appspecific/com.chrome.devtools.json api\debug\debug.cpp:20 leive@DESKTOP-ESCKB7T
+ERROR 2026-08-07 05:50:28,139 NE_RS_UNBLDRE: Unable to load application resource file /app/.well-known/appspecific/com.chrome.devtools.json api\debug\debug.cpp:20 leive@DESKTOP-ESCKB7T
+ERROR 2026-08-07 05:50:36,133 NE_RS_UNBLDRE: Unable to load application resource file /app/.well-known/appspecific/com.chrome.devtools.json api\debug\debug.cpp:20 leive@DESKTOP-ESCKB7T
+INFO 2026-08-07 05:51:41,496 Auth info was exported to ./.tmp/auth_info.json api\debug\debug.cpp:17 leive@DESKTOP-ESCKB7T
+ERROR 2026-08-07 05:51:50,421 NE_RS_UNBLDRE: Unable to load application resource file /app/.well-known/appspecific/com.chrome.devtools.json api\debug\debug.cpp:20 leive@DESKTOP-ESCKB7T
+INFO 2026-08-07 05:51:50,665 Reloading the application... api\debug\debug.cpp:17 leive@DESKTOP-ESCKB7T
+INFO 2026-08-07 05:51:51,070 Reloading the application... api\debug\debug.cpp:17 leive@DESKTOP-ESCKB7T
+INFO 2026-08-07 05:51:51,080 Reloading the application... api\debug\debug.cpp:17 leive@DESKTOP-ESCKB7T
+ERROR 2026-08-07 05:51:51,417 NE_RS_UNBLDRE: Unable to load application resource file /app/.well-known/appspecific/com.chrome.devtools.json api\debug\debug.cpp:20 leive@DESKTOP-ESCKB7T
+INFO 2026-08-07 05:54:25,524 Reloading the application... api\debug\debug.cpp:17 leive@DESKTOP-ESCKB7T
+INFO 2026-08-07 05:54:25,811 Reloading the application... api\debug\debug.cpp:17 leive@DESKTOP-ESCKB7T
+INFO 2026-08-07 05:54:25,815 Reloading the application... api\debug\debug.cpp:17 leive@DESKTOP-ESCKB7T
+INFO 2026-08-07 05:54:47,877 Reloading the application... api\debug\debug.cpp:17 leive@DESKTOP-ESCKB7T
+INFO 2026-08-07 05:54:47,882 Reloading the application... api\debug\debug.cpp:17 leive@DESKTOP-ESCKB7T
+INFO 2026-08-07 05:54:47,920 Reloading the application... api\debug\debug.cpp:17 leive@DESKTOP-ESCKB7T
+INFO 2026-08-07 05:54:47,921 Reloading the application... api\debug\debug.cpp:17 leive@DESKTOP-ESCKB7T
+ERROR 2026-08-07 05:54:51,885 NE_RS_UNBLDRE: Unable to load application resource file /app/.well-known/appspecific/com.chrome.devtools.json api\debug\debug.cpp:20 leive@DESKTOP-ESCKB7T
+INFO 2026-08-07 05:56:06,010 Auth info was exported to ./.tmp/auth_info.json api\debug\debug.cpp:17 leive@DESKTOP-ESCKB7T
+ERROR 2026-08-07 05:56:15,567 NE_RS_UNBLDRE: Unable to load application resource file /app/.well-known/appspecific/com.chrome.devtools.json api\debug\debug.cpp:20 leive@DESKTOP-ESCKB7T

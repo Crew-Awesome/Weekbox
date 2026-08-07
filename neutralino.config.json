@@ -4,7 +4,7 @@
   "applicationIcon": "app/assets/icons/launcher-icon.png",
   "version": "2.0.5",
   "defaultMode": "window",
-  "port": 0,
+  "port": 5173,
   "documentRoot": "/app/",
   "url": "/",
   "enableServer": true,
@@ -39,6 +39,14 @@
       "webviewArgs": "--autoplay-policy=no-user-gesture-required --disable-features=PreloadMediaEngagementData,MediaEngagementBypassAutoplayPolicies"
     }
   },
+  "extensions": [
+    {
+      "id": "extNode",
+      "commandDarwin": "node --inspect ${NL_PATH}/extensions/node/main.js",
+      "commandLinux": "node --inspect ${NL_PATH}/extensions/node/main.js",
+      "commandWindows": "node --inspect ${NL_PATH}/extensions/node/main.js"
+    }
+  ],
   "cli": {
     "binaryName": "WeekBox",
     "resourcesPath": "/app/",
