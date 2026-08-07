@@ -258,6 +258,17 @@ export const downloadMod = {
 
     const { toastThumbnail, sourceType, fileSize, ...installMetadata } =
       metadata;
+    let downloadHost = "unknown";
+    try {
+      downloadHost = new URL(downloadUrl).hostname;
+    } catch {}
+    console.info("[WeekBox Download] install-start", {
+      modId,
+      modName,
+      sourceType,
+      downloadHost,
+      expectedBytes: Number(fileSize) || 0,
+    });
     const coverUrlPromise = this.fetchModCoverUrl(
       modId,
       sourceType,
@@ -488,6 +499,14 @@ export const downloadMod = {
       this.activeTasks.delete(modId);
       return true;
     } catch (error) {
+      console.error("[WeekBox Download] install-failed", {
+        modId,
+        modName,
+        sourceType,
+        downloadHost,
+        message: error?.message || String(error),
+        stack: error?.stack,
+      });
       this.reportInstallProgress(modId, modName, "cancelled", 0);
       if (error.message !== "Cancelled") {
         const task = this.activeTasks.get(modId);

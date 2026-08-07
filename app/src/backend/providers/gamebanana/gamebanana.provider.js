@@ -35,6 +35,7 @@ import {
 import {
   extractMediaFireDirectUrl,
   getGoogleDriveFileId,
+  getRangeSupportedFileSize,
 } from "../../services/downloads/external-download.resolver.js";
 
 const EXCLUDED_ENGINE_SUBMISSIONS = new Map([
@@ -46,6 +47,9 @@ const EXCLUDED_ENGINE_SUBMISSIONS = new Map([
 ]);
 
 const NON_DEPENDENCY_REQUIREMENTS = new Set(EXCLUDED_ENGINE_SUBMISSIONS.keys());
+const BROWSER_USER_AGENT =
+  "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36";
+
 function quoteCommandArgument(value) {
   const argument = String(value).replace(/[\r\n]/g, "");
   if (window.NL_OS === "Windows") {
@@ -291,18 +295,13 @@ export const gameBananaApi = {
       ) {
         const fileId = getGoogleDriveFileId(url);
         if (!fileId) return null;
-        const page = await Neutralino.os.execCommand(
-          `curl --globoff -sSL -A ${quoteCommandArgument(BROWSER_USER_AGENT)} --range 0-0 --max-filesize 131072 --connect-timeout 5 --max-time 12 ${quoteCommandArgument(url)}`,
-          { background: false },
-        );
-        const size = parseHumanFileSize(
-          page.stdOut?.match(
-            /<span[^>]+class=["']uc-name-size["'][^>]*>[\s\S]*?\(([^()]+)\)<\/span>/i,
-          )?.[1],
+        const size = await getRangeSupportedFileSize(
+          `https://drive.usercontent.google.com/download?id=${encodeURIComponent(fileId)}&export=download&confirm=t`,
+          (...args) => Neutralino.os.execCommand(...args),
         );
         return {
           filename: null,
-          size,
+          size: Number(size) || 0,
         };
       } else if (["mediafire.com", "www.mediafire.com"].includes(hostname)) {
         const page = await Neutralino.os.execCommand(
@@ -329,7 +328,12 @@ export const gameBananaApi = {
         /content-disposition:[^\r\n]*filename\*?=(?:UTF-8''|"?)([^";\r\n]+)/i,
       )?.[1];
       const sizes = [...header.matchAll(/content-length:\s*(\d+)/gi)];
-      const size = Number(sizes.at(-1)?.[1] || pageSize || 0);
+      const ranges = [
+        ...header.matchAll(/content-range:[^\r\n]*\/(\d+)/gi),
+      ];
+      const size = Number(
+        ranges.at(-1)?.[1] || sizes.at(-1)?.[1] || pageSize || 0,
+      );
       return {
         filename: filename ? decodeURIComponent(filename.trim().replace(/^"+|"+$/g, "")) : null,
         size: Number.isFinite(size) ? size : 0,
@@ -380,12 +384,6 @@ export const gameBananaApi = {
 
   async getDownloadOptions(data) {
     const externalDownloadFiles = this.getExternalDownloadFiles(data);
-    const hasNonGoogleExternal = externalDownloadFiles.some(
-      (option) =>
-        !/^(?:drive\.google\.com|drive\.usercontent\.google\.com|docs\.google\.com)$/i.test(
-          new URL(option.downloadUrl).hostname,
-        ),
-    );
     const options = [
       ...this.getDownloadFiles(data)
         .filter((file) => this.isInstallableDownloadFile(file))
@@ -403,13 +401,7 @@ export const gameBananaApi = {
           uploadedAtLabel: this.formatDownloadDate(file._tsDateAdded),
           downloadUrl: file._sDownloadUrl,
         })),
-      ...externalDownloadFiles.filter(
-        (option) =>
-          !hasNonGoogleExternal ||
-          !/^(?:drive\.google\.com|drive\.usercontent\.google\.com|docs\.google\.com)$/i.test(
-            new URL(option.downloadUrl).hostname,
-          ),
-      ),
+      ...externalDownloadFiles,
     ];
     options.sort(
       (left, right) =>

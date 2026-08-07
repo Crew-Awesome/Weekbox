@@ -4,6 +4,7 @@ import {
   activateCheckoutDialog,
   deactivateCheckoutDialog,
 } from "../home/modal/dialogFocus.js";
+import { isGoogleDriveQuotaError } from "../../../backend/services/downloads/download-validation.util.js";
 
 const DIAGNOSTIC_REPORT_ENDPOINT =
   "https://fnfweekbox.vercel.app/api/diagnostic-report";
@@ -137,12 +138,7 @@ function describeIssue(error) {
   /**
    * @fix 2026-08-05T03:31:10.964Z - Fix Google Drive download quota exceeded error reporting
    */
-  if (
-    lower.includes("google drive:") ||
-    lower.includes("cuota de descarga") ||
-    lower.includes("quota exceeded") ||
-    lower.includes("too many users have viewed or downloaded")
-  ) {
+  if (isGoogleDriveQuotaError(message)) {
     return {
       title: t("errors.quotaExceededTitle"),
       summary: t("errors.quotaExceededSummary"),

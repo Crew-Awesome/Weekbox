@@ -4,26 +4,53 @@ function looksLikeHtmlResponse(sample) {
   );
 }
 
+function getVisibleHtmlText(sample) {
+  return String(sample || "")
+    .replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi, " ")
+    .replace(/<style\b[^>]*>[\s\S]*?<\/style>/gi, " ")
+    .replace(/<[^>]+>/g, " ")
+    .replace(/&(?:amp|lt|gt|quot|#39|nbsp);/gi, " ")
+    .replace(/\s+/g, " ")
+    .trim()
+    .toLowerCase();
+}
+
+function isGoogleDriveConfirmationPage(sample) {
+  const html = String(sample || "");
+  return (
+    /<form\b[^>]*\baction\s*=\s*["'][^"']*(?:download|uc\b)[^"']*["'][^>]*>/i.test(
+      html,
+    ) ||
+    /id\s*=\s*["'](?:download-form|downloadForm|uc-download-link)["']/i.test(
+      html,
+    ) ||
+    /name\s*=\s*["'](?:confirm|uuid)["']/i.test(html)
+  );
+}
+
+function isGoogleDriveQuotaError(sample) {
+  const lower = getVisibleHtmlText(sample);
+  return (
+    lower.includes("quota exceeded") ||
+    lower.includes(
+      "too many users have viewed or downloaded this file recently",
+    ) ||
+    lower.includes("cuota de descarga") ||
+    lower.includes("ha superado la cuota") ||
+    lower.includes("ha superado su cuota")
+  );
+}
+
 function getHtmlResponseError(sample) {
   const html = String(sample || "");
   if (!looksLikeHtmlResponse(html)) return null;
-  const lower = html.toLowerCase();
 
   // If this is a Google Drive download confirmation page, it is not an error
-  const hasConfirmationForm =
-    /<form[^>]+action\s*=\s*["'][^"']*(?:download|uc\?)[^"']*["']/i.test(html) ||
-    /id=["'](?:download-form|downloadForm|uc-download-link)["']/i.test(html) ||
-    /name=["'](?:confirm|uuid)["']/i.test(html);
-  if (hasConfirmationForm) {
-    return null;
-  }
+  if (isGoogleDriveConfirmationPage(html)) return null;
 
-  if (
-    lower.includes("quota exceeded") ||
-    lower.includes("too many users have viewed or downloaded this file recently") ||
-    lower.includes("ha superado la cuota") ||
-    lower.includes("ha superado su cuota")
-  ) {
+  const lower = getVisibleHtmlText(html);
+
+  if (isGoogleDriveQuotaError(html)) {
     return new Error(
       "Google Drive: Este archivo ha superado la cuota de descargas de Google Drive debido a un alto volumen de descargas recientes. Por favor, selecciona otro enlace de descarga disponible para este mod (como MediaFire o GitHub) o inténtalo más tarde.",
     );
@@ -54,4 +81,9 @@ function getHtmlResponseError(sample) {
   );
 }
 
-export { looksLikeHtmlResponse, getHtmlResponseError };
+export {
+  looksLikeHtmlResponse,
+  isGoogleDriveConfirmationPage,
+  isGoogleDriveQuotaError,
+  getHtmlResponseError,
+};

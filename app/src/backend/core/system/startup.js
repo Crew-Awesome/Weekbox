@@ -469,19 +469,10 @@ async function startApp() {
         if (timeoutHandle) clearTimeout(timeoutHandle);
       });
     }
-    startupLoader.setPhase(t("startup.checkingLibrary"), 89);
-    {
-      let timeoutHandle;
-      await Promise.race([
-        maintenance,
-        new Promise((resolve) => {
-          timeoutHandle = setTimeout(resolve, 5000);
-        }),
-      ]).finally(() => {
-        if (timeoutHandle) clearTimeout(timeoutHandle);
-      });
-    }
     await startupLoader.complete();
+    void maintenance.catch((error) =>
+      console.warn("Background library maintenance failed", error),
+    );
     await offerNestedStorageRepair();
     await openLaunchDeepLink();
     await recommendSaferStorageLocation();

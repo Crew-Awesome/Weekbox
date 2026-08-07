@@ -11,6 +11,8 @@ import {
 import { formatBytes } from "../../utils/formatters.js";
 import {
   getHtmlResponseError,
+  isGoogleDriveConfirmationPage,
+  isGoogleDriveQuotaError,
   looksLikeHtmlResponse,
 } from "./download-validation.util.js";
 
@@ -28,6 +30,16 @@ function formatArchiveEntry(output) {
       .replace(/^x\s+/i, "")
       .replace(/^-+\s*/, "")
       .trim();
+    const byteSummary = name.match(
+      /^([\d,]+)\s+bytes(?:\s+\([^)]*\))?$/i,
+    );
+    if (byteSummary) {
+      return formatBytes(
+        Number(byteSummary[1].replaceAll(",", "")),
+        2,
+        "0 Bytes",
+      );
+    }
     if (
       !name ||
       name.startsWith("Path =") ||
@@ -820,16 +832,24 @@ const GDRIVE_CURL_HEADERS = [
   `-A ${quoteCommandArgument(BROWSER_USER_AGENT)}`,
   `-H ${quoteCommandArgument("Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8")}`,
   `-H ${quoteCommandArgument("Accept-Language: en-US,en;q=0.9")}`,
-  `-H ${quoteCommandArgument('Sec-Ch-Ua: "Google Chrome";v="125", "Chromium";v="125", "Not.A/Brand";v="24"')}`,
-  `-H ${quoteCommandArgument("Sec-Ch-Ua-Mobile: ?0")}`,
-  `-H ${quoteCommandArgument('Sec-Ch-Ua-Platform: "Windows"')}`,
-  `-H ${quoteCommandArgument("Sec-Fetch-Dest: document")}`,
-  `-H ${quoteCommandArgument("Sec-Fetch-Mode: navigate")}`,
-  `-H ${quoteCommandArgument("Sec-Fetch-Site: same-origin")}`,
-  `-H ${quoteCommandArgument("Sec-Fetch-User: ?1")}`,
-  `-H ${quoteCommandArgument("Upgrade-Insecure-Requests: 1")}`,
   `-H ${quoteCommandArgument("Referer: https://drive.usercontent.google.com/")}`,
 ].join(" ");
+
+function logGoogleDriveDebug(stage, details = {}) {
+  console.info(`[WeekBox Google Drive] ${stage}`, {
+    timestamp: new Date().toISOString(),
+    ...details,
+  });
+}
+
+function getContentRangeTotal(headers) {
+  const matches = [
+    ...String(headers || "").matchAll(
+      /content-range:\s*bytes\s+\d+-\d+\/(\d+)/gi,
+    ),
+  ];
+  return Number(matches.at(-1)?.[1] || 0);
+}
 
 /**
  * @fix 2026-08-05T03:31:10.964Z - Fix Google Drive quota detection and confirmation handling
@@ -843,7 +863,10 @@ async function downloadGoogleDriveArchive({
 }) {
   const cookiePath = `${outPath}.cookie`;
   const probePath = `${outPath}.probe`;
+  const rangeHeadersPath = `${outPath}.range-headers`;
+  const rangeProbePath = `${outPath}.range-probe`;
   try {
+    logGoogleDriveDebug("start", { fileId, totalBytes });
     onProgress?.("Authorizing Google Drive download...", 2);
     const initialUrl = `https://drive.usercontent.google.com/download?id=${encodeURIComponent(fileId)}&export=download`;
 
@@ -862,8 +885,10 @@ async function downloadGoogleDriveArchive({
 
     let isHtml = false;
     let htmlContent = "";
+    let probeSize = 0;
     try {
       const stats = await Neutralino.filesystem.getStats(probePath);
+      probeSize = Number(stats.size) || 0;
       if (stats.size > 0) {
         const readSize = Math.min(stats.size, 131072);
         htmlContent = new TextDecoder().decode(
@@ -875,6 +900,13 @@ async function downloadGoogleDriveArchive({
         isHtml = looksLikeHtmlResponse(htmlContent);
       }
     } catch {}
+
+    logGoogleDriveDebug("probe", {
+      bytes: probeSize,
+      isHtml,
+      hasConfirmation: isGoogleDriveConfirmationPage(htmlContent),
+      hasQuotaText: isGoogleDriveQuotaError(htmlContent),
+    });
 
     if (isHtml) {
       // Check if there is a direct download link or confirmation form
@@ -914,14 +946,9 @@ async function downloadGoogleDriveArchive({
         while ((match = inputRegex.exec(htmlContent)) !== null) {
           const name = match[1] || match[4];
           const value = match[2] || match[3] || "";
-          if (name) formParams.set(name, value);
-        }
-
-        const uuidMatch =
-          htmlContent.match(/name=["']uuid["']\s+value=["']([^"']+)["']/i) ||
-          htmlContent.match(/uuid=([^&"'\s<]+)/i);
-        if (uuidMatch && !formParams.get("uuid")) {
-          formParams.set("uuid", uuidMatch[1]);
+          // Google returns a quota page for this form's one-time UUID when
+          // submitted by curl; the canonical endpoint works without it.
+          if (name && name !== "uuid") formParams.set(name, value);
         }
 
         const atMatch =
@@ -935,21 +962,26 @@ async function downloadGoogleDriveArchive({
       }
 
       const hasFormOrLink = Boolean(
-        /<form[^>]+action=["'][^"']*(?:download|uc\?)[^"']*["']/i.test(htmlContent) ||
-        /id=["'](?:download-form|downloadForm|uc-download-link)["']/i.test(htmlContent) ||
-        /name=["'](?:confirm|uuid)["']/i.test(htmlContent) ||
-        directLinkMatch
+        isGoogleDriveConfirmationPage(htmlContent) || directLinkMatch,
       );
 
+      let confirmedUrlDetails = {};
+      try {
+        const confirmedUrl = new URL(confirmedDownloadUrl);
+        confirmedUrlDetails = {
+          host: confirmedUrl.hostname,
+          path: confirmedUrl.pathname,
+          queryKeys: [...confirmedUrl.searchParams.keys()].sort(),
+          hasUuid: confirmedUrl.searchParams.has("uuid"),
+        };
+      } catch {}
+      logGoogleDriveDebug("confirmation", {
+        hasFormOrLink,
+        ...confirmedUrlDetails,
+      });
+
       if (!hasFormOrLink) {
-        if (
-          htmlContent.includes("Quota exceeded") ||
-          htmlContent.includes(
-            "Too many users have viewed or downloaded this file recently",
-          ) ||
-          htmlContent.includes("ha superado la cuota") ||
-          htmlContent.includes("ha superado su cuota")
-        ) {
+        if (isGoogleDriveQuotaError(htmlContent)) {
           throw new Error(
             "Google Drive: Este archivo ha superado su cuota de descargas porque demasiados usuarios lo han descargado recientemente. Inténtalo más tarde o prueba con otro enlace de descarga.",
           );
@@ -980,24 +1012,64 @@ async function downloadGoogleDriveArchive({
 
       await Neutralino.filesystem.remove(probePath).catch(() => {});
       onProgress?.("Downloading mod from Google Drive...", 5);
-      await retryTransientDownload(
-        () =>
-          runCurlDownload(
-            `curl --globoff -# -L --fail --show-error ${GDRIVE_CURL_HEADERS} -b ${quoteCommandArgument(cookiePath)} -c ${quoteCommandArgument(cookiePath)} --connect-timeout 15 --speed-time 60 --speed-limit 1024 ${quoteCommandArgument(confirmedDownloadUrl)} -o ${quoteCommandArgument(outPath)}`,
-            getTask,
-            onProgress,
-            createFileProgressReader(outPath, totalBytes),
-          ),
+      const rangeCheck = await Neutralino.os.execCommand(
+        `curl --globoff -sS -L --fail --show-error ${GDRIVE_CURL_HEADERS} -b ${quoteCommandArgument(cookiePath)} -c ${quoteCommandArgument(cookiePath)} --range 0-0 -D ${quoteCommandArgument(rangeHeadersPath)} ${quoteCommandArgument(confirmedDownloadUrl)} -o ${quoteCommandArgument(rangeProbePath)}`,
+        { background: false },
+      );
+      if (rangeCheck.exitCode !== 0) {
+        throw createProcessError(
+          "Download",
+          rangeCheck.exitCode,
+          rangeCheck.stdErr || rangeCheck.stdOut,
+        );
+      }
+      const rangeHeaders = await Neutralino.filesystem.readFile(
+        rangeHeadersPath,
+      );
+      const rangedTotalBytes = getContentRangeTotal(rangeHeaders);
+      if (!rangedTotalBytes) {
+        const rangeSample = new TextDecoder().decode(
+          await Neutralino.filesystem.readBinaryFile(rangeProbePath, {
+            pos: 0,
+            size: 8192,
+          }),
+        );
+        throw (
+          getHtmlResponseError(rangeSample) ||
+          new Error("Google Drive did not return a ranged archive response.")
+        );
+      }
+      logGoogleDriveDebug("range-check", { totalBytes: rangedTotalBytes });
+      await downloadSegmentedArchive({
+        url: confirmedDownloadUrl,
+        outPath,
+        totalBytes: rangedTotalBytes,
         getTask,
         onProgress,
-        () => Neutralino.filesystem.remove(outPath).catch(() => {}),
-      );
+        curlOptions: GDRIVE_CURL_HEADERS,
+        parallel: false,
+      });
+      const downloadedStats = await Neutralino.filesystem
+        .getStats(outPath)
+        .catch(() => null);
+      logGoogleDriveDebug("download-complete", {
+        bytes: Number(downloadedStats?.size) || 0,
+      });
     } else {
+      logGoogleDriveDebug("probe-was-file", { bytes: probeSize });
       await finalizeDownloadedArchive(probePath, outPath);
     }
+  } catch (error) {
+    logGoogleDriveDebug("failed", {
+      name: error?.name || "Error",
+      message: error?.message || String(error),
+    });
+    throw error;
   } finally {
     await Neutralino.filesystem.remove(cookiePath).catch(() => {});
     await Neutralino.filesystem.remove(probePath).catch(() => {});
+    await Neutralino.filesystem.remove(rangeHeadersPath).catch(() => {});
+    await Neutralino.filesystem.remove(rangeProbePath).catch(() => {});
   }
 }
 
@@ -1053,30 +1125,54 @@ async function downloadSegmentedArchive({
   totalBytes,
   getTask,
   onProgress,
+  curlOptions = "",
+  parallel = true,
 }) {
   const parts = getDownloadSegments(totalBytes, outPath);
   const getProgress = createPartsProgressReader(parts, totalBytes);
   try {
     await removeParts(parts);
-    onProgress?.("Opening parallel download connections...", 2);
-    const requests = parts
-      .map(
-        (part) =>
-          `-L --range ${part.start}-${part.end} -o ${quoteCommandArgument(part.path)} ${quoteCommandArgument(url)}`,
-      )
-      .join(" --next ");
-    await retryTransientDownload(
-      () =>
-        runCurlDownload(
-          `curl --globoff -# --fail --show-error --parallel --parallel-max ${parts.length} ${requests}`,
-          getTask,
-          onProgress,
-          getProgress,
-        ),
-      getTask,
-      onProgress,
-      () => removeParts(parts),
+    onProgress?.(
+      parallel
+        ? "Opening parallel download connections..."
+        : "Opening ranged download connections...",
+      2,
     );
+    const downloadPart = (part) =>
+      retryTransientDownload(
+        () =>
+          runCurlDownload(
+            `curl --globoff -# --fail --show-error ${curlOptions} -L --range ${part.start}-${part.end} -o ${quoteCommandArgument(part.path)} ${quoteCommandArgument(url)}`,
+            getTask,
+            onProgress,
+            getProgress,
+          ),
+        getTask,
+        onProgress,
+        () => removeParts(parts),
+      );
+    if (parallel) {
+      const requests = parts
+        .map(
+          (part) =>
+            `-L --range ${part.start}-${part.end} -o ${quoteCommandArgument(part.path)} ${quoteCommandArgument(url)}`,
+        )
+        .join(" --next ");
+      await retryTransientDownload(
+        () =>
+          runCurlDownload(
+            `curl --globoff -# --fail --show-error --parallel --parallel-max ${parts.length} ${curlOptions} ${requests}`,
+            getTask,
+            onProgress,
+            getProgress,
+          ),
+        getTask,
+        onProgress,
+        () => removeParts(parts),
+      );
+    } else {
+      for (const part of parts) await downloadPart(part);
+    }
     if (getTask()?.cancelled) throw new Error("Cancelled");
     const partSizes = await Promise.all(
       parts.map(async (part) => {
@@ -1087,6 +1183,11 @@ async function downloadSegmentedArchive({
         }
       }),
     );
+    console.info("[WeekBox Google Drive] range-parts", {
+      expected: parts.map((part) => part.size),
+      actual: partSizes,
+      parallel,
+    });
     if (partSizes.some((size, index) => size !== parts[index].size)) {
       throw new Error("Parallel download returned incomplete file parts");
     }
@@ -1321,6 +1422,13 @@ async function verifyDownloadedArchiveContent(archivePath) {
       size: 8192,
     }),
   );
+  if (looksLikeHtmlResponse(sample)) {
+    logGoogleDriveDebug("archive-validation-html", {
+      bytes: stats.size,
+      hasConfirmation: isGoogleDriveConfirmationPage(sample),
+      hasQuotaText: isGoogleDriveQuotaError(sample),
+    });
+  }
   const htmlError = getHtmlResponseError(sample);
   if (htmlError) throw htmlError;
   if (stats.size < 500 * 1024) {
@@ -1332,13 +1440,7 @@ async function verifyDownloadedArchiveContent(archivePath) {
         sample.includes("<html") ||
         sample.includes("<HTML")
       ) {
-        if (
-          sample.includes("Quota exceeded") ||
-          sample.includes(
-            "Too many users have viewed or downloaded this file recently",
-          ) ||
-          sample.includes("ha superado la cuota")
-        ) {
+        if (isGoogleDriveQuotaError(sample)) {
           throw new Error(
             "Google Drive: Este archivo ha superado la cuota de descargas porque demasiados usuarios lo han descargado recientemente. Inténtalo más tarde o prueba con otro enlace.",
           );
