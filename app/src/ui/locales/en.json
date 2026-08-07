@@ -77,7 +77,7 @@
   "settings.launchOnStartup": "Launch on startup",
   "settings.launchOnStartupDescription": "Start WeekBox automatically when your PC starts.",
   "settings.protocolLinks": "Open WeekBox links",
-  "settings.protocolLinksDescription": "Let links such as {{protocol}} open in WeekBox on Windows.",
+  "settings.protocolLinksDescription": "Let links such as {{protocol}} open in WeekBox.",
   "settings.blurOutOfFocus": "Blur out of focus",
   "settings.blurOutOfFocusDescription": "Apply a blur effect to the background when the window loses focus.",
   "settings.hideOnLaunch": "Hide window when launching",

@@ -77,7 +77,7 @@
   "settings.launchOnStartup": "Avvia all'accensione",
   "settings.launchOnStartupDescription": "Avvia WeekBox all'avvio del computer.",
   "settings.protocolLinks": "Apri link WeekBox",
-  "settings.protocolLinksDescription": "Lascia link come {{protocol}} aprire in WeekBox su Windows.",
+  "settings.protocolLinksDescription": "Permetti ai link come {{protocol}} di aprirsi in WeekBox.",
   "settings.blurOutOfFocus": "Sfoca quando inattiva",
   "settings.blurOutOfFocusDescription": "Applica un'effetto di sfocatura quando la finestra è inattiva.",
   "settings.hideOnLaunch": "Riduci finestra durante esecuzione",

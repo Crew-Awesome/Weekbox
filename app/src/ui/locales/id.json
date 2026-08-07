@@ -77,7 +77,7 @@
   "settings.launchOnStartup": "Jalankan saat startup",
   "settings.launchOnStartupDescription": "Mulai WeekBox secara otomatis saat PC Anda menyala.",
   "settings.protocolLinks": "Buka tautan WeekBox",
-  "settings.protocolLinksDescription": "Izinkan tautan seperti {{protocol}} dibuka di WeekBox di Windows.",
+  "settings.protocolLinksDescription": "Izinkan tautan seperti {{protocol}} dibuka di WeekBox.",
   "settings.blurOutOfFocus": "Blur saat tidak fokus",
   "settings.blurOutOfFocusDescription": "Terapkan efek blur pada latar belakang saat jendela kehilangan fokus.",
   "settings.hideOnLaunch": "Sembunyikan jendela saat meluncurkan",

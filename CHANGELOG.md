@@ -24,6 +24,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Improved engine updates, settings, popups, messages, and translations.
 - Improved ZIP, 7Z, and RAR downloads, progress bars, extraction, retries, and file cleanup.
 - Improved GameBanana, Google Drive, and MediaFire link and file-size checks.
+- Simplified the WeekBox link setting text in all languages.
 
 ### Fixed
 
@@ -33,6 +34,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Fixed broken or incomplete archives, retries, temporary files, and Windows file errors.
 - Fixed engine updates, startup errors, the inspector, popups, carousel movement, sidebar layout, images, and memory problems.
 - Fixed language names, flags, search hints, and translated labels.
+- Fixed the Wine version setting not appearing or saving on macOS and Linux.
 
 ### Removed
 

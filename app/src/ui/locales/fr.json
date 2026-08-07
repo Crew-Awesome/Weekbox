@@ -77,7 +77,7 @@
   "settings.launchOnStartup": "Lancement au démarrage",
   "settings.launchOnStartupDescription": "Lancer WeekBox lors du démarrage de votre ordinateur.",
   "settings.protocolLinks": "Ouvrir les liens WeekBox",
-  "settings.protocolLinksDescription": "Laisser les liens tel que {{protocol}} s'ouvrir dans WeekBox sur Windows.",
+  "settings.protocolLinksDescription": "Permettre aux liens comme {{protocol}} de s'ouvrir dans WeekBox.",
   "settings.blurOutOfFocus": "Floutage lors de la perte de focus",
   "settings.blurOutOfFocusDescription": "Appliquer un effet de flou lors de la perte de focus de la fenêtre.",
   "settings.hideOnLaunch": "Cacher la fenêtre lors de l'état en cours",

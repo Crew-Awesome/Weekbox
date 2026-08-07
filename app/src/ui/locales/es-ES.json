@@ -77,7 +77,7 @@
   "settings.launchOnStartup": "Iniciar al encender el ordenador",
   "settings.launchOnStartupDescription": "Inicia WeekBox automáticamente cuando enciendas el ordenador.",
   "settings.protocolLinks": "Abrir enlaces de WeekBox",
-  "settings.protocolLinksDescription": "Permite que enlaces como {{protocol}} se abran en WeekBox en Windows.",
+  "settings.protocolLinksDescription": "Permite que enlaces como {{protocol}} se abran en WeekBox.",
   "settings.blurOutOfFocus": "Desenfocar al perder el foco",
   "settings.blurOutOfFocusDescription": "Aplica un efecto de desenfoque al fondo de WeekBox cuando la ventana pierde el foco.",
   "settings.hideOnLaunch": "Ocultar WeekBox al iniciar",

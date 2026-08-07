@@ -77,7 +77,7 @@
   "settings.launchOnStartup": "Abrir na inicialização",
   "settings.launchOnStartupDescription": "Abre o WeekBox automaticamente quando seu PC inicia.",
   "settings.protocolLinks": "Abrir links do WeekBox",
-  "settings.protocolLinksDescription": "Permite links como {{protocol}} sejam abertos no WeekBox no Windows.",
+  "settings.protocolLinksDescription": "Permite links como {{protocol}} sejam abertos no WeekBox.",
   "settings.blurOutOfFocus": "Borrar quando fora de foco",
   "settings.blurOutOfFocusDescription": "Aplica um efeito de borrão ao fundo quando a janela estiver fora de foco.",
   "settings.hideOnLaunch": "Esconder janela enquanto abre",

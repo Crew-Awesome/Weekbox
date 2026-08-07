@@ -249,6 +249,15 @@ export const configModal = {
         });
       }
     });
+
+    document
+      .getElementById("setting-wineCommand")
+      ?.addEventListener("change", (event) => {
+        appSettings.set("wineCommand", event.target.value || null);
+      });
+    document
+      .getElementById("refresh-wine-versions")
+      ?.addEventListener("click", () => this.loadWineSettings());
     if (language) {
       language.value = i18n.locale;
       this.syncLanguageDropdown(i18n.locale);
@@ -277,7 +286,8 @@ export const configModal = {
       const isSelected = option === selectedOption;
       option.classList.toggle("selected", isSelected);
       option.setAttribute("aria-selected", String(isSelected));
-      const name = option.dataset.languageName ||
+      const name =
+        option.dataset.languageName ||
         option.querySelector("span:last-child")?.textContent.trim() ||
         option.dataset.language;
       option.title = `${name} (${getLocaleCoverage(option.dataset.language)}%)`;
@@ -315,6 +325,7 @@ export const configModal = {
         checkbox.checked = appSettings.get(settingKey);
       }
     });
+    this.loadWineSettings();
     this.updateStorageLocationLabel();
     this.updateNetworkAvailability();
     try {
@@ -323,6 +334,50 @@ export const configModal = {
       );
       if (update?.asset) this.showAvailableAppUpdate(update);
     } catch {}
+  },
+
+  async loadWineSettings() {
+    const setting = document.getElementById("wine-setting");
+    const select = document.getElementById("setting-wineCommand");
+    const refresh = document.getElementById("refresh-wine-versions");
+    const status = document.getElementById("wine-setting-status");
+    if (!setting || !select || !refresh) return;
+
+    const supported = window.NL_OS === "Linux" || window.NL_OS === "Darwin";
+    setting.hidden = !supported;
+    if (!supported) return;
+
+    select.disabled = true;
+    refresh.disabled = true;
+    try {
+      const installations = await FS.getWineInstallations();
+      select.replaceChildren(
+        ...installations.map((installation) => {
+          const option = document.createElement("option");
+          option.value = installation.command;
+          option.textContent = `${installation.version} (${installation.command})`;
+          return option;
+        }),
+      );
+      const selected = appSettings.get("wineCommand");
+      select.value = installations.some(
+        (installation) => installation.command === selected,
+      )
+        ? selected
+        : installations[0]?.command || "";
+      if (select.value && select.value !== selected) {
+        appSettings.set("wineCommand", select.value);
+      }
+      if (status)
+        status.textContent = installations.length ? "" : t("wine.title");
+    } catch (error) {
+      console.warn("Could not find Wine installations", error);
+      select.replaceChildren();
+      if (status) status.textContent = t("wine.title");
+    } finally {
+      select.disabled = !select.options.length;
+      refresh.disabled = false;
+    }
   },
 
   async updateStorageLocationLabel() {

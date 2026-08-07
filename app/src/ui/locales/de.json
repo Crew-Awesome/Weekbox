@@ -77,7 +77,7 @@
   "settings.launchOnStartup": "Beim Start ausführen",
   "settings.launchOnStartupDescription": "Starte WeekBox automatisch, wenn dein PC startet.",
   "settings.protocolLinks": "Öffne WeekBox-Links",
-  "settings.protocolLinksDescription": "Links wie {{protocol}} unter Windows mit WeekBox öffnen.",
+  "settings.protocolLinksDescription": "Links wie {{protocol}} mit WeekBox öffnen.",
   "settings.blurOutOfFocus": "Bei Fokusverlust weichzeichnen",
   "settings.blurOutOfFocusDescription": "Hintergrund weichzeichnen, wenn das Fenster den Fokus verliert.",
   "settings.hideOnLaunch": "Fenster beim Start ausblenden",

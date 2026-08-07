@@ -77,7 +77,7 @@
   "settings.launchOnStartup": "Запускать при старте",
   "settings.launchOnStartupDescription": "Автоматически запускать WeekBox при включении ПК.",
   "settings.protocolLinks": "Открывать ссылки WeekBox",
-  "settings.protocolLinksDescription": "Разрешить открытие ссылок вида {{protocol}} в WeekBox в Windows.",
+  "settings.protocolLinksDescription": "Разрешить открытие ссылок вида {{protocol}} в WeekBox.",
   "settings.blurOutOfFocus": "Размытие при потере фокуса",
   "settings.blurOutOfFocusDescription": "Применять эффект размытия к фону, когда окно теряет фокус.",
   "settings.hideOnLaunch": "Скрывать окно при запуске",
