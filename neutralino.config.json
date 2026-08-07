@@ -10,6 +10,7 @@
   "enableServer": true,
   "enableNativeAPI": true,
   "enableExtensions": true,
+  
   "tokenSecurity": "one-time",
   "singleInstance": true,
   "nativeAllowList": [

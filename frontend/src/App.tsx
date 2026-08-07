@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-
+import { useNavigate } from "react-router-dom";
 // Declaramos las variables globales para que TypeScript no marque error
 declare global {
   interface Window {
@@ -12,20 +12,24 @@ declare global {
 function App() {
   const [contador, setContador] = useState(0);
   const [respuestaNode, setRespuestaNode] = useState('Esperando a Node...');
-
+  const navigate = useNavigate();
   useEffect(() => {
     //
     if (typeof window.Neutralino !== 'undefined' && typeof window.NodeExtension !== 'undefined') {
       
       // init neu y node
       window.Neutralino.init();
-      window.NODE = new window.NodeExtension(true);
+      let node: any = null;
+      node = window.NODE = new window.NodeExtension(true);
       
       // back ping pong
       window.Neutralino.events.on("pingResult", (e: any) => {
         console.log("Respuesta de Node:", e.detail);
         setRespuestaNode(e.detail);
       });
+      window.Neutralino.events.on("ready", () => {
+        node.run("setActivity", { details: "HOLAAA", state:"probando we" });
+      })
 
     } else {
       console.error("e conexión. Revisa la consola.");
@@ -66,6 +70,16 @@ function App() {
         <p style={{ marginTop: '15px', fontSize: '18px' }}>
           <strong>Node responde:</strong> {respuestaNode}
         </p>
+      </div>
+        <div style={{ padding: '15px', border: '2px solid #007bff', borderRadius: '8px' }}>
+        <h2>3. Prueba de CAMBIO DE PESTAña</h2>
+        <button 
+          onClick={() => navigate("/test")}
+          style={{ padding: '10px 20px', fontSize: '16px', cursor: 'pointer', background: '#007bff', color: 'white', border: 'none', borderRadius: '4px' }}
+        >
+          Enviar señal a Node.js
+        </button>
+
       </div>
     </div>
   );

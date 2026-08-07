@@ -38,9 +38,237 @@ INFO 2026-08-07 05:54:47,921 Reloading the application... api\debug\debug.cpp:17
 ERROR 2026-08-07 05:54:51,885 NE_RS_UNBLDRE: Unable to load application resource file /app/.well-known/appspecific/com.chrome.devtools.json api\debug\debug.cpp:20 leive@DESKTOP-ESCKB7T
 INFO 2026-08-07 05:56:06,010 Auth info was exported to ./.tmp/auth_info.json api\debug\debug.cpp:17 leive@DESKTOP-ESCKB7T
 ERROR 2026-08-07 05:56:15,567 NE_RS_UNBLDRE: Unable to load application resource file /app/.well-known/appspecific/com.chrome.devtools.json api\debug\debug.cpp:20 leive@DESKTOP-ESCKB7T
+<<<<<<< Updated upstream
 INFO 2026-08-07 12:27:36,174 Auth info was exported to ./.tmp/auth_info.json api\debug\debug.cpp:17 leive@DESKTOP-ESCKB7T
 ERROR 2026-08-07 12:28:49,808 NE_RS_UNBLDRE: Unable to load application resource file /app/.well-known/appspecific/com.chrome.devtools.json api\debug\debug.cpp:20 leive@DESKTOP-ESCKB7T
 ERROR 2026-08-07 12:30:24,731 NE_RS_UNBLDRE: Unable to load application resource file /app/.well-known/appspecific/com.chrome.devtools.json api\debug\debug.cpp:20 leive@DESKTOP-ESCKB7T
 ERROR 2026-08-07 12:30:26,338 NE_RS_UNBLDRE: Unable to load application resource file /app/.well-known/appspecific/com.chrome.devtools.json api\debug\debug.cpp:20 leive@DESKTOP-ESCKB7T
 INFO 2026-08-07 12:31:33,009 Auth info was exported to ./.tmp/auth_info.json api\debug\debug.cpp:17 leive@DESKTOP-ESCKB7T
 ERROR 2026-08-07 12:31:53,071 NE_RS_UNBLDRE: Unable to load application resource file /app/.well-known/appspecific/com.chrome.devtools.json api\debug\debug.cpp:20 leive@DESKTOP-ESCKB7T
+=======
+INFO 2026-08-07 13:35:47,175 Auth info was exported to ./.tmp/auth_info.json api\debug\debug.cpp:17 corti@DESKTOP-FOG63C3
+ERROR 2026-08-07 13:35:48,437 NE_RS_UNBLDRE: Unable to load application resource file /app/.well-known/appspecific/com.chrome.devtools.json api\debug\debug.cpp:20 corti@DESKTOP-FOG63C3
+INFO 2026-08-07 13:35:49,477 Reloading the application... api\debug\debug.cpp:17 corti@DESKTOP-FOG63C3
+INFO 2026-08-07 13:35:49,484 Reloading the application... api\debug\debug.cpp:17 corti@DESKTOP-FOG63C3
+INFO 2026-08-07 13:35:49,490 Reloading the application... api\debug\debug.cpp:17 corti@DESKTOP-FOG63C3
+ERROR 2026-08-07 13:35:49,567 NE_RS_UNBLDRE: Unable to load application resource file /app/.well-known/appspecific/com.chrome.devtools.json api\debug\debug.cpp:20 corti@DESKTOP-FOG63C3
+INFO 2026-08-07 14:10:13,662 Auth info was exported to ./.tmp/auth_info.json api\debug\debug.cpp:17 corti@DESKTOP-FOG63C3
+ERROR 2026-08-07 14:10:15,029 NE_RS_UNBLDRE: Unable to load application resource file /app/.well-known/appspecific/com.chrome.devtools.json api\debug\debug.cpp:20 corti@DESKTOP-FOG63C3
+INFO 2026-08-07 14:10:15,936 Reloading the application... api\debug\debug.cpp:17 corti@DESKTOP-FOG63C3
+INFO 2026-08-07 14:10:15,941 Reloading the application... api\debug\debug.cpp:17 corti@DESKTOP-FOG63C3
+INFO 2026-08-07 14:10:15,944 Reloading the application... api\debug\debug.cpp:17 corti@DESKTOP-FOG63C3
+ERROR 2026-08-07 14:10:16,004 NE_RS_UNBLDRE: Unable to load application resource file /app/.well-known/appspecific/com.chrome.devtools.json api\debug\debug.cpp:20 corti@DESKTOP-FOG63C3
+INFO 2026-08-07 14:12:21,115 Auth info was exported to ./.tmp/auth_info.json api\debug\debug.cpp:17 corti@DESKTOP-FOG63C3
+ERROR 2026-08-07 14:12:22,186 NE_RS_UNBLDRE: Unable to load application resource file /app/.well-known/appspecific/com.chrome.devtools.json api\debug\debug.cpp:20 corti@DESKTOP-FOG63C3
+INFO 2026-08-07 14:12:23,403 Reloading the application... api\debug\debug.cpp:17 corti@DESKTOP-FOG63C3
+INFO 2026-08-07 14:12:23,404 Reloading the application... api\debug\debug.cpp:17 corti@DESKTOP-FOG63C3
+INFO 2026-08-07 14:12:23,407 Reloading the application... api\debug\debug.cpp:17 corti@DESKTOP-FOG63C3
+ERROR 2026-08-07 14:12:23,511 NE_RS_UNBLDRE: Unable to load application resource file /app/.well-known/appspecific/com.chrome.devtools.json api\debug\debug.cpp:20 corti@DESKTOP-FOG63C3
+INFO 2026-08-07 14:16:41,269 Auth info was exported to ./.tmp/auth_info.json api\debug\debug.cpp:17 corti@DESKTOP-FOG63C3
+ERROR 2026-08-07 14:16:42,314 NE_RS_UNBLDRE: Unable to load application resource file /app/.well-known/appspecific/com.chrome.devtools.json api\debug\debug.cpp:20 corti@DESKTOP-FOG63C3
+INFO 2026-08-07 14:16:43,428 Reloading the application... api\debug\debug.cpp:17 corti@DESKTOP-FOG63C3
+INFO 2026-08-07 14:16:43,431 Reloading the application... api\debug\debug.cpp:17 corti@DESKTOP-FOG63C3
+INFO 2026-08-07 14:16:43,436 Reloading the application... api\debug\debug.cpp:17 corti@DESKTOP-FOG63C3
+ERROR 2026-08-07 14:16:43,506 NE_RS_UNBLDRE: Unable to load application resource file /app/.well-known/appspecific/com.chrome.devtools.json api\debug\debug.cpp:20 corti@DESKTOP-FOG63C3
+INFO 2026-08-07 14:17:27,899 Auth info was exported to ./.tmp/auth_info.json api\debug\debug.cpp:17 corti@DESKTOP-FOG63C3
+ERROR 2026-08-07 14:17:28,999 NE_RS_UNBLDRE: Unable to load application resource file /app/.well-known/appspecific/com.chrome.devtools.json api\debug\debug.cpp:20 corti@DESKTOP-FOG63C3
+INFO 2026-08-07 14:17:30,139 Reloading the application... api\debug\debug.cpp:17 corti@DESKTOP-FOG63C3
+INFO 2026-08-07 14:17:30,144 Reloading the application... api\debug\debug.cpp:17 corti@DESKTOP-FOG63C3
+INFO 2026-08-07 14:17:30,144 Reloading the application... api\debug\debug.cpp:17 corti@DESKTOP-FOG63C3
+ERROR 2026-08-07 14:17:30,278 NE_RS_UNBLDRE: Unable to load application resource file /app/.well-known/appspecific/com.chrome.devtools.json api\debug\debug.cpp:20 corti@DESKTOP-FOG63C3
+INFO 2026-08-07 14:18:10,609 Auth info was exported to ./.tmp/auth_info.json api\debug\debug.cpp:17 corti@DESKTOP-FOG63C3
+ERROR 2026-08-07 14:18:11,593 NE_RS_UNBLDRE: Unable to load application resource file /app/.well-known/appspecific/com.chrome.devtools.json api\debug\debug.cpp:20 corti@DESKTOP-FOG63C3
+INFO 2026-08-07 14:18:12,970 Reloading the application... api\debug\debug.cpp:17 corti@DESKTOP-FOG63C3
+INFO 2026-08-07 14:18:12,981 Reloading the application... api\debug\debug.cpp:17 corti@DESKTOP-FOG63C3
+INFO 2026-08-07 14:18:12,981 Reloading the application... api\debug\debug.cpp:17 corti@DESKTOP-FOG63C3
+ERROR 2026-08-07 14:18:13,032 NE_RS_UNBLDRE: Unable to load application resource file /app/.well-known/appspecific/com.chrome.devtools.json api\debug\debug.cpp:20 corti@DESKTOP-FOG63C3
+INFO 2026-08-07 14:36:37,023 Auth info was exported to ./.tmp/auth_info.json api\debug\debug.cpp:17 corti@DESKTOP-FOG63C3
+ERROR 2026-08-07 14:36:38,134 NE_RS_UNBLDRE: Unable to load application resource file /app/.well-known/appspecific/com.chrome.devtools.json api\debug\debug.cpp:20 corti@DESKTOP-FOG63C3
+INFO 2026-08-07 14:36:39,312 Reloading the application... api\debug\debug.cpp:17 corti@DESKTOP-FOG63C3
+INFO 2026-08-07 14:36:39,319 Reloading the application... api\debug\debug.cpp:17 corti@DESKTOP-FOG63C3
+INFO 2026-08-07 14:36:39,320 Reloading the application... api\debug\debug.cpp:17 corti@DESKTOP-FOG63C3
+ERROR 2026-08-07 14:36:39,364 NE_RS_UNBLDRE: Unable to load application resource file /app/.well-known/appspecific/com.chrome.devtools.json api\debug\debug.cpp:20 corti@DESKTOP-FOG63C3
+INFO 2026-08-07 14:37:42,402 Auth info was exported to ./.tmp/auth_info.json api\debug\debug.cpp:17 corti@DESKTOP-FOG63C3
+ERROR 2026-08-07 14:37:43,565 NE_RS_UNBLDRE: Unable to load application resource file /app/.well-known/appspecific/com.chrome.devtools.json api\debug\debug.cpp:20 corti@DESKTOP-FOG63C3
+INFO 2026-08-07 14:37:44,603 Reloading the application... api\debug\debug.cpp:17 corti@DESKTOP-FOG63C3
+INFO 2026-08-07 14:37:44,603 Reloading the application... api\debug\debug.cpp:17 corti@DESKTOP-FOG63C3
+INFO 2026-08-07 14:37:44,604 Reloading the application... api\debug\debug.cpp:17 corti@DESKTOP-FOG63C3
+ERROR 2026-08-07 14:37:44,673 NE_RS_UNBLDRE: Unable to load application resource file /app/.well-known/appspecific/com.chrome.devtools.json api\debug\debug.cpp:20 corti@DESKTOP-FOG63C3
+INFO 2026-08-07 14:38:19,861 Auth info was exported to ./.tmp/auth_info.json api\debug\debug.cpp:17 corti@DESKTOP-FOG63C3
+ERROR 2026-08-07 14:38:20,974 NE_RS_UNBLDRE: Unable to load application resource file /app/.well-known/appspecific/com.chrome.devtools.json api\debug\debug.cpp:20 corti@DESKTOP-FOG63C3
+INFO 2026-08-07 14:38:22,104 Reloading the application... api\debug\debug.cpp:17 corti@DESKTOP-FOG63C3
+INFO 2026-08-07 14:38:22,106 Reloading the application... api\debug\debug.cpp:17 corti@DESKTOP-FOG63C3
+INFO 2026-08-07 14:38:22,106 Reloading the application... api\debug\debug.cpp:17 corti@DESKTOP-FOG63C3
+ERROR 2026-08-07 14:38:22,280 NE_RS_UNBLDRE: Unable to load application resource file /app/.well-known/appspecific/com.chrome.devtools.json api\debug\debug.cpp:20 corti@DESKTOP-FOG63C3
+INFO 2026-08-07 14:40:59,451 Auth info was exported to ./.tmp/auth_info.json api\debug\debug.cpp:17 corti@DESKTOP-FOG63C3
+ERROR 2026-08-07 14:41:00,483 NE_RS_UNBLDRE: Unable to load application resource file /app/.well-known/appspecific/com.chrome.devtools.json api\debug\debug.cpp:20 corti@DESKTOP-FOG63C3
+INFO 2026-08-07 14:41:01,698 Reloading the application... api\debug\debug.cpp:17 corti@DESKTOP-FOG63C3
+INFO 2026-08-07 14:41:01,698 Reloading the application... api\debug\debug.cpp:17 corti@DESKTOP-FOG63C3
+INFO 2026-08-07 14:41:01,702 Reloading the application... api\debug\debug.cpp:17 corti@DESKTOP-FOG63C3
+ERROR 2026-08-07 14:41:01,793 NE_RS_UNBLDRE: Unable to load application resource file /app/.well-known/appspecific/com.chrome.devtools.json api\debug\debug.cpp:20 corti@DESKTOP-FOG63C3
+INFO 2026-08-07 14:43:12,713 Auth info was exported to ./.tmp/auth_info.json api\debug\debug.cpp:17 corti@DESKTOP-FOG63C3
+ERROR 2026-08-07 14:43:13,741 NE_RS_UNBLDRE: Unable to load application resource file /app/.well-known/appspecific/com.chrome.devtools.json api\debug\debug.cpp:20 corti@DESKTOP-FOG63C3
+INFO 2026-08-07 14:43:14,903 Reloading the application... api\debug\debug.cpp:17 corti@DESKTOP-FOG63C3
+INFO 2026-08-07 14:43:14,909 Reloading the application... api\debug\debug.cpp:17 corti@DESKTOP-FOG63C3
+INFO 2026-08-07 14:43:14,910 Reloading the application... api\debug\debug.cpp:17 corti@DESKTOP-FOG63C3
+ERROR 2026-08-07 14:43:14,963 NE_RS_UNBLDRE: Unable to load application resource file /app/.well-known/appspecific/com.chrome.devtools.json api\debug\debug.cpp:20 corti@DESKTOP-FOG63C3
+INFO 2026-08-07 14:44:42,070 Auth info was exported to ./.tmp/auth_info.json api\debug\debug.cpp:17 corti@DESKTOP-FOG63C3
+ERROR 2026-08-07 14:44:43,173 NE_RS_UNBLDRE: Unable to load application resource file /app/.well-known/appspecific/com.chrome.devtools.json api\debug\debug.cpp:20 corti@DESKTOP-FOG63C3
+INFO 2026-08-07 14:44:44,320 Reloading the application... api\debug\debug.cpp:17 corti@DESKTOP-FOG63C3
+INFO 2026-08-07 14:44:44,320 Reloading the application... api\debug\debug.cpp:17 corti@DESKTOP-FOG63C3
+INFO 2026-08-07 14:44:44,320 Reloading the application... api\debug\debug.cpp:17 corti@DESKTOP-FOG63C3
+ERROR 2026-08-07 14:44:44,373 NE_RS_UNBLDRE: Unable to load application resource file /app/.well-known/appspecific/com.chrome.devtools.json api\debug\debug.cpp:20 corti@DESKTOP-FOG63C3
+INFO 2026-08-07 14:45:36,831 Reloading the application... api\debug\debug.cpp:17 corti@DESKTOP-FOG63C3
+INFO 2026-08-07 14:45:36,832 Reloading the application... api\debug\debug.cpp:17 corti@DESKTOP-FOG63C3
+INFO 2026-08-07 14:45:36,836 Reloading the application... api\debug\debug.cpp:17 corti@DESKTOP-FOG63C3
+ERROR 2026-08-07 14:45:36,891 NE_RS_UNBLDRE: Unable to load application resource file /app/.well-known/appspecific/com.chrome.devtools.json api\debug\debug.cpp:20 corti@DESKTOP-FOG63C3
+INFO 2026-08-07 14:46:42,714 Auth info was exported to ./.tmp/auth_info.json api\debug\debug.cpp:17 corti@DESKTOP-FOG63C3
+ERROR 2026-08-07 14:46:43,739 NE_RS_UNBLDRE: Unable to load application resource file /app/.well-known/appspecific/com.chrome.devtools.json api\debug\debug.cpp:20 corti@DESKTOP-FOG63C3
+INFO 2026-08-07 14:46:44,879 Reloading the application... api\debug\debug.cpp:17 corti@DESKTOP-FOG63C3
+INFO 2026-08-07 14:46:44,882 Reloading the application... api\debug\debug.cpp:17 corti@DESKTOP-FOG63C3
+INFO 2026-08-07 14:46:44,887 Reloading the application... api\debug\debug.cpp:17 corti@DESKTOP-FOG63C3
+ERROR 2026-08-07 14:46:44,952 NE_RS_UNBLDRE: Unable to load application resource file /app/.well-known/appspecific/com.chrome.devtools.json api\debug\debug.cpp:20 corti@DESKTOP-FOG63C3
+INFO 2026-08-07 14:47:30,300 Auth info was exported to ./.tmp/auth_info.json api\debug\debug.cpp:17 corti@DESKTOP-FOG63C3
+ERROR 2026-08-07 14:47:31,346 NE_RS_UNBLDRE: Unable to load application resource file /app/.well-known/appspecific/com.chrome.devtools.json api\debug\debug.cpp:20 corti@DESKTOP-FOG63C3
+INFO 2026-08-07 14:47:32,626 Reloading the application... api\debug\debug.cpp:17 corti@DESKTOP-FOG63C3
+INFO 2026-08-07 14:47:32,633 Reloading the application... api\debug\debug.cpp:17 corti@DESKTOP-FOG63C3
+INFO 2026-08-07 14:47:32,633 Reloading the application... api\debug\debug.cpp:17 corti@DESKTOP-FOG63C3
+ERROR 2026-08-07 14:47:32,680 NE_RS_UNBLDRE: Unable to load application resource file /app/.well-known/appspecific/com.chrome.devtools.json api\debug\debug.cpp:20 corti@DESKTOP-FOG63C3
+INFO 2026-08-07 14:50:32,520 Auth info was exported to ./.tmp/auth_info.json api\debug\debug.cpp:17 corti@DESKTOP-FOG63C3
+ERROR 2026-08-07 14:50:33,514 NE_RS_UNBLDRE: Unable to load application resource file /app/.well-known/appspecific/com.chrome.devtools.json api\debug\debug.cpp:20 corti@DESKTOP-FOG63C3
+INFO 2026-08-07 14:50:34,623 Reloading the application... api\debug\debug.cpp:17 corti@DESKTOP-FOG63C3
+ERROR 2026-08-07 14:50:34,664 NE_RS_UNBLDRE: Unable to load application resource file /app/.well-known/appspecific/com.chrome.devtools.json api\debug\debug.cpp:20 corti@DESKTOP-FOG63C3
+INFO 2026-08-07 14:50:34,716 Reloading the application... api\debug\debug.cpp:17 corti@DESKTOP-FOG63C3
+INFO 2026-08-07 14:50:34,716 Reloading the application... api\debug\debug.cpp:17 corti@DESKTOP-FOG63C3
+INFO 2026-08-07 14:50:34,717 Reloading the application... api\debug\debug.cpp:17 corti@DESKTOP-FOG63C3
+ERROR 2026-08-07 14:50:34,761 NE_RS_UNBLDRE: Unable to load application resource file /app/.well-known/appspecific/com.chrome.devtools.json api\debug\debug.cpp:20 corti@DESKTOP-FOG63C3
+INFO 2026-08-07 14:52:11,326 Auth info was exported to ./.tmp/auth_info.json api\debug\debug.cpp:17 corti@DESKTOP-FOG63C3
+ERROR 2026-08-07 14:52:12,361 NE_RS_UNBLDRE: Unable to load application resource file /app/.well-known/appspecific/com.chrome.devtools.json api\debug\debug.cpp:20 corti@DESKTOP-FOG63C3
+INFO 2026-08-07 14:52:13,389 Reloading the application... api\debug\debug.cpp:17 corti@DESKTOP-FOG63C3
+INFO 2026-08-07 14:52:13,393 Reloading the application... api\debug\debug.cpp:17 corti@DESKTOP-FOG63C3
+INFO 2026-08-07 14:52:13,395 Reloading the application... api\debug\debug.cpp:17 corti@DESKTOP-FOG63C3
+ERROR 2026-08-07 14:52:13,445 NE_RS_UNBLDRE: Unable to load application resource file /app/.well-known/appspecific/com.chrome.devtools.json api\debug\debug.cpp:20 corti@DESKTOP-FOG63C3
+INFO 2026-08-07 14:52:34,501 Auth info was exported to ./.tmp/auth_info.json api\debug\debug.cpp:17 corti@DESKTOP-FOG63C3
+ERROR 2026-08-07 14:52:35,625 NE_RS_UNBLDRE: Unable to load application resource file /app/.well-known/appspecific/com.chrome.devtools.json api\debug\debug.cpp:20 corti@DESKTOP-FOG63C3
+INFO 2026-08-07 14:52:36,898 Reloading the application... api\debug\debug.cpp:17 corti@DESKTOP-FOG63C3
+INFO 2026-08-07 14:52:36,898 Reloading the application... api\debug\debug.cpp:17 corti@DESKTOP-FOG63C3
+INFO 2026-08-07 14:52:36,904 Reloading the application... api\debug\debug.cpp:17 corti@DESKTOP-FOG63C3
+ERROR 2026-08-07 14:52:36,994 NE_RS_UNBLDRE: Unable to load application resource file /app/.well-known/appspecific/com.chrome.devtools.json api\debug\debug.cpp:20 corti@DESKTOP-FOG63C3
+INFO 2026-08-07 14:53:00,644 Auth info was exported to ./.tmp/auth_info.json api\debug\debug.cpp:17 corti@DESKTOP-FOG63C3
+ERROR 2026-08-07 14:53:01,710 NE_RS_UNBLDRE: Unable to load application resource file /app/.well-known/appspecific/com.chrome.devtools.json api\debug\debug.cpp:20 corti@DESKTOP-FOG63C3
+INFO 2026-08-07 14:53:02,965 Reloading the application... api\debug\debug.cpp:17 corti@DESKTOP-FOG63C3
+INFO 2026-08-07 14:53:02,969 Reloading the application... api\debug\debug.cpp:17 corti@DESKTOP-FOG63C3
+INFO 2026-08-07 14:53:02,972 Reloading the application... api\debug\debug.cpp:17 corti@DESKTOP-FOG63C3
+ERROR 2026-08-07 14:53:03,013 NE_RS_UNBLDRE: Unable to load application resource file /app/.well-known/appspecific/com.chrome.devtools.json api\debug\debug.cpp:20 corti@DESKTOP-FOG63C3
+INFO 2026-08-07 14:59:31,699 Auth info was exported to ./.tmp/auth_info.json api\debug\debug.cpp:17 corti@DESKTOP-FOG63C3
+ERROR 2026-08-07 14:59:32,786 NE_RS_UNBLDRE: Unable to load application resource file /app/.well-known/appspecific/com.chrome.devtools.json api\debug\debug.cpp:20 corti@DESKTOP-FOG63C3
+INFO 2026-08-07 14:59:34,009 Reloading the application... api\debug\debug.cpp:17 corti@DESKTOP-FOG63C3
+INFO 2026-08-07 14:59:34,019 Reloading the application... api\debug\debug.cpp:17 corti@DESKTOP-FOG63C3
+INFO 2026-08-07 14:59:34,020 Reloading the application... api\debug\debug.cpp:17 corti@DESKTOP-FOG63C3
+ERROR 2026-08-07 14:59:34,085 NE_RS_UNBLDRE: Unable to load application resource file /app/.well-known/appspecific/com.chrome.devtools.json api\debug\debug.cpp:20 corti@DESKTOP-FOG63C3
+INFO 2026-08-07 15:00:11,688 Auth info was exported to ./.tmp/auth_info.json api\debug\debug.cpp:17 corti@DESKTOP-FOG63C3
+ERROR 2026-08-07 15:00:12,731 NE_RS_UNBLDRE: Unable to load application resource file /app/.well-known/appspecific/com.chrome.devtools.json api\debug\debug.cpp:20 corti@DESKTOP-FOG63C3
+INFO 2026-08-07 15:00:13,753 Reloading the application... api\debug\debug.cpp:17 corti@DESKTOP-FOG63C3
+INFO 2026-08-07 15:00:13,758 Reloading the application... api\debug\debug.cpp:17 corti@DESKTOP-FOG63C3
+INFO 2026-08-07 15:00:13,759 Reloading the application... api\debug\debug.cpp:17 corti@DESKTOP-FOG63C3
+ERROR 2026-08-07 15:00:13,808 NE_RS_UNBLDRE: Unable to load application resource file /app/.well-known/appspecific/com.chrome.devtools.json api\debug\debug.cpp:20 corti@DESKTOP-FOG63C3
+INFO 2026-08-07 15:05:15,028 Auth info was exported to ./.tmp/auth_info.json api\debug\debug.cpp:17 corti@DESKTOP-FOG63C3
+ERROR 2026-08-07 15:05:16,084 NE_RS_UNBLDRE: Unable to load application resource file /app/.well-known/appspecific/com.chrome.devtools.json api\debug\debug.cpp:20 corti@DESKTOP-FOG63C3
+INFO 2026-08-07 15:05:17,197 Reloading the application... api\debug\debug.cpp:17 corti@DESKTOP-FOG63C3
+INFO 2026-08-07 15:05:17,198 Reloading the application... api\debug\debug.cpp:17 corti@DESKTOP-FOG63C3
+INFO 2026-08-07 15:05:17,199 Reloading the application... api\debug\debug.cpp:17 corti@DESKTOP-FOG63C3
+ERROR 2026-08-07 15:05:17,268 NE_RS_UNBLDRE: Unable to load application resource file /app/.well-known/appspecific/com.chrome.devtools.json api\debug\debug.cpp:20 corti@DESKTOP-FOG63C3
+INFO 2026-08-07 15:11:22,319 Auth info was exported to ./.tmp/auth_info.json api\debug\debug.cpp:17 corti@DESKTOP-FOG63C3
+ERROR 2026-08-07 15:11:23,832 NE_RS_UNBLDRE: Unable to load application resource file /app/.well-known/appspecific/com.chrome.devtools.json api\debug\debug.cpp:20 corti@DESKTOP-FOG63C3
+INFO 2026-08-07 15:15:01,569 Auth info was exported to ./.tmp/auth_info.json api\debug\debug.cpp:17 corti@DESKTOP-FOG63C3
+ERROR 2026-08-07 15:15:02,942 NE_RS_UNBLDRE: Unable to load application resource file /app/.well-known/appspecific/com.chrome.devtools.json api\debug\debug.cpp:20 corti@DESKTOP-FOG63C3
+INFO 2026-08-07 15:15:03,801 Reloading the application... api\debug\debug.cpp:17 corti@DESKTOP-FOG63C3
+ERROR 2026-08-07 15:15:03,842 NE_RS_UNBLDRE: Unable to load application resource file /app/.well-known/appspecific/com.chrome.devtools.json api\debug\debug.cpp:20 corti@DESKTOP-FOG63C3
+INFO 2026-08-07 15:15:03,944 Reloading the application... api\debug\debug.cpp:17 corti@DESKTOP-FOG63C3
+INFO 2026-08-07 15:15:03,953 Reloading the application... api\debug\debug.cpp:17 corti@DESKTOP-FOG63C3
+INFO 2026-08-07 15:15:03,987 Reloading the application... api\debug\debug.cpp:17 corti@DESKTOP-FOG63C3
+ERROR 2026-08-07 15:15:04,043 NE_RS_UNBLDRE: Unable to load application resource file /app/.well-known/appspecific/com.chrome.devtools.json api\debug\debug.cpp:20 corti@DESKTOP-FOG63C3
+ERROR 2026-08-07 15:15:14,796 NE_RS_UNBLDRE: Unable to load application resource file /app/test/index.html api\debug\debug.cpp:20 corti@DESKTOP-FOG63C3
+INFO 2026-08-07 15:17:05,516 Auth info was exported to ./.tmp/auth_info.json api\debug\debug.cpp:17 corti@DESKTOP-FOG63C3
+ERROR 2026-08-07 15:17:06,557 NE_RS_UNBLDRE: Unable to load application resource file /app/.well-known/appspecific/com.chrome.devtools.json api\debug\debug.cpp:20 corti@DESKTOP-FOG63C3
+ERROR 2026-08-07 15:17:07,233 NE_RS_UNBLDRE: Unable to load application resource file /app/test/index.html api\debug\debug.cpp:20 corti@DESKTOP-FOG63C3
+INFO 2026-08-07 15:17:49,624 Auth info was exported to ./.tmp/auth_info.json api\debug\debug.cpp:17 corti@DESKTOP-FOG63C3
+ERROR 2026-08-07 15:17:50,665 NE_RS_UNBLDRE: Unable to load application resource file /app/.well-known/appspecific/com.chrome.devtools.json api\debug\debug.cpp:20 corti@DESKTOP-FOG63C3
+ERROR 2026-08-07 15:17:51,674 NE_RS_UNBLDRE: Unable to load application resource file /app/test/index.html api\debug\debug.cpp:20 corti@DESKTOP-FOG63C3
+INFO 2026-08-07 15:19:40,830 Auth info was exported to ./.tmp/auth_info.json api\debug\debug.cpp:17 corti@DESKTOP-FOG63C3
+ERROR 2026-08-07 15:19:41,893 NE_RS_UNBLDRE: Unable to load application resource file /app/.well-known/appspecific/com.chrome.devtools.json api\debug\debug.cpp:20 corti@DESKTOP-FOG63C3
+INFO 2026-08-07 15:19:43,097 Reloading the application... api\debug\debug.cpp:17 corti@DESKTOP-FOG63C3
+INFO 2026-08-07 15:19:43,101 Reloading the application... api\debug\debug.cpp:17 corti@DESKTOP-FOG63C3
+INFO 2026-08-07 15:19:43,105 Reloading the application... api\debug\debug.cpp:17 corti@DESKTOP-FOG63C3
+ERROR 2026-08-07 15:19:43,155 NE_RS_UNBLDRE: Unable to load application resource file /app/.well-known/appspecific/com.chrome.devtools.json api\debug\debug.cpp:20 corti@DESKTOP-FOG63C3
+INFO 2026-08-07 15:20:13,710 Auth info was exported to ./.tmp/auth_info.json api\debug\debug.cpp:17 corti@DESKTOP-FOG63C3
+ERROR 2026-08-07 15:20:14,830 NE_RS_UNBLDRE: Unable to load application resource file /app/.well-known/appspecific/com.chrome.devtools.json api\debug\debug.cpp:20 corti@DESKTOP-FOG63C3
+INFO 2026-08-07 15:20:16,117 Reloading the application... api\debug\debug.cpp:17 corti@DESKTOP-FOG63C3
+INFO 2026-08-07 15:20:16,122 Reloading the application... api\debug\debug.cpp:17 corti@DESKTOP-FOG63C3
+INFO 2026-08-07 15:20:16,122 Reloading the application... api\debug\debug.cpp:17 corti@DESKTOP-FOG63C3
+ERROR 2026-08-07 15:20:16,179 NE_RS_UNBLDRE: Unable to load application resource file /app/.well-known/appspecific/com.chrome.devtools.json api\debug\debug.cpp:20 corti@DESKTOP-FOG63C3
+INFO 2026-08-07 15:20:56,468 Auth info was exported to ./.tmp/auth_info.json api\debug\debug.cpp:17 corti@DESKTOP-FOG63C3
+ERROR 2026-08-07 15:20:57,500 NE_RS_UNBLDRE: Unable to load application resource file /app/.well-known/appspecific/com.chrome.devtools.json api\debug\debug.cpp:20 corti@DESKTOP-FOG63C3
+INFO 2026-08-07 15:20:58,827 Reloading the application... api\debug\debug.cpp:17 corti@DESKTOP-FOG63C3
+INFO 2026-08-07 15:20:58,833 Reloading the application... api\debug\debug.cpp:17 corti@DESKTOP-FOG63C3
+INFO 2026-08-07 15:20:58,836 Reloading the application... api\debug\debug.cpp:17 corti@DESKTOP-FOG63C3
+ERROR 2026-08-07 15:20:58,879 NE_RS_UNBLDRE: Unable to load application resource file /app/.well-known/appspecific/com.chrome.devtools.json api\debug\debug.cpp:20 corti@DESKTOP-FOG63C3
+INFO 2026-08-07 15:22:31,946 Reloading the application... api\debug\debug.cpp:17 corti@DESKTOP-FOG63C3
+INFO 2026-08-07 15:22:31,952 Reloading the application... api\debug\debug.cpp:17 corti@DESKTOP-FOG63C3
+INFO 2026-08-07 15:22:31,955 Reloading the application... api\debug\debug.cpp:17 corti@DESKTOP-FOG63C3
+ERROR 2026-08-07 15:22:32,014 NE_RS_UNBLDRE: Unable to load application resource file /app/.well-known/appspecific/com.chrome.devtools.json api\debug\debug.cpp:20 corti@DESKTOP-FOG63C3
+INFO 2026-08-07 15:22:36,741 Auth info was exported to ./.tmp/auth_info.json api\debug\debug.cpp:17 corti@DESKTOP-FOG63C3
+ERROR 2026-08-07 15:22:38,109 NE_RS_UNBLDRE: Unable to load application resource file /app/.well-known/appspecific/com.chrome.devtools.json api\debug\debug.cpp:20 corti@DESKTOP-FOG63C3
+INFO 2026-08-07 15:22:39,472 Reloading the application... api\debug\debug.cpp:17 corti@DESKTOP-FOG63C3
+INFO 2026-08-07 15:22:39,474 Reloading the application... api\debug\debug.cpp:17 corti@DESKTOP-FOG63C3
+INFO 2026-08-07 15:22:39,475 Reloading the application... api\debug\debug.cpp:17 corti@DESKTOP-FOG63C3
+ERROR 2026-08-07 15:22:39,522 NE_RS_UNBLDRE: Unable to load application resource file /app/.well-known/appspecific/com.chrome.devtools.json api\debug\debug.cpp:20 corti@DESKTOP-FOG63C3
+INFO 2026-08-07 15:23:04,503 Auth info was exported to ./.tmp/auth_info.json api\debug\debug.cpp:17 corti@DESKTOP-FOG63C3
+ERROR 2026-08-07 15:23:05,629 NE_RS_UNBLDRE: Unable to load application resource file /app/.well-known/appspecific/com.chrome.devtools.json api\debug\debug.cpp:20 corti@DESKTOP-FOG63C3
+INFO 2026-08-07 15:23:06,920 Reloading the application... api\debug\debug.cpp:17 corti@DESKTOP-FOG63C3
+INFO 2026-08-07 15:23:06,923 Reloading the application... api\debug\debug.cpp:17 corti@DESKTOP-FOG63C3
+INFO 2026-08-07 15:23:06,926 Reloading the application... api\debug\debug.cpp:17 corti@DESKTOP-FOG63C3
+ERROR 2026-08-07 15:23:06,981 NE_RS_UNBLDRE: Unable to load application resource file /app/.well-known/appspecific/com.chrome.devtools.json api\debug\debug.cpp:20 corti@DESKTOP-FOG63C3
+INFO 2026-08-07 15:24:46,880 Auth info was exported to ./.tmp/auth_info.json api\debug\debug.cpp:17 corti@DESKTOP-FOG63C3
+ERROR 2026-08-07 15:24:47,956 NE_RS_UNBLDRE: Unable to load application resource file /app/.well-known/appspecific/com.chrome.devtools.json api\debug\debug.cpp:20 corti@DESKTOP-FOG63C3
+INFO 2026-08-07 15:24:49,170 Reloading the application... api\debug\debug.cpp:17 corti@DESKTOP-FOG63C3
+INFO 2026-08-07 15:24:49,170 Reloading the application... api\debug\debug.cpp:17 corti@DESKTOP-FOG63C3
+INFO 2026-08-07 15:24:49,176 Reloading the application... api\debug\debug.cpp:17 corti@DESKTOP-FOG63C3
+ERROR 2026-08-07 15:24:49,222 NE_RS_UNBLDRE: Unable to load application resource file /app/.well-known/appspecific/com.chrome.devtools.json api\debug\debug.cpp:20 corti@DESKTOP-FOG63C3
+INFO 2026-08-07 15:25:02,162 Auth info was exported to ./.tmp/auth_info.json api\debug\debug.cpp:17 corti@DESKTOP-FOG63C3
+ERROR 2026-08-07 15:25:03,248 NE_RS_UNBLDRE: Unable to load application resource file /app/.well-known/appspecific/com.chrome.devtools.json api\debug\debug.cpp:20 corti@DESKTOP-FOG63C3
+INFO 2026-08-07 15:25:04,427 Reloading the application... api\debug\debug.cpp:17 corti@DESKTOP-FOG63C3
+INFO 2026-08-07 15:25:04,434 Reloading the application... api\debug\debug.cpp:17 corti@DESKTOP-FOG63C3
+INFO 2026-08-07 15:25:04,435 Reloading the application... api\debug\debug.cpp:17 corti@DESKTOP-FOG63C3
+ERROR 2026-08-07 15:25:04,486 NE_RS_UNBLDRE: Unable to load application resource file /app/.well-known/appspecific/com.chrome.devtools.json api\debug\debug.cpp:20 corti@DESKTOP-FOG63C3
+INFO 2026-08-07 15:25:21,388 Auth info was exported to ./.tmp/auth_info.json api\debug\debug.cpp:17 corti@DESKTOP-FOG63C3
+ERROR 2026-08-07 15:25:22,459 NE_RS_UNBLDRE: Unable to load application resource file /app/.well-known/appspecific/com.chrome.devtools.json api\debug\debug.cpp:20 corti@DESKTOP-FOG63C3
+INFO 2026-08-07 15:25:23,664 Reloading the application... api\debug\debug.cpp:17 corti@DESKTOP-FOG63C3
+INFO 2026-08-07 15:25:23,669 Reloading the application... api\debug\debug.cpp:17 corti@DESKTOP-FOG63C3
+INFO 2026-08-07 15:25:23,679 Reloading the application... api\debug\debug.cpp:17 corti@DESKTOP-FOG63C3
+ERROR 2026-08-07 15:25:23,721 NE_RS_UNBLDRE: Unable to load application resource file /app/.well-known/appspecific/com.chrome.devtools.json api\debug\debug.cpp:20 corti@DESKTOP-FOG63C3
+INFO 2026-08-07 15:25:48,596 Auth info was exported to ./.tmp/auth_info.json api\debug\debug.cpp:17 corti@DESKTOP-FOG63C3
+ERROR 2026-08-07 15:25:49,644 NE_RS_UNBLDRE: Unable to load application resource file /app/.well-known/appspecific/com.chrome.devtools.json api\debug\debug.cpp:20 corti@DESKTOP-FOG63C3
+INFO 2026-08-07 15:25:50,938 Reloading the application... api\debug\debug.cpp:17 corti@DESKTOP-FOG63C3
+INFO 2026-08-07 15:25:50,944 Reloading the application... api\debug\debug.cpp:17 corti@DESKTOP-FOG63C3
+INFO 2026-08-07 15:25:50,947 Reloading the application... api\debug\debug.cpp:17 corti@DESKTOP-FOG63C3
+ERROR 2026-08-07 15:25:51,001 NE_RS_UNBLDRE: Unable to load application resource file /app/.well-known/appspecific/com.chrome.devtools.json api\debug\debug.cpp:20 corti@DESKTOP-FOG63C3
+INFO 2026-08-07 15:26:16,329 Auth info was exported to ./.tmp/auth_info.json api\debug\debug.cpp:17 corti@DESKTOP-FOG63C3
+ERROR 2026-08-07 15:26:17,446 NE_RS_UNBLDRE: Unable to load application resource file /app/.well-known/appspecific/com.chrome.devtools.json api\debug\debug.cpp:20 corti@DESKTOP-FOG63C3
+INFO 2026-08-07 15:26:18,472 Reloading the application... api\debug\debug.cpp:17 corti@DESKTOP-FOG63C3
+INFO 2026-08-07 15:26:18,472 Reloading the application... api\debug\debug.cpp:17 corti@DESKTOP-FOG63C3
+INFO 2026-08-07 15:26:18,472 Reloading the application... api\debug\debug.cpp:17 corti@DESKTOP-FOG63C3
+ERROR 2026-08-07 15:26:18,527 NE_RS_UNBLDRE: Unable to load application resource file /app/.well-known/appspecific/com.chrome.devtools.json api\debug\debug.cpp:20 corti@DESKTOP-FOG63C3
+INFO 2026-08-07 15:26:29,630 Auth info was exported to ./.tmp/auth_info.json api\debug\debug.cpp:17 corti@DESKTOP-FOG63C3
+ERROR 2026-08-07 15:26:30,635 NE_RS_UNBLDRE: Unable to load application resource file /app/.well-known/appspecific/com.chrome.devtools.json api\debug\debug.cpp:20 corti@DESKTOP-FOG63C3
+INFO 2026-08-07 15:26:32,009 Reloading the application... api\debug\debug.cpp:17 corti@DESKTOP-FOG63C3
+INFO 2026-08-07 15:26:32,009 Reloading the application... api\debug\debug.cpp:17 corti@DESKTOP-FOG63C3
+INFO 2026-08-07 15:26:32,027 Reloading the application... api\debug\debug.cpp:17 corti@DESKTOP-FOG63C3
+ERROR 2026-08-07 15:26:32,136 NE_RS_UNBLDRE: Unable to load application resource file /app/.well-known/appspecific/com.chrome.devtools.json api\debug\debug.cpp:20 corti@DESKTOP-FOG63C3
+INFO 2026-08-07 15:26:38,371 Auth info was exported to ./.tmp/auth_info.json api\debug\debug.cpp:17 corti@DESKTOP-FOG63C3
+ERROR 2026-08-07 15:26:39,385 NE_RS_UNBLDRE: Unable to load application resource file /app/.well-known/appspecific/com.chrome.devtools.json api\debug\debug.cpp:20 corti@DESKTOP-FOG63C3
+INFO 2026-08-07 15:26:40,568 Reloading the application... api\debug\debug.cpp:17 corti@DESKTOP-FOG63C3
+INFO 2026-08-07 15:26:40,568 Reloading the application... api\debug\debug.cpp:17 corti@DESKTOP-FOG63C3
+INFO 2026-08-07 15:26:40,574 Reloading the application... api\debug\debug.cpp:17 corti@DESKTOP-FOG63C3
+ERROR 2026-08-07 15:26:40,634 NE_RS_UNBLDRE: Unable to load application resource file /app/.well-known/appspecific/com.chrome.devtools.json api\debug\debug.cpp:20 corti@DESKTOP-FOG63C3
+>>>>>>> Stashed changes
