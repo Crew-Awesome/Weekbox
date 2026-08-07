@@ -1,0 +1,4 @@
+# Carpetas de binarios y empaquetado de Neutralinojs
+/bin/
+/dist/
+.tmp/
