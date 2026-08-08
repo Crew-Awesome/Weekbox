@@ -156,7 +156,6 @@ async function recommendSaferStorageLocation() {
       },
       { replaceExisting: true },
     );
-    appSettings.set("storageParentPath", null);
     toastSystem.setState(toastId, "complete", {
       badgeHtml: '<i class="fa-solid fa-check" aria-hidden="true"></i>',
     });

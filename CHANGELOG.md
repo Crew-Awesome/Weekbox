@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.1.3] - 2026-08-07
+
+### Fixed
+
+- Fixed the default storage location not being remembered after restart.
+- Fixed the safer-location message returning after a successful move.
+
 ## [2.1.2] - 2026-08-07
 
 ### Fixed

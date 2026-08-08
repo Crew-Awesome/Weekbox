@@ -625,7 +625,6 @@ export const configModal = {
         (progress) => this.updateStorageMoveToast(progress),
         { replaceExisting: true },
       );
-      appSettings.set("storageParentPath", null);
       this.updateStorageLocationLabel();
       this.completeStorageMoveToast();
     } catch (error) {

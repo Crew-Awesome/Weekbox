@@ -404,6 +404,7 @@ var _FileSystemService = class _FileSystemService {
     this.setStoragePaths(storage.basePath);
     await appSettings.setDataPath(this.dataPath);
     appSettings.set("storageParentPath", storage.basePath);
+    await appSettings.write();
     return storage.weekboxPath;
   }
   async moveStorageTo(basePath, onProgress = () => {}, options = {}) {
@@ -526,6 +527,7 @@ var _FileSystemService = class _FileSystemService {
       this.setStoragePaths(destinationBasePath);
       await appSettings.setDataPath(this.dataPath);
       appSettings.set("storageParentPath", destinationBasePath);
+      await appSettings.write();
       const [storedMovedMods, movedEngines] = await Promise.all([
         this.mods.getAll(),
         this.getInstalledEngines(),
