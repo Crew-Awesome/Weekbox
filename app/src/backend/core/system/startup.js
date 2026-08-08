@@ -139,6 +139,7 @@ async function recommendSaferStorageLocation() {
     indeterminate: true,
   });
   try {
+    await FS.api.ensureDir(defaultPath);
     await FS.moveStorageTo(
       defaultPath,
       ({ progress, copiedFiles, totalFiles, phase }) => {
@@ -153,6 +154,7 @@ async function recommendSaferStorageLocation() {
           progress,
         });
       },
+      { replaceExisting: true },
     );
     appSettings.set("storageParentPath", null);
     toastSystem.setState(toastId, "complete", {

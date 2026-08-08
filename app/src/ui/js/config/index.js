@@ -619,8 +619,11 @@ export const configModal = {
       chooseButton.disabled = true;
       button.innerHTML = `<i class="fa-solid fa-folder-open"></i> ${t("storage.movingFiles")}`;
       this.showStorageMoveToast();
-      await FS.moveStorageTo(defaultPath, (progress) =>
-        this.updateStorageMoveToast(progress),
+      await FS.api.ensureDir(defaultPath);
+      await FS.moveStorageTo(
+        defaultPath,
+        (progress) => this.updateStorageMoveToast(progress),
+        { replaceExisting: true },
       );
       appSettings.set("storageParentPath", null);
       this.updateStorageLocationLabel();
