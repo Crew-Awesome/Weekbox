@@ -5,6 +5,7 @@ import {
   deactivateCheckoutDialog,
 } from "../home/modal/dialogFocus.js";
 import { isGoogleDriveQuotaError } from "../../../backend/services/downloads/download-validation.util.js";
+import { nativeFetch } from "../../../backend/services/network/native-http.js";
 
 const DIAGNOSTIC_REPORT_ENDPOINT =
   "https://fnfweekbox.vercel.app/api/diagnostic-report";
@@ -41,6 +42,52 @@ async function getArchitecture() {
     return nonEmptyString(await Neutralino.computer.getArch(), window.NL_ARCH);
   } catch {
     return nonEmptyString(window.NL_ARCH);
+  }
+}
+
+async function getLocaleInfo() {
+  try {
+    return await Neutralino.os.getLocaleInfo();
+  } catch {
+    return null;
+  }
+}
+
+async function getDiskDiagnostics() {
+  try {
+    const disks = await Neutralino.computer.getDisks();
+    const list = Array.isArray(disks) ? disks : disks ? [disks] : [];
+    return {
+      count: list.length,
+      totalBytes: list.reduce((sum, disk) => sum + (Number(disk.total) || 0), 0),
+      freeBytes: list.reduce((sum, disk) => sum + (Number(disk.free) || 0), 0),
+    };
+  } catch {
+    return null;
+  }
+}
+
+async function getNetworkDiagnostics() {
+  try {
+    const interfaces = await Neutralino.computer.getNetworkInterfaces({
+      excludeLoopback: true,
+    });
+    const list = Array.isArray(interfaces)
+      ? interfaces
+      : Object.values(interfaces || {});
+    return {
+      count: list.length,
+      ipv4: list.reduce(
+        (count, entry) => count + (Array.isArray(entry?.ipv4) ? entry.ipv4.length : 0),
+        0,
+      ),
+      ipv6: list.reduce(
+        (count, entry) => count + (Array.isArray(entry?.ipv6) ? entry.ipv6.length : 0),
+        0,
+      ),
+    };
+  } catch {
+    return null;
   }
 }
 
@@ -254,11 +301,25 @@ function describeIssue(error) {
   };
 }
 
-function createReport({ error, action, item, version, storagePath, issue }) {
+function createReport({
+  error,
+  action,
+  item,
+  version,
+  storagePath,
+  issue,
+  locale,
+  disks,
+  network,
+}) {
   return [
     "WeekBox support report",
     `Time: ${new Date().toLocaleString()}`,
     `OS: ${window.NL_OS || "Unknown"}`,
+    `Neutralino: ${window.NL_CVERSION || "Unknown"}`,
+    locale?.locale ? `Locale: ${locale.locale}` : null,
+    disks ? `Disks: ${disks.count} (${disks.freeBytes} free / ${disks.totalBytes} total)` : null,
+    network ? `Network interfaces: ${network.count} (${network.ipv4} IPv4 / ${network.ipv6} IPv6)` : null,
     `Action: ${action || "Unknown"}`,
     item ? `Item: ${item}` : null,
     version ? `Version: ${version}` : null,
@@ -275,17 +336,24 @@ function createReport({ error, action, item, version, storagePath, issue }) {
 async function submitDiagnosticReport(context, issue) {
   const errorMessage = getDiagnosticErrorMessage(context.error);
   const stackTrace = getDiagnosticStackTrace(context.error);
-  const [operatingSystem, architecture] = await Promise.all([
+  const [operatingSystem, architecture, locale, disks, network] = await Promise.all([
     getOperatingSystem(),
     getArchitecture(),
+    getLocaleInfo(),
+    getDiskDiagnostics(),
+    getNetworkDiagnostics(),
   ]);
-  const response = await fetch(DIAGNOSTIC_REPORT_ENDPOINT, {
+  const response = await nativeFetch(DIAGNOSTIC_REPORT_ENDPOINT, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       appVersion: nonEmptyString(window.NL_APPVERSION),
+      neutralinoVersion: nonEmptyString(window.NL_CVERSION),
       operatingSystem,
       architecture,
+      locale,
+      disks,
+      network,
       action: context.action || issue.tag,
       item: context.item || "",
       version: context.version || "",

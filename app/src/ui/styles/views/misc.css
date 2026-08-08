@@ -621,7 +621,13 @@ body.window-unfocused::after {
   overflow: hidden;
   z-index: 0;
   -webkit-mask-image: linear-gradient(90deg, #000 25%, transparent 100%);
+  -webkit-mask-size: 100% 100%;
+  -webkit-mask-position: center;
+  -webkit-mask-repeat: no-repeat;
   mask-image: linear-gradient(90deg, #000 25%, transparent 100%);
+  mask-size: 100% 100%;
+  mask-position: center;
+  mask-repeat: no-repeat;
 }
 
 #popular-grid .mod-card--featured .mod-image {

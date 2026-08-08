@@ -1,4 +1,5 @@
 import { i18n } from "../i18n/index.js";
+import { nativeFetch } from "../../../backend/services/network/native-http.js";
 
 const ALLOWED_TAGS = new Set([
   "a",
@@ -178,7 +179,7 @@ export async function fetchAndRenderReleaseNotes(versionData, targetLink) {
   const [owner, repository, tag] = match.slice(1);
 
   try {
-    const response = await fetch(
+    const response = await nativeFetch(
       `https://api.github.com/repos/${owner}/${repository}/releases/tags/${encodeURIComponent(tag)}`,
       {
         headers: {

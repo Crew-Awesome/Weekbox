@@ -1,4 +1,5 @@
 import { ENGINE_RELEASE_SOURCES } from "../../config/engine-release-sources.config.js";
+import { nativeFetch } from "../../services/network/native-http.js";
 
 const CACHE_PREFIX = "weekbox-engine-releases-v2-";
 const CACHE_FRESH_MS = 3 * 60 * 60 * 1000;
@@ -159,7 +160,7 @@ function withLatestReleaseOption(versions, engineId) {
 async function getLatestSuccessfulRun(source, artifact) {
   const workflow = encodeURIComponent(artifact.workflow);
   const branch = encodeURIComponent(source.nightly.branch);
-  const response = await fetch(
+  const response = await nativeFetch(
     `https://api.github.com/repos/${source.repository}/actions/workflows/${workflow}/runs?branch=${branch}&status=success&per_page=1`,
     { headers: GITHUB_API_HEADERS },
   );
@@ -254,7 +255,7 @@ async function fetchAllReleases(source, etag) {
   while (url) {
     const headers = { ...GITHUB_API_HEADERS };
     if (firstResponse && etag) headers["If-None-Match"] = etag;
-    const response = await fetch(url, { headers });
+    const response = await nativeFetch(url, { headers });
     if (response.status === 304) return { notModified: true };
     if (!response.ok)
       throw new Error(`GitHub releases request failed: ${response.status}`);
@@ -268,7 +269,7 @@ async function fetchAllReleases(source, etag) {
 }
 
 async function getLatestRelease(source) {
-  const response = await fetch(
+  const response = await nativeFetch(
     `https://api.github.com/repos/${source.repository}/releases/latest`,
     { headers: GITHUB_API_HEADERS },
   );

@@ -7,6 +7,7 @@ import {
 import { normalizeVersion, compareVersions } from "./versioning.util.js";
 
 import { downloadArchive } from "../../services/downloads/archive-transfer.service.js";
+import { nativeFetch } from "../../services/network/native-http.js";
 function toHex(buffer) {
   return [...new Uint8Array(buffer)]
     .map((byte) => byte.toString(16).padStart(2, "0"))
@@ -99,7 +100,6 @@ if [ -f "$source_resources" ]; then
 else
   rm -f "$target_resources"
 fi
-retry chmod 755 "$target_binary"
 launch_attempts=0
 while :; do
   "$target_binary" >/dev/null 2>&1 &
@@ -118,11 +118,17 @@ async function getCurrentVersion() {
   const config = await Neutralino.app.getConfig();
   return config.version || "0.0.0";
 }
+
+async function ensureUnixExecutable(executable) {
+  if (window.NL_OS === "Windows" || !executable) return;
+  await Neutralino.filesystem.chmod(executable, 0o755).catch(() => {});
+}
+
 async function fetchLatestRelease() {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), UPDATE_REQUEST_TIMEOUT);
   try {
-    const response = await fetch(RELEASES_API, {
+    const response = await nativeFetch(RELEASES_API, {
       signal: controller.signal,
       cache: "no-store",
     });
@@ -274,6 +280,7 @@ appUpdater = {
       scriptPath,
       targetExe: window.NL_ARGS?.[0] || null,
     });
+    await ensureUnixExecutable(window.NL_ARGS?.[0]);
     await Neutralino.filesystem.writeFile(scriptPath, applyScript);
     const command = `/bin/sh ${quoteShellString(scriptPath)} >/dev/null 2>&1 &`;
     await Neutralino.os.execCommand(command, {

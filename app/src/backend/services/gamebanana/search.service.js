@@ -3,6 +3,7 @@ import {
   getSearchTypoRelevance,
   getTypoSearchVariants,
 } from "../../utils/gamebanana/search-ranking.js";
+import { nativeFetch } from "../network/native-http.js";
 
 const SEARCH_API_URL = "https://gamebanana.com/apiv13/Util/Search";
 const SNIRO_SORT = "submitted:desc";
@@ -49,7 +50,9 @@ export class GameBananaSearchService {
         _idGameRow: String(this.api.gameId),
         _sSearchString: normalizedQuery,
       });
-      const response = await fetch(`${SEARCH_API_URL}/Suggestions?${params}`);
+      const response = await nativeFetch(
+        `${SEARCH_API_URL}/Suggestions?${params}`,
+      );
       if (!response.ok) throw new Error("Search suggestions failed");
       const suggestions = await response.json();
       if (!Array.isArray(suggestions)) return [];
@@ -187,7 +190,7 @@ export class GameBananaSearchService {
       _nPage: String(page),
       _nPerpage: String(perPage),
     });
-    const response = await fetch(`${SEARCH_API_URL}/Results?${params}`);
+    const response = await nativeFetch(`${SEARCH_API_URL}/Results?${params}`);
     if (!response.ok) throw new Error("Mod search failed");
     return this.api.getValidRecords(await response.json());
   }

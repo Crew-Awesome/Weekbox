@@ -1,3 +1,5 @@
+import { nativeFetch } from "../network/native-http.js";
+
 export class FeaturedService {
   constructor({ url, getTimeAgo }) {
     this.url = url;
@@ -6,7 +8,7 @@ export class FeaturedService {
 
   async getCarousel() {
     try {
-      const response = await fetch(this.url, { cache: "no-store" });
+      const response = await nativeFetch(this.url, { cache: "no-store" });
       if (!response.ok) throw new Error("Featured request failed");
       const featured = await response.json();
       if (!this.isSupported(featured))

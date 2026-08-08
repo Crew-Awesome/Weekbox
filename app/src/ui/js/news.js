@@ -1,4 +1,5 @@
 import { appEvents } from "../../backend/core/routing/events.service.js";
+import { nativeFetch } from "../../backend/services/network/native-http.js";
 import { enhanceContentLinks } from "./contentLinks.js";
 import { Marked } from "marked";
 import {
@@ -167,7 +168,7 @@ export const newsView = {
     this.detailRequest = controller;
     const timeout = setTimeout(() => controller.abort(), NEWS_REQUEST_TIMEOUT);
     try {
-      const response = await fetch(
+      const response = await nativeFetch(
         `${NEWS_SITE_URL}/api/news/${encodeURIComponent(String(post.slug))}`,
         { headers: { Accept: "application/json" }, signal: controller.signal },
       );
@@ -311,7 +312,7 @@ export const newsView = {
     const timeout = setTimeout(() => controller.abort(), NEWS_REQUEST_TIMEOUT);
     if (this.refreshButton) this.refreshButton.disabled = true;
     try {
-      const response = await fetch(NEWS_FEED_URL, {
+      const response = await nativeFetch(NEWS_FEED_URL, {
         headers: { Accept: "application/json" },
         signal: controller.signal,
       });

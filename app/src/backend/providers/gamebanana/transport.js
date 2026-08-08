@@ -1,3 +1,5 @@
+import { nativeFetch } from "../../services/network/native-http.js";
+
 export class GameBananaTransportError extends Error {
   constructor(kind, message, details = {}) {
     super(message);
@@ -10,7 +12,7 @@ export class GameBananaTransportError extends Error {
 export class GameBananaTransport {
   constructor({
     baseUrl,
-    fetchImpl = (...args) => fetch(...args),
+    fetchImpl = nativeFetch,
     config = {},
   }) {
     this.baseUrl = baseUrl;

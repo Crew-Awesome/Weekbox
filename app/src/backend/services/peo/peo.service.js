@@ -1,11 +1,12 @@
 import { toGridMod, toModDetails } from "../../utils/peo/mod-mapper.js";
+import { nativeFetch } from "../network/native-http.js";
 
 const PAGE_SIZE = 15;
 
 export class PeoModService {
   constructor({
     baseUrl = "https://funkin.sniro.boo",
-    fetchImpl = (...args) => fetch(...args),
+    fetchImpl = nativeFetch,
   } = {}) {
     this.baseUrl = baseUrl;
     this.fetchImpl = fetchImpl;

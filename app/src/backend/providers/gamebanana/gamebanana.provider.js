@@ -26,6 +26,7 @@ import {
 } from "../../utils/gamebanana/submission-links.js";
 import { DISCOVERY_CONFIG } from "../../config/discovery.config.js";
 import { peoApi } from "../peo/peo.provider.js";
+import { nativeFetch } from "../../services/network/native-http.js";
 import {
   ENGINE_CATEGORY_IDS,
   ENGINE_CATEGORY_ROOTS,
@@ -181,7 +182,7 @@ export const gameBananaApi = {
     if (!id) return null;
     if (this.modProfileCache.has(id)) return this.modProfileCache.get(id);
     if (this.modProfileRequests.has(id)) return this.modProfileRequests.get(id);
-    const request = fetch(`${this.baseUrl}/Mod/${id}/ProfilePage`)
+    const request = nativeFetch(`${this.baseUrl}/Mod/${id}/ProfilePage`)
       .then(async (response) => {
         if (!response.ok) return null;
         const profile = await response.json();
@@ -453,7 +454,7 @@ export const gameBananaApi = {
 
   async getToolDetails(toolId, { requireDownload = true } = {}) {
     try {
-      const response = await fetch(
+      const response = await nativeFetch(
         `${this.baseUrl}/Tool/${Number(toolId)}/ProfilePage`,
       );
       if (!response.ok) return null;
@@ -724,7 +725,7 @@ export const gameBananaApi = {
           _sSort: "default",
           _nPage: String(feed.sourcePage),
         });
-        const response = await fetch(
+        const response = await nativeFetch(
           `${this.subfeedBaseUrl}/Game/${this.gameId}/Subfeed?${params}`,
           { signal: options.signal },
         );

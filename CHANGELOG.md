@@ -7,10 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [2.0.6] - 2026-08-07
+## [2.1.0] - 2026-08-07
 
 ### Added
 
+- Added native network requests for GameBanana, GitHub, news, and release notes.
+- Added more details to error reports.
 - Added a new loading screen with progress, artwork, version info, and engine update buttons.
 - Added a menu for choosing between mod download links.
 - Added engine release notes and clearer error reports.
@@ -19,15 +21,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Updated Neutralino to 6.9.0.
 - WeekBox now opens faster while background checks keep running.
 - Improved page layouts, cards, filters, sorting, search, and offline pages.
 - Improved engine updates, settings, popups, messages, and translations.
 - Improved ZIP, 7Z, and RAR downloads, progress bars, extraction, retries, and file cleanup.
 - Improved GameBanana, Google Drive, and MediaFire link and file-size checks.
 - Simplified the WeekBox link setting text in all languages.
+- Improved app updates and featured mods loading.
 
 ### Fixed
 
+- Fixed featured mods not loading because native network requests were blocked.
 - Fixed Google Drive downloads falsely saying "quota exceeded."
 - Fixed large Google Drive downloads, confirmation pages, links, redirects, and cookies.
 - Fixed MediaFire links, downloads, extraction delays, and missing file sizes.
