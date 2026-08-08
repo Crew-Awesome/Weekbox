@@ -20,15 +20,19 @@ export class StorageMoveFeedback {
       message: t("storage.preparingFiles"),
       mediaHtml: '<i class="fa-solid fa-folder-open" aria-hidden="true"></i>',
       showPercent: true,
+      indeterminate: true,
     });
   }
 
-  update({ progress, copiedFiles, totalFiles }) {
+  update({ progress, copiedFiles, totalFiles, phase }) {
+    const preparing = phase === "preparing";
     this.toastSystem.update(TOAST_ID, {
-      message: t("storage.movingFilesProgress", {
-        copied: copiedFiles,
-        total: totalFiles,
-      }),
+      message: preparing
+        ? t("storage.preparingFiles")
+        : t("storage.movingFilesProgress", {
+            copied: copiedFiles,
+            total: totalFiles,
+          }),
       progress,
     });
   }

@@ -34,6 +34,7 @@ export const toastSystem = {
       duration,
       onSelect,
       onCancel,
+      indeterminate = false,
     } = {},
   ) {
     if (isStartupActive()) {
@@ -48,6 +49,7 @@ export const toastSystem = {
           duration,
           onSelect,
           onCancel,
+          indeterminate,
         },
         state: null,
         stateMeta: null,
@@ -83,6 +85,7 @@ export const toastSystem = {
       duration,
       onSelect,
       onCancel,
+      indeterminate = false,
     } = {},
   ) {
     this.remove(id);
@@ -92,6 +95,7 @@ export const toastSystem = {
     toast.id = id;
     toast.className = "engine-update-toast toast-system-item";
     toast.classList.toggle("has-progress", showProgress);
+    toast.classList.toggle("is-indeterminate", indeterminate);
     toast.setAttribute("role", onSelect ? "button" : "status");
     if (onSelect) toast.tabIndex = 0;
     toast.innerHTML = `
@@ -115,6 +119,7 @@ export const toastSystem = {
       progress: toast.querySelector(".engine-update-toast-track i"),
       percent: toast.querySelector(".toast-system-percent"),
     };
+    if (entry.percent) entry.percent.hidden = indeterminate;
     this.toasts.set(id, entry);
     this.ensureContainer().appendChild(toast);
 
@@ -175,18 +180,27 @@ export const toastSystem = {
     return entry;
   },
 
-  update(id, { message, progress } = {}) {
+  update(id, { message, progress, indeterminate } = {}) {
     if (this.pendingToasts.has(id)) {
       const pending = this.pendingToasts.get(id);
       if (message !== undefined) pending.options.message = message;
       if (progress !== undefined) pending.options.progress = progress;
+      if (indeterminate !== undefined) pending.options.indeterminate = indeterminate;
       return;
     }
     const entry = this.toasts.get(id);
     if (!entry) return;
     if (message !== undefined && entry.message) entry.message.textContent = message;
+    if (indeterminate !== undefined) {
+      entry.toast.classList.toggle("is-indeterminate", indeterminate);
+      if (entry.percent) entry.percent.hidden = indeterminate;
+    }
     if (progress !== undefined && entry.progress) {
       const value = Math.max(0, Math.min(100, progress));
+      if (value > 0) {
+        entry.toast.classList.remove("is-indeterminate");
+        if (entry.percent) entry.percent.hidden = false;
+      }
       entry.progress.style.width = `${value}%`;
       if (entry.percent) entry.percent.textContent = `${Math.floor(value)}%`;
     }
@@ -255,6 +269,15 @@ export const toastSystem = {
     this.pendingToasts.clear();
     for (const [id, item] of entries) {
       this._mountToast(id, item.options);
+      if (
+        item.options.progress !== undefined ||
+        item.options.indeterminate !== undefined
+      ) {
+        this.update(id, {
+          progress: item.options.progress,
+          indeterminate: item.options.indeterminate,
+        });
+      }
       if (item.state) {
         this.setState(id, item.state, item.stateMeta);
       }

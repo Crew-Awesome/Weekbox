@@ -458,6 +458,12 @@ var _FileSystemService = class _FileSystemService {
   async copyDirectoryWithProgress(sourcePath, destinationPath, onProgress) {
     const files = [];
     const directories = [];
+    onProgress({
+      progress: 0,
+      copiedFiles: 0,
+      totalFiles: 0,
+      phase: "preparing",
+    });
     const collectFiles = async (directoryPath) => {
       directories.push(directoryPath);
       const entries = getRealEntries(
@@ -470,6 +476,12 @@ var _FileSystemService = class _FileSystemService {
         } else if (entry.type === "FILE") {
           const stats = await Neutralino.filesystem.getStats(entryPath);
           files.push({ path: entryPath, size: Number(stats.size) || 0 });
+          onProgress({
+            progress: 0,
+            copiedFiles: 0,
+            totalFiles: files.length,
+            phase: "preparing",
+          });
         }
       }
     };
@@ -497,11 +509,9 @@ var _FileSystemService = class _FileSystemService {
       while (nextFileIndex < files.length) {
         const file = files[nextFileIndex++];
         const relativePath = file.path.slice(sourcePath.length);
-        await Neutralino.filesystem.copy(
-          file.path,
-          `${destinationPath}${relativePath}`,
-          { recursive: false, overwrite: false, skip: false },
-        );
+        // The destination tree is created above and starts empty. The two-argument
+        // native call is enough here and avoids version-specific option handling.
+        await Neutralino.filesystem.copy(file.path, `${destinationPath}${relativePath}`);
         copiedBytes += fileSizes.get(file.path) || 0;
         copiedFiles += 1;
         reportProgress();

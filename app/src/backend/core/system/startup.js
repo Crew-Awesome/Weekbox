@@ -112,16 +112,20 @@ async function recommendSaferStorageLocation() {
     message: t("storage.preparingFiles"),
     mediaHtml: '<i class="fa-solid fa-folder-open" aria-hidden="true"></i>',
     showPercent: true,
+    indeterminate: true,
   });
   try {
     await FS.moveStorageTo(
       defaultPath,
-      ({ progress, copiedFiles, totalFiles }) => {
+      ({ progress, copiedFiles, totalFiles, phase }) => {
+        const preparing = phase === "preparing";
         toastSystem.update(toastId, {
-          message: t("storage.movingFilesProgress", {
-            copied: copiedFiles,
-            total: totalFiles,
-          }),
+          message: preparing
+            ? t("storage.preparingFiles")
+            : t("storage.movingFilesProgress", {
+                copied: copiedFiles,
+                total: totalFiles,
+              }),
           progress,
         });
       },
@@ -167,16 +171,20 @@ async function offerNestedStorageRepair() {
     message: t("storage.preparingFiles"),
     mediaHtml: '<i class="fa-solid fa-folder-open" aria-hidden="true"></i>',
     showPercent: true,
+    indeterminate: true,
   });
   try {
     await FS.moveStorageTo(
       targetParentPath,
-      ({ progress, copiedFiles, totalFiles }) => {
+      ({ progress, copiedFiles, totalFiles, phase }) => {
+        const preparing = phase === "preparing";
         toastSystem.update(toastId, {
-          message: t("storage.movingFilesProgress", {
-            copied: copiedFiles,
-            total: totalFiles,
-          }),
+          message: preparing
+            ? t("storage.preparingFiles")
+            : t("storage.movingFilesProgress", {
+                copied: copiedFiles,
+                total: totalFiles,
+              }),
           progress,
         });
       },

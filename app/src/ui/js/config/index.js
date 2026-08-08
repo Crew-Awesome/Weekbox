@@ -542,8 +542,7 @@ export const configModal = {
       }
 
       button.disabled = true;
-      button.textContent = t("storage.movingFiles");
-      button.innerHTML = `<i class="fa-solid fa-folder-open"></i> ${t("common.chooseFolder")}`;
+      button.innerHTML = `<i class="fa-solid fa-folder-open"></i> ${t("storage.movingFiles")}`;
       this.showStorageMoveToast();
       await FS.moveStorageTo(selectedPath, (progress) =>
         this.updateStorageMoveToast(progress),
@@ -595,8 +594,7 @@ export const configModal = {
 
       button.disabled = true;
       chooseButton.disabled = true;
-      button.textContent = t("storage.movingFiles");
-      button.textContent = t("common.useDefault");
+      button.innerHTML = `<i class="fa-solid fa-folder-open"></i> ${t("storage.movingFiles")}`;
       this.showStorageMoveToast();
       await FS.moveStorageTo(defaultPath, (progress) =>
         this.updateStorageMoveToast(progress),

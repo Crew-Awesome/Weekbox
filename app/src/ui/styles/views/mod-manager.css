@@ -11,6 +11,10 @@
   overscroll-behavior: contain;
 }
 
+.dependency-review-overlay.app-update-overlay {
+  z-index: 12000;
+}
+
 .dependency-review-overlay[hidden] {
   display: none;
 }
