@@ -1,6 +1,10 @@
 export function getTargetPlatform(versionData) {
   const os = window.NL_OS;
   const arch = window.NL_ARCH;
+  const fallback =
+    versionData?.fallbackPlatform && versionData[versionData.fallbackPlatform]
+      ? versionData.fallbackPlatform
+      : null;
 
   if (os === "Windows") {
     if (arch === "x64") {
@@ -9,19 +13,16 @@ export function getTargetPlatform(versionData) {
       return versionData.win32 ? "win32" : versionData.win ? "win" : null;
     }
   } else if (os === "Linux") {
-    return versionData.lin ? "lin" : null;
+    return versionData.lin ? "lin" : fallback;
   } else if (os === "Darwin") {
     if (arch === "x64")
-      return versionData.mac64 ? "mac64" : versionData.mac ? "mac" : null;
+      return versionData.mac64 ? "mac64" : versionData.mac ? "mac" : fallback;
     if (arch === "arm64")
-      return versionData.macarm ? "macarm" : versionData.mac ? "mac" : null;
-    return versionData.mac
-      ? "mac"
-      : versionData.mac64
-        ? "mac64"
-        : versionData.macarm
-          ? "macarm"
-          : null;
+      return versionData.macarm ? "macarm" : versionData.mac ? "mac" : fallback;
+    if (versionData.mac) return "mac";
+    if (versionData.mac64) return "mac64";
+    if (versionData.macarm) return "macarm";
+    return fallback;
   }
   return null;
 }

@@ -1,7 +1,18 @@
 import { fetchAndRenderReleaseNotes } from "./releaseNotes.js";
-import { getTargetLink, extractVersionFallback } from "./utils.js";
+import {
+  getTargetLink,
+  getTargetPlatform,
+  extractVersionFallback,
+} from "./utils.js";
 import { setupDropdown } from "../../utils/components/dropdown.component.js";
 import { t } from "../i18n/index.js";
+
+function getVersionLabel(versionData) {
+  const usesWine =
+    (window.NL_OS === "Linux" || window.NL_OS === "Darwin") &&
+    getTargetPlatform(versionData) === "win";
+  return usesWine ? `${versionData.version} (Wine)` : versionData.version;
+}
 
 export const engineDropdown = {
   dropdownController: null,
@@ -41,12 +52,13 @@ export const engineDropdown = {
       const optionDiv = document.createElement("div");
       optionDiv.className = "custom-option";
       if (index === 0) optionDiv.classList.add("selected");
-      optionDiv.textContent = v.version;
+      optionDiv.textContent = getVersionLabel(v);
 
       optionDiv.addEventListener("click", (e) => {
         e.stopPropagation();
-        selectedText.textContent = v.version;
-        badge.textContent = `${t("common.version")}: ${v.version}`;
+        const versionLabel = getVersionLabel(v);
+        selectedText.textContent = versionLabel;
+        badge.textContent = `${t("common.version")}: ${versionLabel}`;
         document
           .querySelectorAll(".custom-option")
           .forEach((opt) => opt.classList.remove("selected"));
@@ -62,8 +74,9 @@ export const engineDropdown = {
     });
 
     const initialVersion = engine.versions[0];
-    selectedText.textContent = initialVersion.version;
-    badge.textContent = `${t("common.version")}: ${initialVersion.version}`;
+    const initialVersionLabel = getVersionLabel(initialVersion);
+    selectedText.textContent = initialVersionLabel;
+    badge.textContent = `${t("common.version")}: ${initialVersionLabel}`;
     fetchAndRenderReleaseNotes(initialVersion, getTargetLink(initialVersion));
     if (onVersionChanged) onVersionChanged(initialVersion.version);
 

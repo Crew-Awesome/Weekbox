@@ -23,6 +23,7 @@ import { modManagerModal } from "../../../ui/js/mod-manager/index.js";
 import { firstRunStorageModal } from "../../../ui/js/firstRunStorageModal.js";
 import { firstRunLanguageModal } from "../../../ui/js/firstRunLanguageModal.js";
 import { i18n, t } from "../../../ui/js/i18n/index.js";
+
 function installGlobalErrorReporter() {
   if (window.__weekboxErrorReporterInstalled) return;
   window.__weekboxErrorReporterInstalled = true;

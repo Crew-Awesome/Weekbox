@@ -1,7 +1,7 @@
 import { ENGINE_RELEASE_SOURCES } from "../../config/engine-release-sources.config.js";
 import { nativeFetch } from "../../services/network/native-http.js";
 
-const CACHE_PREFIX = "weekbox-engine-releases-v2-";
+const CACHE_PREFIX = "weekbox-engine-releases-v3-";
 const CACHE_FRESH_MS = 3 * 60 * 60 * 1000;
 const NIGHTLY_CACHE_PREFIX = "weekbox-engine-nightly-";
 const NIGHTLY_CACHE_MS = 3 * 60 * 60 * 1000;
@@ -76,11 +76,14 @@ function getCurrentPlatformKeys() {
   return [];
 }
 
-function filterVersionsForCurrentPlatform(versions) {
+function filterVersionsForCurrentPlatform(versions, engineId) {
   const platforms = getCurrentPlatformKeys();
   if (!platforms.length) return versions;
   return versions.filter((version) =>
-    platforms.some((platform) => Boolean(version[platform])),
+    platforms.some((platform) => Boolean(version[platform])) ||
+    (engineId === "fpsplus" &&
+      version.fallbackPlatform &&
+      version[version.fallbackPlatform]),
   );
 }
 
@@ -105,6 +108,9 @@ function normalizeRelease(release, source) {
     releasedAt: release.published_at || null,
     assetSizes: {},
   };
+  if (source.fallbackPlatform) {
+    result.fallbackPlatform = source.fallbackPlatform;
+  }
   for (const [platform, patterns] of Object.entries(source.assets)) {
     const asset = selectAsset(
       release.assets || [],
@@ -290,6 +296,7 @@ export async function getEngineReleaseVersions(engineId) {
         withLatestReleaseOption(cached.versions, engineId),
         source,
       ),
+      engineId,
     );
   }
 
@@ -302,6 +309,7 @@ export async function getEngineReleaseVersions(engineId) {
           withLatestReleaseOption(cached.versions, engineId),
           source,
         ),
+        engineId,
       );
     }
     const versions = withLatestReleaseOption(
@@ -318,6 +326,7 @@ export async function getEngineReleaseVersions(engineId) {
     });
     return filterVersionsForCurrentPlatform(
       await withNightlyVersion(versions, source),
+      engineId,
     );
   } catch (error) {
     return cached?.versions?.length
@@ -326,6 +335,7 @@ export async function getEngineReleaseVersions(engineId) {
             withLatestReleaseOption(cached.versions, engineId),
             source,
           ),
+          engineId,
         )
       : withNightlyVersion([], source);
   }

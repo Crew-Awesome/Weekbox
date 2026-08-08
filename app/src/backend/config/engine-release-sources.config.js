@@ -51,6 +51,7 @@ export const ENGINE_RELEASE_SOURCES = {
   fpsplus: {
     repository: "ThatRozebudDude/FPS-Plus-Public",
     assets: { win: [/^fpsplus_/i] },
+    fallbackPlatform: "win",
     exclude: [/example_mods/i],
   },
   psychonline: {
