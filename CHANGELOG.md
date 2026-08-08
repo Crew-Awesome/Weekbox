@@ -7,6 +7,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.1.1] - 2026-08-07
+
+### Added
+
+- WeekBox now stores files in a separate folder by default.
+- WeekBox can move old files from the app folder.
+
+### Changed
+
+- First setup uses the new folder unless you choose another one.
+- Storage moves now show better progress and handle existing folders.
+
+### Fixed
+
+- Fixed file moves.
+- Fixed moves into folders that already contain files.
+- Fixed nested storage folders and update dialogs.
+- Fixed developer tools opening when the app starts.
+
 ## [2.1.0] - 2026-08-07
 
 ### Added

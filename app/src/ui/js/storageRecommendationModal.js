@@ -1,4 +1,8 @@
 import { t } from "./i18n/index.js";
+import {
+  activateCheckoutDialog,
+  deactivateCheckoutDialog,
+} from "./home/modal/dialogFocus.js";
 
 export const storageRecommendationModal = {
   ensure() {
@@ -46,7 +50,11 @@ export const storageRecommendationModal = {
     requestAnimationFrame(() => modal.classList.add("show"));
 
     return new Promise((resolve) => {
+      let settled = false;
       const close = (choice) => {
+        if (settled) return;
+        settled = true;
+        deactivateCheckoutDialog(modal);
         modal.classList.remove("show");
         setTimeout(() => {
           modal.style.display = "none";
@@ -60,6 +68,15 @@ export const storageRecommendationModal = {
       modal.onclick = (event) => {
         if (event.target === modal) close("later");
       };
+      requestAnimationFrame(() => {
+        if (settled) return;
+        activateCheckoutDialog(
+          modal,
+          modal.querySelector(".error-content"),
+          modal.querySelector(".storage-later"),
+          () => close("later"),
+        );
+      });
     });
   },
 };

@@ -1,5 +1,9 @@
 import { appUpdater } from "../../../backend/core/updates/app-updater.service.js";
 import { t } from "../i18n/index.js";
+import {
+  activateCheckoutDialog,
+  deactivateCheckoutDialog,
+} from "../home/modal/dialogFocus.js";
 
 const appUpdateModal = {
   ensureModal() {
@@ -41,12 +45,15 @@ const appUpdateModal = {
         version: updateInfo.latestVersion,
       });
     }
-    if (notesContainer && updateInfo?.releaseNotes) {
-      notesContainer.innerHTML = updateInfo.releaseNotes;
-    }
+    if (notesContainer)
+      notesContainer.textContent = updateInfo?.releaseNotes || "";
 
     return new Promise((resolve) => {
+      let settled = false;
       const finish = (confirmed) => {
+        if (settled) return;
+        settled = true;
+        deactivateCheckoutDialog(overlay);
         overlay.classList.remove("show");
         setTimeout(() => (overlay.hidden = true), 180);
         resolve(confirmed);
@@ -67,7 +74,16 @@ const appUpdateModal = {
       };
 
       overlay.hidden = false;
-      requestAnimationFrame(() => overlay.classList.add("show"));
+      requestAnimationFrame(() => {
+        if (settled) return;
+        overlay.classList.add("show");
+        activateCheckoutDialog(
+          overlay,
+          overlay.querySelector(".app-update-dialog"),
+          laterBtn,
+          () => finish(false),
+        );
+      });
     });
   },
 };

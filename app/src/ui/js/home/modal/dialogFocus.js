@@ -9,6 +9,7 @@ function getCheckoutDialogFocusables(dialog) {
 }
 
 function activateCheckoutDialog(overlay, dialog, initialFocus, onEscape) {
+  if (!overlay?.isConnected || !dialog?.isConnected || overlay.hidden) return;
   deactivateCheckoutDialog(overlay, false);
   const wasInert = overlay.inert;
   overlay.inert = false;

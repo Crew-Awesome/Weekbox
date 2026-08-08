@@ -79,9 +79,33 @@ async function completeFirstRunStorageSetup(defaultStoragePath, hadSettings) {
             "OK",
             "WARNING",
           );
-      } else if (!existing) {
-        await FS.moveStorageTo(selectedPath);
-        completed = true;
+      } else {
+        if (/(?:^|[\\/])weekbox[\\/]*$/i.test(selectedPath)) {
+          await Neutralino.os.showMessageBox(
+            t("storage.chooseParentTitle"),
+            t("storage.chooseParentMessage"),
+            "OK",
+            "WARNING",
+          );
+        } else if (await FS.hasStorageFolder(selectedPath)) {
+          const replaceChoice = await Neutralino.os.showMessageBox(
+            t("storage.moveFilesTitle"),
+            t("storage.moveFilesMessage", {
+              path: `${selectedPath.replace(/[\\/]+$/, "")}/WeekBox`,
+            }),
+            "YES_NO",
+            "QUESTION",
+          );
+          if (replaceChoice === "YES") {
+            await FS.moveStorageTo(selectedPath, () => {}, {
+              replaceExisting: true,
+            });
+            completed = true;
+          }
+        } else if (!existing) {
+          await FS.moveStorageTo(selectedPath);
+          completed = true;
+        }
       }
     }
   }
@@ -244,7 +268,8 @@ async function handleStartupAppUpdate() {
 }
 
 function patchNeutralinoMessageBox() {
-  if (typeof Neutralino === "undefined" || !Neutralino.os?.showMessageBox) return;
+  if (typeof Neutralino === "undefined" || !Neutralino.os?.showMessageBox)
+    return;
   if (Neutralino.os._origShowMessageBox) return;
   Neutralino.os._origShowMessageBox = Neutralino.os.showMessageBox;
   Neutralino.os.showMessageBox = async function (
@@ -253,8 +278,12 @@ function patchNeutralinoMessageBox() {
     choice = "OK",
     icon = "INFO",
   ) {
-    let normalizedChoice = String(choice || "OK").toUpperCase().trim();
-    let normalizedIcon = String(icon || "INFO").toUpperCase().trim();
+    let normalizedChoice = String(choice || "OK")
+      .toUpperCase()
+      .trim();
+    let normalizedIcon = String(icon || "INFO")
+      .toUpperCase()
+      .trim();
 
     const choiceMap = {
       ACEPTAR: "OK",
@@ -315,12 +344,12 @@ function patchNeutralinoMessageBox() {
         normalizedIcon,
       );
     } catch (err) {
-      console.warn("Neutralino.os.showMessageBox fallback to alert/confirm:", err);
+      console.warn(
+        "Neutralino.os.showMessageBox fallback to alert/confirm:",
+        err,
+      );
       if (typeof window !== "undefined") {
-        if (
-          normalizedChoice === "YES_NO" ||
-          normalizedChoice === "OK_CANCEL"
-        ) {
+        if (normalizedChoice === "YES_NO" || normalizedChoice === "OK_CANCEL") {
           const res = window.confirm(
             `${title ? title + "\n\n" : ""}${content}`,
           );
@@ -389,7 +418,8 @@ async function startApp() {
             timeoutHandle = setTimeout(resolve, 1500);
           }),
         ]);
-      } catch {} finally {
+      } catch {
+      } finally {
         if (timeoutHandle) clearTimeout(timeoutHandle);
       }
       try {
@@ -457,7 +487,10 @@ async function startApp() {
     await Promise.race([
       router.init(),
       new Promise((_, reject) =>
-        setTimeout(() => reject(new Error("Loading navigation interface timed out")), 8000),
+        setTimeout(
+          () => reject(new Error("Loading navigation interface timed out")),
+          8000,
+        ),
       ),
     ]);
     startupLoader.setPhase(t("startup.preparingModManager"), 70);

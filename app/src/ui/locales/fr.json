@@ -271,7 +271,7 @@
   "storage.alreadyUsingTitle": "Utilise déjà cette emplacement",
   "storage.alreadyUsingMessage": "WeekBox utilise déjà cet emplacement de stockage, donc il n'y a rien à bouger.",
   "storage.moveFilesTitle": "Déplacer les fichiers de WeekBox ?",
-  "storage.moveFilesMessage": "WeekBox va déplacer tous les mods, engines et données vers:\n{{pat}}\n\nCeci peut prendre du temps pour de grandes librairies.",
+  "storage.moveFilesMessage": "WeekBox va déplacer tous les mods, engines et données vers:\n{{path}}\n\nCeci peut prendre du temps pour de grandes librairies.",
   "storage.movingFiles": "Déplacement des fichiers…",
   "storage.switchingLibrary": "Changement de librairie…",
   "storage.moveFailedTitle": "Impossible de déplacer les fichiers de WeekBox",

@@ -1,4 +1,8 @@
 import { t } from "./i18n/index.js";
+import {
+  activateCheckoutDialog,
+  deactivateCheckoutDialog,
+} from "./home/modal/dialogFocus.js";
 
 export const firstRunStorageModal = {
   show(defaultPath) {
@@ -26,7 +30,11 @@ export const firstRunStorageModal = {
     requestAnimationFrame(() => modal.classList.add("show"));
 
     return new Promise((resolve) => {
+      let settled = false;
       const finish = (choice) => {
+        if (settled) return;
+        settled = true;
+        deactivateCheckoutDialog(modal);
         modal.remove();
         resolve(choice);
       };
@@ -36,7 +44,15 @@ export const firstRunStorageModal = {
         finish("new");
       modal.querySelector(".first-run-storage-existing").onclick = () =>
         finish("existing");
-      modal.querySelector(".first-run-storage-default").focus();
+      requestAnimationFrame(() => {
+        if (settled) return;
+        activateCheckoutDialog(
+          modal,
+          modal.querySelector(".diagnostic-consent-panel"),
+          modal.querySelector(".first-run-storage-default"),
+          () => finish("cancel"),
+        );
+      });
     });
   },
 };

@@ -118,7 +118,10 @@ appSettings = {
       await Neutralino.storage
         .setData(SETTINGS_PATH_KEY, dataPath)
         .catch((error) =>
-          console.warn("WeekBox settings: native path storage unavailable.", error),
+          console.warn(
+            "WeekBox settings: native path storage unavailable.",
+            error,
+          ),
         );
       this.initialized = true;
     } catch (error) {
@@ -126,13 +129,23 @@ appSettings = {
     }
   },
   async setDataPath(dataPath) {
-    if (!dataPath || this.path === `${dataPath}/${SETTINGS_FILE_NAME}`) return;
-    this.path = `${dataPath}/${SETTINGS_FILE_NAME}`;
-    await this.write();
+    const nextPath = dataPath && `${dataPath}/${SETTINGS_FILE_NAME}`;
+    if (!nextPath || this.path === nextPath) return;
+    const previousPath = this.path;
+    this.path = nextPath;
+    try {
+      await this.write(nextPath);
+    } catch (error) {
+      this.path = previousPath;
+      throw error;
+    }
     await Neutralino.storage
       .setData(SETTINGS_PATH_KEY, dataPath)
       .catch((error) =>
-        console.warn("WeekBox settings: native path storage unavailable.", error),
+        console.warn(
+          "WeekBox settings: native path storage unavailable.",
+          error,
+        ),
       );
   },
   getLegacyKeys() {
@@ -176,14 +189,14 @@ appSettings = {
       new CustomEvent("settings-changed", { detail: { key, value } }),
     );
   },
-  async write() {
-    if (!this.path) return;
+  async write(path = this.path) {
+    if (!path) return;
     const contents = `${JSON.stringify(this.document, null, 2)}
 `;
     const previous = this.writeQueue;
     const next = previous
       .catch(() => {})
-      .then(() => Neutralino.filesystem.writeFile(this.path, contents));
+      .then(() => Neutralino.filesystem.writeFile(path, contents));
     const settled = next.catch(() => {});
     this.writeQueue = settled;
     settled.finally(() => {

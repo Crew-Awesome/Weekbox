@@ -13,6 +13,7 @@ import { networkStatus } from "../../backend/core/system/network-status.service.
 import { appEvents } from "../../backend/core/routing/events.service.js";
 import { getEngineLabel, getEngineLabelKey, t } from "./i18n/index.js";
 import { ENGINE_DETAILS } from "../../backend/config/engines.config.js";
+import { escapeHtml } from "./mod-manager/modSettingsTemplates.js";
 
 const SIDEBAR_WIDTH_KEY = "weekbox_sidebar_width";
 const SIDEBAR_COLLAPSED_KEY = "weekbox_sidebar_collapsed";
@@ -23,7 +24,8 @@ const sectionResizerControllers = new WeakMap();
 export const sidebar = {
   updateEngineMarquee(button) {
     const container = button.querySelector(".sidebar__marquee-container");
-    const label = button.querySelector(".sidebar__marquee-text");    if (!container || !label) return;
+    const label = button.querySelector(".sidebar__marquee-text");
+    if (!container || !label) return;
     requestAnimationFrame(() => {
       const distance = Math.max(0, label.scrollWidth - container.clientWidth);
       label.classList.toggle(
@@ -54,7 +56,9 @@ export const sidebar = {
     this.applySavedWidth();
     this.setupCollapse();
     this.setupCollapsibleSections();
-    this.setupSectionResizer(document.getElementById("standalone-mods-resizer"));
+    this.setupSectionResizer(
+      document.getElementById("standalone-mods-resizer"),
+    );
     this.setupResizer();
     this.setupNavigation();
     this.viewChangeListener = (event) => this.syncActive(event.detail);
@@ -385,8 +389,12 @@ export const sidebar = {
       "title",
       networkStatus.online ? t("network.online") : t("network.offline"),
     );
-    await this.loadEngines().catch((e) => console.warn("Could not load engines", e));
-    void this.loadStandaloneMods().catch((e) => console.warn("Could not load standalone mods", e));
+    await this.loadEngines().catch((e) =>
+      console.warn("Could not load engines", e),
+    );
+    void this.loadStandaloneMods().catch((e) =>
+      console.warn("Could not load standalone mods", e),
+    );
     if (networkStatus.online) engineUpdateService.startScheduledChecks();
     if (!networkStatus.online && router.currentViewId === "engines") {
       await router.navigate("home");
@@ -519,12 +527,13 @@ export const sidebar = {
       const btn = document.createElement("button");
       btn.className =
         "sidebar__btn sidebar__engine-btn sidebar__standalone-btn";
-      const iconSrc =
+      let iconSrc =
         mod.icoPath ||
         "data:image/svg+xml;utf8,<svg xmlns=\\'http://www.w3.org/2000/svg\\' viewBox=\\'0 0 512 512\\'><path fill=\\'%23888\\' d=\\'M448 32H64C28.65 32 0 60.65 0 96v320c0 35.35 28.65 64 64 64h384c35.35 0 64-28.65 64-64V96C512 60.65 483.3 32 448 32zM212.7 222.7L132.7 302.7C126.4 308.9 118.2 312 110.1 312s-16.38-3.125-22.62-9.375c-12.5-12.5-12.5-32.75 0-45.25L155.3 189.3l-67.88-67.88c-12.5-12.5-12.5-32.75 0-45.25s32.75-32.75 45.25 0l102.6 102.6C247.7 191.3 247.7 210.2 212.7 222.7zM384 320c-17.67 0-32-14.33-32-32s14.33-32 32-32h32c17.67 0 32 14.33 32 32s-14.33 32-32 32H384z\\'/></svg>";
+      iconSrc = escapeHtml(iconSrc);
       btn.innerHTML = `
         <img src="${iconSrc}" class="sidebar__engine-icon" onerror="this.onerror=null; this.src='data:image/svg+xml;utf8,<svg xmlns=\\'http://www.w3.org/2000/svg\\' viewBox=\\'0 0 512 512\\'><path fill=\\'%23888\\' d=\\'M448 32H64C28.65 32 0 60.65 0 96v320c0 35.35 28.65 64 64 64h384c35.35 0 64-28.65 64-64V96C512 60.65 483.3 32 448 32zM212.7 222.7L132.7 302.7C126.4 308.9 118.2 312 110.1 312s-16.38-3.125-22.62-9.375c-12.5-12.5-12.5-32.75 0-45.25L155.3 189.3l-67.88-67.88c-12.5-12.5-12.5-32.75 0-45.25s32.75-32.75 45.25 0l102.6 102.6C247.7 191.3 247.7 210.2 212.7 222.7zM384 320c-17.67 0-32-14.33-32-32s14.33-32 32-32h32c17.67 0 32 14.33 32 32s-14.33 32-32 32H384z\\'/></svg>'">
-        <div class="sidebar__marquee-container"><span class="sidebar__marquee-text">${mod.name}</span></div>
+        <div class="sidebar__marquee-container"><span class="sidebar__marquee-text">${escapeHtml(mod.name)}</span></div>
       `;
       btn.addEventListener("click", async () => {
         if (btn.classList.contains("running")) {
@@ -551,7 +560,7 @@ export const sidebar = {
         btn.classList.add("running");
         await FS.runStandaloneMod(mod.id, () => {
           btn.querySelector(".sidebar__marquee-container").innerHTML =
-            `<span class="sidebar__marquee-text">${originalText}</span>`;
+            `<span class="sidebar__marquee-text">${escapeHtml(originalText)}</span>`;
           this.updateEngineMarquee(btn);
           btn.classList.remove("running");
           this.syncActive();

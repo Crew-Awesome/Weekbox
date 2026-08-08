@@ -12,6 +12,10 @@ import {
   getRealEntries,
   getModFolderName,
   getEngineModFolderName,
+  getDistinctStorageParentPath,
+  pathsOverlap,
+  normalizeComparablePath,
+  getStorageDestinationDecision,
 } from "./filesystem/path.util.js";
 import { isValidEngineVersion } from "./filesystem/engine-version.service.js";
 import {
@@ -140,9 +144,29 @@ var _FileSystemService = class _FileSystemService {
       let storagePath = savedPath || defaultStoragePath;
       if (!savedPath) {
         try {
+          const legacyExecutableBasePath =
+            await this.getLegacyExecutableStorageBasePath();
+          if (legacyExecutableBasePath) {
+            storagePath = legacyExecutableBasePath;
+          }
           const legacyBasePath = await Neutralino.os.getPath("documents");
-          if (await this.api.exists(`${legacyBasePath}/WeekBox`)) {
-            storagePath = legacyBasePath;
+          const legacyWindowsBasePath =
+            window.NL_OS === "Windows"
+              ? await Neutralino.os.getEnv("LOCALAPPDATA").catch(() => "")
+              : "";
+          const legacyStorageBasePath = (
+            await Promise.all(
+              [legacyWindowsBasePath, legacyBasePath]
+                .filter(Boolean)
+                .map(async (basePath) =>
+                  (await this.api.exists(`${basePath}/WeekBox`))
+                    ? basePath
+                    : null,
+                ),
+            )
+          ).find(Boolean);
+          if (!legacyExecutableBasePath && legacyStorageBasePath) {
+            storagePath = legacyStorageBasePath;
           }
         } catch (error) {
           console.warn("Could not inspect the legacy WeekBox folder", error);
@@ -251,22 +275,42 @@ var _FileSystemService = class _FileSystemService {
       const localAppDataPath = await Neutralino.os
         .getEnv("LOCALAPPDATA")
         .catch(() => "");
-      if (localAppDataPath) return localAppDataPath;
+      if (localAppDataPath) {
+        return getDistinctStorageParentPath(localAppDataPath, window.NL_PATH);
+      }
     }
     const documentsPath = await Neutralino.os
       .getPath("documents")
       .catch(() => "");
     if (window.NL_OS === "Darwin" && isICloudPath(documentsPath)) {
       const homePath = await Neutralino.os.getEnv("HOME").catch(() => "");
-      if (homePath) return homePath;
+      if (homePath) {
+        return getDistinctStorageParentPath(homePath, window.NL_PATH);
+      }
     }
-    if (documentsPath) return documentsPath;
+    if (documentsPath) {
+      return getDistinctStorageParentPath(documentsPath, window.NL_PATH);
+    }
     const fallbackKey = window.NL_OS === "Windows" ? "USERPROFILE" : "HOME";
     const fallbackPath = await Neutralino.os
       .getEnv(fallbackKey)
       .catch(() => "");
-    if (fallbackPath) return fallbackPath;
+    if (fallbackPath) {
+      return getDistinctStorageParentPath(fallbackPath, window.NL_PATH);
+    }
     throw new Error("WeekBox could not find a writable storage location");
+  }
+  async getLegacyExecutableStorageBasePath() {
+    const executablePath = normalizeComparablePath(window.NL_PATH);
+    if (!executablePath || !isWeekBoxFolder(window.NL_PATH)) return null;
+    const requiredDirectories = ["data", "engines", "mods"];
+    const complete = await Promise.all(
+      requiredDirectories.map((directory) =>
+        this.api.exists(`${window.NL_PATH}/${directory}`),
+      ),
+    );
+    if (!complete.every(Boolean)) return null;
+    return getParentPath(window.NL_PATH);
   }
   setStoragePaths(basePath) {
     const normalizedBasePath = String(basePath || "")
@@ -338,6 +382,14 @@ var _FileSystemService = class _FileSystemService {
       ? { basePath: storageBasePath, weekboxPath }
       : null;
   }
+  async hasStorageFolder(basePath) {
+    const selectedPath = String(basePath || "").replace(/[\\/]+$/, "");
+    if (!selectedPath) return false;
+    const weekboxPath = isWeekBoxFolder(selectedPath)
+      ? selectedPath
+      : `${selectedPath}/WeekBox`;
+    return this.api.exists(weekboxPath);
+  }
   async useExistingStorage(basePath) {
     this.assertStorageUnlocked();
     if (this.hasRunningProcesses()) {
@@ -376,21 +428,29 @@ var _FileSystemService = class _FileSystemService {
     let replacedStorageBackupPath = null;
     const repairingNestedStorage =
       destinationWeekboxPath.toLowerCase() === this.basePath.toLowerCase();
+    if (
+      pathsOverlap(destinationWeekboxPath, this.weekboxPath) &&
+      !repairingNestedStorage
+    ) {
+      throw new Error(
+        "Choose a storage parent outside the current WeekBox folder.",
+      );
+    }
+    const storageOnlyMove = this.isStorageInExecutableDirectory();
     if (await this.api.exists(destinationWeekboxPath)) {
       const entries = getRealEntries(
         await Neutralino.filesystem.readDirectory(destinationWeekboxPath),
       );
-      const canRepairNestedStorage =
-        repairingNestedStorage &&
-        entries.length === 1 &&
-        entries[0].type === "DIRECTORY" &&
-        entries[0].entry.toLowerCase() === "weekbox";
-      if (entries.length > 0 && !canRepairNestedStorage) {
-        if (!options.replaceExisting) {
-          throw new Error(
-            "The selected parent already contains a non-empty WeekBox folder. Choose a different parent folder so WeekBox does not merge two libraries.",
-          );
-        }
+      const destinationDecision = getStorageDestinationDecision(entries, {
+        replaceExisting: options.replaceExisting,
+        repairingNestedStorage,
+      });
+      if (destinationDecision.action === "reject") {
+        throw new Error(
+          "The selected parent already contains a non-empty WeekBox folder. Choose a different parent folder so WeekBox does not merge two libraries.",
+        );
+      }
+      if (destinationDecision.action === "replace") {
         const timestamp = /* @__PURE__ */ new Date()
           .toISOString()
           .replace(/[:.]/g, "-")
@@ -399,7 +459,10 @@ var _FileSystemService = class _FileSystemService {
         replacedStorageBackupPath = `${destinationBasePath}/WeekBox-backup-${timestamp}`;
         await this.api.move(destinationWeekboxPath, replacedStorageBackupPath);
       }
-      if (!canRepairNestedStorage && !replacedStorageBackupPath) {
+      if (
+        !destinationDecision.canRepairNestedStorage &&
+        !replacedStorageBackupPath
+      ) {
         await Neutralino.filesystem.remove(destinationWeekboxPath);
       }
     }
@@ -414,14 +477,37 @@ var _FileSystemService = class _FileSystemService {
         ),
       );
       try {
-        await this.copyDirectoryWithProgress(
-          this.weekboxPath,
-          destinationWeekboxPath,
-          onProgress,
-        );
-        await this.api.remove(this.weekboxPath);
+        if (storageOnlyMove) {
+          await this.copyStorageDirectoriesWithProgress(
+            this.weekboxPath,
+            destinationWeekboxPath,
+            onProgress,
+          );
+          await Promise.all(
+            ["data", "engines", "mods"].map((directory) =>
+              this.api
+                .remove(`${this.weekboxPath}/${directory}`)
+                .catch((error) =>
+                  console.warn("Could not remove legacy storage directory", {
+                    directory,
+                    error,
+                  }),
+                ),
+            ),
+          );
+        } else {
+          await this.copyDirectoryWithProgress(
+            this.weekboxPath,
+            destinationWeekboxPath,
+            onProgress,
+          );
+          await this.api.remove(this.weekboxPath);
+        }
       } catch (error) {
         console.error("Could not move storage directory:", error);
+        if (!replacedStorageBackupPath && !repairingNestedStorage) {
+          await this.api.remove(destinationWeekboxPath).catch(() => {});
+        }
         if (replacedStorageBackupPath) {
           await this.api.remove(destinationWeekboxPath).catch(() => {});
           await this.api
@@ -511,7 +597,10 @@ var _FileSystemService = class _FileSystemService {
         const relativePath = file.path.slice(sourcePath.length);
         // The destination tree is created above and starts empty. The two-argument
         // native call is enough here and avoids version-specific option handling.
-        await Neutralino.filesystem.copy(file.path, `${destinationPath}${relativePath}`);
+        await Neutralino.filesystem.copy(
+          file.path,
+          `${destinationPath}${relativePath}`,
+        );
         copiedBytes += fileSizes.get(file.path) || 0;
         copiedFiles += 1;
         reportProgress();
@@ -521,11 +610,34 @@ var _FileSystemService = class _FileSystemService {
       Array.from({ length: Math.min(concurrency, files.length) }, copyNextFile),
     );
   }
+  async copyStorageDirectoriesWithProgress(
+    sourceWeekboxPath,
+    destinationWeekboxPath,
+    onProgress,
+  ) {
+    const directories = ["data", "engines", "mods"];
+    for (let index = 0; index < directories.length; index += 1) {
+      const directory = directories[index];
+      await this.copyDirectoryWithProgress(
+        `${sourceWeekboxPath}/${directory}`,
+        `${destinationWeekboxPath}/${directory}`,
+        (event) =>
+          onProgress({
+            ...event,
+            progress:
+              ((index + Math.max(0, Math.min(100, event.progress)) / 100) /
+                directories.length) *
+              100,
+          }),
+      );
+    }
+  }
   async shouldRecommendDefaultStorage() {
+    if (appSettings.get("storageMoveRecommendationDismissed")) return false;
+    if (this.isStorageInExecutableDirectory()) return true;
     if (window.NL_OS !== "Windows" && window.NL_OS !== "Darwin") {
       return false;
     }
-    if (appSettings.get("storageMoveRecommendationDismissed")) return false;
     if (window.NL_OS === "Darwin") return this.isICloudStorage();
     const defaultPath = await this.getDefaultStorageParentPath();
     const usingDefault =
@@ -539,6 +651,12 @@ var _FileSystemService = class _FileSystemService {
   }
   isOneDriveStorage() {
     return window.NL_OS === "Windows" && isOneDrivePath(this.basePath);
+  }
+  isStorageInExecutableDirectory() {
+    return (
+      normalizeComparablePath(this.weekboxPath) ===
+      normalizeComparablePath(window.NL_PATH)
+    );
   }
   isICloudStorage() {
     return window.NL_OS === "Darwin" && isICloudPath(this.basePath);

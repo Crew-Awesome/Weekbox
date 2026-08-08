@@ -17,6 +17,56 @@ function getParentPath(path) {
   return path.slice(0, Math.max(path.lastIndexOf("/"), path.lastIndexOf("\\")));
 }
 
+function normalizeComparablePath(path) {
+  return String(path || "")
+    .trim()
+    .replace(/\\/g, "/")
+    .replace(/\/+/g, "/")
+    .replace(/\/$/, "")
+    .toLocaleLowerCase();
+}
+
+function pathsOverlap(left, right) {
+  const first = normalizeComparablePath(left);
+  const second = normalizeComparablePath(right);
+  return Boolean(
+    first &&
+    second &&
+    (first === second ||
+      first.startsWith(`${second}/`) ||
+      second.startsWith(`${first}/`)),
+  );
+}
+
+function getDistinctStorageParentPath(rootPath, executablePath) {
+  const root = String(rootPath || "")
+    .trim()
+    .replace(/[\\/]+$/, "");
+  if (!root) return "";
+  const candidate = `${root}/WeekBoxData`;
+  if (!pathsOverlap(candidate, executablePath)) return candidate;
+  return `${root}/WeekBoxData-storage`;
+}
+
+function getStorageDestinationDecision(
+  entries,
+  { replaceExisting = false, repairingNestedStorage = false } = {},
+) {
+  const realEntries = getRealEntries(entries);
+  const canRepairNestedStorage =
+    repairingNestedStorage &&
+    realEntries.length === 1 &&
+    realEntries[0].type === "DIRECTORY" &&
+    realEntries[0].entry.toLowerCase() === "weekbox";
+  if (!realEntries.length || canRepairNestedStorage) {
+    return { action: "use", canRepairNestedStorage };
+  }
+  return {
+    action: replaceExisting ? "replace" : "reject",
+    canRepairNestedStorage: false,
+  };
+}
+
 function getRealEntries(entries) {
   return (Array.isArray(entries) ? entries : []).filter(
     (entry) => entry?.entry !== "." && entry?.entry !== "..",
@@ -46,6 +96,10 @@ function normalizeFolderName(value) {
 
 export {
   getParentPath,
+  normalizeComparablePath,
+  pathsOverlap,
+  getDistinctStorageParentPath,
+  getStorageDestinationDecision,
   sanitizePathSegment,
   getRealEntries,
   getModFolderName,

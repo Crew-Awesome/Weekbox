@@ -1,5 +1,9 @@
 function quoteCommandArgument(value) {
-  return `"${String(value).replaceAll('"', '\\"')}"`;
+  const argument = String(value ?? "").replace(/[\r\n]/g, "");
+  if (window.NL_OS === "Windows") {
+    return `"${argument.replace(/["^%]/g, "^$&")}"`;
+  }
+  return `'${argument.replaceAll("'", `'"'"'`)}'`;
 }
 
 function getGoogleDriveFileId(url) {
@@ -44,8 +48,12 @@ function extractMediaFireDirectUrl(html) {
 
   // 2. aria-label="Download file"
   const ariaMatch =
-    decoded.match(/aria-label=["']Download file["'][^>]*href=["']([^"']+)["']/i) ||
-    decoded.match(/href=["']([^"']+)["'][^>]*aria-label=["']Download file["']/i);
+    decoded.match(
+      /aria-label=["']Download file["'][^>]*href=["']([^"']+)["']/i,
+    ) ||
+    decoded.match(
+      /href=["']([^"']+)["'][^>]*aria-label=["']Download file["']/i,
+    );
   if (ariaMatch && /^https?:\/\//i.test(ariaMatch[1])) {
     return ariaMatch[1];
   }
@@ -176,9 +184,7 @@ async function getRangeSupportedFileSize(url, executeCommand) {
   }
   const headers = `${result.stdOut || ""}
 ${result.stdErr || ""}`;
-  const ranges = [
-    ...headers.matchAll(/content-range:\s*bytes\s+0-0\/(\d+)/gi),
-  ];
+  const ranges = [...headers.matchAll(/content-range:\s*bytes\s+0-0\/(\d+)/gi)];
   const rangeSize = Number(ranges.at(-1)?.[1]);
   if (rangeSize > 0) return rangeSize;
   const lengths = [...headers.matchAll(/content-length:\s*(\d+)/gi)];

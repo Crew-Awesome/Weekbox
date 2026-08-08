@@ -1,11 +1,26 @@
 import { t } from "../i18n/index.js";
 
-function renderTemplate(id, data = {}) {
+function escapeHtml(value) {
+  return String(value ?? "").replace(
+    /[&<>"']/g,
+    (character) =>
+      ({
+        "&": "&amp;",
+        "<": "&lt;",
+        ">": "&gt;",
+        '"': "&quot;",
+        "'": "&#39;",
+      })[character],
+  );
+}
+
+function renderTemplate(id, data = {}, rawKeys = []) {
   const tpl = document.getElementById(id);
   if (!tpl) return "";
   let html = tpl.innerHTML;
   for (const key in data) {
-    html = html.replace(new RegExp("{{" + key + "}}", "g"), data[key]);
+    const value = rawKeys.includes(key) ? data[key] : escapeHtml(data[key]);
+    html = html.replace(new RegExp("{{" + key + "}}", "g"), value);
   }
   return html;
 }
@@ -26,20 +41,24 @@ const modManagerTemplates = {
     selectedVersion,
     versionOptionsHtml,
   ) =>
-    renderTemplate("tpl-engineCompatibilityPicker", {
-      modId,
-      engineId,
-      engineVersion,
-      selectedEngineIconHtml: selectedEngineIcon
-        ? `<img src="assets/icons/${selectedEngineIcon}" alt=""/>`
-        : `<i class="fa-solid fa-question-circle" aria-hidden="true"></i>`,
-      selectedEngineName,
-      unassignedSelectedClass: !engineId ? "selected" : "",
-      engineOptionsHtml,
-      selectedVersion,
-      versionOptionsHtml,
-      unassignedLabel: t("import.unassigned"),
-    }),
+    renderTemplate(
+      "tpl-engineCompatibilityPicker",
+      {
+        modId,
+        engineId,
+        engineVersion,
+        selectedEngineIconHtml: selectedEngineIcon
+          ? `<img src="assets/icons/${selectedEngineIcon}" alt=""/>`
+          : `<i class="fa-solid fa-question-circle" aria-hidden="true"></i>`,
+        selectedEngineName,
+        unassignedSelectedClass: !engineId ? "selected" : "",
+        engineOptionsHtml,
+        selectedVersion,
+        versionOptionsHtml,
+        unassignedLabel: t("import.unassigned"),
+      },
+      ["selectedEngineIconHtml", "engineOptionsHtml", "versionOptionsHtml"],
+    ),
   engineOption: (id, name, icon, isSelected) =>
     renderTemplate("tpl-engineOption", {
       id,
@@ -65,17 +84,21 @@ const modManagerTemplates = {
     eyeIcon,
     engineBadgeHtml,
   ) =>
-    renderTemplate("tpl-cardContent", {
-      launchKind,
-      modId,
-      engineId,
-      engineVersion,
-      launchLabel,
-      modName,
-      eyeIcon,
-      engineBadgeHtml,
-      disabledAttr: isHidden || isUnassigned ? "disabled" : "",
-    }),
+    renderTemplate(
+      "tpl-cardContent",
+      {
+        launchKind,
+        modId,
+        engineId,
+        engineVersion,
+        launchLabel,
+        modName,
+        eyeIcon,
+        engineBadgeHtml,
+        disabledAttr: isHidden || isUnassigned ? "disabled" : "",
+      },
+      ["engineBadgeHtml"],
+    ),
   launchButtonRunning: () => renderTemplate("tpl-launchButtonRunning"),
   launchButtonSwitch: () => renderTemplate("tpl-launchButtonSwitch"),
   launchButtonDefault: (launchLabel) =>

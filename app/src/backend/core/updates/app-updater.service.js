@@ -133,7 +133,9 @@ async function fetchLatestRelease() {
       cache: "no-store",
     });
     if (!response.ok)
-      throw new Error(`Update check failed: GitHub returned ${response.status}`);
+      throw new Error(
+        `Update check failed: GitHub returned ${response.status}`,
+      );
     return response.json();
   } finally {
     clearTimeout(timeout);
@@ -302,9 +304,10 @@ appUpdater = {
       .getStats(target)
       .then(() => true)
       .catch(() => false);
+    let previousBytes = null;
     if (targetExists) {
-      const current = await Neutralino.filesystem.readBinaryFile(target);
-      await Neutralino.filesystem.writeBinaryFile(backup, current);
+      previousBytes = await Neutralino.filesystem.readBinaryFile(target);
+      await Neutralino.filesystem.writeBinaryFile(backup, previousBytes);
     }
     onProgress("Downloading update\u2026");
     await downloadArchive({
@@ -328,21 +331,37 @@ appUpdater = {
       throw new Error("Downloaded update failed its integrity check.");
     }
     onProgress("Installing update\u2026");
-    await Neutralino.filesystem.writeBinaryFile(staging, bytes);
-    await Neutralino.filesystem.writeBinaryFile(target, bytes);
-    onProgress("Restarting WeekBox\u2026");
-    const exe = String(window.NL_ARGS?.[0] || "").trim();
-    if (!exe)
-      throw new Error(
-        "WeekBox could not restart because the application path is missing.",
-      );
-    if (window.NL_OS === "Darwin" && exe.includes(".app/Contents/MacOS/")) {
-      const appBundle = exe.substring(0, exe.indexOf(".app/") + 5);
-      await Neutralino.os.execCommand(`open "${appBundle}"`, {
-        background: true,
-      });
-    } else {
-      await Neutralino.os.execCommand(`"${exe}"`, { background: true });
+    try {
+      await Neutralino.filesystem.writeBinaryFile(staging, bytes);
+      await Neutralino.filesystem.writeBinaryFile(target, bytes);
+      onProgress("Restarting WeekBox\u2026");
+      const exe = String(window.NL_ARGS?.[0] || "").trim();
+      if (!exe)
+        throw new Error(
+          "WeekBox could not restart because the application path is missing.",
+        );
+      if (window.NL_OS === "Darwin" && exe.includes(".app/Contents/MacOS/")) {
+        const appBundle = exe.substring(0, exe.indexOf(".app/") + 5);
+        await Neutralino.os.execCommand(`open "${appBundle}"`, {
+          background: true,
+        });
+      } else {
+        await Neutralino.os.execCommand(`"${exe}"`, { background: true });
+      }
+    } catch (error) {
+      try {
+        if (targetExists) {
+          await Neutralino.filesystem.writeBinaryFile(target, previousBytes);
+        } else {
+          await Neutralino.filesystem.remove(target).catch(() => {});
+        }
+      } catch (rollbackError) {
+        console.error(
+          "Could not roll back the resources update:",
+          rollbackError,
+        );
+      }
+      throw error;
     }
     onHandoff();
     await Neutralino.app.exit();
@@ -393,11 +412,13 @@ appUpdater = {
     const escapedAppPath = quotePowerShellLiteral(appPath);
     const escapedZipPath = quotePowerShellLiteral(zipPath);
     const escapedStagingPath = quotePowerShellLiteral(staging);
+    const escapedTargetExe = quotePowerShellLiteral(targetExe);
     const script = [
       "$ErrorActionPreference = 'Stop'",
       `$appPath = '${escapedAppPath}'`,
       `$zip = '${escapedZipPath}'`,
       `$staging = '${escapedStagingPath}'`,
+      `$targetExe = '${escapedTargetExe}'`,
       `$pid_app = ${pid}`,
       "while (Get-Process -Id $pid_app -ErrorAction SilentlyContinue) { Start-Sleep -Seconds 1 }",
       "Expand-Archive -Path $zip -DestinationPath $staging -Force",

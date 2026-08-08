@@ -1,3 +1,11 @@
+function quoteShellArgument(value) {
+  const argument = String(value ?? "").replace(/[\r\n]/g, "");
+  if (window.NL_OS === "Windows") {
+    return `"${argument.replace(/["^%]/g, "^$&")}"`;
+  }
+  return `'${argument.replaceAll("'", "'\"'\"'")}'`;
+}
+
 var APIneuFileSystem = {
   /**
    * Comprueba si un archivo o directorio existe.
@@ -23,7 +31,10 @@ var APIneuFileSystem = {
     const normalizedPath = path.replace(/\\/g, "/").replace(/\/+$/, "");
     if (await this.exists(normalizedPath)) return;
     const separator = normalizedPath.lastIndexOf("/");
-    if (separator > 0 && !/^[a-zA-Z]:$/.test(normalizedPath.slice(0, separator))) {
+    if (
+      separator > 0 &&
+      !/^[a-zA-Z]:$/.test(normalizedPath.slice(0, separator))
+    ) {
       await this.ensureDir(normalizedPath.slice(0, separator));
     }
     try {
@@ -126,8 +137,8 @@ var APIneuFileSystem = {
       try {
         const isWin = window.NL_OS === "Windows";
         const command = isWin
-          ? `cmd /c rmdir /S /Q "${normalizedPath.replace(/\//g, "\\")}"`
-          : `rm -rf "${normalizedPath}"`;
+          ? `cmd /c rmdir /S /Q ${quoteShellArgument(normalizedPath.replace(/\//g, "\\"))}`
+          : `rm -rf ${quoteShellArgument(normalizedPath)}`;
         const result = await Neutralino.os.execCommand(command, {
           background: false,
         });
@@ -158,17 +169,23 @@ var APIneuFileSystem = {
    */
   async move(sourcePath, destinationPath, options = {}) {
     if (typeof sourcePath !== "string" || !sourcePath.trim()) {
-      throw new Error("WeekBox could not move storage data because the source path is missing.");
+      throw new Error(
+        "WeekBox could not move storage data because the source path is missing.",
+      );
     }
     if (typeof destinationPath !== "string" || !destinationPath.trim()) {
-      throw new Error("WeekBox could not move storage data because the destination path is missing.");
+      throw new Error(
+        "WeekBox could not move storage data because the destination path is missing.",
+      );
     }
     const normalizedSource = String(sourcePath).replace(/\\/g, "/");
     const normalizedDest = String(destinationPath).replace(/\\/g, "/");
 
     if (!(await this.exists(normalizedSource))) {
       if (await this.exists(normalizedDest)) return;
-      throw new Error(`WeekBox could not move ${normalizedSource} because it does not exist.`);
+      throw new Error(
+        `WeekBox could not move ${normalizedSource} because it does not exist.`,
+      );
     }
 
     const maxAttempts = options.maxAttempts || 5;
@@ -189,7 +206,9 @@ var APIneuFileSystem = {
       let isDirectory = false;
       try {
         const stats = await Neutralino.filesystem.getStats(normalizedSource);
-        isDirectory = Boolean(stats?.isDirectory || stats?.type === "DIRECTORY");
+        isDirectory = Boolean(
+          stats?.isDirectory || stats?.type === "DIRECTORY",
+        );
       } catch {
         try {
           await Neutralino.filesystem.readDirectory(normalizedSource);

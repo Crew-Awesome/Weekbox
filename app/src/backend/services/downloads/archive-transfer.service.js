@@ -17,7 +17,9 @@ import {
 } from "./download-validation.util.js";
 
 function formatArchiveEntry(output) {
-  const lines = String(output || "").trim().split(/[\r\n]+/);
+  const lines = String(output || "")
+    .trim()
+    .split(/[\r\n]+/);
   for (let i = lines.length - 1; i >= 0; i--) {
     let line = lines[i].trim();
     if (!line) continue;
@@ -30,9 +32,7 @@ function formatArchiveEntry(output) {
       .replace(/^x\s+/i, "")
       .replace(/^-+\s*/, "")
       .trim();
-    const byteSummary = name.match(
-      /^([\d,]+)\s+bytes(?:\s+\([^)]*\))?$/i,
-    );
+    const byteSummary = name.match(/^([\d,]+)\s+bytes(?:\s+\([^)]*\))?$/i);
     if (byteSummary) {
       return formatBytes(
         Number(byteSummary[1].replaceAll(",", "")),
@@ -104,7 +104,12 @@ var MIN_SEGMENTED_DOWNLOAD_BYTES = 8 * 1024 * 1024;
 var MAX_DOWNLOAD_SEGMENTS = 4;
 var archiveFinalizations = new Map();
 function quoteCommandArgument(value) {
-  return `"${String(value).replaceAll('"', '\\"')}"`;
+  const argument = String(value ?? "").replace(/[\r\n]/g, "");
+  if (window.NL_OS === "Windows") {
+    return `"${argument.replace(/["^%]/g, "^$&")}"`;
+  }
+  const escaped = argument.replaceAll("'", "'\"'\"'");
+  return `'${escaped}'`;
 }
 
 function getParentPath(path) {
@@ -535,8 +540,12 @@ async function find7zBinary() {
 }
 
 function getPowerShellExtractCommand(archivePath, destinationPath) {
-  const safeArchive = String(archivePath || "").replace(/\//g, "\\").replace(/'/g, "''");
-  const safeDest = String(destinationPath || "").replace(/\//g, "\\").replace(/'/g, "''");
+  const safeArchive = String(archivePath || "")
+    .replace(/\//g, "\\")
+    .replace(/'/g, "''");
+  const safeDest = String(destinationPath || "")
+    .replace(/\//g, "\\")
+    .replace(/'/g, "''");
   return `powershell -NoProfile -NonInteractive -Command "Expand-Archive -Path '${safeArchive}' -DestinationPath '${safeDest}' -Force"`;
 }
 
@@ -913,8 +922,12 @@ async function downloadGoogleDriveArchive({
       let confirmedDownloadUrl = null;
 
       const directLinkMatch =
-        htmlContent.match(/<a[^>]+id=["']uc-download-link["'][^>]+href=["']([^"']+)["']/i) ||
-        htmlContent.match(/<a[^>]+href=["']([^"']*(?:export=download|drive\.usercontent\.google\.com\/download)[^"']*)["']/i);
+        htmlContent.match(
+          /<a[^>]+id=["']uc-download-link["'][^>]+href=["']([^"']+)["']/i,
+        ) ||
+        htmlContent.match(
+          /<a[^>]+href=["']([^"']*(?:export=download|drive\.usercontent\.google\.com\/download)[^"']*)["']/i,
+        );
 
       if (directLinkMatch) {
         let linkHref = directLinkMatch[1].replaceAll("&amp;", "&");
@@ -1023,9 +1036,8 @@ async function downloadGoogleDriveArchive({
           rangeCheck.stdErr || rangeCheck.stdOut,
         );
       }
-      const rangeHeaders = await Neutralino.filesystem.readFile(
-        rangeHeadersPath,
-      );
+      const rangeHeaders =
+        await Neutralino.filesystem.readFile(rangeHeadersPath);
       const rangedTotalBytes = getContentRangeTotal(rangeHeaders);
       if (!rangedTotalBytes) {
         const rangeSample = new TextDecoder().decode(

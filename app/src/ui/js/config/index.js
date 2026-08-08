@@ -526,6 +526,29 @@ export const configModal = {
         );
         return;
       }
+      if (await FS.hasStorageFolder(selectedPath)) {
+        const newWeekboxPath = `${selectedPath.replace(/[\\/]+$/, "")}/WeekBox`;
+        const replaceChoice = await Neutralino.os.showMessageBox(
+          t("storage.moveFilesTitle"),
+          t("storage.moveFilesMessage", {
+            path: await formatStoragePath(newWeekboxPath),
+          }),
+          "YES_NO",
+          "QUESTION",
+        );
+        if (replaceChoice !== "YES") return;
+        button.disabled = true;
+        button.innerHTML = `<i class="fa-solid fa-folder-open"></i> ${t("storage.movingFiles")}`;
+        this.showStorageMoveToast();
+        await FS.moveStorageTo(
+          selectedPath,
+          (progress) => this.updateStorageMoveToast(progress),
+          { replaceExisting: true },
+        );
+        this.updateStorageLocationLabel();
+        this.completeStorageMoveToast();
+        return;
+      }
       const newWeekboxPath = `${selectedPath.replace(/[\\/]+$/, "")}/WeekBox`;
       const choice = await Neutralino.os.showMessageBox(
         t("storage.moveFilesTitle"),

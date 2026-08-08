@@ -1,4 +1,8 @@
 import { t } from "./i18n/index.js";
+import {
+  activateCheckoutDialog,
+  deactivateCheckoutDialog,
+} from "./home/modal/dialogFocus.js";
 
 export const existingStorageModal = {
   show({ weekboxPath }) {
@@ -31,7 +35,11 @@ export const existingStorageModal = {
     requestAnimationFrame(() => modal.classList.add("show"));
 
     return new Promise((resolve) => {
+      let settled = false;
       const close = (choice) => {
+        if (settled) return;
+        settled = true;
+        deactivateCheckoutDialog(modal);
         modal.classList.remove("show");
         setTimeout(() => {
           modal.remove();
@@ -47,7 +55,15 @@ export const existingStorageModal = {
       modal.onclick = (event) => {
         if (event.target === modal) close("cancel");
       };
-      modal.querySelector(".existing-storage-use").focus();
+      requestAnimationFrame(() => {
+        if (settled) return;
+        activateCheckoutDialog(
+          modal,
+          modal.querySelector(".error-content"),
+          modal.querySelector(".existing-storage-use"),
+          () => close("cancel"),
+        );
+      });
     });
   },
 };
