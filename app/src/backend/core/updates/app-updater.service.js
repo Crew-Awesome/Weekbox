@@ -346,7 +346,11 @@ appUpdater = {
           background: true,
         });
       } else {
-        await Neutralino.os.execCommand(`"${exe}"`, { background: true });
+        const cmd = `"${exe}" --nl-port=${window.NL_PORT} --nl-token=${window.NL_TOKEN} --path=${window.NL_PATH}`;
+        await Neutralino.os.execCommand(cmd, {
+          background: true,
+          cwd: window.NL_PATH,
+        });
       }
     } catch (error) {
       try {
