@@ -105,7 +105,7 @@ var MAX_DOWNLOAD_SEGMENTS = 4;
 var archiveFinalizations = new Map();
 function quoteCommandArgument(value) {
   const argument = String(value ?? "").replace(/[\r\n]/g, "");
-  if (window.NL_OS === "Windows") {
+  if (typeof window !== "undefined" && window.NL_OS === "Windows") {
     return `"${argument.replace(/["^%]/g, "^$&")}"`;
   }
   const escaped = argument.replaceAll("'", "'\"'\"'");
@@ -426,6 +426,13 @@ function getDownloadSegments(totalBytes, outPath) {
       path: `${outPath}.part-${index}`,
     };
   });
+}
+
+function hasExpectedPartSizes(parts, sizes) {
+  return (
+    parts.length === sizes.length &&
+    parts.every((part, index) => Number(sizes[index]) === part.size)
+  );
 }
 
 async function removeParts(parts) {
@@ -844,6 +851,28 @@ const GDRIVE_CURL_HEADERS = [
   `-H ${quoteCommandArgument("Referer: https://drive.usercontent.google.com/")}`,
 ].join(" ");
 
+async function downloadGoogleDriveFile({
+  url,
+  outPath,
+  cookiePath,
+  totalBytes,
+  getTask,
+  onProgress,
+}) {
+  await retryTransientDownload(
+    () =>
+      runCurlDownload(
+        `curl --globoff -# --fail --show-error ${GDRIVE_CURL_HEADERS} -b ${quoteCommandArgument(cookiePath)} -c ${quoteCommandArgument(cookiePath)} -L ${quoteCommandArgument(url)} -o ${quoteCommandArgument(outPath)}`,
+        getTask,
+        onProgress,
+        createFileProgressReader(outPath, totalBytes),
+      ),
+    getTask,
+    onProgress,
+    () => Neutralino.filesystem.remove(outPath).catch(() => {}),
+  );
+}
+
 function logGoogleDriveDebug(stage, details = {}) {
   console.info(`[WeekBox Google Drive] ${stage}`, {
     timestamp: new Date().toISOString(),
@@ -1052,18 +1081,36 @@ async function downloadGoogleDriveArchive({
         );
       }
       logGoogleDriveDebug("range-check", { totalBytes: rangedTotalBytes });
-      await downloadSegmentedArchive({
-        url: confirmedDownloadUrl,
+      try {
+        await downloadSegmentedArchive({
+          url: confirmedDownloadUrl,
+          outPath,
+          totalBytes: rangedTotalBytes,
+          getTask,
+          onProgress,
+          curlOptions: GDRIVE_CURL_HEADERS,
+          parallel: false,
+        });
+      } catch (error) {
+        if (getTask()?.cancelled) throw error;
+        await Neutralino.filesystem.remove(outPath).catch(() => {});
+        onProgress?.(
+          "Ranged download failed. Retrying with one connection...",
+          2,
+        );
+        await downloadGoogleDriveFile({
+          url: confirmedDownloadUrl,
+          outPath,
+          cookiePath,
+          totalBytes: rangedTotalBytes,
+          getTask,
+          onProgress,
+        });
+      }
+      const downloadedStats = await waitForDownloadedArchive(
         outPath,
-        totalBytes: rangedTotalBytes,
-        getTask,
-        onProgress,
-        curlOptions: GDRIVE_CURL_HEADERS,
-        parallel: false,
-      });
-      const downloadedStats = await Neutralino.filesystem
-        .getStats(outPath)
-        .catch(() => null);
+        rangedTotalBytes,
+      );
       logGoogleDriveDebug("download-complete", {
         bytes: Number(downloadedStats?.size) || 0,
       });
@@ -1186,25 +1233,30 @@ async function downloadSegmentedArchive({
       for (const part of parts) await downloadPart(part);
     }
     if (getTask()?.cancelled) throw new Error("Cancelled");
-    const partSizes = await Promise.all(
-      parts.map(async (part) => {
-        try {
-          return (await Neutralino.filesystem.getStats(part.path)).size;
-        } catch (error) {
-          return 0;
-        }
-      }),
-    );
+    let partStats;
+    try {
+      partStats = await Promise.all(
+        parts.map((part) => waitForDownloadedArchive(part.path, part.size)),
+      );
+    } catch (error) {
+      const incompleteError = new Error(
+        "Parallel download returned incomplete file parts",
+      );
+      incompleteError.cause = error;
+      throw incompleteError;
+    }
+    const partSizes = partStats.map((stats) => stats.size);
     console.info("[WeekBox Google Drive] range-parts", {
       expected: parts.map((part) => part.size),
       actual: partSizes,
       parallel,
     });
-    if (partSizes.some((size, index) => size !== parts[index].size)) {
+    if (!hasExpectedPartSizes(parts, partSizes)) {
       throw new Error("Parallel download returned incomplete file parts");
     }
     await mergeParts(parts, outPath);
-    const mergedBytes = (await Neutralino.filesystem.getStats(outPath)).size;
+    const mergedBytes = (await waitForDownloadedArchive(outPath, totalBytes))
+      .size;
     if (mergedBytes !== totalBytes) {
       throw new Error("Parallel download merged to an incomplete archive");
     }
@@ -1213,22 +1265,30 @@ async function downloadSegmentedArchive({
   }
 }
 
-async function waitForDownloadedArchive(outPath) {
+async function waitForDownloadedArchive(outPath, expectedSize = 0) {
   let lastError;
   // Windows can keep curl's output handle open for a few seconds after its
   // process-exit event. Do not treat that short handoff as a failed download.
   for (let attempt = 1; attempt <= 8; attempt += 1) {
     try {
       const stats = await Neutralino.filesystem.getStats(outPath);
-      if (stats.size > 0) return stats;
-      lastError = new Error("The downloaded archive is empty");
+      if (
+        stats.size > 0 &&
+        (!expectedSize || Number(stats.size) === Number(expectedSize))
+      )
+        return stats;
+      lastError = new Error(
+        expectedSize
+          ? `Expected ${expectedSize} bytes but found ${stats.size}`
+          : "The downloaded archive is empty",
+      );
     } catch (error) {
       lastError = error;
     }
     if (attempt < 8) await wait(attempt * 250);
   }
   throw new Error(
-    `WeekBox could not access the temporary download after it completed. ${lastError?.message || lastError || "Unknown filesystem error"}`,
+    `WeekBox could not access a complete temporary download after it completed. ${lastError?.message || lastError || "Unknown filesystem error"}`,
   );
 }
 
@@ -1717,4 +1777,10 @@ async function extractArchive({
   }
 }
 
-export { extractArchive, downloadArchive, listenForProcess };
+export {
+  extractArchive,
+  downloadArchive,
+  listenForProcess,
+  getDownloadSegments,
+  hasExpectedPartSizes,
+};
