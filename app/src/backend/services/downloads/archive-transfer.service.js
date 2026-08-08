@@ -1783,4 +1783,6 @@ export {
   listenForProcess,
   getDownloadSegments,
   hasExpectedPartSizes,
+  buildWindowsMergeCommand,
+  buildUnixMergeCommand,
 };
