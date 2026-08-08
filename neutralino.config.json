@@ -44,7 +44,7 @@
     "resourcesPath": "/app/",
     "extensionsPath": "/extensions/",
     "clientLibrary": "/app/src/backend/core/native/pc/neutralino.js",
-    "binaryVersion": "6.5.0",
-    "clientVersion": "6.5.0"
+    "binaryVersion": "6.9.0",
+    "clientVersion": "6.9.0"
   }
 }
