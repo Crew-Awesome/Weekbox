@@ -10,8 +10,8 @@
   "enableServer": true,
   "enableNativeAPI": true,
   "enableExtensions": true,
-  
   "tokenSecurity": "one-time",
+  "exportAuthInfo": true,
   "singleInstance": true,
   "nativeAllowList": [
     "app.*",

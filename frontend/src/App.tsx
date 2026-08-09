@@ -1,86 +1,148 @@
 import { useEffect, useState } from 'react';
-import { useNavigate } from "react-router-dom";
-// Declaramos las variables globales para que TypeScript no marque error
-declare global {
-  interface Window {
-    NODE: any;
-    Neutralino: any;
-    NodeExtension: any; // aki mas q nada xd
-  }
-}
+import { platform } from './core/platform';
 
+/**
+ * Maqueta básica de Weekbox conectada a la capa unificada de Platform Bridge.
+ * @returns {JSX.Element} Interfaz básica de prueba con botones agnósticos de plataforma.
+ */
 function App() {
-  const [contador, setContador] = useState(0);
-  const [respuestaNode, setRespuestaNode] = useState('Esperando a Node...');
-  const navigate = useNavigate();
-  useEffect(() => {
-    //
-    if (typeof window.Neutralino !== 'undefined' && typeof window.NodeExtension !== 'undefined') {
-      
-      // init neu y node
-      window.Neutralino.init();
-      let node: any = null;
-      node = window.NODE = new window.NodeExtension(true);
-      
-      // back ping pong
-      window.Neutralino.events.on("pingResult", (e: any) => {
-        console.log("Respuesta de Node:", e.detail);
-        setRespuestaNode(e.detail);
-      });
-      window.Neutralino.events.on("ready", () => {
-        node.run("setActivity", { details: "HOLAAA", state:"probando we" });
-      })
+  const [logs, setLogs] = useState<string[]>([]);
+  const [pingCount, setPingCount] = useState<number>(0);
 
-    } else {
-      console.error("e conexión. Revisa la consola.");
-    }
+  /**
+   * Agrega un mensaje a la consola de la maqueta.
+   * @param {string} msg - Texto a registrar.
+   */
+  const addLog = (msg: string) => {
+    setLogs((prev) => [`[${new Date().toLocaleTimeString()}] ${msg}`, ...prev.slice(0, 19)]);
+  };
+
+  /**
+   * Inicialización del puente de plataforma y suscripción a eventos.
+   */
+  useEffect(() => {
+    platform.initialize();
+    addLog(`Plataforma detectada: [${platform.platformName.toUpperCase()}]`);
+
+    const unsubscribePing = platform.onEvent('pingResult', (data: string) => {
+      addLog(`Respuesta: ${data}`);
+    });
+
+    const unsubscribeReady = platform.onEvent('ready', () => {
+      addLog('Plataforma inicializada y lista.');
+    });
+
+    return () => {
+      unsubscribePing();
+      unsubscribeReady();
+    };
   }, []);
 
-  const mandarPing = () => {
-    if (typeof window.NODE !== 'undefined') {
-      window.NODE.run('ping', `¡React dice PING! Contador actual: ${contador}`);
-    } else {
-      alert("Los scripts no han cargado. Node.js no está conectado todavía.");
-    }
+  /**
+   * Envía una señal de Ping a través del adaptador de plataforma activo.
+   */
+  const handlePing = () => {
+    const next = pingCount + 1;
+    setPingCount(next);
+    platform.sendPing(`Ping #${next}`);
+    platform.triggerFeedback('light');
+    addLog(`Enviando Ping #${next}...`);
+  };
+
+  /**
+   * Solicita una tarea pesada en segundo plano.
+   */
+  const handleLongTask = () => {
+    platform.runLongTask(5);
+    platform.triggerFeedback('warning');
+    addLog('Iniciando tarea en segundo plano...');
+  };
+
+  /**
+   * Actualiza el estado de Discord Rich Presence (en Desktop).
+   */
+  const handleDiscordRPC = () => {
+    platform.setDiscordActivity({
+      details: 'Desarrollando Weekbox',
+      state: 'Probando Platform Bridge',
+    });
+    platform.triggerFeedback('success');
+    addLog('Actualización de Discord RPC solicitada.');
   };
 
   return (
-    <div style={{ padding: '30px', fontFamily: 'system-ui, sans-serif' }}>
-      <h1>Prueba de Vite HMR</h1>
-      
-      <div style={{ marginBottom: '30px', padding: '15px', background: '#f0f0f0', borderRadius: '8px' }}>
-        <h2>1. Prueba de Estado (React)</h2>
-        <p>Haz clic varias veces para subir el contador:</p>
-        <button 
-          onClick={() => setContador(contador + 1)}
-          style={{ padding: '10px 20px', fontSize: '16px', cursor: 'pointer' }}
-        >
-          Contador: {contador}
-        </button>
-      </div>
-
-      <div style={{ padding: '15px', border: '2px solid #007bff', borderRadius: '8px' }}>
-        <h2>2. Prueba de Backend (Node.js)</h2>
-        <button 
-          onClick={mandarPing}
-          style={{ padding: '10px 20px', fontSize: '16px', cursor: 'pointer', background: '#007bff', color: 'white', border: 'none', borderRadius: '4px' }}
-        >
-          Enviar señal a Node.js
-        </button>
-        <p style={{ marginTop: '15px', fontSize: '18px' }}>
-          <strong>Node responde:</strong> {respuestaNode}
+    <div style={{ padding: '20px', maxWidth: '650px', margin: '0 auto', fontFamily: 'sans-serif' }}>
+      {/* Cabecera básica */}
+      <header style={{ marginBottom: '16px', borderBottom: '1px solid #ccc', paddingBottom: '10px' }}>
+        <h2 style={{ fontSize: '20px', margin: 0, color: '#333' }}>Weekbox - Maqueta Base</h2>
+        <p style={{ fontSize: '12px', color: '#666', margin: '4px 0 0' }}>
+          Plataforma Activa:{' '}
+          <strong style={{ color: platform.platformName === 'desktop' ? '#16a34a' : '#2563eb' }}>
+            {platform.platformName.toUpperCase()}
+          </strong>
         </p>
-      </div>
-        <div style={{ padding: '15px', border: '2px solid #007bff', borderRadius: '8px' }}>
-        <h2>3. Prueba de CAMBIO DE PESTAña</h2>
-        <button 
-          onClick={() => navigate("/test")}
-          style={{ padding: '10px 20px', fontSize: '16px', cursor: 'pointer', background: '#007bff', color: 'white', border: 'none', borderRadius: '4px' }}
+      </header>
+
+      {/* Botones de acción */}
+      <section style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginBottom: '16px' }}>
+        <button
+          onClick={handlePing}
+          style={{ padding: '8px 14px', border: '1px solid #999', borderRadius: '4px', background: '#f5f5f5' }}
         >
-          Enviar señal a Node.js
+          Mandar Ping ({pingCount})
         </button>
 
-      </div>
+        <button
+          onClick={handleLongTask}
+          style={{ padding: '8px 14px', border: '1px solid #999', borderRadius: '4px', background: '#f5f5f5' }}
+        >
+          Ejecutar Tarea Larga
+        </button>
+
+        <button
+          onClick={handleDiscordRPC}
+          style={{ padding: '8px 14px', border: '1px solid #999', borderRadius: '4px', background: '#f5f5f5' }}
+        >
+          Probar Discord RPC
+        </button>
+
+        <button
+          onClick={() => setLogs([])}
+          style={{ padding: '8px 14px', border: '1px solid #bbb', borderRadius: '4px', background: '#fff', color: '#666' }}
+        >
+          Limpiar Log
+        </button>
+      </section>
+
+      {/* Consola de registros básica */}
+      <section>
+        <div style={{ fontSize: '13px', fontWeight: 'bold', marginBottom: '6px', color: '#444' }}>
+          Registro de Eventos:
+        </div>
+        <div
+          style={{
+            height: '240px',
+            overflowY: 'auto',
+            border: '1px solid #ccc',
+            borderRadius: '4px',
+            padding: '10px',
+            background: '#fafafa',
+            fontFamily: 'monospace',
+            fontSize: '12px',
+            color: '#222',
+          }}
+        >
+          {logs.length === 0 ? (
+            <span style={{ color: '#888' }}>Sin eventos todavía...</span>
+          ) : (
+            logs.map((entry, idx) => (
+              <div key={idx} style={{ marginBottom: '4px' }}>
+                {entry}
+              </div>
+            ))
+          )}
+        </div>
+      </section>
     </div>
   );
 }

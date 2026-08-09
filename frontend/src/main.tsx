@@ -1,17 +1,23 @@
-import { StrictMode } from 'react'
-import { createRoot } from 'react-dom/client'
-import './index.css'
-import App from './App.tsx'
-import { HashRouter, Routes, Route } from "react-router-dom";
-import Test from './test/page';
+import { StrictMode } from 'react';
+import { createRoot } from 'react-dom/client';
+import { HashRouter, Routes, Route } from 'react-router-dom';
+import App from './App';
+import './index.css';
 
-createRoot(document.getElementById('root')!).render(
-  <StrictMode>
-    <HashRouter>
-      <Routes>
-        <Route path="/" element={<App />} />
-        <Route path="/test" element={<Test />} />
-      </Routes>
-    </HashRouter>
-  </StrictMode>,
-)
+/**
+ * Montaje principal de la aplicación React.
+ * Se utiliza HashRouter para garantizar compatibilidad con WebViews y ejecución local (Neutralino/Expo).
+ */
+const rootElement = document.getElementById('root');
+
+if (rootElement) {
+  createRoot(rootElement).render(
+    <StrictMode>
+      <HashRouter>
+        <Routes>
+          <Route path="/" element={<App />} />
+        </Routes>
+      </HashRouter>
+    </StrictMode>
+  );
+}

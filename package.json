@@ -1,13 +1,19 @@
 {
   "name": "weekbox-root",
   "version": "1.0.0",
-  "description": "Orquestador de Weekbox",
+  "description": "root de Weekbox",
   "main": "index.js",
   "scripts": {
+    "install:all": "npm install && cd frontend && npm install && cd ../mobile-app && npm install",
     "build:frontend": "cd frontend && npm run build",
     "watch:frontend": "cd frontend && npm run build -- --watch",
+    "dev:frontend": "cd frontend && npm run dev",
     "start:neu": "neu run",
-    "dev": "npm run build:frontend && concurrently \"npm run watch:frontend\" \"npm run start:neu\""
+    "start:mobile": "cd mobile-app && npm run start",
+    "dev:pc": "npm run build:frontend && concurrently \"npm run watch:frontend\" \"npm run start:neu\"",
+    "dev:mobile": "concurrently \"npm run dev:frontend\" \"npm run start:mobile\"",
+    "dev": "npm run build:frontend && concurrently \"npm run watch:frontend\" \"npm run start:neu\" \"npm run start:mobile\"",
+    "build:pc": "npm run build:frontend && neu build"
   },
   "keywords": [],
   "author": "",
