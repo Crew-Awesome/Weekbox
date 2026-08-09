@@ -6,7 +6,7 @@
   "defaultMode": "window",
   "port": 5173,
   "documentRoot": "/app/",
-  "url": "/",
+  "url": "http://localhost:5173",
   "enableServer": true,
   "enableNativeAPI": true,
   "enableExtensions": true,

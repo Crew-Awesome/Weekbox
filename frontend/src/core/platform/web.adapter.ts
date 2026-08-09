@@ -1,4 +1,4 @@
-import type { DiscordActivityPayload, IPlatformBridge, PlatformType } from './types';
+import type { IPlatformBridge, PlatformType } from './types';
 
 /**
  * Adaptador de plataforma para el entorno Web / Navegador estándar (desarrollo y pruebas en navegador sin Neutralino ni Expo).
@@ -18,32 +18,7 @@ export class WebAdapter implements IPlatformBridge {
     }, 50);
   }
 
-  sendPing(message: string): void {
-    console.log(`[WebAdapter] Ping simulado: ${message}`);
-    setTimeout(() => {
-      this.emitLocalEvent('pingResult', `[Simulación Web] Pong a: "${message}"`);
-    }, 100);
-  }
 
-  runLongTask(steps: number = 5): void {
-    console.log(`[WebAdapter] Tarea pesada simulada de ${steps} pasos`);
-    let current = 1;
-    const interval = setInterval(() => {
-      this.emitLocalEvent('pingResult', `[Simulación Web] Tarea ${current}/${steps}`);
-      if (current >= steps) {
-        clearInterval(interval);
-      }
-      current++;
-    }, 500);
-  }
-
-  setDiscordActivity(activity: DiscordActivityPayload): void {
-    console.log('[WebAdapter] Discord RPC simulado:', activity);
-  }
-
-  triggerFeedback(type: 'success' | 'warning' | 'error' | 'light'): void {
-    console.log(`[WebAdapter] Feedback táctil simulado: ${type}`);
-  }
 
   onEvent(eventName: string, listener: (data: any) => void): () => void {
     if (!this.eventListeners.has(eventName)) {

@@ -10,9 +10,11 @@
     "dev:frontend": "cd frontend && npm run dev",
     "start:neu": "neu run",
     "start:mobile": "cd mobile-app && npm run start",
-    "dev:pc": "npm run build:frontend && concurrently \"npm run watch:frontend\" \"npm run start:neu\"",
+    "predev:pc": "node -e \"const fs=require('fs'); const c=JSON.parse(fs.readFileSync('neutralino.config.json')); c.url='http://localhost:5173'; fs.writeFileSync('neutralino.config.json', JSON.stringify(c, null, 2));\"",
+    "dev:pc": "concurrently \"npm run dev:frontend\" \"neu run\"",
     "dev:mobile": "concurrently \"npm run dev:frontend\" \"npm run start:mobile\"",
     "dev": "npm run build:frontend && concurrently \"npm run watch:frontend\" \"npm run start:neu\" \"npm run start:mobile\"",
+    "prebuild:pc": "node -e \"const fs=require('fs'); const c=JSON.parse(fs.readFileSync('neutralino.config.json')); c.url='/'; fs.writeFileSync('neutralino.config.json', JSON.stringify(c, null, 2));\"",
     "build:pc": "npm run build:frontend && neu build"
   },
   "keywords": [],

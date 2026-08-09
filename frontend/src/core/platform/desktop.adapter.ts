@@ -1,4 +1,4 @@
-import type { DiscordActivityPayload, IPlatformBridge, PlatformType } from './types';
+import type { IPlatformBridge, PlatformType } from './types';
 
 /**
  * Adaptador de plataforma para el entorno de Escritorio (Neutralinojs + Extensión Node.js).
@@ -36,21 +36,7 @@ export class DesktopAdapter implements IPlatformBridge {
     }
   }
 
-  sendPing(message: string): void {
-    window.NODE?.run('ping', message);
-  }
 
-  runLongTask(steps: number = 5): void {
-    window.NODE?.run('longRun', steps);
-  }
-
-  setDiscordActivity(activity: DiscordActivityPayload): void {
-    window.NODE?.run('setActivity', activity);
-  }
-
-  triggerFeedback(type: 'success' | 'warning' | 'error' | 'light'): void {
-    console.log(`[DesktopAdapter] Feedback nativo ejecutado: ${type}`);
-  }
 
   onEvent(eventName: string, listener: (data: any) => void): () => void {
     if (!this.eventListeners.has(eventName)) {

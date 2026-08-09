@@ -1,4 +1,4 @@
-import type { DiscordActivityPayload, IPlatformBridge, PlatformType } from './types';
+import type { IPlatformBridge, PlatformType } from './types';
 
 /**
  * Adaptador de plataforma para el entorno Móvil (Expo / React Native WebView).
@@ -33,35 +33,7 @@ export class MobileAdapter implements IPlatformBridge {
     }, 50);
   }
 
-  /**
-   * Envía un mensaje estructurado hacia la aplicación nativa de React Native.
-   * @param {string} type - Tipo de acción.
-   * @param {*} [payload] - Datos adjuntos.
-   */
-  private sendToHost(type: string, payload?: any): void {
-    if (window.ReactNativeWebView?.postMessage) {
-      window.ReactNativeWebView.postMessage(JSON.stringify({ type, payload }));
-    } else {
-      console.warn('[MobileAdapter] ReactNativeWebView no disponible para enviar mensaje.');
-    }
-  }
 
-  sendPing(message: string): void {
-    this.sendToHost('PING', { message });
-  }
-
-  runLongTask(steps: number = 5): void {
-    this.sendToHost('LONG_TASK', { steps });
-  }
-
-  setDiscordActivity(_activity: DiscordActivityPayload): void {
-    /** En dispositivos móviles, Discord Rich Presence nativo se omite de forma segura */
-    console.info('[MobileAdapter] Discord RPC no aplicable en entorno móvil.');
-  }
-
-  triggerFeedback(type: 'success' | 'warning' | 'error' | 'light'): void {
-    this.sendToHost('HAPTIC_FEEDBACK', { type });
-  }
 
   onEvent(eventName: string, listener: (data: any) => void): () => void {
     if (!this.eventListeners.has(eventName)) {
