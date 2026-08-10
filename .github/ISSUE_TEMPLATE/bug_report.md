@@ -21,10 +21,16 @@ Describe the problem and what you expected to happen.
 - WeekBox version:
 - Operating system:
 - Install type:
+- Engine or mod name/version:
+- Download source, if relevant:
+- Progress/status where it failed, if relevant:
 
 ## Logs or screenshots
 
 Paste relevant logs or drag screenshots here. Remove personal information first.
+
+For engine or download problems, include the browser/Neutralino console log if
+available. Do not include tokens, cookies, usernames, or private paths.
 
 ## Checklist
 

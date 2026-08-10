@@ -14,8 +14,21 @@
 - Download from GameBanana, GitHub, Google Drive, and MediaFire.
 - Install and organize mods and engines locally.
 - Add mods from folders on your computer.
+- Install stable and nightly engine builds with release and build details.
 
 WeekBox has no account system. Your installed library stays on your computer.
+
+## Community
+
+- [Discord Server — The Cellar](https://discord.gg/xQTtYF2Cfn)
+- [WeekBox on GameBanana](https://gamebanana.com/tools/23228)
+- [WeekBox Website](https://fnfweekbox.vercel.app/)
+- [News](https://fnfweekbox.vercel.app/news)
+- [Downloads](https://fnfweekbox.vercel.app/downloads)
+- [Credits](https://fnfweekbox.vercel.app/credits)
+
+Want to work on WeekBox, translate it, or help in another way? Join the
+Discord server and DM **Malloy** or **Britex**.
 
 ## Screenshots
 
@@ -68,10 +81,12 @@ npm run build
 
 ## Documentation
 
-- [Contribution quick start](./CONTRIBUTING.md)
-- [Detailed contribution guide](./docs/CONTRIBUTIONS.md)
+- [Contributing](./CONTRIBUTING.md)
 - [Changelog](./CHANGELOG.md)
 - [Code of Conduct](./CODE_OF_CONDUCT.md)
+- [Bug report template](./.github/ISSUE_TEMPLATE/bug_report.md)
+- [Feature request template](./.github/ISSUE_TEMPLATE/feature_request.md)
+- [Pull request template](./.github/PULL_REQUEST_TEMPLATE.md)
 
 ## Credits
 
