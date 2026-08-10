@@ -1,0 +1,8 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Contribution guide
+    url: https://github.com/Crew-Awesome/Weekbox/blob/main/CONTRIBUTING.md
+    about: Read the contribution and pull request guidance before opening an issue.
+  - name: Code of Conduct
+    url: https://github.com/Crew-Awesome/Weekbox/blob/main/CODE_OF_CONDUCT.md
+    about: Review the community standards for participating in this project.
