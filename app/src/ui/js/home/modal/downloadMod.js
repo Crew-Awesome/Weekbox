@@ -60,10 +60,12 @@ export const downloadMod = {
   /**
    * @fix 2026-08-05T03:31:10.964Z - Fix NE_FS_MOVEERR during mod entries move on Windows
    */
-  async moveEntries(entries, sourceDir, destinationDir, concurrency = 4) {
+  // ponytail: serialize Windows moves; restore parallelism only with a measured filesystem need.
+  async moveEntries(entries, sourceDir, destinationDir, concurrency = 1) {
     const queue = entries.filter(
       (entry) => entry.entry !== "." && entry.entry !== "..",
     );
+    await FS.api.ensureDir(destinationDir);
     let nextIndex = 0;
     const worker = async () => {
       while (nextIndex < queue.length) {
@@ -208,13 +210,10 @@ export const downloadMod = {
     if (!FS.isInitialized) await FS.init();
     FS.assertStorageUnlocked();
 
+    if (this.activeTasks.has(modId)) return false;
+
     if (await FS.isModInstalled(modId)) {
-      this.reportInstallProgress(
-        modId,
-        modName,
-        t("downloads.installed"),
-        100,
-      );
+      this.reportInstallProgress(modId, modName, t("downloads.installed"), 100);
       toastDownloadMod.success(modId);
       const modalBtn = document.getElementById("modal-download-btn");
       if (
@@ -242,7 +241,8 @@ export const downloadMod = {
     const lowerUrl = String(downloadUrl || "").toLowerCase();
     if (lowerUrl.includes(".rar")) archiveExt = ".rar";
     else if (lowerUrl.includes(".7z")) archiveExt = ".7z";
-    else if (lowerUrl.includes(".tar.gz") || lowerUrl.includes(".tgz")) archiveExt = ".tar.gz";
+    else if (lowerUrl.includes(".tar.gz") || lowerUrl.includes(".tgz"))
+      archiveExt = ".tar.gz";
     else if (lowerUrl.includes(".tar")) archiveExt = ".tar";
     const tempFilePath = `${modsBasePath}/temp_${taskKey}${archiveExt}`;
     let downloadMarkerPath = `${targetModFolder}/.downloading`;
@@ -418,10 +418,7 @@ export const downloadMod = {
        * @fix 2026-08-05T03:31:10.964Z - Fix NE_FS_MOVEERR during folder move
        */
       if (wrapper) {
-        await FS.api.move(
-          `${stagingFolder}/${wrapper.entry}`,
-          finalModFolder,
-        );
+        await FS.api.move(`${stagingFolder}/${wrapper.entry}`, finalModFolder);
       } else {
         await FS.api.ensureDir(finalModFolder);
         await this.moveEntries(realEntries, stagingFolder, finalModFolder);

@@ -21,4 +21,4 @@ By contributing, you agree that your contribution may be distributed under the r
 
 ## Security issues
 
-Do not use public issues for vulnerabilities that could put users at risk. Follow the [Security Policy](./SECURITY.md) instead.
+Do not use public issues for vulnerabilities that could put users at risk. Contact a project maintainer privately instead.

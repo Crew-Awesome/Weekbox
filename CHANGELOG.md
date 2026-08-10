@@ -7,6 +7,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.1.4] - 2026-08-10
+
+### Added
+
+- Added a bundled archive-extraction fallback for 7z and LZMA downloads when no compatible system extractor is available.
+
+### Changed
+
+- App-update checks now time out cleanly, reject incomplete responses, and no longer block startup.
+- The app-update prompt now uses the shared error-dialog layout, shows release notes when available, and presents one clear update action.
+- The sidebar now scrolls long engine lists and stops waiting on an unavailable engine catalog.
+- Expanded Italian translations for mod settings, news, search, storage, network, and sidebar controls.
+
+### Fixed
+
+- Fixed failed or truncated downloads, including HTML error pages and Google Drive confirmation pages, being passed to archive extraction.
+- Fixed Windows mod installations failing when folder entries were moved concurrently or an install was already in progress.
+- Fixed storage and download-server failures being reported as generic errors instead of actionable messages.
+- Fixed diagnostic reports miscounting network interfaces with the current Neutralino response format.
+
 ## [2.1.3] - 2026-08-07
 
 ### Fixed
@@ -766,3 +786,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - First WeekBox release.
 - Downloads for Windows, Linux, and macOS.
 - Packages for x64, ARM64, ARMHF, and Universal Macs where available.
+
+[unreleased]: https://github.com/Crew-Awesome/Weekbox/compare/v2.1.4...HEAD
+[2.1.4]: https://github.com/Crew-Awesome/Weekbox/compare/v2.1.3...v2.1.4

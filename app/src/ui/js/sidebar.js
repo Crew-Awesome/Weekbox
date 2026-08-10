@@ -68,7 +68,7 @@ export const sidebar = {
       void this.refreshNetworkFeatures();
     };
     networkStatus.addEventListener("change", this.networkStatusListener);
-    await this.refreshNetworkFeatures();
+    void this.refreshNetworkFeatures();
   },
   setupResizer() {
     if (!this.resizer) return;
@@ -420,7 +420,11 @@ export const sidebar = {
     const wrapper = document.getElementById("engines-wrapper");
     if (!wrapper) return;
     try {
-      const response = await fetch("src/backend/data/engines-router.json");
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 5000);
+      const response = await fetch("src/backend/data/engines-router.json", {
+        signal: controller.signal,
+      }).finally(() => clearTimeout(timeoutId));
       if (!response.ok) throw new Error("Failed to load engines-router.json");
       const enginesRouter = await response.json();
       wrapper.innerHTML = "";
