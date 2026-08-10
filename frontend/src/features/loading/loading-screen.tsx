@@ -3,16 +3,30 @@ import { ProgressBar } from '../../shared/components/atoms/progress-bar/progress
 import { AppVersion } from '../../shared/components/atoms/app-version/app-version';
 import loadingBg from '/assets/images/loading.webp';
 
+export interface LoadingTask {
+  name: string;
+  action: () => Promise<void> | void;
+}
+
 export interface LoadingScreenProps {
-  /** Indica si la pantalla de carga debe iniciar el ciclo */
+  /** Indica si la pantalla de carga debe mostrarse (para retrocompatibilidad) */
   isLoading?: boolean;
+  /** Tareas reales a ejecutar durante la carga */
+  tasks?: LoadingTask[];
+  /** Callback opcional al finalizar la carga */
+  onComplete?: () => void;
 }
 
 /**
  * @description Pantalla de Carga (Feature).
+ * Ejecuta tareas asíncronas reales y muestra su progreso.
  * Maneja independientemente la lógica de ocultarse al llegar al 100% usando un fade-out suave.
  */
-export const LoadingScreen: React.FC<LoadingScreenProps> = ({ isLoading = true }) => {
+export const LoadingScreen: React.FC<LoadingScreenProps> = ({ 
+  isLoading = true, 
+  tasks = [], 
+  onComplete 
+}) => {
   const [progress, setProgress] = useState(0);
   const [action, setAction] = useState('Iniciando entorno...');
   
@@ -20,40 +34,61 @@ export const LoadingScreen: React.FC<LoadingScreenProps> = ({ isLoading = true }
   const [isFadingOut, setIsFadingOut] = useState(false);
   const [isMounted, setIsMounted] = useState(isLoading);
 
-  // Efecto simulado de carga progresiva por el momento
   useEffect(() => {
     if (!isLoading) return;
     
-    let current = 0;
-    const interval = setInterval(() => {
-      // Avanza rápido al principio, luego más lento como placeholder
-      const step = Math.random() * (current > 80 ? 2 : 12);
-      current += step;
-      
-      if (current >= 100) {
-        current = 100;
-        clearInterval(interval);
-        
-        // Al llegar a 100%, esperar un momento, hacer fade-out y desaparece
-        setAction('¡Listo!');
-        setTimeout(() => {
-          setIsFadingOut(true);
-          setTimeout(() => setIsMounted(false), 500); // 500ms para coincidir con la transición CSS
-        }, 500);
-      }
-      
-      setProgress(current);
-      
-      if (current < 100) {
-        if (current < 20) setAction('Comprobando versión...');
-        else if (current < 50) setAction('Cargando módulos base...');
-        else if (current < 85) setAction('Sincronizando biblioteca...');
-        else setAction('Preparando interfaz gráfica...');
-      }
-    }, 400);
+    let isCancelled = false;
 
-    return () => clearInterval(interval);
-  }, [isLoading]);
+    const finishLoading = () => {
+      setIsFadingOut(true);
+      setTimeout(() => {
+        if (isCancelled) return;
+        setIsMounted(false);
+        onComplete?.();
+      }, 500); // 500ms para coincidir con la transición CSS
+    };
+    
+    const runTasks = async () => {
+      if (tasks.length === 0) {
+        // Si no hay tareas, completamos la carga directamente
+        setProgress(100);
+        setAction('¡Listo!');
+        finishLoading();
+        return;
+      }
+
+      for (let i = 0; i < tasks.length; i++) {
+        if (isCancelled) return;
+        const task = tasks[i];
+        
+        setAction(task.name);
+        
+        try {
+          await task.action();
+        } catch (error) {
+          console.error(`Error al ejecutar tarea de carga: ${task.name}`, error);
+          // Opcionalmente se podría manejar un estado de error en la UI,
+          // pero por ahora simplemente continuamos con la siguiente tarea xd.
+        }
+        
+        if (isCancelled) return;
+        
+        // Actualizamos el progreso según las tareas completadas
+        const nextProgress = Math.round(((i + 1) / tasks.length) * 100);
+        setProgress(nextProgress);
+      }
+      
+      if (isCancelled) return;
+      setAction('¡Listo!');
+      finishLoading();
+    };
+
+    runTasks();
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [isLoading, tasks, onComplete]);
 
   if (!isMounted) return null;
 
@@ -69,10 +104,8 @@ export const LoadingScreen: React.FC<LoadingScreenProps> = ({ isLoading = true }
         backgroundRepeat: 'no-repeat'
       }}
     >
-      {/* Capa de oscurecimiento (Gradient) para que el texto resalte */}
+      {/* Capa de oscurecimiento (Gradient) para que el texto de version resalte */}
       <div className="absolute inset-0 bg-gradient-to-t from-[#0e1415]/90 via-[#0e1415]/20 to-[#0e1415]/50 z-0" />
-      
-      {/* Versión de la app (Solo visible en la pantalla de carga) */}
       <AppVersion />
       
       {/* Barra de progreso */}

@@ -30,11 +30,35 @@ const neutralinoAuthPlugin = () => {
 };
 
 /**
+ * Plugin para limpiar archivos residuales (JS, CSS) del build anterior
+ * sin borrar todo el directorio app/ (ya que contiene el backend y config).
+ */
+const cleanAssetsPlugin = () => {
+  return {
+    name: 'clean-assets',
+    enforce: 'pre' as const,
+    buildStart() {
+      const assetsPath = path.resolve(__dirname, '../app/assets');
+      if (fs.existsSync(assetsPath)) {
+        const files = fs.readdirSync(assetsPath);
+        for (const file of files) {
+          // Solo borramos js, css o sourcemaps residuales generados por Vite,
+          // mantenemos otros recursos fijos si los hubiera.
+          if (file.endsWith('.js') || file.endsWith('.css') || file.endsWith('.map') || file.endsWith('.webp')) {
+            fs.unlinkSync(path.join(assetsPath, file));
+          }
+        }
+      }
+    }
+  };
+};
+
+/**
  * Configuración principal de Vite para el entorno de desarrollo y compilación del frontend.
  * @see https://vite.dev/config/
  */
 export default defineConfig({
-  plugins: [react(), tailwindcss(), neutralinoAuthPlugin()],
+  plugins: [react(), tailwindcss(), neutralinoAuthPlugin(), cleanAssetsPlugin()],
   resolve: {
     alias: {
       '@shared': path.resolve(__dirname, './src/shared/shared.tsx')
