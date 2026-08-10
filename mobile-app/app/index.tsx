@@ -41,12 +41,13 @@ export default function App() {
             appVer = appConfig.expo.version || Constants?.expoConfig?.version || '1.0.0';
           } catch (e) {}
           
-          webViewRef.current?.postMessage(
-            JSON.stringify({
-              type: 'VERSION_RESULT',
-              payload: appVer,
-            })
-          );
+          const script = `
+            try {
+              window.postMessage(JSON.stringify({ type: 'VERSION_RESULT', payload: '${appVer}' }), '*');
+            } catch(e) {}
+            true;
+          `;
+          webViewRef.current?.injectJavaScript(script);
           break;
         }
 

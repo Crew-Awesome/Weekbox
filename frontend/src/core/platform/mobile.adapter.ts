@@ -54,7 +54,7 @@ export class MobileAdapter implements IPlatformBridge {
             setTimeout(() => {
               unsubscribe();
               resolve('1.0.0 (Fallback)');
-            }, 500);
+            }, 2000);
           } else if (attempts < 20) {
             attempts++;
             setTimeout(trySend, 100);
