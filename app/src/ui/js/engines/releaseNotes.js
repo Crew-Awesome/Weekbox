@@ -1,4 +1,4 @@
-import { i18n } from "../i18n/index.js";
+import { i18n, t } from "../i18n/index.js";
 import { nativeFetch } from "../../../backend/services/network/native-http.js";
 
 const ALLOWED_TAGS = new Set([
@@ -147,6 +147,52 @@ function renderNotesStatus(container, templateId, fallbackFn) {
   }
 }
 
+function renderNightlyNotes(container, versionData, targetLink) {
+  const platform = Object.keys(versionData?.nightlyInfo || {}).find(
+    (key) => versionData[key] === targetLink,
+  );
+  const info =
+    versionData?.nightlyInfo?.[platform] ||
+    Object.values(versionData?.nightlyInfo || {})[0] ||
+    {};
+  const wrapper = document.createElement("div");
+  const title = document.createElement("p");
+  title.textContent = t("engines.nightlyBuild");
+  wrapper.append(title);
+
+  const details = document.createElement("p");
+  details.textContent = t("engines.nightlyNotes", {
+    commit: info.commit?.slice(0, 8) || "unknown",
+    date: versionData.releasedAt
+      ? new Date(versionData.releasedAt).toLocaleString()
+      : "unknown",
+  });
+  wrapper.append(details);
+
+  if (info.message) {
+    const message = document.createElement("p");
+    message.textContent = info.message;
+    wrapper.append(message);
+  }
+
+  const links = document.createElement("p");
+  for (const [url, label] of [
+    [info.runUrl, t("engines.viewWorkflowRun")],
+    [info.commitUrl, t("engines.viewCommit")],
+  ]) {
+    if (!url) continue;
+    if (links.childNodes.length) links.append(" · ");
+    const link = document.createElement("a");
+    link.href = url;
+    link.target = "_blank";
+    link.rel = "noopener noreferrer";
+    link.textContent = label;
+    links.append(link);
+  }
+  if (links.childNodes.length) wrapper.append(links);
+  container.replaceChildren(wrapper);
+}
+
 export async function fetchAndRenderReleaseNotes(versionData, targetLink) {
   const notesContainer = document.getElementById("engine-release-notes");
   if (!notesContainer) return;
@@ -158,6 +204,11 @@ export async function fetchAndRenderReleaseNotes(versionData, targetLink) {
     p.textContent = t("engines.releaseNotesLoading");
     return p;
   });
+
+  if (versionData?.isNightly) {
+    renderNightlyNotes(notesContainer, versionData, targetLink);
+    return;
+  }
 
   const link =
     targetLink || versionData.win || versionData.lin || versionData.mac || "";
