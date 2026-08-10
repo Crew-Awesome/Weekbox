@@ -94,3 +94,34 @@ INFO 2026-08-09 21:37:00,409 Reloading the application... api\debug\debug.cpp:17
 INFO 2026-08-09 21:37:00,411 Reloading the application... api\debug\debug.cpp:17 corti@DESKTOP-TI5EJR5
 ERROR 2026-08-09 21:37:01,046 NE_RS_UNBLDRE: Unable to load application resource file /app/.well-known/appspecific/com.chrome.devtools.json api\debug\debug.cpp:20 corti@DESKTOP-TI5EJR5
 INFO 2026-08-09 23:27:10,772 Auth info was exported to ./.tmp/auth_info.json api\debug\debug.cpp:17 corti@DESKTOP-TI5EJR5
+INFO 2026-08-10 04:30:44,524 Auth info was exported to ./.tmp/auth_info.json api\debug\debug.cpp:17 leive@DESKTOP-ESCKB7T
+INFO 2026-08-10 04:33:33,935 Auth info was exported to ./.tmp/auth_info.json api\debug\debug.cpp:17 leive@DESKTOP-ESCKB7T
+INFO 2026-08-10 04:36:59,759 Auth info was exported to ./.tmp/auth_info.json api\debug\debug.cpp:17 leive@DESKTOP-ESCKB7T
+ERROR 2026-08-10 04:37:06,232 NE_RS_UNBLDRE: Unable to load application resource file /app/assets/index-CizrfzxH.js api\debug\debug.cpp:20 leive@DESKTOP-ESCKB7T
+ERROR 2026-08-10 04:37:06,282 NE_RS_UNBLDRE: Unable to load application resource file /app/assets/index-B26iTglG.css api\debug\debug.cpp:20 leive@DESKTOP-ESCKB7T
+ERROR 2026-08-10 04:37:08,465 NE_RS_UNBLDRE: Unable to load application resource file /app/assets/index-B26iTglG.css api\debug\debug.cpp:20 leive@DESKTOP-ESCKB7T
+ERROR 2026-08-10 04:37:08,541 NE_RS_UNBLDRE: Unable to load application resource file /app/.well-known/appspecific/com.chrome.devtools.json api\debug\debug.cpp:20 leive@DESKTOP-ESCKB7T
+INFO 2026-08-10 04:42:28,747 Auth info was exported to ./.tmp/auth_info.json api\debug\debug.cpp:17 leive@DESKTOP-ESCKB7T
+INFO 2026-08-10 05:33:07,229 Auth info was exported to ./.tmp/auth_info.json api\debug\debug.cpp:17 leive@DESKTOP-ESCKB7T
+INFO 2026-08-10 05:46:10,809 Auth info was exported to ./.tmp/auth_info.json api\debug\debug.cpp:17 leive@DESKTOP-ESCKB7T
+ERROR 2026-08-10 05:46:20,869 NE_RS_UNBLDRE: Unable to load application resource file /app/assets/index-CizrfzxH.js api\debug\debug.cpp:20 leive@DESKTOP-ESCKB7T
+ERROR 2026-08-10 05:46:20,998 NE_RS_UNBLDRE: Unable to load application resource file /app/assets/index-B26iTglG.css api\debug\debug.cpp:20 leive@DESKTOP-ESCKB7T
+ERROR 2026-08-10 05:46:23,806 NE_RS_UNBLDRE: Unable to load application resource file /app/assets/index-B26iTglG.css api\debug\debug.cpp:20 leive@DESKTOP-ESCKB7T
+ERROR 2026-08-10 05:46:24,163 NE_RS_UNBLDRE: Unable to load application resource file /app/.well-known/appspecific/com.chrome.devtools.json api\debug\debug.cpp:20 leive@DESKTOP-ESCKB7T
+ERROR 2026-08-10 05:46:26,691 NE_RS_UNBLDRE: Unable to load application resource file /app/assets/index-B26iTglG.css api\debug\debug.cpp:20 leive@DESKTOP-ESCKB7T
+ERROR 2026-08-10 05:46:26,725 NE_RS_UNBLDRE: Unable to load application resource file /app/assets/index-CizrfzxH.js api\debug\debug.cpp:20 leive@DESKTOP-ESCKB7T
+ERROR 2026-08-10 05:46:26,758 NE_RS_UNBLDRE: Unable to load application resource file /app/.well-known/appspecific/com.chrome.devtools.json api\debug\debug.cpp:20 leive@DESKTOP-ESCKB7T
+ERROR 2026-08-10 05:48:43,502 NE_RS_UNBLDRE: Unable to load application resource file /app/assets/index-CizrfzxH.js api\debug\debug.cpp:20 leive@DESKTOP-ESCKB7T
+ERROR 2026-08-10 05:48:43,723 NE_RS_UNBLDRE: Unable to load application resource file /app/assets/index-B26iTglG.css api\debug\debug.cpp:20 leive@DESKTOP-ESCKB7T
+ERROR 2026-08-10 05:48:43,838 NE_RS_UNBLDRE: Unable to load application resource file /app/.well-known/appspecific/com.chrome.devtools.json api\debug\debug.cpp:20 leive@DESKTOP-ESCKB7T
+ERROR 2026-08-10 05:48:49,475 NE_RS_UNBLDRE: Unable to load application resource file /app/assets/index-CizrfzxH.js api\debug\debug.cpp:20 leive@DESKTOP-ESCKB7T
+ERROR 2026-08-10 05:48:49,707 NE_RS_UNBLDRE: Unable to load application resource file /app/assets/index-B26iTglG.css api\debug\debug.cpp:20 leive@DESKTOP-ESCKB7T
+ERROR 2026-08-10 05:48:50,109 NE_RS_UNBLDRE: Unable to load application resource file /app/.well-known/appspecific/com.chrome.devtools.json api\debug\debug.cpp:20 leive@DESKTOP-ESCKB7T
+ERROR 2026-08-10 05:48:52,052 NE_RS_UNBLDRE: Unable to load application resource file /app/assets/index-CizrfzxH.js api\debug\debug.cpp:20 leive@DESKTOP-ESCKB7T
+ERROR 2026-08-10 05:48:52,289 NE_RS_UNBLDRE: Unable to load application resource file /app/assets/index-B26iTglG.css api\debug\debug.cpp:20 leive@DESKTOP-ESCKB7T
+ERROR 2026-08-10 05:48:52,381 NE_RS_UNBLDRE: Unable to load application resource file /app/.well-known/appspecific/com.chrome.devtools.json api\debug\debug.cpp:20 leive@DESKTOP-ESCKB7T
+INFO 2026-08-10 05:48:59,924 Auth info was exported to ./.tmp/auth_info.json api\debug\debug.cpp:17 leive@DESKTOP-ESCKB7T
+ERROR 2026-08-10 05:49:04,045 NE_RS_UNBLDRE: Unable to load application resource file /app/assets/index-CizrfzxH.js api\debug\debug.cpp:20 leive@DESKTOP-ESCKB7T
+ERROR 2026-08-10 05:49:04,096 NE_RS_UNBLDRE: Unable to load application resource file /app/assets/index-B26iTglG.css api\debug\debug.cpp:20 leive@DESKTOP-ESCKB7T
+ERROR 2026-08-10 05:49:05,744 NE_RS_UNBLDRE: Unable to load application resource file /app/assets/index-B26iTglG.css api\debug\debug.cpp:20 leive@DESKTOP-ESCKB7T
+ERROR 2026-08-10 05:49:05,753 NE_RS_UNBLDRE: Unable to load application resource file /app/.well-known/appspecific/com.chrome.devtools.json api\debug\debug.cpp:20 leive@DESKTOP-ESCKB7T

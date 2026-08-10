@@ -1,6 +1,9 @@
 import { Sidebar } from './components/organisms/sidebar/sidebar';
 import { ProgressBar } from './components/atoms/progress-bar/progress-bar';
 import { AppVersion } from './components/atoms/app-version/app-version';
+import Card from './components/atoms/card-mainmenu/card';
+import Titles from './components/atoms/titles/titles';
+import Searchbar from './components/molecules/searchbar/searchbar';
 
 /**
  * @description API global para acceder a los componentes compartidos de Weekbox.
@@ -15,13 +18,17 @@ const Shared = {
   atoms: {
     ProgressBar,
     AppVersion,
+    Titles,
   },
 
   /**
    * @description Componentes Moléculas: Agrupaciones simples de átomos construidas para funcionar como una unidad.
    * Ejemplos: Tarjetas (Cards), barras de búsqueda, campos de formulario completos.
    */
-  molecules: {},
+  molecules: {
+    Card,
+    Searchbar,
+  },
 
   /**
    * @description Componentes Organismos: Secciones complejas e independientes de la interfaz compuestas por moléculas y/o átomos.

@@ -61,7 +61,8 @@ export default defineConfig({
   plugins: [react(), tailwindcss(), neutralinoAuthPlugin(), cleanAssetsPlugin()],
   resolve: {
     alias: {
-      '@shared': path.resolve(__dirname, './src/shared/shared.tsx')
+      '@shared': path.resolve(__dirname, './src/shared/shared.tsx'),
+      '@features': path.resolve(__dirname, './src/features/index.ts')
     }
   },
   server: {

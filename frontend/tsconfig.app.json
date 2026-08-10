@@ -24,7 +24,8 @@
     "noFallthroughCasesInSwitch": true,
     "baseUrl": ".",
     "paths": {
-      "@shared": ["./src/shared/shared.tsx"]
+      "@shared": ["./src/shared/shared.tsx"],
+      "@features": ["./src/features/index.ts"]
     }
   },
   "include": ["src"]

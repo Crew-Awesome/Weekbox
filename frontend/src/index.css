@@ -59,6 +59,10 @@
   box-sizing: border-box;
 }
 
+html {
+  font-size: calc(100vh / 55); /* Scales rem units based on window height, slightly larger */
+}
+
 body {
   margin: 0;
   padding: 0;

@@ -3,7 +3,7 @@ import Shared from '@shared';
 import { LoadingScreen, type LoadingTask } from './loading/loading-screen';
 
 interface LayoutProps {
-  children: ReactNode;
+  children?: ReactNode;
   loadingTasks?: LoadingTask[];
 }
 
@@ -14,7 +14,15 @@ export const Layout: React.FC<LayoutProps> = ({ children, loadingTasks }) => {
       <Shared.organisms.Sidebar />
       <main className="flex-1 overflow-y-auto relative">
         <div className="relative z-10 px-8 pt-8 pb-28 md:p-8 h-full">
-          {children}
+          {children || (
+            <div className="items-center -m-8 justify-center text-white font-sans">
+              <div className="relative">
+                <Shared.molecules.Searchbar />
+                <Shared.atoms.Titles title="All Mods" />
+                <Shared.molecules.Card />
+              </div>
+            </div>
+          )}
         </div>
       </main>
     </div>
