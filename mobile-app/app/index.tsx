@@ -1,7 +1,11 @@
 import { useRef } from 'react';
-import { StyleSheet, SafeAreaView, StatusBar, Text, View } from 'react-native';
+import { StyleSheet, StatusBar, Text, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { WebView, WebViewMessageEvent } from 'react-native-webview';
 import * as Haptics from 'expo-haptics';
+
+import Constants from 'expo-constants';
+import appConfig from '../app.json';
 
 /**
  * Componente contenedor de la aplicación móvil en Expo.
@@ -31,6 +35,21 @@ export default function App() {
       const { type, payload } = data;
 
       switch (type) {
+        case 'GET_VERSION': {
+          let appVer = '1.0.0';
+          try {
+            appVer = appConfig.expo.version || Constants?.expoConfig?.version || '1.0.0';
+          } catch (e) {}
+          
+          webViewRef.current?.postMessage(
+            JSON.stringify({
+              type: 'VERSION_RESULT',
+              payload: appVer,
+            })
+          );
+          break;
+        }
+
         case 'HAPTIC_FEEDBACK': {
           if (payload?.type === 'success') {
             await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
@@ -65,18 +84,23 @@ export default function App() {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="dark-content" />
+    <View style={styles.container}>
+      <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
       <WebView
         ref={webViewRef}
         source={{ uri: frontendUrl }}
         style={styles.webview}
-        bounces={false}
-        showsHorizontalScrollIndicator={false}
-        showsVerticalScrollIndicator={false}
+        javaScriptEnabled={true}
+        domStorageEnabled={true}
         onMessage={handleMessage}
+        allowsInlineMediaPlayback={true}
+        mediaPlaybackRequiresUserAction={false}
+        bounces={false}
+        overScrollMode="never"
+        showsVerticalScrollIndicator={false}
+        showsHorizontalScrollIndicator={false}
       />
-    </SafeAreaView>
+    </View>
   );
 }
 

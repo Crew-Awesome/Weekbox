@@ -1,4 +1,5 @@
 import type { IPlatformBridge, PlatformType } from './types';
+import neuConfig from '../../../../neutralino.config.json';
 
 /**
  * Adaptador de plataforma para el entorno de Escritorio (Neutralinojs + Extensión Node.js).
@@ -36,7 +37,9 @@ export class DesktopAdapter implements IPlatformBridge {
     }
   }
 
-
+  async getVersion(): Promise<string> {
+    return neuConfig.version || '1.0.0';
+  }
 
   onEvent(eventName: string, listener: (data: any) => void): () => void {
     if (!this.eventListeners.has(eventName)) {

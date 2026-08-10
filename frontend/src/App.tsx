@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
 import { platform } from './core/platform';
+import { Layout } from './features/layout';
 
 function App() {
   useEffect(() => {
@@ -7,11 +8,13 @@ function App() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-slate-900 flex items-center justify-center text-white font-sans">
-      <h1 className="text-4xl md:text-6xl font-semibold">
-        Im write with one of my hands ahhhh
-      </h1>
-    </div>
+    <Layout>
+      <div className="flex items-center justify-center text-white font-sans w-full h-full">
+        <h1 className="text-4xl md:text-6xl font-semibold text-slate-800 dark:text-white">
+          Welcome to Weekbox
+        </h1>
+      </div>
+    </Layout>
   );
 }
 

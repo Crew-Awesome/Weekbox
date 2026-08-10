@@ -18,7 +18,9 @@ export class WebAdapter implements IPlatformBridge {
     }, 50);
   }
 
-
+  async getVersion(): Promise<string> {
+    return '1.0.0 (Web)';
+  }
 
   onEvent(eventName: string, listener: (data: any) => void): () => void {
     if (!this.eventListeners.has(eventName)) {

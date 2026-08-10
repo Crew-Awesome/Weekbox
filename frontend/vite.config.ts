@@ -35,11 +35,19 @@ const neutralinoAuthPlugin = () => {
  */
 export default defineConfig({
   plugins: [react(), tailwindcss(), neutralinoAuthPlugin()],
+  resolve: {
+    alias: {
+      '@shared': path.resolve(__dirname, './src/shared/shared.tsx')
+    }
+  },
   server: {
     /** Permite exponer el servidor en la red local para acceder desde dispositivos móviles vía Expo Go */
     host: true,
     port: 5173,
-    strictPort: true
+    strictPort: true,
+    fs: {
+      allow: ['..']
+    }
   },
   build: {
     /** Directorio de salida donde Neutralino espera los archivos estáticos */

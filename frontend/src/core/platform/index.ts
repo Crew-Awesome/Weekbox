@@ -9,13 +9,14 @@ import { WebAdapter } from './web.adapter';
  */
 function createPlatformBridge(): IPlatformBridge {
   if (typeof window !== 'undefined') {
-    /** Entorno Móvil (WebView de React Native) */
-    if (typeof window.ReactNativeWebView !== 'undefined') {
+    /** Entorno Móvil (WebView de React Native o dispositivo móvil) */
+    const isMobileBrowser = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+    if (typeof window.ReactNativeWebView !== 'undefined' || isMobileBrowser) {
       return new MobileAdapter();
     }
 
     /** Entorno de Escritorio (Neutralinojs / Node Extension) */
-    if (typeof window.Neutralino !== 'undefined' || typeof window.NodeExtension !== 'undefined') {
+    if (typeof (window as any).NL_PORT !== 'undefined' || typeof window.Neutralino !== 'undefined' || typeof window.NodeExtension !== 'undefined') {
       return new DesktopAdapter();
     }
   }

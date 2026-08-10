@@ -10,6 +10,9 @@ declare global {
       events: {
         on: (eventName: string, handler: (event: any) => void) => void;
       };
+      app?: {
+        getConfig: () => Promise<any>;
+      };
     };
     NodeExtension?: new (debug?: boolean) => {
       run: (func: string, param?: any) => void;
@@ -38,6 +41,12 @@ export interface IPlatformBridge {
 
   // Inicializa los listeners y recursos necesarios de la plataforma.
   initialize(): void;
+
+  /**
+   * Obtiene la versión actual de la aplicación de forma asíncrona.
+   * Dependiendo de la plataforma, esto puede leerse de Neutralino o solicitarse a React Native.
+   */
+  getVersion(): Promise<string>;
 
   /**
    * Suscribe un listener a eventos emitidos por el backend o el host nativo.
