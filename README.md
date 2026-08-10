@@ -55,64 +55,9 @@ Discord server and DM **Malloy** or **Britex**.
   </tr>
 </table>
 
-## Development
-
-### Setup
-
-1. Install [Node.js](https://nodejs.org/en/download/).
-2. Install the Neutralino CLI:
-
-   ```bash
-   npm install -g @neutralinojs/neu
-   ```
-
-3. From the WeekBox project folder, install dependencies:
-
-   ```bash
-   npm install
-   ```
-
-4. Update the Neutralino binaries:
-
-   ```bash
-   neu update
-   ```
-
-`npm install` also runs the project's Neutralino update step. Run `neu update`
-again after changing Neutralino versions or when the binaries are missing.
-
-### Run the app
-
-```bash
-npm run dev
-```
-
-### Rebuild frontend assets
-
-Run this after changing frontend files when you are not already using the asset
-watcher from `npm run dev`:
-
-```bash
-npm run assets
-```
-
-### Build executables
-
-Use this for release builds:
-
-```bash
-npm run build
-```
-
-You can also run `neu build` directly after running `npm run assets`. The
-`npm run build` script runs both commands for you.
-
-See the [development and troubleshooting guide](./docs/DEVELOPMENT.md) if a
-setup, update, asset, or build command fails.
-
 ## Documentation
 
-- [Development and troubleshooting](./docs/DEVELOPMENT.md)
+- [Development guide](./docs/DEVELOPMENT.md)
 - [Contributing](./CONTRIBUTING.md)
 - [Changelog](./CHANGELOG.md)
 - [Code of Conduct](./CODE_OF_CONDUCT.md)

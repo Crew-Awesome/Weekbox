@@ -1,80 +1,101 @@
-# Development
+# Development guide
 
-This guide covers setting up WeekBox, running it from source, and fixing the
-most common development problems.
+This guide covers setup, local development, frontend assets, release builds,
+and common fixes.
 
-## Requirements
+Run all commands from the WeekBox project folder.
 
-- [Node.js](https://nodejs.org/en/download/)
-- npm, included with Node.js
-- [Neutralinojs](https://neutralino.js.org/)
+## Quick start
 
-Node.js provides the JavaScript runtime and npm provides the project commands
-and dependencies. Neutralinojs runs WeekBox as a desktop application.
+1. Install [Node.js](https://nodejs.org/en/download/). npm is included.
+2. Install the Neutralino CLI:
 
-## Setup
+   ```bash
+   npm install -g @neutralinojs/neu
+   ```
 
-Install the Neutralino CLI globally:
+3. Install the project dependencies:
 
-```bash
-npm install -g @neutralinojs/neu
-```
+   ```bash
+   npm install
+   ```
 
-From the WeekBox project folder, install the project dependencies:
+4. Update the Neutralino binaries:
 
-```bash
-npm install
-```
+   ```bash
+   neu update
+   ```
 
-Update the Neutralino binaries used by the project:
+5. Start WeekBox:
 
-```bash
-neu update
-```
+   ```bash
+   npm run dev
+   ```
 
-The `npm install` postinstall script also runs a Neutralino update. The manual
-command is useful after changing Neutralino versions or when the binaries are
-missing.
+`npm install` also runs the project's Neutralino update step. Run `neu update`
+manually after changing Neutralino versions or when the binaries are missing.
 
-## Run WeekBox
+## Commands
 
-Start the development app with:
+| Command | Use it for |
+| --- | --- |
+| `npm run dev` | Start WeekBox and watch frontend asset changes. |
+| `npm run assets` | Rebuild frontend assets after changes or updates. |
+| `npm run build` | Build frontend assets and release executables. |
+| `neu update` | Download or update Neutralino binaries. |
+| `neu build` | Build executables directly after `npm run assets`. |
+
+`npm run dev` and `npm run build` already run `npm run assets`. You only need to
+run it separately when using another command or when you want to check the
+frontend build first.
+
+## Run from source
 
 ```bash
 npm run dev
 ```
 
-This builds the frontend assets, watches asset changes, and starts Neutralino.
+This builds the frontend, watches asset changes, and starts Neutralino.
 
-## Build frontend assets
+If you run Neutralino directly, build the frontend first. `neu run` does not
+bundle the frontend by itself:
 
-Run this after changing frontend files when the development asset watcher is
-not running:
+```bash
+npm run assets
+neu run
+```
+
+If `neu` is not available globally, use the project-local CLI:
+
+```bash
+npx @neutralinojs/neu run
+```
+
+## Rebuild frontend assets
+
+Run this after changing frontend files or updating dependencies when
+`npm run dev` is not already watching them:
 
 ```bash
 npm run assets
 ```
 
-If you run Neutralino directly, build assets first. `neu run` does not bundle
-the frontend by itself.
-
 ## Build executables
 
-For release builds, use:
+For a release build, use:
 
 ```bash
 npm run build
 ```
 
-This builds the frontend assets and then runs `neu build`. To run the
-Neutralino step yourself:
+This runs `npm run assets` and then `neu build`. To run those steps separately:
 
 ```bash
 npm run assets
 neu build
 ```
 
-Neutralino writes built files to the generated `dist` directory.
+Neutralino writes the generated executables to its `dist` directory.
 
 ## Troubleshooting
 
@@ -90,14 +111,14 @@ npm --version
 
 ### `neu` is not recognized
 
-Install the CLI again:
+Install the CLI and reopen your terminal:
 
 ```bash
 npm install -g @neutralinojs/neu
 ```
 
-Then reopen your terminal. The project scripts use the locked package through
-`npx`, so these commands also work without a global CLI:
+The project scripts use the locked CLI package through `npx`, so these commands
+also work without a global install:
 
 ```bash
 npx @neutralinojs/neu update
@@ -107,47 +128,46 @@ npx @neutralinojs/neu build
 
 ### The app reports a missing bundle file
 
-Build the frontend assets, then start the app again:
+Build the frontend assets before starting Neutralino:
 
 ```bash
 npm run assets
 npm run dev
 ```
 
-Do not use `neu run` by itself unless the current files already have a fresh
-asset bundle.
+Do not use `neu run` by itself unless the current asset bundle is up to date.
 
 ### `neu update` fails
 
-Check your internet connection and run the project-local command:
+Check your internet connection, then use the project-local CLI:
 
 ```bash
 npx @neutralinojs/neu update
 ```
 
-If it still fails, run `npm install` again and check that your Node.js version
-and npm version work from the same terminal.
+If it still fails, run `npm install` again and retry from a new terminal.
 
 ### A build fails after changing files
 
-Run the asset build separately so the first error is easier to find:
+Run the asset build separately so the first error is easier to identify:
 
 ```bash
 npm run assets
 npm run build
 ```
 
-If the dependency installation is incomplete, run `npm install` and retry.
+If dependencies are incomplete, run `npm install` and retry.
 
 ### Reporting a problem
 
-Before opening an issue, record:
+Include these details when reporting a reproducible problem:
 
-- your operating system;
-- the output of `node --version` and `npm --version`;
+- operating system;
+- `node --version` output;
+- `npm --version` output;
 - the exact command that failed;
 - the full error message; and
 - whether `npm run assets` succeeds.
 
-Use the [bug report template](../.github/ISSUE_TEMPLATE/bug_report.md) when
-reporting a reproducible problem.
+Use the [bug report template](../.github/ISSUE_TEMPLATE/bug_report.md) to
+report it.
