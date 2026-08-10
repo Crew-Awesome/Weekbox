@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- WeekBox now keeps settings, mods, and engines in one `WeekBoxLibrary` folder.
+- Older storage folders migrate to the new location with dated backups.
+
+### Removed
+
+- Removed the delayed native storage mirror used during startup.
+
 ## [2.1.4] - 2026-08-10
 
 ### Added

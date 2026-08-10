@@ -345,7 +345,7 @@
   "errors.certificateSummary": "Windows bloqueó WeekBox antes de que comenzara la descarga. Comprueba la fecha y la hora y prueba con otra red. Una VPN, un proxy o el análisis HTTPS del antivirus también pueden bloquear la verificación del certificado.",
   "errors.certificateTag": "Verificación de certificado de Windows",
   "errors.oneDriveTitle": "Selecciona una carpeta de almacenamiento local",
-  "errors.oneDriveSummary": "WeekBox no puede descargar motores de forma segura en OneDrive. Usa una carpeta local como C:\\WeekBoxData.",
+  "errors.oneDriveSummary": "WeekBox no puede descargar motores de forma segura en OneDrive. Usa una carpeta local como C:\\WeekBoxLibrary.",
   "errors.storageLocationTag": "Ubicación de almacenamiento",
   "errors.writeFolderTitle": "WeekBox no puede escribir en esta carpeta",
   "errors.writeFolderSummary": "Comprueba que la carpeta de almacenamiento sea local, permita escribir y no la esté usando otro programa.",

@@ -38,33 +38,16 @@ function pathsOverlap(left, right) {
   );
 }
 
-function getDistinctStorageParentPath(rootPath, executablePath) {
+const STORAGE_DIRECTORY_NAME = "WeekBoxLibrary";
+
+function getDistinctStoragePath(rootPath, executablePath) {
   const root = String(rootPath || "")
     .trim()
     .replace(/[\\/]+$/, "");
   if (!root) return "";
-  const candidate = `${root}/WeekBoxData`;
+  const candidate = `${root}/${STORAGE_DIRECTORY_NAME}`;
   if (!pathsOverlap(candidate, executablePath)) return candidate;
-  return `${root}/WeekBoxData-storage`;
-}
-
-function getStorageDestinationDecision(
-  entries,
-  { replaceExisting = false, repairingNestedStorage = false } = {},
-) {
-  const realEntries = getRealEntries(entries);
-  const canRepairNestedStorage =
-    repairingNestedStorage &&
-    realEntries.length === 1 &&
-    realEntries[0].type === "DIRECTORY" &&
-    realEntries[0].entry.toLowerCase() === "weekbox";
-  if (!realEntries.length || canRepairNestedStorage) {
-    return { action: "use", canRepairNestedStorage };
-  }
-  return {
-    action: replaceExisting ? "replace" : "reject",
-    canRepairNestedStorage: false,
-  };
+  return `${root}/${STORAGE_DIRECTORY_NAME}-storage`;
 }
 
 function getRealEntries(entries) {
@@ -95,11 +78,11 @@ function normalizeFolderName(value) {
 }
 
 export {
+  STORAGE_DIRECTORY_NAME,
   getParentPath,
   normalizeComparablePath,
   pathsOverlap,
-  getDistinctStorageParentPath,
-  getStorageDestinationDecision,
+  getDistinctStoragePath,
   sanitizePathSegment,
   getRealEntries,
   getModFolderName,

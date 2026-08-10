@@ -44,7 +44,7 @@ export const storageRecommendationModal = {
     );
     modal.querySelector(".storage-recommendation-path").textContent = t(
       "storage.recommendedPath",
-      { path: `${defaultPath}/WeekBox` },
+      { path: defaultPath },
     );
     modal.style.display = "flex";
     requestAnimationFrame(() => modal.classList.add("show"));

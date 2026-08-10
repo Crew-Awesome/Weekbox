@@ -1,7 +1,6 @@
 import { appSettings } from "./settings.service.js";
 import { networkStatus } from "./network-status.service.js";
 import { startupLoader } from "./startup-loader.service.js";
-import { storageBridge } from "./storage-patch.util.js";
 import { syncWindowsProtocolRegistration } from "./windows-protocol.util.js";
 import { disableProductionRefreshShortcuts } from "./production-shortcuts.util.js";
 import { router } from "../routing/router.service.js";
@@ -91,7 +90,7 @@ async function completeFirstRunStorageSetup(defaultStoragePath, hadSettings) {
           const replaceChoice = await Neutralino.os.showMessageBox(
             t("storage.moveFilesTitle"),
             t("storage.moveFilesMessage", {
-              path: `${selectedPath.replace(/[\\/]+$/, "")}/WeekBox`,
+              path: `${selectedPath.replace(/[\\/]+$/, "")}/WeekBoxLibrary`,
             }),
             "YES_NO",
             "QUESTION",
@@ -115,7 +114,7 @@ async function completeFirstRunStorageSetup(defaultStoragePath, hadSettings) {
 installGlobalErrorReporter();
 async function recommendSaferStorageLocation() {
   if (!(await FS.shouldRecommendDefaultStorage())) return;
-  const defaultPath = await FS.getDefaultStorageParentPath();
+  const defaultPath = await FS.getDefaultStoragePath();
   const choice = await storageRecommendationModal.show({
     currentPath: FS.weekboxPath,
     defaultPath,
@@ -174,62 +173,6 @@ async function recommendSaferStorageLocation() {
     });
   } finally {
     lock.remove();
-  }
-}
-
-async function offerNestedStorageRepair() {
-  const targetParentPath = await FS.getNestedStorageRepairTarget();
-  if (!targetParentPath) return;
-  const choice = await Neutralino.os.showMessageBox(
-    t("storage.repairFolderTitle"),
-    t("storage.repairFolderMessage", {
-      weekboxPath: FS.weekboxPath,
-      basePath: FS.basePath,
-    }),
-    "YES_NO",
-    "QUESTION",
-  );
-  if (choice !== "YES") return;
-  const toastId = "weekbox-nested-storage-repair";
-  toastSystem.show(toastId, {
-    title: t("storage.repairingFolder"),
-    message: t("storage.preparingFiles"),
-    mediaHtml: '<i class="fa-solid fa-folder-open" aria-hidden="true"></i>',
-    showPercent: true,
-    indeterminate: true,
-  });
-  try {
-    await FS.moveStorageTo(
-      targetParentPath,
-      ({ progress, copiedFiles, totalFiles, phase }) => {
-        const preparing = phase === "preparing";
-        toastSystem.update(toastId, {
-          message: preparing
-            ? t("storage.preparingFiles")
-            : t("storage.movingFilesProgress", {
-                copied: copiedFiles,
-                total: totalFiles,
-              }),
-          progress,
-        });
-      },
-    );
-    toastSystem.setState(toastId, "complete", {
-      badgeHtml: '<i class="fa-solid fa-check" aria-hidden="true"></i>',
-    });
-    toastSystem.update(toastId, {
-      message: t("storage.folderRepaired"),
-      progress: 100,
-    });
-    setTimeout(() => toastSystem.hide(toastId), 3600);
-  } catch (error) {
-    toastSystem.setState(toastId, "error", {
-      badgeHtml: '<i class="fa-solid fa-xmark" aria-hidden="true"></i>',
-    });
-    toastSystem.update(toastId, {
-      message: error.message || t("storage.repairFailed"),
-      progress: 100,
-    });
   }
 }
 
@@ -446,20 +389,9 @@ async function startApp() {
     });
     startupLoader.setPhase(t("startup.loadingPreferences"), 20);
     startupStep = "restoring preferences";
-    {
-      let timeoutHandle;
-      await Promise.race([
-        storageBridge.init(),
-        new Promise((resolve) => {
-          timeoutHandle = setTimeout(resolve, 2000);
-        }),
-      ]).finally(() => {
-        if (timeoutHandle) clearTimeout(timeoutHandle);
-      });
-    }
     startupStep = "finding the default storage location";
-    const defaultStoragePath = await FS.getDefaultStorageParentPath();
-    const defaultDataPath = `${defaultStoragePath}/WeekBox/data`;
+    const defaultStoragePath = await FS.getDefaultStoragePath();
+    const defaultDataPath = defaultStoragePath;
     startupStep = "reading saved settings";
     const settingsDataPath = await appSettings.resolveDataPath(defaultDataPath);
     const hadSettings = await FS.api.exists(
@@ -522,7 +454,6 @@ async function startApp() {
     void maintenance.catch((error) =>
       console.warn("Background library maintenance failed", error),
     );
-    await offerNestedStorageRepair();
     await openLaunchDeepLink();
     await recommendSaferStorageLocation();
   } catch (error) {
@@ -562,5 +493,4 @@ export {
   installGlobalErrorReporter,
   completeFirstRunStorageSetup,
   recommendSaferStorageLocation,
-  offerNestedStorageRepair,
 };

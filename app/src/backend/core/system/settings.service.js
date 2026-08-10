@@ -56,7 +56,7 @@ settingDefinitions = {
   autoStartAfterDownload: { type: "boolean", defaultValue: false },
   multithreadDownloads: { type: "boolean", defaultValue: true },
   multithreadStorageMoves: { type: "boolean", defaultValue: true },
-  storageParentPath: { type: "string", defaultValue: null, nullable: true },
+  storagePath: { type: "string", defaultValue: null, nullable: true },
   storageMoveRecommendationDismissed: { type: "boolean", defaultValue: false },
   checkUpdatesOnStartup: { type: "boolean", defaultValue: true },
   checkUpdatesInBackground: { type: "boolean", defaultValue: true },
@@ -128,9 +128,29 @@ appSettings = {
       console.warn("WeekBox settings: file storage is unavailable.", error);
     }
   },
+  async load(dataPath) {
+    if (typeof Neutralino === "undefined" || !dataPath) return false;
+    const nextPath = `${dataPath}/${SETTINGS_FILE_NAME}`;
+    try {
+      const document2 = JSON.parse(
+        await Neutralino.filesystem.readFile(nextPath),
+      );
+      this.document = normaliseDocument(document2);
+      this.path = nextPath;
+      return true;
+    } catch {
+      return false;
+    }
+  },
   async setDataPath(dataPath) {
     const nextPath = dataPath && `${dataPath}/${SETTINGS_FILE_NAME}`;
-    if (!nextPath || this.path === nextPath) return;
+    if (!nextPath) return;
+    if (this.path === nextPath) {
+      await Neutralino.storage
+        .setData(SETTINGS_PATH_KEY, dataPath)
+        .catch(() => {});
+      return;
+    }
     const previousPath = this.path;
     this.path = nextPath;
     try {
@@ -177,14 +197,18 @@ appSettings = {
       ? saved.value
       : definition.defaultValue;
   },
-  set(key, value) {
+  getLegacy(key) {
+    const saved = this.document.settings[key];
+    return saved && typeof saved === "object" ? saved.value : undefined;
+  },
+  set(key, value, { persist = true } = {}) {
     const definition = settingDefinitions[key];
     if (!definition) throw new Error(`Unknown setting: ${key}`);
     if (!isValidValue(definition, value)) {
       throw new TypeError(`Invalid value for setting: ${key}`);
     }
     this.document.settings[key] = { type: definition.type, value };
-    if (this.initialized) this.write().catch(() => {});
+    if (this.initialized && persist) this.write().catch(() => {});
     document.dispatchEvent(
       new CustomEvent("settings-changed", { detail: { key, value } }),
     );
