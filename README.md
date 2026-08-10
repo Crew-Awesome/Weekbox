@@ -44,18 +44,18 @@ Discord server and DM **Malloy** or **Britex**.
       <sub><b>Home</b>: browse featured and discoverable mods.</sub>
     </td>
     <td width="50%">
-      <img src="./docs/screenshots/mod-manager.png" alt="Mods with installed mods" /><br/>
-      <sub><b>Mods</b>: see, launch, and organize what you installed.</sub>
+      <img src="./docs/screenshots/mod-details.png" alt="Mod details view with installation information" /><br/>
+      <sub><b>Mods</b>: open a mod and check its details and install state.</sub>
     </td>
   </tr>
   <tr>
     <td width="50%">
-      <img src="./docs/screenshots/engine-manager.png" alt="Installed engines" /><br/>
-      <sub><b>Engines</b>: install and switch between engines.</sub>
+      <img src="./docs/screenshots/engine-release-notes.png" alt="Engine release notes view" /><br/>
+      <sub><b>Engines</b>: read release notes and launch an engine version.</sub>
     </td>
     <td width="50%">
-      <img src="./docs/screenshots/settings.png" alt="Settings" /><br/>
-      <sub><b>Settings</b>: storage location, downloads, and updates.</sub>
+      <img src="./docs/screenshots/newsletter.png" alt="WeekBox newsletter post" /><br/>
+      <sub><b>Newsletter</b>: read WeekBox news and updates.</sub>
     </td>
   </tr>
 </table>
@@ -80,8 +80,6 @@ downloads come from [GameBanana](https://gamebanana.com/) and
 [Sniro's Psych Online site](https://funkin.sniro.boo/mods).
 
 See the [full credits on the WeekBox website](https://fnfweekbox.vercel.app/credits).
-The launcher, window, and Credits icons all use
-`app/assets/icons/launcher-icon.png`.
 
 ## License
 
