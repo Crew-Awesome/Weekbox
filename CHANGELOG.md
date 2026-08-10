@@ -10,7 +10,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - Added a bundled archive-extraction fallback for 7z and LZMA downloads.
-- Added detailed engine download and install diagnostics.
 - Added nightly build details with commit, workflow-run, and commit links.
 - Added GitHub issue and pull request templates.
 
