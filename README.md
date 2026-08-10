@@ -5,22 +5,27 @@
 </p>
 
 <p align="center">
-  A desktop launcher for discovering, installing, and managing Friday Night Funkin' mods.
+  Find, install, and manage Friday Night Funkin' mods from one desktop app.
 </p>
 
-## Features
+<p align="center">
+  <a href="https://github.com/Crew-Awesome/Weekbox/blob/main/LICENSE"><img src="https://img.shields.io/github/license/Crew-Awesome/Weekbox?style=flat-square" alt="MIT License" /></a>
+  <a href="https://discord.gg/xQTtYF2Cfn"><img src="https://img.shields.io/badge/Discord-The%20Cellar-5865F2?logo=discord&logoColor=white&style=flat-square" alt="The Cellar Discord server" /></a>
+</p>
 
-- Discover Friday Night Funkin' mods from GameBanana and Psych Online.
-- Download from GameBanana, GitHub, Google Drive, and MediaFire.
-- Install and organize mods and engines locally.
-- Add mods from folders on your computer.
-- Install stable and nightly engine builds with release and build details.
+## What you can do
 
-WeekBox has no account system. Your installed library stays on your computer.
+- Browse mods from GameBanana and Psych Online.
+- Download from GameBanana, GitHub, Google Drive, or MediaFire.
+- Install and organize mods and engines on your computer.
+- Import mods from folders already on your computer.
+- Install stable or nightly engine builds and see their release or build details.
+
+There are no WeekBox accounts. Your installed library stays on your computer.
 
 ## Community
 
-- [Discord Server — The Cellar](https://discord.gg/xQTtYF2Cfn)
+- [Discord Server - The Cellar](https://discord.gg/xQTtYF2Cfn)
 - [WeekBox on GameBanana](https://gamebanana.com/tools/23228)
 - [WeekBox Website](https://fnfweekbox.vercel.app/)
 - [News](https://fnfweekbox.vercel.app/news)
@@ -67,11 +72,16 @@ Discord server and DM **Malloy** or **Britex**.
 
 ## Credits
 
-WeekBox is made by [ImMalloy](https://github.com/ImMalloy) and [Britex](https://github.com/expertyeti).
+WeekBox is maintained by [ImMalloy](https://github.com/ImMalloy) and
+[Britex](https://github.com/expertyeti).
 
-It is built with [Neutralinojs](https://neutralino.js.org/) and uses [GameBanana](https://gamebanana.com/) and Sniro (Psych Online Site) for mod data.
-The rest of the credits can be found [here on WeekBox's website](https://fnfweekbox.vercel.app/credits).
-The launcher icon, window icon, and Credits icon all come from the same source asset in `app/assets/icons/launcher-icon.png`.
+The app uses [Neutralinojs](https://neutralino.js.org/). Mod listings and
+downloads come from [GameBanana](https://gamebanana.com/) and
+[Sniro's Psych Online site](https://funkin.sniro.boo/mods).
+
+See the [full credits on the WeekBox website](https://fnfweekbox.vercel.app/credits).
+The launcher, window, and Credits icons all use
+`app/assets/icons/launcher-icon.png`.
 
 ## License
 
