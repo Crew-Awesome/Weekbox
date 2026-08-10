@@ -32,13 +32,18 @@ function formatArchiveEntry(output) {
       .replace(/^x\s+/i, "")
       .replace(/^-+\s*/, "")
       .trim();
-    const byteSummary = name.match(/^([\d,]+)\s+bytes(?:\s+\([^)]*\))?$/i);
+    const byteSummary = name.match(
+      /^(?:(\d+)\s+files?,\s*)?([\d,]+)\s+bytes(?:\s+\([^)]*\))?$/i,
+    );
     if (byteSummary) {
-      return formatBytes(
-        Number(byteSummary[1].replaceAll(",", "")),
+      const size = formatBytes(
+        Number(byteSummary[2].replaceAll(",", "")),
         2,
         "0 Bytes",
       );
+      return byteSummary[1]
+        ? `${byteSummary[1]} ${Number(byteSummary[1]) === 1 ? "file" : "files"}, ${size}`
+        : size;
     }
     if (
       !name ||
@@ -107,7 +112,7 @@ var bundledArchiveToolsPromise = null;
 function quoteCommandArgument(value) {
   const argument = String(value ?? "").replace(/[\r\n]/g, "");
   if (typeof window !== "undefined" && window.NL_OS === "Windows") {
-    return `"${argument.replace(/["^%]/g, "^$&")}"`;
+    return `"${argument.replace(/["^]/g, "^$&")}"`;
   }
   const escaped = argument.replaceAll("'", "'\"'\"'");
   return `'${escaped}'`;
@@ -351,7 +356,13 @@ async function getDownloadContentType(url) {
   }
 }
 
-async function retryTransientDownload(operation, getTask, onProgress, cleanup) {
+async function retryTransientDownload(
+  operation,
+  getTask,
+  onProgress,
+  cleanup,
+  shouldRetry = isTransientDownloadError,
+) {
   // CDN mirrors can briefly return 503/504 while a replacement mirror is
   // becoming available. Give that recovery enough time instead of retrying
   // three times within a second and immediately surfacing a failure.
@@ -365,7 +376,7 @@ async function retryTransientDownload(operation, getTask, onProgress, cleanup) {
       lastError = error;
       if (error?.downloadDiagnostics)
         error.downloadDiagnostics.retryCount = attempt - 1;
-      if (!isTransientDownloadError(error) || attempt === attempts) throw error;
+      if (!shouldRetry(error) || attempt === attempts) throw error;
       await cleanup?.();
       onProgress?.(
         `Download server is busy. Retrying (${attempt + 1}/${attempts})...`,
@@ -1201,6 +1212,8 @@ async function downloadSingleArchive({
     }
   }
 
+  const isNightlyLink = /^https?:\/\/nightly\.link\//i.test(String(url));
+
   await retryTransientDownload(
     () =>
       runCurlDownload(
@@ -1217,6 +1230,10 @@ async function downloadSingleArchive({
     getTask,
     onProgress,
     () => Neutralino.filesystem.remove(outPath).catch(() => {}),
+    (error) =>
+      isTransientDownloadError(error) ||
+      (isNightlyLink &&
+        Number(error?.downloadDiagnostics?.httpStatus) === 404),
   );
 }
 
@@ -1460,6 +1477,11 @@ async function downloadArchive({
       if (detectedSize > 0) {
         remoteFileSize = detectedSize;
         verifiedRemoteFileSize = detectedSize;
+        onDiagnostic?.({
+          resolvedUrl: url,
+          remoteFileSize,
+          verifiedRemoteFileSize,
+        });
       }
     } catch (error) {
       if (getTask()?.cancelled) throw error;

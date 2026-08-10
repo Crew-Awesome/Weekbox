@@ -1,7 +1,7 @@
 function quoteCommandArgument(value) {
   const argument = String(value ?? "").replace(/[\r\n]/g, "");
   if (window.NL_OS === "Windows") {
-    return `"${argument.replace(/["^%]/g, "^$&")}"`;
+    return `"${argument.replace(/["^]/g, "^$&")}"`;
   }
   return `'${argument.replaceAll("'", `'"'"'`)}'`;
 }
@@ -173,8 +173,9 @@ async function resolveExternalDownloadUrl(url, executeCommand) {
 }
 
 async function getRangeSupportedFileSize(url, executeCommand) {
+  const nullDevice = window.NL_OS === "Windows" ? "NUL" : "/dev/null";
   const result = await executeCommand(
-    `curl --globoff -sS -L -I --connect-timeout 3 --max-time 3 --range 0-0 ${quoteCommandArgument(url)}`,
+    `curl --globoff -sS -L --fail --connect-timeout 3 --max-time 3 --range 0-0 -D - -o ${quoteCommandArgument(nullDevice)} ${quoteCommandArgument(url)}`,
     { background: false },
   );
   if (result.exitCode !== 0) {
@@ -184,6 +185,10 @@ async function getRangeSupportedFileSize(url, executeCommand) {
   }
   const headers = `${result.stdOut || ""}
 ${result.stdErr || ""}`;
+  const status = Number(
+    [...headers.matchAll(/^HTTP\/\S+\s+(\d{3})/gim)].at(-1)?.[1] || 0,
+  );
+  if (status && (status < 200 || status >= 400)) return 0;
   const ranges = [...headers.matchAll(/content-range:\s*bytes\s+0-0\/(\d+)/gi)];
   const rangeSize = Number(ranges.at(-1)?.[1]);
   if (rangeSize > 0) return rangeSize;
