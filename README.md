@@ -15,11 +15,9 @@
 - Install and organize mods and engines on your computer.
 - Enjoy a Comfortable experience playing your favorite FNF mods!
 
-There are no WeekBox accounts. Your installed library stays on your computer.
-
 ## Community
 
-- [Discord Server - The Cellar](https://discord.gg/xQTtYF2Cfn)
+- [Discord Server](https://discord.gg/xQTtYF2Cfn)
 - [WeekBox on GameBanana](https://gamebanana.com/tools/23228)
 - [WeekBox Website](https://fnfweekbox.vercel.app/)
 - [News](https://fnfweekbox.vercel.app/news)
@@ -35,17 +33,17 @@ Discord server and DM **Malloy** or **Britex**.
   <tr>
     <td width="50%">
       <img src="./docs/screenshots/home.png" alt="Home screen showing featured and discoverable FNF mods" /><br/>
-      <sub><b>Home</b>: browse featured and discoverable mods.</sub>
+      <sub><b>Home</b>: browse mods.</sub>
     </td>
     <td width="50%">
       <img src="./docs/screenshots/mod-details.png" alt="Mod details view with installation information" /><br/>
-      <sub><b>Mods</b>: open a mod and check its details and install state.</sub>
+      <sub><b>Mods</b>: mod details.</sub>
     </td>
   </tr>
   <tr>
     <td width="50%">
       <img src="./docs/screenshots/engine-release-notes.png" alt="Engine release notes view" /><br/>
-      <sub><b>Engines</b>: read release notes and launch an engine version.</sub>
+      <sub><b>Engines</b>: read release notes and launch an engine.</sub>
     </td>
     <td width="50%">
       <img src="./docs/screenshots/newsletter.png" alt="WeekBox newsletter post" /><br/>
