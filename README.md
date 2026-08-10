@@ -5,10 +5,6 @@
 </p>
 
 <p align="center">
-  Find, install, and manage Friday Night Funkin' mods from one desktop app.
-</p>
-
-<p align="center">
   <a href="https://github.com/Crew-Awesome/Weekbox/blob/main/LICENSE"><img src="https://img.shields.io/github/license/Crew-Awesome/Weekbox?style=flat-square" alt="MIT License" /></a>
   <a href="https://discord.gg/xQTtYF2Cfn"><img src="https://img.shields.io/badge/Discord-The%20Cellar-5865F2?logo=discord&logoColor=white&style=flat-square" alt="The Cellar Discord server" /></a>
 </p>
@@ -16,10 +12,8 @@
 ## What you can do
 
 - Browse mods from GameBanana and Psych Online.
-- Download from GameBanana, GitHub, Google Drive, or MediaFire.
 - Install and organize mods and engines on your computer.
-- Import mods from folders already on your computer.
-- Install stable or nightly engine builds and see their release or build details.
+- Enjoy a Comfortable experience playing your favorite FNF mods!
 
 There are no WeekBox accounts. Your installed library stays on your computer.
 
@@ -78,7 +72,6 @@ WeekBox is maintained by [ImMalloy](https://github.com/ImMalloy) and
 The app uses [Neutralinojs](https://neutralino.js.org/). Mod listings and
 downloads come from [GameBanana](https://gamebanana.com/) and
 [Sniro's Psych Online site](https://funkin.sniro.boo/mods).
-
 See the [full credits on the WeekBox website](https://fnfweekbox.vercel.app/credits).
 
 ## License
