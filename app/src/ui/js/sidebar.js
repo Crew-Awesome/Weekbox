@@ -424,21 +424,17 @@ export const sidebar = {
       if (!response.ok) throw new Error("Failed to load engines-router.json");
       const enginesRouter = await response.json();
       wrapper.innerHTML = "";
-      const engineIds = [
-        ...new Set([
-          ...enginesRouter.map((engineDef) => engineDef?.versions),
-          "fpsplus",
-          "psychonline",
-        ]),
-      ].filter(Boolean);
-      for (const engineId of engineIds) {
-        const details = ENGINE_DETAILS[engineId] || {};
-        const displayName = getEngineLabel(engineId, details.name || engineId);
-        const labelKey = getEngineLabelKey(engineId);
+      for (const engineDef of enginesRouter) {
+        const details = ENGINE_DETAILS[engineDef.versions] || {};
+        const displayName = getEngineLabel(
+          engineDef.versions,
+          details.name || engineDef.versions,
+        );
+        const labelKey = getEngineLabelKey(engineDef.versions);
         const iconSrc = details.icon ? `assets/icons/${details.icon}` : "";
         const btn = document.createElement("button");
         btn.className = "sidebar__btn sidebar__engine-btn";
-        btn.dataset.engineId = engineId;
+        btn.dataset.engineId = engineDef.versions;
         btn.disabled = !networkStatus.online;
         btn.title = networkStatus.online
           ? ""
@@ -454,7 +450,9 @@ export const sidebar = {
             const container = btn.querySelector(".sidebar__marquee-container");
             const originalText = label.textContent;
             container.innerHTML = `<i class="fa-solid fa-spinner fa-spin" style="margin-right:4px;"></i> ${t("common.loading")}`;
-            const releaseVersions = await getEngineReleaseVersions(engineId);
+            const releaseVersions = await getEngineReleaseVersions(
+              engineDef.versions,
+            );
             if (releaseVersions.length === 0)
               throw new Error(t("network.noCompatibleReleases"));
             const processedVersionsData = releaseVersions.map((item) => {
@@ -482,7 +480,7 @@ export const sidebar = {
             });
             container.innerHTML = `<span class="sidebar__marquee-text">${originalText}</span>`;
             setSelectedEngine({
-              id: engineId,
+              id: engineDef.versions,
               meta: { name: displayName, icon: details.icon },
               versions: processedVersionsData,
             });
@@ -504,11 +502,27 @@ export const sidebar = {
     }
   },
   async loadStandaloneMods() {
-    if (!FS.isInitialized) return;
     const container = document.getElementById("standalone-mods-container");
     const wrapper = document.getElementById("standalone-mods-wrapper");
     const resizer = document.getElementById("standalone-mods-resizer");
+    const enginesContainer = document.getElementById("engines-container");
     if (!container || !wrapper) return;
+    const clearSavedEngineHeight = () => {
+      enginesContainer?.style.removeProperty("flex");
+      try {
+        if (enginesContainer) {
+          localStorage.removeItem(
+            `weekbox_sidebar_section_height_${enginesContainer.id}`,
+          );
+        }
+      } catch {}
+    };
+    if (!FS.isInitialized) {
+      container.style.display = "none";
+      if (resizer) resizer.style.display = "none";
+      clearSavedEngineHeight();
+      return;
+    }
 
     wrapper.innerHTML = "";
     const allStandaloneMods = await FS.getStandaloneMods();
@@ -517,6 +531,7 @@ export const sidebar = {
     if (standaloneMods.length === 0) {
       container.style.display = "none";
       if (resizer) resizer.style.display = "none";
+      clearSavedEngineHeight();
       return;
     }
 

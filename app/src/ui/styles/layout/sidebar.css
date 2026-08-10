@@ -34,7 +34,8 @@
   gap: 8px;
   flex: 1;
   min-height: 0;
-  overflow: hidden;
+  overflow-x: hidden;
+  overflow-y: auto;
 }
 
 /* Sidebar Brand */
