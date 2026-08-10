@@ -50,6 +50,10 @@ docs: update contribution links
 Keep commit descriptions short and specific. Useful types include `feat`,
 `fix`, `docs`, `refactor`, `test`, `build`, and `chore`.
 
+Write commits like a normal person. Use simple words and do not make a fix
+sound more technical or important than it is. Prefer `fix archive downloads`
+to `stabilize archive transfers`.
+
 ## Versions
 
 WeekBox follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
