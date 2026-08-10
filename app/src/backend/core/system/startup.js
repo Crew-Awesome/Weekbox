@@ -450,10 +450,11 @@ async function startApp() {
         if (timeoutHandle) clearTimeout(timeoutHandle);
       });
     }
-    await startupLoader.complete();
-    void maintenance.catch((error) =>
+    startupStep = "checking the WeekBox library";
+    await maintenance.catch((error) =>
       console.warn("Background library maintenance failed", error),
     );
+    await startupLoader.complete();
     await openLaunchDeepLink();
     await recommendSaferStorageLocation();
   } catch (error) {
