@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import launcherIcon from "../../../../assets/icons/app/launcher-icon.png";
+import launcherIcon from "/assets/icons/app/launcher-icon.png";
 
 const HomeIcon = ({ className }: { className?: string }) => (
   <svg

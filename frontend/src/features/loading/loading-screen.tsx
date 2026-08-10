@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { ProgressBar } from '../../shared/components/atoms/progress-bar/progress-bar';
 import { AppVersion } from '../../shared/components/atoms/app-version/app-version';
-import loadingBg from '../../assets/images/loading.webp';
+import loadingBg from '/assets/images/loading.webp';
 
 export interface LoadingScreenProps {
   /** Indica si la pantalla de carga debe iniciar el ciclo */
