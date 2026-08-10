@@ -33,7 +33,9 @@ storageBridge = {
     window.localStorage.removeItem = function (key) {
       originalRemove.call(window.localStorage, key);
       if (!isNativeStorageKey(String(key || ""))) return;
-      Neutralino.storage.removeData(key).catch((e) => console.warn(e));
+      Neutralino.storage.removeData(key).catch((e) => {
+        if (e?.code !== "NE_ST_STKEYRE") console.warn(e);
+      });
     };
     window.localStorage.clear = function () {
       originalClear.call(window.localStorage);
