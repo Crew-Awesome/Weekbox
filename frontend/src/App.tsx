@@ -1,11 +1,6 @@
-import { useEffect } from 'react';
-import { platform } from './core/platform';
 import { Layout } from './features/layout';
 
 function App() {
-  useEffect(() => {
-    platform.initialize();
-  }, []);
 
   return (
     <Layout>

@@ -76,3 +76,4 @@ INFO 2026-08-09 19:15:41,481 Auth info was exported to ./.tmp/auth_info.json api
 ERROR 2026-08-09 19:22:56,687 NE_RS_UNBLDRE: Unable to load application resource file /app/.well-known/appspecific/com.chrome.devtools.json api\debug\debug.cpp:20 leive@DESKTOP-ESCKB7T
 ERROR 2026-08-09 19:25:31,223 NE_RS_UNBLDRE: Unable to load application resource file /app/.well-known/appspecific/com.chrome.devtools.json api\debug\debug.cpp:20 leive@DESKTOP-ESCKB7T
 ERROR 2026-08-09 19:29:00,159 NE_RS_UNBLDRE: Unable to load application resource file /app/.well-known/appspecific/com.chrome.devtools.json api\debug\debug.cpp:20 leive@DESKTOP-ESCKB7T
+INFO 2026-08-09 20:01:53,201 Auth info was exported to ./.tmp/auth_info.json api\debug\debug.cpp:17 leive@DESKTOP-ESCKB7T

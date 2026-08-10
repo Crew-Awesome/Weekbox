@@ -28,14 +28,8 @@ En cualquier archivo `.tsx` o `.ts` de tu frontend, importa la variable `platfor
 import { platform } from '../../core/platform'; // O la ruta relativa correspondiente
 ```
 
-### 2. Inicializar la plataforma (solo una vez)
-Asegúrate de que la plataforma se inicialice al arrancar la app. Actualmente esto se hace en `App.tsx`:
-
-```typescript
-useEffect(() => {
-  platform.initialize();
-}, []);
-```
+### 2. Inicialización automática
+La plataforma se inicializa automáticamente al importar el singleton, por lo que no es necesario llamar a `platform.initialize()` manualmente en los componentes o en el `App.tsx`. (Cambiado para simplificar el uso de la API)
 
 ### 3. Escuchar Eventos Nativos
 Para recibir datos desde el backend (por ejemplo, respuestas de la extensión de Node o eventos de la app móvil), utiliza el método `onEvent`. Este método retorna una función para desuscribirse y limpiar el listener, ideal para usar dentro de `useEffect`:

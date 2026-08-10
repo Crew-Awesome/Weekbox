@@ -30,6 +30,9 @@ function createPlatformBridge(): IPlatformBridge {
  */
 export const platform: IPlatformBridge = createPlatformBridge();
 
+// Inicializamos la plataforma automáticamente para simplificar su uso
+platform.initialize();
+
 export type * from './types';
 export * from './desktop.adapter';
 export * from './mobile.adapter';
