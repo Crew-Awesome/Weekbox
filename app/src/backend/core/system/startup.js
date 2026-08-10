@@ -265,7 +265,13 @@ async function handleStartupAppUpdate() {
   document.dispatchEvent(
     new CustomEvent("app-update-available", { detail: update }),
   );
-  return await appUpdateModal.show(update);
+  void appUpdateModal.show(update).catch((error) => {
+    console.warn(
+      "Could not show the WeekBox update prompt during startup",
+      error,
+    );
+  });
+  return false;
 }
 
 function patchNeutralinoMessageBox() {

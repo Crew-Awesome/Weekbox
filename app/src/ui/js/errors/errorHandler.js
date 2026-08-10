@@ -153,7 +153,11 @@ function describeIssue(error) {
     lower.includes("permission") ||
     lower.includes("file is in use") ||
     lower.includes("directory is not empty") ||
-    lower.includes("could not be written to storage")
+    lower.includes("could not be written to storage") ||
+    lower.includes("could not write ") ||
+    lower.includes("could not create its storage folder") ||
+    lower.includes("could not prepare the download destination") ||
+    lower.includes("could not finalize the temporary download")
   ) {
     return {
       title: t("errors.writeFolderTitle"),
@@ -173,6 +177,24 @@ function describeIssue(error) {
       actionLabel: t("errors.openStorageSettings"),
       action: "storage",
       tag: t("errors.storageDriveTag"),
+    };
+  }
+  if (
+    lower.includes("download server is unavailable") ||
+    lower.includes("download server is temporarily unavailable") ||
+    lower.includes("download server rejected this file") ||
+    lower.includes("could not find the download server") ||
+    lower.includes("could not connect to the gamebanana download server") ||
+    lower.includes("connection to the download server") ||
+    lower.includes("download server closed the connection") ||
+    lower.includes("download process ended unexpectedly") ||
+    lower.includes("download was interrupted") ||
+    lower.includes("download was incomplete")
+  ) {
+    return {
+      title: t("errors.downloadUnavailableTitle"),
+      summary: t("errors.downloadUnavailableSummary"),
+      tag: t("errors.downloadUnavailableTag"),
     };
   }
   if (lower.includes("exit code 22") || /\b(?:403|404)\b/.test(lower)) {
