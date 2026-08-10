@@ -7,25 +7,39 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [2.1.4] - 2026-08-10
-
 ### Added
 
-- Added a bundled archive-extraction fallback for 7z and LZMA downloads when no compatible system extractor is available.
+- Added a bundled archive-extraction fallback for 7z and LZMA downloads.
+- Added detailed engine download and install diagnostics.
+- Added nightly build details with commit, workflow-run, and commit links.
+- Added GitHub issue and pull request templates.
 
 ### Changed
 
-- App-update checks now time out cleanly, reject incomplete responses, and no longer block startup.
-- The app-update prompt now uses the shared error-dialog layout, shows release notes when available, and presents one clear update action.
-- The sidebar now scrolls long engine lists and stops waiting on an unavailable engine catalog.
-- Expanded Italian translations for mod settings, news, search, storage, network, and sidebar controls.
+- Downloads now validate archive content, HTML responses, confirmation pages, and expected file sizes before extraction.
+- Downloads retry transient server failures and fall back from parallel to single-connection downloads.
+- Engine progress now detects remote sizes and displays human-readable units.
+- App-update checks now time out without blocking startup, and update prompts show release notes in the shared error layout.
+- Sidebar engine loading now times out when the engine catalog is unavailable.
+- Expanded Italian translations for settings, news, search, storage, network, and sidebar controls.
+- Bumped the project, installer, and Neutralino application version to 2.1.4.
+- Updated the README, contribution guide, code of conduct, and contribution templates.
 
 ### Fixed
 
-- Fixed failed or truncated downloads, including HTML error pages and Google Drive confirmation pages, being passed to archive extraction.
-- Fixed Windows mod installations failing when folder entries were moved concurrently or an install was already in progress.
-- Fixed storage and download-server failures being reported as generic errors instead of actionable messages.
+- Fixed failed or truncated downloads, including HTML error pages and Google Drive confirmation pages, reaching archive extraction.
+- Fixed nightly Codename Engine downloads using stale run-specific artifact URLs.
+- Fixed encoded Windows download URLs being escaped incorrectly before curl runs.
+- Fixed extracted engines being rejected after a cached negative executable lookup.
+- Fixed the engine release-notes panel crashing because its translation helper was not imported.
+- Fixed Windows mod installations failing when folder entries moved concurrently or an install was already in progress.
+- Fixed storage, download-server, and archive failures being reported as generic errors instead of actionable messages.
 - Fixed diagnostic reports miscounting network interfaces with the current Neutralino response format.
+- Fixed missing Neutralino storage keys being logged as errors during cleanup.
+
+### Removed
+
+- Removed obsolete duplicate contribution guides from `docs/md`.
 
 ## [2.1.3] - 2026-08-07
 
@@ -787,5 +801,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Downloads for Windows, Linux, and macOS.
 - Packages for x64, ARM64, ARMHF, and Universal Macs where available.
 
-[unreleased]: https://github.com/Crew-Awesome/Weekbox/compare/v2.1.4...HEAD
-[2.1.4]: https://github.com/Crew-Awesome/Weekbox/compare/v2.1.3...v2.1.4
+[unreleased]: https://github.com/Crew-Awesome/Weekbox/compare/v2.1.3...HEAD
