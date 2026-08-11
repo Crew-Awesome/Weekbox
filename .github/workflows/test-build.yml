@@ -28,6 +28,12 @@ jobs:
       - name: Build app
         run: npm run build
 
+      - name: Assemble package layouts
+        run: npm run package:macos
+
+      - name: Assemble Linux package layouts
+        run: npm run package:linux
+
       - name: Install Inno Setup 7
         shell: pwsh
         run: |
@@ -51,3 +57,77 @@ jobs:
         with:
           name: weekbox-installer
           path: dist/installer
+
+  test-package-macos:
+    runs-on: macos-latest
+    steps:
+      - name: Check out
+        uses: actions/checkout@v5
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Restore Neutralino runtime
+        run: npx @neutralinojs/neu update
+
+      - name: Build app packages
+        run: npm run build && npm run package:macos
+
+      - name: Create macOS packages
+        run: |
+          version=$(node -p "require('./neutralino.config.json').version")
+          mkdir -p dist/release-assets dist/packages/macos-dmg
+          cp -R dist/packages/WeekBox.app dist/packages/macos-dmg/
+          hdiutil create -volname WeekBox -srcfolder dist/packages/macos-dmg -ov -format UDZO "dist/release-assets/WeekBox-$version-macos-universal.dmg"
+          pkgbuild --component dist/packages/WeekBox.app --install-location /Applications "dist/release-assets/WeekBox-$version-macos-universal.pkg"
+
+      - name: Upload macOS package artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: weekbox-macos-packages
+          path: dist/release-assets
+
+  test-package-linux:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out
+        uses: actions/checkout@v5
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Restore Neutralino runtime
+        run: npx @neutralinojs/neu update
+
+      - name: Build app packages
+        run: npm run build && npm run package:linux
+
+      - name: Install AppImage tooling
+        run: |
+          curl --fail --location https://github.com/AppImage/appimagetool/releases/download/continuous/appimagetool-x86_64.AppImage --output "$RUNNER_TEMP/appimagetool"
+          chmod +x "$RUNNER_TEMP/appimagetool"
+
+      - name: Create Linux packages
+        run: |
+          version=$(node -p "require('./neutralino.config.json').version")
+          mkdir -p dist/release-assets
+          "$RUNNER_TEMP/appimagetool" --appimage-extract-and-run dist/packages/WeekBox.AppDir "dist/release-assets/WeekBox-$version-linux-x86_64.AppImage"
+          dpkg-deb --build --root-owner-group dist/packages/WeekBox-deb "dist/release-assets/WeekBox-$version-linux-amd64.deb"
+
+      - name: Upload Linux package artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: weekbox-linux-packages
+          path: dist/release-assets
