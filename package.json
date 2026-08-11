@@ -1,7 +1,7 @@
 {
   "name": "weekbox",
   "version": "2.1.4",
-  "description": "",
+  "description": "A Re-Imagined Original FNF Mod Launcher",
   "main": "index.js",
   "scripts": {
     "format": "prettier --write \"app/**/*.{js,css,html,json}\"",
@@ -9,6 +9,8 @@
     "locales:check:strict": "node scripts/check-locales.js --strict",
     "locales:sync": "node scripts/sync-locales.js",
     "assets": "node scripts/bundle.js",
+    "package:macos": "node scripts/package-macos.js",
+    "package:linux": "node scripts/package-linux.js",
     "postinstall": "npx @neutralinojs/neu update",
     "dev": "npm run assets && npm-run-all --parallel \"assets -- --watch\" neu",
     "neu": "npx @neutralinojs/neu run",

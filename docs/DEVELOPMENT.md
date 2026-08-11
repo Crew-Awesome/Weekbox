@@ -37,13 +37,15 @@ manually after changing Neutralino versions or when the binaries are missing.
 
 ## Commands
 
-| Command | Use it for |
-| --- | --- |
-| `npm run dev` | Start WeekBox and watch frontend asset changes. |
-| `npm run assets` | Rebuild frontend assets after changes or updates. |
-| `npm run build` | Build frontend assets and release executables. |
-| `neu update` | Download or update Neutralino binaries. |
-| `neu build` | Build executables directly after `npm run assets`. |
+| Command                 | Use it for                                               |
+| ----------------------- | -------------------------------------------------------- |
+| `npm run dev`           | Start WeekBox and watch frontend asset changes.          |
+| `npm run assets`        | Rebuild frontend assets after changes or updates.        |
+| `npm run build`         | Build frontend assets and release executables.           |
+| `npm run package:macos` | Assemble the macOS `.app` bundle from the release build. |
+| `npm run package:linux` | Assemble the Linux AppImage and `.deb` input folders.    |
+| `neu update`            | Download or update Neutralino binaries.                  |
+| `neu build`             | Build executables directly after `npm run assets`.       |
 
 `npm run dev` and `npm run build` already run `npm run assets`. You only need to
 run it separately when using another command or when you want to check the
@@ -96,6 +98,10 @@ neu build
 ```
 
 Neutralino writes the generated executables to its `dist` directory.
+
+The release workflow packages the existing binaries into a macOS `.app`, `.dmg`,
+and `.pkg`, plus Linux AppImage and Debian packages. The macOS disk image and
+Linux AppImage/deb conversion require their native CI runners.
 
 ## Troubleshooting
 

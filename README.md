@@ -9,6 +9,8 @@
   <a href="https://discord.gg/xQTtYF2Cfn"><img src="https://img.shields.io/badge/Discord-The%20Cellar-5865F2?logo=discord&logoColor=white&style=flat-square" alt="The Cellar Discord server" /></a>
 </p>
 
+A Re-Imagined Original FNF Mod Launcher
+
 ## What you can do
 
 - Browse mods from GameBanana and Psych Online.

@@ -100,11 +100,97 @@ jobs:
             gh release upload $env:RELEASE_TAG $_.FullName --clobber
           }
 
+  package-macos:
+    runs-on: macos-latest
+    env:
+      RELEASE_TAG: ${{ github.event.release.tag_name || inputs.tag }}
+
+    steps:
+      - name: Check out the release tag
+        uses: actions/checkout@v5
+        with:
+          ref: ${{ env.RELEASE_TAG }}
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Restore Neutralino runtime
+        run: npx @neutralinojs/neu update
+
+      - name: Build app bundle
+        run: npm run build && npm run package:macos
+
+      - name: Create macOS packages
+        run: |
+          version=$(node -p "require('./neutralino.config.json').version")
+          mkdir -p dist/release-assets
+          mkdir -p dist/packages/macos-dmg
+          cp -R dist/packages/WeekBox.app dist/packages/macos-dmg/
+          hdiutil create -volname WeekBox -srcfolder dist/packages/macos-dmg -ov -format UDZO "dist/release-assets/WeekBox-$version-macos-universal.dmg"
+          pkgbuild --component dist/packages/WeekBox.app --install-location /Applications "dist/release-assets/WeekBox-$version-macos-universal.pkg"
+
+      - name: Upload macOS packages
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release upload "$RELEASE_TAG" dist/release-assets/* --clobber
+
+  package-linux:
+    runs-on: ubuntu-latest
+    env:
+      RELEASE_TAG: ${{ github.event.release.tag_name || inputs.tag }}
+
+    steps:
+      - name: Check out the release tag
+        uses: actions/checkout@v5
+        with:
+          ref: ${{ env.RELEASE_TAG }}
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Restore Neutralino runtime
+        run: npx @neutralinojs/neu update
+
+      - name: Build Linux packages
+        run: npm run build && npm run package:linux
+
+      - name: Install AppImage tooling
+        run: |
+          curl --fail --location https://github.com/AppImage/appimagetool/releases/download/continuous/appimagetool-x86_64.AppImage --output "$RUNNER_TEMP/appimagetool"
+          chmod +x "$RUNNER_TEMP/appimagetool"
+
+      - name: Create Linux packages
+        run: |
+          version=$(node -p "require('./neutralino.config.json').version")
+          mkdir -p dist/release-assets
+          "$RUNNER_TEMP/appimagetool" --appimage-extract-and-run dist/packages/WeekBox.AppDir "dist/release-assets/WeekBox-$version-linux-x86_64.AppImage"
+          dpkg-deb --build --root-owner-group dist/packages/WeekBox-deb "dist/release-assets/WeekBox-$version-linux-amd64.deb"
+
+      - name: Upload Linux packages
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release upload "$RELEASE_TAG" dist/release-assets/* --clobber
+
+  refresh-downloads:
+    needs: [build-and-upload, package-macos, package-linux]
+    runs-on: ubuntu-latest
+    steps:
       - name: Refresh the Downloads page
-        shell: pwsh
         env:
           REVALIDATE_SECRET: ${{ secrets.WEEKBOX_SITE_REVALIDATE_SECRET }}
         run: |
-          curl.exe --fail-with-body --silent --show-error --request POST `
-            'https://fnfweekbox.vercel.app/api/revalidate-release' `
-            --header "Authorization: Bearer $env:REVALIDATE_SECRET"
+          curl --fail-with-body --silent --show-error --request POST \
+            'https://fnfweekbox.vercel.app/api/revalidate-release' \
+            --header "Authorization: Bearer $REVALIDATE_SECRET"
