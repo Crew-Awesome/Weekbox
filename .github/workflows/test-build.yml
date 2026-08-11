@@ -84,6 +84,7 @@ jobs:
           version=$(node -p "require('./neutralino.config.json').version")
           mkdir -p dist/release-assets dist/packages/macos-dmg
           cp -R dist/packages/WeekBox.app dist/packages/macos-dmg/
+          ditto -c -k --sequesterRsrc --keepParent dist/packages/WeekBox.app "dist/release-assets/WeekBox-$version-macos-universal.app.zip"
           hdiutil create -volname WeekBox -srcfolder dist/packages/macos-dmg -ov -format UDZO "dist/release-assets/WeekBox-$version-macos-universal.dmg"
           pkgbuild --component dist/packages/WeekBox.app --install-location /Applications "dist/release-assets/WeekBox-$version-macos-universal.pkg"
 
