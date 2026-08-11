@@ -188,7 +188,8 @@ var APIneuFileSystem = {
       );
     }
 
-    const maxAttempts = options.maxAttempts || 5;
+    const maxAttempts =
+      options.maxAttempts || (window.NL_OS === "Windows" ? 8 : 5);
     let lastError = null;
     for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
       try {
@@ -196,6 +197,12 @@ var APIneuFileSystem = {
         return;
       } catch (error) {
         lastError = error;
+        if (
+          !(await this.exists(normalizedSource)) &&
+          (await this.exists(normalizedDest))
+        ) {
+          return;
+        }
         if (attempt < maxAttempts) {
           await new Promise((resolve) => setTimeout(resolve, attempt * 150));
         }

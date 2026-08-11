@@ -29,6 +29,12 @@ router = {
         "src/ui/html/download-choice-modal.html",
       ];
       const parser = new DOMParser();
+      const requiredTemplateIds = [
+        "tpl-mainModal",
+        "tpl-config-modal",
+        "tpl-home",
+        "tpl-sidebar",
+      ];
       await Promise.allSettled(
         templateFiles.map(async (file) => {
           try {
@@ -51,6 +57,14 @@ router = {
           }
         }),
       );
+      const missingTemplates = requiredTemplateIds.filter(
+        (id) => !document.getElementById(id),
+      );
+      if (missingTemplates.length) {
+        throw new Error(
+          `WeekBox interface templates are unavailable: ${missingTemplates.join(", ")}`,
+        );
+      }
       const sidebarTpl = document.getElementById("tpl-sidebar");
       if (sidebarTpl) {
         this.sidebarContainer.replaceChildren(
@@ -58,8 +72,9 @@ router = {
         );
         i18n.apply(this.sidebarContainer);
       }
-    } catch (e) {
-      console.error("Failed to load templates", e);
+    } catch (error) {
+      console.error("Failed to load templates", error);
+      throw error;
     }
     await sidebar.init();
     await this.navigate("home");

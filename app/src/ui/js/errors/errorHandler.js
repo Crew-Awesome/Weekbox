@@ -151,15 +151,16 @@ function describeIssue(error) {
    * @fix 2026-08-05T04:49:46.409Z - Fix download could not be written to storage error
    */
   if (
-    lower.includes("access is denied") ||
-    lower.includes("permission") ||
-    lower.includes("file is in use") ||
-    lower.includes("directory is not empty") ||
-    lower.includes("could not be written to storage") ||
-    lower.includes("could not write ") ||
-    lower.includes("could not create its storage folder") ||
-    lower.includes("could not prepare the download destination") ||
-    lower.includes("could not finalize the temporary download")
+    !lower.includes("bundled archive extractor") &&
+    (lower.includes("access is denied") ||
+      lower.includes("permission") ||
+      lower.includes("file is in use") ||
+      lower.includes("directory is not empty") ||
+      lower.includes("could not be written to storage") ||
+      lower.includes("could not write ") ||
+      lower.includes("could not create its storage folder") ||
+      lower.includes("could not prepare the download destination") ||
+      lower.includes("could not finalize the temporary download"))
   ) {
     return {
       title: t("errors.writeFolderTitle"),
@@ -258,6 +259,16 @@ function describeIssue(error) {
       summary: t("errors.invalidLinkSummary"),
       tag: t("errors.invalidLinkTag"),
       reportable: false,
+    };
+  }
+  if (
+    lower.includes("cannot be unpacked by this version of macos") ||
+    lower.includes("bundled archive extractor")
+  ) {
+    return {
+      title: t("errors.unpackTitle"),
+      summary: t("errors.unpackSummary"),
+      tag: t("errors.archiveProblemTag"),
     };
   }
   if (

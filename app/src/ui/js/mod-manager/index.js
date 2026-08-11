@@ -28,7 +28,10 @@ export const modManagerModal = {
     if (!document.getElementById("mod-manager-modal")) {
       const wrapper = document.createElement("div");
       wrapper.innerHTML = modManagerTemplates.mainModal();
-      document.body.appendChild(wrapper.firstElementChild);
+      const modalElement = wrapper.firstElementChild;
+      if (!modalElement)
+        throw new Error("WeekBox mod manager template is unavailable.");
+      document.body.appendChild(modalElement);
       i18n.apply(document.getElementById("mod-manager-modal"));
 
       const modal = document.getElementById("mod-manager-modal");

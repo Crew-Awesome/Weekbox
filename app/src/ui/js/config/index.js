@@ -54,7 +54,10 @@ export const configModal = {
       const html = tpl.innerHTML;
       const wrapper = document.createElement("div");
       wrapper.innerHTML = html;
-      document.body.appendChild(wrapper.firstElementChild);
+      const modalElement = wrapper.firstElementChild;
+      if (!modalElement)
+        throw new Error("WeekBox configuration template is unavailable.");
+      document.body.appendChild(modalElement);
       this.renderLanguageOptions();
       i18n.apply(document.getElementById("config-modal"));
 

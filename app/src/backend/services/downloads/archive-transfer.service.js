@@ -199,6 +199,15 @@ function createProcessError(operation, exitCode, output) {
   }
   if (
     operation === "Extraction" &&
+    Number(exitCode) === 126 &&
+    /7z|ld\.so|permission denied/i.test(detail)
+  ) {
+    return new Error(
+      "WeekBox could not run the bundled archive extractor. Its executable permission or Linux runtime is unavailable.",
+    );
+  }
+  if (
+    operation === "Extraction" &&
     /LZMA codec is unsupported|LZMA.*not supported/i.test(detail)
   ) {
     return new Error(
@@ -505,7 +514,16 @@ function get7zExtractionCommand(binaryPath, archivePath, destinationPath) {
     const normDest = String(destinationPath || "").replace(/\//g, "\\");
     return `"${normBin}" x -y -aoa "-o${normDest}" "${normArchive}"`;
   }
-  return `${quoteCommandArgument(binaryPath)} x -y -aoa -o${quoteCommandArgument(destinationPath)} ${quoteCommandArgument(archivePath)}`;
+  const cleanSteamEnvironment =
+    window.NL_OS === "Linux" ? "unset LD_PRELOAD; " : "";
+  return `${cleanSteamEnvironment}${quoteCommandArgument(binaryPath)} x -y -aoa -o${quoteCommandArgument(destinationPath)} ${quoteCommandArgument(archivePath)}`;
+}
+
+async function prepareArchiveTool(binaryPath) {
+  if (window.NL_OS !== "Windows") {
+    await Neutralino.filesystem.chmod(binaryPath, 0o755).catch(() => {});
+  }
+  return binaryPath;
 }
 
 async function find7zBinary() {
@@ -559,7 +577,7 @@ async function find7zBinary() {
     try {
       const stats = await Neutralino.filesystem.getStats(normalized);
       if (stats?.isFile || stats?.type === "FILE") {
-        return normalized;
+        return prepareArchiveTool(normalized);
       }
     } catch {}
   }
@@ -591,7 +609,9 @@ async function find7zBinary() {
       const normalized = `${bundledDirectory}/${bin}`.replace(/\\/g, "/");
       try {
         const stats = await Neutralino.filesystem.getStats(normalized);
-        if (stats?.isFile || stats?.type === "FILE") return normalized;
+        if (stats?.isFile || stats?.type === "FILE") {
+          return prepareArchiveTool(normalized);
+        }
       } catch {}
     }
   }
