@@ -7,10 +7,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.1.5] - 2026-08-11
+
+### Added
+
+- Added macOS app, disk image, and installer packages, plus Linux AppImage and Debian packages.
+
 ### Changed
 
 - WeekBox now keeps settings, mods, and engines in one `WeekBoxLibrary` folder.
 - Older storage folders migrate to the new location with dated backups.
+- Startup now waits for library maintenance before opening the app.
+- Expanded Italian translations for storage and error messages.
+
+### Fixed
+
+- Fixed Linux bundled archive extraction when executable permissions or Steam's `LD_PRELOAD` interfered.
+- Fixed macOS RAR and 7z extraction fallback and archive error reporting.
+- Fixed Windows extraction moves that could fail while temporary files were still being released.
+- Fixed startup failures caused by missing or malformed interface templates.
 
 ### Removed
 
@@ -811,5 +826,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Downloads for Windows, Linux, and macOS.
 - Packages for x64, ARM64, ARMHF, and Universal Macs where available.
 
-[unreleased]: https://github.com/Crew-Awesome/Weekbox/compare/v2.1.4...HEAD
+[unreleased]: https://github.com/Crew-Awesome/Weekbox/compare/v2.1.5...HEAD
+[2.1.5]: https://github.com/Crew-Awesome/Weekbox/compare/v2.1.4...v2.1.5
 [2.1.4]: https://github.com/Crew-Awesome/Weekbox/compare/v2.1.3...v2.1.4
