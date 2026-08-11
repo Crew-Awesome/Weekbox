@@ -455,8 +455,12 @@ async function startApp() {
       console.warn("Background library maintenance failed", error),
     );
     await startupLoader.complete();
-    await openLaunchDeepLink();
-    await recommendSaferStorageLocation();
+    await openLaunchDeepLink().catch((error) =>
+      console.warn("Could not open the WeekBox launch link", error),
+    );
+    await recommendSaferStorageLocation().catch((error) =>
+      console.warn("Could not check the WeekBox storage recommendation", error),
+    );
   } catch (error) {
     const message = error?.message || String(error);
     const startupError = new Error(

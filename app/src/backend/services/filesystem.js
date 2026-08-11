@@ -366,6 +366,14 @@ var _FileSystemService = class _FileSystemService {
     return `${selectedPath}/${STORAGE_DIRECTORY_NAME}`;
   }
   async copyFileAndVerify(sourcePath, destinationPath) {
+    if (
+      typeof sourcePath !== "string" ||
+      !sourcePath.trim() ||
+      typeof destinationPath !== "string" ||
+      !destinationPath.trim()
+    ) {
+      throw new Error("Storage copy paths are missing");
+    }
     const sourceStats = await Neutralino.filesystem.getStats(sourcePath);
     const destinationStats = await Neutralino.filesystem
       .getStats(destinationPath)
@@ -373,12 +381,29 @@ var _FileSystemService = class _FileSystemService {
     if (destinationStats && Number(destinationStats.size) === Number(sourceStats.size)) {
       return;
     }
-    if (destinationStats) await this.api.remove(destinationPath);
-    await Neutralino.filesystem.copy(sourcePath, destinationPath);
-    const copiedStats = await Neutralino.filesystem.getStats(destinationPath);
-    if (Number(copiedStats.size) !== Number(sourceStats.size)) {
-      throw new Error(`Storage verification failed for ${destinationPath}`);
+    let lastError;
+    for (let attempt = 1; attempt <= 4; attempt += 1) {
+      try {
+        await Neutralino.filesystem.copy(sourcePath, destinationPath, {
+          recursive: false,
+          overwrite: true,
+          skip: false,
+        });
+        const copiedStats = await Neutralino.filesystem.getStats(
+          destinationPath,
+        );
+        if (Number(copiedStats.size) === Number(sourceStats.size)) return;
+        lastError = new Error(
+          `Storage verification failed for ${destinationPath}`,
+        );
+      } catch (error) {
+        lastError = error;
+      }
+      if (attempt < 4) await new Promise((resolve) => setTimeout(resolve, attempt * 250));
     }
+    throw new Error(
+      `Could not copy ${sourcePath} -> ${destinationPath}: ${lastError?.message || lastError}`,
+    );
   }
   async writeStorageManifest(root, legacySource = null, { force = false } = {}) {
     const manifestPath = `${root}/storage-manifest.json`;
