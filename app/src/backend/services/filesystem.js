@@ -382,8 +382,9 @@ var _FileSystemService = class _FileSystemService {
       return;
     }
     let lastError;
-    for (let attempt = 1; attempt <= 4; attempt += 1) {
+    for (let attempt = 1; attempt <= 8; attempt += 1) {
       try {
+        await this.api.remove(destinationPath);
         await Neutralino.filesystem.copy(sourcePath, destinationPath, {
           recursive: false,
           overwrite: true,
@@ -399,7 +400,8 @@ var _FileSystemService = class _FileSystemService {
       } catch (error) {
         lastError = error;
       }
-      if (attempt < 4) await new Promise((resolve) => setTimeout(resolve, attempt * 250));
+      if (attempt < 8)
+        await new Promise((resolve) => setTimeout(resolve, attempt * 250));
     }
     throw new Error(
       `Could not copy ${sourcePath} -> ${destinationPath}: ${lastError?.message || lastError}`,
@@ -736,7 +738,13 @@ var _FileSystemService = class _FileSystemService {
       const relativePath = sourceDirectory.slice(sourcePath.length);
       await this.api.ensureDir(`${destinationPath}${relativePath}`);
     }
-    const concurrency = appSettings.get("multithreadStorageMoves") ? 4 : 1;
+    // ponytail: Windows native copies stay serial; re-enable bounded concurrency after reliability is measured.
+    const concurrency =
+      window.NL_OS === "Windows"
+        ? 1
+        : appSettings.get("multithreadStorageMoves")
+          ? 4
+          : 1;
     let nextFileIndex = 0;
     const copyNextFile = async () => {
       while (nextFileIndex < files.length) {

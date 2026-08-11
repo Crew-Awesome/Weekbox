@@ -136,8 +136,13 @@ var APIneuFileSystem = {
     if (await this.exists(normalizedPath)) {
       try {
         const isWin = window.NL_OS === "Windows";
+        const stats = await Neutralino.filesystem
+          .getStats(normalizedPath)
+          .catch(() => null);
         const command = isWin
-          ? `cmd /c rmdir /S /Q ${quoteShellArgument(normalizedPath.replace(/\//g, "\\"))}`
+          ? stats?.isDirectory
+            ? `cmd /c rmdir /S /Q ${quoteShellArgument(normalizedPath.replace(/\//g, "\\"))}`
+            : `cmd /c del /F /Q ${quoteShellArgument(normalizedPath.replace(/\//g, "\\"))}`
           : `rm -rf ${quoteShellArgument(normalizedPath)}`;
         const result = await Neutralino.os.execCommand(command, {
           background: false,

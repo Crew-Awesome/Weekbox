@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.1.6] - 2026-08-11
+
+### Fixed
+
+- Fixed Windows storage migrations failing on staged or locked files.
+- Fixed startup storage checks failing after a partial migration copy.
+
 ## [2.1.5] - 2026-08-11
 
 ### Added
@@ -826,6 +833,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Downloads for Windows, Linux, and macOS.
 - Packages for x64, ARM64, ARMHF, and Universal Macs where available.
 
-[unreleased]: https://github.com/Crew-Awesome/Weekbox/compare/v2.1.5...HEAD
+[unreleased]: https://github.com/Crew-Awesome/Weekbox/compare/v2.1.6...HEAD
+[2.1.6]: https://github.com/Crew-Awesome/Weekbox/compare/v2.1.5...v2.1.6
 [2.1.5]: https://github.com/Crew-Awesome/Weekbox/compare/v2.1.4...v2.1.5
 [2.1.4]: https://github.com/Crew-Awesome/Weekbox/compare/v2.1.3...v2.1.4
