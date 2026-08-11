@@ -7,10 +7,11 @@ import it from "../../locales/it.json";
 import pt from "../../locales/pt.json";
 import fr from "../../locales/fr.json";
 import ru from "../../locales/ru.json";
+import tr from "../../locales/tr.json";
 import shared from "../../locales/shared.json";
 import { appSettings } from "../../../backend/core/system/settings.service.js";
 
-const catalogs = { en, es, "es-ES": esES, de, id, it, pt, fr, ru };
+const catalogs = { en, es, "es-ES": esES, de, id, it, pt, fr, ru, tr };
 const fallbackLocale = "en";
 export const LANGUAGES = [
   { id: "en", flag: "us", name: "English (United States)" },
@@ -22,6 +23,7 @@ export const LANGUAGES = [
   { id: "pt", flag: "br", name: "Portugu\u00eas (Brasil)" },
   { id: "fr", flag: "fr", name: "Fran\u00e7ais (France)" },
   { id: "ru", flag: "ru", name: "Russian (Russia)" },
+  { id: "tr", flag: "tr", name: "Türkçe (Türkiye)" },
 ];
 const engineLabelKeys = {
   vslice: "home.baseGame",
