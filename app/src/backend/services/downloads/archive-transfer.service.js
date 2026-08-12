@@ -334,6 +334,13 @@ function isTransientDownloadError(error) {
   );
 }
 
+function isRetryableArchiveValidationError(error) {
+  if (error?.archiveDiagnostics?.retryable === true) return true;
+  return /downloaded archive (?:is empty|was incomplete)|web page instead of the archive/i.test(
+    String(error?.message || error),
+  );
+}
+
 function wait(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
@@ -420,6 +427,45 @@ async function detectArchiveFormat(path) {
     if (String.fromCharCode(...data.slice(257, 262)) === "ustar") return "tar";
   } catch {}
   return "unknown";
+}
+
+async function verifyArchiveReadable(archivePath, archiveFormat) {
+  if (archiveFormat === "dmg") return;
+  const binaryPath = await find7zBinary();
+  if (!binaryPath) return;
+  const process = await spawnProcessWithShell(
+    get7zTestCommand(binaryPath, archivePath),
+  );
+  let processOutput = "";
+  await listenForProcess(
+    process,
+    () => null,
+    (event, handler, resolve, reject) => {
+      if (event.action === "stdOut" || event.action === "stdErr") {
+        processOutput = appendProcessOutput(processOutput, event.data);
+        return;
+      }
+      if (event.action !== "exit") return;
+      Neutralino.events.off("spawnedProcess", handler);
+      if (
+        event.data === 0 ||
+        isNonFatalUnzipFilenameWarning(event.data, processOutput)
+      ) {
+        resolve();
+        return;
+      }
+      const error = new Error(
+        `The downloaded ${archiveFormat} archive failed integrity verification. Try the download again or choose another link.`,
+      );
+      error.archiveDiagnostics = {
+        stage: "archive-test",
+        format: archiveFormat,
+        retryable: true,
+        output: getUsefulProcessOutput(processOutput),
+      };
+      reject(error);
+    },
+  );
 }
 
 async function hasExtractedPayload(path) {
@@ -517,6 +563,18 @@ function get7zExtractionCommand(binaryPath, archivePath, destinationPath) {
   const cleanSteamEnvironment =
     window.NL_OS === "Linux" ? "unset LD_PRELOAD; " : "";
   return `${cleanSteamEnvironment}${quoteCommandArgument(binaryPath)} x -y -aoa -o${quoteCommandArgument(destinationPath)} ${quoteCommandArgument(archivePath)}`;
+}
+
+function get7zTestCommand(binaryPath, archivePath) {
+  const isWindows = window.NL_OS === "Windows";
+  if (isWindows) {
+    const normBin = String(binaryPath || "").replace(/\//g, "\\");
+    const normArchive = String(archivePath || "").replace(/\//g, "\\");
+    return `"${normBin}" t -y "${normArchive}"`;
+  }
+  const cleanSteamEnvironment =
+    window.NL_OS === "Linux" ? "unset LD_PRELOAD; " : "";
+  return `${cleanSteamEnvironment}${quoteCommandArgument(binaryPath)} t -y ${quoteCommandArgument(archivePath)}`;
 }
 
 async function prepareArchiveTool(binaryPath) {
@@ -1476,10 +1534,22 @@ async function downloadArchive({
     url.includes("docs.google.com");
 
   if (sourceType === "external" && !isGoogleDriveUrl) {
+    const contentType = await getDownloadContentType(url);
     onDiagnostic?.({
       resolvedUrl: url,
-      contentType: await getDownloadContentType(url),
+      contentType,
     });
+    if (/^(?:text\/html|application\/xhtml\+xml)\b/i.test(contentType || "")) {
+      const error = new Error(
+        "The download server returned a web page instead of the archive. Select another download link and try again.",
+      );
+      error.archiveDiagnostics = {
+        stage: "headers",
+        contentType,
+        retryable: false,
+      };
+      throw error;
+    }
   }
 
   const useMultithreadDownloads = appSettings.get("multithreadDownloads");
@@ -1508,12 +1578,31 @@ async function downloadArchive({
     }
   }
 
-  if (
-    useMultithreadDownloads &&
-    !isGoogleDriveUrl &&
-    verifiedRemoteFileSize >= MIN_SEGMENTED_DOWNLOAD_BYTES
-  ) {
-    try {
+  const cleanupDownloadAttempt = async () => {
+    await Promise.all([
+      Neutralino.filesystem.remove(partPath).catch(() => {}),
+      Neutralino.filesystem.remove(outPath).catch(() => {}),
+    ]);
+  };
+  const finalizeAndVerifyDownload = async () => {
+    onProgress?.("Finalizing downloaded file...", 98);
+    await finalizeDownloadedArchive(partPath, outPath);
+    const stats = await waitForDownloadedArchive(outPath);
+    onProgress?.("Verifying downloaded archive...", 98);
+    await verifyDownloadedArchiveContent(outPath, verifiedRemoteFileSize);
+    onDiagnostic?.({
+      resolvedUrl: url,
+      downloadedSize: stats.size,
+      archiveFormat: await detectArchiveFormat(outPath),
+    });
+    return stats;
+  };
+  const performDownload = async () => {
+    if (
+      useMultithreadDownloads &&
+      !isGoogleDriveUrl &&
+      verifiedRemoteFileSize >= MIN_SEGMENTED_DOWNLOAD_BYTES
+    ) {
       try {
         await downloadSegmentedArchive({
           url,
@@ -1537,44 +1626,30 @@ async function downloadArchive({
           onProgress,
         });
       }
-      onProgress?.("Finalizing downloaded file...", 98);
-      await finalizeDownloadedArchive(partPath, outPath);
-      const stats = await waitForDownloadedArchive(outPath);
-      onProgress?.("Verifying downloaded archive...", 98);
-      await verifyDownloadedArchiveContent(outPath, verifiedRemoteFileSize);
-      onDiagnostic?.({
-        resolvedUrl: url,
-        downloadedSize: stats.size,
-        archiveFormat: await detectArchiveFormat(outPath),
+    } else {
+      onProgress?.("Connecting to download server...", 2);
+      await downloadSingleArchive({
+        url,
+        outPath: partPath,
+        totalBytes: remoteFileSize,
+        getTask,
+        onProgress,
       });
-      return stats;
-    } catch (error) {
-      await Neutralino.filesystem.remove(partPath).catch(() => {});
-      throw error;
     }
-  }
+    return finalizeAndVerifyDownload();
+  };
   try {
-    onProgress?.("Connecting to download server...", 2);
-    await downloadSingleArchive({
-      url,
-      outPath: partPath,
-      totalBytes: remoteFileSize,
+    return await retryTransientDownload(
+      performDownload,
       getTask,
       onProgress,
-    });
-    onProgress?.("Finalizing downloaded file...", 98);
-    await finalizeDownloadedArchive(partPath, outPath);
-    const stats = await waitForDownloadedArchive(outPath);
-    onProgress?.("Verifying downloaded archive...", 98);
-    await verifyDownloadedArchiveContent(outPath, verifiedRemoteFileSize);
-    onDiagnostic?.({
-      resolvedUrl: url,
-      downloadedSize: stats.size,
-      archiveFormat: await detectArchiveFormat(outPath),
-    });
-    return stats;
+      cleanupDownloadAttempt,
+      (error) =>
+        isTransientDownloadError(error) ||
+        isRetryableArchiveValidationError(error),
+    );
   } catch (error) {
-    await Neutralino.filesystem.remove(partPath).catch(() => {});
+    await cleanupDownloadAttempt();
     throw error;
   }
 }
@@ -1598,16 +1673,31 @@ async function verifyDownloadedArchiveContent(archivePath, expectedSize = 0) {
     });
   }
   const htmlError = getHtmlResponseError(sample);
-  if (htmlError) throw htmlError;
+  if (htmlError) {
+    htmlError.archiveDiagnostics = {
+      stage: "html-response",
+      retryable: !/quota|does not exist|requires permissions|sign in/i.test(
+        htmlError.message,
+      ),
+    };
+    throw htmlError;
+  }
   if (looksLikeHtmlResponse(sample)) {
-    throw new Error(
+    const error = new Error(
       "The download server returned a web page instead of the archive. Select another download link and try again.",
     );
+    error.archiveDiagnostics = {
+      stage: "html-response",
+      retryable: true,
+    };
+    throw error;
   }
   if (Number(expectedSize) > 0 && Number(stats.size) !== Number(expectedSize)) {
-    throw new Error(
+    const error = new Error(
       `The downloaded archive was incomplete. Expected ${expectedSize} bytes but found ${stats.size}. Try the download again.`,
     );
+    error.archiveDiagnostics = { stage: "size", retryable: true };
+    throw error;
   }
   if (stats.size < 500 * 1024) {
     try {
@@ -1647,6 +1737,20 @@ async function verifyDownloadedArchiveContent(archivePath, expectedSize = 0) {
       }
     }
   }
+  const archiveFormat = /\.dmg$/i.test(String(archivePath))
+    ? "dmg"
+    : await detectArchiveFormat(archivePath);
+  if (archiveFormat === "unknown") {
+    const error = new Error(
+      "The downloaded file is not a recognized archive. Choose another download link and try again.",
+    );
+    error.archiveDiagnostics = {
+      stage: "format",
+      retryable: false,
+    };
+    throw error;
+  }
+  await verifyArchiveReadable(archivePath, archiveFormat);
   return stats;
 }
 
@@ -1901,4 +2005,6 @@ export {
   hasExpectedPartSizes,
   buildWindowsMergeCommand,
   buildUnixMergeCommand,
+  detectArchiveFormat,
+  verifyDownloadedArchiveContent,
 };
