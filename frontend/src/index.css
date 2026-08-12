@@ -40,7 +40,7 @@
   --wb-shadow: #000000;
 
   /* Mapping for Sidebar & App Layout (Legacy fallbacks) */
-  --wb-bg: var(--wb-surface);
+  --wb-bg: var(--wb-surface-dim);
   --wb-front-bg: var(--wb-surface-container-lowest);
   --wb-back-bg: var(--wb-surface-container);
   
