@@ -22,7 +22,7 @@ export const MobileNav: React.FC<MobileNavProps> = ({ activeItem, setActiveItem 
   return (
     <nav 
       ref={containerRef}
-      className="flex md:hidden fixed bottom-6 left-1/2 -translate-x-1/2 w-[22rem] max-w-[95%] h-[4.5rem] bg-[var(--wb-front-bg)]/70 backdrop-blur-xl rounded-full drop-shadow-[0_8px_16px_rgba(0,0,0,0.6)] items-center justify-evenly z-50 border border-white/10 px-4"
+      className="flex md:hidden fixed bottom-6 left-1/2 -translate-x-1/2 w-[22rem] max-w-[95%] h-[4.5rem] bg-[var(--wb-front-bg)]/70 backdrop-blur-xl rounded-full drop-shadow-[0_8px_16px_rgba(0,0,0,0.6)] items-center justify-center gap-4 z-50 px-4"
     >
       {/* Indicador animado GSAP */}
       <div 

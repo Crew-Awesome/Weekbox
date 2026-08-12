@@ -122,14 +122,12 @@ export default function Card() {
       {modstest.map((item, index) => (
         <div
           key={index}
-          className=" relative shadow-2xs bg-transparent rounded-md p-3"
+          className=" relative shadow-2xs bg-transparent rounded-[1rem] p-3"
           style={{ fontFamily: "Manrope, sans-serif", fontWeight: 500 }}
         >
-          <div className="relative aspect-[16/9] w-full rounded-md overflow-hidden">
+          <div className="relative aspect-[16/9] w-full rounded-[1rem] overflow-hidden">
             {/* Contenedor de la máscara */}
             <div className="absolute left-0 top-0 w-[18%] aspect-square bg-[var(--wb-bg)] z-10 rounded-br-[8px]">
-              {/* Expansión hacia afuera para forzar el recorte perfecto y eliminar el píxel d mrd (no funciona, bueno, mas o menos :[ )) */}
-              <div className="absolute w-[50px] h-[50px] bg-transparent"></div>
               <div className="relative z-10 w-full h-full flex items-center justify-center p-2">
                 <img
                   className="object-contain w-full h-full block"
