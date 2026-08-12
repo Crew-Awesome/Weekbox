@@ -3,6 +3,7 @@ import { ProgressBar } from './components/atoms/progress-bar/progress-bar';
 import { AppVersion } from './components/atoms/app-version/app-version';
 import Card from './components/atoms/card-mainmenu/card';
 import Titles from './components/atoms/titles/titles';
+import { AnimatedInput } from './components/atoms/animated-input/animated-input';
 import Searchbar from './components/molecules/searchbar/searchbar';
 
 /**
@@ -19,6 +20,7 @@ const Shared = {
     ProgressBar,
     AppVersion,
     Titles,
+    AnimatedInput,
   },
 
   /**
