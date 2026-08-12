@@ -1,5 +1,6 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Search } from "lucide-react";
+import gsap from "gsap";
 
 interface SearchbarProps {
   placeholders?: string[];
@@ -7,16 +8,40 @@ interface SearchbarProps {
 
 export default function Searchbar({ placeholders = ["Search..."] }: SearchbarProps) {
     const [placeholderIndex, setPlaceholderIndex] = useState(0);
+    const [isEmpty, setIsEmpty] = useState(true);
+    const placeholderRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
         if (!placeholders || placeholders.length <= 1) return;
         
         const interval = setInterval(() => {
-            setPlaceholderIndex((prev) => (prev + 1) % placeholders.length);
-        }, 3000);
+            if (placeholderRef.current) {
+                gsap.to(placeholderRef.current, {
+                    y: -15,
+                    opacity: 0,
+                    duration: 0.3,
+                    ease: "power2.in",
+                    onComplete: () => {
+                        setPlaceholderIndex((prev) => (prev + 1) % placeholders.length);
+                        
+                        if (placeholderRef.current) {
+                            gsap.fromTo(placeholderRef.current, 
+                                { y: 15, opacity: 0 }, 
+                                { y: 0, opacity: 1, duration: 0.3, ease: "power2.out" }
+                            );
+                        }
+                    }
+                });
+            }
+        }, 3500); // Wait 3.5s before changing
         
         return () => clearInterval(interval);
     }, [placeholders]);
+
+    const handleInput = (e: React.FormEvent<HTMLDivElement>) => {
+        const text = e.currentTarget.textContent?.trim() || "";
+        setIsEmpty(text === "");
+    };
 
     const currentPlaceholder = placeholders[placeholderIndex];
 
@@ -24,12 +49,24 @@ export default function Searchbar({ placeholders = ["Search..."] }: SearchbarPro
         <div className="flex items-start w-full md:w-auto h-25 rounded-t-none rounded-b-[16px] bg-[var(--wb-surface-container)] mx-0 md:mx-2 px-4 md:px-6">
             <div className="bg-black rounded-2xl h-14 mt-5 w-[40%] flex items-center overflow-hidden">
                 <Search className="w-10 h-10 ml-4 text-[var(--wb-icon-default)] shrink-0"></Search>
-                <div 
-                    contentEditable="true"
-                    suppressContentEditableWarning={true}
-                    className="ml-3 mr-3 w-full bg-transparent outline-none text-lg text-[var(--wb-text-main)] empty:before:content-[attr(data-placeholder)] empty:before:text-[var(--wb-text-muted)] empty:before:pointer-events-none transition-all duration-300 truncate"
-                    data-placeholder={currentPlaceholder}
-                />
+                
+                <div className="relative w-full ml-3 mr-3 flex items-center">
+                    {isEmpty && (
+                        <div 
+                            ref={placeholderRef}
+                            className="absolute left-0 right-0 text-lg text-[var(--wb-text-muted)] pointer-events-none truncate"
+                        >
+                            {currentPlaceholder}
+                        </div>
+                    )}
+                    
+                    <div 
+                        contentEditable="true"
+                        suppressContentEditableWarning={true}
+                        onInput={handleInput}
+                        className="w-full bg-transparent outline-none text-lg text-[var(--wb-text-main)] truncate z-10"
+                    />
+                </div>
             </div>
         </div>
     );
