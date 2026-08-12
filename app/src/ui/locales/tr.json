@@ -155,7 +155,7 @@
   "home.discover": "Keşfet",
   "home.searchPlaceholder": "Modları ara (... vs Kemal Sunal, Blink Emre 2.0)",
   "home.searchHint": "Modları ara, GameBanana linki yapıştır veya ModID'sini yapıştır",
-  "home.loadingFeatured": "Loading featured…", // buraya el at
+  "home.loadingFeatured": "Loading featured…",
   "home.allEngines": "Tüm motorlar",
   "home.baseGame": "Ana Oyun",
   "home.executables": "Çalıştırılabilir Dosyalar",
