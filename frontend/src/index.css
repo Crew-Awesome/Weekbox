@@ -105,3 +105,13 @@ button:active {
   scrollbar-width: thin;
   scrollbar-color: var(--wb-primary) transparent;
 }
+
+/* Hide scrollbar on mobile but keep functionality */
+@media (max-width: 768px) {
+  .mobile-no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+  .mobile-no-scrollbar {
+    scrollbar-width: none;
+  }
+}
