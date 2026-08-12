@@ -1,59 +1,104 @@
-import React from 'react';
+import React, { useRef } from 'react';
+import gsap from 'gsap';
+import { useGSAP } from '@gsap/react';
 import launcherIcon from "/assets/icons/app/launcher-icon.png";
 import { navItems, InfoIcon, SettingsIcon } from './sidebar-icons';
 
 interface DesktopSidebarProps {
-  activeItem: string;
-  setActiveItem: (id: string) => void;
+  activeMain: string;
+  setActiveMain: (id: string) => void;
+  activeSecondary: string | null;
+  setActiveSecondary: (id: string | null) => void;
 }
 
-export const DesktopSidebar: React.FC<DesktopSidebarProps> = ({ activeItem, setActiveItem }) => {
+export const DesktopSidebar: React.FC<DesktopSidebarProps> = ({ activeMain, setActiveMain, activeSecondary, setActiveSecondary }) => {
+  const navRef = useRef<HTMLElement>(null);
+  const indicatorRef = useRef<HTMLDivElement>(null);
+  const btnRefs = useRef<Record<string, HTMLButtonElement | null>>({});
+
+  useGSAP(() => {
+    const updatePosition = (isResize = false) => {
+      const activeBtn = btnRefs.current[activeMain];
+      if (activeBtn && indicatorRef.current && navRef.current) {
+        const btnRect = activeBtn.getBoundingClientRect();
+        const navRect = navRef.current.getBoundingClientRect();
+        
+        const xPos = btnRect.left - navRect.left;
+        const yPos = btnRect.top - navRect.top;
+        
+        gsap.to(indicatorRef.current, {
+          x: xPos,
+          y: yPos,
+          width: btnRect.width,
+          height: btnRect.height,
+          opacity: 1,
+          duration: isResize ? 0 : 0.5,
+          ease: "elastic.out(1, 0.75)",
+          overwrite: "auto",
+        });
+      }
+    };
+
+    updatePosition();
+    const handleResize = () => updatePosition(true);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, { dependencies: [activeMain], scope: navRef });
+
   return (
     <aside className="hidden md:block relative w-32 h-full drop-shadow-2xl">
-        {/* SEGUNDA PARTE (z-index 10) */}
+        {/* SEGUNDA PARTE (z-index 10) - Toggles */}
         <div className="absolute inset-y-0 left-0 right-6 bg-[var(--wb-back-bg)] rounded-tr-[16px] rounded-br-[16px] z-10 flex flex-col justify-end items-end pb-6 pr-3">
           <div className="flex flex-col space-y-4">
             <button
-              onClick={() => setActiveItem("info")}
+              onClick={() => setActiveSecondary(activeSecondary === "info" ? null : "info")}
               title="Info"
               className={`flex items-center justify-center w-12 h-12 rounded-2xl transition-all duration-300 group outline-none ${
-                activeItem === "info"
+                activeSecondary === "info"
                   ? "bg-[var(--wb-item-active)] text-[var(--wb-icon-active)]"
-                  : "text-[var(--wb-icon-default)] hover:bg-[var(--wb-item-hover)] hover:text-[var(--wb-icon-hover)]"
+                  : "bg-transparent text-[var(--wb-icon-default)] hover:bg-[var(--wb-item-hover)] hover:text-[var(--wb-icon-hover)]"
               }`}
             >
-              <InfoIcon className={`w-6 h-6 transition-transform duration-300 ${activeItem === "info" ? "text-[var(--wb-icon-active)]" : "group-hover:scale-110 group-hover:text-[var(--wb-icon-hover)]"}`} />
+              <InfoIcon className={`w-6 h-6 transition-transform duration-300 ${activeSecondary === "info" ? "text-[var(--wb-icon-active)]" : "group-hover:scale-110 group-hover:text-[var(--wb-icon-hover)]"}`} />
             </button>
 
             <button
-              onClick={() => setActiveItem("settings")}
+              onClick={() => setActiveSecondary(activeSecondary === "settings" ? null : "settings")}
               title="Settings"
               className={`flex items-center justify-center w-12 h-12 rounded-2xl transition-all duration-300 group outline-none ${
-                activeItem === "settings"
+                activeSecondary === "settings"
                   ? "bg-[var(--wb-item-active)] text-[var(--wb-icon-active)]"
-                  : "text-[var(--wb-icon-default)] hover:bg-[var(--wb-item-hover)] hover:text-[var(--wb-icon-hover)]"
+                  : "bg-transparent text-[var(--wb-icon-default)] hover:bg-[var(--wb-item-hover)] hover:text-[var(--wb-icon-hover)]"
               }`}
             >
-              <SettingsIcon className={`w-6 h-6 transition-transform duration-300 ${activeItem === "settings" ? "rotate-90 text-[var(--wb-icon-active)]" : "group-hover:rotate-90 group-hover:text-[var(--wb-icon-hover)]"}`} />
+              <SettingsIcon className={`w-6 h-6 transition-transform duration-300 ${activeSecondary === "settings" ? "rotate-90 text-[var(--wb-icon-active)]" : "group-hover:rotate-90 group-hover:text-[var(--wb-icon-hover)]"}`} />
             </button>
           </div>
         </div>
 
-        {/* PRIMERA PARTE (z-index 20) */}
+        {/* PRIMERA PARTE (z-index 20) - Radio Group */}
         <div className="absolute inset-0 z-20 flex flex-col pointer-events-none drop-shadow-[4px_0_8px_rgba(0,0,0,0.6)]">
           <div className="w-32 bg-[var(--wb-front-bg)] rounded-tr-[16px] flex flex-col items-center pt-8 pb-4 pointer-events-auto">
             <div className="flex items-center justify-center mb-8 w-full relative z-20 px-2">
               <img src={launcherIcon} alt="Weekbox" className="w-full h-auto object-contain drop-shadow-md" />
             </div>
-            <nav className="flex flex-col items-center w-full space-y-4">
+            <nav ref={navRef} className="flex flex-col items-center w-full space-y-4 relative">
+              {/* GSAP Indicator */}
+              <div 
+                ref={indicatorRef} 
+                className="absolute top-0 left-0 rounded-2xl bg-[var(--wb-item-active)] pointer-events-none"
+                style={{ opacity: 0 }}
+              />
+
               {navItems.map((item) => {
-                const isActive = activeItem === item.id;
+                const isActive = activeMain === item.id;
                 return (
                   <button
                     key={item.id}
-                    onClick={() => setActiveItem(item.id)}
-                    className={`flex flex-col items-center justify-center w-20 h-20 rounded-2xl transition-all duration-300 group outline-none relative ${
-                      isActive ? "bg-[var(--wb-item-active)] text-[var(--wb-icon-active)]" : "text-[var(--wb-icon-default)] hover:bg-[var(--wb-item-hover)] hover:text-[var(--wb-icon-hover)]"
+                    ref={(el) => { btnRefs.current[item.id] = el; }}
+                    onClick={() => setActiveMain(item.id)}
+                    className={`flex flex-col items-center justify-center w-20 h-20 rounded-2xl transition-colors duration-300 group outline-none relative z-10 ${
+                      isActive ? "text-[var(--wb-icon-active)]" : "text-[var(--wb-icon-default)] hover:text-[var(--wb-icon-hover)]"
                     }`}
                   >
                     <item.icon className={`w-8 h-8 mb-1 transition-transform duration-300 ${isActive ? "text-[var(--wb-icon-active)]" : "group-hover:scale-110 group-hover:text-[var(--wb-icon-hover)]"}`} />

@@ -12,12 +12,30 @@ import { MobileNav } from "./mobile-nav";
  * @returns {React.FC} El componente funcional de la barra lateral.
  */
 export const Sidebar: React.FC = () => {
-  const [activeItem, setActiveItem] = useState("home");
+  const [activeMain, setActiveMain] = useState("home");
+  const [activeSecondary, setActiveSecondary] = useState<string | null>(null);
+
+  const handleMobileSet = (id: string) => {
+    if (id === 'settings' || id === 'info') {
+      setActiveSecondary(prev => prev === id ? null : id);
+    } else {
+      setActiveMain(id);
+      setActiveSecondary(null);
+    }
+  };
 
   return (
     <>
-      <DesktopSidebar activeItem={activeItem} setActiveItem={setActiveItem} />
-      <MobileNav activeItem={activeItem} setActiveItem={setActiveItem} />
+      <DesktopSidebar 
+        activeMain={activeMain} 
+        setActiveMain={setActiveMain} 
+        activeSecondary={activeSecondary} 
+        setActiveSecondary={setActiveSecondary} 
+      />
+      <MobileNav 
+        activeItem={activeSecondary || activeMain} 
+        setActiveItem={handleMobileSet} 
+      />
     </>
   );
 };
