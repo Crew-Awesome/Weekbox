@@ -7,10 +7,9 @@ export const Home: React.FC = () => {
       <div className="relative">
         <Shared.molecules.Searchbar 
           placeholders={[
-            "Busca tus mods favoritos...", 
-            "Prueba buscar 'Sonic.exe'", 
-            "Encuentra nuevas aventuras...",
-            "V-Slice, Mario's Madness..."
+            "Paste your favorite mod's ID...", 
+            "Search for mods...", 
+            "Search on GameBanana..."
           ]} 
         />
         <Shared.atoms.Titles title="All Mods" />
