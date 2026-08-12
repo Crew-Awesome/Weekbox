@@ -188,7 +188,12 @@ var _FileSystemService = class _FileSystemService {
             this.storageMigrationFallback = {
               sourcePath: legacyPath,
               targetPath: defaultStoragePath,
+              stagePath: error.storageMigration?.stagePath || null,
               reportPath: error.storageMigration?.reportPath || null,
+              failedFiles: error.storageMigration?.failedFiles || [],
+              failedFileCount: error.storageMigration?.failedFileCount || 0,
+              totalFiles: error.storageMigration?.totalFiles || 0,
+              copiedFiles: error.storageMigration?.copiedFiles || 0,
               error: `WeekBox storage migration paused: ${error.message || String(error)}`,
             };
             console.warn(
@@ -547,6 +552,9 @@ var _FileSystemService = class _FileSystemService {
         stagePath: stage,
         reportPath,
         failedFiles: failures,
+        failedFileCount: failureCount,
+        totalFiles: migration.totalFiles,
+        copiedFiles: migration.copiedFiles,
       };
       throw error;
     }

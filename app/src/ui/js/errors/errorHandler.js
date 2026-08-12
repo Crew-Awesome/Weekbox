@@ -120,6 +120,57 @@ function getDiagnosticStackTrace(error) {
   return `No JavaScript stack trace was provided by Neutralino.\nNative error details:\n${nativeDetails}`;
 }
 
+function optionalDiagnosticText(value, maximumLength = 2_000) {
+  return typeof value === "string" ? value.trim().slice(0, maximumLength) : "";
+}
+
+function getStorageMigrationDiagnostics(diagnostics) {
+  const migration = diagnostics?.storageMigration;
+  if (!migration || typeof migration !== "object") return null;
+  const failedFiles = Array.isArray(migration.failedFiles)
+    ? migration.failedFiles.slice(0, 20).map((failure) => ({
+        path: optionalDiagnosticText(failure?.path, 2_000),
+        reason: optionalDiagnosticText(failure?.reason, 1_000),
+      }))
+    : [];
+  return {
+    sourcePath: optionalDiagnosticText(migration.sourcePath),
+    targetPath: optionalDiagnosticText(migration.targetPath),
+    stagePath: optionalDiagnosticText(migration.stagePath),
+    reportPath: optionalDiagnosticText(migration.reportPath),
+    failedFileCount: Number.isFinite(Number(migration.failedFileCount))
+      ? Number(migration.failedFileCount)
+      : failedFiles.length,
+    totalFiles: Number.isFinite(Number(migration.totalFiles))
+      ? Number(migration.totalFiles)
+      : null,
+    copiedFiles: Number.isFinite(Number(migration.copiedFiles))
+      ? Number(migration.copiedFiles)
+      : null,
+    failedFiles,
+  };
+}
+
+function formatStorageMigrationDiagnostics(migration) {
+  if (!migration) return null;
+  const failureLines = migration.failedFiles
+    .filter((failure) => failure.path || failure.reason)
+    .map(({ path, reason }) => `- ${path || "Unknown path"}: ${reason || "Unknown reason"}`);
+  return [
+    "Storage migration diagnostics:",
+    migration.sourcePath ? `Source: ${migration.sourcePath}` : null,
+    migration.targetPath ? `Target: ${migration.targetPath}` : null,
+    migration.stagePath ? `Stage: ${migration.stagePath}` : null,
+    migration.reportPath ? `Report: ${migration.reportPath}` : null,
+    `Files: ${migration.copiedFiles ?? "?"}/${migration.totalFiles ?? "?"} copied; ${migration.failedFileCount} failed`,
+    failureLines.length
+      ? `Failed entries:\n${failureLines.join("\n")}`
+      : null,
+  ]
+    .filter(Boolean)
+    .join("\n");
+}
+
 function describeIssue(error) {
   const message = getMessage(error);
   const lower = message.toLowerCase();
@@ -355,7 +406,9 @@ function createReport({
   locale,
   disks,
   network,
+  diagnostics,
 }) {
+  const migration = getStorageMigrationDiagnostics(diagnostics);
   return [
     "WeekBox support report",
     `Time: ${new Date().toLocaleString()}`,
@@ -372,6 +425,7 @@ function createReport({
     item ? `Item: ${item}` : null,
     version ? `Version: ${version}` : null,
     storagePath ? `Storage path: ${storagePath}` : null,
+    formatStorageMigrationDiagnostics(migration),
     `Issue: ${issue.tag}`,
     `What happened: ${issue.summary}`,
     `Error: ${getDiagnosticErrorMessage(error)}`,
@@ -384,6 +438,7 @@ function createReport({
 async function submitDiagnosticReport(context, issue) {
   const errorMessage = getDiagnosticErrorMessage(context.error);
   const stackTrace = getDiagnosticStackTrace(context.error);
+  const migration = getStorageMigrationDiagnostics(context.diagnostics);
   const [operatingSystem, architecture, locale, disks, network] =
     await Promise.all([
       getOperatingSystem(),
@@ -412,6 +467,7 @@ async function submitDiagnosticReport(context, issue) {
       summary: issue.summary,
       errorMessage,
       stackTrace,
+      diagnostics: migration ? { storageMigration: migration } : null,
       reportedAt: new Date().toISOString(),
     }),
   });

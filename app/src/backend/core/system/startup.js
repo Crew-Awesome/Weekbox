@@ -461,10 +461,15 @@ async function startApp() {
       const reportPath = storageMigrationFallback.reportPath
         ? ` Migration report: ${storageMigrationFallback.reportPath}`
         : "";
+      const migrationError = new Error(
+        `${storageMigrationFallback.error}${reportPath}`,
+      );
+      migrationError.storageMigration = storageMigrationFallback;
       errorHandler.show({
-        error: new Error(`${storageMigrationFallback.error}${reportPath}`),
+        error: migrationError,
         action: t("startup.startWeekBoxAction"),
         storagePath: FS.weekboxPath,
+        diagnostics: { storageMigration: storageMigrationFallback },
       });
     }
     await openLaunchDeepLink().catch((error) =>
