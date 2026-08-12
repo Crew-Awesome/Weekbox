@@ -122,27 +122,27 @@ export default function Card() {
       {modstest.map((item, index) => (
         <div
           key={index}
-          className=" relative shadow-2xs overflow-hidden bg-transparent rounded-md "
+          className=" relative shadow-2xs bg-transparent rounded-md p-3"
           style={{ fontFamily: "Manrope, sans-serif", fontWeight: 500 }}
         >
-          <div className="relative aspect-[16/9] w-full">
+          <div className="relative aspect-[16/9] w-full rounded-md overflow-hidden">
             {/* Contenedor de la máscara */}
-            <div className="absolute left-0 top-0 w-[18%] aspect-square bg-[var(--wb-bg)] z-10 rounded-br-2xl">
-              {/* Expansión hacia afuera para forzar el recorte perfecto y eliminar el píxel d mrd */}
-              <div className="absolute -top-[5px] -left-[5px] w-[20px] h-[20px] bg-[var(--wb-bg)]"></div>
-              <div className="relative z-10 w-full h-full flex items-center justify-center p-[15%]">
+            <div className="absolute left-0 top-0 w-[18%] aspect-square bg-[var(--wb-bg)] z-10 rounded-br-[8px]">
+              {/* Expansión hacia afuera para forzar el recorte perfecto y eliminar el píxel d mrd (no funciona, bueno, mas o menos :[ )) */}
+              <div className="absolute w-[50px] h-[50px] bg-transparent"></div>
+              <div className="relative z-10 w-full h-full flex items-center justify-center p-2">
                 <img
                   className="object-contain w-full h-full block"
                   src={item.icon}
                 />
               </div>
               {/* Curva derecha */}
-              <div className="absolute top-0 left-full w-[35%] aspect-square overflow-hidden pointer-events-none">
-                <div className="absolute bottom-0 right-0 w-full h-full bg-transparent rounded-tl-full shadow-[0_0_0_100px_var(--wb-bg)]"></div>
+              <div className="absolute top-0 left-full w-2 h-2 overflow-hidden pointer-events-none">
+                <div className="absolute bottom-0 right-0 w-full h-full bg-transparent rounded-tl-full shadow-[0_0_0_20px_var(--wb-bg)]"></div>
               </div>
               {/* Curva inferior */}
-              <div className="absolute top-full left-0 w-[35%] aspect-square overflow-hidden pointer-events-none">
-                <div className="absolute bottom-0 right-0 w-full h-full bg-transparent rounded-tl-full shadow-[0_0_0_100px_var(--wb-bg)]"></div>
+              <div className="absolute top-full left-0 w-2 h-2 overflow-hidden pointer-events-none">
+                <div className="absolute bottom-0 right-0 w-full h-full bg-transparent rounded-tl-full shadow-[0_0_0_20px_var(--wb-bg)]"></div>
               </div>
             </div>
 
@@ -156,8 +156,10 @@ export default function Card() {
             />
           </div>
 
-          <strong className="text-xl truncate block">{item.name}</strong>
-          <h5 className="text-gray-400 text-sm truncate">{item.description}</h5>
+          <div className="mt-4 flex flex-col gap-1">
+            <strong className="text-xl truncate block">{item.name}</strong>
+            <h5 className="text-gray-400 text-sm truncate">{item.description}</h5>
+          </div>
         </div>
       ))}
     </div>
