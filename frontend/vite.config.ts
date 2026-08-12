@@ -62,7 +62,8 @@ export default defineConfig({
   resolve: {
     alias: {
       '@shared': path.resolve(__dirname, './src/shared/shared.tsx'),
-      '@features': path.resolve(__dirname, './src/features/index.ts')
+      '@features': path.resolve(__dirname, './src/features/index.ts'),
+      '@utils': path.resolve(__dirname, './src/utils/utils.tsx')
     }
   },
   server: {

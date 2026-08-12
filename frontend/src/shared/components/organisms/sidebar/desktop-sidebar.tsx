@@ -8,9 +8,10 @@ interface DesktopSidebarProps {
   setActiveMain: (id: string) => void;
   activeSecondary: string | null;
   setActiveSecondary: (id: string | null) => void;
+  onSecondaryClick?: (id: string, el: HTMLElement | null) => void;
 }
 
-export const DesktopSidebar: React.FC<DesktopSidebarProps> = ({ activeMain, setActiveMain, activeSecondary, setActiveSecondary }) => {
+export const DesktopSidebar: React.FC<DesktopSidebarProps> = ({ activeMain, setActiveMain, activeSecondary, setActiveSecondary, onSecondaryClick }) => {
   const navRef = useRef<HTMLElement>(null);
   const indicatorRef = useRef<HTMLDivElement>(null);
   const btnRefs = useRef<Record<string, HTMLButtonElement | null>>({});
@@ -28,7 +29,13 @@ export const DesktopSidebar: React.FC<DesktopSidebarProps> = ({ activeMain, setA
         <div className="absolute inset-y-0 left-0 right-6 bg-[var(--wb-back-bg)] rounded-tr-[16px] rounded-br-[16px] z-10 flex flex-col justify-end items-end pb-6 pr-3">
           <div className="flex flex-col space-y-4">
             <button
-              onClick={() => setActiveSecondary(activeSecondary === "info" ? null : "info")}
+              onClick={(e) => {
+                if (onSecondaryClick) {
+                  onSecondaryClick('info', e.currentTarget);
+                } else {
+                  setActiveSecondary(activeSecondary === "info" ? null : "info");
+                }
+              }}
               title="Info"
               className={`flex items-center justify-center w-12 h-12 rounded-2xl transition-all duration-300 group outline-none ${
                 activeSecondary === "info"
@@ -40,7 +47,13 @@ export const DesktopSidebar: React.FC<DesktopSidebarProps> = ({ activeMain, setA
             </button>
 
             <button
-              onClick={() => setActiveSecondary(activeSecondary === "settings" ? null : "settings")}
+              onClick={(e) => {
+                if (onSecondaryClick) {
+                  onSecondaryClick('settings', e.currentTarget);
+                } else {
+                  setActiveSecondary(activeSecondary === "settings" ? null : "settings");
+                }
+              }}
               title="Settings"
               className={`flex items-center justify-center w-12 h-12 rounded-2xl transition-all duration-300 group outline-none ${
                 activeSecondary === "settings"

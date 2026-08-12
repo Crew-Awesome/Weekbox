@@ -4,6 +4,7 @@ import { MobileNav } from "./mobile-nav";
 
 interface SidebarProps {
   onNavigate?: (view: string) => void;
+  onSecondaryClick?: (id: string, el: HTMLElement | null) => void;
 }
 
 /**
@@ -15,7 +16,7 @@ interface SidebarProps {
  * 
  * @returns {React.FC} El componente funcional de la barra lateral.
  */
-export const Sidebar: React.FC<SidebarProps> = ({ onNavigate }) => {
+export const Sidebar: React.FC<SidebarProps> = ({ onNavigate, onSecondaryClick }) => {
   const [activeMain, setActiveMain] = useState("home");
   const [activeSecondary, setActiveSecondary] = useState<string | null>(null);
 
@@ -40,11 +41,13 @@ export const Sidebar: React.FC<SidebarProps> = ({ onNavigate }) => {
         activeMain={activeMain} 
         setActiveMain={setActiveMain} 
         activeSecondary={activeSecondary} 
-        setActiveSecondary={setActiveSecondary} 
+        setActiveSecondary={setActiveSecondary}
+        onSecondaryClick={onSecondaryClick}
       />
       <MobileNav 
         activeItem={activeSecondary || activeMain} 
-        setActiveItem={handleMobileSet} 
+        setActiveItem={handleMobileSet}
+        onSecondaryClick={onSecondaryClick}
       />
     </>
   );

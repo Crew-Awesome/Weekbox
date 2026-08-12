@@ -5,6 +5,8 @@ import Card from './components/atoms/card-mainmenu/card';
 import Titles from './components/atoms/titles/titles';
 import { AnimatedInput } from './components/atoms/animated-input/animated-input';
 import Searchbar from './components/molecules/searchbar/searchbar';
+import { Modal } from './components/molecules/modal/modal';
+import { ModalsFallback } from './components/molecules/modal/modals-fallback';
 
 /**
  * @description API global para acceder a los componentes compartidos de Weekbox.
@@ -30,6 +32,8 @@ const Shared = {
   molecules: {
     Card,
     Searchbar,
+    Modal,
+    ModalsFallback,
   },
 
   /**

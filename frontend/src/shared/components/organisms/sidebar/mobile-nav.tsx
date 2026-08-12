@@ -5,9 +5,10 @@ import { useActiveIndicator } from './use-active-indicator';
 interface MobileNavProps {
   activeItem: string | null;
   setActiveItem: (id: string) => void;
+  onSecondaryClick?: (id: string, el: HTMLElement | null) => void;
 }
 
-export const MobileNav: React.FC<MobileNavProps> = ({ activeItem, setActiveItem }) => {
+export const MobileNav: React.FC<MobileNavProps> = ({ activeItem, setActiveItem, onSecondaryClick }) => {
   const containerRef = useRef<HTMLElement>(null);
   const indicatorRef = useRef<HTMLDivElement>(null);
   const btnRefs = useRef<Record<string, HTMLButtonElement | null>>({});
@@ -61,7 +62,13 @@ export const MobileNav: React.FC<MobileNavProps> = ({ activeItem, setActiveItem 
       {/* Botón de configuración */}
       <button
         ref={(el) => { btnRefs.current['settings'] = el; }}
-        onClick={() => setActiveItem('settings')}
+        onClick={(e) => {
+          if (onSecondaryClick) {
+            onSecondaryClick('settings', e.currentTarget);
+          } else {
+            setActiveItem('settings');
+          }
+        }}
         className={`relative flex items-center justify-center w-14 h-14 rounded-full transition-colors duration-300 group outline-none z-10 ${
           activeItem === 'settings'
             ? "text-[var(--wb-icon-active)]"
