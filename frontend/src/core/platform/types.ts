@@ -18,14 +18,11 @@ declare global {
       run: (func: string, param?: any) => void;
       stop: () => void;
     };
-    ReactNativeWebView?: {
-      postMessage: (message: string) => void;
-    };
   }
 }
 
 // Tipo de plataforma activa en tiempo de ejecución.
-export type PlatformType = 'desktop' | 'mobile' | 'web';
+export type PlatformType = 'desktop' | 'web';
 
 /**
  * Definición del contrato común de la plataforma.
