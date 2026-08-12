@@ -1,7 +1,7 @@
 
 export default function Titles({ title }: { title: string }) {
     return (
-        <div className="flex items-stretch -mx-8 px-8 sm:mx-0 sm:px-6 my-6">
+        <div className="flex items-stretch -mx-8 px-0 sm:mx-0 sm:px-6 my-6">
             {/* Contenedor del texto con linea inferior */}
             <div className="flex flex-col justify-end border-b-[3px] border-white pr-3 shrink-0">
                 <h1 className="text-white font-bold text-2xl md:text-3xl whitespace-nowrap pb-1 leading-none">

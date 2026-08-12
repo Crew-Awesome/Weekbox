@@ -15,7 +15,7 @@ export const Home: React.FC = () => {
           />
         </div>
         
-        <div className="pt-8 px-8">
+        <div className="pt-2 sm:pt-8 px-8">
           <Shared.atoms.Titles title="All Mods" />
           <Shared.molecules.Card />
         </div>
