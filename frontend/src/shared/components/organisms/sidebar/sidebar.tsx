@@ -1,6 +1,10 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { DesktopSidebar } from "./desktop-sidebar";
 import { MobileNav } from "./mobile-nav";
+
+interface SidebarProps {
+  onNavigate?: (view: string) => void;
+}
 
 /**
  * @description Organismo Sidebar (Barra Lateral).
@@ -11,9 +15,15 @@ import { MobileNav } from "./mobile-nav";
  * 
  * @returns {React.FC} El componente funcional de la barra lateral.
  */
-export const Sidebar: React.FC = () => {
+export const Sidebar: React.FC<SidebarProps> = ({ onNavigate }) => {
   const [activeMain, setActiveMain] = useState("home");
   const [activeSecondary, setActiveSecondary] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (onNavigate) {
+      onNavigate(activeMain);
+    }
+  }, [activeMain, onNavigate]);
 
   const handleMobileSet = (id: string) => {
     if (id === 'settings' || id === 'info') {
