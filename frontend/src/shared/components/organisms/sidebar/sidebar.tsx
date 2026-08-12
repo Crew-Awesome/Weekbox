@@ -117,7 +117,7 @@ export const Sidebar: React.FC = () => {
       {/* SIDEBAR DE ESCRITORIO (Siempre visible por ahora) */}
       <aside className="block relative w-32 h-full drop-shadow-2xl">
         {/* SEGUNDA PARTE (z-index 10) */}
-        <div className="absolute inset-y-0 left-0 right-1 bg-[var(--wb-back-bg)] rounded-tr-[16px] rounded-br-[16px] z-10 flex flex-col justify-end items-center pb-6 pl-[28px]">
+        <div className="absolute inset-y-0 left-0 right-6 bg-[var(--wb-back-bg)] rounded-tr-[16px] rounded-br-[16px] z-10 flex flex-col justify-end items-end pb-6 pr-3">
           <div className="flex flex-col space-y-4">
             <button
               onClick={() => setActiveItem("info")}
@@ -171,7 +171,7 @@ export const Sidebar: React.FC = () => {
           </div>
           <div className="w-32 h-20 pointer-events-auto relative -mt-[1px]">
             <svg viewBox="0 0 80 64" fill="none" preserveAspectRatio="none" className="block w-full h-full">
-              <path d="M 80 0 C 80 5 78 7 75 10 L 33 54 C 30 57 28 59 28 64 L 0 64 L 0 0 Z" fill="var(--wb-front-bg)" />
+              <path d="M 80 0 C 80 32 20 32 20 64 L 0 64 L 0 0 Z" fill="var(--wb-front-bg)" />
             </svg>
           </div>
           <div className="w-8 flex-1 bg-[var(--wb-front-bg)] rounded-br-[16px] pointer-events-auto -mt-[1px]"></div>
