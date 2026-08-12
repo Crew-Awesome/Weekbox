@@ -1,23 +1,33 @@
 
-export default function Titles({ title }: {title:string}){
+export default function Titles({ title }: { title: string }) {
     return (
-        
-            <div className="relative ml-6 mr-6 h-30  sm:ml-6 sm:mr-6 sm:h-24 md:h-30 w-auto">
-            <h1 className=" absolute text-white font-bold mt-4 text-3xl sm:mt-4 sm:text-2xl md:text-3x whitespace-nowrap">
-            {title}
-            </h1>
-            <svg className=" absolute flex h-30 w-full" preserveAspectRatio="none" viewBox="0 0 100 24"> 
-                <polyline
-                points="-20,12 6,12 8,4 100,4 "
-                fill="none"
-                stroke="rgba(255,255,255)"
-                strokeWidth="3"
-                vectorEffect="non-scaling-stroke"
-                />
-            </svg>
+        <div className="flex w-full items-stretch px-6 my-6">
+            {/* Contenedor del texto con linea inferior */}
+            <div className="flex flex-col justify-end border-b-[3px] border-white pr-3 shrink-0">
+                <h1 className="text-white font-bold text-2xl md:text-3xl whitespace-nowrap pb-1 leading-none">
+                    {title}
+                </h1>
+            </div>
+            
+            {/* El escalon diagonal */}
+            <div className="w-6 shrink-0 relative overflow-visible">
+                <svg 
+                    className="absolute inset-0 w-full h-full overflow-visible" 
+                    viewBox="0 0 100 100" 
+                    preserveAspectRatio="none"
+                >
+                    <line 
+                        x1="0" y1="100" 
+                        x2="100" y2="0" 
+                        stroke="white" 
+                        strokeWidth="3" 
+                        vectorEffect="non-scaling-stroke" 
+                    />
+                </svg>
+            </div>
 
+            {/* Linea superior que continua hacia la derecha */}
+            <div className="flex-1 border-t-[3px] border-white min-w-[20px]"></div>
         </div>
-
-
-    )
+    );
 }
