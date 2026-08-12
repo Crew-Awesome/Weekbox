@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.1.8] - 2026-08-12
+
+### Fixed
+
+- Fixed diagnostic reports hiding the failed files and reasons from storage migrations.
+- Fixed Discord diagnostic messages exceeding embed limits by storing full reports in Supabase and sending a compact summary.
+
 ## [2.1.7] - 2026-08-11
 
 ### Fixed
@@ -842,7 +849,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Downloads for Windows, Linux, and macOS.
 - Packages for x64, ARM64, ARMHF, and Universal Macs where available.
 
-[unreleased]: https://github.com/Crew-Awesome/Weekbox/compare/v2.1.7...HEAD
+[unreleased]: https://github.com/Crew-Awesome/Weekbox/compare/v2.1.8...HEAD
+[2.1.8]: https://github.com/Crew-Awesome/Weekbox/compare/v2.1.7...v2.1.8
 [2.1.7]: https://github.com/Crew-Awesome/Weekbox/compare/v2.1.6...v2.1.7
 [2.1.6]: https://github.com/Crew-Awesome/Weekbox/compare/v2.1.5...v2.1.6
 [2.1.5]: https://github.com/Crew-Awesome/Weekbox/compare/v2.1.4...v2.1.5
