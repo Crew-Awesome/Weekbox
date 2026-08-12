@@ -1,16 +1,35 @@
-import { Grid2X2, Search } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Search } from "lucide-react";
 
-export default function Searchbar(){
+interface SearchbarProps {
+  placeholders?: string[];
+}
+
+export default function Searchbar({ placeholders = ["Search..."] }: SearchbarProps) {
+    const [placeholderIndex, setPlaceholderIndex] = useState(0);
+
+    useEffect(() => {
+        if (!placeholders || placeholders.length <= 1) return;
+        
+        const interval = setInterval(() => {
+            setPlaceholderIndex((prev) => (prev + 1) % placeholders.length);
+        }, 3000);
+        
+        return () => clearInterval(interval);
+    }, [placeholders]);
+
+    const currentPlaceholder = placeholders[placeholderIndex];
+
     return (
         <div className="flex items-start w-full md:w-auto h-25 rounded-t-none rounded-b-[16px] bg-[var(--wb-surface-container)] mx-0 md:mx-2 px-4 md:px-6">
-            <div className="bg-black rounded-2xl h-14 mt-5 w-[40%] md:w-[30%] flex items-center">
-                <Search className="w-10 h-10 ml-2 md:ml-4"></Search>
-                <input type="text" className="ml-3 w-full bg-transparent outline-none" />
+            <div className="bg-black rounded-2xl h-14 mt-5 w-[40%] flex items-center overflow-hidden">
+                <Search className="w-5 h-5 ml-4 text-[var(--wb-icon-default)] shrink-0"></Search>
+                <input 
+                    type="text" 
+                    className="ml-3 w-full h-full bg-transparent outline-none text-[var(--wb-text-main)] placeholder-[var(--wb-text-muted)] transition-all duration-300"
+                    placeholder={currentPlaceholder}
+                />
             </div>
-            <button className="ml-auto mt-5 h-14 w-14 bg-[var(--wb-surface-container-high)] hover:bg-[var(--wb-surface-container-highest)] rounded-md flex items-center justify-center transition-colors">
-                <Grid2X2 className="w-8 h-8 text-[var(--wb-icon-default)]"></Grid2X2>
-            </button>
         </div>
-
-    )
+    );
 }
