@@ -125,7 +125,7 @@ export default function Card() {
           className=" relative shadow-2xs bg-transparent rounded-none sm:rounded-[1rem] p-0 sm:p-3"
           style={{ fontFamily: "Manrope, sans-serif", fontWeight: 500 }}
         >
-          <div className="relative aspect-[16/9] w-full rounded-none sm:rounded-[1rem] overflow-hidden">
+          <div className="relative aspect-[16/9] w-full rounded-none sm:rounded-t-[1rem] overflow-hidden">
             {/* Contenedor de la máscara */}
             <div className="absolute left-0 top-0 w-[18%] aspect-square bg-[var(--wb-bg)] z-10 rounded-br-[8px]">
               <div className="relative z-10 w-full h-full flex items-center justify-center p-2">

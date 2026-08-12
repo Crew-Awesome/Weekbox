@@ -10,7 +10,7 @@ interface LayoutProps {
 }
 
 export const Layout: React.FC<LayoutProps> = ({ children, loadingTasks }) => {
-  const { currentView, setCurrentView, RenderView } = Utils.hooks.useViews("home");
+  const { setCurrentView, RenderView } = Utils.hooks.useViews("home");
 
   return (
     <div className="flex h-screen w-full bg-[var(--wb-bg)] text-[var(--wb-text-main)] overflow-hidden font-sans relative">
