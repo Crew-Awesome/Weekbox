@@ -182,6 +182,15 @@ function describeIssue(error) {
       tag: t("errors.storageDriveTag"),
     };
   }
+  if (lower.includes("storage migration paused")) {
+    return {
+      title: t("errors.storageDriveTitle"),
+      summary: t("errors.storageDriveSummary"),
+      actionLabel: t("errors.openStorageSettings"),
+      action: "storage",
+      tag: t("errors.storageDriveTag"),
+    };
+  }
   if (
     lower.includes("download server is unavailable") ||
     lower.includes("download server is temporarily unavailable") ||

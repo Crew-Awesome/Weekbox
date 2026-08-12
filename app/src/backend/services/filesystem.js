@@ -103,6 +103,7 @@ var _FileSystemService = class _FileSystemService {
     this.initPromise = null;
     this.startupMaintenancePromise = null;
     this.isStorageMoveInProgress = false;
+    this.storageMigrationFallback = null;
     this.activeDownload = null;
     this.abortController = null;
     this.isPaused = false;
@@ -177,7 +178,25 @@ var _FileSystemService = class _FileSystemService {
           defaultStoragePath,
         );
         if (legacyPath) {
-          storagePath = await this.migrateStorage(legacyPath, defaultStoragePath);
+          try {
+            storagePath = await this.migrateStorage(
+              legacyPath,
+              defaultStoragePath,
+            );
+          } catch (error) {
+            if (!(await this.isCompleteStorage(legacyPath))) throw error;
+            this.storageMigrationFallback = {
+              sourcePath: legacyPath,
+              targetPath: defaultStoragePath,
+              reportPath: error.storageMigration?.reportPath || null,
+              error: `WeekBox storage migration paused: ${error.message || String(error)}`,
+            };
+            console.warn(
+              "WeekBox storage migration paused; keeping the original library:",
+              error,
+            );
+            storagePath = trimPath(legacyPath);
+          }
         }
       }
 
@@ -365,7 +384,7 @@ var _FileSystemService = class _FileSystemService {
     }
     return `${selectedPath}/${STORAGE_DIRECTORY_NAME}`;
   }
-  async copyFileAndVerify(sourcePath, destinationPath) {
+  async copyFileAndVerify(sourcePath, destinationPath, { force = false } = {}) {
     if (
       typeof sourcePath !== "string" ||
       !sourcePath.trim() ||
@@ -378,7 +397,11 @@ var _FileSystemService = class _FileSystemService {
     const destinationStats = await Neutralino.filesystem
       .getStats(destinationPath)
       .catch(() => null);
-    if (destinationStats && Number(destinationStats.size) === Number(sourceStats.size)) {
+    if (
+      !force &&
+      destinationStats &&
+      Number(destinationStats.size) === Number(sourceStats.size)
+    ) {
       return;
     }
     let lastError;
@@ -458,15 +481,78 @@ var _FileSystemService = class _FileSystemService {
       return target;
     }
     const stage = `${target}.migration`;
-    await this.copyDirectoryWithProgress(source, stage, () => {});
+    const retryPaths = new Set();
+    const reportPath = `${stage}/migration-report.json`;
+    if (await this.api.exists(reportPath)) {
+      try {
+        const report = JSON.parse(await this.api.read(reportPath));
+        for (const failure of report?.failedFiles || []) {
+          if (failure?.path) retryPaths.add(String(failure.path));
+        }
+      } catch {}
+    }
+    const migration = await this.copyDirectoryWithProgress(
+      source,
+      stage,
+      () => {},
+      { continueOnError: true, forcePaths: retryPaths },
+    );
+    const failures = [...migration.failures];
+    let failureCount = migration.failedFileCount;
     const sourceSettings = (await this.api.exists(`${source}/settings.json`))
       ? `${source}/settings.json`
       : `${source}/data/settings.json`;
     if (await this.api.exists(sourceSettings)) {
-      await this.copyFileAndVerify(sourceSettings, `${stage}/settings.json`);
+      try {
+        await this.copyFileAndVerify(
+          sourceSettings,
+          `${stage}/settings.json`,
+          { force: retryPaths.has("settings.json") },
+        );
+      } catch (error) {
+        failureCount += 1;
+        failures.push({
+          path: "settings.json",
+          reason: error.message || String(error),
+        });
+      }
+    }
+    if (failureCount) {
+      await this.api
+        .write(
+          reportPath,
+          `${JSON.stringify(
+            {
+              version: 1,
+              status: "incomplete",
+              source,
+              target,
+              failedFiles: failures,
+              failedFileCount: failureCount,
+              totalFiles: migration.totalFiles,
+              copiedFiles: migration.copiedFiles,
+              updatedAt: new Date().toISOString(),
+            },
+            null,
+            2,
+          )}\n`,
+        )
+        .catch(() => {});
+      const error = new Error(
+        `WeekBox storage migration paused after ${failureCount} file failure${failureCount === 1 ? "" : "s"}. The original library was kept; retry from WeekBox storage settings after resolving the reported paths.`,
+      );
+      error.storageMigration = {
+        sourcePath: source,
+        targetPath: target,
+        stagePath: stage,
+        reportPath,
+        failedFiles: failures,
+      };
+      throw error;
     }
     await this.api.remove(`${stage}/data/settings.json`);
     await this.ensureStorageDirectoriesAt(stage);
+    await this.api.remove(`${stage}/migration-report.json`).catch(() => {});
     await this.writeStorageManifest(stage, source);
     if (await this.isCompleteStorage(stage) && await this.api.exists(`${stage}/settings.json`)) {
       if (await this.api.exists(target)) await this.api.move(target, storageBackupPath(target));
@@ -482,6 +568,11 @@ var _FileSystemService = class _FileSystemService {
       return target;
     }
     throw new Error("WeekBox storage migration did not pass verification");
+  }
+  consumeStorageMigrationFallback() {
+    const fallback = this.storageMigrationFallback;
+    this.storageMigrationFallback = null;
+    return fallback;
   }
   async ensureStorageDirectoriesAt(root) {
     await this.api.ensureDir(root);
@@ -690,31 +781,63 @@ var _FileSystemService = class _FileSystemService {
       this.isStorageMoveInProgress = false;
     }
   }
-  async copyDirectoryWithProgress(sourcePath, destinationPath, onProgress) {
+  async copyDirectoryWithProgress(
+    sourcePath,
+    destinationPath,
+    onProgress,
+    { continueOnError = false, forcePaths = new Set() } = {},
+  ) {
     const files = [];
     const directories = [];
+    const failures = [];
+    let failedFileCount = 0;
+    const recordFailure = (path, error) => {
+      failedFileCount += 1;
+      if (failures.length >= 100) return;
+      const relativePath = String(path)
+        .slice(sourcePath.length)
+        .replace(/^[\\/]+/, "");
+      failures.push({
+        path: relativePath || String(path),
+        reason: error?.message || String(error),
+      });
+    };
     onProgress({
       progress: 0,
       copiedFiles: 0,
       totalFiles: 0,
+      failedFiles: 0,
       phase: "preparing",
     });
     const collectFiles = async (directoryPath) => {
       directories.push(directoryPath);
-      const entries = getRealEntries(
-        await Neutralino.filesystem.readDirectory(directoryPath),
-      );
+      let entries;
+      try {
+        entries = getRealEntries(
+          await Neutralino.filesystem.readDirectory(directoryPath),
+        );
+      } catch (error) {
+        if (!continueOnError) throw error;
+        recordFailure(directoryPath, error);
+        return;
+      }
       for (const entry of entries) {
         const entryPath = `${directoryPath}/${entry.entry}`;
         if (entry.type === "DIRECTORY") {
           await collectFiles(entryPath);
         } else if (entry.type === "FILE") {
-          const stats = await Neutralino.filesystem.getStats(entryPath);
-          files.push({ path: entryPath, size: Number(stats.size) || 0 });
+          try {
+            const stats = await Neutralino.filesystem.getStats(entryPath);
+            files.push({ path: entryPath, size: Number(stats.size) || 0 });
+          } catch (error) {
+            if (!continueOnError) throw error;
+            recordFailure(entryPath, error);
+          }
           onProgress({
             progress: 0,
             copiedFiles: 0,
             totalFiles: files.length,
+            failedFiles: failedFileCount,
             phase: "preparing",
           });
         }
@@ -722,46 +845,73 @@ var _FileSystemService = class _FileSystemService {
     };
     await collectFiles(sourcePath);
     const totalBytes = files.reduce((total, file) => total + file.size, 0);
-    const fileSizes = new Map(files.map((file) => [file.path, file.size]));
     let copiedBytes = 0;
     let copiedFiles = 0;
+    let processedBytes = 0;
+    let processedFiles = 0;
     const reportProgress = () => {
       const progress = totalBytes
-        ? (copiedBytes / totalBytes) * 100
+        ? (processedBytes / totalBytes) * 100
         : files.length
-          ? (copiedFiles / files.length) * 100
+          ? (processedFiles / files.length) * 100
           : 100;
-      onProgress({ progress, copiedFiles, totalFiles: files.length });
+      onProgress({
+        progress,
+        copiedFiles,
+        totalFiles: files.length,
+        failedFiles: failedFileCount,
+        phase: "copying",
+      });
     };
     reportProgress();
     for (const sourceDirectory of directories) {
       const relativePath = sourceDirectory.slice(sourcePath.length);
-      await this.api.ensureDir(`${destinationPath}${relativePath}`);
+      try {
+        await this.api.ensureDir(`${destinationPath}${relativePath}`);
+      } catch (error) {
+        if (!continueOnError) throw error;
+        recordFailure(sourceDirectory, error);
+      }
     }
-    // ponytail: Windows native copies stay serial; re-enable bounded concurrency after reliability is measured.
-    const concurrency =
-      window.NL_OS === "Windows"
-        ? 1
-        : appSettings.get("multithreadStorageMoves")
-          ? 4
-          : 1;
+    const concurrency = appSettings.get("multithreadStorageMoves") ? 4 : 1;
     let nextFileIndex = 0;
     const copyNextFile = async () => {
       while (nextFileIndex < files.length) {
         const file = files[nextFileIndex++];
         const relativePath = file.path.slice(sourcePath.length);
-        await this.copyFileAndVerify(
-          file.path,
-          `${destinationPath}${relativePath}`,
-        );
-        copiedBytes += fileSizes.get(file.path) || 0;
-        copiedFiles += 1;
-        reportProgress();
+        try {
+          await this.copyFileAndVerify(
+            file.path,
+            `${destinationPath}${relativePath}`,
+            {
+              force: forcePaths.has(
+                relativePath.replace(/^[\\/]+/, ""),
+              ),
+            },
+          );
+          copiedBytes += file.size;
+          copiedFiles += 1;
+        } catch (error) {
+          if (!continueOnError) throw error;
+          recordFailure(file.path, error);
+        } finally {
+          processedBytes += file.size;
+          processedFiles += 1;
+          reportProgress();
+        }
       }
     };
     await Promise.all(
       Array.from({ length: Math.min(concurrency, files.length) }, copyNextFile),
     );
+    return {
+      failures,
+      failedFileCount,
+      totalFiles: files.length,
+      copiedFiles,
+      totalBytes,
+      copiedBytes,
+    };
   }
   async copyStorageDirectoriesWithProgress(
     sourceWeekboxPath,
