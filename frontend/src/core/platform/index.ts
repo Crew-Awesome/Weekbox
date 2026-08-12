@@ -9,7 +9,7 @@ import { WebAdapter } from './web.adapter';
 function createPlatformBridge(): IPlatformBridge {
   if (typeof window !== 'undefined') {
     /** Entorno de Escritorio (Neutralinojs / Node Extension) */
-    if (typeof (window as any).NL_PORT !== 'undefined' || typeof window.Neutralino !== 'undefined' || typeof window.NodeExtension !== 'undefined') {
+    if (typeof (window as any).NL_TOKEN !== 'undefined' && typeof window.Neutralino !== 'undefined') {
       return new DesktopAdapter();
     }
   }
