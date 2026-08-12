@@ -116,16 +116,16 @@ export default function Card() {
 
   return (
     <div 
-        className="grid gap-12 ml-6 mr-6 h-auto w-auto"
+        className="grid gap-12 -mx-8 sm:mx-6 h-auto w-auto"
         style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))' }}
     >
       {modstest.map((item, index) => (
         <div
           key={index}
-          className=" relative shadow-2xs bg-transparent rounded-[1rem] p-3"
+          className=" relative shadow-2xs bg-transparent rounded-none sm:rounded-[1rem] p-0 sm:p-3"
           style={{ fontFamily: "Manrope, sans-serif", fontWeight: 500 }}
         >
-          <div className="relative aspect-[16/9] w-full rounded-[1rem] overflow-hidden">
+          <div className="relative aspect-[16/9] w-full rounded-none sm:rounded-[1rem] overflow-hidden">
             {/* Contenedor de la máscara */}
             <div className="absolute left-0 top-0 w-[18%] aspect-square bg-[var(--wb-bg)] z-10 rounded-br-[8px]">
               <div className="relative z-10 w-full h-full flex items-center justify-center p-2">
@@ -154,7 +154,7 @@ export default function Card() {
             />
           </div>
 
-          <div className="mt-4 flex flex-col gap-1">
+          <div className="mt-4 px-8 sm:px-0 flex flex-col gap-1">
             <strong className="text-xl truncate block">{item.name}</strong>
             <h5 className="text-gray-400 text-sm truncate">{item.description}</h5>
           </div>
