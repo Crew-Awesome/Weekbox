@@ -1,10 +1,9 @@
 import React, { useRef } from 'react';
-import gsap from "gsap";
-import { useGSAP } from "@gsap/react";
 import { navItems, SettingsIcon } from './sidebar-icons';
+import { useActiveIndicator } from './use-active-indicator';
 
 interface MobileNavProps {
-  activeItem: string;
+  activeItem: string | null;
   setActiveItem: (id: string) => void;
 }
 
@@ -13,42 +12,12 @@ export const MobileNav: React.FC<MobileNavProps> = ({ activeItem, setActiveItem 
   const indicatorRef = useRef<HTMLDivElement>(null);
   const btnRefs = useRef<Record<string, HTMLButtonElement | null>>({});
 
-  useGSAP(() => {
-    const updatePosition = () => {
-      const activeBtn = btnRefs.current[activeItem];
-      if (activeBtn && indicatorRef.current && containerRef.current) {
-        const btnRect = activeBtn.getBoundingClientRect();
-        const containerRect = containerRef.current.getBoundingClientRect();
-        
-        // Calculamos posiciones exactas relativas al contenedor
-        const xPos = btnRect.left - containerRect.left;
-        const yPos = btnRect.top - containerRect.top;
-        
-        gsap.to(indicatorRef.current, {
-          x: xPos,
-          y: yPos,
-          width: btnRect.width,
-          height: btnRect.height,
-          opacity: 1,
-          scale: 1,
-          duration: 0.5,
-          ease: "elastic.out(1, 0.75)",
-          overwrite: "auto",
-        });
-      } else if (indicatorRef.current) {
-        gsap.to(indicatorRef.current, {
-          opacity: 0,
-          scale: 0.5,
-          duration: 0.3,
-          overwrite: "auto",
-        });
-      }
-    };
-
-    updatePosition();
-    window.addEventListener('resize', updatePosition);
-    return () => window.removeEventListener('resize', updatePosition);
-  }, { dependencies: [activeItem], scope: containerRef });
+  useActiveIndicator({
+    activeId: activeItem,
+    btnRefs,
+    indicatorRef,
+    containerRef,
+  });
 
   return (
     <nav 

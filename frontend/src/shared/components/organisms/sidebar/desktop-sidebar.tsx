@@ -1,8 +1,7 @@
 import React, { useRef } from 'react';
-import gsap from 'gsap';
-import { useGSAP } from '@gsap/react';
 import launcherIcon from "/assets/icons/app/launcher-icon.png";
 import { navItems, InfoIcon, SettingsIcon } from './sidebar-icons';
+import { useActiveIndicator } from './use-active-indicator';
 
 interface DesktopSidebarProps {
   activeMain: string;
@@ -16,34 +15,12 @@ export const DesktopSidebar: React.FC<DesktopSidebarProps> = ({ activeMain, setA
   const indicatorRef = useRef<HTMLDivElement>(null);
   const btnRefs = useRef<Record<string, HTMLButtonElement | null>>({});
 
-  useGSAP(() => {
-    const updatePosition = (isResize = false) => {
-      const activeBtn = btnRefs.current[activeMain];
-      if (activeBtn && indicatorRef.current && navRef.current) {
-        const btnRect = activeBtn.getBoundingClientRect();
-        const navRect = navRef.current.getBoundingClientRect();
-        
-        const xPos = btnRect.left - navRect.left;
-        const yPos = btnRect.top - navRect.top;
-        
-        gsap.to(indicatorRef.current, {
-          x: xPos,
-          y: yPos,
-          width: btnRect.width,
-          height: btnRect.height,
-          opacity: 1,
-          duration: isResize ? 0 : 0.5,
-          ease: "elastic.out(1, 0.75)",
-          overwrite: "auto",
-        });
-      }
-    };
-
-    updatePosition();
-    const handleResize = () => updatePosition(true);
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, { dependencies: [activeMain], scope: navRef });
+  useActiveIndicator({
+    activeId: activeMain,
+    btnRefs,
+    indicatorRef,
+    containerRef: navRef,
+  });
 
   return (
     <aside className="hidden md:block relative w-32 h-full drop-shadow-2xl">
