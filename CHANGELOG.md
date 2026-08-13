@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- Fixed startup keeping existing WeekBox storage in place instead of moving it to `WeekBoxLibrary`.
+
 ## [2.1.8] - 2026-08-12
 
 ### Fixed

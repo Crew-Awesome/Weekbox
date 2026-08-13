@@ -177,32 +177,7 @@ var _FileSystemService = class _FileSystemService {
           savedLegacyPath || legacyParentPath,
           defaultStoragePath,
         );
-        if (legacyPath) {
-          try {
-            storagePath = await this.migrateStorage(
-              legacyPath,
-              defaultStoragePath,
-            );
-          } catch (error) {
-            if (!(await this.isCompleteStorage(legacyPath))) throw error;
-            this.storageMigrationFallback = {
-              sourcePath: legacyPath,
-              targetPath: defaultStoragePath,
-              stagePath: error.storageMigration?.stagePath || null,
-              reportPath: error.storageMigration?.reportPath || null,
-              failedFiles: error.storageMigration?.failedFiles || [],
-              failedFileCount: error.storageMigration?.failedFileCount || 0,
-              totalFiles: error.storageMigration?.totalFiles || 0,
-              copiedFiles: error.storageMigration?.copiedFiles || 0,
-              error: `WeekBox storage migration paused: ${error.message || String(error)}`,
-            };
-            console.warn(
-              "WeekBox storage migration paused; keeping the original library:",
-              error,
-            );
-            storagePath = trimPath(legacyPath);
-          }
-        }
+        if (legacyPath) storagePath = trimPath(legacyPath);
       }
 
       storagePath ||= defaultStoragePath;
