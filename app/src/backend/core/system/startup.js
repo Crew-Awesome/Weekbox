@@ -23,6 +23,76 @@ import { firstRunStorageModal } from "../../../ui/js/firstRunStorageModal.js";
 import { firstRunLanguageModal } from "../../../ui/js/firstRunLanguageModal.js";
 import { i18n, t } from "../../../ui/js/i18n/index.js";
 
+const SINGLE_INSTANCE_MUTEX = "Global\\WeekBox-com.weekbox.app";
+
+function encodePowerShellCommand(script) {
+  const bytes = new Uint8Array(script.length * 2);
+  for (let index = 0; index < script.length; index += 1) {
+    const code = script.charCodeAt(index);
+    bytes[index * 2] = code & 0xff;
+    bytes[index * 2 + 1] = code >> 8;
+  }
+  return btoa(String.fromCharCode(...bytes));
+}
+
+async function focusWeekBoxWindow() {
+  try {
+    if (typeof Neutralino.window.show === "function") {
+      await Neutralino.window.show();
+    }
+    await Neutralino.window.focus();
+  } catch {}
+}
+
+async function ensureSingleInstance() {
+  if (window.NL_OS !== "Windows") return true;
+  const parentPid = Number(window.NL_PID);
+  if (!Number.isInteger(parentPid) || parentPid <= 0) return true;
+
+  // ponytail: Windows named mutex bridge; add a native extension for Unix locking if needed.
+  const script = `$created = $false\n$mutex = [System.Threading.Mutex]::new($false, '${SINGLE_INSTANCE_MUTEX}', [ref]$created)\n$owned = $false\ntry { $owned = $mutex.WaitOne(0) } catch [System.Threading.AbandonedMutexException] { $owned = $true }\nif (-not $owned) { [Console]::Out.WriteLine('duplicate'); exit 2 }\n[Console]::Out.WriteLine('acquired')\ntry { while (Get-Process -Id ${parentPid} -ErrorAction SilentlyContinue) { Start-Sleep -Milliseconds 500 } } finally { $mutex.ReleaseMutex(); $mutex.Dispose() }`;
+  let process;
+  try {
+    process = await Neutralino.os.spawnProcess(
+      `powershell.exe -NoLogo -NoProfile -NonInteractive -ExecutionPolicy Bypass -EncodedCommand ${encodePowerShellCommand(script)}`,
+    );
+  } catch (error) {
+    console.warn("Could not start the WeekBox single-instance guard", error);
+    return true;
+  }
+
+  return new Promise((resolve) => {
+    let settled = false;
+    let timeoutHandle;
+    const finish = (isPrimary) => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timeoutHandle);
+      Neutralino.events.off("spawnedProcess", handler);
+      resolve(isPrimary);
+    };
+    const handler = (event) => {
+      if (event.detail.id !== process.id) return;
+      const output = String(event.detail.data || "").toLowerCase();
+      if (event.detail.action === "stdOut" && output.includes("acquired")) {
+        finish(true);
+      } else if (
+        event.detail.action === "stdOut" &&
+        output.includes("duplicate")
+      ) {
+        finish(false);
+      } else if (event.detail.action === "exit") {
+        finish(true);
+      }
+    };
+    timeoutHandle = setTimeout(() => {
+      console.warn("The WeekBox single-instance guard did not respond in time");
+      finish(true);
+    }, 5000);
+    Neutralino.events.on("spawnedProcess", handler).catch(() => finish(true));
+  });
+}
+
 function installGlobalErrorReporter() {
   if (window.__weekboxErrorReporterInstalled) return;
   window.__weekboxErrorReporterInstalled = true;
@@ -318,9 +388,15 @@ async function startApp() {
     startupLoader.setPhase(t("startup.startingServices"), 8);
     Neutralino.init();
     patchNeutralinoMessageBox();
+    Neutralino.events.on("weekbox:focus", () => void focusWeekBoxWindow());
+    if (!(await ensureSingleInstance())) {
+      await Neutralino.app.broadcast("weekbox:focus").catch(() => {});
+      await Neutralino.app.exit().catch(() => {});
+      return;
+    }
     void startupLoader.initVersion();
     networkStatus.init();
-    await Neutralino.window.focus().catch(() => {});
+    await focusWeekBoxWindow();
     const setWindowFocus = (isFocused) => {
       if (isFocused) {
         document.body.classList.remove("window-unfocused");

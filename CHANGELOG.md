@@ -11,6 +11,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Added an unread count for new newsletter posts.
 
+### Fixed
+
+- WeekBox no longer opens a second copy on Windows.
+- App updates no longer treat `resources.neu` as a regular archive.
+
 ## [2.1.9] - 2026-08-12
 
 ### Fixed

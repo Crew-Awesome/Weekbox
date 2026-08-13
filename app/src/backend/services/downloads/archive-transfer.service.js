@@ -1488,6 +1488,7 @@ async function downloadArchive({
   sourceType,
   onDiagnostic,
   expectedSize = 0,
+  validateArchive = true,
 }) {
   if (!String(url || "").trim()) {
     throw new Error("This download does not have a valid link");
@@ -1589,11 +1590,17 @@ async function downloadArchive({
     await finalizeDownloadedArchive(partPath, outPath);
     const stats = await waitForDownloadedArchive(outPath);
     onProgress?.("Verifying downloaded archive...", 98);
-    await verifyDownloadedArchiveContent(outPath, verifiedRemoteFileSize);
+    await verifyDownloadedArchiveContent(
+      outPath,
+      verifiedRemoteFileSize,
+      validateArchive,
+    );
     onDiagnostic?.({
       resolvedUrl: url,
       downloadedSize: stats.size,
-      archiveFormat: await detectArchiveFormat(outPath),
+      archiveFormat: validateArchive
+        ? await detectArchiveFormat(outPath)
+        : "binary",
     });
     return stats;
   };
@@ -1654,7 +1661,11 @@ async function downloadArchive({
   }
 }
 
-async function verifyDownloadedArchiveContent(archivePath, expectedSize = 0) {
+async function verifyDownloadedArchiveContent(
+  archivePath,
+  expectedSize = 0,
+  validateArchive = true,
+) {
   const stats = await Neutralino.filesystem.getStats(archivePath);
   if (stats.size === 0) {
     throw new Error("The downloaded archive is empty (0 bytes).");
@@ -1737,6 +1748,7 @@ async function verifyDownloadedArchiveContent(archivePath, expectedSize = 0) {
       }
     }
   }
+  if (!validateArchive) return stats;
   const archiveFormat = /\.dmg$/i.test(String(archivePath))
     ? "dmg"
     : await detectArchiveFormat(archivePath);
