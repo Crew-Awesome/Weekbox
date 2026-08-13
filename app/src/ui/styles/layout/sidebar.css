@@ -135,6 +135,26 @@
   flex-shrink: 0;
 }
 
+.sidebar__unread-badge {
+  align-items: center;
+  background: var(--primary);
+  border-radius: 999px;
+  color: var(--on-primary);
+  display: inline-flex;
+  flex-shrink: 0;
+  font-size: 0.7rem;
+  font-weight: 800;
+  justify-content: center;
+  line-height: 1;
+  margin-left: auto;
+  min-width: 20px;
+  padding: 4px 6px;
+}
+
+.sidebar__unread-badge[hidden] {
+  display: none;
+}
+
 .sidebar__divider {
   height: 1px;
   background-color: var(--outline-variant);

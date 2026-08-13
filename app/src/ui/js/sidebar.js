@@ -61,7 +61,11 @@ export const sidebar = {
     );
     this.setupResizer();
     this.setupNavigation();
-    this.viewChangeListener = (event) => this.syncActive(event.detail);
+    this.viewChangeListener = (event) => {
+      this.syncActive(event.detail);
+      if (event.detail === "home")
+        appEvents.dispatchEvent(new CustomEvent("news:refresh-badge"));
+    };
     appEvents.addEventListener("view:loaded", this.viewChangeListener);
     this.setupBrandButton();
     this.networkStatusListener = () => {

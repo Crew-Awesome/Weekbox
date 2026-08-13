@@ -15,6 +15,7 @@ import { applyDominantColor } from "../utils/media/extract-color.util.js";
 const NEWS_SITE_URL = "https://fnfweekbox.vercel.app";
 const NEWS_FEED_URL = `${NEWS_SITE_URL}/api/news`;
 const NEWS_CACHE_KEY = "weekbox_news_feed_v1";
+const NEWS_SEEN_KEY = "weekbox_news_seen_v1";
 const NEWS_REQUEST_TIMEOUT = 8000;
 
 function safeNewsUrl(value) {
@@ -223,6 +224,45 @@ export const newsView = {
     }
   },
 
+  updateUnreadBadge(posts) {
+    const badge = document.getElementById("newsletter-unread");
+    const validPosts = (Array.isArray(posts) ? posts : []).filter(
+      (post) => post && post.slug && post.title,
+    );
+    if (!badge || !validPosts.length) return;
+
+    let seenSlug = "";
+    try {
+      seenSlug = localStorage.getItem(NEWS_SEEN_KEY) || "";
+      if (!seenSlug) {
+        localStorage.setItem(NEWS_SEEN_KEY, String(validPosts[0].slug));
+        badge.hidden = true;
+        return;
+      }
+    } catch {
+      badge.hidden = true;
+      return;
+    }
+
+    const unread = validPosts.findIndex(
+      (post) => String(post.slug) === seenSlug,
+    );
+    const count = unread < 0 ? validPosts.length : unread;
+    badge.textContent = count > 99 ? "99+" : String(count);
+    badge.hidden = count === 0;
+  },
+
+  markNewsRead(posts) {
+    const firstPost = (Array.isArray(posts) ? posts : []).find(
+      (post) => post?.slug,
+    );
+    if (!firstPost) return;
+    try {
+      localStorage.setItem(NEWS_SEEN_KEY, String(firstPost.slug));
+    } catch {}
+    this.updateUnreadBadge(posts);
+  },
+
   render(payload) {
     if (!this.grid) return;
     this.grid.replaceChildren();
@@ -301,11 +341,16 @@ export const newsView = {
     }
   },
 
-  async load() {
-    if (!this.grid || !this.status) return;
+  async load({ badgeOnly = false } = {}) {
+    if (!badgeOnly && (!this.grid || !this.status)) return;
     const cached = this.readCache();
-    if (cached) this.render(cached);
-    else this.setStatus(t("news.loading"));
+    if (cached) {
+      this.updateUnreadBadge(cached.posts);
+      if (!badgeOnly) {
+        this.render(cached);
+        this.markNewsRead(cached.posts);
+      }
+    } else if (!badgeOnly) this.setStatus(t("news.loading"));
     this.request?.abort();
     const controller = new AbortController();
     this.request = controller;
@@ -323,10 +368,16 @@ export const newsView = {
         throw new Error("Unsupported news feed");
       }
       this.writeCache(payload);
-      this.render(payload);
-      this.setStatus("");
+      this.updateUnreadBadge(payload.posts);
+      if (!badgeOnly) {
+        this.render(payload);
+        this.markNewsRead(payload.posts);
+        this.setStatus("");
+      }
     } catch (error) {
-      if (cached) {
+      if (badgeOnly) {
+        console.warn("WeekBox news badge unavailable", error);
+      } else if (cached) {
         this.setStatus(t("news.refreshFailedCached"), "error");
       } else {
         this.render({ posts: [] });
@@ -342,6 +393,9 @@ export const newsView = {
 };
 
 export function registerNewsView() {
+  appEvents.addEventListener("news:refresh-badge", () =>
+    void newsView.load({ badgeOnly: true }),
+  );
   appEvents.addEventListener("view:loaded", (event) => {
     if (event.detail === "news") newsView.init();
     else newsView.destroy();

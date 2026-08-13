@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Added an unread count for new newsletter posts.
+
 ## [2.1.9] - 2026-08-12
 
 ### Fixed
