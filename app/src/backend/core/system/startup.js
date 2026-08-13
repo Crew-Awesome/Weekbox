@@ -60,9 +60,7 @@ async function completeFirstRunStorageSetup(defaultStoragePath, hadSettings) {
   let completed = choice === "default";
   if (choice === "new" || choice === "existing") {
     const selectedPath = await Neutralino.os.showFolderDialog(
-      choice === "existing"
-        ? t("storage.chooseExistingFolder")
-        : t("storage.chooseContainingFolder"),
+      t("common.chooseFolder"),
       { defaultPath: FS.basePath },
     );
     if (selectedPath) {
@@ -79,18 +77,11 @@ async function completeFirstRunStorageSetup(defaultStoragePath, hadSettings) {
             "WARNING",
           );
       } else {
-        if (/(?:^|[\\/])weekbox[\\/]*$/i.test(selectedPath)) {
-          await Neutralino.os.showMessageBox(
-            t("storage.chooseParentTitle"),
-            t("storage.chooseParentMessage"),
-            "OK",
-            "WARNING",
-          );
-        } else if (await FS.hasStorageFolder(selectedPath)) {
+        if (existing || (await FS.hasStorageFolder(selectedPath))) {
           const replaceChoice = await Neutralino.os.showMessageBox(
             t("storage.moveFilesTitle"),
             t("storage.moveFilesMessage", {
-              path: `${selectedPath.replace(/[\\/]+$/, "")}/WeekBoxLibrary`,
+              path: selectedPath,
             }),
             "YES_NO",
             "QUESTION",

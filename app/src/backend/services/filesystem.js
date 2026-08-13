@@ -355,14 +355,33 @@ var _FileSystemService = class _FileSystemService {
   }
   getStorageDestinationPath(path) {
     const selectedPath = trimPath(path);
-    if (!selectedPath) return "";
-    if (isLibraryFolder(selectedPath)) return selectedPath;
-    if (isWeekBoxFolder(selectedPath)) {
+    return selectedPath;
+  }
+  async assertStoragePathAllowed(path) {
+    const selectedPath = trimPath(path);
+    const selectedComparablePath = normalizeComparablePath(selectedPath);
+    const appPath = normalizeComparablePath(window.NL_PATH);
+    const runningExecutable = trimPath(window.NL_ARGS?.[0]);
+    const executableDirectory = normalizeComparablePath(
+      runningExecutable ? getParentPath(runningExecutable) : "",
+    );
+    const executableName =
+      runningExecutable.split("/").pop() ||
+      (window.NL_OS === "Windows" ? "WeekBox.exe" : "WeekBox");
+    const hasAppFile = await Promise.all(
+      ["resources.neu", executableName].map((file) =>
+        this.api.exists(`${selectedPath}/${file}`),
+      ),
+    );
+    if (
+      selectedComparablePath === appPath ||
+      selectedComparablePath === executableDirectory ||
+      hasAppFile.some(Boolean)
+    ) {
       throw new Error(
-        "Choose a folder for the new WeekBoxLibrary, not the old WeekBox folder.",
+        "Choose a storage folder outside the WeekBox application folder.",
       );
     }
-    return `${selectedPath}/${STORAGE_DIRECTORY_NAME}`;
   }
   async copyFileAndVerify(sourcePath, destinationPath, { force = false } = {}) {
     if (
@@ -605,7 +624,6 @@ var _FileSystemService = class _FileSystemService {
         return {
           basePath: candidate,
           weekboxPath: candidate,
-          legacy: !isLibraryFolder(candidate),
         };
       }
     }
@@ -633,16 +651,11 @@ var _FileSystemService = class _FileSystemService {
         "The selected folder does not contain a complete WeekBox library.",
       );
     }
-    const target = storage.legacy
-      ? `${getParentPath(storage.basePath)}/${STORAGE_DIRECTORY_NAME}`
-      : storage.basePath;
-    const selected = storage.legacy
-      ? await this.migrateStorage(storage.basePath, target)
-      : storage.basePath;
-    this.setStoragePaths(selected);
+    await this.assertStoragePathAllowed(storage.basePath);
+    this.setStoragePaths(storage.basePath);
     await this.ensureStorageDirectories();
     await this.ensureStorageManifest();
-    await this.selectSettingsPath(selected);
+    await this.selectSettingsPath(storage.basePath);
     return this.weekboxPath;
   }
   async moveStorageTo(basePath, onProgress = () => {}, options = {}) {
@@ -652,6 +665,7 @@ var _FileSystemService = class _FileSystemService {
     if (normalizeComparablePath(destinationBasePath) === normalizeComparablePath(this.basePath)) {
       return this.weekboxPath;
     }
+    await this.assertStoragePathAllowed(destinationBasePath);
     if (this.hasRunningProcesses()) {
       throw new Error("Close running engines before moving WeekBox files");
     }
@@ -661,7 +675,7 @@ var _FileSystemService = class _FileSystemService {
     }
     if (pathsOverlap(destinationBasePath, this.basePath)) {
       throw new Error(
-        "Choose a storage folder outside the current WeekBoxLibrary folder.",
+        "Choose a storage folder outside the current storage folder.",
       );
     }
     const destinationStagePath = `${destinationBasePath}.moving`;

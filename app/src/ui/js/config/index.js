@@ -477,7 +477,7 @@ export const configModal = {
     const button = document.getElementById("choose-storage-location");
     try {
       const selectedPath = await Neutralino.os.showFolderDialog(
-        t("storage.chooseParentDialog"),
+        t("common.chooseFolder"),
         { defaultPath: FS.basePath },
       );
       if (!selectedPath) return;
@@ -520,21 +520,11 @@ export const configModal = {
         location.reload();
         return;
       }
-      if (/(?:^|[\\/])weekbox[\\/]*$/i.test(selectedPath)) {
-        await Neutralino.os.showMessageBox(
-          t("storage.chooseParentTitle"),
-          t("storage.chooseParentMessage"),
-          "OK",
-          "WARNING",
-        );
-        return;
-      }
       if (await FS.hasStorageFolder(selectedPath)) {
-        const newWeekboxPath = `${selectedPath.replace(/[\\/]+$/, "")}/WeekBoxLibrary`;
         const replaceChoice = await Neutralino.os.showMessageBox(
           t("storage.moveFilesTitle"),
           t("storage.moveFilesMessage", {
-            path: await formatStoragePath(newWeekboxPath),
+            path: await formatStoragePath(selectedPath),
           }),
           "YES_NO",
           "QUESTION",
@@ -552,11 +542,10 @@ export const configModal = {
         this.completeStorageMoveToast();
         return;
       }
-      const newWeekboxPath = `${selectedPath.replace(/[\\/]+$/, "")}/WeekBoxLibrary`;
       const choice = await Neutralino.os.showMessageBox(
         t("storage.moveFilesTitle"),
         t("storage.moveFilesMessage", {
-          path: await formatStoragePath(newWeekboxPath),
+          path: await formatStoragePath(selectedPath),
         }),
         "YES_NO",
         "QUESTION",

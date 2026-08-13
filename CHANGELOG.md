@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - Fixed startup keeping existing WeekBox storage in place instead of moving it to `WeekBoxLibrary`.
+- Fixed storage selection allowing the chosen folder itself as the library root.
 
 ## [2.1.8] - 2026-08-12
 
