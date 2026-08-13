@@ -38,18 +38,6 @@ function pathsOverlap(left, right) {
   );
 }
 
-const STORAGE_DIRECTORY_NAME = "WeekBoxLibrary";
-
-function getDistinctStoragePath(rootPath, executablePath) {
-  const root = String(rootPath || "")
-    .trim()
-    .replace(/[\\/]+$/, "");
-  if (!root) return "";
-  const candidate = `${root}/${STORAGE_DIRECTORY_NAME}`;
-  if (!pathsOverlap(candidate, executablePath)) return candidate;
-  return `${root}/${STORAGE_DIRECTORY_NAME}-storage`;
-}
-
 function getRealEntries(entries) {
   return (Array.isArray(entries) ? entries : []).filter(
     (entry) => entry?.entry !== "." && entry?.entry !== "..",
@@ -78,11 +66,9 @@ function normalizeFolderName(value) {
 }
 
 export {
-  STORAGE_DIRECTORY_NAME,
   getParentPath,
   normalizeComparablePath,
   pathsOverlap,
-  getDistinctStoragePath,
   sanitizePathSegment,
   getRealEntries,
   getModFolderName,

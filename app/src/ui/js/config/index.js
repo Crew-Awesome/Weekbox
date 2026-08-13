@@ -387,7 +387,7 @@ export const configModal = {
     const label = document.getElementById("storage-location-path");
     if (label)
       label.textContent = await formatStoragePath(
-        FS.weekboxPath || "AppData/WeekBoxLibrary",
+        FS.weekboxPath || "AppData/WeekBox",
       );
   },
 

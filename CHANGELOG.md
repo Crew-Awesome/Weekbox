@@ -7,14 +7,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.1.10] - 2026-08-13
+
 ### Added
 
 - Added an unread count for new newsletter posts.
 
+### Changed
+
+- Expanded Italian error translations.
+
 ### Fixed
 
-- WeekBox no longer opens a second copy on Windows.
-- App updates no longer treat `resources.neu` as a regular archive.
+- Fixed Windows opening duplicate WeekBox windows and failing to focus the existing window.
+- Fixed app updates treating `resources.neu` as a regular archive.
+- Fixed startup stalls caused by multiple interface resource requests; delayed resources now retry before WeekBox gives up.
+- Fixed downloads reaching extraction with incomplete files, HTML responses, or invalid archives.
+- Fixed transient file-handoff races after downloads and extraction complete.
+- Fixed storage moves failing when extracted files take time to become visible.
+- Fixed macOS startup repeatedly requesting Documents access and stalling while opening the library.
+- Added download and archive details to diagnostic reports and stopped expected download failures from being reported as app errors.
+
+### Removed
+
+- Removed automatic migration and legacy probing for the old `WeekBoxLibrary` storage location.
 
 ## [2.1.9] - 2026-08-12
 
@@ -865,7 +881,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Downloads for Windows, Linux, and macOS.
 - Packages for x64, ARM64, ARMHF, and Universal Macs where available.
 
-[unreleased]: https://github.com/Crew-Awesome/Weekbox/compare/v2.1.9...HEAD
+[unreleased]: https://github.com/Crew-Awesome/Weekbox/compare/v2.1.10...HEAD
+[2.1.10]: https://github.com/Crew-Awesome/Weekbox/compare/v2.1.9...v2.1.10
 [2.1.9]: https://github.com/Crew-Awesome/Weekbox/compare/v2.1.8...v2.1.9
 [2.1.8]: https://github.com/Crew-Awesome/Weekbox/compare/v2.1.7...v2.1.8
 [2.1.7]: https://github.com/Crew-Awesome/Weekbox/compare/v2.1.6...v2.1.7

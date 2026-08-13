@@ -345,7 +345,7 @@
   "errors.certificateSummary": "WeekBox è stato bloccato da Windows prima che il download poteva iniziare. Controlla il tuo orario, poi prova un'altra rete. Un VPN, proxy, o una scansione HTTPS da un antivirus può anche aver bloccato il controllo del certificato di sicurezza.",
   "errors.certificateTag": "Controllo certificato Windows",
   "errors.oneDriveTitle": "Scegli una cartella locale",
-  "errors.oneDriveSummary": "WeekBox non può sicuramente scaricare engine su OneDrive. Invece usa una cartella locale come C:\\WeekBoxLibrary.",
+  "errors.oneDriveSummary": "WeekBox non può sicuramente scaricare engine su OneDrive. Invece usa una cartella locale come C:\\WeekBox.",
   "errors.storageLocationTag": "Posizione di memoria",
   "errors.writeFolderTitle": "WeekBox non può leggere questa cartella",
   "errors.writeFolderSummary": "Controlla che la tua cartella sia locale, leggibile, e non è in uso da nessun'altro programma.",

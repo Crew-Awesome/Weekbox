@@ -14,20 +14,7 @@ router = {
       );
     }
     try {
-      const templateFiles = [
-        "src/ui/html/index.html",
-        "src/ui/html/context-menu.html",
-        "src/ui/html/engine-manager.html",
-        "src/ui/html/engine-update-modal.html",
-        "src/ui/html/engine-launch-button.html",
-        "src/ui/html/engine-release-notes.html",
-        "src/ui/html/home-carousel-slide.html",
-        "src/ui/html/home-grid-loader.html",
-        "src/ui/html/home-offline.html",
-        "src/ui/html/home-search-dropdown.html",
-        "src/ui/html/dependency-review-modal.html",
-        "src/ui/html/download-choice-modal.html",
-      ];
+      const templateFiles = ["src/ui/html/index.html"];
       const parser = new DOMParser();
       const requiredTemplateIds = [
         "tpl-mainModal",
@@ -35,28 +22,38 @@ router = {
         "tpl-home",
         "tpl-sidebar",
       ];
-      await Promise.allSettled(
-        templateFiles.map(async (file) => {
+      for (const file of templateFiles) {
+        let loaded = false;
+        for (let attempt = 1; attempt <= 3 && !loaded; attempt += 1) {
           try {
             const controller = new AbortController();
-            const timeoutId = setTimeout(() => controller.abort(), 2500);
-            const response = await fetch(file, { signal: controller.signal });
+            const timeoutId = setTimeout(() => controller.abort(), 5000);
+            const response = await fetch(file, {
+              signal: controller.signal,
+              cache: "no-store",
+            });
             clearTimeout(timeoutId);
-            if (response.ok) {
-              const html = await response.text();
-              const doc = parser.parseFromString(html, "text/html");
-              const templates = doc.querySelectorAll("template");
-              templates.forEach((t) => {
-                if (t.id && !document.getElementById(t.id)) {
-                  document.body.appendChild(document.importNode(t, true));
-                }
-              });
-            }
+            if (!response.ok) throw new Error(`HTTP ${response.status}`);
+            const html = await response.text();
+            const doc = parser.parseFromString(html, "text/html");
+            const templates = doc.querySelectorAll("template");
+            templates.forEach((t) => {
+              if (t.id && !document.getElementById(t.id)) {
+                document.body.appendChild(document.importNode(t, true));
+              }
+            });
+            loaded = true;
           } catch (fetchErr) {
-            console.warn(`Could not load template file: ${file}`, fetchErr);
+            if (attempt === 3) {
+              console.warn(`Could not load template file: ${file}`, fetchErr);
+            } else {
+              await new Promise((resolve) =>
+                setTimeout(resolve, attempt * 250),
+              );
+            }
           }
-        }),
-      );
+        }
+      }
       const missingTemplates = requiredTemplateIds.filter(
         (id) => !document.getElementById(id),
       );

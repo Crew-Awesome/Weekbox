@@ -383,7 +383,6 @@ function patchNeutralinoMessageBox() {
 
 async function startApp() {
   let startupStep = "starting native services";
-  let storageMigrationFallback = null;
   try {
     startupLoader.setPhase(t("startup.startingServices"), 8);
     Neutralino.init();
@@ -480,7 +479,6 @@ async function startApp() {
     startupLoader.setPhase(t("startup.openingLibrary"), 42);
     startupStep = "preparing the WeekBox library";
     await FS.init({ deferMaintenance: true });
-    storageMigrationFallback = FS.consumeStorageMigrationFallback();
     await appSettings.setDataPath(FS.dataPath);
     try {
       await completeFirstRunStorageSetup(defaultStoragePath, hadSettings);
@@ -524,21 +522,6 @@ async function startApp() {
       console.warn("Background library maintenance failed", error),
     );
     await startupLoader.complete();
-    if (storageMigrationFallback) {
-      const reportPath = storageMigrationFallback.reportPath
-        ? ` Migration report: ${storageMigrationFallback.reportPath}`
-        : "";
-      const migrationError = new Error(
-        `${storageMigrationFallback.error}${reportPath}`,
-      );
-      migrationError.storageMigration = storageMigrationFallback;
-      errorHandler.show({
-        error: migrationError,
-        action: t("startup.startWeekBoxAction"),
-        storagePath: FS.weekboxPath,
-        diagnostics: { storageMigration: storageMigrationFallback },
-      });
-    }
     await openLaunchDeepLink().catch((error) =>
       console.warn("Could not open the WeekBox launch link", error),
     );

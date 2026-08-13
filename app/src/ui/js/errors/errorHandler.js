@@ -120,60 +120,53 @@ function getDiagnosticStackTrace(error) {
   return `No JavaScript stack trace was provided by Neutralino.\nNative error details:\n${nativeDetails}`;
 }
 
-function optionalDiagnosticText(value, maximumLength = 2_000) {
-  return typeof value === "string" ? value.trim().slice(0, maximumLength) : "";
+function getDownloadDiagnostics(error) {
+  const details = {};
+  for (const [name, source] of [
+    ["download", error?.downloadDiagnostics],
+    ["archive", error?.archiveDiagnostics],
+  ]) {
+    if (!source || typeof source !== "object") continue;
+    details[name] = Object.fromEntries(
+      Object.entries(source)
+        .filter(
+          ([, value]) => value !== undefined && value !== null && value !== "",
+        )
+        .map(([key, value]) => [
+          key,
+          typeof value === "string" ? value.slice(0, 2_000) : value,
+        ]),
+    );
+  }
+  return Object.keys(details).length ? details : null;
 }
 
-function getStorageMigrationDiagnostics(diagnostics) {
-  const migration = diagnostics?.storageMigration;
-  if (!migration || typeof migration !== "object") return null;
-  const failedFiles = Array.isArray(migration.failedFiles)
-    ? migration.failedFiles.slice(0, 20).map((failure) => ({
-        path: optionalDiagnosticText(failure?.path, 2_000),
-        reason: optionalDiagnosticText(failure?.reason, 1_000),
-      }))
-    : [];
-  return {
-    sourcePath: optionalDiagnosticText(migration.sourcePath),
-    targetPath: optionalDiagnosticText(migration.targetPath),
-    stagePath: optionalDiagnosticText(migration.stagePath),
-    reportPath: optionalDiagnosticText(migration.reportPath),
-    failedFileCount: Number.isFinite(Number(migration.failedFileCount))
-      ? Number(migration.failedFileCount)
-      : failedFiles.length,
-    totalFiles: Number.isFinite(Number(migration.totalFiles))
-      ? Number(migration.totalFiles)
-      : null,
-    copiedFiles: Number.isFinite(Number(migration.copiedFiles))
-      ? Number(migration.copiedFiles)
-      : null,
-    failedFiles,
-  };
-}
-
-function formatStorageMigrationDiagnostics(migration) {
-  if (!migration) return null;
-  const failureLines = migration.failedFiles
-    .filter((failure) => failure.path || failure.reason)
-    .map(({ path, reason }) => `- ${path || "Unknown path"}: ${reason || "Unknown reason"}`);
-  return [
-    "Storage migration diagnostics:",
-    migration.sourcePath ? `Source: ${migration.sourcePath}` : null,
-    migration.targetPath ? `Target: ${migration.targetPath}` : null,
-    migration.stagePath ? `Stage: ${migration.stagePath}` : null,
-    migration.reportPath ? `Report: ${migration.reportPath}` : null,
-    `Files: ${migration.copiedFiles ?? "?"}/${migration.totalFiles ?? "?"} copied; ${migration.failedFileCount} failed`,
-    failureLines.length
-      ? `Failed entries:\n${failureLines.join("\n")}`
-      : null,
-  ]
-    .filter(Boolean)
-    .join("\n");
+function formatDownloadDiagnostics(error) {
+  const diagnostics = getDownloadDiagnostics(error);
+  if (!diagnostics) return null;
+  return `Download diagnostics:\n${JSON.stringify(diagnostics, null, 2)}`;
 }
 
 function describeIssue(error) {
   const message = getMessage(error);
   const lower = message.toLowerCase();
+
+  if (
+    lower.includes("integrity verification") ||
+    lower.includes("not a recognized archive") ||
+    lower.includes("web page instead of the archive") ||
+    lower.includes("devolvió una página web") ||
+    lower.includes("devolviÃ³ una pÃ¡gina web") ||
+    lower.includes("file sharing and storage made simple")
+  ) {
+    const isArchiveTestFailure = lower.includes("integrity verification");
+    return {
+      title: t("errors.unpackTitle"),
+      summary: t("errors.unpackSummary"),
+      tag: t("errors.archiveProblemTag"),
+      reportable: isArchiveTestFailure ? undefined : false,
+    };
+  }
 
   if (
     lower.includes("crypt_e_no_revocation_check") ||
@@ -252,12 +245,15 @@ function describeIssue(error) {
     lower.includes("download server closed the connection") ||
     lower.includes("download process ended unexpectedly") ||
     lower.includes("download was interrupted") ||
-    lower.includes("download was incomplete")
+    lower.includes("download was incomplete") ||
+    lower.includes("downloaded archive was incomplete") ||
+    lower.includes("complete temporary download after it completed")
   ) {
     return {
       title: t("errors.downloadUnavailableTitle"),
       summary: t("errors.downloadUnavailableSummary"),
       tag: t("errors.downloadUnavailableTag"),
+      reportable: false,
     };
   }
   if (lower.includes("exit code 22") || /\b(?:403|404)\b/.test(lower)) {
@@ -265,6 +261,7 @@ function describeIssue(error) {
       title: t("errors.downloadUnavailableTitle"),
       summary: t("errors.downloadUnavailableSummary"),
       tag: t("errors.downloadUnavailableTag"),
+      reportable: false,
     };
   }
   /**
@@ -406,9 +403,7 @@ function createReport({
   locale,
   disks,
   network,
-  diagnostics,
 }) {
-  const migration = getStorageMigrationDiagnostics(diagnostics);
   return [
     "WeekBox support report",
     `Time: ${new Date().toLocaleString()}`,
@@ -425,9 +420,9 @@ function createReport({
     item ? `Item: ${item}` : null,
     version ? `Version: ${version}` : null,
     storagePath ? `Storage path: ${storagePath}` : null,
-    formatStorageMigrationDiagnostics(migration),
     `Issue: ${issue.tag}`,
     `What happened: ${issue.summary}`,
+    formatDownloadDiagnostics(error),
     `Error: ${getDiagnosticErrorMessage(error)}`,
     `Stack trace:\n${getDiagnosticStackTrace(error)}`,
   ]
@@ -438,7 +433,7 @@ function createReport({
 async function submitDiagnosticReport(context, issue) {
   const errorMessage = getDiagnosticErrorMessage(context.error);
   const stackTrace = getDiagnosticStackTrace(context.error);
-  const migration = getStorageMigrationDiagnostics(context.diagnostics);
+  const downloadDiagnostics = getDownloadDiagnostics(context.error);
   const [operatingSystem, architecture, locale, disks, network] =
     await Promise.all([
       getOperatingSystem(),
@@ -467,7 +462,9 @@ async function submitDiagnosticReport(context, issue) {
       summary: issue.summary,
       errorMessage,
       stackTrace,
-      diagnostics: migration ? { storageMigration: migration } : null,
+      diagnostics: downloadDiagnostics
+        ? { download: downloadDiagnostics }
+        : null,
       reportedAt: new Date().toISOString(),
     }),
   });

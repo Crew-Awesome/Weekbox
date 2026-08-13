@@ -345,7 +345,7 @@
   "errors.certificateSummary": "WeekBox wurde vor dem Start des Downloads von Windows blockiert. Überprüfe dein Datum und deine Uhrzeit und probiere ein anderes Netzwerk. Ein VPN, ein Proxy oder ein HTTPS-Scanner eines Antivirenprogramms kann die Zertifikatsüberprüfung ebenfalls blockieren.",
   "errors.certificateTag": "Windows-Zertifikatsüberprüfung",
   "errors.oneDriveTitle": "Lokalen Speicherort wählen",
-  "errors.oneDriveSummary": "WeekBox kann die Dateien nicht sicher in OneDrive verlegen. Nutze lieber einen lokalen Speicherort wie diesen: C:\\WeekBoxLibrary.",
+  "errors.oneDriveSummary": "WeekBox kann die Dateien nicht sicher in OneDrive verlegen. Nutze lieber einen lokalen Speicherort wie diesen: C:\\WeekBox.",
   "errors.storageLocationTag": "Speicherort",
   "errors.writeFolderTitle": "WeekBox kann nicht in den Ordner schreiben",
   "errors.writeFolderSummary": "Prüfe, ob der Speicherort lokal und schreibbar ist und nicht von einem anderen Programm verwendet wird.",

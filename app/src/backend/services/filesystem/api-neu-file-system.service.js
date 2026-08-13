@@ -186,15 +186,26 @@ var APIneuFileSystem = {
     const normalizedSource = String(sourcePath).replace(/\\/g, "/");
     const normalizedDest = String(destinationPath).replace(/\\/g, "/");
 
-    if (!(await this.exists(normalizedSource))) {
+    const maxAttempts =
+      options.maxAttempts || (window.NL_OS === "Windows" ? 8 : 5);
+    let sourceExists = false;
+    // ponytail: bounded source-visibility polling; use native filesystem events if delayed extraction persists.
+    for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+      if (await this.exists(normalizedSource)) {
+        sourceExists = true;
+        break;
+      }
       if (await this.exists(normalizedDest)) return;
+      if (attempt < maxAttempts) {
+        await new Promise((resolve) => setTimeout(resolve, attempt * 150));
+      }
+    }
+    if (!sourceExists) {
       throw new Error(
         `WeekBox could not move ${normalizedSource} because it does not exist.`,
       );
     }
 
-    const maxAttempts =
-      options.maxAttempts || (window.NL_OS === "Windows" ? 8 : 5);
     let lastError = null;
     for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
       try {

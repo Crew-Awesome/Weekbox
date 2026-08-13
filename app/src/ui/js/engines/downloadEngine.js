@@ -114,7 +114,7 @@ export const downloadEngine = {
 
     if (FS.isOneDriveStorage()) {
       throw new Error(
-        "WeekBox storage is inside OneDrive. Choose a local folder outside OneDrive, such as C:\\WeekBoxLibrary, before downloading engines.",
+        "WeekBox storage is inside OneDrive. Choose a local folder outside OneDrive, such as C:\\WeekBox, before downloading engines.",
       );
     }
 

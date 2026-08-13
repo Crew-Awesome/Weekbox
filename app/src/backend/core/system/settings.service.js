@@ -45,7 +45,7 @@ var SETTINGS_FILE_NAME,
 SETTINGS_FILE_NAME = "settings.json";
 SETTINGS_SCHEMA_VERSION = 1;
 LEGACY_PREFIX = "weekbox_setting_";
-SETTINGS_PATH_KEY = "weekbox-settings-data-path";
+SETTINGS_PATH_KEY = "weekbox-settings-data-path-v2";
 settingDefinitions = {
   language: { type: "string", defaultValue: "en" },
   firstRunLanguageSetupComplete: { type: "boolean", defaultValue: false },

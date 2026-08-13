@@ -336,6 +336,7 @@ function isTransientDownloadError(error) {
 
 function isRetryableArchiveValidationError(error) {
   if (error?.archiveDiagnostics?.retryable === true) return true;
+  if (error?.downloadDiagnostics?.retryable === true) return true;
   return /downloaded archive (?:is empty|was incomplete)|web page instead of the archive/i.test(
     String(error?.message || error),
   );
@@ -1310,8 +1311,7 @@ async function downloadSingleArchive({
     () => Neutralino.filesystem.remove(outPath).catch(() => {}),
     (error) =>
       isTransientDownloadError(error) ||
-      (isNightlyLink &&
-        Number(error?.downloadDiagnostics?.httpStatus) === 404),
+      (isNightlyLink && Number(error?.downloadDiagnostics?.httpStatus) === 404),
   );
 }
 
@@ -1424,9 +1424,18 @@ async function waitForDownloadedArchive(outPath, expectedSize = 0) {
     }
     if (attempt < 8) await wait(attempt * 250);
   }
-  throw new Error(
+  const error = new Error(
     `WeekBox could not access a complete temporary download after it completed. ${lastError?.message || lastError || "Unknown filesystem error"}`,
   );
+  error.downloadDiagnostics = {
+    stage: "file-handoff",
+    retryable: true,
+    expectedSize: Number(expectedSize) || 0,
+    lastError: String(
+      lastError?.message || lastError || "Unknown filesystem error",
+    ).slice(0, 500),
+  };
+  throw error;
 }
 
 async function finalizeDownloadedArchive(partPath, outPath) {
