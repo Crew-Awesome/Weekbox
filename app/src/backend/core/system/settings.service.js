@@ -39,6 +39,7 @@ var SETTINGS_FILE_NAME,
   SETTINGS_SCHEMA_VERSION,
   LEGACY_PREFIX,
   SETTINGS_PATH_KEY,
+  LEGACY_SETTINGS_PATH_KEY,
   settingDefinitions,
   appSettings;
 
@@ -46,6 +47,7 @@ SETTINGS_FILE_NAME = "settings.json";
 SETTINGS_SCHEMA_VERSION = 1;
 LEGACY_PREFIX = "weekbox_setting_";
 SETTINGS_PATH_KEY = "weekbox-settings-data-path-v2";
+LEGACY_SETTINGS_PATH_KEY = "weekbox-settings-data-path";
 settingDefinitions = {
   language: { type: "string", defaultValue: "en" },
   firstRunLanguageSetupComplete: { type: "boolean", defaultValue: false },
@@ -79,7 +81,9 @@ appSettings = {
   async resolveDataPath(defaultDataPath) {
     try {
       return (
-        (await Neutralino.storage.getData(SETTINGS_PATH_KEY)) || defaultDataPath
+        (await Neutralino.storage.getData(SETTINGS_PATH_KEY)) ||
+        (await Neutralino.storage.getData(LEGACY_SETTINGS_PATH_KEY)) ||
+        defaultDataPath
       );
     } catch {
       return defaultDataPath;

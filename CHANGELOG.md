@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- Existing WeekBox libraries are reused when the default folder points at the installed app or an empty storage folder.
+
 ## [2.1.10] - 2026-08-13
 
 ### Added

@@ -155,10 +155,15 @@ var _FileSystemService = class _FileSystemService {
     if (typeof Neutralino !== "undefined") {
       const defaultStoragePath = await this.getDefaultStoragePath();
       const savedPath = appSettings.get("storagePath");
-      let storagePath =
-        savedPath && (await this.isCompleteStorage(savedPath))
-          ? trimPath(savedPath)
-          : null;
+      let storagePath = null;
+      if (savedPath && (await this.isCompleteStorage(savedPath))) {
+        try {
+          await this.assertStoragePathAllowed(savedPath);
+          storagePath = trimPath(savedPath);
+        } catch {}
+      }
+
+      storagePath ||= await this.findFallbackStorage();
 
       storagePath ||= defaultStoragePath;
       this.setStoragePaths(storagePath);
@@ -270,6 +275,45 @@ var _FileSystemService = class _FileSystemService {
         : `${fallbackPath}/WeekBox`;
     }
     throw new Error("WeekBox could not find a writable storage location");
+  }
+  async findFallbackStorage() {
+    const candidates = [];
+    const add = (path) => {
+      const value = trimPath(path);
+      if (
+        value &&
+        !candidates.some(
+          (item) =>
+            normalizeComparablePath(item) === normalizeComparablePath(value),
+        )
+      ) {
+        candidates.push(value);
+      }
+    };
+    const addRootCandidates = (root) => {
+      const value = trimPath(root);
+      if (!value) return;
+      add(`${value}/WeekBoxLibrary`);
+      add(`${value}/WeekBoxLibrary-storage`);
+      add(`${value}/WeekBoxData/WeekBox`);
+      add(`${value}/WeekBox`);
+    };
+
+    addRootCandidates(getParentPath(window.NL_PATH));
+    addRootCandidates(
+      await Neutralino.os.getEnv("LOCALAPPDATA").catch(() => ""),
+    );
+    addRootCandidates(await Neutralino.os.getPath("documents").catch(() => ""));
+    addRootCandidates(await Neutralino.os.getEnv("HOME").catch(() => ""));
+
+    for (const candidate of candidates) {
+      if (!(await this.isCompleteStorage(candidate))) continue;
+      try {
+        await this.assertStoragePathAllowed(candidate);
+        return candidate;
+      } catch {}
+    }
+    return null;
   }
   async isCompleteStorage(path) {
     const root = trimPath(path);
