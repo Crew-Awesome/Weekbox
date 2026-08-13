@@ -7,9 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.1.11] - 2026-08-13
+
 ### Fixed
 
-- Existing WeekBox libraries are reused when the default folder points at the installed app or an empty storage folder.
+- **IMPORTANT: Existing WeekBox libraries are restored after upgrading from 2.1.10.**
 
 ## [2.1.10] - 2026-08-13
 
@@ -885,7 +887,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Downloads for Windows, Linux, and macOS.
 - Packages for x64, ARM64, ARMHF, and Universal Macs where available.
 
-[unreleased]: https://github.com/Crew-Awesome/Weekbox/compare/v2.1.10...HEAD
+[unreleased]: https://github.com/Crew-Awesome/Weekbox/compare/v2.1.11...HEAD
+[2.1.11]: https://github.com/Crew-Awesome/Weekbox/compare/v2.1.10...v2.1.11
 [2.1.10]: https://github.com/Crew-Awesome/Weekbox/compare/v2.1.9...v2.1.10
 [2.1.9]: https://github.com/Crew-Awesome/Weekbox/compare/v2.1.8...v2.1.9
 [2.1.8]: https://github.com/Crew-Awesome/Weekbox/compare/v2.1.7...v2.1.8
