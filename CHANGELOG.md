@@ -7,10 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.1.9] - 2026-08-12
+
 ### Fixed
 
-- Fixed startup keeping existing WeekBox storage in place instead of moving it to `WeekBoxLibrary`.
-- Fixed storage selection allowing the chosen folder itself as the library root.
+- Existing storage folders stay where they are when WeekBox starts.
+- You can choose any folder as the WeekBox storage folder.
 
 ## [2.1.8] - 2026-08-12
 
@@ -854,7 +856,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Downloads for Windows, Linux, and macOS.
 - Packages for x64, ARM64, ARMHF, and Universal Macs where available.
 
-[unreleased]: https://github.com/Crew-Awesome/Weekbox/compare/v2.1.8...HEAD
+[unreleased]: https://github.com/Crew-Awesome/Weekbox/compare/v2.1.9...HEAD
+[2.1.9]: https://github.com/Crew-Awesome/Weekbox/compare/v2.1.8...v2.1.9
 [2.1.8]: https://github.com/Crew-Awesome/Weekbox/compare/v2.1.7...v2.1.8
 [2.1.7]: https://github.com/Crew-Awesome/Weekbox/compare/v2.1.6...v2.1.7
 [2.1.6]: https://github.com/Crew-Awesome/Weekbox/compare/v2.1.5...v2.1.6
