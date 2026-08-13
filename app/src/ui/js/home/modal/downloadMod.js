@@ -60,27 +60,18 @@ export const downloadMod = {
   /**
    * @fix 2026-08-05T03:31:10.964Z - Fix NE_FS_MOVEERR during mod entries move on Windows
    */
-  // ponytail: serialize Windows moves; restore parallelism only with a measured filesystem need.
-  async moveEntries(entries, sourceDir, destinationDir, concurrency = 1) {
+  // Keep extracted entry moves serial because concurrent Neutralino moves can fail on Windows.
+  async moveEntries(entries, sourceDir, destinationDir) {
     const queue = entries.filter(
       (entry) => entry.entry !== "." && entry.entry !== "..",
     );
     await FS.api.ensureDir(destinationDir);
-    let nextIndex = 0;
-    const worker = async () => {
-      while (nextIndex < queue.length) {
-        const entry = queue[nextIndex];
-        nextIndex += 1;
-        await FS.api.move(
-          `${sourceDir}/${entry.entry}`,
-          `${destinationDir}/${entry.entry}`,
-        );
-      }
-    };
-
-    await Promise.all(
-      Array.from({ length: Math.min(concurrency, queue.length) }, worker),
-    );
+    for (const entry of queue) {
+      await FS.api.move(
+        `${sourceDir}/${entry.entry}`,
+        `${destinationDir}/${entry.entry}`,
+      );
+    }
   },
 
   async hasExtractedFiles(path) {

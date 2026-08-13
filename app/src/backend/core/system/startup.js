@@ -49,7 +49,7 @@ async function ensureSingleInstance() {
   const parentPid = Number(window.NL_PID);
   if (!Number.isInteger(parentPid) || parentPid <= 0) return true;
 
-  // ponytail: Windows named mutex bridge; add a native extension for Unix locking if needed.
+  // The guard is Windows-specific; add a native Unix lock if duplicate launches become a real issue.
   const script = `$created = $false\n$mutex = [System.Threading.Mutex]::new($false, '${SINGLE_INSTANCE_MUTEX}', [ref]$created)\n$owned = $false\ntry { $owned = $mutex.WaitOne(0) } catch [System.Threading.AbandonedMutexException] { $owned = $true }\nif (-not $owned) { [Console]::Out.WriteLine('duplicate'); exit 2 }\n[Console]::Out.WriteLine('acquired')\ntry { while (Get-Process -Id ${parentPid} -ErrorAction SilentlyContinue) { Start-Sleep -Milliseconds 500 } } finally { $mutex.ReleaseMutex(); $mutex.Dispose() }`;
   let process;
   try {

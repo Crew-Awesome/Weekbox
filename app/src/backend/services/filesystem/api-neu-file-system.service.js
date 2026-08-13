@@ -189,7 +189,7 @@ var APIneuFileSystem = {
     const maxAttempts =
       options.maxAttempts || (window.NL_OS === "Windows" ? 8 : 5);
     let sourceExists = false;
-    // ponytail: bounded source-visibility polling; use native filesystem events if delayed extraction persists.
+    // Neutralino can expose extracted paths late; bounded polling avoids a move race.
     for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
       if (await this.exists(normalizedSource)) {
         sourceExists = true;
