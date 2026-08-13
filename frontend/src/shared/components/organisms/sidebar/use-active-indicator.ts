@@ -1,4 +1,4 @@
-import React, { RefObject } from 'react';
+import React, { type RefObject } from 'react';
 import gsap from 'gsap';
 import { useGSAP } from '@gsap/react';
 

@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from "react";
 import { DesktopSidebar } from "./desktop-sidebar";
 import { MobileNav } from "./mobile-nav";
+import { SidebarModals } from "./modals/sidebar-modals";
+import Utils from '@utils';
 
 interface SidebarProps {
   onNavigate?: (view: string) => void;
@@ -8,17 +10,15 @@ interface SidebarProps {
 }
 
 /**
- * @description Organismo Sidebar (Barra Lateral).
- * Maneja la navegación principal de la aplicación y agrupa las acciones globales
- * (Inicio, Biblioteca, Explorar) en una interfaz interactiva y animada.
- * Utiliza SVG para crear la rampita y tiene dos niveles de profundidad
- * para tener elementos de configuración en un bloque visualmente separado.
- * 
- * @returns {React.FC} El componente funcional de la barra lateral.
+ * Sidebar Organism.
+ * Handles primary application navigation and groups global actions
+ * into an interactive interface.
  */
 export const Sidebar: React.FC<SidebarProps> = ({ onNavigate, onSecondaryClick }) => {
   const [activeMain, setActiveMain] = useState("home");
   const [activeSecondary, setActiveSecondary] = useState<string | null>(null);
+
+  const { morphModalData, openMorphModal, closeMorphModal } = Utils.hooks.useModals();
 
   useEffect(() => {
     if (onNavigate) {
@@ -35,6 +35,8 @@ export const Sidebar: React.FC<SidebarProps> = ({ onNavigate, onSecondaryClick }
     }
   };
 
+  const handleSecondaryClick = onSecondaryClick || openMorphModal;
+
   return (
     <>
       <DesktopSidebar 
@@ -42,12 +44,17 @@ export const Sidebar: React.FC<SidebarProps> = ({ onNavigate, onSecondaryClick }
         setActiveMain={setActiveMain} 
         activeSecondary={activeSecondary} 
         setActiveSecondary={setActiveSecondary}
-        onSecondaryClick={onSecondaryClick}
+        onSecondaryClick={handleSecondaryClick}
       />
       <MobileNav 
         activeItem={activeSecondary || activeMain} 
         setActiveItem={handleMobileSet}
-        onSecondaryClick={onSecondaryClick}
+        onSecondaryClick={handleSecondaryClick}
+      />
+      
+      <SidebarModals 
+        morphModalData={morphModalData} 
+        closeMorphModal={closeMorphModal} 
       />
     </>
   );

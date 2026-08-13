@@ -1,0 +1,26 @@
+import React from 'react';
+import { InfoModal } from './info-modal';
+import { ConfigModal } from './config-modal';
+import type { MorphModalData } from '../../../../../../utils/hooks/use-modals';
+
+interface SidebarModalsProps {
+  morphModalData: MorphModalData | null;
+  closeMorphModal: () => void;
+}
+
+export const SidebarModals: React.FC<SidebarModalsProps> = ({ morphModalData, closeMorphModal }) => {
+  return (
+    <>
+      <InfoModal 
+        isOpen={morphModalData?.id === 'info'} 
+        onClose={closeMorphModal}
+        sourceElement={morphModalData?.element || null}
+      />
+      <ConfigModal 
+        isOpen={morphModalData?.id === 'settings'} 
+        onClose={closeMorphModal}
+        sourceElement={morphModalData?.element || null}
+      />
+    </>
+  );
+};

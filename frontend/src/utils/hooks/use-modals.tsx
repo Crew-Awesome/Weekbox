@@ -2,18 +2,22 @@ import { useState, useEffect } from 'react';
 
 export interface MorphModalData {
   id: string;
-  element: HTMLElement;
+  element: HTMLElement | null;
 }
 
 /**
- * @description Hook especializado en gestionar el estado global y local
- * de todos los modales de la aplicación (Global, Morphing, etc.)
+ * Hook for managing the local and global state of the application's modals.
+ * 
+ * @returns {Object} State and setters for global and morphing modals.
  */
 export const useModals = () => {
   const [isGlobalModalOpen, setIsGlobalModalOpen] = useState(false);
   const [morphModalData, setMorphModalData] = useState<MorphModalData | null>(null);
 
-  // Escucha de eventos globales para abrir el modal genérico (útil desde consola)
+  /**
+   * Listens for global events to open the generic modal.
+   * Useful for triggering the modal from outside React (e.g., console).
+   */
   useEffect(() => {
     const handleOpenModal = () => setIsGlobalModalOpen(true);
     window.addEventListener('open-modal', handleOpenModal);
@@ -25,7 +29,7 @@ export const useModals = () => {
     };
   }, []);
 
-  const openMorphModal = (id: string, element: HTMLElement) => {
+  const openMorphModal = (id: string, element: HTMLElement | null) => {
     setMorphModalData({ id, element });
   };
 

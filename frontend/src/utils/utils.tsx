@@ -1,5 +1,6 @@
 import { useViews } from './hooks/use-views';
 import { useModals } from './hooks/use-modals';
+import { useFlip } from './hooks/use-flip';
 
 /**
  * @description API global para acceder a las utilidades de Weekbox.
@@ -9,6 +10,7 @@ const Utils = {
   hooks: {
     useViews,
     useModals,
+    useFlip,
   }
 };
 

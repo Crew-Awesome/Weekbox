@@ -24,7 +24,6 @@ export const Layout: React.FC<LayoutProps> = ({ children, loadingTasks }) => {
         </div>
       </main>
 
-      <Shared.molecules.ModalsFallback />
     </div>
   );
 };
