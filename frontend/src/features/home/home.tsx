@@ -3,8 +3,8 @@ import Shared from '@shared';
 
 const MOCK_MODS = [
   {
-    name: "Friday Night Funkin': Mod Title",
-    description: "Mod Description that's very long but very very very long",
+    name: "Friday Night Funkidsasadsdaasdsadsaaaaaaaaaaaaaasdasdasdasdasdassdasddn': Mod Title",
+    description: "Mod asdsdaadsDescription that's very long but very very very long",
     img: "/assets/images/placeholder-mini.jpg",
     icon: "/assets/icons/categories/codename.png",
     showIcon: true,
@@ -63,8 +63,8 @@ export const Home: React.FC = () => {
           <Shared.atoms.Titles title="All Mods" />
           
           <div
-            className="grid gap-12 -mx-8 sm:mx-6 h-auto w-auto"
-            style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))' }}
+            className="grid gap-4 sm:gap-6 -mx-8 sm:mx-6 h-auto w-auto"
+            style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))' }}
           >
             {EXTENDED_MOCKS.map((item, index) => (
               <Shared.molecules.Card 

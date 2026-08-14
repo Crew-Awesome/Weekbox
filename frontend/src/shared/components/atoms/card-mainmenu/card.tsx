@@ -167,14 +167,26 @@ export const Card: React.FC<CardProps> = ({
         </div>
       )}
 
-      <div className="mt-4 px-0 sm:px-0 flex flex-col gap-1">
-        <strong className="text-xl truncate block">{title}</strong>
+      <div className="mt-4 px-0 sm:px-0 flex flex-col gap-1 h-20">
+        {/* Title: Uses line-clamp-2 to allow up to 2 lines without a fixed height, letting the description slide up. */}
+        <strong 
+          className="text-xl font-bold leading-snug line-clamp-2"
+        >
+          {title}
+        </strong>
+        {/* Description: Sits directly under the title. */}
         {description && (
-          <h5 className="text-gray-400 text-sm truncate">{description}</h5>
+          <h5 className="text-[var(--wb-on-surface-variant)] text-sm truncate">
+            {description}
+          </h5>
         )}
       </div>
 
-      {children && <div className="mt-2">{children}</div>}
+      {children && (
+        <div className="mt-2">
+          {children}
+        </div>
+      )}
     </div>
   );
 };
