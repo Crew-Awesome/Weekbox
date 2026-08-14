@@ -166,7 +166,7 @@ export default function Card() {
             </div>
 
             {/* Contenedor de la máscara */}
-            <div className="absolute left-0 top-0 w-[18%] aspect-square rounded-tl-none bg-[var(--wb-bg)] z-10 rounded-br-[8px]">
+            <div className="absolute left-0 top-0 w-[18%] aspect-square rounded-tl-none rounded-br-[8px] bg-[var(--wb-bg)] z-10">
               <div className="relative z-10 w-full h-full flex items-center justify-center p-2">
                 <img
                   className="object-contain w-full h-full block"
@@ -174,13 +174,13 @@ export default function Card() {
                 />
               </div>
               {/* Curva derecha */}
-              <div className="absolute top-0 left-full w-2 h-2 pointer-events-none">
-                <div className="absolute bottom-0 right-0 w-full h-full bg-transparent rounded-tl-full "></div>
-              </div>
+              <svg className="absolute top-0 left-full w-[8px] h-[8px] text-[var(--wb-bg)] pointer-events-none" viewBox="0 0 8 8" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M0 0 H8 A8 8 0 0 0 0 8 V0 Z" fill="currentColor" />
+              </svg>
               {/* Curva inferior */}
-              <div className="absolute top-full left-0 w-2 h-2 pointer-events-none">
-                <div className="absolute bottom-0 right-0 w-full h-full bg-transparent rounded-tl-full"></div>
-              </div>
+              <svg className="absolute top-full left-0 w-[8px] h-[8px] text-[var(--wb-bg)] pointer-events-none" viewBox="0 0 8 8" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M0 0 H8 A8 8 0 0 0 0 8 V0 Z" fill="currentColor" />
+              </svg>
             </div>
           </div>
 
