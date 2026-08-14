@@ -8,7 +8,7 @@ import { WebAdapter } from './web.adapter';
  */
 function createPlatformBridge(): IPlatformBridge {
   if (typeof window !== 'undefined') {
-    /** Entorno de Escritorio (Neutralinojs / Node Extension) */
+    /** Desktop Environment (Neutralinojs / Node Extension) */
     if (typeof (window as any).NL_TOKEN !== 'undefined' && typeof window.Neutralino !== 'undefined') {
       return new DesktopAdapter();
     }
@@ -23,7 +23,7 @@ function createPlatformBridge(): IPlatformBridge {
  */
 export const platform: IPlatformBridge = createPlatformBridge();
 
-// Inicializamos la plataforma automáticamente para simplificar su uso
+// Automatically initialize the platform to simplify usage
 platform.initialize();
 
 export type * from './types';

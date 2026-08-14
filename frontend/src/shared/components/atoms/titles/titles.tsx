@@ -3,13 +3,14 @@ export default function Titles({ title }: { title: string }) {
     return (
         <div className="flex items-stretch -mx-8 px-0 sm:mx-0 sm:px-6 my-6">
             {/* Contenedor del texto con linea inferior */}
+            {/* Text container with bottom line */}
             <div className="flex flex-col justify-end border-b-[3px] border-white pr-3 shrink-0">
                 <h1 className="text-white font-bold text-2xl md:text-3xl whitespace-nowrap pb-1 leading-none">
                     {title}
                 </h1>
             </div>
             
-            {/* El escalon diagonal */}
+            {/* Diagonal step */}
             <div className="w-6 shrink-0 relative overflow-visible">
                 <svg 
                     className="absolute inset-0 w-full h-full overflow-visible" 
@@ -26,7 +27,7 @@ export default function Titles({ title }: { title: string }) {
                 </svg>
             </div>
 
-            {/* Linea superior que continua hacia la derecha */}
+            {/* Top line continuing to the right */}
             <div className="flex-1 border-t-[3px] border-white min-w-[20px]"></div>
         </div>
     );

@@ -25,7 +25,7 @@ export const MobileNav: React.FC<MobileNavProps> = ({ activeItem, setActiveItem,
       ref={containerRef}
       className="flex md:hidden fixed bottom-6 left-1/2 -translate-x-1/2 w-[22rem] max-w-[95%] h-[4.5rem] bg-[var(--wb-front-bg)]/70 backdrop-blur-xl rounded-full drop-shadow-[0_8px_16px_rgba(0,0,0,0.6)] items-center justify-center gap-4 z-50 px-4"
     >
-      {/* Indicador animado GSAP */}
+      {/* Active Indicator */}
       <div 
         ref={indicatorRef}
         className="absolute top-0 left-0 rounded-full bg-[var(--wb-item-active)] shadow-lg pointer-events-none"
@@ -56,10 +56,10 @@ export const MobileNav: React.FC<MobileNavProps> = ({ activeItem, setActiveItem,
         );
       })}
       
-      {/* Separador */}
+      {/* Divider */}
       <div className="w-[1px] h-8 bg-white/20 mx-1 z-10" />
       
-      {/* Botón de configuración */}
+      {/* Settings Button */}
       <button
         ref={(el) => { btnRefs.current['settings'] = el; }}
         onClick={(e) => {

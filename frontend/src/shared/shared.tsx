@@ -42,7 +42,7 @@ const Shared = {
   organisms: {
     /**
      * @description Barra lateral principal de la aplicación.
-     * Contiene el logo, la navegación de las secciones (Home, Library, Explore) y 
+     * Contiene el logo, la navegación de las secciones (Home, Library, Engines) y 
      * configuraciones rápidas, utilizando un diseño en capas (z-index) y curvas vectoriales.
      */
     Sidebar,

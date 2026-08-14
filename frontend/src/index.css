@@ -96,7 +96,7 @@ button:active {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: var(--wb-primary); /* o var(--wb-outline-variant) dependiendo de preferencia, usar primary hace que resalte */
+  background: var(--wb-primary); /* Use primary to make it stand out */
   border-radius: 2px;
 }
 

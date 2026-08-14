@@ -10,7 +10,7 @@ export interface ProgressBarProps {
  * Muestra el porcentaje y la acción actual que se está ejecutando.
  */
 export const ProgressBar: React.FC<ProgressBarProps> = ({ progress, actionText }) => {
-  // Asegurarnos que el progreso esté entre 0 y 100
+  // Ensure progress is clamped between 0 and 100
   const clampedProgress = Math.min(Math.max(progress, 0), 100);
 
   return (

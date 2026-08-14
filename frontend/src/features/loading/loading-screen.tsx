@@ -9,11 +9,11 @@ export interface LoadingTask {
 }
 
 export interface LoadingScreenProps {
-  /** Indica si la pantalla de carga debe mostrarse (para retrocompatibilidad) */
+  /** Indicates if the loading screen should be shown (for backwards compatibility) */
   isLoading?: boolean;
-  /** Tareas reales a ejecutar durante la carga */
+  /** Actual tasks to execute during loading */
   tasks?: LoadingTask[];
-  /** Callback opcional al finalizar la carga */
+  /** Optional callback upon loading completion */
   onComplete?: () => void;
 }
 
@@ -30,7 +30,7 @@ export const LoadingScreen: React.FC<LoadingScreenProps> = ({
   const [progress, setProgress] = useState(0);
   const [action, setAction] = useState('Iniciando entorno...');
   
-  // Estados para controlar el desmontaje suave
+  // States to control smooth unmounting
   const [isFadingOut, setIsFadingOut] = useState(false);
   const [isMounted, setIsMounted] = useState(isLoading);
 
@@ -45,12 +45,12 @@ export const LoadingScreen: React.FC<LoadingScreenProps> = ({
         if (isCancelled) return;
         setIsMounted(false);
         onComplete?.();
-      }, 500); // 500ms para coincidir con la transición CSS
+      }, 500); // 500ms to match CSS transition
     };
     
     const runTasks = async () => {
       if (tasks.length === 0) {
-        // Si no hay tareas, completamos la carga directamente
+        // If no tasks, complete loading directly
         setProgress(100);
         setAction('¡Listo!');
         finishLoading();
@@ -67,13 +67,13 @@ export const LoadingScreen: React.FC<LoadingScreenProps> = ({
           await task.action();
         } catch (error) {
           console.error(`Error al ejecutar tarea de carga: ${task.name}`, error);
-          // Opcionalmente se podría manejar un estado de error en la UI,
-          // pero por ahora simplemente continuamos con la siguiente tarea xd.
+          // Optionally handle an error state in the UI,
+          // but for now just continue with the next task.
         }
         
         if (isCancelled) return;
         
-        // Actualizamos el progreso según las tareas completadas
+        // Update progress based on completed tasks
         const nextProgress = Math.round(((i + 1) / tasks.length) * 100);
         setProgress(nextProgress);
       }
@@ -104,11 +104,11 @@ export const LoadingScreen: React.FC<LoadingScreenProps> = ({
         backgroundRepeat: 'no-repeat'
       }}
     >
-      {/* Capa de oscurecimiento (Gradient) para que el texto de version resalte */}
+      {/* Darkening layer (Gradient) to make version text pop */}
       <div className="absolute inset-0 bg-gradient-to-t from-[#0e1415]/90 via-[#0e1415]/20 to-[#0e1415]/50 z-0" />
       <AppVersion />
       
-      {/* Barra de progreso */}
+      {/* Progress bar */}
       <div className="relative z-10 w-full px-8 md:px-32 flex justify-center">
         <ProgressBar progress={progress} actionText={action} />
       </div>

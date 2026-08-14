@@ -24,12 +24,12 @@ export class DesktopAdapter implements IPlatformBridge {
       neutralino.init();
       window.NODE = new NodeExt(true);
 
-      /** Escucha el resultado de pings desde la extensión Node.js */
+      /** Listens for ping results from the Node.js extension */
       neutralino.events.on('pingResult', (event: { detail: any }) => {
         this.emitLocalEvent('pingResult', event.detail);
       });
 
-      /** Notifica cuando el entorno nativo de Neutralino está listo */
+      /** Notifies when the Neutralino native environment is ready */
       neutralino.events.on('ready', () => {
         this._isReady = true;
         this.emitLocalEvent('ready', true);

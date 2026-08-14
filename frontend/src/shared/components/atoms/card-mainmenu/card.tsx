@@ -165,7 +165,7 @@ export default function Card() {
 
             </div>
 
-            {/* Contenedor de la máscara */}
+            {/* Mask Container */}
             <div className="absolute left-0 top-0 w-[18%] aspect-square rounded-tl-none rounded-br-[8px] bg-[var(--wb-bg)] z-10">
               <div className="relative z-10 w-full h-full flex items-center justify-center p-2">
                 <img

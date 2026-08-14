@@ -1,4 +1,6 @@
-// Declaraciones globales de tipos para las APIs nativas de Neutralino, Node.js y React Native WebView.
+/**
+ * Global type declarations for Neutralino, Node.js, and React Native WebView native APIs.
+ */
 declare global {
   interface Window {
     NODE?: {
@@ -21,7 +23,7 @@ declare global {
   }
 }
 
-// Tipo de plataforma activa en tiempo de ejecución.
+/** Active platform type at runtime */
 export type PlatformType = 'desktop' | 'web';
 
 /**
@@ -30,13 +32,13 @@ export type PlatformType = 'desktop' | 'web';
  * de forma agnóstica sin acoplarse a Neutralino, React Native o Web.
  */
 export interface IPlatformBridge {
-  // Nombre de la plataforma detectada
+  /** Detected platform name */
   readonly platformName: PlatformType;
 
-  // Indica si la plataforma ha completado su inicialización
+  /** Indicates if the platform has completed its initialization */
   readonly isReady: boolean;
 
-  // Inicializa los listeners y recursos necesarios de la plataforma.
+  /** Initializes listeners and required platform resources */
   initialize(): void;
 
   /**

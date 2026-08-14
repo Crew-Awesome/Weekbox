@@ -33,8 +33,8 @@ export const Modal: React.FC<ModalProps> = ({
     
     if (isOpen) {
       setIsRendered(true);
-      // Usar requestAnimationFrame doble para asegurar que el navegador pinte el estado inicial
-      // con opacity-0 antes de cambiar a opacity-100 y disparar la transición CSS.
+      // Use double requestAnimationFrame to ensure the browser paints the initial state
+      // with opacity-0 before changing to opacity-100 to trigger the CSS transition.
       rafId = requestAnimationFrame(() => {
         rafId = requestAnimationFrame(() => {
           setIsVisible(true);

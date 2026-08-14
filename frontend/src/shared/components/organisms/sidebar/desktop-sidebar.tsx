@@ -25,7 +25,7 @@ export const DesktopSidebar: React.FC<DesktopSidebarProps> = ({ activeMain, setA
 
   return (
     <aside className="hidden md:block relative w-32 h-full drop-shadow-2xl">
-        {/* SEGUNDA PARTE (z-index 10) - Toggles */}
+        {/* Secondary Navigation (Toggles) */}
         <div className="absolute inset-y-0 left-0 right-6 bg-[var(--wb-back-bg)] rounded-tr-[16px] rounded-br-[16px] z-10 flex flex-col justify-end items-end pb-6 pr-3">
           <div className="flex flex-col space-y-4">
             <button
@@ -66,14 +66,14 @@ export const DesktopSidebar: React.FC<DesktopSidebarProps> = ({ activeMain, setA
           </div>
         </div>
 
-        {/* PRIMERA PARTE (z-index 20) - Radio Group */}
+        {/* Primary Navigation (Radio Group) */}
         <div className="absolute inset-0 z-20 flex flex-col pointer-events-none drop-shadow-[4px_0_8px_rgba(0,0,0,0.6)]">
           <div className="w-32 bg-[var(--wb-front-bg)] rounded-tr-[16px] flex flex-col items-center pt-8 pb-4 pointer-events-auto">
             <div className="flex items-center justify-center mb-8 w-full relative z-20 px-2">
               <img src={launcherIcon} alt="Weekbox" className="w-full h-auto object-contain drop-shadow-md" />
             </div>
             <nav ref={navRef} className="flex flex-col items-center w-full space-y-4 relative">
-              {/* GSAP Indicator */}
+              {/* Active Indicator */}
               <div 
                 ref={indicatorRef} 
                 className="absolute top-0 left-0 rounded-2xl bg-[var(--wb-item-active)] pointer-events-none"
