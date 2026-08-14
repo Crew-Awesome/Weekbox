@@ -1,6 +1,5 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import { X } from 'lucide-react';
-import Utils from '@utils';
 
 export interface ModalProps {
   isOpen: boolean;
