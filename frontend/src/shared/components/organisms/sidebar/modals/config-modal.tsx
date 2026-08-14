@@ -4,15 +4,15 @@ import Shared from '@shared';
 interface ConfigModalProps {
   isOpen: boolean;
   onClose: () => void;
-  sourceElement: HTMLElement | null;
+
 }
 
-export const ConfigModal: React.FC<ConfigModalProps> = ({ isOpen, onClose, sourceElement }) => {
+export const ConfigModal: React.FC<ConfigModalProps> = ({ isOpen, onClose }) => {
   return (
     <Shared.atoms.Modal
       isOpen={isOpen}
       onClose={onClose}
-      sourceElement={sourceElement}
+
       widthClass="w-[90vw] sm:w-[600px]"
       heightClass="h-[90vh] sm:h-[500px]"
     >

@@ -4,15 +4,15 @@ import Shared from '@shared';
 interface InfoModalProps {
   isOpen: boolean;
   onClose: () => void;
-  sourceElement: HTMLElement | null;
+
 }
 
-export const InfoModal: React.FC<InfoModalProps> = ({ isOpen, onClose, sourceElement }) => {
+export const InfoModal: React.FC<InfoModalProps> = ({ isOpen, onClose }) => {
   return (
     <Shared.atoms.Modal
       isOpen={isOpen}
       onClose={onClose}
-      sourceElement={sourceElement}
+
       widthClass="w-[90vw] sm:w-[500px]"
       heightClass="h-[90vh] sm:h-[400px]"
     >

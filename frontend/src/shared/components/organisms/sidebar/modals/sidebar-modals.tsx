@@ -14,12 +14,12 @@ export const SidebarModals: React.FC<SidebarModalsProps> = ({ morphModalData, cl
       <InfoModal 
         isOpen={morphModalData?.id === 'info'} 
         onClose={closeMorphModal}
-        sourceElement={morphModalData?.element || null}
+
       />
       <ConfigModal 
         isOpen={morphModalData?.id === 'settings'} 
         onClose={closeMorphModal}
-        sourceElement={morphModalData?.element || null}
+
       />
     </>
   );
