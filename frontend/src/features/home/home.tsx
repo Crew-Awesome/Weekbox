@@ -6,7 +6,7 @@ const MOCK_MODS = [
     name: "Friday Night Funkin': Mod Title",
     description: "Mod Description that's very long but very very very long",
     img: "/assets/images/placeholder-mini.jpg",
-    icon: "/assets/icons/categories/vslice.png",
+    icon: "/assets/icons/categories/codename.png",
     showIcon: true,
   },
   {
@@ -27,7 +27,7 @@ const MOCK_MODS = [
     name: "Standard Card",
     description: "Another regular card.",
     img: "/assets/images/placeholder-mini.jpg",
-    icon: "/assets/icons/categories/vslice.png",
+    icon: "/assets/icons/categories/fpsplus.png",
     showIcon: true,
   }
 ];

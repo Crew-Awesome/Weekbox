@@ -86,9 +86,9 @@ export const Card: React.FC<CardProps> = ({
 
   return (
     <div
-      className={`relative shadow-2xs bg-transparent rounded-none sm:rounded-r-[1rem] sm:rounded-l-none p-0 sm:p-3 ${
-        isWholeCardClickable ? "cursor-pointer" : ""
-      }`}
+      className={`relative shadow-2xs bg-transparent rounded-none p-0 sm:p-3 ${
+        shouldRenderIcon ? "sm:rounded-r-[1rem] sm:rounded-l-none" : "sm:rounded-[1rem]"
+      } ${isWholeCardClickable ? "cursor-pointer" : ""}`}
       style={{ fontFamily: "Manrope, sans-serif", fontWeight: 500 }}
       onClick={isWholeCardClickable ? onClick : undefined}
       onMouseEnter={isWholeCardClickable ? handleMouseEnter : undefined}
@@ -96,9 +96,9 @@ export const Card: React.FC<CardProps> = ({
     >
       {thumbnail && (
         <div
-          className={`relative aspect-[16/9] overflow-hidden w-full sm:rounded-tr-[1rem] sm:rounded-tl-none ${
-            isThumbnailClickable ? "cursor-pointer" : ""
-          }`}
+          className={`relative aspect-[16/9] overflow-hidden w-full ${
+            shouldRenderIcon ? "sm:rounded-tr-[1rem] sm:rounded-tl-none" : "sm:rounded-t-[1rem]"
+          } ${isThumbnailClickable ? "cursor-pointer" : ""}`}
           onClick={
             isThumbnailClickable && !isWholeCardClickable ? onClick : undefined
           }
@@ -115,19 +115,17 @@ export const Card: React.FC<CardProps> = ({
         >
           <div
             ref={thumbnailRef}
-            className="absolute inset-0 sm:rounded-tr-[1rem] sm:rounded-tl-none"
+            className={`absolute inset-0 ${
+              shouldRenderIcon ? "sm:rounded-tr-[1rem] sm:rounded-tl-none" : "sm:rounded-t-[1rem]"
+            }`}
           >
             <img
               className="w-full h-full object-cover block"
               src={thumbnail}
               alt={title}
               style={{
-                WebkitMaskImage: shouldRenderIcon
-                  ? "linear-gradient(to bottom, black 50%, transparent 100%)"
-                  : "none",
-                maskImage: shouldRenderIcon
-                  ? "linear-gradient(to bottom, black 50%, transparent 100%)"
-                  : "none",
+                WebkitMaskImage: "linear-gradient(to bottom, black 50%, transparent 100%)",
+                maskImage: "linear-gradient(to bottom, black 50%, transparent 100%)",
               }}
             />
           </div>
