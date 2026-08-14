@@ -24,13 +24,38 @@ export const Modal: React.FC<ModalProps> = ({
   heightClass = "h-[90vh] sm:h-[80vh] md:h-[70vh]",
   svgBackgrounds
 }) => {
-  if (!isOpen) return null;
+  const [isRendered, setIsRendered] = useState(isOpen);
+  const [isVisible, setIsVisible] = useState(false);
 
+  useEffect(() => {
+    let timeoutId: ReturnType<typeof setTimeout>;
+    let rafId: number;
+    
+    if (isOpen) {
+      setIsRendered(true);
+      // Usar requestAnimationFrame doble para asegurar que el navegador pinte el estado inicial
+      // con opacity-0 antes de cambiar a opacity-100 y disparar la transición CSS.
+      rafId = requestAnimationFrame(() => {
+        rafId = requestAnimationFrame(() => {
+          setIsVisible(true);
+        });
+      });
+    } else {
+      setIsVisible(false);
+      timeoutId = setTimeout(() => setIsRendered(false), 300);
+    }
 
+    return () => {
+      clearTimeout(timeoutId);
+      cancelAnimationFrame(rafId);
+    };
+  }, [isOpen]);
+
+  if (!isRendered) return null;
 
   return (
     <div 
-      className={`fixed inset-0 z-[100] flex items-center justify-center ${overlayClassName}`}
+      className={`fixed inset-0 z-[100] flex items-center justify-center transition-opacity duration-300 ease-out ${isVisible ? 'opacity-100' : 'opacity-0'} ${overlayClassName}`}
       onClick={onClose}
     >
       <div 
@@ -38,7 +63,7 @@ export const Modal: React.FC<ModalProps> = ({
       />
 
       <div 
-        className={`relative flex flex-col ${widthClass} ${heightClass} ${modalClassName}`}
+        className={`relative flex flex-col ${widthClass} ${heightClass} ${modalClassName} transition-all duration-300 ease-out transform ${isVisible ? 'scale-100 translate-y-0 opacity-100' : 'scale-[0.97] translate-y-4 opacity-0'}`}
         onClick={(e) => e.stopPropagation()}
       >
         <div 
