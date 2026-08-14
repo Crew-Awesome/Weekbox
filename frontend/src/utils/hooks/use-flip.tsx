@@ -53,7 +53,7 @@ export const useFlip = ({
     const bg = bgRef.current;
     const content = contentRef.current;
     const sourceRect = sourceMetrics.rect;
-    const sourceRadius = sourceMetrics.borderRadius;
+   // const sourceRadius = sourceMetrics.borderRadius;
 
     if (!isExiting) {
       gsap.set(bg, { clearProps: 'all' });

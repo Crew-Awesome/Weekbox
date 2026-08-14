@@ -1,5 +1,9 @@
 @import "tailwindcss";
 
+html,body{
+  overscroll-behavior: none;
+}
+
 :root {
   color-scheme: dark;
 

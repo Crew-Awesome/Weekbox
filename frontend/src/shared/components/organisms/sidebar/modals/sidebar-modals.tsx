@@ -1,7 +1,7 @@
 import React from 'react';
 import { InfoModal } from './info-modal';
 import { ConfigModal } from './config-modal';
-import type { MorphModalData } from '../../../../../../utils/hooks/use-modals';
+import type { MorphModalData } from 'src/utils/hooks/use-modals';
 
 interface SidebarModalsProps {
   morphModalData: MorphModalData | null;
