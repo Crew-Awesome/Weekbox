@@ -76,7 +76,7 @@ export const Modal: React.FC<ModalProps> = ({
         </div>
 
         <div 
-          className="absolute inset-0 flex flex-col z-10 text-[var(--wb-on-surface)]"
+          className="relative flex flex-col z-10 text-[var(--wb-on-surface)] h-full"
         >
           <button 
             onClick={onClose}

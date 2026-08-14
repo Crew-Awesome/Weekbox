@@ -114,20 +114,24 @@ export const Card: React.FC<CardProps> = ({
           }
         >
           <div
-            ref={thumbnailRef}
-            className={`absolute inset-0 ${
-              shouldRenderIcon ? "sm:rounded-tr-[1rem] sm:rounded-tl-none" : "sm:rounded-t-[1rem]"
-            }`}
+            className="absolute inset-0"
+            style={{
+              WebkitMaskImage: "linear-gradient(to bottom, black 50%, transparent 100%)",
+              maskImage: "linear-gradient(to bottom, black 50%, transparent 100%)",
+            }}
           >
-            <img
-              className="w-full h-full object-cover block"
-              src={thumbnail}
-              alt={title}
-              style={{
-                WebkitMaskImage: "linear-gradient(to bottom, black 50%, transparent 100%)",
-                maskImage: "linear-gradient(to bottom, black 50%, transparent 100%)",
-              }}
-            />
+            <div
+              ref={thumbnailRef}
+              className={`absolute inset-0 ${
+                shouldRenderIcon ? "sm:rounded-tr-[1rem] sm:rounded-tl-none" : "sm:rounded-t-[1rem]"
+              }`}
+            >
+              <img
+                className="w-full h-full object-cover block"
+                src={thumbnail}
+                alt={title}
+              />
+            </div>
           </div>
 
           {/* Mask Container */}
