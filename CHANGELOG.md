@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.1.12] - 2026-08-14
+
+### Fixed
+
+- Fixed valid archive downloads being rejected by the pre-extraction integrity check.
+- Fixed macOS and Linux startup using the application bundle or AppImage mount as storage.
+- Fixed startup accepting incomplete interface-template responses.
+
 ## [2.1.11] - 2026-08-13
 
 ### Fixed
@@ -888,7 +896,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Downloads for Windows, Linux, and macOS.
 - Packages for x64, ARM64, ARMHF, and Universal Macs where available.
 
-[unreleased]: https://github.com/Crew-Awesome/Weekbox/compare/v2.1.11...HEAD
+[unreleased]: https://github.com/Crew-Awesome/Weekbox/compare/v2.1.12...HEAD
+[2.1.12]: https://github.com/Crew-Awesome/Weekbox/compare/v2.1.11...v2.1.12
 [2.1.11]: https://github.com/Crew-Awesome/Weekbox/compare/v2.1.10...v2.1.11
 [2.1.10]: https://github.com/Crew-Awesome/Weekbox/compare/v2.1.9...v2.1.10
 [2.1.9]: https://github.com/Crew-Awesome/Weekbox/compare/v2.1.8...v2.1.9

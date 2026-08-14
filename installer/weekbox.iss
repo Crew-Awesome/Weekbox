@@ -1,5 +1,5 @@
 #ifndef MyAppVersion
-#define MyAppVersion "2.1.11"
+#define MyAppVersion "2.1.12"
 #endif
 
 #define MyAppName "WeekBox"

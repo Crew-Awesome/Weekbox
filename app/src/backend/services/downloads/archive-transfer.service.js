@@ -448,9 +448,13 @@ async function verifyArchiveReadable(archivePath, archiveFormat) {
       }
       if (event.action !== "exit") return;
       Neutralino.events.off("spawnedProcess", handler);
+      const exitCode = Number(event.data);
       if (
-        event.data === 0 ||
-        isNonFatalUnzipFilenameWarning(event.data, processOutput)
+        exitCode === 0 ||
+        // 7-Zip uses exit code 1 for warnings; extraction remains the final
+        // payload check before an install is accepted.
+        exitCode === 1 ||
+        isNonFatalUnzipFilenameWarning(exitCode, processOutput)
       ) {
         resolve();
         return;

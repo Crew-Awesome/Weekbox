@@ -265,12 +265,17 @@ var _FileSystemService = class _FileSystemService {
       );
       if (localAppDataPath) return `${localAppDataPath}/WeekBoxLibrary`;
     }
-    const applicationDataPath = trimPath(window.NL_DATAPATH);
-    if (applicationDataPath) return applicationDataPath;
     const nativeDataPath = trimPath(
       await Neutralino.os.getPath("data").catch(() => ""),
     );
-    if (nativeDataPath) return nativeDataPath;
+    const applicationDataPath = trimPath(window.NL_DATAPATH);
+    for (const candidate of [nativeDataPath, applicationDataPath]) {
+      if (!candidate) continue;
+      try {
+        await this.assertStoragePathAllowed(candidate);
+        return candidate;
+      } catch {}
+    }
     const fallbackKey = window.NL_OS === "Windows" ? "LOCALAPPDATA" : "HOME";
     const fallbackPath = trimPath(
       await Neutralino.os.getEnv(fallbackKey).catch(() => ""),

@@ -36,6 +36,14 @@ router = {
             if (!response.ok) throw new Error(`HTTP ${response.status}`);
             const html = await response.text();
             const doc = parser.parseFromString(html, "text/html");
+            const missingTemplateIds = requiredTemplateIds.filter(
+              (id) => !document.getElementById(id) && !doc.getElementById(id),
+            );
+            if (missingTemplateIds.length) {
+              throw new Error(
+                `Template response was incomplete: ${missingTemplateIds.join(", ")}`,
+              );
+            }
             const templates = doc.querySelectorAll("template");
             templates.forEach((t) => {
               if (t.id && !document.getElementById(t.id)) {
