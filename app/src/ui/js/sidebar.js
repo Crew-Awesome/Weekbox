@@ -19,6 +19,7 @@ const SIDEBAR_WIDTH_KEY = "weekbox_sidebar_width";
 const SIDEBAR_COLLAPSED_KEY = "weekbox_sidebar_collapsed";
 const MIN_SIDEBAR_WIDTH = 200;
 const MAX_SIDEBAR_WIDTH = 500;
+const RESPONSIVE_BREAKPOINT = MAX_SIDEBAR_WIDTH * 1.55;
 const sectionResizerControllers = new WeakMap();
 
 export const sidebar = {
@@ -73,6 +74,22 @@ export const sidebar = {
     };
     networkStatus.addEventListener("change", this.networkStatusListener);
     void this.refreshNetworkFeatures();
+    this.setupResponsiveCollapse();
+  },
+  setupResponsiveCollapse() {
+    const updateCollapse = () => {
+      const windowWidth = window.innerWidth;
+      const shouldCollapse = windowWidth <= RESPONSIVE_BREAKPOINT;
+      const isCollapsed = this.sidebar.classList.contains("sidebar--collapsed");
+      if (shouldCollapse && !isCollapsed) {
+        this.setCollapsed(true);
+      }
+      if (this.collapseBtn) {
+        this.collapseBtn.style.display = shouldCollapse ? "none" : "";
+      }
+    };
+    updateCollapse();
+    window.addEventListener("resize", updateCollapse);
   },
   setupResizer() {
     if (!this.resizer) return;

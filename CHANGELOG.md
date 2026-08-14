@@ -18,6 +18,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - Added an unread count for new newsletter posts.
+- Added automatic sidebar collapse when window is too small.
 
 ### Changed
 
