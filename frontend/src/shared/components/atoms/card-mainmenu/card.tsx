@@ -1,196 +1,109 @@
-import { useRef } from "react";
+import React, { useRef } from "react";
 import gsap from "gsap";
 
-export default function Card() {
-  const modstest = [
-    {
-      name: "Friday Night Funkin': Mod Title that's very long but very very very long o sea we, bien largote",
-      description:
-        "Mod Description that's very long but very very very long o sea we, bien largote",
-      img: "/assets/images/placeholder-mini.jpg",
-      icon: "/assets/icons/categories/vslice.png",
-    },
-    {
-      name: "Friday Night Funkin': Mod Title that's very long but very very very long o sea we, bien largote",
-      description:
-        "Mod Description that's very long but very very very long o sea we, bien largote",
-      img: "/assets/images/placeholder-mini.jpg",
-      icon: "/assets/icons/categories/vslice.png",
-    },
-    {
-      name: "Friday Night Funkin': Mod Title that's very long but very very very long o sea we, bien largote",
-      description:
-        "Mod Description that's very long but very very very long o sea we, bien largote",
-      img: "/assets/images/placeholder-mini.jpg",
-      icon: "/assets/icons/categories/vslice.png",
-    },
-    {
-      name: "Friday Night Funkin': Mod Title that's very long but very very very long o sea we, bien largote",
-      description:
-        "Mod Description that's very long but very very very long o sea we, bien largote",
-      img: "/assets/images/placeholder-mini.jpg",
-      icon: "/assets/icons/categories/vslice.png",
-    },
-    {
-      name: "Friday Night Funkin': Mod Title that's very long but very very very long o sea we, bien largote",
-      description:
-        "Mod Description that's very long but very very very long o sea we, bien largote",
-      img: "/assets/images/placeholder-mini.jpg",
-      icon: "/assets/icons/categories/vslice.png",
-    },
-    {
-      name: "Friday Night Funkin': Mod Title that's very long but very very very long o sea we, bien largote",
-      description:
-        "Mod Description that's very long but very very very long o sea we, bien largote",
-      img: "/assets/images/placeholder-mini.jpg",
-      icon: "/assets/icons/categories/vslice.png",
-    },
-    {
-      name: "Friday Night Funkin': Mod Title that's very long but very very very long o sea we, bien largote",
-      description:
-        "Mod Description that's very long but very very very long o sea we, bien largote",
-      img: "/assets/images/placeholder-mini.jpg",
-      icon: "/assets/icons/categories/vslice.png",
-    },
-    {
-      name: "Friday Night Funkin': Mod Title that's very long but very very very long o sea we, bien largote",
-      description:
-        "Mod Description that's very long but very very very long o sea we, bien largote",
-      img: "/assets/images/placeholder-mini.jpg",
-      icon: "/assets/icons/categories/vslice.png",
-    },
-    {
-      name: "Friday Night Funkin': Mod Title that's very long but very very very long o sea we, bien largote",
-      description:
-        "Mod Description that's very long but very very very long o sea we, bien largote",
-      img: "/assets/images/placeholder-mini.jpg",
-      icon: "/assets/icons/categories/vslice.png",
-    },
-    {
-      name: "Friday Night Funkin': Mod Title that's very long but very very very long o sea we, bien largote",
-      description:
-        "Mod Description that's very long but very very very long o sea we, bien largote",
-      img: "/assets/images/placeholder-mini.jpg",
-      icon: "/assets/icons/categories/vslice.png",
-    },
-    {
-      name: "Friday Night Funkin': Mod Title that's very long but very very very long o sea we, bien largote",
-      description:
-        "Mod Description that's very long but very very very long o sea we, bien largote",
-      img: "/assets/images/placeholder-mini.jpg",
-      icon: "/assets/icons/categories/vslice.png",
-    },
-    {
-      name: "Friday Night Funkin': Mod Title that's very long but very very very long o sea we, bien largote",
-      description:
-        "Mod Description that's very long but very very very long o sea we, bien largote",
-      img: "/assets/images/placeholder-mini.jpg",
-      icon: "/assets/icons/categories/vslice.png",
-    },
-    {
-      name: "Friday Night Funkin': Mod Title that's very long but very very very long o sea we, bien largote",
-      description:
-        "Mod Description that's very long but very very very long o sea we, bien largote",
-      img: "/assets/images/placeholder-mini.jpg",
-      icon: "/assets/icons/categories/vslice.png",
-    },
-    {
-      name: "Friday Night Funkin': Mod Title that's very long but very very very long o sea we, bien largote",
-      description:
-        "Mod Description that's very long but very very very long o sea we, bien largote",
-      img: "/assets/images/placeholder-mini.jpg",
-      icon: "/assets/icons/categories/vslice.png",
-    },
-    {
-      name: "Friday Night Funkin': Mod Title that's very long but very very very long o sea we, bien largote",
-      description:
-        "Mod Description that's very long but very very very long o sea we, bien largote",
-      img: "/assets/images/placeholder-mini.jpg",
-      icon: "/assets/icons/categories/vslice.png",
-    },
-    {
-      name: "Friday Night Funkin': Mod Title that's very long but very very very long o sea we, bien largote",
-      description:
-        "Mod Description that's very long but very very very long o sea we, bien largote",
-      img: "/assets/images/placeholder-mini.jpg",
-      icon: "/assets/icons/categories/vslice.png",
-    },
-  ];
-  const cardRef = useRef<(HTMLDivElement | null)[]>([]);
+export interface CardProps {
+  title: string;
+  description?: string;
+  thumbnail?: string;
+  icon?: string;
+  onClick?: (e: React.MouseEvent) => void;
+  clickableArea?: 'whole-card' | 'thumbnail' | 'none';
+  children?: React.ReactNode;
+}
 
-  const onmouseenter = (index: number) => {
-    gsap.to(cardRef.current[index], {
-      scale: 1.05,
-      duration: 0.3,
-      ease: "power2.out",
-    })
-  }
-  const onmouseleave = (index: number) => {
-    gsap.to(cardRef.current[index], {
-      scale: 1,
-      duration: 0.3,
-      ease: "power2.out",
-    })
-  }
+export const Card: React.FC<CardProps> = ({
+  title,
+  description,
+  thumbnail,
+  icon,
+  onClick,
+  clickableArea = 'whole-card',
+  children
+}) => {
+  const thumbnailRef = useRef<HTMLDivElement>(null);
 
+  const handleMouseEnter = () => {
+    if (thumbnailRef.current && thumbnail) {
+      gsap.to(thumbnailRef.current, { scale: 1.05, duration: 0.3, ease: "power2.out" });
+    }
+  };
+
+  const handleMouseLeave = () => {
+    if (thumbnailRef.current && thumbnail) {
+      gsap.to(thumbnailRef.current, { scale: 1, duration: 0.3, ease: "power2.out" });
+    }
+  };
+
+  const isWholeCardClickable = clickableArea === 'whole-card';
+  const isThumbnailClickable = clickableArea === 'thumbnail';
 
   return (
     <div
-      className="grid gap-12 -mx-8 sm:mx-6 h-auto w-auto "
-      style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))' }}
+      className={`relative shadow-2xs bg-transparent rounded-none sm:rounded-[1rem] p-0 sm:p-3 ${
+        isWholeCardClickable ? "cursor-pointer" : ""
+      }`}
+      style={{ fontFamily: "Manrope, sans-serif", fontWeight: 500 }}
+      onClick={isWholeCardClickable ? onClick : undefined}
+      onMouseEnter={isWholeCardClickable ? handleMouseEnter : undefined}
+      onMouseLeave={isWholeCardClickable ? handleMouseLeave : undefined}
     >
-      {modstest.map((item, index) => (
-        <div
-          className=" relative shadow-2xs bg-transparent rounded-none sm:rounded-[1rem] p-0 sm:p-3 "
-          style={{ fontFamily: "Manrope, sans-serif", fontWeight: 500 }}
+      {thumbnail && (
+        <div 
+          className={`relative aspect-[16/9] overflow-hidden w-full sm:rounded-t-[1rem] ${
+            isThumbnailClickable ? "cursor-pointer" : ""
+          }`}
+          onClick={isThumbnailClickable && !isWholeCardClickable ? onClick : undefined}
+          onMouseEnter={isThumbnailClickable && !isWholeCardClickable ? handleMouseEnter : undefined}
+          onMouseLeave={isThumbnailClickable && !isWholeCardClickable ? handleMouseLeave : undefined}
         >
-          <div className="relative aspect-[16/9]  overflow-hidden  w-full sm:rounded-t-[1rem] ">
+          <div
+            ref={thumbnailRef}
+            className="absolute inset-0 sm:rounded-t-[1rem]"
+          >
+            <img
+              className="w-full h-full object-cover block"
+              src={thumbnail}
+              alt={title}
+              style={{
+                WebkitMaskImage: icon ? "linear-gradient(to bottom, black 50%, transparent 100%)" : "none",
+                maskImage: icon ? "linear-gradient(to bottom, black 50%, transparent 100%)" : "none"
+              }}
+            />
+          </div>
 
-            <div
-              ref={(a) => { cardRef.current[index] = a }}
-              key={index}
-            
-              onMouseEnter={() => onmouseenter(index)}
-              onMouseLeave={() => onmouseleave(index)}
-              className="absolute inset-0sm:rounded-t-[1rem]">
-              <img
-                className="w-full h-full object-cover block"
-                src={item.img}
-
-                style={{
-                  WebkitMaskImage: "linear-gradient(to bottom, black 50%, transparent 100%)",
-                  maskImage: "linear-gradient(to bottom, black 50%, transparent 100%)"
-                }}
-              />
-
-            </div>
-
-            {/* Mask Container */}
-            <div className="absolute left-0 top-0 w-[18%] aspect-square rounded-tl-none rounded-br-[8px] bg-[var(--wb-bg)] z-10">
+          {/* Mask Container */}
+          {icon && (
+            <div className="absolute left-0 top-0 w-[18%] aspect-square rounded-tl-none rounded-br-[8px] bg-[var(--wb-bg)] z-10 pointer-events-none">
               <div className="relative z-10 w-full h-full flex items-center justify-center p-2">
                 <img
                   className="object-contain w-full h-full block"
-                  src={item.icon}
+                  src={icon}
+                  alt="icon"
                 />
               </div>
-              {/* Curva derecha */}
               <svg className="absolute top-0 left-full w-[8px] h-[8px] text-[var(--wb-bg)] pointer-events-none" viewBox="0 0 8 8" fill="none" xmlns="http://www.w3.org/2000/svg">
                 <path d="M0 0 H8 A8 8 0 0 0 0 8 V0 Z" fill="currentColor" />
               </svg>
-              {/* Curva inferior */}
               <svg className="absolute top-full left-0 w-[8px] h-[8px] text-[var(--wb-bg)] pointer-events-none" viewBox="0 0 8 8" fill="none" xmlns="http://www.w3.org/2000/svg">
                 <path d="M0 0 H8 A8 8 0 0 0 0 8 V0 Z" fill="currentColor" />
               </svg>
             </div>
-          </div>
-
-          <div className="mt-4 px-0 sm:px-0 flex flex-col gap-1">
-            <strong className="text-xl truncate block">{item.name}</strong>
-            <h5 className="text-gray-400 text-sm truncate">{item.description}</h5>
-          </div>
+          )}
         </div>
+      )}
 
-      ))}
+      <div className="mt-4 px-0 sm:px-0 flex flex-col gap-1">
+        <strong className="text-xl truncate block">{title}</strong>
+        {description && <h5 className="text-gray-400 text-sm truncate">{description}</h5>}
+      </div>
+
+      {children && (
+        <div className="mt-2">
+          {children}
+        </div>
+      )}
     </div>
   );
-}
+};
+
+export default Card;
