@@ -86,7 +86,7 @@ export const Card: React.FC<CardProps> = ({
 
   return (
     <div
-      className={`relative shadow-2xs bg-transparent rounded-none sm:rounded-[1rem] p-0 sm:p-3 ${
+      className={`relative shadow-2xs bg-transparent rounded-none sm:rounded-r-[1rem] sm:rounded-l-none p-0 sm:p-3 ${
         isWholeCardClickable ? "cursor-pointer" : ""
       }`}
       style={{ fontFamily: "Manrope, sans-serif", fontWeight: 500 }}
@@ -96,7 +96,7 @@ export const Card: React.FC<CardProps> = ({
     >
       {thumbnail && (
         <div
-          className={`relative aspect-[16/9] overflow-hidden w-full sm:rounded-t-[1rem] ${
+          className={`relative aspect-[16/9] overflow-hidden w-full sm:rounded-tr-[1rem] sm:rounded-tl-none ${
             isThumbnailClickable ? "cursor-pointer" : ""
           }`}
           onClick={
@@ -115,7 +115,7 @@ export const Card: React.FC<CardProps> = ({
         >
           <div
             ref={thumbnailRef}
-            className="absolute inset-0 sm:rounded-t-[1rem]"
+            className="absolute inset-0 sm:rounded-tr-[1rem] sm:rounded-tl-none"
           >
             <img
               className="w-full h-full object-cover block"
