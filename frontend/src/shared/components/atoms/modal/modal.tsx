@@ -1,16 +1,39 @@
 import React, { useState, useEffect } from 'react';
 import { X } from 'lucide-react';
 
+/**
+ * Configuration for the modal's separation from the screen edges.
+ * Accepts any valid CSS unit (e.g., '16px', '2rem', '5%').
+ */
+export interface EdgeSpacingConfig {
+  /** 
+   * Separation on mobile screens (< 640px). 
+   * @default "16px"
+   */
+  mobile?: string;
+  /** 
+   * Separation on desktop/tablet screens (>= 640px). 
+   * @default "32px"
+   */
+  desktop?: string;
+}
+
 export interface ModalProps {
   isOpen: boolean;
   onClose: () => void;
   children?: React.ReactNode;
   overlayClassName?: string;
   modalClassName?: string;
+  /** Legacy width class, overridden if edgeSpacing is active */
   widthClass?: string;
+  /** Legacy height class, overridden if edgeSpacing is active */
   heightClass?: string;
   svgBackgrounds?: React.ReactNode;
-
+  /**
+   * Defines how far the modal is separated from the screen edge.
+   * If provided, the modal will automatically stretch to fill the remaining space.
+   */
+  edgeSpacing?: EdgeSpacingConfig;
 }
 
 export const Modal: React.FC<ModalProps> = ({ 
@@ -21,10 +44,19 @@ export const Modal: React.FC<ModalProps> = ({
   modalClassName = "",
   widthClass = "w-[90vw] sm:w-[80vw] md:w-[60vw]", 
   heightClass = "h-[90vh] sm:h-[80vh] md:h-[70vh]",
-  svgBackgrounds
+  svgBackgrounds,
+  edgeSpacing
 }) => {
   const [isRendered, setIsRendered] = useState(isOpen);
   const [isVisible, setIsVisible] = useState(false);
+  const [isDesktop, setIsDesktop] = useState(typeof window !== 'undefined' ? window.innerWidth >= 640 : false);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const handleResize = () => setIsDesktop(window.innerWidth >= 640);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   useEffect(() => {
     let timeoutId: ReturnType<typeof setTimeout>;
@@ -52,17 +84,26 @@ export const Modal: React.FC<ModalProps> = ({
 
   if (!isRendered) return null;
 
+  // Determine current spacing value
+  const currentSpacing = edgeSpacing ? (isDesktop ? (edgeSpacing.desktop || '32px') : (edgeSpacing.mobile || '16px')) : undefined;
+  
+  // If edge spacing is enabled, the modal expands to 100% of the available space inside the padding.
+  // Otherwise, it falls back to the legacy widthClass/heightClass.
+  const activeWidthClass = edgeSpacing ? "w-full max-w-full" : widthClass;
+  const activeHeightClass = edgeSpacing ? "h-full max-h-full" : heightClass;
+
   return (
     <div 
       className={`fixed inset-0 z-[100] flex items-center justify-center transition-opacity duration-300 ease-out ${isVisible ? 'opacity-100' : 'opacity-0'} ${overlayClassName}`}
       onClick={onClose}
+      style={currentSpacing ? { padding: currentSpacing } : undefined}
     >
       <div 
-        className="absolute inset-0 bg-black/40 backdrop-blur-md" 
+        className="absolute inset-0 bg-black/40 backdrop-blur-md z-[-1]" 
       />
 
       <div 
-        className={`relative flex flex-col ${widthClass} ${heightClass} ${modalClassName} transition-all duration-300 ease-out transform ${isVisible ? 'scale-100 translate-y-0 opacity-100' : 'scale-[0.97] translate-y-4 opacity-0'}`}
+        className={`relative flex flex-col ${activeWidthClass} ${activeHeightClass} ${modalClassName} transition-all duration-300 ease-out transform ${isVisible ? 'scale-100 translate-y-0 opacity-100' : 'scale-[0.97] translate-y-4 opacity-0'}`}
         onClick={(e) => e.stopPropagation()}
       >
         <div 

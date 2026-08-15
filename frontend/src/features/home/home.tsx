@@ -84,8 +84,7 @@ export const Home: React.FC = () => {
       <Shared.atoms.Modal 
         isOpen={!!selectedCard} 
         onClose={handleCloseModal}
-        widthClass="w-[90vw] sm:w-[500px]"
-        heightClass="h-auto max-h-[90vh] sm:h-auto"
+        edgeSpacing={{ mobile: '16px', desktop: '10%' }}
       >
         {selectedCard && (
           <div className="flex flex-col gap-4 text-[var(--wb-on-surface)]">
