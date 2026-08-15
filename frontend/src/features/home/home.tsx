@@ -4,6 +4,7 @@ import { FeaturedMods } from './components/FeaturedMods';
 import { AllMods } from './components/AllMods';
 import { ModDetailsModal } from './components/ModDetailsModal';
 import { HomeSearchbar } from './components/HomeSearchbar';
+import { HomeBanner } from './components/HomeBanner';
 
 export const Home: React.FC = () => {
   const [selectedCard, setSelectedCard] = useState<ModItem | null>(null);
@@ -20,6 +21,7 @@ export const Home: React.FC = () => {
         <div className="pt-2 sm:pt-8 px-8">
           <FeaturedMods />
           <AllMods onCardClick={setSelectedCard} />
+          <HomeBanner />
         </div>
       </div>
 

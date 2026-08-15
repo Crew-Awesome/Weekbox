@@ -6,6 +6,7 @@ import Titles from './components/atoms/titles/titles';
 import { AnimatedInput } from './components/atoms/animated-input/animated-input';
 import Searchbar from './components/molecules/searchbar/searchbar';
 import { Carousel } from './components/molecules/Carousel';
+import Banner from './components/molecules/banner/banner';
 import { Modal } from './components/atoms/modal/modal';
 import { extractColor } from './utils/extractColor';
 
@@ -32,6 +33,7 @@ const Shared = {
     Card,
     Searchbar,
     Carousel,
+    Banner,
   },
 
   /**
