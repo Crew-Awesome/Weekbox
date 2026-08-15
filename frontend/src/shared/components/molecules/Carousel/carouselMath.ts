@@ -4,16 +4,44 @@
  * 
  * @param {number} totalItems - Total number of items in the carousel.
  * @param {number} p_continuous - Continuous exact index (e.g., 0.5 means halfway between item 0 and 1).
- * @param {boolean} isFinite - Whether the carousel is finite (non-looping).
+ * @param {boolean} isMobile - Whether the carousel is in simple full-width mobile mode.
  * @returns {Array<{ w: number, x: number, display: string }>} An array of layout objects {w, x, display} for each item.
  */
-export function calculateVisuals(totalItems: number, p_continuous: number, isFinite: boolean) {
+export function calculateVisuals(totalItems: number, p_continuous: number, isFinite: boolean, isMobile: boolean = false) {
     const layouts = new Array(totalItems);
     for(let i = 0; i < totalItems; i++) {
         layouts[i] = { w: 0, x: 100, display: 'none' };
     }
     
     if (totalItems === 0) return layouts;
+
+    if (isMobile) {
+        const p_lower = Math.floor(p_continuous);
+        const fraction = p_continuous - p_lower;
+        
+        let idxA, idxB, idxC;
+        if (isFinite) {
+            idxA = p_lower - 1;
+            idxB = p_lower;
+            idxC = p_lower + 1;
+        } else {
+            idxA = (p_lower - 1 + totalItems) % totalItems;
+            idxB = p_lower % totalItems;
+            idxC = (p_lower + 1) % totalItems;
+        }
+        
+        if ((idxA >= 0 && idxA < totalItems) || !isFinite) {
+            layouts[idxA] = { w: 100, x: -110 - (fraction * 110), display: 'block' };
+        }
+        if ((idxB >= 0 && idxB < totalItems) || !isFinite) {
+            layouts[idxB] = { w: 100, x: -(fraction * 110), display: 'block' };
+        }
+        if ((idxC >= 0 && idxC < totalItems) || !isFinite) {
+            layouts[idxC] = { w: 100, x: 110 - (fraction * 110), display: 'block' };
+        }
+        
+        return layouts;
+    }
 
     if (isFinite) {
         p_continuous = Math.max(0, Math.min(totalItems - 1, p_continuous));
