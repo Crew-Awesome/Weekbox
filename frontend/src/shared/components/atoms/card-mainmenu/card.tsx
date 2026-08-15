@@ -100,6 +100,9 @@ export const Card: React.FC<CardProps> = ({
   }, []);
 
   const handleMouseEnter = () => {
+    // Disable hover effects on touch/mobile devices
+    if (window.matchMedia("(hover: none)").matches) return;
+
     if (thumbnailRef.current && thumbnail) {
       gsap.to(thumbnailRef.current, {
         scale: 1.05,
@@ -131,6 +134,8 @@ export const Card: React.FC<CardProps> = ({
   };
 
   const handleMouseLeave = () => {
+    if (window.matchMedia("(hover: none)").matches) return;
+
     if (thumbnailRef.current && thumbnail) {
       gsap.to(thumbnailRef.current, {
         scale: 1, duration: 0.3, ease: "power2.out",
