@@ -10,6 +10,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - Fixed Mod Manager loading and error icons rendering as literal HTML text.
+
+## [2.1.13] - 2026-08-14
+
+### Fixed
+
 - Fixed multipart downloads corrupting archives when a server ignored range requests.
 - Fixed archive extraction racing the temporary file handoff after download.
 - Fixed macOS storage setup selecting the app bundle or failing at the filesystem root.
@@ -905,7 +910,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Downloads for Windows, Linux, and macOS.
 - Packages for x64, ARM64, ARMHF, and Universal Macs where available.
 
-[unreleased]: https://github.com/Crew-Awesome/Weekbox/compare/v2.1.12...HEAD
+[unreleased]: https://github.com/Crew-Awesome/Weekbox/compare/v2.1.13...HEAD
+[2.1.13]: https://github.com/Crew-Awesome/Weekbox/compare/v2.1.12...v2.1.13
 [2.1.12]: https://github.com/Crew-Awesome/Weekbox/compare/v2.1.11...v2.1.12
 [2.1.11]: https://github.com/Crew-Awesome/Weekbox/compare/v2.1.10...v2.1.11
 [2.1.10]: https://github.com/Crew-Awesome/Weekbox/compare/v2.1.9...v2.1.10
