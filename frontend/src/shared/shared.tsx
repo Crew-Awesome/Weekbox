@@ -6,17 +6,15 @@ import Titles from './components/atoms/titles/titles';
 import { AnimatedInput } from './components/atoms/animated-input/animated-input';
 import Searchbar from './components/molecules/searchbar/searchbar';
 import { Modal } from './components/atoms/modal/modal';
-
+import { extractColor } from './utils/extractColor';
 
 /**
- * @description API global para acceder a los componentes compartidos de Weekbox.
- * Esta estructura sigue la metodología de Atomic Design (Átomos, Moléculas, Organismos)
- * para facilitar la importación global mediante un único punto de acceso.
+ * Global API to access shared components and utilities in Weekbox.
+ * Structured using the Atomic Design methodology for a single, centralized access point.
  */
 const Shared = {
   /**
-   * @description Componentes Átomos: Los bloques de construcción más básicos e indivisibles de la interfaz.
-   * Ejemplos: Botones, etiquetas (labels), inputs de texto, íconos.
+   * Atoms: The most basic, indivisible building blocks of the interface.
    */
   atoms: {
     ProgressBar,
@@ -27,8 +25,7 @@ const Shared = {
   },
 
   /**
-   * @description Componentes Moléculas: Agrupaciones simples de átomos construidas para funcionar como una unidad.
-   * Ejemplos: Tarjetas (Cards), barras de búsqueda, campos de formulario completos.
+   * Molecules: Simple groupings of atoms built to function together as a unit.
    */
   molecules: {
     Card,
@@ -36,17 +33,18 @@ const Shared = {
   },
 
   /**
-   * @description Componentes Organismos: Secciones complejas e independientes de la interfaz compuestas por moléculas y/o átomos.
-   * Ejemplos: Barra lateral (Sidebar), barra de navegación (Header), pie de página (Footer).
+   * Organisms: Complex, independent sections of the interface composed of molecules and/or atoms.
    */
   organisms: {
-    /**
-     * @description Barra lateral principal de la aplicación.
-     * Contiene el logo, la navegación de las secciones (Home, Library, Engines) y 
-     * configuraciones rápidas, utilizando un diseño en capas (z-index) y curvas vectoriales.
-     */
     Sidebar,
   },
+
+  /**
+   * Utils: Helper functions and shared logic.
+   */
+  utils: {
+    extractColor,
+  }
 };
 
 export default Shared;

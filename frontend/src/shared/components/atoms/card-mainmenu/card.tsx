@@ -1,5 +1,6 @@
-import React, { useRef } from "react";
+import React, { useRef, useState, useEffect } from "react";
 import gsap from "gsap";
+import Shared from "@shared";
 
 /**
  * Configuration properties for the Card component.
@@ -44,6 +45,11 @@ export interface CardProps {
    * Optional CSS classes to apply to the root element.
    */
   className?: string;
+  /**
+   * If true, extracts the predominant color from the thumbnail image and uses it
+   * as the card's background color on hover (with 0.8 opacity).
+   */
+  extractColor?: boolean;
 }
 
 /**
@@ -60,8 +66,38 @@ export const Card: React.FC<CardProps> = ({
   clickableArea = "whole-card",
   children,
   className = "",
+  extractColor = false,
 }) => {
   const thumbnailRef = useRef<HTMLDivElement>(null);
+  const hoverBgRef = useRef<HTMLDivElement>(null);
+  const notchOverlayRef = useRef<HTMLDivElement>(null);
+  const notchSvg1Ref = useRef<SVGSVGElement>(null);
+  const notchSvg2Ref = useRef<SVGSVGElement>(null);
+  const [hoverColor, setHoverColor] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (extractColor && thumbnail) {
+      Shared.utils.extractColor(thumbnail, 0.3)
+        .then((color) => {
+          setHoverColor(color);
+        })
+        .catch(console.error);
+    }
+  }, [extractColor, thumbnail]);
+
+  // Set initial inset state based on responsive padding
+  useEffect(() => {
+    if (hoverBgRef.current) {
+      const paddingPixels = window.innerWidth >= 640 ? 12 : 0;
+      gsap.set(hoverBgRef.current, {
+        top: paddingPixels,
+        left: paddingPixels,
+        right: paddingPixels,
+        bottom: paddingPixels,
+        opacity: 0
+      });
+    }
+  }, []);
 
   const handleMouseEnter = () => {
     if (thumbnailRef.current && thumbnail) {
@@ -71,14 +107,53 @@ export const Card: React.FC<CardProps> = ({
         ease: "power2.out",
       });
     }
+    const finalColor = hoverColor || 'rgba(255, 255, 255, 0.1)';
+    if (hoverBgRef.current) {
+      gsap.to(hoverBgRef.current, {
+        top: 0, left: 0, right: 0, bottom: 0,
+        opacity: 1, backgroundColor: finalColor,
+        duration: 0.3, ease: "power2.inOut",
+      });
+    }
+    // Synchronize the notch overlay to look like a transparent hole
+    if (notchOverlayRef.current) {
+      gsap.to(notchOverlayRef.current, {
+        opacity: 1, backgroundColor: finalColor,
+        duration: 0.3, ease: "power2.inOut",
+      });
+    }
+    if (notchSvg1Ref.current && notchSvg2Ref.current) {
+      gsap.to([notchSvg1Ref.current, notchSvg2Ref.current], {
+        opacity: 1, color: finalColor,
+        duration: 0.3, ease: "power2.inOut",
+      });
+    }
   };
 
   const handleMouseLeave = () => {
     if (thumbnailRef.current && thumbnail) {
       gsap.to(thumbnailRef.current, {
-        scale: 1,
-        duration: 0.3,
-        ease: "power2.out",
+        scale: 1, duration: 0.3, ease: "power2.out",
+      });
+    }
+    if (hoverBgRef.current) {
+      const paddingPixels = window.innerWidth >= 640 ? 12 : 0;
+      gsap.to(hoverBgRef.current, {
+        top: paddingPixels, left: paddingPixels, right: paddingPixels, bottom: paddingPixels,
+        opacity: 0, backgroundColor: "transparent",
+        duration: 0.3, ease: "power2.inOut",
+      });
+    }
+    if (notchOverlayRef.current) {
+      gsap.to(notchOverlayRef.current, {
+        opacity: 0, backgroundColor: "transparent",
+        duration: 0.3, ease: "power2.inOut",
+      });
+    }
+    if (notchSvg1Ref.current && notchSvg2Ref.current) {
+      gsap.to([notchSvg1Ref.current, notchSvg2Ref.current], {
+        opacity: 0, color: "transparent",
+        duration: 0.3, ease: "power2.inOut",
       });
     }
   };
@@ -91,17 +166,22 @@ export const Card: React.FC<CardProps> = ({
 
   return (
     <div
-      className={`relative flex flex-col shadow-2xs bg-transparent rounded-none p-0 sm:p-3 select-none ${
-        shouldRenderIcon ? "sm:rounded-r-[1rem] sm:rounded-l-none" : "sm:rounded-[1rem]"
+      className={`relative isolate flex flex-col shadow-2xs bg-transparent p-0 sm:p-3 select-none ${
+        shouldRenderIcon ? "sm:rounded-r-[1rem] sm:rounded-bl-[1rem] sm:rounded-tl-none" : "sm:rounded-[1rem]"
       } ${isWholeCardClickable ? "cursor-pointer" : ""} h-full ${className}`}
       style={{ fontFamily: "Manrope, sans-serif", fontWeight: 500 }}
       onClick={isWholeCardClickable ? onClick : undefined}
       onMouseEnter={isWholeCardClickable ? handleMouseEnter : undefined}
       onMouseLeave={isWholeCardClickable ? handleMouseLeave : undefined}
     >
+      {/* Hover Background Layer */}
+      <div 
+        ref={hoverBgRef}
+        className="absolute pointer-events-none z-[-1] sm:rounded-[1rem]"
+      />
       {thumbnail && (
         <div
-          className={`relative overflow-hidden w-full aspect-[16/9] ${
+          className={`relative overflow-hidden w-full aspect-[16/9] isolate ${
             shouldRenderIcon ? "sm:rounded-tr-[1rem] sm:rounded-tl-none" : "sm:rounded-t-[1rem]"
           } ${isThumbnailClickable ? "cursor-pointer" : ""}`}
           onClick={
@@ -118,13 +198,8 @@ export const Card: React.FC<CardProps> = ({
               : undefined
           }
         >
-          <div
-            className="absolute inset-0"
-            style={{
-              WebkitMaskImage: "linear-gradient(to bottom, black 50%, transparent 100%)",
-              maskImage: "linear-gradient(to bottom, black 50%, transparent 100%)",
-            }}
-          >
+          {/* Base Image Layer */}
+          <div className="absolute inset-0 isolate">
             <div
               ref={thumbnailRef}
               className={`absolute inset-0 ${
@@ -136,41 +211,59 @@ export const Card: React.FC<CardProps> = ({
                 src={thumbnail}
                 alt={title}
                 draggable={false}
+                style={{
+                  WebkitMaskImage: "linear-gradient(to bottom, black 50%, transparent 100%)",
+                  maskImage: "linear-gradient(to bottom, black 50%, transparent 100%)",
+                }}
               />
             </div>
-          </div>
 
-          {/* Mask Container */}
-          {shouldRenderIcon && (
-            <div className="absolute left-0 top-0 w-[18%] aspect-square rounded-tl-none rounded-br-[8px] bg-[var(--wb-bg)] z-10 pointer-events-none">
-              <div className="relative z-10 w-full h-full flex items-center justify-center p-2">
-                {icon && (
-                  <img
-                    className="object-contain w-full h-full block"
-                    src={icon}
-                    alt="icon"
-                    draggable={false}
-                  />
-                )}
+            {/* Mask Container (Opaque with animated overlay) */}
+            {shouldRenderIcon && (
+              <div className="absolute left-0 top-0 w-[18%] aspect-square rounded-tl-none rounded-br-[8px] bg-[var(--wb-bg)] z-10 pointer-events-none">
+                {/* Overlay that receives the hover color animation */}
+                <div 
+                  ref={notchOverlayRef}
+                  className="absolute inset-0 pointer-events-none opacity-0"
+                />
+
+                <div className="relative z-10 w-full h-full flex items-center justify-center p-2">
+                  {icon && (
+                    <img
+                      className="object-contain w-full h-full block"
+                      src={icon}
+                      alt="icon"
+                      draggable={false}
+                    />
+                  )}
+                </div>
+
+                {/* Base SVGs to hide the image underneath */}
+                <svg className="absolute top-0 left-full w-[8px] h-[8px] text-[var(--wb-bg)] pointer-events-none" viewBox="0 0 8 8" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M0 0 H8 A8 8 0 0 0 0 8 V0 Z" fill="currentColor" />
+                </svg>
+                <svg className="absolute top-full left-0 w-[8px] h-[8px] text-[var(--wb-bg)] pointer-events-none" viewBox="0 0 8 8" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M0 0 H8 A8 8 0 0 0 0 8 V0 Z" fill="currentColor" />
+                </svg>
+
+                {/* Hover SVGs to apply the hover color seamlessly */}
+                <svg 
+                  ref={notchSvg1Ref}
+                  className="absolute top-0 left-full w-[8px] h-[8px] pointer-events-none opacity-0" 
+                  viewBox="0 0 8 8" fill="none" xmlns="http://www.w3.org/2000/svg"
+                >
+                  <path d="M0 0 H8 A8 8 0 0 0 0 8 V0 Z" fill="currentColor" />
+                </svg>
+                <svg 
+                  ref={notchSvg2Ref}
+                  className="absolute top-full left-0 w-[8px] h-[8px] pointer-events-none opacity-0" 
+                  viewBox="0 0 8 8" fill="none" xmlns="http://www.w3.org/2000/svg"
+                >
+                  <path d="M0 0 H8 A8 8 0 0 0 0 8 V0 Z" fill="currentColor" />
+                </svg>
               </div>
-              <svg
-                className="absolute top-0 left-full w-[8px] h-[8px] text-[var(--wb-bg)] pointer-events-none"
-                viewBox="0 0 8 8"
-                fill="none"
-                xmlns="http://www.w3.org/2000/svg"
-              >
-                <path d="M0 0 H8 A8 8 0 0 0 0 8 V0 Z" fill="currentColor" />
-              </svg>
-              <svg
-                className="absolute top-full left-0 w-[8px] h-[8px] text-[var(--wb-bg)] pointer-events-none"
-                viewBox="0 0 8 8"
-                fill="none"
-                xmlns="http://www.w3.org/2000/svg"
-              >
-                <path d="M0 0 H8 A8 8 0 0 0 0 8 V0 Z" fill="currentColor" />
-              </svg>
-            </div>
-          )}
+            )}
+          </div>
         </div>
       )}
 

@@ -75,6 +75,7 @@ export const Home: React.FC = () => {
                 showIcon={item.showIcon}
                 clickableArea="whole-card"
                 onClick={() => handleCardClick(item)}
+                extractColor={true}
               />
             ))}
           </div>
