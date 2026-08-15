@@ -1631,9 +1631,12 @@ async function downloadArchive({
           getTask,
           onProgress,
         });
+        // Validate the merged file before accepting the multipart transfer.
+        // Some CDNs return correctly-sized but incorrect range bodies.
+        return await finalizeAndVerifyDownload();
       } catch (error) {
         if (getTask()?.cancelled) throw error;
-        await Neutralino.filesystem.remove(partPath).catch(() => {});
+        await cleanupDownloadAttempt();
         onProgress?.(
           "Parallel download failed. Retrying with one connection...",
           2,
@@ -1789,9 +1792,9 @@ async function extractArchive({
   requireValue(archivePath, "archivePath");
   requireValue(destinationPath, "destinationPath");
   await ensureDirectoryExists(destinationPath);
-  const archiveStats = await Neutralino.filesystem
-    .getStats(archivePath)
-    .catch(() => null);
+  const archiveStats = await waitForDownloadedArchive(archivePath).catch(
+    () => null,
+  );
   if (!archiveStats?.size) {
     throw new Error(
       "WeekBox could not find a complete downloaded archive to unpack. Try the download again.",

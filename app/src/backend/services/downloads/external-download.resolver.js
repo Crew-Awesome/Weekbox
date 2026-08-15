@@ -191,10 +191,10 @@ ${result.stdErr || ""}`;
   if (status && (status < 200 || status >= 400)) return 0;
   const ranges = [...headers.matchAll(/content-range:\s*bytes\s+0-0\/(\d+)/gi)];
   const rangeSize = Number(ranges.at(-1)?.[1]);
-  if (rangeSize > 0) return rangeSize;
-  const lengths = [...headers.matchAll(/content-length:\s*(\d+)/gi)];
-  const length = Number(lengths.at(-1)?.[1]);
-  return length > 0 ? length : 0;
+  // A Content-Length-only response means the server ignored the range.
+  // Treating it as range support makes every multipart request download the
+  // same full file and produces a corrupt archive after the parts are merged.
+  return rangeSize > 0 && (!status || status === 206) ? rangeSize : 0;
 }
 
 export {
