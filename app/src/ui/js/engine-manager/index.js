@@ -392,23 +392,10 @@ export const engineManagerModal = {
           const targetPath = `${FS.enginesPath}/${engineId}/${version}`;
           try {
             if (await FS.api.exists(targetPath)) {
-              const result = await Neutralino.os.execCommand(
-                window.NL_OS === "Windows"
-                  ? `rmdir /S /Q "${targetPath.replace(/\//g, "\\")}"`
-                  : `rm -rf "${targetPath}"`,
-                { background: false },
-              );
-              if (
-                Number(result?.exitCode) !== 0 &&
-                (await FS.api.exists(targetPath))
-              ) {
-                await FS.api.remove(targetPath).catch(() => {});
-              }
+              await FS.api.remove(targetPath);
               if (await FS.api.exists(targetPath)) {
                 throw new Error(
-                  result?.stdErr ||
-                    result?.stdOut ||
-                    "The engine folder could not be removed. Close the engine and try again.",
+                  "The engine folder could not be removed. Close the engine and try again.",
                 );
               }
             }

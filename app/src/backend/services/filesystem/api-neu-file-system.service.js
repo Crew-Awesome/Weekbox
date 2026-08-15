@@ -28,7 +28,10 @@ var APIneuFileSystem = {
         "WeekBox could not create a storage folder because its path is missing.",
       );
     }
-    const normalizedPath = path.replace(/\\/g, "/").replace(/\/+$/, "");
+    const rawPath = path.replace(/\\/g, "/");
+    const normalizedPath =
+      rawPath.replace(/\/+$/, "") || (rawPath.startsWith("/") ? "/" : rawPath);
+    if (normalizedPath === "/" || /^[a-zA-Z]:$/.test(normalizedPath)) return;
     if (await this.exists(normalizedPath)) return;
     const separator = normalizedPath.lastIndexOf("/");
     if (
@@ -128,12 +131,14 @@ var APIneuFileSystem = {
 
     try {
       await Neutralino.filesystem.remove(normalizedPath);
-      return;
+      if (!(await this.exists(normalizedPath))) return;
     } catch (error) {
       // Native remove can fail if path is a non-empty directory
     }
 
-    if (await this.exists(normalizedPath)) {
+    const maxAttempts = window.NL_OS === "Windows" ? 3 : 2;
+    for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+      if (!(await this.exists(normalizedPath))) return;
       try {
         const isWin = window.NL_OS === "Windows";
         const stats = await Neutralino.filesystem
@@ -144,15 +149,13 @@ var APIneuFileSystem = {
             ? `cmd /c rmdir /S /Q ${quoteShellArgument(normalizedPath.replace(/\//g, "\\"))}`
             : `cmd /c del /F /Q ${quoteShellArgument(normalizedPath.replace(/\//g, "\\"))}`
           : `rm -rf ${quoteShellArgument(normalizedPath)}`;
-        const result = await Neutralino.os.execCommand(command, {
-          background: false,
-        });
-        if (result?.exitCode === 0 || !(await this.exists(normalizedPath))) {
-          return;
-        }
+        await Neutralino.os.execCommand(command, { background: false });
+        if (!(await this.exists(normalizedPath))) return;
       } catch (cmdError) {
         console.warn("Recursive removal fallback failed:", cmdError);
       }
+      if (attempt < maxAttempts)
+        await new Promise((resolve) => setTimeout(resolve, attempt * 200));
     }
 
     if (await this.exists(normalizedPath)) {

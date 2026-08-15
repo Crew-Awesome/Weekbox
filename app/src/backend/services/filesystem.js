@@ -344,6 +344,14 @@ var _FileSystemService = class _FileSystemService {
     const selectedPath = trimPath(path);
     const selectedComparablePath = normalizeComparablePath(selectedPath);
     const appPath = normalizeComparablePath(window.NL_PATH);
+    if (
+      window.NL_OS === "Darwin" &&
+      /\/[^/]+\.app\/Contents\/MacOS(?:\/|$)/i.test(selectedPath)
+    ) {
+      throw new Error(
+        "Choose a storage folder outside the WeekBox application folder.",
+      );
+    }
     const runningExecutable = trimPath(window.NL_ARGS?.[0]);
     const executableDirectory = normalizeComparablePath(
       runningExecutable ? getParentPath(runningExecutable) : "",
