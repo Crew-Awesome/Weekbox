@@ -5,6 +5,7 @@ import Card from './components/atoms/card-mainmenu/card';
 import Titles from './components/atoms/titles/titles';
 import { AnimatedInput } from './components/atoms/animated-input/animated-input';
 import Searchbar from './components/molecules/searchbar/searchbar';
+import { Carousel } from './components/molecules/Carousel';
 import { Modal } from './components/atoms/modal/modal';
 import { extractColor } from './utils/extractColor';
 
@@ -30,6 +31,7 @@ const Shared = {
   molecules: {
     Card,
     Searchbar,
+    Carousel,
   },
 
   /**

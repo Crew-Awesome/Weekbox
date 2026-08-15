@@ -60,6 +60,27 @@ export const Home: React.FC = () => {
         </div>
         
         <div className="pt-2 sm:pt-8 px-8">
+          <div className="mb-8 w-full">
+            <Shared.atoms.Titles title="Featured Mods" />
+            <Shared.molecules.Carousel isInfinite isAuto autoInterval={3500} aspectRatio="21 / 9" className="mt-4">
+              {MOCK_MODS.map((item, index) => (
+                <div key={`featured-${index}`} className="w-full h-full p-2">
+                  <div className="m3-card w-full h-full bg-[var(--wb-surface-container)] rounded-[32px] overflow-hidden relative shadow-lg">
+                    {item.img && <img src={item.img} alt={item.name} className="absolute inset-0 w-full h-full object-cover opacity-60" />}
+                    <div className="m3-card-content absolute inset-0 p-6 flex flex-col justify-end bg-gradient-to-t from-black/90 to-transparent">
+                      <div className="flex items-center gap-3">
+                        {item.showIcon !== false && item.icon && (
+                          <img src={item.icon} alt="icon" className="w-10 h-10 object-contain drop-shadow-md" />
+                        )}
+                        <h3 className="text-xl font-bold text-white truncate drop-shadow-md">{item.name}</h3>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </Shared.molecules.Carousel>
+          </div>
+
           <Shared.atoms.Titles title="All Mods" />
           
           <div
