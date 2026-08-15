@@ -2,20 +2,30 @@ import React, { useState, useEffect } from 'react';
 import { X } from 'lucide-react';
 
 /**
+ * Defines spacing as a single string (all sides) or [horizontal, vertical] array.
+ */
+export type SpacingValue = string | [string, string];
+
+/**
  * Configuration for the modal's separation from the screen edges.
  * Accepts any valid CSS unit (e.g., '16px', '2rem', '5%').
  */
 export interface EdgeSpacingConfig {
+  /**
+   * If true, the modal will NOT stretch to fill the edges. Instead, the `mobile` and `desktop` 
+   * properties will define the EXACT [Width, Height] of the modal directly via inline styles.
+   */
+  isStaticSize?: boolean;
   /** 
-   * Separation on mobile screens (< 640px). 
+   * Separation on mobile screens (< 640px). Or exact [Width, Height] if isStaticSize is true.
    * @default "16px"
    */
-  mobile?: string;
+  mobile?: SpacingValue;
   /** 
-   * Separation on desktop/tablet screens (>= 640px). 
+   * Separation on desktop/tablet screens (>= 640px). Or exact [Width, Height] if isStaticSize is true.
    * @default "32px"
    */
-  desktop?: string;
+  desktop?: SpacingValue;
 }
 
 export interface ModalProps {
@@ -84,19 +94,56 @@ export const Modal: React.FC<ModalProps> = ({
 
   if (!isRendered) return null;
 
-  // Determine current spacing value
-  const currentSpacing = edgeSpacing ? (isDesktop ? (edgeSpacing.desktop || '32px') : (edgeSpacing.mobile || '16px')) : undefined;
+  // Helper to parse SpacingValue to CSS padding string
+  const parseSpacing = (spacing?: SpacingValue, fallback: string = '0px') => {
+    if (!spacing) return fallback;
+    if (Array.isArray(spacing)) {
+      // spacing is [horizontal, vertical] => CSS padding: "vertical horizontal"
+      return `${spacing[1]} ${spacing[0]}`;
+    }
+    return spacing;
+  };
+
+  // Determine active spacing/size configuration
+  const currentConfig = edgeSpacing ? (isDesktop ? edgeSpacing.desktop : edgeSpacing.mobile) : undefined;
+  const isStatic = edgeSpacing?.isStaticSize;
+
+  let overlayPadding: string | undefined;
+  let staticModalStyle: React.CSSProperties = {};
   
-  // If edge spacing is enabled, the modal expands to 100% of the available space inside the padding.
-  // Otherwise, it falls back to the legacy widthClass/heightClass.
-  const activeWidthClass = edgeSpacing ? "w-full max-w-full" : widthClass;
-  const activeHeightClass = edgeSpacing ? "h-full max-h-full" : heightClass;
+  if (currentConfig) {
+    if (isStatic) {
+      if (Array.isArray(currentConfig)) {
+        staticModalStyle = { width: currentConfig[0], height: currentConfig[1] };
+      } else {
+        staticModalStyle = { width: currentConfig, height: currentConfig };
+      }
+    } else {
+      overlayPadding = parseSpacing(currentConfig, isDesktop ? '32px' : '16px');
+    }
+  }
+
+  // Determine active classes for the modal body
+  let activeWidthClass = widthClass;
+  let activeHeightClass = heightClass;
+
+  if (edgeSpacing) {
+    if (!isStatic) {
+      // Dynamic Edge Spacing: expand to fill the padding limits
+      activeWidthClass = "w-full max-w-full";
+      activeHeightClass = "h-full max-h-full";
+    } else {
+      // Static Size: clear tailwind width/height classes so inline styles apply cleanly
+      activeWidthClass = "";
+      activeHeightClass = "";
+    }
+  }
 
   return (
     <div 
       className={`fixed inset-0 z-[100] flex items-center justify-center transition-opacity duration-300 ease-out ${isVisible ? 'opacity-100' : 'opacity-0'} ${overlayClassName}`}
       onClick={onClose}
-      style={currentSpacing ? { padding: currentSpacing } : undefined}
+      style={overlayPadding ? { padding: overlayPadding } : undefined}
     >
       <div 
         className="absolute inset-0 bg-black/40 backdrop-blur-md z-[-1]" 
@@ -105,6 +152,7 @@ export const Modal: React.FC<ModalProps> = ({
       <div 
         className={`relative flex flex-col ${activeWidthClass} ${activeHeightClass} ${modalClassName} transition-all duration-300 ease-out transform ${isVisible ? 'scale-100 translate-y-0 opacity-100' : 'scale-[0.97] translate-y-4 opacity-0'}`}
         onClick={(e) => e.stopPropagation()}
+        style={staticModalStyle}
       >
         <div 
           className="absolute inset-0 bg-[var(--wb-surface)] rounded-2xl shadow-[0_8px_32px_rgba(0,0,0,0.6)] border border-white/10 overflow-hidden z-0"
