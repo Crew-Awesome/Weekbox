@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { platform } from '../../../../core/platform';
+import Core from '@core';
 
 /**
  * @description Átomo: Versión de la Aplicación.
@@ -10,7 +10,7 @@ export const AppVersion: React.FC = () => {
   const [version, setVersion] = useState<string | null>('...');
 
   useEffect(() => {
-    platform.getVersion().then((v) => {
+    Core.platform.getVersion().then((v) => {
       setVersion(v);
     });
   }, []);

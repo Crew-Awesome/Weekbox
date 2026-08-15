@@ -26,7 +26,8 @@
     "paths": {
       "@shared": ["./src/shared/shared.tsx"],
       "@features": ["./src/features/index.ts"],
-      "@utils": ["./src/utils/utils.tsx"]
+      "@utils": ["./src/utils/utils.tsx"],
+      "@core": ["./src/core/index.ts"]
     }
   },
   "include": ["src"]

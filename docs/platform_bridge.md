@@ -21,22 +21,22 @@ El sistema se compone de los siguientes elementos clave (ubicados en `frontend/s
 
 Gracias a esta arquitectura, usar características nativas desde cualquier componente es muy sencillo.
 
-### 1. Importar el Singleton
-En cualquier archivo `.tsx` o `.ts` de tu frontend, importa la variable `platform`:
+### 1. Importar el Núcleo (Core)
+Gracias a nuestra configuración de alias absolutos y el Patrón Fachada, no necesitas rutas relativas complicadas. Simplemente importa `Core`:
 
 ```typescript
-import { platform } from '../../core/platform'; // O la ruta relativa correspondiente
+import Core from '@core';
 ```
 
 ### 2. Inicialización automática
-La plataforma se inicializa automáticamente al importar el singleton, por lo que no es necesario llamar a `platform.initialize()` manualmente en los componentes o en el `App.tsx`. (Cambiado para simplificar el uso de la API)
+La plataforma se inicializa automáticamente en el Core, por lo que no es necesario llamar a `Core.platform.initialize()` manualmente en los componentes o en el `App.tsx`.
 
 ### 3. Escuchar Eventos Nativos
-Para recibir datos desde el backend (por ejemplo, respuestas de la extensión de Node o eventos de la app móvil), utiliza el método `onEvent`. Este método retorna una función para desuscribirse y limpiar el listener, ideal para usar dentro de `useEffect`:
+Para recibir datos desde el backend (por ejemplo, respuestas de la extensión de Node o eventos nativos), utiliza el método `onEvent`. Este método retorna una función para desuscribirse y limpiar el listener, ideal para usar dentro de `useEffect`:
 
 ```typescript
 useEffect(() => {
-  const unsubscribe = platform.onEvent('myDataEvent', (data) => {
+  const unsubscribe = Core.platform.onEvent('myDataEvent', (data) => {
     console.log('Datos recibidos del backend nativo:', data);
   });
 
@@ -66,4 +66,4 @@ A medida que el proyecto crezca, necesitaremos nuevas funciones nativas (ej. lee
    - *Web*: Simula la respuesta con `setTimeout` o imprime un `console.log` para que la UI no se rompa en desarrollo.
 
 3. **Úsalo en la UI**:
-   Ahora cualquier componente puede llamar a `platform.readFile('archivo.txt')` (por ejemplo) sin importarle en qué dispositivo está corriendo. El Singleton se encargará de rutear esa llamada al adaptador activo.
+   Ahora cualquier componente puede llamar a `Core.platform.readFile('archivo.txt')` (por ejemplo) sin importarle en qué dispositivo está corriendo. El Singleton se encargará de rutear esa llamada al adaptador activo.

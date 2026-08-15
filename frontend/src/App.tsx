@@ -1,5 +1,5 @@
 import Features from '@features';
-import { platform } from './core/platform';
+import Core from '@core';
 import type { LoadingTask } from '@features';
 //import DiscordRpc from './utils/discordrpc';
 
@@ -9,8 +9,8 @@ function App() {
     {
       name: 'Comprobando entorno de ejecución...',
       action: async () => {
-        const version = await platform.getVersion();
-        console.log(`Ejecutando Weekbox v${version} en ${platform.platformName}`);
+        const version = await Core.platform.getVersion();
+        console.log(`Ejecutando Weekbox v${version} en ${Core.platform.platformName}`);
       }
     }
   ];
