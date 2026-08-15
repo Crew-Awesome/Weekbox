@@ -148,7 +148,7 @@ export const Banner: React.FC<BannerProps> = ({
 
   return (
     <div
-      className={`relative isolate flex shadow-2xs bg-transparent p-0 sm:p-3 select-none cursor-pointer w-full min-h-[200px] sm:min-h-[250px] sm:rounded-[1rem] ${className}`}
+      className={`relative isolate flex shadow-2xs bg-transparent p-0 sm:p-3 select-none cursor-pointer w-full min-h-[200px] sm:min-h-[250px] sm:rounded-[1rem] sm:rounded-tl-none ${className}`}
       style={{ fontFamily: "Manrope, sans-serif", fontWeight: 500 }}
       onClick={onClick}
       onMouseEnter={handleMouseEnter}
@@ -162,7 +162,7 @@ export const Banner: React.FC<BannerProps> = ({
 
       {/* Background Image Container with static mask */}
       <div
-        className="absolute left-0 top-0 bottom-0 sm:left-3 sm:top-3 sm:bottom-3 w-[65%] sm:w-[calc(65%-12px)] overflow-hidden isolate pointer-events-none z-0 rounded-l-[1rem] sm:rounded-l-[1rem]"
+        className="absolute left-0 top-0 bottom-0 sm:left-3 sm:top-3 sm:bottom-3 w-[65%] sm:w-[calc(65%-12px)] overflow-hidden isolate pointer-events-none z-0 rounded-bl-[1rem] sm:rounded-bl-[1rem]"
         style={{
           WebkitMaskImage: "linear-gradient(to right, black 50%, transparent 100%)",
           maskImage: "linear-gradient(to right, black 50%, transparent 100%)",
@@ -182,7 +182,7 @@ export const Banner: React.FC<BannerProps> = ({
 
         {/* Mask Container (Icon top-left notch) */}
         {shouldRenderIcon && (
-          <div className="absolute left-0 top-0 w-16 sm:w-20 aspect-square rounded-tl-[1rem] rounded-br-[8px] bg-[var(--wb-bg)] z-10 pointer-events-none">
+          <div className="absolute left-0 top-0 w-16 sm:w-20 aspect-square rounded-br-[8px] bg-[var(--wb-bg)] z-10 pointer-events-none">
             <div 
               ref={notchOverlayRef}
               className="absolute inset-0 pointer-events-none opacity-0"

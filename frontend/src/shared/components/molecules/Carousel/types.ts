@@ -28,4 +28,6 @@ export interface CarouselProps {
     aspectRatio?: string;
     /** Optional callback to render custom indicators (like pills or dots). */
     renderIndicators?: (api: CarouselAPI) => React.ReactNode;
+    /** Optional callback executed when the active (centered) item is clicked. */
+    onItemClick?: (index: number) => void;
 }

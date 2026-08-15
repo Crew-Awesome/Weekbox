@@ -86,6 +86,7 @@ export const Carousel: React.FC<CarouselProps> = (props) => {
                     }}
                     onPointerDown={onPointerDown}
                     onScroll={onScroll}
+                    onTouchEnd={onTouchEnd}
                 >
                     <div className="absolute inset-0 pointer-events-none">
                         {visualChildren.map((child, idx) => (

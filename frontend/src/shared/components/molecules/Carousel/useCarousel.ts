@@ -9,7 +9,8 @@ export function useCarousel(props: CarouselProps) {
         children,
         isInfinite = false,
         isAuto = false,
-        autoInterval = 3000
+        autoInterval = 3000,
+        onItemClick
     } = props;
 
     const containerRef = useRef<HTMLDivElement>(null);
@@ -21,7 +22,8 @@ export function useCarousel(props: CarouselProps) {
         startX: 0,
         scrollLeft: 0,
         isAnimating: false,
-        direction: 1
+        direction: 1,
+        hasDragged: false
     });
 
     const childrenArray = Children.toArray(children);
@@ -190,6 +192,8 @@ export function useCarousel(props: CarouselProps) {
     }, [isAuto, isInfinite, autoInterval, smoothScrollToIndex, pauseAuto]);
 
     const goToLogicalIndex = useCallback((targetUniqueIndex: number) => {
+        if (dragState.current.hasDragged) return;
+        
         const scroller = scrollerRef.current;
         if (!scroller || scroller.clientWidth === 0 || totalItems === 0) return;
         
@@ -199,7 +203,10 @@ export function useCarousel(props: CarouselProps) {
         const currentUniqueIndex = currentLogicalIndex % childrenArray.length;
         
         let diff = targetUniqueIndex - currentUniqueIndex;
-        if (diff === 0) return;
+        if (diff === 0) {
+            if (onItemClick) onItemClick(targetUniqueIndex);
+            return;
+        }
         
         if (isInfinite) {
             const uniqueCount = childrenArray.length;
@@ -209,14 +216,22 @@ export function useCarousel(props: CarouselProps) {
         
         const targetIndex = currentIndex + diff;
         smoothScrollToIndex(targetIndex, 0.6);
-    }, [isInfinite, totalItems, childrenArray.length, smoothScrollToIndex]);
+    }, [isInfinite, totalItems, childrenArray.length, smoothScrollToIndex, onItemClick]);
 
     const onPointerDown = (e: PointerEvent<HTMLDivElement>) => {
+        const isMobile = window.innerWidth < 640;
+        
+        if (isMobile) {
+            pauseAuto();
+            return;
+        }
+
         const scroller = scrollerRef.current;
         if (!scroller) return;
         
         pauseAuto();
         dragState.current.isDown = true;
+        dragState.current.hasDragged = false;
         
         if (dragState.current.isAnimating) {
             dragState.current.isAnimating = false;
@@ -235,6 +250,10 @@ export function useCarousel(props: CarouselProps) {
             
             const dx = Math.abs(moveEvent.pageX - dragState.current.startX);
             const dy = Math.abs(moveEvent.pageY - startY);
+            
+            if (dx > 5 || dy > 5) {
+                dragState.current.hasDragged = true;
+            }
             
             // Determine direction lock on first few pixels of movement
             if (isHorizontalSwipe === null && (dx > 5 || dy > 5)) {
