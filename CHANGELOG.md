@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- Fixed Mod Manager loading and error icons rendering as literal HTML text.
+
 ## [2.1.12] - 2026-08-14
 
 ### Fixed
