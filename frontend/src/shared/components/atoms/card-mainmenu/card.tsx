@@ -40,6 +40,10 @@ export interface CardProps {
    * Optional custom elements to render at the bottom of the card. 
    */
   children?: React.ReactNode;
+  /**
+   * Optional CSS classes to apply to the root element.
+   */
+  className?: string;
 }
 
 /**
@@ -55,6 +59,7 @@ export const Card: React.FC<CardProps> = ({
   onClick,
   clickableArea = "whole-card",
   children,
+  className = "",
 }) => {
   const thumbnailRef = useRef<HTMLDivElement>(null);
 
@@ -86,9 +91,9 @@ export const Card: React.FC<CardProps> = ({
 
   return (
     <div
-      className={`relative shadow-2xs bg-transparent rounded-none p-0 sm:p-3 ${
+      className={`relative flex flex-col shadow-2xs bg-transparent rounded-none p-0 sm:p-3 select-none ${
         shouldRenderIcon ? "sm:rounded-r-[1rem] sm:rounded-l-none" : "sm:rounded-[1rem]"
-      } ${isWholeCardClickable ? "cursor-pointer" : ""}`}
+      } ${isWholeCardClickable ? "cursor-pointer" : ""} h-full ${className}`}
       style={{ fontFamily: "Manrope, sans-serif", fontWeight: 500 }}
       onClick={isWholeCardClickable ? onClick : undefined}
       onMouseEnter={isWholeCardClickable ? handleMouseEnter : undefined}
@@ -96,7 +101,7 @@ export const Card: React.FC<CardProps> = ({
     >
       {thumbnail && (
         <div
-          className={`relative aspect-[16/9] overflow-hidden w-full ${
+          className={`relative overflow-hidden w-full aspect-[16/9] ${
             shouldRenderIcon ? "sm:rounded-tr-[1rem] sm:rounded-tl-none" : "sm:rounded-t-[1rem]"
           } ${isThumbnailClickable ? "cursor-pointer" : ""}`}
           onClick={
@@ -130,6 +135,7 @@ export const Card: React.FC<CardProps> = ({
                 className="w-full h-full object-cover block"
                 src={thumbnail}
                 alt={title}
+                draggable={false}
               />
             </div>
           </div>
@@ -143,6 +149,7 @@ export const Card: React.FC<CardProps> = ({
                     className="object-contain w-full h-full block"
                     src={icon}
                     alt="icon"
+                    draggable={false}
                   />
                 )}
               </div>
@@ -167,10 +174,10 @@ export const Card: React.FC<CardProps> = ({
         </div>
       )}
 
-      <div className="mt-4 px-0 sm:px-0 flex flex-col gap-1 h-20">
+      <div className="mt-4 px-0 sm:px-0 flex flex-col gap-1 h-20 shrink-0">
         {/* Title: Uses line-clamp-2 to allow up to 2 lines without a fixed height, letting the description slide up. */}
         <strong 
-          className="text-xl font-bold leading-snug line-clamp-2"
+          className="text-xl font-bold leading-snug line-clamp-2 select-text"
         >
           {title}
         </strong>
