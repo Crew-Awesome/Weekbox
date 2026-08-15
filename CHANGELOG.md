@@ -10,6 +10,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - Fixed Mod Manager loading and error icons rendering as literal HTML text.
+- Fixed multipart downloads corrupting archives when a server ignored range requests.
+- Fixed archive extraction racing the temporary file handoff after download.
+- Fixed macOS storage setup selecting the app bundle or failing at the filesystem root.
+- Fixed engine removal retrying through the shared filesystem cleanup path.
+- Fixed packaged startup missing interface templates when the document-root URL was unavailable.
 
 ## [2.1.12] - 2026-08-14
 

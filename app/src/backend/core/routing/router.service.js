@@ -14,7 +14,10 @@ router = {
       );
     }
     try {
-      const templateFiles = ["src/ui/html/index.html"];
+      const templateFiles = [
+        "src/ui/html/index.html",
+        "/app/src/ui/html/index.html",
+      ];
       const parser = new DOMParser();
       const requiredTemplateIds = [
         "tpl-mainModal",
@@ -61,6 +64,7 @@ router = {
             }
           }
         }
+        if (loaded) break;
       }
       const missingTemplates = requiredTemplateIds.filter(
         (id) => !document.getElementById(id),
