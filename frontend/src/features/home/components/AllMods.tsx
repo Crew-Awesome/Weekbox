@@ -29,3 +29,4 @@ export const AllMods: React.FC<AllModsProps> = ({ onCardClick }) => {
     </>
   );
 };
+

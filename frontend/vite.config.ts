@@ -64,7 +64,9 @@ export default defineConfig({
       '@shared': path.resolve(__dirname, './src/shared/shared.tsx'),
       '@features': path.resolve(__dirname, './src/features/index.ts'),
       '@utils': path.resolve(__dirname, './src/utils/utils.tsx'),
-      '@core': path.resolve(__dirname, './src/core/index.ts')
+      '@core': path.resolve(__dirname, './src/core/index.ts'),
+      '@fs': path.resolve(__dirname, './src/core/backend/fs/index.ts'),
+      '@http': path.resolve(__dirname, './src/core/backend/http/index.ts')
     }
   },
   server: {

@@ -27,7 +27,9 @@
       "@shared": ["./src/shared/shared.tsx"],
       "@features": ["./src/features/index.ts"],
       "@utils": ["./src/utils/utils.tsx"],
-      "@core": ["./src/core/index.ts"]
+      "@core": ["./src/core/index.ts"],
+      "@fs": ["./src/core/backend/fs/index.ts"],
+      "@http": ["./src/core/backend/http/index.ts"]
     }
   },
   "include": ["src"]

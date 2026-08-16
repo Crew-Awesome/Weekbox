@@ -1,4 +1,6 @@
 import { platform } from './platform';
+import { fs } from './backend/fs';
+import { http } from './backend/http';
 
 /**
  * @description API global para acceder al Núcleo (Core) de Weekbox.
@@ -11,9 +13,10 @@ const Core = {
   platform,
   
   /**
-   * @description Módulos y utilidades del sistema de archivos (File System).
+   * @description Módulos y utilidades del sistema de archivos unificado (Neutralino + Node).
    */
-  fs: {},
+  fs,
+  http,
 
   /**
    * @description Servicios externos para consumo de APIs (GameBanana, GameJolt, etc.).

@@ -6,13 +6,21 @@ console.log('STARTING NODE MAIN.JS');
 // (c)2023-2024 Harald Schneider - marketmix.com
 
 const NeutralinoExtension = require('./neutralino-extension');
-const discordRPC = require('./discord/discordRPC');
 const DEBUG = true;     // Print incoming event messages to the console
+const { Client } = require("@xhayper/discord-rpc");
 const backendModule = import('../host.mjs');
+const DISCORD_ID = "1535155487056732160";
+let isdiscordready = false;
 
-// Initialize Discord RPC
-discordRPC.init();
+const cliente = new Client({ clientId: DISCORD_ID });
+cliente.on("ready", () => {
+    isdiscordready = true;
 
+});
+
+
+
+cliente.login().catch((err) => { console.log(err, "error ayuda"); });
 // This simulates a long-running task, reporting its progress to the frontend.
 //
 function delay(ms) {
@@ -30,6 +38,27 @@ function ping(d) {
     // Send some data to the Neutralino app
 
     ext.sendMessage('pingResult', `Node says PONG, in reply to "${d}"`);
+}
+function loading(time = 5000) {
+    return new Promise((resolve, reject) => {
+        if (isdiscordready) return resolve();
+
+        const start = Date.now();
+        const interval = setInterval(() => {
+            console.log("discord carga", time, interval);
+
+            if (isdiscordready) {
+                clearInterval(interval);
+                resolve();
+            } else if (Date.now() - start > time) {
+                clearInterval(interval);
+                reject(new Error("Discord RPC timeout"));
+            }
+        }, 100);
+
+
+    })
+
 }
 
 async function processAppEvent(data) {
@@ -66,12 +95,24 @@ async function processAppEvent(data) {
         }
 
         if (eventName === "setActivity") {
-            await discordRPC.setActivity(eventData);
+            try {
+                await loading();
+                cliente.user.setActivity(eventData);
+            } catch (err) {
+                console.error("Discortd no cargo a tiempo", err);
+            }
         }
 
+
         if (eventName === "clearActivity") {
-            await discordRPC.clearActivity();
+            try {
+                await loading();
+                cliente.user.clearActivity();
+            } catch (err) {
+                console.error("Discortd no cargo para eliminar actividad a tiempo", err);
+            }
         }
+
     }
 }
 

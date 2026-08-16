@@ -18,6 +18,7 @@ declare global {
       app?: {
         getConfig: () => Promise<any>;
       };
+      filesystem?: any;
     };
     NodeExtension?: new (debug?: boolean) => {
       run: (func: string, param?: any) => void;
