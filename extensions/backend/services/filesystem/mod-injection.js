@@ -1,0 +1,338 @@
+import {
+  getModFolderName,
+  getEngineModFolderName,
+  normalizeFolderName,
+} from "./path.js";
+
+function sameId(left, right) {
+  return String(left) === String(right);
+}
+
+function supportsEngineVersion(mod, version) {
+  return !mod.engineVersion || mod.engineVersion === version;
+}
+
+function usesAddonsDirectory(mod, engineId) {
+  // Legacy Codename dependencies already live in addons; keep that placement on migration.
+  return (
+    engineId === "codename" &&
+    (mod.kind === "dependency" || mod.kind === "addon")
+  );
+}
+
+var _ModInjectionService = class _ModInjectionService {
+  constructor({
+    api,
+    executables,
+    modRepository,
+    getEnginesPath,
+    getModsPath,
+    isEngineRunning,
+  }) {
+    this.api = api;
+    this.executables = executables;
+    this.modRepository = modRepository;
+    this.getEnginesPath = getEnginesPath;
+    this.getModsPath = getModsPath;
+    this.isEngineRunning = isEngineRunning;
+  }
+  getLegacyModsPath(engineId, version) {
+    return `${this.getEnginesPath()}/${engineId}/${version}/mods`;
+  }
+  getLegacyAddonsPath(engineId, version) {
+    return `${this.getEnginesPath()}/${engineId}/${version}/addons`;
+  }
+  async getEngineContentPath(engineId, version, directoryName) {
+    const legacyPath = `${this.getEnginesPath()}/${engineId}/${version}/${directoryName}`;
+    if (window.NL_OS !== "Darwin") return legacyPath;
+    const executablePath = await this.executables.find(
+      `${this.getEnginesPath()}/${engineId}/${version}`,
+    );
+    const normalizedPath = String(executablePath || "").replace(/\\/g, "/");
+    const bundleMatch = normalizedPath.match(/^(.+?\.app)(?:\/|$)/i);
+    return bundleMatch
+      ? `${bundleMatch[1]}/Contents/Resources/${directoryName}`
+      : legacyPath;
+  }
+  async getEngineModsPath(engineId, version) {
+    return this.getEngineContentPath(engineId, version, "mods");
+  }
+  async getEngineAddonsPath(engineId, version) {
+    return this.getEngineContentPath(engineId, version, "addons");
+  }
+  async migrateLegacyEngineMods(engineId, version) {
+    if (window.NL_OS !== "Darwin") return;
+    const legacyModsPath = this.getLegacyModsPath(engineId, version);
+    const bundleModsPath = await this.getEngineModsPath(engineId, version);
+    if (
+      bundleModsPath === legacyModsPath ||
+      !(await this.api.exists(legacyModsPath))
+    ) {
+      return;
+    }
+    await this.api.ensureDir(bundleModsPath);
+    const entries = await Neutralino.filesystem
+      .readDirectory(legacyModsPath)
+      .catch(() => []);
+    for (const entry of entries.filter(
+      (item) => item.entry !== "." && item.entry !== "..",
+    )) {
+      const sourcePath = `${legacyModsPath}/${entry.entry}`;
+      const destinationPath = `${bundleModsPath}/${entry.entry}`;
+      if (await this.api.exists(destinationPath)) continue;
+      try {
+        await this.api.move(sourcePath, destinationPath);
+      } catch (error) {
+        console.warn("Could not migrate macOS engine mod:", sourcePath, error);
+      }
+    }
+  }
+  async migrateLegacyEngineModsFor(engines) {
+    if (window.NL_OS !== "Darwin") return;
+    await Promise.all(
+      engines.map((engine) =>
+        this.migrateLegacyEngineMods(engine.id, engine.version),
+      ),
+    );
+  }
+  async link(mod, engineId, version) {
+    const folderName = getModFolderName(mod);
+    if (!String(folderName || "").trim())
+      throw new Error(
+        "WeekBox could not link this mod: required parameter 'folderName' is missing.",
+      );
+    const sourcePath = `${this.getModsPath()}/${folderName}`;
+    await this.migrateLegacyEngineMods(engineId, version);
+    const modsPath = usesAddonsDirectory(mod, engineId)
+      ? await this.getEngineAddonsPath(engineId, version)
+      : await this.getEngineModsPath(engineId, version);
+    const engineFolderName = getEngineModFolderName(mod);
+    if (!String(modsPath || "").trim())
+      throw new Error(
+        "WeekBox could not link this mod: required parameter 'modsPath' is missing.",
+      );
+    if (!String(engineFolderName || "").trim())
+      throw new Error(
+        "WeekBox could not link this mod: required parameter 'engineFolderName' is missing.",
+      );
+    const linkPath = `${modsPath}/${engineFolderName}`;
+    if (!(await this.api.exists(sourcePath))) {
+      throw new Error(`Mod files not found for ${mod.name}`);
+    }
+    await this.api.ensureDir(modsPath);
+    if (await this.api.exists(linkPath)) {
+      const storedMods = await this.modRepository.getAll();
+      const conflicts = (Array.isArray(storedMods) ? storedMods : []).filter(
+        (otherMod) =>
+          !sameId(otherMod.id, mod.id) &&
+          otherMod.engineId === engineId &&
+          !otherMod.hidden &&
+          usesAddonsDirectory(otherMod, engineId) ===
+            usesAddonsDirectory(mod, engineId) &&
+          normalizeFolderName(getEngineModFolderName(otherMod)) ===
+            normalizeFolderName(engineFolderName),
+      );
+      if (conflicts.length) {
+        throw new Error(
+          `Engine folder conflict: ${engineFolderName} is already used by ${conflicts[0].name}. Remove or hide it before launching ${mod.name}.`,
+        );
+      }
+      return { linked: false, path: linkPath };
+    }
+    const command =
+      window.NL_OS === "Windows"
+        ? `cmd /c mklink /J "${linkPath}" "${sourcePath}"`
+        : `ln -s "${sourcePath}" "${linkPath}"`;
+    const result = await Neutralino.os.execCommand(command, {
+      background: false,
+    });
+    if (result.exitCode !== 0) {
+      if (
+        window.NL_OS === "Windows" &&
+        /local ntfs volumes are required|not supported/i.test(
+          String(result.stdErr || ""),
+        )
+      ) {
+        await Neutralino.filesystem.copy(sourcePath, linkPath, {
+          recursive: true,
+          overwrite: false,
+          skip: false,
+        });
+        await this.api.write(`${linkPath}/.weekbox-copy-link`, "1");
+        return { linked: true, copied: true, path: linkPath };
+      }
+      throw new Error(result.stdErr || `Could not inject ${mod.name}`);
+    }
+    return { linked: true, path: linkPath };
+  }
+  async injectOne(modId, engineId, version) {
+    const storedMods = await this.modRepository.getAll();
+    const mod = (Array.isArray(storedMods) ? storedMods : []).find((item) =>
+      sameId(item.id, modId),
+    );
+    if (!mod || mod.hidden || !supportsEngineVersion(mod, version)) return;
+    return this.link(mod, engineId, version);
+  }
+  async injectForEngine(engineId, version) {
+    const storedMods = await this.modRepository.getAll();
+    const mods = (Array.isArray(storedMods) ? storedMods : []).filter(
+      (mod) =>
+        mod.engineId === engineId &&
+        !mod.hidden &&
+        supportsEngineVersion(mod, version),
+    );
+    return Promise.allSettled(
+      mods.map((mod) => this.link(mod, engineId, version)),
+    );
+  }
+  async injectIntoInstalledEngines(modId, engines) {
+    const storedMods = await this.modRepository.getAll();
+    const mod = (Array.isArray(storedMods) ? storedMods : []).find((item) =>
+      sameId(item.id, modId),
+    );
+    if (!mod?.engineId || mod.hidden) return [];
+    return Promise.allSettled(
+      engines
+        .filter(
+          (engine) =>
+            engine.id === mod.engineId &&
+            supportsEngineVersion(mod, engine.version),
+        )
+        .map((engine) => this.link(mod, engine.id, engine.version)),
+    );
+  }
+  async unlinkFromEngine(mod, engineId, version) {
+    const legacyModsPath = this.getLegacyModsPath(engineId, version);
+    const bundleModsPath = await this.getEngineModsPath(engineId, version);
+    const enginePaths = [bundleModsPath, legacyModsPath];
+    if (engineId === "codename") {
+      enginePaths.push(
+        await this.getEngineAddonsPath(engineId, version),
+        this.getLegacyAddonsPath(engineId, version),
+      );
+    }
+    const paths = [...new Set(enginePaths)].map(
+      (modsPath) => `${modsPath}/${getEngineModFolderName(mod)}`,
+    );
+    let removed = false;
+    for (const linkPath of paths) {
+      if (!(await this.api.exists(linkPath))) continue;
+      const linkCheck =
+        window.NL_OS === "Windows"
+          ? `cmd /c fsutil reparsepoint query "${linkPath.replace(/\//g, "\\")}"`
+          : `test -L "${linkPath}"`;
+      const isLink = await Neutralino.os
+        .execCommand(linkCheck, {
+          background: false,
+        })
+        .then((result) => result.exitCode === 0)
+        .catch(() => false);
+      const isCopiedLink = await this.api.exists(
+        `${linkPath}/.weekbox-copy-link`,
+      );
+      // Directly downloaded engine mods are normal folders. They do not belong
+      // to this WeekBox library entry, so never delete them as if they were links.
+      if (!isLink && !isCopiedLink) continue;
+      let lastError;
+      for (let attempt = 1; attempt <= 3; attempt += 1) {
+        try {
+          if (this.isEngineRunning?.(engineId, version)) {
+            throw new Error(
+              `Close the ${engineId} engine before removing ${mod.name}.`,
+            );
+          }
+          if (isCopiedLink) {
+            await this.api.remove(linkPath).catch(async () => {
+              if (window.NL_OS !== "Windows")
+                throw new Error("Could not remove copied mod link");
+              await Neutralino.os.execCommand(
+                `rmdir /S /Q "${linkPath.replace(/\//g, "\\")}"`,
+                { background: false },
+              );
+            });
+          } else {
+            const command =
+              window.NL_OS === "Windows"
+                ? `cmd /c rmdir /S /Q "${linkPath.replace(/\//g, "\\")}"`
+                : window.NL_OS === "Darwin"
+                  ? `rm -f "${linkPath}"`
+                  : `rm -rf "${linkPath}"`;
+            const result = await Neutralino.os.execCommand(command, {
+              background: false,
+            });
+            if (result.exitCode !== 0)
+              throw new Error(
+                result.stdErr || result.stdOut || "The directory is not empty",
+              );
+          }
+          if (!(await this.api.exists(linkPath))) break;
+          throw new Error("The directory is not empty");
+        } catch (error) {
+          lastError = error;
+          if (attempt < 3)
+            await new Promise((resolve) => setTimeout(resolve, attempt * 350));
+        }
+      }
+      if (await this.api.exists(linkPath)) {
+        const detail = String(lastError?.message || lastError || "")
+          .replace(/[\0\r]+/g, " ")
+          .trim();
+        throw new Error(
+          detail
+            ? `Could not remove mod link because a file is in use: ${detail}`
+            : `Could not remove mod link for ${mod.name}. Close the engine and try again.`,
+        );
+      }
+      removed = true;
+    }
+    return removed;
+  }
+  async unlinkFromInstalledEngines(mod, engines) {
+    return Promise.allSettled(
+      engines
+        .filter(
+          (engine) =>
+            engine.id === mod.engineId &&
+            supportsEngineVersion(mod, engine.version),
+        )
+        .map((engine) => this.unlinkFromEngine(mod, engine.id, engine.version)),
+    );
+  }
+  async cleanup(engineId, version) {
+    const legacyModsPath = this.getLegacyModsPath(engineId, version);
+    const bundleModsPath = await this.getEngineModsPath(engineId, version);
+    const enginePaths = [bundleModsPath, legacyModsPath];
+    if (engineId === "codename") {
+      enginePaths.push(
+        await this.getEngineAddonsPath(engineId, version),
+        this.getLegacyAddonsPath(engineId, version),
+      );
+    }
+    for (const modsPath of new Set(enginePaths)) {
+      if (!(await this.api.exists(modsPath))) continue;
+      try {
+        const entries = await Neutralino.filesystem.readDirectory(modsPath);
+        for (const entry of entries.filter(
+          (item) => item.entry !== "." && item.entry !== "..",
+        )) {
+          const linkPath = `${modsPath}/${entry.entry}`;
+          const command =
+            window.NL_OS === "Windows"
+              ? `cmd /c rmdir "${linkPath.replace(/\//g, "\\")}"`
+              : window.NL_OS === "Darwin"
+                ? `rm -f "${linkPath}"`
+                : `rm -rf "${linkPath}"`;
+          await Neutralino.os
+            .execCommand(command, { background: false })
+            .catch(() => {});
+        }
+      } catch (error) {
+        console.warn("Could not clean up mods shortcuts", error);
+      }
+    }
+  }
+};
+
+var ModInjectionService = _ModInjectionService;
+
+export { ModInjectionService };

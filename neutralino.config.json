@@ -4,9 +4,9 @@
   "applicationIcon": "app/assets/icons/launcher-icon.png",
   "version": "2.2.0",
   "defaultMode": "window",
-  "port": 5173,
+  "port": 0,
   "documentRoot": "/app/",
-  "url": "/",
+  "url": "http://localhost:5173",
   "enableServer": true,
   "enableNativeAPI": true,
   "enableExtensions": true,
@@ -43,9 +43,9 @@
   "extensions": [
     {
       "id": "extNode",
-      "commandDarwin": "node --inspect ${NL_PATH}/extensions/node/main.js",
-      "commandLinux": "node --inspect ${NL_PATH}/extensions/node/main.js",
-      "commandWindows": "node --inspect ${NL_PATH}/extensions/node/main.js"
+      "commandDarwin": "node --inspect ${NL_PATH}/extensions/backend/node/main.js",
+      "commandLinux": "node --inspect ${NL_PATH}/extensions/backend/node/main.js",
+      "commandWindows": "node --inspect ${NL_PATH}/extensions/backend/node/main.js"
     }
   ],
   "cli": {
