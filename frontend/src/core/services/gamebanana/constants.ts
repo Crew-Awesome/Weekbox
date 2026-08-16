@@ -1,4 +1,4 @@
-export const FNF_GAME_ID = 8694;
+﻿export const FNF_GAME_ID = 8694;
 
 export const ENGINE_CATEGORIES: Record<number, string> = {
   29202: "vslice",
@@ -13,3 +13,4 @@ export const ENGINE_CATEGORIES: Record<number, string> = {
 export const EXCLUDED_CATEGORIES = new Set([43772, 3833, 44037]);
 
 export const GB_BASE_URL = "https://gamebanana.com/apiv11";
+

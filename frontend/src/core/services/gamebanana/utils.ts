@@ -1,4 +1,4 @@
-import { ENGINE_CATEGORIES, EXCLUDED_CATEGORIES } from './constants';
+﻿import { ENGINE_CATEGORIES, EXCLUDED_CATEGORIES } from './constants';
 
 export function getTimeAgo(timestamp: number): string {
   const seconds = Math.floor(Date.now() / 1000) - timestamp;
@@ -63,3 +63,4 @@ export function extractThumbnail(record: any): string {
   }
   return "assets/img/placeholder-mini.jpg";
 }
+

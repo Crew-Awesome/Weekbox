@@ -12,6 +12,14 @@ function App() {
         const version = await Core.platform.getVersion();
         console.log(`Ejecutando Weekbox v${version} en ${Core.platform.platformName}`);
       }
+    },
+    {
+      name: 'Obtaining Mods...',
+      action: async () => {
+        // Pre-carga los mods populares para guardarlos en el caché de la API
+        // Así cuando la UI inicie, los mostrará instantáneamente.
+        await Core.services.gamebanana.getMods('popular', 1, 15);
+      }
     }
   ];
 

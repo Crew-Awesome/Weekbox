@@ -1,6 +1,9 @@
-import { platform } from './platform';
+﻿import { platform } from './platform';
 import { fs } from './backend/fs';
 import { http } from './backend/http';
+import { gameBananaApi } from './services/gamebanana';
+
+export * from './services/gamebanana/types';
 
 /**
  * @description API global para acceder al Núcleo (Core) de Weekbox.
@@ -22,6 +25,7 @@ const Core = {
    * @description Servicios externos para consumo de APIs (GameBanana, GameJolt, etc.).
    */
   services: {
+    gamebanana: gameBananaApi,
     backend: {
       call: platform.call.bind(platform),
     },

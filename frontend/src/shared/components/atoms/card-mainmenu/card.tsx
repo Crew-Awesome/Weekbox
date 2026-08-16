@@ -75,15 +75,33 @@ export const Card: React.FC<CardProps> = ({
   const notchSvg2Ref = useRef<SVGSVGElement>(null);
   const [hoverColor, setHoverColor] = useState<string | null>(null);
 
+  const [isInView, setIsInView] = useState(false);
+  const cardRootRef = useRef<HTMLDivElement>(null);
+
+  // Lazy Load Observer (evita extraer color si no está en pantalla)
   useEffect(() => {
-    if (extractColor && thumbnail) {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting) {
+          setIsInView(true);
+          observer.disconnect();
+        }
+      },
+      { rootMargin: "400px" }
+    );
+    if (cardRootRef.current) observer.observe(cardRootRef.current);
+    return () => observer.disconnect();
+  }, []);
+
+  useEffect(() => {
+    if (isInView && extractColor && thumbnail) {
       Shared.utils.extractColor(thumbnail, 0.3)
         .then((color) => {
           setHoverColor(color);
         })
         .catch(console.error);
     }
-  }, [extractColor, thumbnail]);
+  }, [isInView, extractColor, thumbnail]);
 
   // Set initial inset state based on responsive padding
   useEffect(() => {
@@ -171,6 +189,7 @@ export const Card: React.FC<CardProps> = ({
 
   return (
     <div
+      ref={cardRootRef}
       className={`relative isolate flex flex-col shadow-2xs bg-transparent p-0 sm:p-3 select-none ${
         shouldRenderIcon ? "sm:rounded-r-[1rem] sm:rounded-bl-[1rem] sm:rounded-tl-none" : "sm:rounded-[1rem]"
       } ${isWholeCardClickable ? "cursor-pointer" : ""} h-full ${className}`}
@@ -215,6 +234,7 @@ export const Card: React.FC<CardProps> = ({
                 className="w-full h-full object-cover block"
                 src={thumbnail}
                 alt={title}
+                loading="lazy"
                 draggable={false}
                 style={{
                   WebkitMaskImage: "linear-gradient(to bottom, black 50%, transparent 100%)",
@@ -238,6 +258,7 @@ export const Card: React.FC<CardProps> = ({
                       className="object-contain w-full h-full block"
                       src={icon}
                       alt="icon"
+                      loading="lazy"
                       draggable={false}
                     />
                   )}
