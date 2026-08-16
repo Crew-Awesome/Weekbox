@@ -7,7 +7,12 @@ export function scoreCandidate(candidate, { snapshotCreatedAt, config }) {
     0,
     (snapshotCreatedAt - Number(candidate.createdAt || 0)) / 86400,
   );
-  const quality = clamp(likes / views / config.qualityTargetRate);
+  const qualityConfidence = clamp(
+    views / Math.max(1, Number(config.qualityConfidenceViews) || 100),
+  );
+  const quality = clamp(
+    (likes / views / config.qualityTargetRate) * qualityConfidence,
+  );
   const likeVolume = clamp(
     Math.log1p(likes) / Math.log1p(config.likeSaturation),
   );
