@@ -32,6 +32,7 @@ export class DiscoverySnapshotStore {
       orderedIds: [],
       generatedPageCount: 0,
       sourceCursors: {},
+      sourceExhausted: {},
       errors: [],
       exhausted: false,
     };
