@@ -18,7 +18,11 @@ const Core = {
   /**
    * @description Servicios externos para consumo de APIs (GameBanana, GameJolt, etc.).
    */
-  services: {}
+  services: {
+    backend: {
+      call: platform.call.bind(platform),
+    },
+  }
 };
 
 export default Core;

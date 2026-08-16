@@ -1,10 +1,13 @@
 /**
  * Global type declarations for Neutralino, Node.js, and React Native WebView native APIs.
  */
+import type { BackendOperation, BackendResult } from '../backend/types';
+
 declare global {
   interface Window {
     NODE?: {
       run: (func: string, param?: any) => void;
+      call: <T = unknown>(operation: string, params?: unknown, timeoutMs?: number) => Promise<T>;
       stop: () => void;
     };
     Neutralino?: {
@@ -18,6 +21,7 @@ declare global {
     };
     NodeExtension?: new (debug?: boolean) => {
       run: (func: string, param?: any) => void;
+      call: <T = unknown>(operation: string, params?: unknown, timeoutMs?: number) => Promise<T>;
       stop: () => void;
     };
   }
@@ -54,4 +58,10 @@ export interface IPlatformBridge {
    * @returns {Function} Función de desuscripción.
    */
   onEvent(eventName: string, listener: (data: any) => void): () => void;
+
+  /** Calls a backend operation through the active platform adapter. */
+  call<Operation extends BackendOperation>(
+    operation: Operation,
+    params?: unknown,
+  ): Promise<BackendResult<Operation>>;
 }

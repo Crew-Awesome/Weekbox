@@ -1,3 +1,4 @@
+import type { BackendOperation, BackendResult } from '../backend/types';
 import type { IPlatformBridge, PlatformType } from './types';
 
 /**
@@ -20,6 +21,10 @@ export class WebAdapter implements IPlatformBridge {
 
   async getVersion(): Promise<string> {
     return '1.0.0 (Web)';
+  }
+
+  call<Operation extends BackendOperation>(): Promise<BackendResult<Operation>> {
+    return Promise.reject(new Error('Backend calls require the desktop platform.'));
   }
 
   onEvent(eventName: string, listener: (data: any) => void): () => void {

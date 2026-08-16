@@ -34,4 +34,6 @@ frontend/*.ntvs*
 frontend/*.njsproj
 frontend/*.sln
 frontend/*.sw?
-/app/dist
+/app/dist/
+/app/assets/index-*.js
+/app/assets/index-*.css

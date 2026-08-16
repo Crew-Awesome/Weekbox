@@ -8,6 +8,7 @@
 const NeutralinoExtension = require('./neutralino-extension');
 const DEBUG = true;     // Print incoming event messages to the console
 const { Client } = require("@xhayper/discord-rpc");
+const backendModule = import('./backend/host.mjs');
 const DISCORD_ID = "1535155487056732160";
 let isdiscordready = false;
 
@@ -69,6 +70,29 @@ async function processAppEvent(data) {
     if (ext.isEvent(data, "runNode")) {
         const eventName = data.data.function;
         const eventData = data.data.parameter;
+
+        if (eventName === "backend.call") {
+            const requestId = eventData?.requestId || null;
+            try {
+                const { handleRequest } = await backendModule;
+                const result = await handleRequest(eventData?.operation, eventData?.params);
+                ext.sendMessage('backend:response', {
+                    requestId,
+                    ok: true,
+                    data: result,
+                });
+            } catch (error) {
+                ext.sendMessage('backend:response', {
+                    requestId,
+                    ok: false,
+                    error: {
+                        name: error?.name || 'Error',
+                        message: error?.message || String(error),
+                    },
+                });
+            }
+            return;
+        }
 
         if (eventName === "setActivity") {
             try {

@@ -1,3 +1,4 @@
+import type { BackendOperation, BackendResult } from '../backend/types';
 import type { IPlatformBridge, PlatformType } from './types';
 import neuConfig from '../../../../neutralino.config.json';
 
@@ -39,6 +40,16 @@ export class DesktopAdapter implements IPlatformBridge {
 
   async getVersion(): Promise<string> {
     return neuConfig.version || '1.0.0';
+  }
+
+  call<Operation extends BackendOperation>(
+    operation: Operation,
+    params?: unknown,
+  ): Promise<BackendResult<Operation>> {
+    if (!window.NODE?.call) {
+      return Promise.reject(new Error('The Node backend is not available.'));
+    }
+    return window.NODE.call<BackendResult<Operation>>(operation, params);
   }
 
   onEvent(eventName: string, listener: (data: any) => void): () => void {
