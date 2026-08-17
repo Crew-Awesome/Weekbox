@@ -1,4 +1,4 @@
-﻿import http from '@http';
+import http from '@http';
 import { FNF_GAME_ID } from '../constants';
 import { isExcluded, getEngineId } from '../utils';
 
@@ -32,7 +32,7 @@ export async function fetchRipeRecords(targetEngineId: string | null = null, max
 
         const engineId = getEngineId(mod);
         if (!engineId || engineId === "unknown") continue;
-        if (targetEngineId && engineId !== targetEngineId) continue;
+        if (targetEngineId && targetEngineId !== 'all' && engineId !== targetEngineId) continue;
         
         if (modIds.has(mod._idRow)) continue;
         

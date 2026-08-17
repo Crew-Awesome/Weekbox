@@ -1,8 +1,9 @@
-﻿import React, { useEffect, useState, useRef, useCallback } from 'react';
+import React, { useEffect, useState, useRef, useCallback } from 'react';
 import Shared from '@shared';
 import Core from '@core';
 import type { GameBananaMod } from '@core';
 import type { ModItem } from '../types';
+import { Eye, Download, Clock, User } from 'lucide-react';
 
 interface AllModsProps {
     onCardClick: (card: ModItem) => void;
@@ -91,10 +92,40 @@ export const AllMods: React.FC<AllModsProps> = ({ onCardClick }) => {
                 title={item.title}
                 description={item.description}
                 thumbnail={item.thumbnail}
+                icon={item.engineIcon}
                 clickableArea="whole-card"
                 onClick={() => onCardClick(modItem)}
                 extractColor={true}
-              />
+                lazyLoad={true}
+              >
+                <div className="flex flex-col gap-2 mt-1">
+                   {/* Author */}
+                   <div className="flex items-center gap-1.5 text-[var(--wb-on-surface-variant)] text-xs font-medium">
+                      {item.userPfp ? (
+                        <img src={item.userPfp} alt={item.author} className="w-4 h-4 rounded-full object-cover shrink-0" />
+                      ) : (
+                        <User size={14} className="opacity-80 shrink-0" />
+                      )}
+                      <span className="truncate">{item.author}</span>
+                   </div>
+                   
+                   {/* Metadata Icons */}
+                   <div className="flex items-center gap-4 text-[var(--wb-on-surface-variant)] opacity-70 text-[11px] font-medium">
+                      <div className="flex items-center gap-1" title={`${item.views} Views`}>
+                         <Eye size={12} />
+                         <span>{Intl.NumberFormat('en-US', { notation: 'compact' }).format(item.views)}</span>
+                      </div>
+                      <div className="flex items-center gap-1" title={`${item.downloads} Downloads`}>
+                         <Download size={12} />
+                         <span>{Intl.NumberFormat('en-US', { notation: 'compact' }).format(item.downloads)}</span>
+                      </div>
+                      <div className="flex items-center gap-1" title={`Uploaded ${item.timeAgo}`}>
+                         <Clock size={12} />
+                         <span>{item.timeAgo}</span>
+                      </div>
+                   </div>
+                </div>
+              </Shared.molecules.Card>
             </div>
           );
         })}

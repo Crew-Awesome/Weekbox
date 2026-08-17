@@ -50,6 +50,11 @@ export interface CardProps {
    * as the card's background color on hover (with 0.8 opacity).
    */
   extractColor?: boolean;
+  /**
+   * If true, delays color extraction until the card is near the viewport (IntersectionObserver).
+   * Useful for infinite scrolling lists. Defaults to false for static cards.
+   */
+  lazyLoad?: boolean;
 }
 
 /**
@@ -67,6 +72,7 @@ export const Card: React.FC<CardProps> = ({
   children,
   className = "",
   extractColor = false,
+  lazyLoad = false,
 }) => {
   const thumbnailRef = useRef<HTMLDivElement>(null);
   const hoverBgRef = useRef<HTMLDivElement>(null);
@@ -74,12 +80,15 @@ export const Card: React.FC<CardProps> = ({
   const notchSvg1Ref = useRef<SVGSVGElement>(null);
   const notchSvg2Ref = useRef<SVGSVGElement>(null);
   const [hoverColor, setHoverColor] = useState<string | null>(null);
+  const [isHovered, setIsHovered] = useState(false);
 
-  const [isInView, setIsInView] = useState(false);
+  const [isInView, setIsInView] = useState(!lazyLoad);
   const cardRootRef = useRef<HTMLDivElement>(null);
 
   // Lazy Load Observer (evita extraer color si no está en pantalla)
   useEffect(() => {
+    if (!lazyLoad) return;
+    
     const observer = new IntersectionObserver(
       (entries) => {
         if (entries[0].isIntersecting) {
@@ -91,16 +100,18 @@ export const Card: React.FC<CardProps> = ({
     );
     if (cardRootRef.current) observer.observe(cardRootRef.current);
     return () => observer.disconnect();
-  }, []);
+  }, [lazyLoad]);
 
   useEffect(() => {
+    let isMounted = true;
     if (isInView && extractColor && thumbnail) {
       Shared.utils.extractColor(thumbnail, 0.3)
         .then((color) => {
-          setHoverColor(color);
+          if (isMounted) setHoverColor(color);
         })
         .catch(console.error);
     }
+    return () => { isMounted = false; };
   }, [isInView, extractColor, thumbnail]);
 
   // Set initial inset state based on responsive padding
@@ -117,9 +128,19 @@ export const Card: React.FC<CardProps> = ({
     }
   }, []);
 
+  // Update hover color dynamically if it arrives while already hovering
+  useEffect(() => {
+    if (isHovered && hoverColor) {
+      if (hoverBgRef.current) gsap.to(hoverBgRef.current, { backgroundColor: hoverColor, duration: 0.3, ease: "power2.inOut" });
+      if (notchOverlayRef.current) gsap.to(notchOverlayRef.current, { backgroundColor: hoverColor, duration: 0.3, ease: "power2.inOut" });
+      if (notchSvg1Ref.current && notchSvg2Ref.current) gsap.to([notchSvg1Ref.current, notchSvg2Ref.current], { color: hoverColor, duration: 0.3, ease: "power2.inOut" });
+    }
+  }, [hoverColor, isHovered]);
+
   const handleMouseEnter = () => {
     // Disable hover effects on touch/mobile devices
     if (window.matchMedia("(hover: none)").matches) return;
+    setIsHovered(true);
 
     if (thumbnailRef.current && thumbnail) {
       gsap.to(thumbnailRef.current, {
@@ -153,6 +174,7 @@ export const Card: React.FC<CardProps> = ({
 
   const handleMouseLeave = () => {
     if (window.matchMedia("(hover: none)").matches) return;
+    setIsHovered(false);
 
     if (thumbnailRef.current && thumbnail) {
       gsap.to(thumbnailRef.current, {
@@ -293,7 +315,7 @@ export const Card: React.FC<CardProps> = ({
         </div>
       )}
 
-      <div className="mt-4 px-0 sm:px-0 flex flex-col gap-1 h-20 shrink-0">
+      <div className="mt-4 px-0 sm:px-0 flex flex-col gap-1">
         {/* Title: Uses line-clamp-2 to allow up to 2 lines without a fixed height, letting the description slide up. */}
         <strong 
           className="text-xl font-bold leading-snug line-clamp-2 select-text"

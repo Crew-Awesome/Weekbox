@@ -1,4 +1,4 @@
-﻿import { ENGINE_CATEGORIES, EXCLUDED_CATEGORIES } from './constants';
+import { ENGINE_CATEGORIES, EXCLUDED_CATEGORIES } from './constants';
 
 export function getTimeAgo(timestamp: number): string {
   const seconds = Math.floor(Date.now() / 1000) - timestamp;
@@ -24,9 +24,14 @@ export function getEngineId(record: any): string {
     record.__injectedCategoryId
   ];
   for (const id of ids) {
-    if (id && ENGINE_CATEGORIES[id]) return ENGINE_CATEGORIES[id];
+    if (id && ENGINE_CATEGORIES[id as keyof typeof ENGINE_CATEGORIES]) return ENGINE_CATEGORIES[id as keyof typeof ENGINE_CATEGORIES].id;
   }
   return "unknown";
+}
+
+export function getEngineIcon(engineId: string): string | undefined {
+  const match = Object.values(ENGINE_CATEGORIES).find(c => c.id === engineId);
+  return match?.icon;
 }
 
 export function isExcluded(record: any): boolean {
@@ -62,5 +67,19 @@ export function extractThumbnail(record: any): string {
      return images[0]._sBaseUrl + "/" + images[0]._sFile;
   }
   return "assets/img/placeholder-mini.jpg";
+}
+
+export function extractUserId(record: any): number {
+  return record._aSubmitter?._idRow || 0;
+}
+
+export function extractUserPfp(record: any): string {
+  if (record._aSubmitter?._sAvatarUrl) {
+    return record._aSubmitter._sAvatarUrl;
+  }
+  if (record._aSubmitter?._aAvatar?._sBaseUrl && record._aSubmitter?._aAvatar?._sFile) {
+    return record._aSubmitter._aAvatar._sBaseUrl + "/" + record._aSubmitter._aAvatar._sFile;
+  }
+  return "";
 }
 

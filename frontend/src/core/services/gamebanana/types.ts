@@ -1,9 +1,11 @@
-﻿export interface GameBananaItem {
+export interface GameBananaItem {
   id: number;
   gameId: number;
   title: string;
   description: string;
   author: string;
+  userId: number;
+  userPfp: string;
   authors: string[];
   likes: number;
   views: number;
@@ -15,6 +17,7 @@
 
 export interface GameBananaMod extends GameBananaItem {
   engineId: string;
+  engineIcon?: string;
 }
 
 export interface GameBananaTool extends GameBananaItem {
