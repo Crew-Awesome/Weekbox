@@ -21,8 +21,6 @@ export async function fetchDiscoveryRecords(targetEngineId: string | null = null
     for (let page = 1; page <= source.pages; page++) {
       for (const catId of categoryIds) {
         requests.push((async () => {
-          // El antiguo backend usaba 12 per page, pero 15 esta bien para nuestra UI,
-          // lo critico para que de el mismo orden son las paginas per source.
           const url = GB_BASE_URL + "/Mod/Index?_nPage=" + page + "&_nPerpage=15&_aFilters[Generic_Game]=" + FNF_GAME_ID + "&_aFilters[Generic_Category]=" + catId + "&_sSort=" + source.sort;
           try {
             const res: any = await http.fetchJson(url);
