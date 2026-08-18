@@ -24,4 +24,3 @@ export function formatTimeAgo(seconds, fallback = "N/A", inclusive = true) {
   );
   return match ? `${Math.floor(elapsed / match[0])}${match[1]}` : `${elapsed}s`;
 }
-

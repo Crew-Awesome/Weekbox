@@ -1,6 +1,7 @@
 @import "tailwindcss";
 
-html,body{
+html,
+body {
   overscroll-behavior: none;
 }
 
@@ -47,14 +48,14 @@ html,body{
   --wb-bg: var(--wb-surface-dim);
   --wb-front-bg: var(--wb-surface-container-lowest);
   --wb-back-bg: var(--wb-surface-container);
-  
+
   --wb-text-main: var(--wb-on-surface);
   --wb-text-muted: var(--wb-on-surface-variant);
-  
+
   --wb-icon-default: var(--wb-on-surface-variant);
   --wb-icon-active: var(--wb-on-secondary-container);
   --wb-icon-hover: var(--wb-on-surface);
-  
+
   --wb-item-hover: var(--wb-surface-container-high);
   --wb-item-active: var(--wb-secondary-container);
 }
@@ -64,7 +65,9 @@ html,body{
 }
 
 html {
-  font-size: calc(100vh / 55); /* Scales rem units based on window height, slightly larger */
+  font-size: calc(
+    100vh / 55
+  ); /* Scales rem units based on window height, slightly larger */
 }
 
 body {
@@ -72,7 +75,9 @@ body {
   padding: 0;
   background-color: var(--wb-bg);
   color: var(--wb-text-main);
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  font-family:
+    -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial,
+    sans-serif;
   -webkit-font-smoothing: antialiased;
 }
 

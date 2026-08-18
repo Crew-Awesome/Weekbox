@@ -1,5 +1,5 @@
-import React from 'react';
-import Shared from '@shared';
+import React from "react";
+import Shared from "@shared";
 
 export const HomeBanner: React.FC = () => {
   return (
@@ -13,7 +13,7 @@ export const HomeBanner: React.FC = () => {
       thumbnail="/assets/images/placeholder-mini.jpg"
       icon="/assets/icons/categories/codename.png"
       className="mt-8 mb-8"
-      onClick={() => console.log('Banner clicked!')}
+      onClick={() => console.log("Banner clicked!")}
     />
   );
 };

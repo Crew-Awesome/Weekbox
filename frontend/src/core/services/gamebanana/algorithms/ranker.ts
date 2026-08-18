@@ -9,26 +9,42 @@
   creatorPerSnapshot: 2,
 };
 
-const clamp = (value: number, min = 0, max = 1) => Math.min(max, Math.max(min, value));
+const clamp = (value: number, min = 0, max = 1) =>
+  Math.min(max, Math.max(min, value));
 
-export function scoreCandidate(candidate: any, snapshotCreatedAt: number = Date.now()) {
+export function scoreCandidate(
+  candidate: any,
+  snapshotCreatedAt: number = Date.now(),
+) {
   const likes = Math.max(0, Number(candidate.likes) || 0);
   const views = Math.max(1, Number(candidate.views) || 0);
-  const createdAtSecs = Number(candidate.createdAt || candidate.submittedAt || 0);
-  const ageDays = Math.max(0, ((snapshotCreatedAt / 1000) - createdAtSecs) / 86400);
-  
-  const qualityConfidence = clamp(views / Math.max(1, RANKER_CONFIG.qualityConfidenceViews));
-  const quality = clamp((likes / views / RANKER_CONFIG.qualityTargetRate) * qualityConfidence);
-  const likeVolume = clamp(Math.log1p(likes) / Math.log1p(RANKER_CONFIG.likeSaturation));
-  
+  const createdAtSecs = Number(
+    candidate.createdAt || candidate.submittedAt || 0,
+  );
+  const ageDays = Math.max(
+    0,
+    (snapshotCreatedAt / 1000 - createdAtSecs) / 86400,
+  );
+
+  const qualityConfidence = clamp(
+    views / Math.max(1, RANKER_CONFIG.qualityConfidenceViews),
+  );
+  const quality = clamp(
+    (likes / views / RANKER_CONFIG.qualityTargetRate) * qualityConfidence,
+  );
+  const likeVolume = clamp(
+    Math.log1p(likes) / Math.log1p(RANKER_CONFIG.likeSaturation),
+  );
+
   // Los mods nuevos reciben un boost, pero los viejos bien rankeados aun compiten
-  const freshness = 0.35 + 0.65 * 2 ** (-ageDays / RANKER_CONFIG.freshnessHalfLifeDays);
-  
+  const freshness =
+    0.35 + 0.65 * 2 ** (-ageDays / RANKER_CONFIG.freshnessHalfLifeDays);
+
   const score =
     RANKER_CONFIG.qualityWeight * quality +
     RANKER_CONFIG.likesWeight * likeVolume +
     RANKER_CONFIG.freshnessWeight * freshness;
-    
+
   return { score, quality, likeVolume, freshness, ageDays };
 }
 
@@ -39,7 +55,12 @@ export function rankCandidates(candidates: any[]) {
       ...candidate,
       ...scoreCandidate(candidate, now),
     }))
-    .sort((left, right) => right.score - left.score || right.submittedAt - left.submittedAt || right.id - left.id);
+    .sort(
+      (left, right) =>
+        right.score - left.score ||
+        right.submittedAt - left.submittedAt ||
+        right.id - left.id,
+    );
 }
 
 export function applyDiversity(ranked: any[]) {
@@ -59,4 +80,3 @@ export function applyDiversity(ranked: any[]) {
   }
   return [...selected, ...deferred];
 }
-

@@ -1,4 +1,4 @@
-import { ENGINE_CATEGORIES, EXCLUDED_CATEGORIES } from './constants';
+import { ENGINE_CATEGORIES, EXCLUDED_CATEGORIES } from "./constants";
 
 export function getTimeAgo(timestamp: number): string {
   const seconds = Math.floor(Date.now() / 1000) - timestamp;
@@ -21,16 +21,17 @@ export function getEngineId(record: any): string {
     record._aSuperCategory?._idRow,
     record._aRootCategory?._idRow,
     record._aSubCategory?._idRow,
-    record.__injectedCategoryId
+    record.__injectedCategoryId,
   ];
   for (const id of ids) {
-    if (id && ENGINE_CATEGORIES[id as keyof typeof ENGINE_CATEGORIES]) return ENGINE_CATEGORIES[id as keyof typeof ENGINE_CATEGORIES].id;
+    if (id && ENGINE_CATEGORIES[id as keyof typeof ENGINE_CATEGORIES])
+      return ENGINE_CATEGORIES[id as keyof typeof ENGINE_CATEGORIES].id;
   }
   return "unknown";
 }
 
 export function getEngineIcon(engineId: string): string | undefined {
-  const match = Object.values(ENGINE_CATEGORIES).find(c => c.id === engineId);
+  const match = Object.values(ENGINE_CATEGORIES).find((c) => c.id === engineId);
   return match?.icon;
 }
 
@@ -52,9 +53,9 @@ export function extractAuthors(metaCredits: any): string[] {
   if (metaCredits) {
     for (const group of Object.values(metaCredits)) {
       if (Array.isArray(group)) {
-         group.forEach((credit: any) => {
-           if (credit && credit[0]) authors.push(credit[0]);
-         });
+        group.forEach((credit: any) => {
+          if (credit && credit[0]) authors.push(credit[0]);
+        });
       }
     }
   }
@@ -64,7 +65,7 @@ export function extractAuthors(metaCredits: any): string[] {
 export function extractThumbnail(record: any): string {
   const images = record._aPreviewMedia?._aImages;
   if (images && images.length > 0) {
-     return images[0]._sBaseUrl + "/" + images[0]._sFile;
+    return images[0]._sBaseUrl + "/" + images[0]._sFile;
   }
   return "assets/img/placeholder-mini.jpg";
 }
@@ -74,12 +75,26 @@ export function extractUserId(record: any): number {
 }
 
 export function extractUserPfp(record: any): string {
+  let url = "";
   if (record._aSubmitter?._sAvatarUrl) {
-    return record._aSubmitter._sAvatarUrl;
+    url = record._aSubmitter._sAvatarUrl;
+  } else if (
+    record._aSubmitter?._aAvatar?._sBaseUrl &&
+    record._aSubmitter?._aAvatar?._sFile
+  ) {
+    url =
+      record._aSubmitter._aAvatar._sBaseUrl +
+      "/" +
+      record._aSubmitter._aAvatar._sFile;
   }
-  if (record._aSubmitter?._aAvatar?._sBaseUrl && record._aSubmitter?._aAvatar?._sFile) {
-    return record._aSubmitter._aAvatar._sBaseUrl + "/" + record._aSubmitter._aAvatar._sFile;
-  }
-  return "";
-}
 
+  if (!url) return "";
+
+  // GameBanana injects default avatars that look ugly, filter them out so UI uses our Lucide icon
+  const lowerUrl = url.toLowerCase();
+  if (lowerUrl.includes("default") || lowerUrl.includes("avatar.png")) {
+    return "";
+  }
+
+  return url;
+}

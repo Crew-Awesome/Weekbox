@@ -1,8 +1,8 @@
-import fs from 'node:fs/promises';
-import { constants } from 'node:fs';
-import os from 'node:os';
-import { exec } from 'node:child_process';
-import { promisify } from 'node:util';
+import fs from "node:fs/promises";
+import { constants } from "node:fs";
+import os from "node:os";
+import { exec } from "node:child_process";
+import { promisify } from "node:util";
 
 const execAsync = promisify(exec);
 const isWin = process.platform === "win32";
@@ -29,11 +29,11 @@ export const fsApi = {
    */
   async getStats(targetPath) {
     const stats = await fs.stat(targetPath);
-    return { 
-      size: stats.size, 
-      isDirectory: stats.isDirectory(), 
-      isFile: stats.isFile(), 
-      type: stats.isDirectory() ? "DIRECTORY" : "FILE" 
+    return {
+      size: stats.size,
+      isDirectory: stats.isDirectory(),
+      isFile: stats.isFile(),
+      type: stats.isDirectory() ? "DIRECTORY" : "FILE",
     };
   },
 
@@ -44,9 +44,9 @@ export const fsApi = {
    */
   async readDirectory(targetPath) {
     const entries = await fs.readdir(targetPath, { withFileTypes: true });
-    return entries.map(e => ({ 
-      entry: e.name, 
-      type: e.isDirectory() ? "DIRECTORY" : "FILE" 
+    return entries.map((e) => ({
+      entry: e.name,
+      type: e.isDirectory() ? "DIRECTORY" : "FILE",
     }));
   },
 
@@ -56,11 +56,11 @@ export const fsApi = {
    * @returns {Promise<boolean>} Devuelve true si el elemento existe.
    */
   async exists(targetPath) {
-    try { 
-      await fs.access(targetPath, constants.F_OK); 
-      return true; 
-    } catch { 
-      return false; 
+    try {
+      await fs.access(targetPath, constants.F_OK);
+      return true;
+    } catch {
+      return false;
     }
   },
 
@@ -80,7 +80,7 @@ export const fsApi = {
    * @returns {Promise<void>}
    */
   async writeFile(targetPath, data) {
-    await fs.writeFile(targetPath, data, 'utf-8');
+    await fs.writeFile(targetPath, data, "utf-8");
   },
 
   /**
@@ -100,7 +100,7 @@ export const fsApi = {
    * @returns {Promise<void>}
    */
   async appendFile(targetPath, data) {
-    await fs.appendFile(targetPath, data, 'utf-8');
+    await fs.appendFile(targetPath, data, "utf-8");
   },
 
   /**
@@ -119,7 +119,7 @@ export const fsApi = {
    * @returns {Promise<string>} El contenido de texto.
    */
   async readFile(targetPath) {
-    return await fs.readFile(targetPath, 'utf-8');
+    return await fs.readFile(targetPath, "utf-8");
   },
 
   /**
@@ -129,7 +129,10 @@ export const fsApi = {
    */
   async readBinaryFile(targetPath) {
     const buffer = await fs.readFile(targetPath);
-    return buffer.buffer.slice(buffer.byteOffset, buffer.byteOffset + buffer.byteLength);
+    return buffer.buffer.slice(
+      buffer.byteOffset,
+      buffer.byteOffset + buffer.byteLength,
+    );
   },
 
   /**
@@ -143,9 +146,9 @@ export const fsApi = {
       await fs.rm(targetPath, { recursive: true, force: true });
     } catch (err) {
       if (await this.exists(targetPath)) {
-        const normalized = isWin ? targetPath.replace(/\//g, '\\') : targetPath;
-        const command = isWin 
-          ? `cmd /c rmdir /S /Q ${quoteShellArgument(normalized)}` 
+        const normalized = isWin ? targetPath.replace(/\//g, "\\") : targetPath;
+        const command = isWin
+          ? `cmd /c rmdir /S /Q ${quoteShellArgument(normalized)}`
           : `rm -rf ${quoteShellArgument(normalized)}`;
         await execAsync(command);
       }
@@ -160,10 +163,10 @@ export const fsApi = {
    * @returns {Promise<void>}
    */
   async copy(source, dest, options = {}) {
-    await fs.cp(source, dest, { 
-      recursive: options.recursive ?? true, 
-      force: options.overwrite ?? true, 
-      errorOnExist: options.skip ? true : false 
+    await fs.cp(source, dest, {
+      recursive: options.recursive ?? true,
+      force: options.overwrite ?? true,
+      errorOnExist: options.skip ? true : false,
     });
   },
 
@@ -176,15 +179,35 @@ export const fsApi = {
    * @returns {Promise<void>}
    */
   async move(source, dest, options = {}) {
-    try { 
-      await fs.rename(source, dest); 
+    try {
+      await fs.rename(source, dest);
     } catch (err) {
-      if (err.code === 'EXDEV') {
+      if (err.code === "EXDEV") {
         await this.copy(source, dest, { recursive: true, overwrite: true });
         await this.remove(source);
       } else {
         throw err;
       }
     }
-  }
+  },
+
+  /**
+   * Extrae un archivo comprimido (ZIP, TAR, GZ, RAR) en una carpeta destino.
+   * Utiliza el comando nativo "tar" que está disponible en Win10+, Mac y Linux.
+   * Admite zips y varios formatos de archivos.
+   * @param {string} archivePath - Ruta del archivo comprimido.
+   * @param {string} destFolder - Carpeta destino.
+   */
+  async extractArchive(archivePath, destFolder) {
+    if (!(await this.exists(destFolder))) {
+      await this.createDirectory(destFolder);
+    }
+    const normalizedArchive = isWin
+      ? archivePath.replace(/\//g, "\\")
+      : archivePath;
+    const normalizedDest = isWin ? destFolder.replace(/\//g, "\\") : destFolder;
+    // tar nativo de Windows extrae zip, tar, gz perfectamente
+    const command = `tar -xf ${quoteShellArgument(normalizedArchive)} -C ${quoteShellArgument(normalizedDest)}`;
+    await execAsync(command);
+  },
 };

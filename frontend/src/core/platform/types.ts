@@ -1,13 +1,17 @@
 /**
  * Global type declarations for Neutralino, Node.js, and React Native WebView native APIs.
  */
-import type { BackendOperation, BackendResult } from '../backend/types';
+import type { BackendOperation, BackendResult } from "../backend/types";
 
 declare global {
   interface Window {
     NODE?: {
       run: (func: string, param?: any) => void;
-      call: <T = unknown>(operation: string, params?: unknown, timeoutMs?: number) => Promise<T>;
+      call: <T = unknown>(
+        operation: string,
+        params?: unknown,
+        timeoutMs?: number,
+      ) => Promise<T>;
       stop: () => void;
     };
     Neutralino?: {
@@ -22,14 +26,18 @@ declare global {
     };
     NodeExtension?: new (debug?: boolean) => {
       run: (func: string, param?: any) => void;
-      call: <T = unknown>(operation: string, params?: unknown, timeoutMs?: number) => Promise<T>;
+      call: <T = unknown>(
+        operation: string,
+        params?: unknown,
+        timeoutMs?: number,
+      ) => Promise<T>;
       stop: () => void;
     };
   }
 }
 
 /** Active platform type at runtime */
-export type PlatformType = 'desktop' | 'web';
+export type PlatformType = "desktop" | "web";
 
 /**
  * Definición del contrato común de la plataforma.

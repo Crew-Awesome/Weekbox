@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect } from "react";
 
 export interface MorphModalData {
   id: string;
@@ -7,12 +7,14 @@ export interface MorphModalData {
 
 /**
  * Hook for managing the local and global state of the application's modals.
- * 
+ *
  * @returns {Object} State and setters for global and morphing modals.
  */
 export const useModals = () => {
   const [isGlobalModalOpen, setIsGlobalModalOpen] = useState(false);
-  const [morphModalData, setMorphModalData] = useState<MorphModalData | null>(null);
+  const [morphModalData, setMorphModalData] = useState<MorphModalData | null>(
+    null,
+  );
 
   /**
    * Listens for global events to open the generic modal.
@@ -20,11 +22,11 @@ export const useModals = () => {
    */
   useEffect(() => {
     const handleOpenModal = () => setIsGlobalModalOpen(true);
-    window.addEventListener('open-modal', handleOpenModal);
+    window.addEventListener("open-modal", handleOpenModal);
     (window as any).openWeekboxModal = () => setIsGlobalModalOpen(true);
-    
+
     return () => {
-      window.removeEventListener('open-modal', handleOpenModal);
+      window.removeEventListener("open-modal", handleOpenModal);
       delete (window as any).openWeekboxModal;
     };
   }, []);

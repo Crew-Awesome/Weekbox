@@ -8,8 +8,10 @@ export type BackendOperation =
   | "fs.exists"
   | "fs.remove"
   | "fs.getStats"
+  | "fs.extractArchive"
   | "http.fetchJson"
-  | "http.fetchText";
+  | "http.fetchText"
+  | "http.downloadToFile";
 
 export interface BackendRequest {
   requestId: string;
@@ -33,8 +35,11 @@ export interface BackendResultMap {
   "fs.readDirectory": { entry: string; type: "FILE" | "DIRECTORY" }[];
   "fs.readFile": string;
   "fs.exists": boolean;
+  "fs.extractArchive": void;
+  "http.downloadToFile": void;
 }
 
 export type BackendResult<Operation extends BackendOperation> =
-  Operation extends keyof BackendResultMap ? BackendResultMap[Operation] : unknown;
-
+  Operation extends keyof BackendResultMap
+    ? BackendResultMap[Operation]
+    : unknown;

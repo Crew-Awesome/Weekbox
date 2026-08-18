@@ -1,12 +1,12 @@
-import type { BackendOperation, BackendResult } from '../backend/types';
-import type { IPlatformBridge, PlatformType } from './types';
-import neuConfig from '../../../../neutralino.config.json';
+import type { BackendOperation, BackendResult } from "../backend/types";
+import type { IPlatformBridge, PlatformType } from "./types";
+import neuConfig from "../../../../neutralino.config.json";
 
 /**
  * Adaptador de plataforma para el entorno de Escritorio (Neutralinojs + Extensión Node.js).
  */
 export class DesktopAdapter implements IPlatformBridge {
-  readonly platformName: PlatformType = 'desktop';
+  readonly platformName: PlatformType = "desktop";
   private _isReady: boolean = false;
   private eventListeners: Map<string, Set<(data: any) => void>> = new Map();
 
@@ -26,20 +26,20 @@ export class DesktopAdapter implements IPlatformBridge {
       window.NODE = new NodeExt(true);
 
       /** Listens for ping results from the Node.js extension */
-      neutralino.events.on('pingResult', (event: { detail: any }) => {
-        this.emitLocalEvent('pingResult', event.detail);
+      neutralino.events.on("pingResult", (event: { detail: any }) => {
+        this.emitLocalEvent("pingResult", event.detail);
       });
 
       /** Notifies when the Neutralino native environment is ready */
-      neutralino.events.on('ready', () => {
+      neutralino.events.on("ready", () => {
         this._isReady = true;
-        this.emitLocalEvent('ready', true);
+        this.emitLocalEvent("ready", true);
       });
     }
   }
 
   async getVersion(): Promise<string> {
-    return neuConfig.version || '1.0.0';
+    return neuConfig.version || "1.0.0";
   }
 
   call<Operation extends BackendOperation>(
@@ -47,7 +47,7 @@ export class DesktopAdapter implements IPlatformBridge {
     params?: unknown,
   ): Promise<BackendResult<Operation>> {
     if (!window.NODE?.call) {
-      return Promise.reject(new Error('The Node backend is not available.'));
+      return Promise.reject(new Error("The Node backend is not available."));
     }
     return window.NODE.call<BackendResult<Operation>>(operation, params);
   }

@@ -1,11 +1,11 @@
-import type { BackendOperation, BackendResult } from '../backend/types';
-import type { IPlatformBridge, PlatformType } from './types';
+import type { BackendOperation, BackendResult } from "../backend/types";
+import type { IPlatformBridge, PlatformType } from "./types";
 
 /**
  * Adaptador de plataforma para el entorno Web / Navegador estándar (desarrollo y pruebas en navegador sin Neutralino ni Expo).
  */
 export class WebAdapter implements IPlatformBridge {
-  readonly platformName: PlatformType = 'web';
+  readonly platformName: PlatformType = "web";
   private _isReady: boolean = true;
   private eventListeners: Map<string, Set<(data: any) => void>> = new Map();
 
@@ -15,16 +15,20 @@ export class WebAdapter implements IPlatformBridge {
 
   initialize(): void {
     setTimeout(() => {
-      this.emitLocalEvent('ready', true);
+      this.emitLocalEvent("ready", true);
     }, 50);
   }
 
   async getVersion(): Promise<string> {
-    return '1.0.0 (Web)';
+    return "1.0.0 (Web)";
   }
 
-  call<Operation extends BackendOperation>(): Promise<BackendResult<Operation>> {
-    return Promise.reject(new Error('Backend calls require the desktop platform.'));
+  call<Operation extends BackendOperation>(): Promise<
+    BackendResult<Operation>
+  > {
+    return Promise.reject(
+      new Error("Backend calls require the desktop platform."),
+    );
   }
 
   onEvent(eventName: string, listener: (data: any) => void): () => void {

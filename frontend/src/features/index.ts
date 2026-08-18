@@ -1,7 +1,7 @@
-import { Layout } from './layout';
-import { LoadingScreen } from './loading/loading-screen';
-import { Home } from './home/home';
-export type { LoadingTask } from './loading/loading-screen';
+import { Layout } from "./layout";
+import { LoadingScreen } from "./loading/loading-screen";
+import { Home } from "./home/home";
+export type { LoadingTask } from "./loading/loading-screen";
 
 const Features = {
   Layout,

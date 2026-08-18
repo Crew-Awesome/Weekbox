@@ -1,9 +1,9 @@
-﻿import { platform } from './platform';
-import { fs } from './backend/fs';
-import { http } from './backend/http';
-import { gameBananaApi } from './services/gamebanana';
+﻿import { platform } from "./platform";
+import { fs } from "./backend/fs";
+import { http } from "./backend/http";
+import { gameBananaApi } from "./services/gamebanana";
 
-export * from './services/gamebanana/types';
+export * from "./services/gamebanana/types";
 
 /**
  * @description API global para acceder al Núcleo (Core) de Weekbox.
@@ -14,7 +14,7 @@ const Core = {
    * @description Adaptador principal de la plataforma (detecta Neutralino o Web automáticamente).
    */
   platform,
-  
+
   /**
    * @description Módulos y utilidades del sistema de archivos unificado (Neutralino + Node).
    */
@@ -29,7 +29,7 @@ const Core = {
     backend: {
       call: platform.call.bind(platform),
     },
-  }
+  },
 };
 
 export default Core;

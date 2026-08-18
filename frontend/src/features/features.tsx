@@ -1,5 +1,5 @@
-import { LoadingScreen } from './loading/loading-screen';
-import { Layout } from './layout';
+import { LoadingScreen } from "./loading/loading-screen";
+import { Layout } from "./layout";
 
 /**
  * @description API global para acceder a las Características principales (Features) de Weekbox.
@@ -10,7 +10,7 @@ const Features = {
    * @description Pantalla de carga (Loading Screen) con lógica de fade-out.
    */
   LoadingScreen,
-  
+
   /**
    * @description Contenedor principal de la aplicación.
    */

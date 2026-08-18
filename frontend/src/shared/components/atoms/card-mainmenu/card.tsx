@@ -6,28 +6,28 @@ import Shared from "@shared";
  * Configuration properties for the Card component.
  */
 export interface CardProps {
-  /** 
-   * The main title of the card. 
-  */
+  /**
+   * The main title of the card.
+   */
   title: string;
-  /** 
-   * Optional subtitle or description. 
-  */
+  /**
+   * Optional subtitle or description.
+   */
   description?: string;
-  /** 
-   * Optional URL for the background image thumbnail. 
-  */
+  /**
+   * Optional URL for the background image thumbnail.
+   */
   thumbnail?: string;
-  /** 
-   * Optional URL for the icon image. Displayed in the top-left corner. 
+  /**
+   * Optional URL for the icon image. Displayed in the top-left corner.
    */
   icon?: string;
-  /** 
-   * Explicitly controls whether the icon and its transparent mask are shown. Defaults to true if an icon is provided. 
+  /**
+   * Explicitly controls whether the icon and its transparent mask are shown. Defaults to true if an icon is provided.
    */
   showIcon?: boolean;
-  /** 
-   * Function to execute when the specified clickable area is interacted with. 
+  /**
+   * Function to execute when the specified clickable area is interacted with.
    */
   onClick?: (e: React.MouseEvent) => void;
   /**
@@ -37,8 +37,8 @@ export interface CardProps {
    * - 'none': No default interaction.
    */
   clickableArea?: "whole-card" | "thumbnail" | "none";
-  /** 
-   * Optional custom elements to render at the bottom of the card. 
+  /**
+   * Optional custom elements to render at the bottom of the card.
    */
   children?: React.ReactNode;
   /**
@@ -88,7 +88,7 @@ export const Card: React.FC<CardProps> = ({
   // Lazy Load Observer (evita extraer color si no está en pantalla)
   useEffect(() => {
     if (!lazyLoad) return;
-    
+
     const observer = new IntersectionObserver(
       (entries) => {
         if (entries[0].isIntersecting) {
@@ -96,7 +96,7 @@ export const Card: React.FC<CardProps> = ({
           observer.disconnect();
         }
       },
-      { rootMargin: "400px" }
+      { rootMargin: "400px" },
     );
     if (cardRootRef.current) observer.observe(cardRootRef.current);
     return () => observer.disconnect();
@@ -105,13 +105,16 @@ export const Card: React.FC<CardProps> = ({
   useEffect(() => {
     let isMounted = true;
     if (isInView && extractColor && thumbnail) {
-      Shared.utils.extractColor(thumbnail, 0.3)
+      Shared.utils
+        .extractColor(thumbnail, 0.3)
         .then((color) => {
           if (isMounted) setHoverColor(color);
         })
         .catch(console.error);
     }
-    return () => { isMounted = false; };
+    return () => {
+      isMounted = false;
+    };
   }, [isInView, extractColor, thumbnail]);
 
   // Set initial inset state based on responsive padding
@@ -123,7 +126,7 @@ export const Card: React.FC<CardProps> = ({
         left: paddingPixels,
         right: paddingPixels,
         bottom: paddingPixels,
-        opacity: 0
+        opacity: 0,
       });
     }
   }, []);
@@ -131,9 +134,24 @@ export const Card: React.FC<CardProps> = ({
   // Update hover color dynamically if it arrives while already hovering
   useEffect(() => {
     if (isHovered && hoverColor) {
-      if (hoverBgRef.current) gsap.to(hoverBgRef.current, { backgroundColor: hoverColor, duration: 0.3, ease: "power2.inOut" });
-      if (notchOverlayRef.current) gsap.to(notchOverlayRef.current, { backgroundColor: hoverColor, duration: 0.3, ease: "power2.inOut" });
-      if (notchSvg1Ref.current && notchSvg2Ref.current) gsap.to([notchSvg1Ref.current, notchSvg2Ref.current], { color: hoverColor, duration: 0.3, ease: "power2.inOut" });
+      if (hoverBgRef.current)
+        gsap.to(hoverBgRef.current, {
+          backgroundColor: hoverColor,
+          duration: 0.3,
+          ease: "power2.inOut",
+        });
+      if (notchOverlayRef.current)
+        gsap.to(notchOverlayRef.current, {
+          backgroundColor: hoverColor,
+          duration: 0.3,
+          ease: "power2.inOut",
+        });
+      if (notchSvg1Ref.current && notchSvg2Ref.current)
+        gsap.to([notchSvg1Ref.current, notchSvg2Ref.current], {
+          color: hoverColor,
+          duration: 0.3,
+          ease: "power2.inOut",
+        });
     }
   }, [hoverColor, isHovered]);
 
@@ -149,25 +167,34 @@ export const Card: React.FC<CardProps> = ({
         ease: "power2.out",
       });
     }
-    const finalColor = hoverColor || 'rgba(255, 255, 255, 0.1)';
+    const finalColor = hoverColor || "rgba(255, 255, 255, 0.1)";
     if (hoverBgRef.current) {
       gsap.to(hoverBgRef.current, {
-        top: 0, left: 0, right: 0, bottom: 0,
-        opacity: 1, backgroundColor: finalColor,
-        duration: 0.3, ease: "power2.inOut",
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        opacity: 1,
+        backgroundColor: finalColor,
+        duration: 0.3,
+        ease: "power2.inOut",
       });
     }
     // Synchronize the notch overlay to look like a transparent hole
     if (notchOverlayRef.current) {
       gsap.to(notchOverlayRef.current, {
-        opacity: 1, backgroundColor: finalColor,
-        duration: 0.3, ease: "power2.inOut",
+        opacity: 1,
+        backgroundColor: finalColor,
+        duration: 0.3,
+        ease: "power2.inOut",
       });
     }
     if (notchSvg1Ref.current && notchSvg2Ref.current) {
       gsap.to([notchSvg1Ref.current, notchSvg2Ref.current], {
-        opacity: 1, color: finalColor,
-        duration: 0.3, ease: "power2.inOut",
+        opacity: 1,
+        color: finalColor,
+        duration: 0.3,
+        ease: "power2.inOut",
       });
     }
   };
@@ -178,27 +205,38 @@ export const Card: React.FC<CardProps> = ({
 
     if (thumbnailRef.current && thumbnail) {
       gsap.to(thumbnailRef.current, {
-        scale: 1, duration: 0.3, ease: "power2.out",
+        scale: 1,
+        duration: 0.3,
+        ease: "power2.out",
       });
     }
     if (hoverBgRef.current) {
       const paddingPixels = window.innerWidth >= 640 ? 12 : 0;
       gsap.to(hoverBgRef.current, {
-        top: paddingPixels, left: paddingPixels, right: paddingPixels, bottom: paddingPixels,
-        opacity: 0, backgroundColor: "transparent",
-        duration: 0.3, ease: "power2.inOut",
+        top: paddingPixels,
+        left: paddingPixels,
+        right: paddingPixels,
+        bottom: paddingPixels,
+        opacity: 0,
+        backgroundColor: "transparent",
+        duration: 0.3,
+        ease: "power2.inOut",
       });
     }
     if (notchOverlayRef.current) {
       gsap.to(notchOverlayRef.current, {
-        opacity: 0, backgroundColor: "transparent",
-        duration: 0.3, ease: "power2.inOut",
+        opacity: 0,
+        backgroundColor: "transparent",
+        duration: 0.3,
+        ease: "power2.inOut",
       });
     }
     if (notchSvg1Ref.current && notchSvg2Ref.current) {
       gsap.to([notchSvg1Ref.current, notchSvg2Ref.current], {
-        opacity: 0, color: "transparent",
-        duration: 0.3, ease: "power2.inOut",
+        opacity: 0,
+        color: "transparent",
+        duration: 0.3,
+        ease: "power2.inOut",
       });
     }
   };
@@ -213,7 +251,9 @@ export const Card: React.FC<CardProps> = ({
     <div
       ref={cardRootRef}
       className={`relative isolate flex flex-col shadow-2xs bg-transparent p-0 sm:p-3 select-none ${
-        shouldRenderIcon ? "sm:rounded-r-[1rem] sm:rounded-bl-[1rem] sm:rounded-tl-none" : "sm:rounded-[1rem]"
+        shouldRenderIcon
+          ? "sm:rounded-r-[1rem] sm:rounded-bl-[1rem] sm:rounded-tl-none"
+          : "sm:rounded-[1rem]"
       } ${isWholeCardClickable ? "cursor-pointer" : ""} h-full ${className}`}
       style={{ fontFamily: "Manrope, sans-serif", fontWeight: 500 }}
       onClick={isWholeCardClickable ? onClick : undefined}
@@ -221,14 +261,16 @@ export const Card: React.FC<CardProps> = ({
       onMouseLeave={isWholeCardClickable ? handleMouseLeave : undefined}
     >
       {/* Hover Background Layer */}
-      <div 
+      <div
         ref={hoverBgRef}
         className="absolute pointer-events-none z-[-1] sm:rounded-[1rem]"
       />
       {thumbnail && (
         <div
           className={`relative overflow-hidden w-full aspect-[16/9] isolate ${
-            shouldRenderIcon ? "sm:rounded-tr-[1rem] sm:rounded-tl-none" : "sm:rounded-t-[1rem]"
+            shouldRenderIcon
+              ? "sm:rounded-tr-[1rem] sm:rounded-tl-none"
+              : "sm:rounded-t-[1rem]"
           } ${isThumbnailClickable ? "cursor-pointer" : ""}`}
           onClick={
             isThumbnailClickable && !isWholeCardClickable ? onClick : undefined
@@ -249,7 +291,9 @@ export const Card: React.FC<CardProps> = ({
             <div
               ref={thumbnailRef}
               className={`absolute inset-0 ${
-                shouldRenderIcon ? "sm:rounded-tr-[1rem] sm:rounded-tl-none" : "sm:rounded-t-[1rem]"
+                shouldRenderIcon
+                  ? "sm:rounded-tr-[1rem] sm:rounded-tl-none"
+                  : "sm:rounded-t-[1rem]"
               }`}
             >
               <img
@@ -259,8 +303,10 @@ export const Card: React.FC<CardProps> = ({
                 loading="lazy"
                 draggable={false}
                 style={{
-                  WebkitMaskImage: "linear-gradient(to bottom, black 50%, transparent 100%)",
-                  maskImage: "linear-gradient(to bottom, black 50%, transparent 100%)",
+                  WebkitMaskImage:
+                    "linear-gradient(to bottom, black 50%, transparent 100%)",
+                  maskImage:
+                    "linear-gradient(to bottom, black 50%, transparent 100%)",
                 }}
               />
             </div>
@@ -269,7 +315,7 @@ export const Card: React.FC<CardProps> = ({
             {shouldRenderIcon && (
               <div className="absolute left-0 top-0 w-[18%] aspect-square rounded-tl-none rounded-br-[8px] bg-[var(--wb-bg)] z-10 pointer-events-none">
                 {/* Overlay that receives the hover color animation */}
-                <div 
+                <div
                   ref={notchOverlayRef}
                   className="absolute inset-0 pointer-events-none opacity-0"
                 />
@@ -287,25 +333,39 @@ export const Card: React.FC<CardProps> = ({
                 </div>
 
                 {/* Base SVGs to hide the image underneath */}
-                <svg className="absolute top-0 left-full w-[8px] h-[8px] text-[var(--wb-bg)] pointer-events-none" viewBox="0 0 8 8" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <svg
+                  className="absolute top-0 left-full w-[8px] h-[8px] text-[var(--wb-bg)] pointer-events-none"
+                  viewBox="0 0 8 8"
+                  fill="none"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
                   <path d="M0 0 H8 A8 8 0 0 0 0 8 V0 Z" fill="currentColor" />
                 </svg>
-                <svg className="absolute top-full left-0 w-[8px] h-[8px] text-[var(--wb-bg)] pointer-events-none" viewBox="0 0 8 8" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <svg
+                  className="absolute top-full left-0 w-[8px] h-[8px] text-[var(--wb-bg)] pointer-events-none"
+                  viewBox="0 0 8 8"
+                  fill="none"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
                   <path d="M0 0 H8 A8 8 0 0 0 0 8 V0 Z" fill="currentColor" />
                 </svg>
 
                 {/* Hover SVGs to apply the hover color seamlessly */}
-                <svg 
+                <svg
                   ref={notchSvg1Ref}
-                  className="absolute top-0 left-full w-[8px] h-[8px] pointer-events-none opacity-0" 
-                  viewBox="0 0 8 8" fill="none" xmlns="http://www.w3.org/2000/svg"
+                  className="absolute top-0 left-full w-[8px] h-[8px] pointer-events-none opacity-0"
+                  viewBox="0 0 8 8"
+                  fill="none"
+                  xmlns="http://www.w3.org/2000/svg"
                 >
                   <path d="M0 0 H8 A8 8 0 0 0 0 8 V0 Z" fill="currentColor" />
                 </svg>
-                <svg 
+                <svg
                   ref={notchSvg2Ref}
-                  className="absolute top-full left-0 w-[8px] h-[8px] pointer-events-none opacity-0" 
-                  viewBox="0 0 8 8" fill="none" xmlns="http://www.w3.org/2000/svg"
+                  className="absolute top-full left-0 w-[8px] h-[8px] pointer-events-none opacity-0"
+                  viewBox="0 0 8 8"
+                  fill="none"
+                  xmlns="http://www.w3.org/2000/svg"
                 >
                   <path d="M0 0 H8 A8 8 0 0 0 0 8 V0 Z" fill="currentColor" />
                 </svg>
@@ -317,9 +377,7 @@ export const Card: React.FC<CardProps> = ({
 
       <div className="mt-4 px-0 sm:px-0 flex flex-col gap-1">
         {/* Title: Uses line-clamp-2 to allow up to 2 lines without a fixed height, letting the description slide up. */}
-        <strong 
-          className="text-xl font-bold leading-snug line-clamp-2 select-text"
-        >
+        <strong className="text-xl font-bold leading-snug line-clamp-2 select-text">
           {title}
         </strong>
         {/* Description: Sits directly under the title. */}
@@ -330,11 +388,7 @@ export const Card: React.FC<CardProps> = ({
         )}
       </div>
 
-      {children && (
-        <div className="mt-2">
-          {children}
-        </div>
-      )}
+      {children && <div className="mt-2">{children}</div>}
     </div>
   );
 };

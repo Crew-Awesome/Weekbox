@@ -1,9 +1,10 @@
-import type { ModItem } from '../types';
+import type { ModItem } from "../types";
 
 export const MOCK_MODS: ModItem[] = [
   {
     name: "Friday Night Funkidsasadsdaasdsadsaaaaaaaaaaaaaasdasdasdasdasdassdasddn': Mod Title",
-    description: "Mod asdsdaadsDescription that's very long but very very very long",
+    description:
+      "Mod asdsdaadsDescription that's very long but very very very long",
     img: "/assets/images/placeholder-mini.jpg",
     icon: "/assets/icons/categories/codename.png",
     showIcon: true,
@@ -28,7 +29,9 @@ export const MOCK_MODS: ModItem[] = [
     img: "/assets/images/placeholder-mini.jpg",
     icon: "/assets/icons/categories/fpsplus.png",
     showIcon: true,
-  }
+  },
 ];
 
-export const EXTENDED_MOCKS: ModItem[] = Array.from({ length: 16 }).map((_, i) => MOCK_MODS[i % MOCK_MODS.length]);
+export const EXTENDED_MOCKS: ModItem[] = Array.from({ length: 16 }).map(
+  (_, i) => MOCK_MODS[i % MOCK_MODS.length],
+);

@@ -1,15 +1,18 @@
-import type { IPlatformBridge } from './types';
-import { DesktopAdapter } from './desktop.adapter';
-import { WebAdapter } from './web.adapter';
+import type { IPlatformBridge } from "./types";
+import { DesktopAdapter } from "./desktop.adapter";
+import { WebAdapter } from "./web.adapter";
 
 /**
  * Detecta el entorno de ejecución actual y crea la instancia correspondiente del adaptador.
  * @returns {IPlatformBridge} Adaptador concreto para la plataforma activa.
  */
 function createPlatformBridge(): IPlatformBridge {
-  if (typeof window !== 'undefined') {
+  if (typeof window !== "undefined") {
     /** Desktop Environment (Neutralinojs / Node Extension) */
-    if (typeof (window as any).NL_TOKEN !== 'undefined' && typeof window.Neutralino !== 'undefined') {
+    if (
+      typeof (window as any).NL_TOKEN !== "undefined" &&
+      typeof window.Neutralino !== "undefined"
+    ) {
       return new DesktopAdapter();
     }
   }
@@ -26,6 +29,6 @@ export const platform: IPlatformBridge = createPlatformBridge();
 // Automatically initialize the platform to simplify usage
 platform.initialize();
 
-export type * from './types';
-export * from './desktop.adapter';
-export * from './web.adapter';
+export type * from "./types";
+export * from "./desktop.adapter";
+export * from "./web.adapter";

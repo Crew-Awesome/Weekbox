@@ -3,6 +3,7 @@ export interface GameBananaItem {
   gameId: number;
   title: string;
   description: string;
+  htmlBody: string;
   author: string;
   userId: number;
   userPfp: string;
@@ -18,9 +19,10 @@ export interface GameBananaItem {
 export interface GameBananaMod extends GameBananaItem {
   engineId: string;
   engineIcon?: string;
+  __featuredLabel?: string;
+  __featuredCategoryId?: number;
 }
 
 export interface GameBananaTool extends GameBananaItem {
   // Las tools no dependen de engineId, asi que mantenemos su propia interfaz
 }
-

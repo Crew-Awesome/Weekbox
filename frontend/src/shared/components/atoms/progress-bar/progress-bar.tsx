@@ -1,4 +1,4 @@
-import React from 'react';
+import React from "react";
 
 export interface ProgressBarProps {
   progress: number;
@@ -9,7 +9,10 @@ export interface ProgressBarProps {
  * @description Átomo: Barra de Progreso.
  * Muestra el porcentaje y la acción actual que se está ejecutando.
  */
-export const ProgressBar: React.FC<ProgressBarProps> = ({ progress, actionText }) => {
+export const ProgressBar: React.FC<ProgressBarProps> = ({
+  progress,
+  actionText,
+}) => {
   // Ensure progress is clamped between 0 and 100
   const clampedProgress = Math.min(Math.max(progress, 0), 100);
 
@@ -20,7 +23,7 @@ export const ProgressBar: React.FC<ProgressBarProps> = ({ progress, actionText }
         <span>{Math.round(clampedProgress)}%</span>
       </div>
       <div className="h-2 w-full bg-white/20 rounded-full overflow-hidden backdrop-blur-sm border border-white/10 shadow-inner">
-        <div 
+        <div
           className="h-full bg-[var(--wb-primary)] rounded-full transition-all duration-300 ease-out shadow-[0_0_10px_var(--wb-primary)]"
           style={{ width: `${clampedProgress}%` }}
         />

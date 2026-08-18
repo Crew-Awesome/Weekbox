@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { DesktopSidebar } from "./desktop-sidebar";
 import { MobileNav } from "./mobile-nav";
 import { SidebarModals } from "./modals/sidebar-modals";
-import Utils from '@utils';
+import Utils from "@utils";
 
 interface SidebarProps {
   onNavigate?: (view: string) => void;
@@ -14,11 +14,15 @@ interface SidebarProps {
  * Handles primary application navigation and groups global actions
  * into an interactive interface.
  */
-export const Sidebar: React.FC<SidebarProps> = ({ onNavigate, onSecondaryClick }) => {
+export const Sidebar: React.FC<SidebarProps> = ({
+  onNavigate,
+  onSecondaryClick,
+}) => {
   const [activeMain, setActiveMain] = useState("home");
   const [activeSecondary, setActiveSecondary] = useState<string | null>(null);
 
-  const { morphModalData, openMorphModal, closeMorphModal } = Utils.hooks.useModals();
+  const { morphModalData, openMorphModal, closeMorphModal } =
+    Utils.hooks.useModals();
 
   useEffect(() => {
     if (onNavigate) {
@@ -27,8 +31,8 @@ export const Sidebar: React.FC<SidebarProps> = ({ onNavigate, onSecondaryClick }
   }, [activeMain, onNavigate]);
 
   const handleMobileSet = (id: string) => {
-    if (id === 'settings' || id === 'info') {
-      setActiveSecondary(prev => prev === id ? null : id);
+    if (id === "settings" || id === "info") {
+      setActiveSecondary((prev) => (prev === id ? null : id));
     } else {
       setActiveMain(id);
       setActiveSecondary(null);
@@ -39,22 +43,22 @@ export const Sidebar: React.FC<SidebarProps> = ({ onNavigate, onSecondaryClick }
 
   return (
     <>
-      <DesktopSidebar 
-        activeMain={activeMain} 
-        setActiveMain={setActiveMain} 
-        activeSecondary={activeSecondary} 
+      <DesktopSidebar
+        activeMain={activeMain}
+        setActiveMain={setActiveMain}
+        activeSecondary={activeSecondary}
         setActiveSecondary={setActiveSecondary}
         onSecondaryClick={handleSecondaryClick}
       />
-      <MobileNav 
-        activeItem={activeSecondary || activeMain} 
+      <MobileNav
+        activeItem={activeSecondary || activeMain}
         setActiveItem={handleMobileSet}
         onSecondaryClick={handleSecondaryClick}
       />
-      
-      <SidebarModals 
-        morphModalData={morphModalData} 
-        closeMorphModal={closeMorphModal} 
+
+      <SidebarModals
+        morphModalData={morphModalData}
+        closeMorphModal={closeMorphModal}
       />
     </>
   );
