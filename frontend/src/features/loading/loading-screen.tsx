@@ -18,9 +18,10 @@ export interface LoadingScreenProps {
 }
 
 /**
- * @description Pantalla de Carga (Feature).
- * Ejecuta tareas asíncronas reales y muestra su progreso.
- * Maneja independientemente la lógica de ocultarse al llegar al 100% usando un fade-out suave.
+ * @description Loading Screen (Feature).
+ * Executes real asynchronous startup tasks and visually displays their progress.
+ * Manages its own unmounting lifecycle, applying a smooth fade-out CSS transition upon reaching 100%.
+ * @param {LoadingScreenProps} props - The component props.
  */
 export const LoadingScreen: React.FC<LoadingScreenProps> = ({
   isLoading = true,
@@ -28,7 +29,7 @@ export const LoadingScreen: React.FC<LoadingScreenProps> = ({
   onComplete,
 }) => {
   const [progress, setProgress] = useState(0);
-  const [action, setAction] = useState("Iniciando entorno...");
+  const [action, setAction] = useState("Initializing environment...");
 
   // States to control smooth unmounting
   const [isFadingOut, setIsFadingOut] = useState(false);
@@ -52,7 +53,7 @@ export const LoadingScreen: React.FC<LoadingScreenProps> = ({
       if (tasks.length === 0) {
         // If no tasks, complete loading directly
         setProgress(100);
-        setAction("¡Listo!");
+        setAction("Ready!");
         finishLoading();
         return;
       }
@@ -66,10 +67,7 @@ export const LoadingScreen: React.FC<LoadingScreenProps> = ({
         try {
           await task.action();
         } catch (error) {
-          console.error(
-            `Error al ejecutar tarea de carga: ${task.name}`,
-            error,
-          );
+          console.error(`Error executing startup task: ${task.name}`, error);
           // Optionally handle an error state in the UI,
           // but for now just continue with the next task.
         }
@@ -82,7 +80,7 @@ export const LoadingScreen: React.FC<LoadingScreenProps> = ({
       }
 
       if (isCancelled) return;
-      setAction("¡Listo!");
+      setAction("Ready!");
       finishLoading();
     };
 

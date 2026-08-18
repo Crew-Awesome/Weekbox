@@ -2,6 +2,10 @@ import http from "@http";
 import { FNF_GAME_ID, ENGINE_CATEGORIES } from "../constants";
 import { isExcluded } from "../utils";
 
+/**
+ * In-memory cache to store the pagination state and records for the "Ripe" algorithm.
+ * Keeps track of which page to fetch next and prevents duplicates.
+ */
 const ripeCache = new Map<
   string,
   {
@@ -12,6 +16,14 @@ const ripeCache = new Map<
   }
 >();
 
+/**
+ * @description Fetches "Ripe" (Most Liked historically) records by querying all allowed categories in parallel.
+ * Results are merged and sorted locally to provide a fallback infinite scroll when Discovery runs out.
+ * @param {string | null} targetEngineId - Optional ID to filter by a specific engine.
+ * @param {number} maxPages - Maximum depth of pages to query per execution to avoid hanging.
+ * @param {number} maxRecords - Number of valid records needed before returning.
+ * @returns {Promise<any[]>} An array of historical top mods.
+ */
 export async function fetchRipeRecords(
   targetEngineId: string | null = null,
   maxPages = 4,

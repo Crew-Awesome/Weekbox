@@ -21,12 +21,26 @@ import {
 
 export type ModFilter = "popular" | "new" | "ripe" | "updated";
 
+/**
+ * In-memory cache to store popular/discovery mods for a short period.
+ * This avoids re-running the heavy discovery algorithm on rapid pagination or component remounts.
+ */
 const popularCache = new Map<
   string,
   { timestamp: number; mods: GameBananaMod[] }
 >();
-const CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutos
+const CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
 
+/**
+ * @description Master entry point for fetching and formatting GameBanana mods.
+ * Handles Discovery algorithms, standard GameBanana sorting, fallback infinite scrolling,
+ * and mapping raw API records into clean `GameBananaMod` objects.
+ * @param {ModFilter} filter - The type of feed to fetch ('popular', 'new', 'ripe', 'updated').
+ * @param {number} page - The current page to fetch (1-indexed).
+ * @param {number} perPage - Number of items per page.
+ * @param {string | null} engineId - Optional ID to filter by engine (e.g. 'psych', 'kade').
+ * @returns {Promise<GameBananaMod[]>} A standardized array of mod items.
+ */
 export async function getMods(
   filter: ModFilter = "popular",
   page = 1,
@@ -43,7 +57,7 @@ export async function getMods(
       const slice = cached.mods.slice((page - 1) * perPage, page * perPage);
       if (slice.length > 0) return slice;
     }
-    // Discovery returns max 60 items. If we are asking for items beyond 60, use the fallback.
+    // Discovery currently returns max 60 items. If we page beyond that limit, trigger the infinite fallback.
     if ((page - 1) * perPage >= 60) isPopularFallback = true;
   }
 
@@ -84,6 +98,8 @@ export async function getMods(
     });
 
     const allRecords = (await Promise.all(requests)).flat();
+
+    // De-duplicate in case of overlap between categories
     const uniqueRecords = Array.from(
       new Map(allRecords.map((r) => [r._idRow, r])).values(),
     );
@@ -106,7 +122,7 @@ export async function getMods(
   }
 
   if (filter === "popular" && !isPopularFallback) {
-    // Mapeo temporal para poder rankear todos (500+ mods) sin pedir Multi
+    // Temporary mapping to rank all candidates (up to 500+ mods) locally without querying Mod/Multi yet
     let tempCandidates = rawRecords.map((r) => ({
       raw: r,
       id: r._idRow,
@@ -118,7 +134,8 @@ export async function getMods(
     }));
     const ranked = rankCandidates(tempCandidates);
     const diverse = applyDiversity(ranked);
-    // Tomamos los mejores 60 y extraemos sus raw objects para continuar el flujo
+
+    // Take the best 60 and extract their raw objects to continue the pipeline
     rawRecords = diverse.slice(0, 60).map((c) => c.raw);
   } else if (filter === "new" || filter === "updated") {
     rawRecords = rawRecords.slice(0, perPage);
@@ -128,6 +145,7 @@ export async function getMods(
 
   if (rawRecords.length === 0) return [];
 
+  // Batch fetch secondary statistics and full descriptions using the Mod/Multi endpoint
   const modIds = rawRecords.map((r) => r._idRow).join(",");
   const multiUrl =
     GB_BASE_URL +

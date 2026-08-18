@@ -4,6 +4,11 @@ import gsap from "gsap";
 import { calculateVisuals } from "./carouselMath";
 import type { CarouselProps, CarouselAPI } from "./types";
 
+/**
+ * @description Custom hook for managing Carousel state, GSAP animations, infinite scrolling mathematics, and touch/pointer interactions.
+ * @param {CarouselProps} props - Component properties.
+ * @returns {object} Refs, state, and event handlers for the Carousel component.
+ */
 export function useCarousel(props: CarouselProps) {
   const {
     children,

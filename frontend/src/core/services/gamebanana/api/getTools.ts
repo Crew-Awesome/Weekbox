@@ -10,6 +10,13 @@ import {
 } from "../utils";
 import Utils from "@utils";
 
+/**
+ * @description Fetches tools/executables for Friday Night Funkin' from GameBanana.
+ * Performs a dual fetch: first to get the main feed, then a Mod/Multi fallback to retrieve deeper metadata like descriptions and credits.
+ * @param {number} page - Current page to fetch.
+ * @param {number} perPage - Number of items per page.
+ * @returns {Promise<GameBananaTool[]>} Standardized array of tools.
+ */
 export async function getTools(
   page = 1,
   perPage = 15,
@@ -33,6 +40,7 @@ export async function getTools(
 
   if (records.length === 0) return [];
 
+  // Fetch expanded details for the tools obtained
   const toolIds = records.map((r: any) => r._idRow).join(",");
   const multiUrl =
     GB_BASE_URL +
@@ -43,7 +51,9 @@ export async function getTools(
   let multiData: any[] = [];
   try {
     multiData = (await http.fetchJson(multiUrl)) as any[];
-  } catch (e) {}
+  } catch (e) {
+    console.error("GameBanana Tool/Multi failed:", e);
+  }
   const multiMap = new Map(multiData.map((d) => [d._idRow, d]));
 
   return records.map((tool) => {

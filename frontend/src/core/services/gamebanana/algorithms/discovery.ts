@@ -2,6 +2,12 @@ import http from "@http";
 import { GB_BASE_URL, FNF_GAME_ID, ENGINE_CATEGORIES } from "../constants";
 import { isExcluded } from "../utils";
 
+/**
+ * @description Fetches discovery records by polling different sorting strategies
+ * (Newest and Most Liked) across allowed engine categories.
+ * @param {string | null} targetEngineId - Optional ID to filter by a specific engine.
+ * @returns {Promise<any[]>} An array of unique, filtered GameBanana mod records.
+ */
 export async function fetchDiscoveryRecords(
   targetEngineId: string | null = null,
 ) {
@@ -55,9 +61,11 @@ export async function fetchDiscoveryRecords(
   const responses = await Promise.all(requests);
   const allRecords = responses.flat();
 
-  // Filtrar y deduplicar
+  // Deduplicate records based on their unique Row ID
   const uniqueRecords = Array.from(
     new Map(allRecords.map((r) => [r._idRow, r])).values(),
   );
+
+  // Filter out globally excluded mods (e.g. adult content, trash)
   return uniqueRecords.filter((r) => !isExcluded(r));
 }

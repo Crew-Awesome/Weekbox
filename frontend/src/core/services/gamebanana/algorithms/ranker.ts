@@ -1,4 +1,7 @@
-﻿export const RANKER_CONFIG = {
+/**
+ * Configuration weights and limits for the internal ranking algorithm.
+ */
+export const RANKER_CONFIG = {
   qualityTargetRate: 0.04,
   qualityConfidenceViews: 100,
   likeSaturation: 100,
@@ -12,6 +15,12 @@
 const clamp = (value: number, min = 0, max = 1) =>
   Math.min(max, Math.max(min, value));
 
+/**
+ * @description Calculates a composite score for a mod based on quality, likes volume, and freshness.
+ * @param {any} candidate - The mod record to score.
+ * @param {number} snapshotCreatedAt - The current timestamp for age calculation.
+ * @returns {object} The computed score and its individual metrics.
+ */
 export function scoreCandidate(
   candidate: any,
   snapshotCreatedAt: number = Date.now(),
@@ -36,7 +45,7 @@ export function scoreCandidate(
     Math.log1p(likes) / Math.log1p(RANKER_CONFIG.likeSaturation),
   );
 
-  // Los mods nuevos reciben un boost, pero los viejos bien rankeados aun compiten
+  // New mods receive a freshness boost, but older high-ranking mods can still compete fairly
   const freshness =
     0.35 + 0.65 * 2 ** (-ageDays / RANKER_CONFIG.freshnessHalfLifeDays);
 
@@ -48,6 +57,11 @@ export function scoreCandidate(
   return { score, quality, likeVolume, freshness, ageDays };
 }
 
+/**
+ * @description Scores and sorts an array of mod candidates from highest to lowest score.
+ * @param {any[]} candidates - The array of mods to rank.
+ * @returns {any[]} The ranked array.
+ */
 export function rankCandidates(candidates: any[]) {
   const now = Date.now();
   return candidates
@@ -63,6 +77,12 @@ export function rankCandidates(candidates: any[]) {
     );
 }
 
+/**
+ * @description Applies diversity filtering to prevent a single author from dominating the feed.
+ * Defers excessive mods from the same author to the end of the array.
+ * @param {any[]} ranked - The already sorted array of mods.
+ * @returns {any[]} The diversity-adjusted array.
+ */
 export function applyDiversity(ranked: any[]) {
   const selected = [];
   const deferred = [];

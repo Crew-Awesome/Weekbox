@@ -6,8 +6,9 @@ export interface ProgressBarProps {
 }
 
 /**
- * @description Átomo: Barra de Progreso.
- * Muestra el porcentaje y la acción actual que se está ejecutando.
+ * @description Atom: Progress Bar.
+ * Displays the progress percentage and the current action being executed.
+ * @param {ProgressBarProps} props - Component properties.
  */
 export const ProgressBar: React.FC<ProgressBarProps> = ({
   progress,

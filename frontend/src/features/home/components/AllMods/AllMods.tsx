@@ -8,6 +8,12 @@ interface AllModsProps {
   onCardClick: (card: ModItem) => void;
 }
 
+/**
+ * @description Renders an infinite-scrolling grid of GameBanana mods.
+ * Automatically handles pagination, layout packing (row dense) for banners,
+ * and interpolates Community Picks continuously within the grid.
+ * @param {AllModsProps} props - The component props.
+ */
 export const AllMods: React.FC<AllModsProps> = ({ onCardClick }) => {
   const { mods, loading, loadingMore, hasMore, page, lastElementRef } =
     useAllMods();

@@ -11,6 +11,12 @@ interface DesktopSidebarProps {
   onSecondaryClick?: (id: string, el: HTMLElement | null) => void;
 }
 
+/**
+ * @description Organism: Desktop Sidebar.
+ * Displays the main navigation menu for desktop layouts. Includes a layered GSAP indicator
+ * for primary navigation and separate secondary actions.
+ * @param {DesktopSidebarProps} props - Component properties.
+ */
 export const DesktopSidebar: React.FC<DesktopSidebarProps> = ({
   activeMain,
   setActiveMain,

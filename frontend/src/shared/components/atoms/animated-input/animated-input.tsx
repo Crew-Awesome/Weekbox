@@ -8,6 +8,12 @@ interface AnimatedInputProps {
   onInput?: (text: string, html: string) => void;
 }
 
+/**
+ * @description Atom: Animated Input.
+ * A highly customizable, content-editable input element that displays a rotating list of placeholders using GSAP animations.
+ * Commonly used for search bars or dynamic input fields.
+ * @param {AnimatedInputProps} props - The component properties.
+ */
 export const AnimatedInput = ({
   placeholders = ["Type here..."],
   icon,

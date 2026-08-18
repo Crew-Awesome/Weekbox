@@ -85,7 +85,7 @@ export const Card: React.FC<CardProps> = ({
   const [isInView, setIsInView] = useState(!lazyLoad);
   const cardRootRef = useRef<HTMLDivElement>(null);
 
-  // Lazy Load Observer (evita extraer color si no está en pantalla)
+  // Lazy Load Observer (prevents color extraction if not in viewport)
   useEffect(() => {
     if (!lazyLoad) return;
 

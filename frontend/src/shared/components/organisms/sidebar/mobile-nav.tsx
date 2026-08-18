@@ -8,6 +8,11 @@ interface MobileNavProps {
   onSecondaryClick?: (id: string, el: HTMLElement | null) => void;
 }
 
+/**
+ * @description Organism: Mobile Navigation.
+ * Displays a floating bottom bar for mobile screens using a GSAP pill indicator.
+ * @param {MobileNavProps} props - Component properties.
+ */
 export const MobileNav: React.FC<MobileNavProps> = ({
   activeItem,
   setActiveItem,

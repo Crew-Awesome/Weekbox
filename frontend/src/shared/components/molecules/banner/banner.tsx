@@ -39,6 +39,11 @@ export interface BannerProps {
   viewsCount?: string | number;
 }
 
+/**
+ * @description Molecule: Banner.
+ * Displays a wide, interactive promotional banner. Extracts predominant color from the thumbnail on hover.
+ * @param {BannerProps} props - Component properties.
+ */
 export const Banner: React.FC<BannerProps> = ({
   thumbnail,
   icon,
@@ -169,7 +174,7 @@ export const Banner: React.FC<BannerProps> = ({
 
   return (
     <div
-      className={`relative isolate flex shadow-2xs bg-transparent p-0 sm:p-3 select-none cursor-pointer w-full min-h-[200px] sm:min-h-[250px] sm:rounded-[1rem] sm:rounded-tl-none ${className}`}
+      className={`relative isolate flex shadow-2xs bg-transparent p-0 sm:p-3 select-none cursor-pointer w-full aspect-[2/1] sm:aspect-[21/9] lg:aspect-[21/8] xl:aspect-[3/1] sm:rounded-[1rem] sm:rounded-tl-none ${className}`}
       style={{ fontFamily: "Manrope, sans-serif", fontWeight: 500 }}
       onClick={onClick}
       onMouseEnter={handleMouseEnter}

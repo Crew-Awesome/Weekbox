@@ -1,25 +1,45 @@
 import React from "react";
 import Shared from "@shared";
 import type { GameBananaMod } from "@core";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight, AlertTriangle } from "lucide-react";
 import { useFeaturedMods } from "./useFeaturedMods";
 
 interface FeaturedModsProps {
   onCardClick?: (mod: GameBananaMod) => void;
 }
 
+/**
+ * @description Renders a wide Carousel for Featured Mods (Community Picks, Mods of the Month, etc.).
+ * Maps the custom features from the backend JSON into a sleek, auto-playing UI.
+ * @param {FeaturedModsProps} props - Component props.
+ */
 export const FeaturedMods: React.FC<FeaturedModsProps> = ({ onCardClick }) => {
   const { featuredMods, categories } = useFeaturedMods();
 
   if (featuredMods.length === 0) {
-    return null;
+    return (
+      <div className="mb-4 w-full">
+        <Shared.atoms.Titles title="Featured Mods" align="center" />
+        <div className="w-full aspect-[2/1] sm:aspect-[21/9] lg:aspect-[21/8] xl:aspect-[3/1] bg-[var(--wb-surface-container)] rounded-[32px] flex flex-col items-center justify-center border border-white/5 shadow-inner mt-4 p-6 text-center">
+          <AlertTriangle className="w-12 h-12 text-[var(--wb-primary)] mb-4 opacity-80" />
+          <h3 className="text-xl font-bold text-white mb-2">
+            Could not load Featured Mods
+          </h3>
+          <p className="text-[var(--wb-on-surface-variant)] text-sm max-w-md">
+            The backend request timed out or the connection to the server
+            failed. Make sure the Node.js extension is running and try
+            restarting the app.
+          </p>
+        </div>
+      </div>
+    );
   }
 
   return (
     <div className="mb-4 w-full">
       <Shared.atoms.Titles title="Featured Mods" align="center" />
 
-      {/* Contenedor con márgenes negativos para que el carrusel ocupe TODO el ancho de la pantalla */}
+      {/* Container with negative margins to make the carousel take full screen width */}
       <div className="-mx-8 mt-4">
         <Shared.molecules.Carousel
           isInfinite
@@ -39,47 +59,31 @@ export const FeaturedMods: React.FC<FeaturedModsProps> = ({ onCardClick }) => {
             }
           }}
           renderIndicators={(api) => {
-            // Determinar la categoría activa basándonos en el índice actual del carrusel
+            // Determine active category based on the carousel's current index
             const activeMod = featuredMods[api.activeIndex];
             const activeLabel = activeMod?.__featuredLabel || categories[0];
 
-            const goToCategory = (label: string) => {
-              const index = featuredMods.findIndex(
-                (m) => m.__featuredLabel === label,
+            const handlePrevCard = () => {
+              api.goToLogicalIndex(
+                (api.activeIndex - 1 + featuredMods.length) %
+                  featuredMods.length,
               );
-              if (index !== -1) {
-                api.goToLogicalIndex(index);
-              }
             };
 
-            const handlePrevCategory = () => {
-              const currentIndex = categories.indexOf(activeLabel);
-              if (currentIndex > 0) {
-                goToCategory(categories[currentIndex - 1]);
-              } else {
-                goToCategory(categories[categories.length - 1]);
-              }
-            };
-
-            const handleNextCategory = () => {
-              const currentIndex = categories.indexOf(activeLabel);
-              if (currentIndex < categories.length - 1) {
-                goToCategory(categories[currentIndex + 1]);
-              } else {
-                goToCategory(categories[0]);
-              }
+            const handleNextCard = () => {
+              api.goToLogicalIndex((api.activeIndex + 1) % featuredMods.length);
             };
 
             return (
               <div className="flex items-center justify-center gap-4 mt-4 px-4 w-full pointer-events-none z-10">
                 <button
-                  onClick={handlePrevCategory}
+                  onClick={handlePrevCard}
                   className="p-1.5 rounded-full bg-white/5 hover:bg-white/20 transition-colors text-white shrink-0 pointer-events-auto cursor-pointer"
                 >
                   <ChevronLeft size={20} />
                 </button>
 
-                {/* Píldoras (puntos) solo para la sección actual */}
+                {/* Pills (dots) rendered only for the current section */}
                 <div className="flex gap-2 justify-center items-center pointer-events-auto">
                   {featuredMods
                     .map((m, idx) => ({ ...m, absoluteIndex: idx }))
@@ -106,7 +110,7 @@ export const FeaturedMods: React.FC<FeaturedModsProps> = ({ onCardClick }) => {
                 </div>
 
                 <button
-                  onClick={handleNextCategory}
+                  onClick={handleNextCard}
                   className="p-1.5 rounded-full bg-white/5 hover:bg-white/20 transition-colors text-white shrink-0 pointer-events-auto cursor-pointer"
                 >
                   <ChevronRight size={20} />
@@ -131,7 +135,7 @@ export const FeaturedMods: React.FC<FeaturedModsProps> = ({ onCardClick }) => {
                   />
                 )}
 
-                {/* Nombre de la sección en cada card */}
+                {/* Section name on each card */}
                 {item.__featuredLabel && (
                   <div className="m3-card-badge absolute top-4 right-4 z-10 bg-black/60 backdrop-blur-md px-4 py-1.5 rounded-full shadow-md border border-white/10 pointer-events-none">
                     <span className="text-white text-xs sm:text-sm font-bold uppercase tracking-widest drop-shadow-md">
@@ -142,7 +146,7 @@ export const FeaturedMods: React.FC<FeaturedModsProps> = ({ onCardClick }) => {
 
                 <div className="m3-card-content absolute inset-0 p-6 sm:p-10 flex flex-col justify-end bg-gradient-to-t from-black/90 via-black/40 to-transparent pointer-events-none">
                   <div className="flex items-center gap-4 sm:gap-6">
-                    {/* Ícono del Engine a la izquierda del título */}
+                    {/* Engine Icon on the left of the title */}
                     {item.engineIcon && (
                       <img
                         src={item.engineIcon.replace(/^\/+/, "")}
@@ -157,7 +161,7 @@ export const FeaturedMods: React.FC<FeaturedModsProps> = ({ onCardClick }) => {
                         {item.title}
                       </h3>
                       <span className="text-base sm:text-xl text-gray-200 drop-shadow-md font-medium mt-1">
-                        Por {item.author}
+                        By {item.author}
                       </span>
                     </div>
                   </div>

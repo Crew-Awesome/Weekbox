@@ -2,6 +2,11 @@ import { useEffect, useState } from "react";
 import Core from "@core";
 import type { GameBananaMod } from "@core";
 
+/**
+ * @description Hook to fetch and manage the state of Featured Mods (Community Picks).
+ * Extracts unique categories/labels for rendering carousel indicators.
+ * @returns {object} Object containing the fetched array of mods and their unique categories.
+ */
 export function useFeaturedMods() {
   const [featuredMods, setFeaturedMods] = useState<GameBananaMod[]>([]);
 

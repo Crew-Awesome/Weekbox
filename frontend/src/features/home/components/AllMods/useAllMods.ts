@@ -2,6 +2,11 @@ import { useEffect, useState, useRef, useCallback, useMemo } from "react";
 import Core from "@core";
 import type { GameBananaMod } from "@core";
 
+/**
+ * @description Custom hook to manage the state, pagination, and layout injection for the AllMods grid.
+ * Merges regular Discovery mods with Featured "Community Picks" injected mathematically.
+ * @returns {object} State and refs required for the infinite scrolling grid.
+ */
 export function useAllMods() {
   const [mods, setMods] = useState<GameBananaMod[]>([]);
   const [featuredPool, setFeaturedPool] = useState<GameBananaMod[]>([]);
@@ -17,7 +22,7 @@ export function useAllMods() {
       if (loading || loadingMore) return;
       if (observer.current) observer.current.disconnect();
 
-      // rootMargin: '600px' hace que cargue "media página antes"
+      // rootMargin: '600px' triggers the next page load roughly half a screen before reaching the bottom
       observer.current = new IntersectionObserver(
         (entries) => {
           if (entries[0].isIntersecting && hasMore) {
@@ -32,38 +37,23 @@ export function useAllMods() {
     [loading, loadingMore, hasMore],
   );
 
-  // Cargar el pool de Community Picks
+  // Pre-load the pool of Community Picks from Ripe
   useEffect(() => {
     Core.services.gamebanana
-      .getFeaturedMods()
-      .then((fMods) => {
-        const pool: GameBananaMod[] = [];
-        const usedIds = new Set<number>();
+      .getMods("ripe", 1, 60)
+      .then((ripeMods) => {
+        if (!ripeMods || ripeMods.length === 0) return;
 
-        const tryAdd = (keyword: string) => {
-          const mod = fMods.find(
-            (m) =>
-              m.__featuredLabel?.toLowerCase().includes(keyword) &&
-              !usedIds.has(m.id),
-          );
-          if (mod) {
-            usedIds.add(mod.id);
-            pool.push({ ...mod, __isCommunityPick: true } as GameBananaMod);
-          }
-        };
+        // Shuffle the ripe mods to get random ones
+        const shuffled = [...ripeMods].sort(() => 0.5 - Math.random());
+        
+        // Take up to 50 random ripe mods to inject into the grid
+        const pool = shuffled.slice(0, 50).map((mod) => ({
+          ...mod,
+          __isCommunityPick: true,
+          __featuredLabel: "Pick of the Community",
+        })) as GameBananaMod[];
 
-        tryAdd("today");
-        tryAdd("week");
-        tryAdd("month");
-        tryAdd("6 month");
-
-        for (const mod of fMods) {
-          if (pool.length >= 4) break;
-          if (!usedIds.has(mod.id)) {
-            usedIds.add(mod.id);
-            pool.push({ ...mod, __isCommunityPick: true } as GameBananaMod);
-          }
-        }
         setFeaturedPool(pool);
       })
       .catch(console.error);
@@ -107,7 +97,7 @@ export function useAllMods() {
     };
   }, [page]);
 
-  // Inyectar matemáticamente los Community Picks entre las filas de manera infinita
+  // Mathematically inject Community Picks between the rows infinitely
   const combinedMods = useMemo(() => {
     const result = [...mods];
     if (featuredPool.length === 0) return result;

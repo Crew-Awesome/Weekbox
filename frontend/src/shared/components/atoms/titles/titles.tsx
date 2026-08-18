@@ -3,6 +3,11 @@ interface TitlesProps {
   align?: "left" | "center" | "right";
 }
 
+/**
+ * @description Atom: Titles.
+ * Displays a styled title with diagonal accents and horizontal lines.
+ * @param {TitlesProps} props - Component properties.
+ */
 export default function Titles({ title, align = "left" }: TitlesProps) {
   const textNode = (
     <div className="flex flex-col justify-end border-b-[3px] border-white px-3 shrink-0">

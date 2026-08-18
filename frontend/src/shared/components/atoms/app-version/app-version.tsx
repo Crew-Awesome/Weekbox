@@ -2,9 +2,9 @@ import React, { useState, useEffect } from "react";
 import Core from "@core";
 
 /**
- * @description Átomo: Versión de la Aplicación.
- * Muestra el número de versión extraído desde la plataforma nativa.
- * @returns {JSX.Element | null} Componente React
+ * @description Atom: App Version.
+ * Displays the application version number fetched dynamically from the native platform (Neutralinojs).
+ * @returns {JSX.Element | null} React Component.
  */
 export const AppVersion: React.FC = () => {
   const [version, setVersion] = useState<string | null>("...");

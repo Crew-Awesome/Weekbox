@@ -2,14 +2,14 @@ import { platform } from "../../platform";
 import type { BackendOperation } from "../types";
 
 /**
- * @description Interfaz unificada para el File System (FS).
- * Se comunica exclusivamente con el backend en Node.js, ofreciendo un API crudo (Raw) de manipulación de archivos y carpetas.
+ * @description Unified interface for the File System (FS).
+ * Communicates exclusively with the Node.js backend, offering a raw API for manipulating files and directories.
  */
 export const fs = {
   /**
-   * @description Lee el contenido de un directorio.
-   * @param {string} path - La ruta del directorio a leer.
-   * @returns {Promise<Array<{entry: string, type: 'FILE' | 'DIRECTORY'}>>} Elementos del directorio.
+   * @description Reads the contents of a directory.
+   * @param {string} path - The path of the directory to read.
+   * @returns {Promise<Array<{entry: string, type: 'FILE' | 'DIRECTORY'}>>} Directory entries.
    */
   async readDirectory(path: string) {
     return await platform.call("fs.readDirectory" as BackendOperation, {
@@ -18,8 +18,8 @@ export const fs = {
   },
 
   /**
-   * @description Crea un directorio.
-   * @param {string} path - La ruta del directorio a crear.
+   * @description Creates a directory.
+   * @param {string} path - The path of the directory to create.
    * @returns {Promise<void>}
    */
   async createDirectory(path: string) {
@@ -29,18 +29,18 @@ export const fs = {
   },
 
   /**
-   * @description Lee un archivo como texto a través de Node.
-   * @param {string} path - La ruta del archivo a leer.
-   * @returns {Promise<string>} El contenido del archivo en formato de texto.
+   * @description Reads a file as text via Node.
+   * @param {string} path - The path of the file to read.
+   * @returns {Promise<string>} The text content of the file.
    */
   async readFile(path: string) {
     return await platform.call("fs.readFile" as BackendOperation, { path });
   },
 
   /**
-   * @description Lee un archivo binario a través de Node.
-   * @param {string} path - La ruta del archivo binario.
-   * @returns {Promise<ArrayBuffer>} El contenido del archivo.
+   * @description Reads a binary file via Node.
+   * @param {string} path - The path of the binary file.
+   * @returns {Promise<ArrayBuffer>} The binary content of the file.
    */
   async readBinaryFile(path: string) {
     return await platform.call("fs.readBinaryFile" as BackendOperation, {
@@ -49,9 +49,9 @@ export const fs = {
   },
 
   /**
-   * @description Escribe texto en un archivo a través de Node.
-   * @param {string} path - La ruta destino del archivo.
-   * @param {string} content - El contenido de texto a escribir.
+   * @description Writes text content to a file via Node.
+   * @param {string} path - The destination path of the file.
+   * @param {string} content - The text content to write.
    * @returns {Promise<void>}
    */
   async writeFile(path: string, content: string) {
@@ -62,9 +62,9 @@ export const fs = {
   },
 
   /**
-   * @description Escribe contenido binario en un archivo a través de Node.
-   * @param {string} path - La ruta destino del archivo.
-   * @param {ArrayBuffer} content - El contenido binario a escribir.
+   * @description Writes binary content to a file via Node.
+   * @param {string} path - The destination path of the file.
+   * @param {ArrayBuffer} content - The binary content to write.
    * @returns {Promise<void>}
    */
   async writeBinaryFile(path: string, content: ArrayBuffer) {
@@ -75,17 +75,17 @@ export const fs = {
   },
 
   /**
-   * @description Verifica si un archivo o carpeta existe.
-   * @param {string} path - La ruta a verificar.
-   * @returns {Promise<boolean>}
+   * @description Checks if a file or directory exists.
+   * @param {string} path - The path to check.
+   * @returns {Promise<boolean>} True if the path exists.
    */
   async exists(path: string) {
     return await platform.call("fs.exists" as BackendOperation, { path });
   },
 
   /**
-   * @description Elimina un archivo o directorio de forma recursiva y segura usando Node.
-   * @param {string} path - La ruta del archivo o directorio a eliminar.
+   * @description Safely and recursively removes a file or directory via Node.
+   * @param {string} path - The path of the file or directory to remove.
    * @returns {Promise<void>}
    */
   async remove(path: string) {
@@ -93,18 +93,18 @@ export const fs = {
   },
 
   /**
-   * @description Obtiene las estadísticas de un archivo o carpeta.
-   * @param {string} path - La ruta.
-   * @returns {Promise<{size: number, isDirectory: boolean, isFile: boolean, type: string}>}
+   * @description Gets the statistics of a file or directory.
+   * @param {string} path - The path to check.
+   * @returns {Promise<{size: number, isDirectory: boolean, isFile: boolean, type: string}>} File stats.
    */
   async getStats(path: string) {
     return await platform.call("fs.getStats" as BackendOperation, { path });
   },
 
   /**
-   * @description Extrae un archivo comprimido (ZIP, TAR, GZ, RAR) en una carpeta destino.
-   * @param {string} archivePath - La ruta del archivo comprimido.
-   * @param {string} destFolder - La carpeta destino.
+   * @description Extracts a compressed archive (ZIP, TAR, GZ, RAR) to a destination folder.
+   * @param {string} archivePath - The path of the compressed archive.
+   * @param {string} destFolder - The destination folder.
    * @returns {Promise<void>}
    */
   async extractArchive(archivePath: string, destFolder: string) {

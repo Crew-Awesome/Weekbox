@@ -10,9 +10,10 @@ interface SidebarProps {
 }
 
 /**
- * Sidebar Organism.
+ * @description Organism: Sidebar.
  * Handles primary application navigation and groups global actions
- * into an interactive interface.
+ * into an interactive interface, delegating responsive UI to Desktop/Mobile counterparts.
+ * @param {SidebarProps} props - Component properties.
  */
 export const Sidebar: React.FC<SidebarProps> = ({
   onNavigate,

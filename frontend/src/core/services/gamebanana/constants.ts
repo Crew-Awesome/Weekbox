@@ -1,5 +1,12 @@
-﻿export const FNF_GAME_ID = 8694;
+/**
+ * @description The official GameBanana ID for Friday Night Funkin'
+ */
+export const FNF_GAME_ID = 8694;
 
+/**
+ * @description Map of allowed GameBanana categories (Engines/Executables) that this app supports.
+ * Contains metadata for rendering UI icons and resolving engine IDs.
+ */
 export const ENGINE_CATEGORIES: Record<
   number,
   { id: string; name: string; icon: string }
@@ -41,6 +48,12 @@ export const ENGINE_CATEGORIES: Record<
   },
 };
 
+/**
+ * @description Set of GameBanana category IDs that should be strictly excluded (e.g. adult content, unrelated categories).
+ */
 export const EXCLUDED_CATEGORIES = new Set([43772, 3833, 44037]);
 
+/**
+ * @description The base URL for GameBanana API v11 requests.
+ */
 export const GB_BASE_URL = "https://gamebanana.com/apiv11";

@@ -5,6 +5,11 @@ interface SearchbarProps {
   placeholders?: string[];
 }
 
+/**
+ * @description Molecule: Searchbar.
+ * A styled search container wrapping the AnimatedInput atom.
+ * @param {SearchbarProps} props - Component properties.
+ */
 export default function Searchbar({
   placeholders = ["Search..."],
 }: SearchbarProps) {
