@@ -9,6 +9,13 @@ function App() {
     {
       name: "Comprobando entorno de ejecución...",
       action: async () => {
+        try {
+          // Muestra la ventana una vez que el webview ha renderizado
+          await Core.window.show();
+        } catch (e) {
+          console.warn("No se pudo mostrar la ventana nativa (posible en web o error IPC):", e);
+        }
+        
         const version = await Core.platform.getVersion();
         console.log(
           `Ejecutando Weekbox v${version} en ${Core.platform.platformName}`,
@@ -23,6 +30,13 @@ function App() {
         await Core.services.gamebanana.getMods("popular", 1, 15);
       },
     },
+    {
+      name: "Testeando API de Ventana (Lemniscate de Bernoulli)...",
+      action: async () => {
+        const { runInfinityWindowTest } = await import("./features/experiments/window-test");
+        await runInfinityWindowTest();
+      }
+    }
   ];
 
   return <Features.Layout loadingTasks={initTasks} />;

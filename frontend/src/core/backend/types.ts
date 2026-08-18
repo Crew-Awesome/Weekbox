@@ -11,7 +11,23 @@ export type BackendOperation =
   | "fs.extractArchive"
   | "http.fetchJson"
   | "http.fetchText"
-  | "http.downloadToFile";
+  | "http.downloadToFile"
+  | "window.minimize"
+  | "window.maximize"
+  | "window.unmaximize"
+  | "window.isMaximized"
+  | "window.setFullScreen"
+  | "window.exitFullScreen"
+  | "window.show"
+  | "window.hide"
+  | "window.focus"
+  | "window.move"
+  | "window.setSize"
+  | "window.getSize"
+  | "window.getPosition"
+  | "window.getDisplays"
+  | "window.close"
+  | "window.center";
 
 export interface BackendRequest {
   requestId: string;
@@ -37,6 +53,10 @@ export interface BackendResultMap {
   "fs.exists": boolean;
   "fs.extractArchive": void;
   "http.downloadToFile": void;
+  "window.isMaximized": boolean;
+  "window.getSize": { width: number; height: number };
+  "window.getPosition": { x: number; y: number };
+  "window.getDisplays": any[];
 }
 
 export type BackendResult<Operation extends BackendOperation> =

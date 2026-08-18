@@ -33,6 +33,7 @@
       "minWidth": 800,
       "minHeight": 500,
       "center": true,
+      "hidden": true,
       "enableInspector": true,
       "openInspectorOnStartup": true,
       "resizable": true,

@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import Core from "@core";
 import type { GameBananaMod } from "@core";
+import Utils from "@utils";
 
 /**
  * @description Hook to fetch and manage the state of Featured Mods (Community Picks).
@@ -9,6 +10,14 @@ import type { GameBananaMod } from "@core";
  */
 export function useFeaturedMods() {
   const [featuredMods, setFeaturedMods] = useState<GameBananaMod[]>([]);
+  const [retryTrigger, setRetryTrigger] = useState(0);
+
+  // Auto-reload logic if connection is restored and we have no content
+  Utils.hooks.useNetworkRecovery(() => {
+    if (featuredMods.length === 0) {
+      setRetryTrigger((prev) => prev + 1);
+    }
+  });
 
   useEffect(() => {
     const fetchFeatured = async () => {
@@ -20,7 +29,7 @@ export function useFeaturedMods() {
       }
     };
     fetchFeatured();
-  }, []);
+  }, [retryTrigger]);
 
   const categories = Array.from(
     new Set(featuredMods.map((m) => m.__featuredLabel).filter(Boolean)),

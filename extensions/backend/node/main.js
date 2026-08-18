@@ -45,7 +45,12 @@ async function processAppEvent(data) {
     if (eventName === "backend.call") {
       const requestId = eventData?.requestId || null;
       try {
-        const { handleRequest } = await backendModule;
+        const { handleRequest, setExtensionContext } = await backendModule;
+        // Inject ext context so host operations can use callApi
+        if (setExtensionContext) {
+          setExtensionContext(ext);
+        }
+
         const result = await handleRequest(
           eventData?.operation,
           eventData?.params,

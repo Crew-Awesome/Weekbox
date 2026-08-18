@@ -51,7 +51,6 @@ export const LoadingScreen: React.FC<LoadingScreenProps> = ({
 
     const runTasks = async () => {
       if (tasks.length === 0) {
-        // If no tasks, complete loading directly
         setProgress(100);
         setAction("Ready!");
         finishLoading();
@@ -68,13 +67,10 @@ export const LoadingScreen: React.FC<LoadingScreenProps> = ({
           await task.action();
         } catch (error) {
           console.error(`Error executing startup task: ${task.name}`, error);
-          // Optionally handle an error state in the UI,
-          // but for now just continue with the next task.
         }
 
         if (isCancelled) return;
 
-        // Update progress based on completed tasks
         const nextProgress = Math.round(((i + 1) / tasks.length) * 100);
         setProgress(nextProgress);
       }
@@ -84,7 +80,20 @@ export const LoadingScreen: React.FC<LoadingScreenProps> = ({
       finishLoading();
     };
 
-    runTasks();
+    // First, preload the background image so it is fully visible before heavy tasks start
+    const preloadImage = new Image();
+    preloadImage.src = loadingBg;
+    
+    const startTasksAfterRender = () => {
+      if (isCancelled) return;
+      // Give the browser a tiny moment to actually paint the image on the screen
+      requestAnimationFrame(() => {
+        setTimeout(runTasks, 100);
+      });
+    };
+
+    preloadImage.onload = startTasksAfterRender;
+    preloadImage.onerror = startTasksAfterRender; // Fallback so we don't hang if image is missing
 
     return () => {
       isCancelled = true;

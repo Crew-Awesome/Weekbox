@@ -1,6 +1,7 @@
-﻿import { platform } from "./platform";
+import { platform } from "./platform";
 import { fs } from "./backend/fs";
 import { http } from "./backend/http";
+import { windowApi } from "./backend/window";
 import { gameBananaApi } from "./services/gamebanana";
 
 export * from "./services/gamebanana/types";
@@ -20,6 +21,7 @@ const Core = {
    */
   fs,
   http,
+  window: windowApi,
 
   /**
    * @description Servicios externos para consumo de APIs (GameBanana, GameJolt, etc.).

@@ -1,6 +1,7 @@
 import { useEffect, useState, useRef, useCallback, useMemo } from "react";
 import Core from "@core";
 import type { GameBananaMod } from "@core";
+import Utils from "@utils";
 
 /**
  * @description Custom hook to manage the state, pagination, and layout injection for the AllMods grid.
@@ -37,6 +38,15 @@ export function useAllMods() {
     [loading, loadingMore, hasMore],
   );
 
+  const [retryTrigger, setRetryTrigger] = useState(0);
+
+  // Auto-reload logic if connection is restored and we have no content
+  Utils.hooks.useNetworkRecovery(() => {
+    if (mods.length === 0) {
+      setRetryTrigger((prev) => prev + 1);
+    }
+  });
+
   // Pre-load the pool of Community Picks from Ripe
   useEffect(() => {
     Core.services.gamebanana
@@ -44,10 +54,7 @@ export function useAllMods() {
       .then((ripeMods) => {
         if (!ripeMods || ripeMods.length === 0) return;
 
-        // Shuffle the ripe mods to get random ones
         const shuffled = [...ripeMods].sort(() => 0.5 - Math.random());
-        
-        // Take up to 50 random ripe mods to inject into the grid
         const pool = shuffled.slice(0, 50).map((mod) => ({
           ...mod,
           __isCommunityPick: true,
@@ -57,7 +64,7 @@ export function useAllMods() {
         setFeaturedPool(pool);
       })
       .catch(console.error);
-  }, []);
+  }, [retryTrigger]);
 
   useEffect(() => {
     let isMounted = true;
@@ -95,7 +102,7 @@ export function useAllMods() {
     return () => {
       isMounted = false;
     };
-  }, [page]);
+  }, [page, retryTrigger]);
 
   // Mathematically inject Community Picks between the rows infinitely
   const combinedMods = useMemo(() => {

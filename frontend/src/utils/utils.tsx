@@ -1,5 +1,6 @@
 import { useViews } from "./hooks/use-views";
 import { useModals } from "./hooks/use-modals";
+import { useNetwork, useNetworkRecovery } from "./hooks/useNetwork";
 
 import { sanitizeHtml, htmlToPlainText } from "./sanitize";
 
@@ -11,6 +12,8 @@ const Utils = {
   hooks: {
     useViews,
     useModals,
+    useNetwork,
+    useNetworkRecovery,
   },
   sanitize: {
     sanitizeHtml,

@@ -8,9 +8,9 @@ class NeutralinoExtension {
   constructor(debug = false) {
     this.version = "1.0.4";
     this.debug = debug;
+    this.pendingRequests = new Map();
 
     this.debugTermColors = true; // Use terminal colors
-    this.debugTermColorIN = "\x1b[32m"; // Green: All incoming events, except function calls
     this.debugTermColorCALL = "\x1b[91m"; // Red: Incoming function calls
     this.debugTermColorOUT = "\x1b[33m"; // Yellow: Outgoing events
 
@@ -61,11 +61,28 @@ class NeutralinoExtension {
     this.debugLog(`${msg}`, "out");
   }
 
-  run(onReceiveMessage) {
-    //
-    //  Socket-handler main loop. Sends and receives messages.
-    //  :param onReceiveMessage: Callback for incoming messages
+  callApi(method, data = {}) {
+    return new Promise((resolve, reject) => {
+      let id = crypto.randomUUID();
+      let d = {
+        id: id,
+        method: method,
+        accessToken: this.token,
+      };
+      
+      if (data && Object.keys(data).length > 0) {
+        d.data = data;
+      }
+      
+      this.pendingRequests.set(id, { resolve, reject });
+      
+      let msg = JSON.stringify(d);
+      this.socket.send(msg);
+      this.debugLog(`API CALL: ${msg}`, "out");
+    });
+  }
 
+  run(onReceiveMessage) {
     const WebSocket = require("ws");
     this.socket = new WebSocket(this.urlSocket);
     let self = this;
@@ -81,6 +98,20 @@ class NeutralinoExtension {
       try {
         msg = JSON.parse(msg);
       } catch (e) {}
+
+      // Handle API responses
+      if (msg.id && self.pendingRequests.has(msg.id)) {
+        self.debugLog(`API RESPONSE: ${JSON.stringify(msg)}`, "in");
+        const { resolve, reject } = self.pendingRequests.get(msg.id);
+        self.pendingRequests.delete(msg.id);
+        if (msg.error) {
+          reject(msg.error);
+        } else {
+          // Send the full raw message back to host.mjs so it can parse whatever Neutralino actually returned
+          resolve(msg);
+        }
+        return;
+      }
 
       try {
         if (self.termOnWindowClose) {

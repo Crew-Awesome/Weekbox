@@ -21,8 +21,26 @@ declare global {
       };
       app?: {
         getConfig: () => Promise<any>;
+        exit: () => Promise<void>;
       };
       filesystem?: any;
+      window?: {
+        minimize: () => Promise<void>;
+        maximize: () => Promise<void>;
+        unmaximize: () => Promise<void>;
+        setFullScreen: () => Promise<void>;
+        exitFullScreen: () => Promise<void>;
+        show: () => Promise<void>;
+        hide: () => Promise<void>;
+        focus: () => Promise<void>;
+        move: (x: number, y: number) => Promise<void>;
+        setSize: (width: number, height: number) => Promise<void>;
+        getSize: () => Promise<{ width: number; height: number }>;
+        getPosition: () => Promise<{ x: number; y: number }>;
+      };
+      computer?: {
+        getDisplays: () => Promise<any[]>;
+      };
     };
     NodeExtension?: new (debug?: boolean) => {
       run: (func: string, param?: any) => void;
