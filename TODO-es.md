@@ -16,6 +16,10 @@
 - **Problema:** Un gestor de mods requiere mantener el seguimiento de multiples estados asincronos y globales (ej. cola de descargas, estado de instalacion de cada mod). Usar Context nativo puede causar re-renderizados innecesarios en toda la app.
 - **Solucion:** Implementar una libreria ligera de estado global como **Zustand**. Esto permite un manejo centralizado y performante de las descargas y el estado de la aplicacion fuera del ciclo de vida de React, sin causar dolores de cabeza por *prop-drilling*.
 
+### - [ ] [Testing] [Core] Tests Automatizados
+- **Problema:** Al contar con una arquitectura desacoplada y madura, cualquier regresion introducida en la logica de Negocio o en el puente IPC puede romper silenciosamente componentes o la aplicacion de escritorio completa.
+- **Solucion:** Implementar un entorno de pruebas unitarias y de integracion (con Vitest o Jest) que cubra minimamente los adaptadores de plataforma en "Core" y el estado de Zustand, validando el correcto funcionamiento sin depender del flujo UI.
+
 ### - [ ] [Fix] [UI] Manejo Silencioso de Errores en la API
 - **Problema:** En `getMods.ts`, si la peticion a la API `Mod/Multi` de GameBanana falla, el bloque `catch` silenciosamente devuelve `[]`. El usuario vera que los mods cargan, pero con 0 visualizaciones y 0 descargas, haciendole creer que los mods no tienen actividad.
 - **Solucion:** Implementar un sistema de notificaciones/Toasts para alertar al usuario ("Advertencia: Problemas conectando con GameBanana, pueden faltar datos de estadisticas").
