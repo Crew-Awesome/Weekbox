@@ -61,7 +61,7 @@ class NeutralinoExtension {
     this.debugLog(`${msg}`, "out");
   }
 
-  callApi(method, data = {}) {
+  callApi(method, data = {}, timeoutMs = 45000) {
     return new Promise((resolve, reject) => {
       let id = crypto.randomUUID();
       let d = {
@@ -130,6 +130,7 @@ class NeutralinoExtension {
 
     this.socket.on("close", (code, reason) => {
       console.log(`WebSocket closed: ${code} - ${reason}`);
+      process.exit(0);
     });
 
     this.socket.on("error", (error) => {

@@ -9,17 +9,30 @@ import { Readable, Transform } from 'node:stream';
  * @param {number} timeoutMs - Milisegundos antes de abortar.
  * @returns {Promise<Response>} 
  */
-const fetchWithTimeout = async (url, options = {}, timeoutMs = 15000) => {
-  const controller = new AbortController();
-  const id = setTimeout(() => controller.abort(), timeoutMs);
-  try {
-    const response = await fetch(url, { ...options, signal: controller.signal });
-    clearTimeout(id);
-    return response;
-  } catch (error) {
-    clearTimeout(id);
-    throw error;
+const fetchWithTimeout = async (url, options = {}, timeoutMs = 30000, retries = 1) => {
+  let lastError;
+  for (let i = 0; i <= retries; i++) {
+    const controller = new AbortController();
+    const id = setTimeout(() => controller.abort(), timeoutMs);
+    try {
+      const response = await fetch(url, { ...options, signal: controller.signal });
+      clearTimeout(id);
+      if (!response.ok) {
+        if (response.status === 429 || response.status >= 500) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        return response; // Si es 404 o 403 que lo maneje el caller
+      }
+      return response;
+    } catch (error) {
+      clearTimeout(id);
+      lastError = error;
+      if (i < retries) {
+        await new Promise(resolve => setTimeout(resolve, 2000)); // Esperar 2s antes de reintentar
+      }
+    }
   }
+  throw lastError;
 };
 
 /**

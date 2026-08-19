@@ -9,7 +9,10 @@ interface LayoutProps {
 }
 
 export const Layout: React.FC<LayoutProps> = ({ children, loadingTasks }) => {
-  const { setCurrentView, RenderView } = Utils.hooks.useViews("home");
+  const { setCurrentView, renderView } = Utils.hooks.useViews("home");
+  
+  // Activa el atrapador de deeplinks en background
+  Utils.hooks.useDeeplinkManager();
 
   return (
     <div className="flex h-screen w-full bg-[var(--wb-bg)] text-[var(--wb-text-main)] overflow-hidden font-sans relative">
@@ -17,7 +20,7 @@ export const Layout: React.FC<LayoutProps> = ({ children, loadingTasks }) => {
       <Shared.organisms.Sidebar onNavigate={setCurrentView} />
       <main className="flex-1 overflow-y-auto relative mobile-no-scrollbar">
         <div className="relative z-10 px-8 pt-8 pb-28 md:p-8 h-full">
-          <RenderView>{children}</RenderView>
+          {renderView(children)}
         </div>
       </main>
     </div>

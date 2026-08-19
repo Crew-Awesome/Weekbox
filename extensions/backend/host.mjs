@@ -1,10 +1,21 @@
 import { fsApi as APINodeFileSystem } from "./node/fs/fs.mjs";
 import { httpApi as APINodeHttp } from "./node/http/http.mjs";
+import { deeplinkApi as APINodeDeeplink } from "./node/deeplink/deeplink.mjs";
+import { winApi as APINodeWindow } from "./node/win/win.mjs";
 
 let extContext = null;
+let lastPingTime = Date.now();
+
+setInterval(() => {
+  if (Date.now() - lastPingTime > 10000) {
+    console.log("No heartbeat received from frontend. Suicide.");
+    process.exit(0);
+  }
+}, 5000);
 
 const setExtensionContext = (ext) => {
   extContext = ext;
+  APINodeDeeplink.startServer(extContext);
 };
 
 const callApi = async (namespace, method, params = {}) => {
@@ -15,11 +26,18 @@ const callApi = async (namespace, method, params = {}) => {
     return response.returnValue;
   }
   
-  // Some APIs might just return success or other properties directly
   return response;
 };
 
 const operations = {
+  "system.ping": () => {
+    lastPingTime = Date.now();
+    return { ok: true };
+  },
+  "system.suicide": () => {
+    console.log("Suicide signal received. Exiting Node.js.");
+    process.exit(0);
+  },
   "fs.readDirectory": async ({ path }) => APINodeFileSystem.readDirectory(path),
   "fs.readFile": async ({ path }) => APINodeFileSystem.readFile(path),
   "fs.readBinaryFile": async ({ path }) => APINodeFileSystem.readBinaryFile(path),
@@ -35,52 +53,22 @@ const operations = {
   "http.downloadToFile": async ({ url, destPath, options }, onProgress) => APINodeHttp.downloadToFile({ url, destPath, options, onProgress }),
   
   // Window API
-  "window.minimize": async () => callApi("window", "minimize"),
-  "window.maximize": async () => callApi("window", "maximize"),
-  "window.unmaximize": async () => callApi("window", "unmaximize"),
-  "window.isMaximized": async () => callApi("window", "isMaximized"),
-  "window.setFullScreen": async () => callApi("window", "setFullScreen"),
-  "window.exitFullScreen": async () => callApi("window", "exitFullScreen"),
-  "window.show": async () => callApi("window", "show"),
-  "window.hide": async () => callApi("window", "hide"),
-  "window.focus": async () => callApi("window", "focus"),
-  "window.move": async ({ x, y }) => callApi("window", "move", { x, y }),
-  "window.setSize": async ({ width, height }) => callApi("window", "setSize", { width, height }),
-  "window.getSize": async () => callApi("window", "getSize"),
-  "window.getPosition": async () => callApi("window", "getPosition"),
-  "window.getDisplays": async () => callApi("computer", "getDisplays"),
-  "window.close": async () => callApi("app", "exit"),
-  "window.center": async () => {
-     // Center manually
-     const size = await callApi("window", "getSize");
-     const displays = await callApi("computer", "getDisplays");
-     const pos = await callApi("window", "getPosition");
-     
-     // Find the display the window is currently on
-     let currentDisplay = displays[0];
-     for (const display of displays) {
-       const bx = display.bounds?.x || 0;
-       const by = display.bounds?.y || 0;
-       const bw = display.resolution.width;
-       const bh = display.resolution.height;
-       // Check if window is within this display's bounds
-       if (
-         pos.x >= bx &&
-         pos.x < bx + bw &&
-         pos.y >= by &&
-         pos.y < by + bh
-       ) {
-         currentDisplay = display;
-         break;
-       }
-     }
-
-     const bx = currentDisplay.bounds?.x || 0;
-     const by = currentDisplay.bounds?.y || 0;
-     const centerX = bx + Math.floor((currentDisplay.resolution.width - size.width) / 2);
-     const centerY = by + Math.floor((currentDisplay.resolution.height - size.height) / 2);
-     await callApi("window", "move", { x: centerX, y: centerY });
-  }
+  "window.minimize": async () => APINodeWindow.minimize(callApi),
+  "window.maximize": async () => APINodeWindow.maximize(callApi),
+  "window.unmaximize": async () => APINodeWindow.unmaximize(callApi),
+  "window.isMaximized": async () => APINodeWindow.isMaximized(callApi),
+  "window.setFullScreen": async () => APINodeWindow.setFullScreen(callApi),
+  "window.exitFullScreen": async () => APINodeWindow.exitFullScreen(callApi),
+  "window.show": async () => APINodeWindow.show(callApi),
+  "window.hide": async () => APINodeWindow.hide(callApi),
+  "window.focus": async () => APINodeWindow.focus(callApi),
+  "window.move": async ({ x, y }) => APINodeWindow.move(callApi, { x, y }),
+  "window.setSize": async ({ width, height }) => APINodeWindow.setSize(callApi, { width, height }),
+  "window.getSize": async () => APINodeWindow.getSize(callApi),
+  "window.getPosition": async () => APINodeWindow.getPosition(callApi),
+  "window.getDisplays": async () => APINodeWindow.getDisplays(callApi),
+  "window.close": async () => APINodeWindow.close(callApi),
+  "window.center": async () => APINodeWindow.center(callApi)
 };
 
 async function handleRequest(operation, params = {}, onProgress = null) {

@@ -41,7 +41,12 @@ declare global {
       computer?: {
         getDisplays: () => Promise<any[]>;
       };
+      os?: {
+        execCommand: (command: string) => Promise<{ pid: number; exitCode: number; stdOut: string; stdErr: string }>;
+      };
     };
+    NL_ARGS?: string[];
+    NL_OS?: string;
     NodeExtension?: new (debug?: boolean) => {
       run: (func: string, param?: any) => void;
       call: <T = unknown>(

@@ -69,24 +69,31 @@ export class FeaturedService {
       }
 
       const labels = [
-        "Mod del Día",
-        "Mod de la Semana",
-        "Mod del Mes",
-        "Hace 6 Meses",
-        "Mod del Año",
-        "De Todos los Tiempos",
-        "Trending Ripe",
+        "Mod of the Day",
+        "Mod of the Week",
+        "Mod of the Month",
+        "6 Months Ago",
+        "Mod of the Year",
+        "All Time Classic",
       ];
 
       // Shuffle combined to give variety every time it falls back
       const shuffled = combined.sort(() => 0.5 - Math.random());
 
       const result: GameBananaMod[] = [];
-      for (let i = 0; i < labels.length && i < shuffled.length; i++) {
-        result.push({
-          ...shuffled[i],
-          __featuredLabel: labels[i],
-        });
+      let modIndex = 0;
+      
+      for (const label of labels) {
+        // Take up to 4 mods for this category
+        for (let j = 0; j < 4; j++) {
+          if (modIndex < shuffled.length) {
+            result.push({
+              ...shuffled[modIndex],
+              __featuredLabel: label,
+            });
+            modIndex++;
+          }
+        }
       }
 
       return result;

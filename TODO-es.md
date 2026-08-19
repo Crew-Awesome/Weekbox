@@ -12,7 +12,7 @@
 
 ## Prioridad Media (Medium Priority)
 
-### - [ ] [Refactor] [Frontend] Gestion del Estado Global Complejo
+### - [x] [Refactor] [Frontend] Gestion del Estado Global Complejo
 - **Problema:** Un gestor de mods requiere mantener el seguimiento de multiples estados asincronos y globales (ej. cola de descargas, estado de instalacion de cada mod). Usar Context nativo puede causar re-renderizados innecesarios en toda la app.
 - **Solucion:** Implementar una libreria ligera de estado global como **Zustand**. Esto permite un manejo centralizado y performante de las descargas y el estado de la aplicacion fuera del ciclo de vida de React, sin causar dolores de cabeza por *prop-drilling*.
 

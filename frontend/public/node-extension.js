@@ -26,7 +26,7 @@ class NodeExtension {
         */
     window.Neutralino.extensions.dispatch("extNode", "runNode", data);
   }
-  call(operation, params, timeoutMs = 30000) {
+  call(operation, params, timeoutMs = 45000) {
     const requestId =
       globalThis.crypto?.randomUUID?.() || `${Date.now()}-${Math.random()}`;
     return new Promise((resolve, reject) => {

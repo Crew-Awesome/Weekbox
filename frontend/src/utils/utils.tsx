@@ -1,6 +1,7 @@
 import { useViews } from "./hooks/use-views";
 import { useModals } from "./hooks/use-modals";
 import { useNetwork, useNetworkRecovery } from "./hooks/useNetwork";
+import { useDeeplinkManager } from "./hooks/useDeeplinkManager";
 
 import { sanitizeHtml, htmlToPlainText } from "./sanitize";
 
@@ -14,6 +15,7 @@ const Utils = {
     useModals,
     useNetwork,
     useNetworkRecovery,
+    useDeeplinkManager,
   },
   sanitize: {
     sanitizeHtml,

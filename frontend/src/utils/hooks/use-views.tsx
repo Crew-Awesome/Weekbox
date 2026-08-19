@@ -10,7 +10,7 @@ export type ViewType = "home" | "library" | "engines" | string;
 export const useViews = (defaultView: ViewType = "home") => {
   const [currentView, setCurrentView] = useState<ViewType>(defaultView);
 
-  const RenderView = ({ children }: { children?: React.ReactNode }) => {
+  const renderView = (children?: React.ReactNode) => {
     if (children) return <>{children}</>;
 
     switch (currentView) {
@@ -36,6 +36,6 @@ export const useViews = (defaultView: ViewType = "home") => {
   return {
     currentView,
     setCurrentView,
-    RenderView,
+    renderView,
   };
 };

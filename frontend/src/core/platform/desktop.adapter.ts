@@ -30,10 +30,27 @@ export class DesktopAdapter implements IPlatformBridge {
         this.emitLocalEvent("pingResult", event.detail);
       });
 
+      /** Notifies when a new instance is launched via Deeplink (Native) */
+      neutralino.events.on("newInstance", (event: any) => {
+        console.log("RECEIVED NEW INSTANCE NATIVELY:", event);
+        console.log("DETAIL IS:", event?.detail);
+        this.emitLocalEvent("newInstance", event);
+      });
+
+      /** Notifies when a new instance is launched via Deeplink (Custom HTTP fallback) */
+      neutralino.events.on("deeplinkArgs", (event: any) => {
+        this.emitLocalEvent("deeplinkArgs", event);
+      });
+
       /** Notifies when the Neutralino native environment is ready */
       neutralino.events.on("ready", () => {
         this._isReady = true;
         this.emitLocalEvent("ready", true);
+        
+        // Start heartbeat to keep the Node backend alive
+        setInterval(() => {
+          this.call("system.ping" as any).catch(() => {});
+        }, 5000);
       });
     }
   }

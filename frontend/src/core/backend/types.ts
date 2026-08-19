@@ -1,4 +1,6 @@
 export type BackendOperation =
+  | "system.suicide"
+  | "system.ping"
   | "fs.readDirectory"
   | "fs.createDirectory"
   | "fs.readFile"
