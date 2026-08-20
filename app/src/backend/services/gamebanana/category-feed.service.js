@@ -103,10 +103,8 @@ export class CategoryFeedService {
       snapshot =
         this.snapshots.get(queryKey, now) ||
         this.snapshots.create(queryKey, now);
-    if (
-      !snapshot.orderedIds.length ||
-      (page - 1) * this.config.pageSize >= snapshot.orderedIds.length
-    ) {
+    const pageStart = (page - 1) * this.config.pageSize;
+    while (pageStart >= snapshot.orderedIds.length && !snapshot.exhausted) {
       const collection = await this.collector.collect(snapshot, {
         categoryId,
         signal,
@@ -147,10 +145,11 @@ export class CategoryFeedService {
         ...ranked.map((item) => item.id).filter((id) => !known.has(id)),
       );
       snapshot.generatedPageCount = Math.max(snapshot.generatedPageCount, page);
-      snapshot.partial = collection.partial;
+      snapshot.partial = snapshot.partial || collection.partial;
+      if (!collection.requested || collection.errors.length) break;
     }
     const ids = snapshot.orderedIds.slice(
-      (page - 1) * this.config.pageSize,
+      pageStart,
       page * this.config.pageSize,
     );
     return createDiscoveryResult({

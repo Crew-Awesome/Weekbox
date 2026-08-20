@@ -3,7 +3,7 @@ import { nativeFetch } from "../../services/network/native-http.js";
 
 const CACHE_PREFIX = "weekbox-engine-releases-v3-";
 const CACHE_FRESH_MS = 3 * 60 * 60 * 1000;
-const NIGHTLY_CACHE_PREFIX = "weekbox-engine-nightly-";
+const NIGHTLY_CACHE_PREFIX = "weekbox-engine-nightly-v3-";
 const NIGHTLY_CACHE_MS = 3 * 60 * 60 * 1000;
 const GITHUB_API_HEADERS = {
   Accept: "application/vnd.github+json",
@@ -218,10 +218,25 @@ async function getLatestNightly(source) {
     if (result.status !== "fulfilled" || !result.value) continue;
     const { platform, artifact, run } = result.value;
     const name = encodeURIComponent(artifact.artifact);
-    // A run URL is immutable, unlike nightly.link's branch URL, which moves
-    // whenever a later workflow succeeds.
+    const workflow = encodeURIComponent(
+      artifact.workflow.replace(/\.(?:ya?ml)$/i, ""),
+    );
+    const branch = encodeURIComponent(source.nightly.branch);
+    // Keep the run SHA as the update key, but use nightly.link's workflow URL
+    // so a stale run-specific artifact route cannot strand the Nightly entry.
     version[platform] =
-      `https://nightly.link/${source.repository}/actions/runs/${run.id}/${name}.zip`;
+      `https://nightly.link/${source.repository}/workflows/${workflow}/${branch}/${name}.zip`;
+    version.nightlyInfo = {
+      ...(version.nightlyInfo || {}),
+      [platform]: {
+        commit: run.head_sha,
+        message: run.head_commit?.message?.split(/\r?\n/, 1)[0] || "",
+        runUrl:
+          run.html_url ||
+          `https://github.com/${source.repository}/actions/runs/${run.id}`,
+        commitUrl: `https://github.com/${source.repository}/commit/${run.head_sha}`,
+      },
+    };
     version.updateKeys[platform] = `nightly:${run.head_sha}`;
     if (!version.releasedAt || run.updated_at > version.releasedAt) {
       version.releasedAt = run.updated_at || run.created_at || null;

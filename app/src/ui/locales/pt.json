@@ -345,7 +345,7 @@
   "errors.certificateSummary": "WeekBox was blocked by Windows before the download started. Check your date and time, then try another network. A VPN, proxy, or antivirus HTTPS scanning can also block the certificate check.",
   "errors.certificateTag": "Windows certificate check",
   "errors.oneDriveTitle": "Choose a local storage folder",
-  "errors.oneDriveSummary": "WeekBox cannot safely download engines into OneDrive. Use a local folder such as C:\\WeekBoxData instead.",
+  "errors.oneDriveSummary": "WeekBox cannot safely download engines into OneDrive. Use a local folder such as C:\\WeekBox instead.",
   "errors.storageLocationTag": "Storage location",
   "errors.writeFolderTitle": "WeekBox cannot write to this folder",
   "errors.writeFolderSummary": "Check that your storage folder is local, writable, and not being used by another program.",

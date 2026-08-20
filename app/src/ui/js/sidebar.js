@@ -19,6 +19,7 @@ const SIDEBAR_WIDTH_KEY = "weekbox_sidebar_width";
 const SIDEBAR_COLLAPSED_KEY = "weekbox_sidebar_collapsed";
 const MIN_SIDEBAR_WIDTH = 200;
 const MAX_SIDEBAR_WIDTH = 500;
+const RESPONSIVE_BREAKPOINT = MAX_SIDEBAR_WIDTH * 1.55;
 const sectionResizerControllers = new WeakMap();
 
 export const sidebar = {
@@ -61,14 +62,34 @@ export const sidebar = {
     );
     this.setupResizer();
     this.setupNavigation();
-    this.viewChangeListener = (event) => this.syncActive(event.detail);
+    this.viewChangeListener = (event) => {
+      this.syncActive(event.detail);
+      if (event.detail === "home")
+        appEvents.dispatchEvent(new CustomEvent("news:refresh-badge"));
+    };
     appEvents.addEventListener("view:loaded", this.viewChangeListener);
     this.setupBrandButton();
     this.networkStatusListener = () => {
       void this.refreshNetworkFeatures();
     };
     networkStatus.addEventListener("change", this.networkStatusListener);
-    await this.refreshNetworkFeatures();
+    void this.refreshNetworkFeatures();
+    this.setupResponsiveCollapse();
+  },
+  setupResponsiveCollapse() {
+    const updateCollapse = () => {
+      const windowWidth = window.innerWidth;
+      const shouldCollapse = windowWidth <= RESPONSIVE_BREAKPOINT;
+      const isCollapsed = this.sidebar.classList.contains("sidebar--collapsed");
+      if (shouldCollapse && !isCollapsed) {
+        this.setCollapsed(true);
+      }
+      if (this.collapseBtn) {
+        this.collapseBtn.style.display = shouldCollapse ? "none" : "";
+      }
+    };
+    updateCollapse();
+    window.addEventListener("resize", updateCollapse);
   },
   setupResizer() {
     if (!this.resizer) return;
@@ -420,7 +441,11 @@ export const sidebar = {
     const wrapper = document.getElementById("engines-wrapper");
     if (!wrapper) return;
     try {
-      const response = await fetch("src/backend/data/engines-router.json");
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 5000);
+      const response = await fetch("src/backend/data/engines-router.json", {
+        signal: controller.signal,
+      }).finally(() => clearTimeout(timeoutId));
       if (!response.ok) throw new Error("Failed to load engines-router.json");
       const enginesRouter = await response.json();
       wrapper.innerHTML = "";
@@ -502,11 +527,27 @@ export const sidebar = {
     }
   },
   async loadStandaloneMods() {
-    if (!FS.isInitialized) return;
     const container = document.getElementById("standalone-mods-container");
     const wrapper = document.getElementById("standalone-mods-wrapper");
     const resizer = document.getElementById("standalone-mods-resizer");
+    const enginesContainer = document.getElementById("engines-container");
     if (!container || !wrapper) return;
+    const clearSavedEngineHeight = () => {
+      enginesContainer?.style.removeProperty("flex");
+      try {
+        if (enginesContainer) {
+          localStorage.removeItem(
+            `weekbox_sidebar_section_height_${enginesContainer.id}`,
+          );
+        }
+      } catch {}
+    };
+    if (!FS.isInitialized) {
+      container.style.display = "none";
+      if (resizer) resizer.style.display = "none";
+      clearSavedEngineHeight();
+      return;
+    }
 
     wrapper.innerHTML = "";
     const allStandaloneMods = await FS.getStandaloneMods();
@@ -515,6 +556,7 @@ export const sidebar = {
     if (standaloneMods.length === 0) {
       container.style.display = "none";
       if (resizer) resizer.style.display = "none";
+      clearSavedEngineHeight();
       return;
     }
 

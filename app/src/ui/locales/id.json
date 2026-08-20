@@ -345,7 +345,7 @@
   "errors.certificateSummary": "WeekBox diblokir oleh Windows sebelum unduhan dimulai. Periksa tanggal dan waktu Anda, lalu coba jaringan lain. VPN, proxy, atau pemindaian HTTPS antivirus juga dapat memblokir pemeriksaan sertifikat.",
   "errors.certificateTag": "Pemeriksaan sertifikat Windows",
   "errors.oneDriveTitle": "Pilih folder penyimpanan lokal",
-  "errors.oneDriveSummary": "WeekBox tidak dapat mengunduh engine dengan aman ke OneDrive. Gunakan folder lokal seperti C:\\WeekBoxData sebagai gantinya.",
+  "errors.oneDriveSummary": "WeekBox tidak dapat mengunduh engine dengan aman ke OneDrive. Gunakan folder lokal seperti C:\\WeekBox sebagai gantinya.",
   "errors.storageLocationTag": "Lokasi penyimpanan",
   "errors.writeFolderTitle": "WeekBox tidak dapat menulis ke folder ini",
   "errors.writeFolderSummary": "Pastikan folder penyimpanan Anda bersifat lokal, dapat ditulisi, dan tidak digunakan oleh program lain.",

@@ -38,35 +38,6 @@ function pathsOverlap(left, right) {
   );
 }
 
-function getDistinctStorageParentPath(rootPath, executablePath) {
-  const root = String(rootPath || "")
-    .trim()
-    .replace(/[\\/]+$/, "");
-  if (!root) return "";
-  const candidate = `${root}/WeekBoxData`;
-  if (!pathsOverlap(candidate, executablePath)) return candidate;
-  return `${root}/WeekBoxData-storage`;
-}
-
-function getStorageDestinationDecision(
-  entries,
-  { replaceExisting = false, repairingNestedStorage = false } = {},
-) {
-  const realEntries = getRealEntries(entries);
-  const canRepairNestedStorage =
-    repairingNestedStorage &&
-    realEntries.length === 1 &&
-    realEntries[0].type === "DIRECTORY" &&
-    realEntries[0].entry.toLowerCase() === "weekbox";
-  if (!realEntries.length || canRepairNestedStorage) {
-    return { action: "use", canRepairNestedStorage };
-  }
-  return {
-    action: replaceExisting ? "replace" : "reject",
-    canRepairNestedStorage: false,
-  };
-}
-
 function getRealEntries(entries) {
   return (Array.isArray(entries) ? entries : []).filter(
     (entry) => entry?.entry !== "." && entry?.entry !== "..",
@@ -98,8 +69,6 @@ export {
   getParentPath,
   normalizeComparablePath,
   pathsOverlap,
-  getDistinctStorageParentPath,
-  getStorageDestinationDecision,
   sanitizePathSegment,
   getRealEntries,
   getModFolderName,

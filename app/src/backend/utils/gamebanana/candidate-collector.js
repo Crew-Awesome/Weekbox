@@ -35,68 +35,98 @@ export class CandidateCollector {
         pages: this.config.mostLikedMaxPagesPerCategory,
       },
     ];
-    const errors = [];
-    const seen = new Set();
-    let requests = 0;
-
-    for (let page = 1; requests < this.config.maxRequestsPerSnapshot; page++) {
-      let requestedThisRound = false;
-      for (const source of sources) {
-        if (
-          page > source.pages ||
-          requests >= this.config.maxRequestsPerSnapshot
-        )
-          continue;
-        requestedThisRound = true;
-        const batch = categories
-          .slice(0, this.config.maxRequestsPerSnapshot - requests)
-          .map((id) => ({ id, page, source }));
-        for (
-          let index = 0;
-          index < batch.length;
-          index += this.config.maxConcurrentRequests
-        ) {
-          const group = batch.slice(
-            index,
-            index + this.config.maxConcurrentRequests,
-          );
-          const outcomes = await Promise.allSettled(
-            group.map(({ id, page: sourcePage, source: itemSource }) =>
-              this.fetchSource(id, sourcePage, itemSource.sort, signal),
-            ),
-          );
-          requests += outcomes.length;
-          outcomes.forEach((outcome, outcomeIndex) => {
-            const request = group[outcomeIndex];
-            snapshot.sourceCursors[`${request.id}:${request.source.name}`] =
-              request.page;
-            if (outcome.status === "rejected") {
-              if (outcome.reason?.kind === "aborted") throw outcome.reason;
-              errors.push({
-                categoryId: request.id,
-                kind: outcome.reason?.kind || "network",
-              });
-              return;
-            }
-            for (const raw of outcome.value) {
-              if (this.isExcluded(raw)) continue;
-              if (seen.has(raw._idRow)) continue;
-              seen.add(raw._idRow);
-              const candidate = this.normalizeCandidate(raw, {
-                categoryId: request.id,
-              });
-              if (candidate.id)
-                snapshot.candidatesById.set(candidate.id, candidate);
-            }
-          });
+    const tasks = [];
+    for (const source of sources) {
+      for (let page = 1; page <= source.pages; page += 1) {
+        for (const id of categories) {
+          const key = `${id}:${source.name}`;
+          const cursor = Number(snapshot.sourceCursors[key] || 0);
+          if (snapshot.sourceExhausted[key] || page <= cursor) continue;
+          tasks.push({ id, page, source, key });
         }
       }
-      if (!requestedThisRound) break;
+    }
+    const errors = [];
+    const seen = new Set(snapshot.candidatesById.keys());
+    const blockedKeys = new Set();
+    let pending = [...tasks];
+    let requests = 0;
+    let added = 0;
+
+    while (pending.length && requests < this.config.maxRequestsPerSnapshot) {
+      const group = [];
+      while (
+        pending.length &&
+        group.length < this.config.maxConcurrentRequests &&
+        requests + group.length < this.config.maxRequestsPerSnapshot
+      ) {
+        const task = pending[0];
+        if (blockedKeys.has(task.key)) {
+          pending.shift();
+          continue;
+        }
+        if (group.some((item) => item.key === task.key)) break;
+        pending.shift();
+        group.push(task);
+      }
+      if (!group.length) break;
+      const outcomes = await Promise.allSettled(
+        group.map(({ id, page, source }) =>
+          this.fetchSource(id, page, source.sort, signal),
+        ),
+      );
+      requests += outcomes.length;
+      outcomes.forEach((outcome, outcomeIndex) => {
+        const request = group[outcomeIndex];
+        if (outcome.status === "rejected") {
+          if (outcome.reason?.kind === "aborted") throw outcome.reason;
+          blockedKeys.add(request.key);
+          errors.push({
+            categoryId: request.id,
+            kind: outcome.reason?.kind || "network",
+          });
+          return;
+        }
+        snapshot.sourceCursors[request.key] = request.page;
+        if (outcome.value.length < this.config.sourcePerPage) {
+          snapshot.sourceExhausted[request.key] = true;
+        }
+        for (const raw of outcome.value) {
+          if (this.isExcluded(raw)) continue;
+          if (seen.has(raw._idRow)) continue;
+          seen.add(raw._idRow);
+          const candidate = this.normalizeCandidate(raw, {
+            categoryId: request.id,
+          });
+          if (candidate.id) {
+            snapshot.candidatesById.set(candidate.id, candidate);
+            added += 1;
+          }
+        }
+      });
+    }
+
+    for (const source of sources) {
+      for (const id of categories) {
+        const key = `${id}:${source.name}`;
+        const cursor = Number(snapshot.sourceCursors[key] || 0);
+        if (cursor >= source.pages) snapshot.sourceExhausted[key] = true;
+      }
     }
 
     snapshot.errors.push(...errors);
-    snapshot.exhausted = requests >= this.config.maxRequestsPerSnapshot;
-    return { errors, partial: errors.length > 0 };
+    snapshot.exhausted = sources.every((source) =>
+      categories.every((id) => {
+        const key = `${id}:${source.name}`;
+        return snapshot.sourceExhausted[key];
+      }),
+    );
+    return {
+      errors,
+      added,
+      requested: requests,
+      partial: errors.length > 0,
+    };
   }
 
   async fetchSource(categoryId, page, sort, signal) {

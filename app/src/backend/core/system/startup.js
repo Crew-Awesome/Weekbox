@@ -1,7 +1,6 @@
 import { appSettings } from "./settings.service.js";
 import { networkStatus } from "./network-status.service.js";
 import { startupLoader } from "./startup-loader.service.js";
-import { storageBridge } from "./storage-patch.util.js";
 import { syncWindowsProtocolRegistration } from "./windows-protocol.util.js";
 import { disableProductionRefreshShortcuts } from "./production-shortcuts.util.js";
 import { router } from "../routing/router.service.js";
@@ -23,6 +22,76 @@ import { modManagerModal } from "../../../ui/js/mod-manager/index.js";
 import { firstRunStorageModal } from "../../../ui/js/firstRunStorageModal.js";
 import { firstRunLanguageModal } from "../../../ui/js/firstRunLanguageModal.js";
 import { i18n, t } from "../../../ui/js/i18n/index.js";
+
+const SINGLE_INSTANCE_MUTEX = "Global\\WeekBox-com.weekbox.app";
+
+function encodePowerShellCommand(script) {
+  const bytes = new Uint8Array(script.length * 2);
+  for (let index = 0; index < script.length; index += 1) {
+    const code = script.charCodeAt(index);
+    bytes[index * 2] = code & 0xff;
+    bytes[index * 2 + 1] = code >> 8;
+  }
+  return btoa(String.fromCharCode(...bytes));
+}
+
+async function focusWeekBoxWindow() {
+  try {
+    if (typeof Neutralino.window.show === "function") {
+      await Neutralino.window.show();
+    }
+    await Neutralino.window.focus();
+  } catch {}
+}
+
+async function ensureSingleInstance() {
+  if (window.NL_OS !== "Windows") return true;
+  const parentPid = Number(window.NL_PID);
+  if (!Number.isInteger(parentPid) || parentPid <= 0) return true;
+
+  // The guard is Windows-specific; add a native Unix lock if duplicate launches become a real issue.
+  const script = `$created = $false\n$mutex = [System.Threading.Mutex]::new($false, '${SINGLE_INSTANCE_MUTEX}', [ref]$created)\n$owned = $false\ntry { $owned = $mutex.WaitOne(0) } catch [System.Threading.AbandonedMutexException] { $owned = $true }\nif (-not $owned) { [Console]::Out.WriteLine('duplicate'); exit 2 }\n[Console]::Out.WriteLine('acquired')\ntry { while (Get-Process -Id ${parentPid} -ErrorAction SilentlyContinue) { Start-Sleep -Milliseconds 500 } } finally { $mutex.ReleaseMutex(); $mutex.Dispose() }`;
+  let process;
+  try {
+    process = await Neutralino.os.spawnProcess(
+      `powershell.exe -NoLogo -NoProfile -NonInteractive -ExecutionPolicy Bypass -EncodedCommand ${encodePowerShellCommand(script)}`,
+    );
+  } catch (error) {
+    console.warn("Could not start the WeekBox single-instance guard", error);
+    return true;
+  }
+
+  return new Promise((resolve) => {
+    let settled = false;
+    let timeoutHandle;
+    const finish = (isPrimary) => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timeoutHandle);
+      Neutralino.events.off("spawnedProcess", handler);
+      resolve(isPrimary);
+    };
+    const handler = (event) => {
+      if (event.detail.id !== process.id) return;
+      const output = String(event.detail.data || "").toLowerCase();
+      if (event.detail.action === "stdOut" && output.includes("acquired")) {
+        finish(true);
+      } else if (
+        event.detail.action === "stdOut" &&
+        output.includes("duplicate")
+      ) {
+        finish(false);
+      } else if (event.detail.action === "exit") {
+        finish(true);
+      }
+    };
+    timeoutHandle = setTimeout(() => {
+      console.warn("The WeekBox single-instance guard did not respond in time");
+      finish(true);
+    }, 5000);
+    Neutralino.events.on("spawnedProcess", handler).catch(() => finish(true));
+  });
+}
 
 function installGlobalErrorReporter() {
   if (window.__weekboxErrorReporterInstalled) return;
@@ -61,9 +130,7 @@ async function completeFirstRunStorageSetup(defaultStoragePath, hadSettings) {
   let completed = choice === "default";
   if (choice === "new" || choice === "existing") {
     const selectedPath = await Neutralino.os.showFolderDialog(
-      choice === "existing"
-        ? t("storage.chooseExistingFolder")
-        : t("storage.chooseContainingFolder"),
+      t("common.chooseFolder"),
       { defaultPath: FS.basePath },
     );
     if (selectedPath) {
@@ -80,18 +147,11 @@ async function completeFirstRunStorageSetup(defaultStoragePath, hadSettings) {
             "WARNING",
           );
       } else {
-        if (/(?:^|[\\/])weekbox[\\/]*$/i.test(selectedPath)) {
-          await Neutralino.os.showMessageBox(
-            t("storage.chooseParentTitle"),
-            t("storage.chooseParentMessage"),
-            "OK",
-            "WARNING",
-          );
-        } else if (await FS.hasStorageFolder(selectedPath)) {
+        if (existing || (await FS.hasStorageFolder(selectedPath))) {
           const replaceChoice = await Neutralino.os.showMessageBox(
             t("storage.moveFilesTitle"),
             t("storage.moveFilesMessage", {
-              path: `${selectedPath.replace(/[\\/]+$/, "")}/WeekBox`,
+              path: selectedPath,
             }),
             "YES_NO",
             "QUESTION",
@@ -115,7 +175,7 @@ async function completeFirstRunStorageSetup(defaultStoragePath, hadSettings) {
 installGlobalErrorReporter();
 async function recommendSaferStorageLocation() {
   if (!(await FS.shouldRecommendDefaultStorage())) return;
-  const defaultPath = await FS.getDefaultStorageParentPath();
+  const defaultPath = await FS.getDefaultStoragePath();
   const choice = await storageRecommendationModal.show({
     currentPath: FS.weekboxPath,
     defaultPath,
@@ -177,62 +237,6 @@ async function recommendSaferStorageLocation() {
   }
 }
 
-async function offerNestedStorageRepair() {
-  const targetParentPath = await FS.getNestedStorageRepairTarget();
-  if (!targetParentPath) return;
-  const choice = await Neutralino.os.showMessageBox(
-    t("storage.repairFolderTitle"),
-    t("storage.repairFolderMessage", {
-      weekboxPath: FS.weekboxPath,
-      basePath: FS.basePath,
-    }),
-    "YES_NO",
-    "QUESTION",
-  );
-  if (choice !== "YES") return;
-  const toastId = "weekbox-nested-storage-repair";
-  toastSystem.show(toastId, {
-    title: t("storage.repairingFolder"),
-    message: t("storage.preparingFiles"),
-    mediaHtml: '<i class="fa-solid fa-folder-open" aria-hidden="true"></i>',
-    showPercent: true,
-    indeterminate: true,
-  });
-  try {
-    await FS.moveStorageTo(
-      targetParentPath,
-      ({ progress, copiedFiles, totalFiles, phase }) => {
-        const preparing = phase === "preparing";
-        toastSystem.update(toastId, {
-          message: preparing
-            ? t("storage.preparingFiles")
-            : t("storage.movingFilesProgress", {
-                copied: copiedFiles,
-                total: totalFiles,
-              }),
-          progress,
-        });
-      },
-    );
-    toastSystem.setState(toastId, "complete", {
-      badgeHtml: '<i class="fa-solid fa-check" aria-hidden="true"></i>',
-    });
-    toastSystem.update(toastId, {
-      message: t("storage.folderRepaired"),
-      progress: 100,
-    });
-    setTimeout(() => toastSystem.hide(toastId), 3600);
-  } catch (error) {
-    toastSystem.setState(toastId, "error", {
-      badgeHtml: '<i class="fa-solid fa-xmark" aria-hidden="true"></i>',
-    });
-    toastSystem.update(toastId, {
-      message: error.message || t("storage.repairFailed"),
-      progress: 100,
-    });
-  }
-}
-
 async function handleStartupAppUpdate() {
   if (!networkStatus.online) {
     return false;
@@ -265,7 +269,13 @@ async function handleStartupAppUpdate() {
   document.dispatchEvent(
     new CustomEvent("app-update-available", { detail: update }),
   );
-  return await appUpdateModal.show(update);
+  void appUpdateModal.show(update).catch((error) => {
+    console.warn(
+      "Could not show the WeekBox update prompt during startup",
+      error,
+    );
+  });
+  return false;
 }
 
 function patchNeutralinoMessageBox() {
@@ -377,9 +387,15 @@ async function startApp() {
     startupLoader.setPhase(t("startup.startingServices"), 8);
     Neutralino.init();
     patchNeutralinoMessageBox();
+    Neutralino.events.on("weekbox:focus", () => void focusWeekBoxWindow());
+    if (!(await ensureSingleInstance())) {
+      await Neutralino.app.broadcast("weekbox:focus").catch(() => {});
+      await Neutralino.app.exit().catch(() => {});
+      return;
+    }
     void startupLoader.initVersion();
     networkStatus.init();
-    await Neutralino.window.focus().catch(() => {});
+    await focusWeekBoxWindow();
     const setWindowFocus = (isFocused) => {
       if (isFocused) {
         document.body.classList.remove("window-unfocused");
@@ -440,20 +456,9 @@ async function startApp() {
     });
     startupLoader.setPhase(t("startup.loadingPreferences"), 20);
     startupStep = "restoring preferences";
-    {
-      let timeoutHandle;
-      await Promise.race([
-        storageBridge.init(),
-        new Promise((resolve) => {
-          timeoutHandle = setTimeout(resolve, 2000);
-        }),
-      ]).finally(() => {
-        if (timeoutHandle) clearTimeout(timeoutHandle);
-      });
-    }
     startupStep = "finding the default storage location";
-    const defaultStoragePath = await FS.getDefaultStorageParentPath();
-    const defaultDataPath = `${defaultStoragePath}/WeekBox/data`;
+    const defaultStoragePath = await FS.getDefaultStoragePath();
+    const defaultDataPath = defaultStoragePath;
     startupStep = "reading saved settings";
     const settingsDataPath = await appSettings.resolveDataPath(defaultDataPath);
     const hadSettings = await FS.api.exists(
@@ -512,13 +517,17 @@ async function startApp() {
         if (timeoutHandle) clearTimeout(timeoutHandle);
       });
     }
-    await startupLoader.complete();
-    void maintenance.catch((error) =>
+    startupStep = "checking the WeekBox library";
+    await maintenance.catch((error) =>
       console.warn("Background library maintenance failed", error),
     );
-    await offerNestedStorageRepair();
-    await openLaunchDeepLink();
-    await recommendSaferStorageLocation();
+    await startupLoader.complete();
+    await openLaunchDeepLink().catch((error) =>
+      console.warn("Could not open the WeekBox launch link", error),
+    );
+    await recommendSaferStorageLocation().catch((error) =>
+      console.warn("Could not check the WeekBox storage recommendation", error),
+    );
   } catch (error) {
     const message = error?.message || String(error);
     const startupError = new Error(
@@ -556,5 +565,4 @@ export {
   installGlobalErrorReporter,
   completeFirstRunStorageSetup,
   recommendSaferStorageLocation,
-  offerNestedStorageRepair,
 };

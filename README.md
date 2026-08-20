@@ -1,16 +1,33 @@
+# WeekBox
+
 <p align="center">
   <img src="./docs/brand/weekbox-banner.png" width="800" alt="WeekBox" />
 </p>
 
 <p align="center">
-  A desktop launcher for discovering, installing, and managing Friday Night Funkin' mods.
+  <a href="https://github.com/Crew-Awesome/Weekbox/blob/main/LICENSE"><img src="https://img.shields.io/github/license/Crew-Awesome/Weekbox?style=flat-square" alt="MIT License" /></a>
+  <a href="https://discord.gg/xQTtYF2Cfn"><img src="https://img.shields.io/badge/Discord-The%20Cellar-5865F2?logo=discord&logoColor=white&style=flat-square" alt="The Cellar Discord server" /></a>
 </p>
 
-## What it does
+A Re-Imagined Original FNF Mod Launcher
 
-WeekBox lets you find Friday Night Funkin' mods, install them in a couple of clicks, and keep your engines and mods organized in one place. Search pulls from GameBanana and Psych Online at the same time. Downloads work through GameBanana, GitHub, Google Drive, and MediaFire. You can also add mods from a folder on your own computer.
+## What you can do
 
-Everything you install stays local. WeekBox has no account system and does not upload your library anywhere. See the [Privacy Policy](./PRIVACY.md) for the full list of services it contacts.
+- Browse mods from GameBanana and Psych Online.
+- Install and organize mods and engines on your computer.
+- Enjoy a Comfortable experience playing your favorite FNF mods!
+
+## Community
+
+- [Discord Server](https://discord.gg/xQTtYF2Cfn)
+- [WeekBox on GameBanana](https://gamebanana.com/tools/23228)
+- [WeekBox Website](https://fnfweekbox.vercel.app/)
+- [News](https://fnfweekbox.vercel.app/news)
+- [Downloads](https://fnfweekbox.vercel.app/downloads)
+- [Credits](https://fnfweekbox.vercel.app/credits)
+
+Want to work on WeekBox, translate it, or help in another way? Join the
+Discord server and DM **Malloy** or **Britex**.
 
 ## Screenshots
 
@@ -18,59 +35,44 @@ Everything you install stays local. WeekBox has no account system and does not u
   <tr>
     <td width="50%">
       <img src="./docs/screenshots/home.png" alt="Home screen showing featured and discoverable FNF mods" /><br/>
-      <sub><b>Home</b>: browse featured and discoverable mods.</sub>
+      <sub><b>Home</b>: browse mods.</sub>
     </td>
     <td width="50%">
-      <img src="./docs/screenshots/mod-manager.png" alt="Mods with installed mods" /><br/>
-      <sub><b>Mods</b>: see, launch, and organize what you installed.</sub>
+      <img src="./docs/screenshots/mod-details.png" alt="Mod details view with installation information" /><br/>
+      <sub><b>Mods</b>: mod details.</sub>
     </td>
   </tr>
   <tr>
     <td width="50%">
-      <img src="./docs/screenshots/engine-manager.png" alt="Installed engines" /><br/>
-      <sub><b>Engines</b>: install and switch between engines.</sub>
+      <img src="./docs/screenshots/engine-release-notes.png" alt="Engine release notes view" /><br/>
+      <sub><b>Engines</b>: read release notes and launch an engine.</sub>
     </td>
     <td width="50%">
-      <img src="./docs/screenshots/settings.png" alt="Settings" /><br/>
-      <sub><b>Settings</b>: storage location, downloads, and updates.</sub>
+      <img src="./docs/screenshots/newsletter.png" alt="WeekBox newsletter post" /><br/>
+      <sub><b>Newsletter</b>: read WeekBox news and updates.</sub>
     </td>
   </tr>
 </table>
 
-## Run and build
+## Documentation
 
-Install dependencies, then run from source:
-
-```bash
-npm install
-npm run dev
-```
-
-`neu run` by itself does not bundle the frontend. If it reports a missing
-`/app/dist/bundle.css`, run `npm run dev` (or `npm run assets` before
-`npx @neutralinojs/neu run`).
-
-Build release binaries:
-
-```bash
-npm run build
-```
-
-The launcher icon, window icon, and Credits icon all come from the same source asset in `app/assets/icons/launcher-icon.png`.
+- [Development guide](./docs/DEVELOPMENT.md)
+- [Contributing](./CONTRIBUTING.md)
+- [Changelog](./CHANGELOG.md)
+- [Code of Conduct](./CODE_OF_CONDUCT.md)
+- [Bug report template](./.github/ISSUE_TEMPLATE/bug_report.md)
+- [Feature request template](./.github/ISSUE_TEMPLATE/feature_request.md)
+- [Pull request template](./.github/PULL_REQUEST_TEMPLATE.md)
 
 ## Credits
 
-WeekBox is made by [ImMalloy](https://github.com/ImMalloy) and [Britex](https://github.com/expertyeti).
+WeekBox is maintained by [ImMalloy](https://github.com/ImMalloy) and
+[Britex](https://github.com/expertyeti).
 
-It is built with [Neutralinojs](https://neutralino.js.org/) and uses [GameBanana](https://gamebanana.com/) and Sniro (Psych Online Site) for mod data.
-The rest of the credits can be found [here on WeekBox's website](https://fnfweekbox.vercel.app/credits).
-
-## Project policies
-
-- [WeekBox Privacy Policy](./PRIVACY.md)
-- [Security Policy](./SECURITY.md)
-- [Contributing](./CONTRIBUTING.md)
-- [Code of Conduct](./CODE_OF_CONDUCT.md)
+The app uses [Neutralinojs](https://neutralino.js.org/). Mod listings and
+downloads come from [GameBanana](https://gamebanana.com/) and
+[Sniro's Psych Online site](https://funkin.sniro.boo/mods).
+See the [full credits on the WeekBox website](https://fnfweekbox.vercel.app/credits).
 
 ## License
 

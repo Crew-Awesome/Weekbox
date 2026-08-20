@@ -28,7 +28,10 @@ var APIneuFileSystem = {
         "WeekBox could not create a storage folder because its path is missing.",
       );
     }
-    const normalizedPath = path.replace(/\\/g, "/").replace(/\/+$/, "");
+    const rawPath = path.replace(/\\/g, "/");
+    const normalizedPath =
+      rawPath.replace(/\/+$/, "") || (rawPath.startsWith("/") ? "/" : rawPath);
+    if (normalizedPath === "/" || /^[a-zA-Z]:$/.test(normalizedPath)) return;
     if (await this.exists(normalizedPath)) return;
     const separator = normalizedPath.lastIndexOf("/");
     if (
@@ -128,26 +131,31 @@ var APIneuFileSystem = {
 
     try {
       await Neutralino.filesystem.remove(normalizedPath);
-      return;
+      if (!(await this.exists(normalizedPath))) return;
     } catch (error) {
       // Native remove can fail if path is a non-empty directory
     }
 
-    if (await this.exists(normalizedPath)) {
+    const maxAttempts = window.NL_OS === "Windows" ? 3 : 2;
+    for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+      if (!(await this.exists(normalizedPath))) return;
       try {
         const isWin = window.NL_OS === "Windows";
+        const stats = await Neutralino.filesystem
+          .getStats(normalizedPath)
+          .catch(() => null);
         const command = isWin
-          ? `cmd /c rmdir /S /Q ${quoteShellArgument(normalizedPath.replace(/\//g, "\\"))}`
+          ? stats?.isDirectory
+            ? `cmd /c rmdir /S /Q ${quoteShellArgument(normalizedPath.replace(/\//g, "\\"))}`
+            : `cmd /c del /F /Q ${quoteShellArgument(normalizedPath.replace(/\//g, "\\"))}`
           : `rm -rf ${quoteShellArgument(normalizedPath)}`;
-        const result = await Neutralino.os.execCommand(command, {
-          background: false,
-        });
-        if (result?.exitCode === 0 || !(await this.exists(normalizedPath))) {
-          return;
-        }
+        await Neutralino.os.execCommand(command, { background: false });
+        if (!(await this.exists(normalizedPath))) return;
       } catch (cmdError) {
         console.warn("Recursive removal fallback failed:", cmdError);
       }
+      if (attempt < maxAttempts)
+        await new Promise((resolve) => setTimeout(resolve, attempt * 200));
     }
 
     if (await this.exists(normalizedPath)) {
@@ -181,14 +189,26 @@ var APIneuFileSystem = {
     const normalizedSource = String(sourcePath).replace(/\\/g, "/");
     const normalizedDest = String(destinationPath).replace(/\\/g, "/");
 
-    if (!(await this.exists(normalizedSource))) {
+    const maxAttempts =
+      options.maxAttempts || (window.NL_OS === "Windows" ? 8 : 5);
+    let sourceExists = false;
+    // Neutralino can expose extracted paths late; bounded polling avoids a move race.
+    for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+      if (await this.exists(normalizedSource)) {
+        sourceExists = true;
+        break;
+      }
       if (await this.exists(normalizedDest)) return;
+      if (attempt < maxAttempts) {
+        await new Promise((resolve) => setTimeout(resolve, attempt * 150));
+      }
+    }
+    if (!sourceExists) {
       throw new Error(
         `WeekBox could not move ${normalizedSource} because it does not exist.`,
       );
     }
 
-    const maxAttempts = options.maxAttempts || 5;
     let lastError = null;
     for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
       try {
@@ -196,6 +216,12 @@ var APIneuFileSystem = {
         return;
       } catch (error) {
         lastError = error;
+        if (
+          !(await this.exists(normalizedSource)) &&
+          (await this.exists(normalizedDest))
+        ) {
+          return;
+        }
         if (attempt < maxAttempts) {
           await new Promise((resolve) => setTimeout(resolve, attempt * 150));
         }

@@ -114,7 +114,7 @@ export const downloadEngine = {
 
     if (FS.isOneDriveStorage()) {
       throw new Error(
-        "WeekBox storage is inside OneDrive. Choose a local folder outside OneDrive, such as C:\\WeekBoxData, before downloading engines.",
+        "WeekBox storage is inside OneDrive. Choose a local folder outside OneDrive, such as C:\\WeekBox, before downloading engines.",
       );
     }
 
@@ -134,7 +134,6 @@ export const downloadEngine = {
       pid: null,
       tempFilePath,
       engineDir,
-      phase: "downloading",
       progressInfo: { status: t("engines.preparingEnvironment"), progress: 0 },
       onStateChange,
     };
@@ -170,7 +169,6 @@ export const downloadEngine = {
         throw new Error("Download finished without creating an archive file");
       }
 
-      task.phase = "extracting";
       this.notifyState(task, "installing");
       updateProgress(t("engines.downloadCompleteExtracting"), 98);
       await extractArchive({

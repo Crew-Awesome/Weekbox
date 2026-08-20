@@ -35,6 +35,47 @@
   animation: error-content-pop 260ms cubic-bezier(0.22, 1.25, 0.36, 1) both;
 }
 
+.app-update-error-overlay {
+  z-index: 21000;
+}
+
+.app-update-error-overlay[hidden] {
+  display: none;
+}
+
+.app-update-error-content {
+  width: min(620px, 100%);
+}
+
+.app-update-error-overlay .app-update-error-rail {
+  color: #80d4ff;
+  background: rgba(90, 182, 255, 0.1);
+}
+
+.app-update-notes {
+  max-height: 170px;
+  margin-top: 16px;
+  padding: 12px;
+  overflow: auto;
+  border: 1px solid var(--border-color);
+  border-radius: 7px;
+  background: var(--bg-color);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.app-update-error-overlay .app-update-now {
+  border-color: rgba(128, 212, 255, 0.55);
+  background: rgba(90, 182, 255, 0.16);
+}
+
+.app-update-error-overlay .app-update-now:hover,
+.app-update-error-overlay .app-update-now:focus-visible {
+  border-color: #80d4ff;
+  background: rgba(90, 182, 255, 0.25);
+  outline: none;
+}
+
 .error-rail {
   display: grid;
   place-items: start center;

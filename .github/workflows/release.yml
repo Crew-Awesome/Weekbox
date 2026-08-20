@@ -54,12 +54,6 @@ jobs:
           }
 
           $assets = @{
-            'WeekBox-linux_arm64' = "WeekBox-$version-linux-arm64.zip"
-            'WeekBox-linux_armhf' = "WeekBox-$version-linux-armhf.zip"
-            'WeekBox-linux_x64' = "WeekBox-$version-linux-x64.zip"
-            'WeekBox-mac_arm64' = "WeekBox-$version-macos-arm64.zip"
-            'WeekBox-mac_universal' = "WeekBox-$version-macos-universal.zip"
-            'WeekBox-mac_x64' = "WeekBox-$version-macos-x64.zip"
             'WeekBox-win_x64.exe' = "WeekBox-$version-windows-x64.zip"
           }
 
@@ -100,11 +94,131 @@ jobs:
             gh release upload $env:RELEASE_TAG $_.FullName --clobber
           }
 
+  package-macos:
+    runs-on: macos-latest
+    env:
+      RELEASE_TAG: ${{ github.event.release.tag_name || inputs.tag }}
+
+    steps:
+      - name: Check out the release tag
+        uses: actions/checkout@v5
+        with:
+          ref: ${{ env.RELEASE_TAG }}
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Restore Neutralino runtime
+        run: npx @neutralinojs/neu update
+
+      - name: Build app bundle
+        run: npm run build && npm run package:macos
+
+      - name: Create macOS packages
+        run: |
+          version=$(node -p "require('./neutralino.config.json').version")
+          if [ "$RELEASE_TAG" != "v$version" ]; then
+            echo "Release tag $RELEASE_TAG does not match app version $version."
+            exit 1
+          fi
+
+          mkdir -p dist/release-assets dist/release-archives
+          for arch in arm64 universal x64; do
+            staging="dist/release-archives/macos-$arch"
+            mkdir -p "$staging"
+            cp "dist/WeekBox/WeekBox-mac_$arch" "$staging/WeekBox-mac_$arch"
+            cp dist/WeekBox/resources.neu "$staging/resources.neu"
+            chmod +x "$staging/WeekBox-mac_$arch"
+            (cd "$staging" && zip -X -q -r "$GITHUB_WORKSPACE/dist/release-assets/WeekBox-$version-macos-$arch.zip" .)
+          done
+
+          mkdir -p dist/packages/macos-dmg
+          cp -R dist/packages/WeekBox.app dist/packages/macos-dmg/
+          ditto -c -k --sequesterRsrc --keepParent dist/packages/WeekBox.app "dist/release-assets/WeekBox-$version-macos-universal.app.zip"
+          hdiutil create -volname WeekBox -srcfolder dist/packages/macos-dmg -ov -format UDZO "dist/release-assets/WeekBox-$version-macos-universal.dmg"
+          pkgbuild --component dist/packages/WeekBox.app --install-location /Applications "dist/release-assets/WeekBox-$version-macos-universal.pkg"
+
+      - name: Upload macOS packages
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release upload "$RELEASE_TAG" dist/release-assets/* --clobber
+
+  package-linux:
+    runs-on: ubuntu-latest
+    env:
+      RELEASE_TAG: ${{ github.event.release.tag_name || inputs.tag }}
+
+    steps:
+      - name: Check out the release tag
+        uses: actions/checkout@v5
+        with:
+          ref: ${{ env.RELEASE_TAG }}
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Restore Neutralino runtime
+        run: npx @neutralinojs/neu update
+
+      - name: Build Linux packages
+        run: npm run build && npm run package:linux
+
+      - name: Install AppImage tooling
+        run: |
+          curl --fail --location https://github.com/AppImage/appimagetool/releases/download/continuous/appimagetool-x86_64.AppImage --output "$RUNNER_TEMP/appimagetool"
+          chmod +x "$RUNNER_TEMP/appimagetool"
+
+      - name: Create Linux packages
+        run: |
+          version=$(node -p "require('./neutralino.config.json').version")
+          if [ "$RELEASE_TAG" != "v$version" ]; then
+            echo "Release tag $RELEASE_TAG does not match app version $version."
+            exit 1
+          fi
+
+          mkdir -p dist/release-assets dist/release-archives
+          for arch in arm64 armhf x64; do
+            staging="dist/release-archives/linux-$arch"
+            mkdir -p "$staging"
+            cp "dist/WeekBox/WeekBox-linux_$arch" "$staging/WeekBox-linux_$arch"
+            cp dist/WeekBox/resources.neu "$staging/resources.neu"
+            chmod +x "$staging/WeekBox-linux_$arch"
+            (cd "$staging" && zip -X -q -r "$GITHUB_WORKSPACE/dist/release-assets/WeekBox-$version-linux-$arch.zip" .)
+          done
+
+          "$RUNNER_TEMP/appimagetool" --appimage-extract-and-run dist/packages/WeekBox.AppDir "dist/release-assets/WeekBox-$version-linux-x86_64.AppImage"
+          dpkg-deb --build --root-owner-group dist/packages/WeekBox-deb "dist/release-assets/WeekBox-$version-linux-amd64.deb"
+
+      - name: Upload Linux packages
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release upload "$RELEASE_TAG" dist/release-assets/* --clobber
+
+  refresh-downloads:
+    needs: [build-and-upload, package-macos, package-linux]
+    runs-on: ubuntu-latest
+    steps:
       - name: Refresh the Downloads page
-        shell: pwsh
         env:
           REVALIDATE_SECRET: ${{ secrets.WEEKBOX_SITE_REVALIDATE_SECRET }}
         run: |
-          curl.exe --fail-with-body --silent --show-error --request POST `
-            'https://fnfweekbox.vercel.app/api/revalidate-release' `
-            --header "Authorization: Bearer $env:REVALIDATE_SECRET"
+          if [ -z "$REVALIDATE_SECRET" ]; then
+            echo "::error::WEEKBOX_SITE_REVALIDATE_SECRET is not configured."
+            exit 1
+          fi
+          curl --fail-with-body --silent --show-error --request POST \
+            --max-time 30 \
+            'https://fnfweekbox.vercel.app/api/revalidate-release' \
+            --header "Authorization: Bearer $REVALIDATE_SECRET"

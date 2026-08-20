@@ -144,7 +144,6 @@ var _ExecutableService = class _ExecutableService {
         console.warn("Could not search for a Windows executable:", dir, error);
       }
     }
-    this.cache.set(normalizedDir, null);
     return null;
   }
   getLastError() {

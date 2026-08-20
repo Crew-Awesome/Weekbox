@@ -315,6 +315,7 @@ appUpdater = {
       outPath: staging,
       getTask: () => null,
       onProgress: (status) => onProgress(status),
+      validateArchive: false,
     });
     const bytes = new Uint8Array(
       await Neutralino.filesystem.readBinaryFile(staging),

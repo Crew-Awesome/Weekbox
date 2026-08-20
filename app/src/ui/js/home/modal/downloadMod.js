@@ -60,25 +60,18 @@ export const downloadMod = {
   /**
    * @fix 2026-08-05T03:31:10.964Z - Fix NE_FS_MOVEERR during mod entries move on Windows
    */
-  async moveEntries(entries, sourceDir, destinationDir, concurrency = 4) {
+  // Keep extracted entry moves serial because concurrent Neutralino moves can fail on Windows.
+  async moveEntries(entries, sourceDir, destinationDir) {
     const queue = entries.filter(
       (entry) => entry.entry !== "." && entry.entry !== "..",
     );
-    let nextIndex = 0;
-    const worker = async () => {
-      while (nextIndex < queue.length) {
-        const entry = queue[nextIndex];
-        nextIndex += 1;
-        await FS.api.move(
-          `${sourceDir}/${entry.entry}`,
-          `${destinationDir}/${entry.entry}`,
-        );
-      }
-    };
-
-    await Promise.all(
-      Array.from({ length: Math.min(concurrency, queue.length) }, worker),
-    );
+    await FS.api.ensureDir(destinationDir);
+    for (const entry of queue) {
+      await FS.api.move(
+        `${sourceDir}/${entry.entry}`,
+        `${destinationDir}/${entry.entry}`,
+      );
+    }
   },
 
   async hasExtractedFiles(path) {
@@ -208,13 +201,10 @@ export const downloadMod = {
     if (!FS.isInitialized) await FS.init();
     FS.assertStorageUnlocked();
 
+    if (this.activeTasks.has(modId)) return false;
+
     if (await FS.isModInstalled(modId)) {
-      this.reportInstallProgress(
-        modId,
-        modName,
-        t("downloads.installed"),
-        100,
-      );
+      this.reportInstallProgress(modId, modName, t("downloads.installed"), 100);
       toastDownloadMod.success(modId);
       const modalBtn = document.getElementById("modal-download-btn");
       if (
@@ -242,7 +232,8 @@ export const downloadMod = {
     const lowerUrl = String(downloadUrl || "").toLowerCase();
     if (lowerUrl.includes(".rar")) archiveExt = ".rar";
     else if (lowerUrl.includes(".7z")) archiveExt = ".7z";
-    else if (lowerUrl.includes(".tar.gz") || lowerUrl.includes(".tgz")) archiveExt = ".tar.gz";
+    else if (lowerUrl.includes(".tar.gz") || lowerUrl.includes(".tgz"))
+      archiveExt = ".tar.gz";
     else if (lowerUrl.includes(".tar")) archiveExt = ".tar";
     const tempFilePath = `${modsBasePath}/temp_${taskKey}${archiveExt}`;
     let downloadMarkerPath = `${targetModFolder}/.downloading`;
@@ -258,17 +249,6 @@ export const downloadMod = {
 
     const { toastThumbnail, sourceType, fileSize, ...installMetadata } =
       metadata;
-    let downloadHost = "unknown";
-    try {
-      downloadHost = new URL(downloadUrl).hostname;
-    } catch {}
-    console.info("[WeekBox Download] install-start", {
-      modId,
-      modName,
-      sourceType,
-      downloadHost,
-      expectedBytes: Number(fileSize) || 0,
-    });
     const coverUrlPromise = this.fetchModCoverUrl(
       modId,
       sourceType,
@@ -418,10 +398,7 @@ export const downloadMod = {
        * @fix 2026-08-05T03:31:10.964Z - Fix NE_FS_MOVEERR during folder move
        */
       if (wrapper) {
-        await FS.api.move(
-          `${stagingFolder}/${wrapper.entry}`,
-          finalModFolder,
-        );
+        await FS.api.move(`${stagingFolder}/${wrapper.entry}`, finalModFolder);
       } else {
         await FS.api.ensureDir(finalModFolder);
         await this.moveEntries(realEntries, stagingFolder, finalModFolder);
@@ -499,14 +476,6 @@ export const downloadMod = {
       this.activeTasks.delete(modId);
       return true;
     } catch (error) {
-      console.error("[WeekBox Download] install-failed", {
-        modId,
-        modName,
-        sourceType,
-        downloadHost,
-        message: error?.message || String(error),
-        stack: error?.stack,
-      });
       this.reportInstallProgress(modId, modName, "cancelled", 0);
       if (error.message !== "Cancelled") {
         const task = this.activeTasks.get(modId);

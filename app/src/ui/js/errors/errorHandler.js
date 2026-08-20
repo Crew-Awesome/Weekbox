@@ -59,7 +59,10 @@ async function getDiskDiagnostics() {
     const list = Array.isArray(disks) ? disks : disks ? [disks] : [];
     return {
       count: list.length,
-      totalBytes: list.reduce((sum, disk) => sum + (Number(disk.total) || 0), 0),
+      totalBytes: list.reduce(
+        (sum, disk) => sum + (Number(disk.total) || 0),
+        0,
+      ),
       freeBytes: list.reduce((sum, disk) => sum + (Number(disk.free) || 0), 0),
     };
   } catch {
@@ -69,20 +72,19 @@ async function getDiskDiagnostics() {
 
 async function getNetworkDiagnostics() {
   try {
-    const interfaces = await Neutralino.computer.getNetworkInterfaces({
-      excludeLoopback: true,
-    });
-    const list = Array.isArray(interfaces)
-      ? interfaces
-      : Object.values(interfaces || {});
+    const interfaces = await Neutralino.computer.getNetworkInterfaces();
+    const names = Object.keys(interfaces || {});
+    const list = Object.values(interfaces || {})
+      .flatMap((addresses) => (Array.isArray(addresses) ? addresses : []))
+      .filter((address) => !address?.isInternal);
     return {
-      count: list.length,
+      count: names.length,
       ipv4: list.reduce(
-        (count, entry) => count + (Array.isArray(entry?.ipv4) ? entry.ipv4.length : 0),
+        (count, entry) => count + (entry?.family === "ipv4" ? 1 : 0),
         0,
       ),
       ipv6: list.reduce(
-        (count, entry) => count + (Array.isArray(entry?.ipv6) ? entry.ipv6.length : 0),
+        (count, entry) => count + (entry?.family === "ipv6" ? 1 : 0),
         0,
       ),
     };
@@ -118,9 +120,53 @@ function getDiagnosticStackTrace(error) {
   return `No JavaScript stack trace was provided by Neutralino.\nNative error details:\n${nativeDetails}`;
 }
 
+function getDownloadDiagnostics(error) {
+  const details = {};
+  for (const [name, source] of [
+    ["download", error?.downloadDiagnostics],
+    ["archive", error?.archiveDiagnostics],
+  ]) {
+    if (!source || typeof source !== "object") continue;
+    details[name] = Object.fromEntries(
+      Object.entries(source)
+        .filter(
+          ([, value]) => value !== undefined && value !== null && value !== "",
+        )
+        .map(([key, value]) => [
+          key,
+          typeof value === "string" ? value.slice(0, 2_000) : value,
+        ]),
+    );
+  }
+  return Object.keys(details).length ? details : null;
+}
+
+function formatDownloadDiagnostics(error) {
+  const diagnostics = getDownloadDiagnostics(error);
+  if (!diagnostics) return null;
+  return `Download diagnostics:\n${JSON.stringify(diagnostics, null, 2)}`;
+}
+
 function describeIssue(error) {
   const message = getMessage(error);
   const lower = message.toLowerCase();
+
+  if (
+    lower.includes("integrity verification") ||
+    lower.includes("not a recognized archive") ||
+    lower.includes("web page instead of the archive") ||
+    lower.includes("devolvió una página web") ||
+    lower.includes("devolviÃ³ una pÃ¡gina web") ||
+    lower.includes("file sharing and storage made simple")
+  ) {
+    const isArchiveTestFailure = lower.includes("integrity verification");
+    return {
+      title: t("errors.unpackTitle"),
+      summary: t("errors.unpackSummary"),
+      tag: t("errors.archiveProblemTag"),
+      reportable: isArchiveTestFailure ? undefined : false,
+    };
+  }
 
   if (
     lower.includes("crypt_e_no_revocation_check") ||
@@ -149,11 +195,16 @@ function describeIssue(error) {
    * @fix 2026-08-05T04:49:46.409Z - Fix download could not be written to storage error
    */
   if (
-    lower.includes("access is denied") ||
-    lower.includes("permission") ||
-    lower.includes("file is in use") ||
-    lower.includes("directory is not empty") ||
-    lower.includes("could not be written to storage")
+    !lower.includes("bundled archive extractor") &&
+    (lower.includes("access is denied") ||
+      lower.includes("permission") ||
+      lower.includes("file is in use") ||
+      lower.includes("directory is not empty") ||
+      lower.includes("could not be written to storage") ||
+      lower.includes("could not write ") ||
+      lower.includes("could not create its storage folder") ||
+      lower.includes("could not prepare the download destination") ||
+      lower.includes("could not finalize the temporary download"))
   ) {
     return {
       title: t("errors.writeFolderTitle"),
@@ -175,11 +226,42 @@ function describeIssue(error) {
       tag: t("errors.storageDriveTag"),
     };
   }
+  if (lower.includes("storage migration paused")) {
+    return {
+      title: t("errors.storageDriveTitle"),
+      summary: t("errors.storageDriveSummary"),
+      actionLabel: t("errors.openStorageSettings"),
+      action: "storage",
+      tag: t("errors.storageDriveTag"),
+    };
+  }
+  if (
+    lower.includes("download server is unavailable") ||
+    lower.includes("download server is temporarily unavailable") ||
+    lower.includes("download server rejected this file") ||
+    lower.includes("could not find the download server") ||
+    lower.includes("could not connect to the gamebanana download server") ||
+    lower.includes("connection to the download server") ||
+    lower.includes("download server closed the connection") ||
+    lower.includes("download process ended unexpectedly") ||
+    lower.includes("download was interrupted") ||
+    lower.includes("download was incomplete") ||
+    lower.includes("downloaded archive was incomplete") ||
+    lower.includes("complete temporary download after it completed")
+  ) {
+    return {
+      title: t("errors.downloadUnavailableTitle"),
+      summary: t("errors.downloadUnavailableSummary"),
+      tag: t("errors.downloadUnavailableTag"),
+      reportable: false,
+    };
+  }
   if (lower.includes("exit code 22") || /\b(?:403|404)\b/.test(lower)) {
     return {
       title: t("errors.downloadUnavailableTitle"),
       summary: t("errors.downloadUnavailableSummary"),
       tag: t("errors.downloadUnavailableTag"),
+      reportable: false,
     };
   }
   /**
@@ -234,6 +316,16 @@ function describeIssue(error) {
       summary: t("errors.invalidLinkSummary"),
       tag: t("errors.invalidLinkTag"),
       reportable: false,
+    };
+  }
+  if (
+    lower.includes("cannot be unpacked by this version of macos") ||
+    lower.includes("bundled archive extractor")
+  ) {
+    return {
+      title: t("errors.unpackTitle"),
+      summary: t("errors.unpackSummary"),
+      tag: t("errors.archiveProblemTag"),
     };
   }
   if (
@@ -318,14 +410,19 @@ function createReport({
     `OS: ${window.NL_OS || "Unknown"}`,
     `Neutralino: ${window.NL_CVERSION || "Unknown"}`,
     locale?.locale ? `Locale: ${locale.locale}` : null,
-    disks ? `Disks: ${disks.count} (${disks.freeBytes} free / ${disks.totalBytes} total)` : null,
-    network ? `Network interfaces: ${network.count} (${network.ipv4} IPv4 / ${network.ipv6} IPv6)` : null,
+    disks
+      ? `Disks: ${disks.count} (${disks.freeBytes} free / ${disks.totalBytes} total)`
+      : null,
+    network
+      ? `Network interfaces: ${network.count} (${network.ipv4} IPv4 / ${network.ipv6} IPv6)`
+      : null,
     `Action: ${action || "Unknown"}`,
     item ? `Item: ${item}` : null,
     version ? `Version: ${version}` : null,
     storagePath ? `Storage path: ${storagePath}` : null,
     `Issue: ${issue.tag}`,
     `What happened: ${issue.summary}`,
+    formatDownloadDiagnostics(error),
     `Error: ${getDiagnosticErrorMessage(error)}`,
     `Stack trace:\n${getDiagnosticStackTrace(error)}`,
   ]
@@ -336,13 +433,15 @@ function createReport({
 async function submitDiagnosticReport(context, issue) {
   const errorMessage = getDiagnosticErrorMessage(context.error);
   const stackTrace = getDiagnosticStackTrace(context.error);
-  const [operatingSystem, architecture, locale, disks, network] = await Promise.all([
-    getOperatingSystem(),
-    getArchitecture(),
-    getLocaleInfo(),
-    getDiskDiagnostics(),
-    getNetworkDiagnostics(),
-  ]);
+  const downloadDiagnostics = getDownloadDiagnostics(context.error);
+  const [operatingSystem, architecture, locale, disks, network] =
+    await Promise.all([
+      getOperatingSystem(),
+      getArchitecture(),
+      getLocaleInfo(),
+      getDiskDiagnostics(),
+      getNetworkDiagnostics(),
+    ]);
   const response = await nativeFetch(DIAGNOSTIC_REPORT_ENDPOINT, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -363,6 +462,9 @@ async function submitDiagnosticReport(context, issue) {
       summary: issue.summary,
       errorMessage,
       stackTrace,
+      diagnostics: downloadDiagnostics
+        ? { download: downloadDiagnostics }
+        : null,
       reportedAt: new Date().toISOString(),
     }),
   });

@@ -7,6 +7,150 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Added a Chinese locale placeholder for translators.
+
+## [2.1.13] - 2026-08-14
+
+### Fixed
+
+- Fixed Mod Manager loading and error icons rendering as literal HTML text.
+- Fixed multipart downloads corrupting archives when a server ignored range requests.
+- Fixed archive extraction racing the temporary file handoff after download.
+- Fixed macOS storage setup selecting the app bundle or failing at the filesystem root.
+- Fixed engine removal retrying through the shared filesystem cleanup path.
+- Fixed packaged startup missing interface templates when the document-root URL was unavailable.
+
+## [2.1.12] - 2026-08-14
+
+### Fixed
+
+- Fixed valid archive downloads being rejected by the pre-extraction integrity check.
+- Fixed macOS and Linux startup using the application bundle or AppImage mount as storage.
+- Fixed startup accepting incomplete interface-template responses.
+
+## [2.1.11] - 2026-08-13
+
+### Fixed
+
+- **IMPORTANT: Existing WeekBox libraries are restored after upgrading from 2.1.10.**
+
+## [2.1.10] - 2026-08-13
+
+### Added
+
+- Added an unread count for new newsletter posts.
+- Added automatic sidebar collapse when window is too small.
+
+### Changed
+
+- Expanded Italian error translations.
+
+### Fixed
+
+- Fixed Windows opening duplicate WeekBox windows and failing to focus the existing window.
+- Fixed app updates treating `resources.neu` as a regular archive.
+- Fixed startup stalls caused by multiple interface resource requests; delayed resources now retry before WeekBox gives up.
+- Fixed downloads reaching extraction with incomplete files, HTML responses, or invalid archives.
+- Fixed transient file-handoff races after downloads and extraction complete.
+- Fixed storage moves failing when extracted files take time to become visible.
+- Fixed macOS startup repeatedly requesting Documents access and stalling while opening the library.
+- Added download and archive details to diagnostic reports and stopped expected download failures from being reported as app errors.
+
+### Removed
+
+- Removed automatic migration and legacy probing for the old `WeekBoxLibrary` storage location.
+
+## [2.1.9] - 2026-08-12
+
+### Fixed
+
+- Existing storage folders stay where they are when WeekBox starts.
+- You can choose any folder as the WeekBox storage folder.
+
+## [2.1.8] - 2026-08-12
+
+### Fixed
+
+- Fixed diagnostic reports hiding the failed files and reasons from storage migrations.
+- Fixed Discord diagnostic messages exceeding embed limits by storing full reports in Supabase and sending a compact summary.
+
+## [2.1.7] - 2026-08-11
+
+### Fixed
+
+- Fixed large library migrations stopping startup on one unreadable or locked file.
+- Fixed interrupted migrations by resuming staged copies and keeping the original library available for repair.
+- Fixed downloads reaching extraction after returning an HTML page, incomplete file, or invalid archive.
+- Fixed transient download failures leaving invalid temporary files behind.
+
+## [2.1.6] - 2026-08-11
+
+### Fixed
+
+- Fixed Windows storage migrations failing on staged or locked files.
+- Fixed startup storage checks failing after a partial migration copy.
+
+## [2.1.5] - 2026-08-11
+
+### Added
+
+- Added macOS app, disk image, and installer packages, plus Linux AppImage and Debian packages.
+
+### Changed
+
+- WeekBox now keeps settings, mods, and engines in one `WeekBoxLibrary` folder.
+- Older storage folders migrate to the new location with dated backups.
+- Startup now waits for library maintenance before opening the app.
+- Expanded Italian translations for storage and error messages.
+
+### Fixed
+
+- Fixed Linux bundled archive extraction when executable permissions or Steam's `LD_PRELOAD` interfered.
+- Fixed macOS RAR and 7z extraction fallback and archive error reporting.
+- Fixed Windows extraction moves that could fail while temporary files were still being released.
+- Fixed startup failures caused by missing or malformed interface templates.
+
+### Removed
+
+- Removed the delayed native storage mirror used during startup.
+
+## [2.1.4] - 2026-08-10
+
+### Added
+
+- Added a bundled archive-extraction fallback for 7z and LZMA downloads.
+- Added nightly build details with commit, workflow-run, and commit links.
+- Added GitHub issue and pull request templates.
+
+### Changed
+
+- Downloads now validate archive content, HTML responses, confirmation pages, and expected file sizes before extraction.
+- Downloads retry transient server failures and fall back from parallel to single-connection downloads.
+- Engine progress now detects remote sizes and displays human-readable units.
+- App-update checks now time out without blocking startup, and update prompts show release notes in the shared error layout.
+- Sidebar engine loading now times out when the engine catalog is unavailable.
+- Expanded Italian translations for settings, news, search, storage, network, and sidebar controls.
+- Bumped the project, installer, and Neutralino application version to 2.1.4.
+- Updated the README, contribution guide, code of conduct, and contribution templates.
+
+### Fixed
+
+- Fixed failed or truncated downloads, including HTML error pages and Google Drive confirmation pages, reaching archive extraction.
+- Fixed nightly Codename Engine downloads using stale run-specific artifact URLs.
+- Fixed encoded Windows download URLs being escaped incorrectly before curl runs.
+- Fixed extracted engines being rejected after a cached negative executable lookup.
+- Fixed the engine release-notes panel crashing because its translation helper was not imported.
+- Fixed Windows mod installations failing when folder entries moved concurrently or an install was already in progress.
+- Fixed storage, download-server, and archive failures being reported as generic errors instead of actionable messages.
+- Fixed diagnostic reports miscounting network interfaces with the current Neutralino response format.
+- Fixed missing Neutralino storage keys being logged as errors during cleanup.
+
+### Removed
+
+- Removed obsolete duplicate contribution guides from `docs/md`.
+
 ## [2.1.3] - 2026-08-07
 
 ### Fixed
@@ -766,3 +910,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - First WeekBox release.
 - Downloads for Windows, Linux, and macOS.
 - Packages for x64, ARM64, ARMHF, and Universal Macs where available.
+
+[unreleased]: https://github.com/Crew-Awesome/Weekbox/compare/v2.1.13...HEAD
+[2.1.13]: https://github.com/Crew-Awesome/Weekbox/compare/v2.1.12...v2.1.13
+[2.1.12]: https://github.com/Crew-Awesome/Weekbox/compare/v2.1.11...v2.1.12
+[2.1.11]: https://github.com/Crew-Awesome/Weekbox/compare/v2.1.10...v2.1.11
+[2.1.10]: https://github.com/Crew-Awesome/Weekbox/compare/v2.1.9...v2.1.10
+[2.1.9]: https://github.com/Crew-Awesome/Weekbox/compare/v2.1.8...v2.1.9
+[2.1.8]: https://github.com/Crew-Awesome/Weekbox/compare/v2.1.7...v2.1.8
+[2.1.7]: https://github.com/Crew-Awesome/Weekbox/compare/v2.1.6...v2.1.7
+[2.1.6]: https://github.com/Crew-Awesome/Weekbox/compare/v2.1.5...v2.1.6
+[2.1.5]: https://github.com/Crew-Awesome/Weekbox/compare/v2.1.4...v2.1.5
+[2.1.4]: https://github.com/Crew-Awesome/Weekbox/compare/v2.1.3...v2.1.4

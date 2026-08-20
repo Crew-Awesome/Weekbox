@@ -103,7 +103,8 @@ const modManagerTemplates = {
   launchButtonSwitch: () => renderTemplate("tpl-launchButtonSwitch"),
   launchButtonDefault: (launchLabel) =>
     renderTemplate("tpl-launchButtonDefault", { launchLabel }),
-  emptyState: (message) => renderTemplate("tpl-emptyState", { message }),
+  emptyState: (message) =>
+    renderTemplate("tpl-emptyState", { message }, ["message"]),
   deleteSpinner: () => renderTemplate("tpl-deleteSpinner"),
   deleteIcon: () => renderTemplate("tpl-deleteIcon"),
   unassignedQuestionIcon: () => renderTemplate("tpl-unassignedQuestionIcon"),

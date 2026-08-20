@@ -345,7 +345,7 @@
   "errors.certificateSummary": "WeekBox был заблокирован Windows до начала загрузки. Проверьте дату и время, затем попробуйте другую сеть. VPN, прокси или антивирусное сканирование HTTPS также могут заблокировать проверку сертификата.",
   "errors.certificateTag": "Проверка сертификата Windows",
   "errors.oneDriveTitle": "Выберите локальную папку хранилища",
-  "errors.oneDriveSummary": "WeekBox не может безопасно загружать движки в OneDrive. Используйте локальную папку, например C:\\WeekBoxData.",
+  "errors.oneDriveSummary": "WeekBox не может безопасно загружать движки в OneDrive. Используйте локальную папку, например C:\\WeekBox.",
   "errors.storageLocationTag": "Расположение хранилища",
   "errors.writeFolderTitle": "WeekBox не может записать в эту папку",
   "errors.writeFolderSummary": "Проверьте, что ваша папка хранилища локальна, доступна для записи и не используется другой программой.",

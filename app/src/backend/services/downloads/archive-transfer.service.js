@@ -32,13 +32,18 @@ function formatArchiveEntry(output) {
       .replace(/^x\s+/i, "")
       .replace(/^-+\s*/, "")
       .trim();
-    const byteSummary = name.match(/^([\d,]+)\s+bytes(?:\s+\([^)]*\))?$/i);
+    const byteSummary = name.match(
+      /^(?:(\d+)\s+files?,\s*)?([\d,]+)\s+bytes(?:\s+\([^)]*\))?$/i,
+    );
     if (byteSummary) {
-      return formatBytes(
-        Number(byteSummary[1].replaceAll(",", "")),
+      const size = formatBytes(
+        Number(byteSummary[2].replaceAll(",", "")),
         2,
         "0 Bytes",
       );
+      return byteSummary[1]
+        ? `${byteSummary[1]} ${Number(byteSummary[1]) === 1 ? "file" : "files"}, ${size}`
+        : size;
     }
     if (
       !name ||
@@ -103,10 +108,11 @@ function listenForProcess(process, getTask, onEvent) {
 var MIN_SEGMENTED_DOWNLOAD_BYTES = 8 * 1024 * 1024;
 var MAX_DOWNLOAD_SEGMENTS = 4;
 var archiveFinalizations = new Map();
+var bundledArchiveToolsPromise = null;
 function quoteCommandArgument(value) {
   const argument = String(value ?? "").replace(/[\r\n]/g, "");
   if (typeof window !== "undefined" && window.NL_OS === "Windows") {
-    return `"${argument.replace(/["^%]/g, "^$&")}"`;
+    return `"${argument.replace(/["^]/g, "^$&")}"`;
   }
   const escaped = argument.replaceAll("'", "'\"'\"'");
   return `'${escaped}'`;
@@ -189,6 +195,23 @@ function createProcessError(operation, exitCode, output) {
   ) {
     return new Error(
       "To install .7z or .rar mods on Linux, you must install the p7zip package (e.g. sudo apt install p7zip-full).",
+    );
+  }
+  if (
+    operation === "Extraction" &&
+    Number(exitCode) === 126 &&
+    /7z|ld\.so|permission denied/i.test(detail)
+  ) {
+    return new Error(
+      "WeekBox could not run the bundled archive extractor. Its executable permission or Linux runtime is unavailable.",
+    );
+  }
+  if (
+    operation === "Extraction" &&
+    /LZMA codec is unsupported|LZMA.*not supported/i.test(detail)
+  ) {
+    return new Error(
+      "WeekBox could not unpack this LZMA archive with the available extractor. Update WeekBox or ask the mod author for a ZIP download.",
     );
   }
   if (operation === "Download" && Number(exitCode) === 28) {
@@ -311,6 +334,14 @@ function isTransientDownloadError(error) {
   );
 }
 
+function isRetryableArchiveValidationError(error) {
+  if (error?.archiveDiagnostics?.retryable === true) return true;
+  if (error?.downloadDiagnostics?.retryable === true) return true;
+  return /downloaded archive (?:is empty|was incomplete)|web page instead of the archive/i.test(
+    String(error?.message || error),
+  );
+}
+
 function wait(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
@@ -342,7 +373,13 @@ async function getDownloadContentType(url) {
   }
 }
 
-async function retryTransientDownload(operation, getTask, onProgress, cleanup) {
+async function retryTransientDownload(
+  operation,
+  getTask,
+  onProgress,
+  cleanup,
+  shouldRetry = isTransientDownloadError,
+) {
   // CDN mirrors can briefly return 503/504 while a replacement mirror is
   // becoming available. Give that recovery enough time instead of retrying
   // three times within a second and immediately surfacing a failure.
@@ -356,7 +393,7 @@ async function retryTransientDownload(operation, getTask, onProgress, cleanup) {
       lastError = error;
       if (error?.downloadDiagnostics)
         error.downloadDiagnostics.retryCount = attempt - 1;
-      if (!isTransientDownloadError(error) || attempt === attempts) throw error;
+      if (!shouldRetry(error) || attempt === attempts) throw error;
       await cleanup?.();
       onProgress?.(
         `Download server is busy. Retrying (${attempt + 1}/${attempts})...`,
@@ -391,6 +428,49 @@ async function detectArchiveFormat(path) {
     if (String.fromCharCode(...data.slice(257, 262)) === "ustar") return "tar";
   } catch {}
   return "unknown";
+}
+
+async function verifyArchiveReadable(archivePath, archiveFormat) {
+  if (archiveFormat === "dmg") return;
+  const binaryPath = await find7zBinary();
+  if (!binaryPath) return;
+  const process = await spawnProcessWithShell(
+    get7zTestCommand(binaryPath, archivePath),
+  );
+  let processOutput = "";
+  await listenForProcess(
+    process,
+    () => null,
+    (event, handler, resolve, reject) => {
+      if (event.action === "stdOut" || event.action === "stdErr") {
+        processOutput = appendProcessOutput(processOutput, event.data);
+        return;
+      }
+      if (event.action !== "exit") return;
+      Neutralino.events.off("spawnedProcess", handler);
+      const exitCode = Number(event.data);
+      if (
+        exitCode === 0 ||
+        // 7-Zip uses exit code 1 for warnings; extraction remains the final
+        // payload check before an install is accepted.
+        exitCode === 1 ||
+        isNonFatalUnzipFilenameWarning(exitCode, processOutput)
+      ) {
+        resolve();
+        return;
+      }
+      const error = new Error(
+        `The downloaded ${archiveFormat} archive failed integrity verification. Try the download again or choose another link.`,
+      );
+      error.archiveDiagnostics = {
+        stage: "archive-test",
+        format: archiveFormat,
+        retryable: true,
+        output: getUsefulProcessOutput(processOutput),
+      };
+      reject(error);
+    },
+  );
 }
 
 async function hasExtractedPayload(path) {
@@ -485,7 +565,28 @@ function get7zExtractionCommand(binaryPath, archivePath, destinationPath) {
     const normDest = String(destinationPath || "").replace(/\//g, "\\");
     return `"${normBin}" x -y -aoa "-o${normDest}" "${normArchive}"`;
   }
-  return `${quoteCommandArgument(binaryPath)} x -y -aoa -o${quoteCommandArgument(destinationPath)} ${quoteCommandArgument(archivePath)}`;
+  const cleanSteamEnvironment =
+    window.NL_OS === "Linux" ? "unset LD_PRELOAD; " : "";
+  return `${cleanSteamEnvironment}${quoteCommandArgument(binaryPath)} x -y -aoa -o${quoteCommandArgument(destinationPath)} ${quoteCommandArgument(archivePath)}`;
+}
+
+function get7zTestCommand(binaryPath, archivePath) {
+  const isWindows = window.NL_OS === "Windows";
+  if (isWindows) {
+    const normBin = String(binaryPath || "").replace(/\//g, "\\");
+    const normArchive = String(archivePath || "").replace(/\//g, "\\");
+    return `"${normBin}" t -y "${normArchive}"`;
+  }
+  const cleanSteamEnvironment =
+    window.NL_OS === "Linux" ? "unset LD_PRELOAD; " : "";
+  return `${cleanSteamEnvironment}${quoteCommandArgument(binaryPath)} t -y ${quoteCommandArgument(archivePath)}`;
+}
+
+async function prepareArchiveTool(binaryPath) {
+  if (window.NL_OS !== "Windows") {
+    await Neutralino.filesystem.chmod(binaryPath, 0o755).catch(() => {});
+  }
+  return binaryPath;
 }
 
 async function find7zBinary() {
@@ -539,9 +640,43 @@ async function find7zBinary() {
     try {
       const stats = await Neutralino.filesystem.getStats(normalized);
       if (stats?.isFile || stats?.type === "FILE") {
-        return normalized;
+        return prepareArchiveTool(normalized);
       }
     } catch {}
+  }
+
+  if (!bundledArchiveToolsPromise) {
+    bundledArchiveToolsPromise = (async () => {
+      const destination = `${window.NL_DATAPATH || ""}/.weekbox-tools`;
+      if (!window.NL_DATAPATH || !Neutralino.resources?.extractDirectory) {
+        return null;
+      }
+      try {
+        await Neutralino.filesystem
+          .createDirectory(destination)
+          .catch(() => {});
+        await Neutralino.resources.extractDirectory(
+          "/app/assets/bin",
+          destination,
+        );
+        return destination;
+      } catch (error) {
+        console.warn("Could not extract the bundled archive tools", error);
+        return null;
+      }
+    })();
+  }
+  const bundledDirectory = await bundledArchiveToolsPromise;
+  if (bundledDirectory) {
+    for (const bin of binNames) {
+      const normalized = `${bundledDirectory}/${bin}`.replace(/\\/g, "/");
+      try {
+        const stats = await Neutralino.filesystem.getStats(normalized);
+        if (stats?.isFile || stats?.type === "FILE") {
+          return prepareArchiveTool(normalized);
+        }
+      } catch {}
+    }
   }
   return null;
 }
@@ -1107,7 +1242,8 @@ async function downloadGoogleDriveArchive({
           onProgress,
         });
       }
-      const downloadedStats = await waitForDownloadedArchive(
+      await waitForDownloadedArchive(outPath);
+      const downloadedStats = await verifyDownloadedArchiveContent(
         outPath,
         rangedTotalBytes,
       );
@@ -1159,6 +1295,8 @@ async function downloadSingleArchive({
     }
   }
 
+  const isNightlyLink = /^https?:\/\/nightly\.link\//i.test(String(url));
+
   await retryTransientDownload(
     () =>
       runCurlDownload(
@@ -1175,6 +1313,9 @@ async function downloadSingleArchive({
     getTask,
     onProgress,
     () => Neutralino.filesystem.remove(outPath).catch(() => {}),
+    (error) =>
+      isTransientDownloadError(error) ||
+      (isNightlyLink && Number(error?.downloadDiagnostics?.httpStatus) === 404),
   );
 }
 
@@ -1287,9 +1428,18 @@ async function waitForDownloadedArchive(outPath, expectedSize = 0) {
     }
     if (attempt < 8) await wait(attempt * 250);
   }
-  throw new Error(
+  const error = new Error(
     `WeekBox could not access a complete temporary download after it completed. ${lastError?.message || lastError || "Unknown filesystem error"}`,
   );
+  error.downloadDiagnostics = {
+    stage: "file-handoff",
+    retryable: true,
+    expectedSize: Number(expectedSize) || 0,
+    lastError: String(
+      lastError?.message || lastError || "Unknown filesystem error",
+    ).slice(0, 500),
+  };
+  throw error;
 }
 
 async function finalizeDownloadedArchive(partPath, outPath) {
@@ -1351,6 +1501,7 @@ async function downloadArchive({
   sourceType,
   onDiagnostic,
   expectedSize = 0,
+  validateArchive = true,
 }) {
   if (!String(url || "").trim()) {
     throw new Error("This download does not have a valid link");
@@ -1397,46 +1548,109 @@ async function downloadArchive({
     url.includes("docs.google.com");
 
   if (sourceType === "external" && !isGoogleDriveUrl) {
+    const contentType = await getDownloadContentType(url);
     onDiagnostic?.({
       resolvedUrl: url,
-      contentType: await getDownloadContentType(url),
+      contentType,
     });
+    if (/^(?:text\/html|application\/xhtml\+xml)\b/i.test(contentType || "")) {
+      const error = new Error(
+        "The download server returned a web page instead of the archive. Select another download link and try again.",
+      );
+      error.archiveDiagnostics = {
+        stage: "headers",
+        contentType,
+        retryable: false,
+      };
+      throw error;
+    }
   }
 
   const useMultithreadDownloads = appSettings.get("multithreadDownloads");
   let remoteFileSize = Number(expectedSize) || 0;
-  if (!isGoogleDriveUrl && (useMultithreadDownloads || !remoteFileSize)) {
+  let verifiedRemoteFileSize = 0;
+  if (
+    !isGoogleDriveUrl &&
+    (useMultithreadDownloads || !remoteFileSize || expectedSize)
+  ) {
     try {
       onProgress?.("Checking download server...", 2);
       const detectedSize = await getRangeSupportedFileSize(url, (...args) =>
         Neutralino.os.execCommand(...args),
       );
-      if (detectedSize > 0) remoteFileSize = detectedSize;
+      if (detectedSize > 0) {
+        remoteFileSize = detectedSize;
+        verifiedRemoteFileSize = detectedSize;
+        onDiagnostic?.({
+          resolvedUrl: url,
+          remoteFileSize,
+          verifiedRemoteFileSize,
+        });
+      }
     } catch (error) {
       if (getTask()?.cancelled) throw error;
     }
   }
 
-  if (
-    useMultithreadDownloads &&
-    !isGoogleDriveUrl &&
-    remoteFileSize >= MIN_SEGMENTED_DOWNLOAD_BYTES
-  ) {
-    try {
-      await downloadSegmentedArchive({
-        url,
-        outPath: partPath,
-        totalBytes: remoteFileSize,
-        getTask,
-        onProgress,
-      });
-    } catch (error) {
-      if (getTask()?.cancelled) throw error;
-      await Neutralino.filesystem.remove(partPath).catch(() => {});
-      onProgress?.(
-        "Parallel download failed. Retrying with one connection...",
-        2,
-      );
+  const cleanupDownloadAttempt = async () => {
+    await Promise.all([
+      Neutralino.filesystem.remove(partPath).catch(() => {}),
+      Neutralino.filesystem.remove(outPath).catch(() => {}),
+    ]);
+  };
+  const finalizeAndVerifyDownload = async () => {
+    onProgress?.("Finalizing downloaded file...", 98);
+    await finalizeDownloadedArchive(partPath, outPath);
+    const stats = await waitForDownloadedArchive(outPath);
+    onProgress?.("Verifying downloaded archive...", 98);
+    await verifyDownloadedArchiveContent(
+      outPath,
+      verifiedRemoteFileSize,
+      validateArchive,
+    );
+    onDiagnostic?.({
+      resolvedUrl: url,
+      downloadedSize: stats.size,
+      archiveFormat: validateArchive
+        ? await detectArchiveFormat(outPath)
+        : "binary",
+    });
+    return stats;
+  };
+  const performDownload = async () => {
+    if (
+      useMultithreadDownloads &&
+      !isGoogleDriveUrl &&
+      verifiedRemoteFileSize >= MIN_SEGMENTED_DOWNLOAD_BYTES
+    ) {
+      try {
+        await downloadSegmentedArchive({
+          url,
+          outPath: partPath,
+          totalBytes: remoteFileSize,
+          getTask,
+          onProgress,
+        });
+        // Validate the merged file before accepting the multipart transfer.
+        // Some CDNs return correctly-sized but incorrect range bodies.
+        return await finalizeAndVerifyDownload();
+      } catch (error) {
+        if (getTask()?.cancelled) throw error;
+        await cleanupDownloadAttempt();
+        onProgress?.(
+          "Parallel download failed. Retrying with one connection...",
+          2,
+        );
+        await downloadSingleArchive({
+          url,
+          outPath: partPath,
+          totalBytes: remoteFileSize,
+          getTask,
+          onProgress,
+        });
+      }
+    } else {
+      onProgress?.("Connecting to download server...", 2);
       await downloadSingleArchive({
         url,
         outPath: partPath,
@@ -1445,45 +1659,29 @@ async function downloadArchive({
         onProgress,
       });
     }
-    onProgress?.("Finalizing downloaded file...", 98);
-    await finalizeDownloadedArchive(partPath, outPath);
-    const stats = await waitForDownloadedArchive(outPath);
-    onProgress?.("Verifying downloaded archive...", 98);
-    await verifyDownloadedArchiveContent(outPath);
-    onDiagnostic?.({
-      resolvedUrl: url,
-      downloadedSize: stats.size,
-      archiveFormat: await detectArchiveFormat(outPath),
-    });
-    return stats;
-  }
+    return finalizeAndVerifyDownload();
+  };
   try {
-    onProgress?.("Connecting to download server...", 2);
-    await downloadSingleArchive({
-      url,
-      outPath: partPath,
-      totalBytes: remoteFileSize,
+    return await retryTransientDownload(
+      performDownload,
       getTask,
       onProgress,
-    });
-    onProgress?.("Finalizing downloaded file...", 98);
-    await finalizeDownloadedArchive(partPath, outPath);
-    const stats = await waitForDownloadedArchive(outPath);
-    onProgress?.("Verifying downloaded archive...", 98);
-    await verifyDownloadedArchiveContent(outPath);
-    onDiagnostic?.({
-      resolvedUrl: url,
-      downloadedSize: stats.size,
-      archiveFormat: await detectArchiveFormat(outPath),
-    });
-    return stats;
+      cleanupDownloadAttempt,
+      (error) =>
+        isTransientDownloadError(error) ||
+        isRetryableArchiveValidationError(error),
+    );
   } catch (error) {
-    await Neutralino.filesystem.remove(partPath).catch(() => {});
+    await cleanupDownloadAttempt();
     throw error;
   }
 }
 
-async function verifyDownloadedArchiveContent(archivePath) {
+async function verifyDownloadedArchiveContent(
+  archivePath,
+  expectedSize = 0,
+  validateArchive = true,
+) {
   const stats = await Neutralino.filesystem.getStats(archivePath);
   if (stats.size === 0) {
     throw new Error("The downloaded archive is empty (0 bytes).");
@@ -1502,7 +1700,32 @@ async function verifyDownloadedArchiveContent(archivePath) {
     });
   }
   const htmlError = getHtmlResponseError(sample);
-  if (htmlError) throw htmlError;
+  if (htmlError) {
+    htmlError.archiveDiagnostics = {
+      stage: "html-response",
+      retryable: !/quota|does not exist|requires permissions|sign in/i.test(
+        htmlError.message,
+      ),
+    };
+    throw htmlError;
+  }
+  if (looksLikeHtmlResponse(sample)) {
+    const error = new Error(
+      "The download server returned a web page instead of the archive. Select another download link and try again.",
+    );
+    error.archiveDiagnostics = {
+      stage: "html-response",
+      retryable: true,
+    };
+    throw error;
+  }
+  if (Number(expectedSize) > 0 && Number(stats.size) !== Number(expectedSize)) {
+    const error = new Error(
+      `The downloaded archive was incomplete. Expected ${expectedSize} bytes but found ${stats.size}. Try the download again.`,
+    );
+    error.archiveDiagnostics = { stage: "size", retryable: true };
+    throw error;
+  }
   if (stats.size < 500 * 1024) {
     try {
       const sample = await Neutralino.filesystem.readFile(archivePath);
@@ -1541,6 +1764,22 @@ async function verifyDownloadedArchiveContent(archivePath) {
       }
     }
   }
+  if (!validateArchive) return stats;
+  const archiveFormat = /\.dmg$/i.test(String(archivePath))
+    ? "dmg"
+    : await detectArchiveFormat(archivePath);
+  if (archiveFormat === "unknown") {
+    const error = new Error(
+      "The downloaded file is not a recognized archive. Choose another download link and try again.",
+    );
+    error.archiveDiagnostics = {
+      stage: "format",
+      retryable: false,
+    };
+    throw error;
+  }
+  await verifyArchiveReadable(archivePath, archiveFormat);
+  return stats;
 }
 
 async function extractArchive({
@@ -1552,6 +1791,15 @@ async function extractArchive({
 }) {
   requireValue(archivePath, "archivePath");
   requireValue(destinationPath, "destinationPath");
+  await ensureDirectoryExists(destinationPath);
+  const archiveStats = await waitForDownloadedArchive(archivePath).catch(
+    () => null,
+  );
+  if (!archiveStats?.size) {
+    throw new Error(
+      "WeekBox could not find a complete downloaded archive to unpack. Try the download again.",
+    );
+  }
   const reportEntry = createThrottledEntryReporter(onEntry);
   const isDiskImage =
     window.NL_OS === "Darwin" && /\.dmg$/i.test(String(archivePath));
@@ -1785,4 +2033,6 @@ export {
   hasExpectedPartSizes,
   buildWindowsMergeCommand,
   buildUnixMergeCommand,
+  detectArchiveFormat,
+  verifyDownloadedArchiveContent,
 };

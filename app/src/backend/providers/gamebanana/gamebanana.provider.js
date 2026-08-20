@@ -54,7 +54,7 @@ const BROWSER_USER_AGENT =
 function quoteCommandArgument(value) {
   const argument = String(value).replace(/[\r\n]/g, "");
   if (window.NL_OS === "Windows") {
-    return `"${argument.replace(/["^%]/g, "^$&")}"`;
+    return `"${argument.replace(/["^]/g, "^$&")}"`;
   }
   return `'${argument.replaceAll("'", "'\\''")}'`;
 }
