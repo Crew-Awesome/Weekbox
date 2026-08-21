@@ -7,6 +7,7 @@ import {
   extractThumbnail,
   extractUserId,
   extractUserPfp,
+  checkIsNsfw,
 } from "../utils";
 import Utils from "@utils";
 
@@ -78,6 +79,7 @@ export async function getTools(
       submittedAt: tool._tsDateAdded,
       timeAgo: getTimeAgo(tool._tsDateAdded),
       thumbnail: extractThumbnail(tool),
+      isNsfw: checkIsNsfw(tool),
     };
   });
 }

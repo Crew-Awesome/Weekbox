@@ -9,6 +9,7 @@ import {
   extractThumbnail,
   extractUserId,
   extractUserPfp,
+  checkIsNsfw,
 } from "../utils";
 import Utils from "@utils";
 
@@ -60,6 +61,7 @@ export async function getModById(modId: number): Promise<GameBananaMod | null> {
       engineId,
       engineIcon: getEngineIcon(engineId),
       thumbnail: extractThumbnail(raw),
+      isNsfw: checkIsNsfw(raw),
     };
   } catch (error) {
     console.error(`Error fetching mod ${modId} from GameBanana:`, error);

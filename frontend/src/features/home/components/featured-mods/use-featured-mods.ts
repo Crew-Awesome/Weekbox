@@ -8,7 +8,7 @@ import Utils from "@utils";
  * Extracts unique categories/labels for rendering carousel indicators.
  * @returns {object} Object containing the fetched array of mods and their unique categories.
  */
-export function useFeaturedMods() {
+export function useFeaturedMods(searchQuery: string = "", engineIds: string[] = ["all"]) {
   const [featuredMods, setFeaturedMods] = useState<GameBananaMod[]>([]);
   const [retryTrigger, setRetryTrigger] = useState(0);
 
@@ -22,14 +22,20 @@ export function useFeaturedMods() {
   useEffect(() => {
     const fetchFeatured = async () => {
       try {
-        const mods = await Core.services.gamebanana.getFeaturedMods();
-        setFeaturedMods(mods);
+        if (searchQuery.trim().length > 0) {
+          // Fetch top 4 results for the carousel
+          const mods = await Core.services.gamebanana.getMods("popular", 1, 4, engineIds, searchQuery);
+          setFeaturedMods(mods);
+        } else {
+          const mods = await Core.services.gamebanana.getFeaturedMods();
+          setFeaturedMods(mods);
+        }
       } catch (e) {
         console.error("Failed to load featured mods", e);
       }
     };
     fetchFeatured();
-  }, [retryTrigger]);
+  }, [retryTrigger, searchQuery, engineIds]);
 
   const categories = Array.from(
     new Set(featuredMods.map((m) => m.__featuredLabel).filter(Boolean)),

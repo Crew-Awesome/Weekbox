@@ -5,11 +5,12 @@ import { ENGINE_CATEGORIES } from "../../../../core/services/gamebanana/constant
 import { Globe } from "lucide-react";
 
 export interface EngineFilterPillProps {
-  value: string;
-  onChange: (value: string) => void;
+  value: string | string[];
+  onChange: (value: any) => void;
+  isMulti?: boolean;
 }
 
-export const EngineFilterPill: React.FC<EngineFilterPillProps> = ({ value, onChange }) => {
+export const EngineFilterPill: React.FC<EngineFilterPillProps> = ({ value, onChange, isMulti = false }) => {
   const options = useMemo(() => {
     // Mapeamos los engines disponibles desde las constantes del Core
     const engines = Object.keys(ENGINE_CATEGORIES).map((key) => {
@@ -33,8 +34,9 @@ export const EngineFilterPill: React.FC<EngineFilterPillProps> = ({ value, onCha
       value={value}
       onChange={onChange}
       options={options}
-      iconPosition="right"
-      align="right"
+      iconPosition="left"
+      align="left"
+      isMulti={isMulti}
     />
   );
 };

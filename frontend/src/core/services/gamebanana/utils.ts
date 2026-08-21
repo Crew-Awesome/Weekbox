@@ -26,13 +26,21 @@ export function getTimeAgo(timestamp: number): string {
  * @returns {string} The resolved engine ID (e.g. 'psych', 'kade') or 'unknown'.
  */
 export function getEngineId(record: any): string {
+  const extractId = (cat: any) => {
+    if (!cat) return null;
+    if (cat._idRow) return cat._idRow;
+    if (cat._sProfileUrl) return parseInt(cat._sProfileUrl.split("/").pop() || "0", 10);
+    return null;
+  };
+
   const ids = [
-    record._aCategory?._idRow,
-    record._aSuperCategory?._idRow,
-    record._aRootCategory?._idRow,
-    record._aSubCategory?._idRow,
+    extractId(record._aCategory),
+    extractId(record._aSuperCategory),
+    extractId(record._aRootCategory),
+    extractId(record._aSubCategory),
     record.__injectedCategoryId,
   ];
+  
   for (const id of ids) {
     if (id && ENGINE_CATEGORIES[id as keyof typeof ENGINE_CATEGORIES])
       return ENGINE_CATEGORIES[id as keyof typeof ENGINE_CATEGORIES].id;

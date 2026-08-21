@@ -11,6 +11,11 @@ export const Home: React.FC = () => {
   const activeModItem = useAppStore((state) => state.activeModItem);
   const setActiveModItem = useAppStore((state) => state.setActiveModItem);
 
+  // Lifted state
+  const [searchQuery, setSearchQuery] = useState("");
+  const [sortFilter, setSortFilter] = useState("popular");
+  const [categoryFilter, setCategoryFilter] = useState<string[]>(["all"]);
+
   // Sincronizar el estado de Zustand con el estado local del modal
   useEffect(() => {
     if (activeModItem) {
@@ -23,14 +28,29 @@ export const Home: React.FC = () => {
     setActiveModItem(null);
   };
 
+  const handleSearch = (query: string) => {
+    setSearchQuery(query);
+  };
+
   return (
     <div className="items-center -m-8 justify-center text-white font-sans">
       <div className="relative">
-        <HomeSearchbar />
+        <HomeSearchbar 
+          onSearchSubmit={handleSearch} 
+          sortFilter={sortFilter}
+          setSortFilter={setSortFilter}
+          categoryFilter={categoryFilter}
+          setCategoryFilter={setCategoryFilter}
+        />
 
         <div className="pt-2 sm:pt-8 px-8">
-          <FeaturedMods onCardClick={setSelectedCard as any} />
-          <AllMods onCardClick={setSelectedCard} />
+          <FeaturedMods onCardClick={setSelectedCard as any} searchQuery={searchQuery} engineIds={categoryFilter} />
+          <AllMods
+            onCardClick={setSelectedCard}
+            searchQuery={searchQuery}
+            sortFilter={sortFilter}
+            categoryFilter={categoryFilter}
+          />
         </div>
       </div>
 

@@ -23,11 +23,13 @@ const popularCache = new Map<
  * @returns {Promise<any[]>} An array of historical popular mods.
  */
 export async function fetchPopularRecords(
-  targetEngineId: string | null = null,
+  targetEngineIds: string[] | null = null,
   maxPages = 4,
   maxRecords = 30,
 ) {
-  const cacheKey = targetEngineId || "all";
+  const isAll = !targetEngineIds || targetEngineIds.length === 0 || (targetEngineIds.length === 1 && targetEngineIds[0] === "all");
+  const cacheKey = isAll ? "all" : targetEngineIds!.slice().sort().join(",");
+  
   if (!popularCache.has(cacheKey)) {
     popularCache.set(cacheKey, {
       records: [],
@@ -46,11 +48,11 @@ export async function fetchPopularRecords(
   const indexUrl = "https://gamebanana.com/apiv12/Mod/Index";
 
   let categoryIds = Object.keys(ENGINE_CATEGORIES).map(Number);
-  if (targetEngineId && targetEngineId !== "all") {
-    const match = Object.entries(ENGINE_CATEGORIES).find(
-      ([_, cat]) => cat.id === targetEngineId,
-    );
-    if (match) categoryIds = [Number(match[0])];
+  if (!isAll) {
+    categoryIds = targetEngineIds!.map(id => {
+      const match = Object.entries(ENGINE_CATEGORIES).find(([_, cat]) => cat.id === id);
+      return match ? Number(match[0]) : -1;
+    }).filter(id => id !== -1);
   }
 
   while (

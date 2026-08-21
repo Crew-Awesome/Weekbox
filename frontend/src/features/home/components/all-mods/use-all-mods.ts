@@ -8,7 +8,11 @@ import Utils from "@utils";
  * Merges regular Discovery mods with Featured "Community Picks" injected mathematically.
  * @returns {object} State and refs required for the infinite scrolling grid.
  */
-export function useAllMods(filter: string = "popular", engineId: string = "all") {
+export function useAllMods(
+  filter: string = "popular",
+  engineIds: string[] = ["all"],
+  searchQuery: string = ""
+) {
   const [mods, setMods] = useState<GameBananaMod[]>([]);
   const [featuredPool, setFeaturedPool] = useState<GameBananaMod[]>([]);
   const [loading, setLoading] = useState(true);
@@ -16,12 +20,12 @@ export function useAllMods(filter: string = "popular", engineId: string = "all")
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
 
-  // Cuando cambian los filtros, reseteamos la paginación y limpiamos la lista
+  // Cuando cambian los filtros o la búsqueda, reseteamos la paginación y limpiamos la lista
   useEffect(() => {
     setMods([]);
     setPage(1);
     setHasMore(true);
-  }, [filter, engineId]);
+  }, [filter, engineIds, searchQuery]);
 
   const observer = useRef<IntersectionObserver | null>(null);
 
@@ -54,27 +58,26 @@ export function useAllMods(filter: string = "popular", engineId: string = "all")
     }
   });
 
-  // Pre-load the pool of Community Picks based on current filters
+  // Pre-load the pool of Community Picks from the official featured list
   useEffect(() => {
     Core.services.gamebanana
-      .getMods(filter as any, 1, 60, engineId === "all" ? null : engineId)
-      .then((ripeMods) => {
-        if (!ripeMods || ripeMods.length === 0) {
+      .getFeaturedMods()
+      .then((featuredItems) => {
+        if (!featuredItems || featuredItems.length === 0) {
           setFeaturedPool([]);
           return;
         }
 
-        const shuffled = [...ripeMods].sort(() => 0.5 - Math.random());
-        const pool = shuffled.slice(0, 50).map((mod) => ({
+        const pool = featuredItems.map((mod) => ({
           ...mod,
           __isCommunityPick: true,
-          __featuredLabel: "Pick of the Community",
+          __featuredLabel: "Community Pick",
         })) as GameBananaMod[];
 
         setFeaturedPool(pool);
       })
       .catch(console.error);
-  }, [retryTrigger, filter, engineId]);
+  }, [retryTrigger]);
 
   useEffect(() => {
     let isMounted = true;
@@ -88,18 +91,25 @@ export function useAllMods(filter: string = "popular", engineId: string = "all")
           filter as any,
           page,
           45,
-          engineId === "all" ? null : engineId
+          engineIds,
+          searchQuery
         );
 
         if (isMounted) {
           if (data.length === 0) {
             setHasMore(false);
           } else {
-            setMods((prev) => (page === 1 ? data : [...prev, ...data]));
+            setMods((prev) => {
+              if (page === 1) return data;
+              // Prevenir duplicados a nivel de paginación
+              const existingIds = new Set(prev.map(m => m.id));
+              const uniqueData = data.filter(m => !existingIds.has(m.id));
+              return [...prev, ...uniqueData];
+            });
           }
         }
       } catch (error) {
-        console.error("Failed to fetch discovery mods:", error);
+        console.error("Failed to fetch mods:", error);
       } finally {
         if (isMounted) {
           setLoading(false);
@@ -113,19 +123,35 @@ export function useAllMods(filter: string = "popular", engineId: string = "all")
     return () => {
       isMounted = false;
     };
-  }, [page, retryTrigger, filter, engineId]);
+  }, [page, retryTrigger, filter, engineIds, searchQuery]);
 
   // Mathematically inject Community Picks between the rows infinitely
   const combinedMods = useMemo(() => {
     const result = [...mods];
     if (featuredPool.length === 0) return result;
 
+    const existingIds = new Set(result.map(m => m.id));
     let injectedCount = 0;
+    
     for (let i = 3; i < result.length; i += 16) {
-      const pick = featuredPool[injectedCount % featuredPool.length];
-      result.splice(i, 0, pick);
-      injectedCount++;
-      i++;
+      let pick: GameBananaMod | null = null;
+      let attempts = 0;
+      
+      while (attempts < featuredPool.length) {
+        const potentialPick = featuredPool[(injectedCount + attempts) % featuredPool.length];
+        if (!existingIds.has(potentialPick.id)) {
+          pick = potentialPick;
+          injectedCount += attempts + 1;
+          break;
+        }
+        attempts++;
+      }
+      
+      if (pick) {
+        existingIds.add(pick.id);
+        result.splice(i, 0, pick);
+        i++; // Skip the newly injected item
+      }
     }
 
     return result;

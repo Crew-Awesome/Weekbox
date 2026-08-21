@@ -14,42 +14,38 @@ import {
 } from "../utils";
 import Utils from "@utils";
 import {
-  fetchDiscoveryRecords,
   fetchRipeRecords,
   fetchPopularRecords,
+  fetchSearchRecords,
 } from "../algorithms";
 
 export type ModFilter = "popular" | "new" | "ripe" | "updated";
 
-/**
- * @description Master entry point for fetching and formatting GameBanana mods.
- * Handles Discovery algorithms, standard GameBanana sorting, fallback infinite scrolling,
- * and mapping raw API records into clean `GameBananaMod` objects.
- * @param {ModFilter} filter - The type of feed to fetch ('popular', 'new', 'ripe', 'updated').
- * @param {number} page - The current page to fetch (1-indexed).
- * @param {number} perPage - Number of items per page.
- * @param {string | null} engineId - Optional ID to filter by engine (e.g. 'psych', 'kade').
- * @returns {Promise<GameBananaMod[]>} A standardized array of mod items.
- */
 export async function getMods(
   filter: ModFilter = "popular",
   page = 1,
   perPage = 15,
-  engineId: string | null = null,
+  engineIds: string[] | string | null = null,
+  searchQuery: string = ""
 ): Promise<GameBananaMod[]> {
   let rawRecords: any[] = [];
+  
+  const enginesArray = Array.isArray(engineIds) ? engineIds : (engineIds ? [engineIds] : ["all"]);
+  const isAll = enginesArray.length === 0 || (enginesArray.length === 1 && enginesArray[0] === "all");
 
-  if (filter === "popular") {
-    rawRecords = await fetchPopularRecords(engineId, 9999, page * perPage);
+  if (searchQuery.trim().length > 0) {
+    rawRecords = await fetchSearchRecords(searchQuery, enginesArray, filter, page, perPage);
+  } else if (filter === "popular") {
+    rawRecords = await fetchPopularRecords(isAll ? null : enginesArray, 9999, page * perPage);
   } else if (filter === "ripe") {
-    rawRecords = await fetchRipeRecords(engineId, 9999, page * perPage);
+    rawRecords = await fetchRipeRecords(isAll ? null : enginesArray, 9999, page * perPage);
   } else if (filter === "new" || filter === "updated") {
     let categoryIds = Object.keys(ENGINE_CATEGORIES).map(Number);
-    if (engineId && engineId !== "all") {
-      const match = Object.entries(ENGINE_CATEGORIES).find(
-        ([_, cat]) => cat.id === engineId,
-      );
-      if (match) categoryIds = [Number(match[0])];
+    if (!isAll) {
+      categoryIds = enginesArray.map((id) => {
+        const match = Object.entries(ENGINE_CATEGORIES).find(([_, cat]) => cat.id === id);
+        return match ? Number(match[0]) : -1;
+      }).filter((id) => id !== -1);
     }
 
     const sortStr =
@@ -97,6 +93,10 @@ export async function getMods(
             : b._tsDateAdded || 0;
         return Number(timeB) - Number(timeA);
       });
+  }
+
+  if (searchQuery.trim().length > 0) {
+    // fetchSearchRecords already slices correctly internally
   } else if (filter === "new" || filter === "updated") {
     rawRecords = rawRecords.slice(0, perPage);
   } else {
@@ -111,7 +111,7 @@ export async function getMods(
     GB_BASE_URL +
     "/Mod/Multi?_csvRowIds=" +
     modIds +
-    "&_csvProperties=_idRow,_nLikeCount,_nViewCount,_nDownloadCount,_sDescription,_sText,_aCredits";
+    "&_csvProperties=_idRow,_nLikeCount,_nViewCount,_nDownloadCount,_sDescription,_sText,_aCredits,_aCategory,_aSuperCategory,_aRootCategory";
 
   let multiData: any[] = [];
   try {
@@ -123,7 +123,9 @@ export async function getMods(
 
   let finalMods: GameBananaMod[] = rawRecords.map((mod) => {
     const meta = multiMap.get(mod._idRow) || {};
-    const finalEngineId = mod.__resolvedEngineId || getEngineId(mod);
+    let finalEngineId = mod.__resolvedEngineId || getEngineId(mod);
+    if (finalEngineId === "unknown") finalEngineId = getEngineId(meta);
+
     return {
       id: mod._idRow,
       gameId: FNF_GAME_ID,

@@ -6,6 +6,7 @@ interface AnimatedInputProps {
   icon?: React.ReactNode;
   className?: string;
   onInput?: (text: string, html: string) => void;
+  onKeyDown?: (e: React.KeyboardEvent<HTMLDivElement>) => void;
 }
 
 /**
@@ -19,6 +20,7 @@ export const AnimatedInput = ({
   icon,
   className = "",
   onInput,
+  onKeyDown,
 }: AnimatedInputProps) => {
   const [placeholderIndex, setPlaceholderIndex] = useState(0);
   const [isEmpty, setIsEmpty] = useState(true);
@@ -85,6 +87,7 @@ export const AnimatedInput = ({
           contentEditable="true"
           suppressContentEditableWarning={true}
           onInput={handleInput}
+          onKeyDown={onKeyDown}
           className="w-full bg-transparent outline-none text-lg text-[var(--wb-text-main)] truncate z-10"
         />
       </div>

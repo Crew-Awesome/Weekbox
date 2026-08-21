@@ -99,11 +99,5 @@ export default defineConfig({
       allow: [".."],
     },
   },
-  build: {
-    /** Directorio de salida donde Neutralino espera los archivos estáticos */
-    outDir: "../app",
-    /** Mantiene archivos existentes en el directorio de salida al compilar */
-    emptyOutDir: false,
-  },
 });
 

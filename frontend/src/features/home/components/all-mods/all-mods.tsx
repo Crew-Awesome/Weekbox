@@ -1,12 +1,15 @@
 import React from "react";
 import Shared from "@shared";
-import { Eye, Download, Clock, User, Star, Flame, RefreshCcw, Sparkles } from "lucide-react";
+import { Eye, Download, User, Clock } from "lucide-react";
 import type { ModItem } from "../../types";
 import { useAllMods } from "./use-all-mods";
 import { ENGINE_CATEGORIES } from "../../../../core/services/gamebanana/constants";
 
 interface AllModsProps {
   onCardClick: (card: ModItem) => void;
+  searchQuery?: string;
+  sortFilter?: string;
+  categoryFilter?: string[];
 }
 
 /**
@@ -15,32 +18,14 @@ interface AllModsProps {
  * and interpolates Community Picks continuously within the grid.
  * @param {AllModsProps} props - The component props.
  */
-export const AllMods: React.FC<AllModsProps> = ({ onCardClick }) => {
-  const [sortFilter, setSortFilter] = React.useState("popular");
-  const [categoryFilter, setCategoryFilter] = React.useState("all");
-
+export const AllMods: React.FC<AllModsProps> = ({
+  onCardClick,
+  searchQuery = "",
+  sortFilter = "popular",
+  categoryFilter = ["all"],
+}) => {
   const { mods, loading, loadingMore, hasMore, page, lastElementRef } =
-    useAllMods(sortFilter, categoryFilter);
-
-  const filterControls = (
-    <div className="flex flex-wrap justify-end items-center gap-3">
-      <Shared.molecules.PillDropdown
-        label="Sort by"
-        value={sortFilter}
-        onChange={setSortFilter}
-        options={[
-          { label: "Popular", value: "popular", icon: <Star size={16} /> },
-          { label: "Newest", value: "new", icon: <Sparkles size={16} /> },
-          { label: "Most Ripped", value: "ripe", icon: <Flame size={16} /> },
-          { label: "Recently Updated", value: "updated", icon: <RefreshCcw size={16} /> },
-        ]}
-      />
-      <Shared.organisms.EngineFilterPill
-        value={categoryFilter}
-        onChange={setCategoryFilter}
-      />
-    </div>
-  );
+    useAllMods(sortFilter, categoryFilter, searchQuery);
 
   const sortLabels: Record<string, string> = {
     popular: "Popular",
@@ -50,26 +35,31 @@ export const AllMods: React.FC<AllModsProps> = ({ onCardClick }) => {
   };
 
   const dynamicTitle = React.useMemo(() => {
+    if (searchQuery.trim().length > 0) {
+      return `Search: "${searchQuery}"`;
+    }
+
     const sLabel = sortLabels[sortFilter] || "Discovery";
     let cLabel = "All Engines";
-    if (categoryFilter !== "all") {
-      // Find the name by matching the string ID
+    
+    if (categoryFilter.length === 1 && categoryFilter[0] !== "all") {
       const engineKey = Object.keys(ENGINE_CATEGORIES).find(
-        (key) => ENGINE_CATEGORIES[Number(key)].id === categoryFilter
+        (key) => ENGINE_CATEGORIES[Number(key)].id === categoryFilter[0]
       );
       if (engineKey) {
         cLabel = ENGINE_CATEGORIES[Number(engineKey)].name;
       }
+    } else if (categoryFilter.length > 1) {
+      cLabel = `${categoryFilter.length} Engines`;
     }
+    
     return `${sLabel} - ${cLabel}`;
-  }, [sortFilter, categoryFilter]);
+  }, [sortFilter, categoryFilter, searchQuery]);
 
   if (loading && page === 1) {
     return (
       <>
-        <Shared.atoms.Titles title={dynamicTitle}>
-          {filterControls}
-        </Shared.atoms.Titles>
+        <Shared.atoms.Titles title={dynamicTitle} />
         <div
           className="grid gap-4 sm:gap-6 -mx-8 sm:mx-0 h-auto w-auto grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4"
           style={{ gridAutoFlow: "row dense" }}
@@ -110,9 +100,7 @@ export const AllMods: React.FC<AllModsProps> = ({ onCardClick }) => {
 
   return (
     <>
-      <Shared.atoms.Titles title={dynamicTitle}>
-        {filterControls}
-      </Shared.atoms.Titles>
+      <Shared.atoms.Titles title={dynamicTitle} />
       <div
         className="grid gap-4 sm:gap-6 -mx-8 sm:mx-0 h-auto w-auto grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4"
         style={{ gridAutoFlow: "row dense" }}

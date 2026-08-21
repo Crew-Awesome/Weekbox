@@ -6,6 +6,8 @@ import { useFeaturedMods } from "./use-featured-mods";
 
 interface FeaturedModsProps {
   onCardClick?: (mod: GameBananaMod) => void;
+  searchQuery?: string;
+  engineIds?: string[];
 }
 
 /**
@@ -13,8 +15,12 @@ interface FeaturedModsProps {
  * Maps the custom features from the backend JSON into a sleek, auto-playing UI.
  * @param {FeaturedModsProps} props - Component props.
  */
-export const FeaturedMods: React.FC<FeaturedModsProps> = ({ onCardClick }) => {
-  const { featuredMods, categories } = useFeaturedMods();
+export const FeaturedMods: React.FC<FeaturedModsProps> = ({
+  onCardClick,
+  searchQuery = "",
+  engineIds = ["all"],
+}) => {
+  const { featuredMods, categories } = useFeaturedMods(searchQuery, engineIds);
 
   if (featuredMods.length === 0) {
     return (
@@ -37,7 +43,7 @@ export const FeaturedMods: React.FC<FeaturedModsProps> = ({ onCardClick }) => {
 
   return (
     <div className="mb-4 w-full">
-      <Shared.atoms.Titles title="Featured Mods" align="center" />
+      <Shared.atoms.Titles title={searchQuery ? "Top Search Results" : "Featured Mods"} align="center" />
 
       {/* Container with negative margins to make the carousel take full screen width */}
       <div className="-mx-8 mt-4">
@@ -76,18 +82,20 @@ export const FeaturedMods: React.FC<FeaturedModsProps> = ({ onCardClick }) => {
 
             return (
               <div className="flex items-center justify-center gap-4 mt-4 px-4 w-full pointer-events-none z-10">
-                <button
-                  onClick={handlePrevCard}
-                  className="p-1.5 rounded-full bg-white/5 hover:bg-white/20 transition-colors text-white shrink-0 pointer-events-auto cursor-pointer"
-                >
-                  <ChevronLeft size={20} />
-                </button>
+                {!searchQuery && (
+                  <button
+                    onClick={handlePrevCard}
+                    className="p-1.5 rounded-full bg-white/5 hover:bg-white/20 transition-colors text-white shrink-0 pointer-events-auto cursor-pointer"
+                  >
+                    <ChevronLeft size={20} />
+                  </button>
+                )}
 
                 {/* Pills (dots) rendered only for the current section */}
                 <div className="flex gap-2 justify-center items-center pointer-events-auto">
                   {featuredMods
                     .map((m, idx) => ({ ...m, absoluteIndex: idx }))
-                    .filter((m) => m.__featuredLabel === activeLabel)
+                    .filter((m) => !searchQuery ? m.__featuredLabel === activeLabel : true)
                     .map((mod) => (
                       <div
                         key={`indicator-${mod.absoluteIndex}`}
@@ -109,12 +117,14 @@ export const FeaturedMods: React.FC<FeaturedModsProps> = ({ onCardClick }) => {
                     ))}
                 </div>
 
-                <button
-                  onClick={handleNextCard}
-                  className="p-1.5 rounded-full bg-white/5 hover:bg-white/20 transition-colors text-white shrink-0 pointer-events-auto cursor-pointer"
-                >
-                  <ChevronRight size={20} />
-                </button>
+                {!searchQuery && (
+                  <button
+                    onClick={handleNextCard}
+                    className="p-1.5 rounded-full bg-white/5 hover:bg-white/20 transition-colors text-white shrink-0 pointer-events-auto cursor-pointer"
+                  >
+                    <ChevronRight size={20} />
+                  </button>
+                )}
               </div>
             );
           }}
@@ -136,9 +146,9 @@ export const FeaturedMods: React.FC<FeaturedModsProps> = ({ onCardClick }) => {
                 )}
 
                 {/* Section name on each card */}
-                {item.__featuredLabel && (
-                  <div className="m3-card-badge absolute top-4 right-4 z-10 bg-black/60 backdrop-blur-md px-4 py-1.5 rounded-full shadow-md border border-white/10 pointer-events-none">
-                    <span className="text-white text-xs sm:text-sm font-bold uppercase tracking-widest drop-shadow-md">
+                {!searchQuery && item.__featuredLabel && (
+                  <div className="m3-card-badge absolute top-6 left-6 sm:top-8 sm:left-8 z-10 bg-black/40 backdrop-blur-md px-4 py-2 rounded-full shadow-md border border-white/10 pointer-events-auto flex items-center gap-2">
+                    <span className="text-white text-xs sm:text-sm font-medium tracking-wide drop-shadow-md">
                       {item.__featuredLabel}
                     </span>
                   </div>
