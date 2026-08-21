@@ -1,1 +1,0 @@
-import { fetchSearchRecords } from './frontend/src/core/services/gamebanana/algorithms/search.ts'; fetchSearchRecords('mario').then(console.log).catch(console.error);

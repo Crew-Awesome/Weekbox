@@ -1,1 +1,0 @@
-const q=encodeURIComponent(\mario's madness\); fetch(\https://gamebanana.com/apiv11/Util/Search/Results?_sModelName=Mod&_idGameRow=8694&_sSearchString=\&_nPage=1&_nPerpage=15\).then(r=>r.json()).then(d=>console.log(d._aRecords.map((r,i)=>i+': '+r._sName).join('\\n'))).catch(console.error);

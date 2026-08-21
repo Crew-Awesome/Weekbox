@@ -19,7 +19,7 @@ const ripeCache = new Map<
 /**
  * @description Fetches "Ripe" (Most Liked historically) records by querying all allowed categories in parallel.
  * Results are merged and sorted locally to provide a fallback infinite scroll when Discovery runs out.
- * @param {string | null} targetEngineId - Optional ID to filter by a specific engine.
+ * @param {string[] | null} targetEngineIds - Optional array of engine IDs to filter by. Defaults to `null` (all engines).
  * @param {number} maxPages - Maximum depth of pages to query per execution to avoid hanging.
  * @param {number} maxRecords - Number of valid records needed before returning.
  * @returns {Promise<any[]>} An array of historical top mods.

@@ -11,6 +11,17 @@ let hasReachedEnd = false;
 let currentFetchPromise: Promise<void> | null = null;
 const CHUNK_PAGES = 5; // Fetches 5 * 15 = 75 items per massive chunk
 
+/**
+ * @description Advanced hybrid search algorithm that merges GameBanana's native search results with
+ * an offline popular cache. Applies an AI-like relevance scoring inspired by YouTube's recommendation system.
+ * Filters strictly by title, supports pagination, multiple engines, and deduplicates automatically.
+ * @param {string} query - The search string input by the user.
+ * @param {string[]} engineIds - An array of engine IDs to filter the results (e.g. `["vslice", "psych"]`). Defaults to `["all"]`.
+ * @param {string} sortFilter - The active sort mode (e.g. `"popular"`, `"new"`, `"updated"`). Defaults to `"popular"`.
+ * @param {number} page - The UI page number currently requested.
+ * @param {number} perPage - How many items should be returned per page.
+ * @returns {Promise<any[]>} A highly curated, filtered, and sorted array of Mod records ready for Mod/Multi hydration.
+ */
 export async function fetchSearchRecords(
   query: string,
   engineIds: string[] = ["all"],
