@@ -27,7 +27,7 @@ if (rootElement) {
     <StrictMode>
       <HashRouter>
         <Routes>
-          <Route path="/" element={<App />} />
+          <Route path="*" element={<App />} />
         </Routes>
       </HashRouter>
     </StrictMode>,

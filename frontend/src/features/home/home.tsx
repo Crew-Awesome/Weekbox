@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { useSearchParams } from "react-router-dom";
 import type { ModItem } from "./types";
 import { FeaturedMods } from "./components/featured-mods";
 import { AllMods } from "./components/all-mods";
@@ -11,26 +12,62 @@ export const Home: React.FC = () => {
   const activeModItem = useAppStore((state) => state.activeModItem);
   const setActiveModItem = useAppStore((state) => state.setActiveModItem);
 
-  // Lifted state
-  const [searchQuery, setSearchQuery] = useState("");
-  const [sortFilter, setSortFilter] = useState("popular");
-  const [categoryFilter, setCategoryFilter] = useState<string[]>(["all"]);
+  const [searchParams, setSearchParams] = useSearchParams();
 
-  // Sincronizar el estado de Zustand con el estado local del modal
+  // Lifted state synchronized with URL
+  const searchQuery = searchParams.get("q") || "";
+  const sortFilter = searchParams.get("sort") || "popular";
+  
+  // Categorías pueden venir separadas por comas en la URL: ?engines=vslice,psych
+  const engineParam = searchParams.get("engines");
+  const categoryFilter = engineParam ? engineParam.split(",") : ["all"];
+
   useEffect(() => {
     if (activeModItem) {
       setSelectedCard(activeModItem);
     }
   }, [activeModItem]);
 
+  const updateUrlParams = React.useCallback((updates: Record<string, string | null>) => {
+    const newParams = new URLSearchParams(searchParams);
+    for (const [key, value] of Object.entries(updates)) {
+      if (value === null || value === "" || value === "popular" || value === "all") {
+        newParams.delete(key);
+      } else {
+        newParams.set(key, value);
+      }
+    }
+    setSearchParams(newParams, { replace: true });
+  }, [searchParams, setSearchParams]);
+
   const handleCloseModal = () => {
     setSelectedCard(null);
     setActiveModItem(null);
+    updateUrlParams({ modal: null }); // Si tuviéramos modal en URL
   };
 
   const handleSearch = (query: string) => {
-    setSearchQuery(query);
+    updateUrlParams({ q: query });
   };
+
+  const handleSetSortFilter = (val: string) => {
+    updateUrlParams({ sort: val });
+  };
+
+  const handleSetCategoryFilter = (val: string[]) => {
+    updateUrlParams({ engines: val.includes("all") ? null : val.join(",") });
+  };
+
+  // Rest of the UI syncs perfectly with modal tracking
+  useEffect(() => {
+    if (selectedCard) {
+      updateUrlParams({ modal: (selectedCard as any).id?.toString() || selectedCard.name });
+    } else {
+      updateUrlParams({ modal: null });
+    }
+  }, [selectedCard]);
+
+  // Si abrimos la URL con ?modal=id, podríamos restaurarlo (WIP)
 
   return (
     <div className="items-center -m-8 justify-center text-white font-sans">
@@ -38,9 +75,9 @@ export const Home: React.FC = () => {
         <HomeSearchbar 
           onSearchSubmit={handleSearch} 
           sortFilter={sortFilter}
-          setSortFilter={setSortFilter}
+          setSortFilter={handleSetSortFilter}
           categoryFilter={categoryFilter}
-          setCategoryFilter={setCategoryFilter}
+          setCategoryFilter={handleSetCategoryFilter}
         />
 
         <div className="pt-2 sm:pt-8 px-8">

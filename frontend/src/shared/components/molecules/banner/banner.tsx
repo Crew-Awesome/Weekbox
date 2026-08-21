@@ -73,14 +73,20 @@ export const Banner: React.FC<BannerProps> = ({
   const [iconLoaded, setIconLoaded] = useState(false);
 
   useEffect(() => {
+    let isMounted = true;
     if (extractColor && thumbnail) {
       Shared.utils
         .extractColor(thumbnail, 0.3)
         .then((color) => {
-          setHoverColor(color);
+          if (isMounted) {
+            setHoverColor((prev) => (prev !== color ? color : prev));
+          }
         })
         .catch(console.error);
     }
+    return () => {
+      isMounted = false;
+    };
   }, [extractColor, thumbnail]);
 
   useEffect(() => {

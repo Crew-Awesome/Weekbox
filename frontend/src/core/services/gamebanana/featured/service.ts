@@ -1,4 +1,4 @@
-import http from "@http";
+
 import { getTimeAgo, getEngineIcon } from "../utils";
 import Utils from "@utils";
 import type { GameBananaMod } from "../types";
@@ -26,7 +26,12 @@ export class FeaturedService {
    */
   public async getCarousel(): Promise<GameBananaMod[]> {
     try {
-      const response = (await http.fetchJson(this.url)) as FeaturedSchema;
+      // Usamos el fetch nativo del navegador porque GitHub Raw soporta CORS
+      // y así evitamos posibles cuellos de botella o timeouts en el backend de Node.
+      const raw = await fetch(this.url);
+      if (!raw.ok) throw new Error(`GitHub HTTP error: ${raw.status}`);
+      
+      const response = (await raw.json()) as FeaturedSchema;
 
       if (!this.isSupported(response)) {
         throw new Error("Unsupported featured schema");
@@ -37,68 +42,8 @@ export class FeaturedService {
 
       return mods;
     } catch (error) {
-      console.warn(
-        "FeaturedService error (static JSON failed), triggering dynamic fallback algorithm:",
-        error,
-      );
-      return await this.fetchDynamicFallback();
-    }
-  }
-
-  /**
-   * @description Fallback algorithm that generates dynamic banners when the static JSON fails.
-   * Ensures no duplicates and assigns temporal labels (Day, Week, Month, etc.) and Ripe fallbacks.
-   */
-  private async fetchDynamicFallback(): Promise<GameBananaMod[]> {
-    try {
-      // Import dynamically to avoid circular dependencies
-      const { getMods } = await import("../api/getMods");
-
-      const popular = await getMods("popular", 1, 30);
-      const ripe = await getMods("ripe", 1, 15);
-
-      // Deduplicate to ensure we NEVER reuse the same mods
-      const seen = new Set<number>();
-      const combined: GameBananaMod[] = [];
-
-      for (const mod of [...popular, ...ripe]) {
-        if (!seen.has(mod.id)) {
-          seen.add(mod.id);
-          combined.push(mod);
-        }
-      }
-
-      const labels = [
-        "Mod of the Day",
-        "Mod of the Week",
-        "Mod of the Month",
-        "6 Months Ago",
-        "Mod of the Year",
-        "All Time Classic",
-      ];
-
-      // Shuffle combined to give variety every time it falls back
-      const shuffled = combined.sort(() => 0.5 - Math.random());
-
-      const result: GameBananaMod[] = [];
-      let modIndex = 0;
-      
-      for (const label of labels) {
-        // Take up to 4 mods for this category
-        for (let j = 0; j < 4; j++) {
-          if (modIndex < shuffled.length) {
-            result.push({
-              ...shuffled[modIndex],
-              __featuredLabel: label,
-            });
-            modIndex++;
-          }
-        }
-      }
-
-      return result;
-    } catch (fallbackError) {
-      console.error("Dynamic fallback also failed:", fallbackError);
+      console.warn("FeaturedService error (static JSON failed):", error);
+      // Retornamos array vacío para no hacer peticiones masivas a GameBanana
       return [];
     }
   }

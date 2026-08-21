@@ -49,7 +49,17 @@ export async function fetchSearchRecords(
     }
 
     // Si no tenemos suficientes elementos en caché para la página actual, cargamos más hasta llenar
-    while (cachedRecords.length < page * perPage && chunkIndex < 50 && !hasReachedEnd) {
+    let chunksLoadedThisCall = 0;
+    
+    // LIMITAMOS a máximo 2 chunks (150 mods de GameBanana) por llamada para evitar 
+    // ataques DDOS al servidor si el filtro estricto descarta demasiados mods basura.
+    while (
+      cachedRecords.length < page * perPage && 
+      chunkIndex < 50 && 
+      !hasReachedEnd &&
+      chunksLoadedThisCall < 2
+    ) {
+      chunksLoadedThisCall++;
       chunkIndex++;
       const startGBPage = (chunkIndex * CHUNK_PAGES) + 1;
       

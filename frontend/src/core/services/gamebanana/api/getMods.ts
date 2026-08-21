@@ -117,23 +117,39 @@ export async function getMods(
   if (rawRecords.length === 0) return [];
 
   // Batch fetch secondary statistics and full descriptions using the Mod/Multi endpoint
-  const modIds = rawRecords.map((r) => r._idRow).join(",");
-  const multiUrl =
-    GB_BASE_URL +
-    "/Mod/Multi?_csvRowIds=" +
-    modIds +
-    "&_csvProperties=_idRow,_nLikeCount,_nViewCount,_nDownloadCount,_sDescription,_sText,_aCredits,_aCategory,_aSuperCategory,_aRootCategory";
-
+  // GameBanana often fails or truncates when _csvRowIds has too many items, so we chunk them.
+  const CHUNK_SIZE = 15;
   let multiData: any[] = [];
+  
   try {
-    multiData = (await http.fetchJson(multiUrl)) as any[];
+    const chunkPromises = [];
+    for (let i = 0; i < rawRecords.length; i += CHUNK_SIZE) {
+      const chunk = rawRecords.slice(i, i + CHUNK_SIZE);
+      const modIds = chunk.map((r) => r._idRow).join(",");
+      const multiUrl =
+        GB_BASE_URL +
+        "/Mod/Multi?_csvRowIds=" +
+        modIds +
+        "&_csvProperties=_idRow,_nLikeCount,_nViewCount,_nDownloadCount,_sDescription,_sText,_aCredits,_aCategory,_aSuperCategory,_aRootCategory";
+      
+      chunkPromises.push(http.fetchJson(multiUrl));
+    }
+    
+    const chunkResults = await Promise.all(chunkPromises);
+    multiData = chunkResults.flat();
   } catch (e) {
     console.error("GameBanana Mod/Multi failed:", e);
   }
-  const multiMap = new Map(multiData.map((d) => [d._idRow, d]));
+
+  const multiMap = new Map<number, any>();
+  for (const d of multiData) {
+    if (d && d._idRow) {
+      multiMap.set(d._idRow, d);
+    }
+  }
 
   let finalMods: GameBananaMod[] = rawRecords.map((mod) => {
-    const meta = multiMap.get(mod._idRow) || {};
+    const meta: any = multiMap.get(mod._idRow) || {};
     let finalEngineId = mod.__resolvedEngineId || getEngineId(mod);
     if (finalEngineId === "unknown") finalEngineId = getEngineId(meta);
 
