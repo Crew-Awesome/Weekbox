@@ -37,6 +37,10 @@ export interface BannerProps {
   likesCount?: string | number;
   /** Number of views for the stats area */
   viewsCount?: string | number;
+  /** If true, renders the banner in a skeleton loading state */
+  isLoading?: boolean;
+  /** If true, displays a red NSFW pill */
+  isNsfw?: boolean;
 }
 
 /**
@@ -56,6 +60,8 @@ export const Banner: React.FC<BannerProps> = ({
   timeText,
   likesCount,
   viewsCount,
+  isLoading = false,
+  isNsfw = false,
 }) => {
   const thumbnailRef = useRef<HTMLDivElement>(null);
   const hoverBgRef = useRef<HTMLDivElement>(null);
@@ -63,6 +69,8 @@ export const Banner: React.FC<BannerProps> = ({
   const notchSvg1Ref = useRef<SVGSVGElement>(null);
   const notchSvg2Ref = useRef<SVGSVGElement>(null);
   const [hoverColor, setHoverColor] = useState<string | null>(null);
+  const [thumbnailLoaded, setThumbnailLoaded] = useState(false);
+  const [iconLoaded, setIconLoaded] = useState(false);
 
   useEffect(() => {
     if (extractColor && thumbnail) {
@@ -196,12 +204,18 @@ export const Banner: React.FC<BannerProps> = ({
         }}
       >
         <div ref={thumbnailRef} className="absolute inset-0">
-          <img
-            className="w-full h-full object-cover block"
-            src={thumbnail}
-            alt="Banner background"
-            draggable={false}
-          />
+          {(!thumbnailLoaded || isLoading) && (
+            <div className="absolute inset-0 bg-[var(--wb-surface-variant)] animate-pulse" />
+          )}
+          {!isLoading && (
+            <img
+              className={`w-full h-full object-cover block transition-opacity duration-300 ${thumbnailLoaded ? "opacity-100" : "opacity-0"}`}
+              src={thumbnail}
+              alt="Banner background"
+              draggable={false}
+              onLoad={() => setThumbnailLoaded(true)}
+            />
+          )}
         </div>
 
         {/* Mask Container (Icon top-left notch) */}
@@ -209,15 +223,25 @@ export const Banner: React.FC<BannerProps> = ({
           <div className="absolute left-0 top-0 w-16 sm:w-20 aspect-square rounded-br-[8px] bg-[var(--wb-bg)] z-10 pointer-events-none">
             <div
               ref={notchOverlayRef}
-              className="absolute inset-0 pointer-events-none opacity-0"
+              className="absolute inset-0 pointer-events-none opacity-0 rounded-tl-none rounded-br-[8px]"
             />
             <div className="relative z-10 w-full h-full flex items-center justify-center p-2">
-              <img
-                className="object-contain w-full h-full block"
-                src={icon}
-                alt="icon"
-                draggable={false}
-              />
+              {icon && (
+                <>
+                  {(!iconLoaded || isLoading) && (
+                    <div className="absolute inset-2 rounded-full bg-[var(--wb-surface-variant)] animate-pulse" />
+                  )}
+                  {!isLoading && (
+                    <img
+                      className={`object-contain w-full h-full block transition-opacity duration-300 ${iconLoaded ? "opacity-100" : "opacity-0"}`}
+                      src={icon}
+                      alt="icon"
+                      draggable={false}
+                      onLoad={() => setIconLoaded(true)}
+                    />
+                  )}
+                </>
+              )}
             </div>
             {/* Notch SVGs */}
             <svg
@@ -262,82 +286,102 @@ export const Banner: React.FC<BannerProps> = ({
       {/* Content Area */}
       <div className="relative z-10 w-full flex justify-end pr-4 sm:pr-12 md:pr-24 h-full items-center">
         <div className="flex flex-col items-start gap-3">
-          {pillTitle && (
-            <div className="px-3 py-1 text-[10px] sm:text-xs font-bold tracking-wider text-white border border-white/20 rounded-full w-max uppercase bg-black/20">
-              {pillTitle}
-            </div>
-          )}
+          {isLoading ? (
+            <>
+              {pillTitle && <div className="h-5 w-24 bg-[var(--wb-surface-variant)] rounded-full animate-pulse" />}
+              <div className="h-10 w-48 sm:w-64 bg-[var(--wb-surface-variant)] rounded animate-pulse" />
+              {author && <div className="h-5 w-32 bg-[var(--wb-surface-variant)] rounded animate-pulse mb-2" />}
+              {(timeText || likesCount !== undefined || viewsCount !== undefined) && (
+                <div className="h-8 w-40 bg-[var(--wb-surface-variant)] rounded-full animate-pulse" />
+              )}
+            </>
+          ) : (
+            <>
+              <div className="flex items-center gap-2">
+                {pillTitle && (
+                  <div className="px-3 py-1 text-[10px] sm:text-xs font-bold tracking-wider text-white border border-white/20 rounded-full w-max uppercase bg-black/20">
+                    {pillTitle}
+                  </div>
+                )}
+                {isNsfw && (
+                  <div className="px-3 py-1 text-[10px] sm:text-xs font-bold tracking-wider text-red-500 border border-red-500/50 rounded-full w-max uppercase bg-red-500/20">
+                    NSFW
+                  </div>
+                )}
+              </div>
 
-          <h2 className="text-3xl sm:text-4xl font-black text-white leading-tight uppercase line-clamp-2 max-w-[400px]">
-            {title}
-          </h2>
+              <h2 className="text-3xl sm:text-4xl font-black text-white leading-tight uppercase line-clamp-2 max-w-[400px]">
+                {title}
+              </h2>
 
-          {author && (
-            <p className="text-[var(--wb-on-surface-variant)] text-sm sm:text-base mb-2">
-              {author}
-            </p>
-          )}
+              {author && (
+                <p className="text-[var(--wb-on-surface-variant)] text-sm sm:text-base mb-2">
+                  {author}
+                </p>
+              )}
 
-          {/* Stats */}
-          {(timeText ||
-            likesCount !== undefined ||
-            viewsCount !== undefined) && (
-            <div className="flex items-center gap-4 text-sm text-[var(--wb-on-surface-variant)] bg-black/40 px-4 py-1.5 rounded-full">
-              {timeText && (
-                <div className="flex items-center gap-1">
-                  <svg
-                    className="w-4 h-4"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth="2"
-                      d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
-                    ></path>
-                  </svg>
-                  <span>{timeText}</span>
+              {/* Stats */}
+              {(timeText ||
+                likesCount !== undefined ||
+                viewsCount !== undefined) && (
+                <div className="flex items-center gap-4 text-sm text-[var(--wb-on-surface-variant)] bg-black/40 px-4 py-1.5 rounded-full">
+                  {timeText && (
+                    <div className="flex items-center gap-1">
+                      <svg
+                        className="w-4 h-4"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth="2"
+                          d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+                        ></path>
+                      </svg>
+                      <span>{timeText}</span>
+                    </div>
+                  )}
+                  {likesCount !== undefined && (
+                    <div className="flex items-center gap-1">
+                      <svg
+                        className="w-4 h-4"
+                        fill="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"></path>
+                      </svg>
+                      <span>{likesCount}</span>
+                    </div>
+                  )}
+                  {viewsCount !== undefined && (
+                    <div className="flex items-center gap-1">
+                      <svg
+                        className="w-4 h-4"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth="2"
+                          d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+                        ></path>
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth="2"
+                          d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.478 0-8.268-2.943-9.542-7z"
+                        ></path>
+                      </svg>
+                      <span>{viewsCount}</span>
+                    </div>
+                  )}
                 </div>
               )}
-              {likesCount !== undefined && (
-                <div className="flex items-center gap-1">
-                  <svg
-                    className="w-4 h-4"
-                    fill="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"></path>
-                  </svg>
-                  <span>{likesCount}</span>
-                </div>
-              )}
-              {viewsCount !== undefined && (
-                <div className="flex items-center gap-1">
-                  <svg
-                    className="w-4 h-4"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth="2"
-                      d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
-                    ></path>
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth="2"
-                      d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.478 0-8.268-2.943-9.542-7z"
-                    ></path>
-                  </svg>
-                  <span>{viewsCount}</span>
-                </div>
-              )}
-            </div>
+            </>
           )}
         </div>
       </div>

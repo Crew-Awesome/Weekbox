@@ -14,10 +14,11 @@ export interface GameBananaItem {
   submittedAt: number;
   timeAgo: string;
   thumbnail: string;
+  isNsfw: boolean;
 }
 
 export interface GameBananaMod extends GameBananaItem {
-  engineId: string;
+  engineId?: string;
   engineIcon?: string;
   __featuredLabel?: string;
   __featuredCategoryId?: number;

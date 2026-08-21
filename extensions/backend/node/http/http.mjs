@@ -1,6 +1,7 @@
 import fs from 'node:fs';
 import { pipeline } from 'node:stream/promises';
 import { Readable, Transform } from 'node:stream';
+import { httpCache } from './http-cache.mjs';
 
 /**
  * Realiza un fetch nativo con límite de tiempo (timeout).
@@ -40,14 +41,28 @@ const fetchWithTimeout = async (url, options = {}, timeoutMs = 30000, retries = 
  */
 export const httpApi = {
   /**
-   * Obtiene una respuesta JSON.
+   * Obtiene una respuesta JSON (implementa caché en memoria para peticiones GET).
    * @param {{url: string, options?: RequestInit}} params
    * @returns {Promise<any>}
    */
   async fetchJson({ url, options = {} }) {
+    const isGet = !options.method || options.method.toUpperCase() === 'GET';
+    
+    // Si es GET, revisamos la caché primero
+    if (isGet) {
+      const cached = httpCache.get(url);
+      if (cached) return cached;
+    }
+
     const res = await fetchWithTimeout(url, options);
     if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
-    return await res.json();
+    const data = await res.json();
+    
+    if (isGet) {
+      httpCache.set(url, data);
+    }
+    
+    return data;
   },
 
   /**

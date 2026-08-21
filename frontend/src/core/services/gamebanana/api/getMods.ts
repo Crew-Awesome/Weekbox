@@ -10,26 +10,16 @@ import {
   extractThumbnail,
   extractUserId,
   extractUserPfp,
+  checkIsNsfw,
 } from "../utils";
 import Utils from "@utils";
 import {
   fetchDiscoveryRecords,
   fetchRipeRecords,
-  rankCandidates,
-  applyDiversity,
+  fetchPopularRecords,
 } from "../algorithms";
 
 export type ModFilter = "popular" | "new" | "ripe" | "updated";
-
-/**
- * In-memory cache to store popular/discovery mods for a short period.
- * This avoids re-running the heavy discovery algorithm on rapid pagination or component remounts.
- */
-const popularCache = new Map<
-  string,
-  { timestamp: number; mods: GameBananaMod[] }
->();
-const CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
 
 /**
  * @description Master entry point for fetching and formatting GameBanana mods.
@@ -48,20 +38,10 @@ export async function getMods(
   engineId: string | null = null,
 ): Promise<GameBananaMod[]> {
   let rawRecords: any[] = [];
-  let isPopularFallback = false;
 
   if (filter === "popular") {
-    const cacheKey = engineId || "all";
-    const cached = popularCache.get(cacheKey);
-    if (cached && Date.now() - cached.timestamp < CACHE_TTL_MS) {
-      const slice = cached.mods.slice((page - 1) * perPage, page * perPage);
-      if (slice.length > 0) return slice;
-    }
-    // Discovery currently returns max 60 items. If we page beyond that limit, trigger the infinite fallback.
-    if ((page - 1) * perPage >= 60) isPopularFallback = true;
-  }
-
-  if (filter === "ripe" || isPopularFallback) {
+    rawRecords = await fetchPopularRecords(engineId, 9999, page * perPage);
+  } else if (filter === "ripe") {
     rawRecords = await fetchRipeRecords(engineId, 9999, page * perPage);
   } else if (filter === "new" || filter === "updated") {
     let categoryIds = Object.keys(ENGINE_CATEGORIES).map(Number);
@@ -117,26 +97,6 @@ export async function getMods(
             : b._tsDateAdded || 0;
         return Number(timeB) - Number(timeA);
       });
-  } else if (filter === "popular" && !isPopularFallback) {
-    rawRecords = await fetchDiscoveryRecords(engineId);
-  }
-
-  if (filter === "popular" && !isPopularFallback) {
-    // Temporary mapping to rank all candidates (up to 500+ mods) locally without querying Mod/Multi yet
-    let tempCandidates = rawRecords.map((r) => ({
-      raw: r,
-      id: r._idRow,
-      likes: r._nLikeCount || 0,
-      views: r._nViewCount || 0,
-      submittedAt: r._tsDateAdded,
-      author: r._aSubmitter?._sName || "Unknown Creator",
-      creatorId: r._aSubmitter?._idRow?.toString() || null,
-    }));
-    const ranked = rankCandidates(tempCandidates);
-    const diverse = applyDiversity(ranked);
-
-    // Take the best 60 and extract their raw objects to continue the pipeline
-    rawRecords = diverse.slice(0, 60).map((c) => c.raw);
   } else if (filter === "new" || filter === "updated") {
     rawRecords = rawRecords.slice(0, perPage);
   } else {
@@ -186,14 +146,9 @@ export async function getMods(
       engineId: finalEngineId,
       engineIcon: getEngineIcon(finalEngineId),
       thumbnail: extractThumbnail(mod),
+      isNsfw: checkIsNsfw(mod),
     };
   });
-
-  if (filter === "popular" && !isPopularFallback) {
-    const cacheKey = engineId || "all";
-    popularCache.set(cacheKey, { timestamp: Date.now(), mods: finalMods });
-    return finalMods.slice((page - 1) * perPage, page * perPage);
-  }
 
   return finalMods;
 }

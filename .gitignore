@@ -37,3 +37,5 @@ frontend/*.sw?
 /app/dist/
 /app/assets/index-*.js
 /app/assets/index-*.css
+
+README_FREC.md

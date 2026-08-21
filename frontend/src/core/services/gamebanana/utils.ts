@@ -1,4 +1,4 @@
-import { ENGINE_CATEGORIES, EXCLUDED_CATEGORIES } from "./constants";
+import { ENGINE_CATEGORIES, EXCLUDED_CATEGORIES, ALLOW_NSFW } from "./constants";
 
 /**
  * @description Converts a Unix timestamp into a human-readable relative time string.
@@ -51,11 +51,35 @@ export function getEngineIcon(engineId: string): string | undefined {
 }
 
 /**
+ * @description Determines if a record is explicitly NSFW based on GameBanana flags or categories.
+ * @param {any} record - The raw GameBanana mod record.
+ * @returns {boolean} True if the record is NSFW.
+ */
+export function checkIsNsfw(record: any): boolean {
+  if (record._bIsNsfw || record._bContainsNsfw) return true;
+  
+  // GameBanana's "Not Safe For Work" category ID is often 43772 or we can check the names if available.
+  // For now, if it's in EXCLUDED_CATEGORIES, it might be NSFW. 
+  // Let's assume 43772 is the explicit NSFW category ID for FNF.
+  const ids = [
+    record._aCategory?._idRow,
+    record._aSuperCategory?._idRow,
+    record._aRootCategory?._idRow,
+    record._aSubCategory?._idRow,
+  ];
+  if (ids.includes(43772)) return true;
+
+  return false;
+}
+
+/**
  * @description Checks if a GameBanana record belongs to an explicitly excluded/blacklisted category.
  * @param {any} record - The raw GameBanana mod record.
  * @returns {boolean} True if the record should be excluded.
  */
 export function isExcluded(record: any): boolean {
+  if (!ALLOW_NSFW && checkIsNsfw(record)) return true;
+
   const ids = [
     record._aCategory?._idRow,
     record._aSuperCategory?._idRow,
@@ -63,7 +87,11 @@ export function isExcluded(record: any): boolean {
     record._aSubCategory?._idRow,
   ];
   for (const id of ids) {
-    if (id && EXCLUDED_CATEGORIES.has(id)) return true;
+    if (id && EXCLUDED_CATEGORIES.has(id)) {
+      // If NSFW is allowed, do not exclude the NSFW category!
+      if (ALLOW_NSFW && id === 43772) continue;
+      return true;
+    }
   }
   return false;
 }

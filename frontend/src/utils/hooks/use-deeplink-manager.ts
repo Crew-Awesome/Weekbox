@@ -31,20 +31,21 @@ export function useDeeplinkManager() {
 
     const bootSingleInstanceLock = async () => {
       try {
-        const res = await fetch('http://127.0.0.1:45555/deeplink', {
-          method: 'POST',
-          body: JSON.stringify(window.NL_ARGS || []),
-        });
-        if (res.ok) {
-          // Somos la SEGUNDA instancia. Enviamos los datos con exito.
+        const isPrimary = await Core.platform.call("deeplink.isPrimary" as any);
+        if (isPrimary === false) {
+          // Somos la SEGUNDA instancia. Enviamos los datos a la principal.
+          await fetch('http://127.0.0.1:45555/deeplink', {
+            method: 'POST',
+            body: JSON.stringify(window.NL_ARGS || []),
+          }).catch(() => {});
+          
           // Salimos silenciosamente y matamos el Node.js backend.
           Core.platform.call("system.suicide" as any).catch(() => {});
           window.Neutralino?.app?.exit();
           return;
         }
       } catch (e) {
-        // Ignoramos ERR_CONNECTION_REFUSED. Ocurre en la primera instancia 
-        // porque el servidor 45555 aún no está listo.
+        // Ignoramos errores. Asumimos que somos la principal si algo falla.
       }
 
       checkDeeplink(undefined, true);

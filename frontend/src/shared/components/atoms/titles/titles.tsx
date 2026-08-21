@@ -1,6 +1,7 @@
 interface TitlesProps {
   title: string;
   align?: "left" | "center" | "right";
+  children?: React.ReactNode;
 }
 
 /**
@@ -8,10 +9,10 @@ interface TitlesProps {
  * Displays a styled title with diagonal accents and horizontal lines.
  * @param {TitlesProps} props - Component properties.
  */
-export default function Titles({ title, align = "left" }: TitlesProps) {
+export default function Titles({ title, align = "left", children }: TitlesProps) {
   const textNode = (
-    <div className="flex flex-col justify-end border-b-[3px] border-white px-3 shrink-0">
-      <h1 className="text-white font-bold text-2xl md:text-3xl whitespace-nowrap pb-1 leading-none">
+    <div className="flex items-center border-b-[3px] border-white px-3 shrink-0">
+      <h1 className="text-white font-bold text-2xl md:text-3xl whitespace-nowrap leading-none pb-1">
         {title}
       </h1>
     </div>
@@ -58,7 +59,9 @@ export default function Titles({ title, align = "left" }: TitlesProps) {
   );
 
   const lineTop = (
-    <div className="flex-1 border-t-[3px] border-white min-w-[20px]"></div>
+    <div className="flex-1 border-t-[3px] border-white min-w-[20px] pt-3 pr-2 flex justify-end">
+      {children}
+    </div>
   );
 
   return (

@@ -55,6 +55,14 @@ export interface CardProps {
    * Useful for infinite scrolling lists. Defaults to false for static cards.
    */
   lazyLoad?: boolean;
+  /**
+   * If true, renders the card in a skeleton loading state.
+   */
+  isLoading?: boolean;
+  /**
+   * If true, displays a red NSFW pill next to the title.
+   */
+  isNsfw?: boolean;
 }
 
 /**
@@ -73,6 +81,8 @@ export const Card: React.FC<CardProps> = ({
   className = "",
   extractColor = false,
   lazyLoad = false,
+  isLoading = false,
+  isNsfw = false,
 }) => {
   const thumbnailRef = useRef<HTMLDivElement>(null);
   const hoverBgRef = useRef<HTMLDivElement>(null);
@@ -81,6 +91,8 @@ export const Card: React.FC<CardProps> = ({
   const notchSvg2Ref = useRef<SVGSVGElement>(null);
   const [hoverColor, setHoverColor] = useState<string | null>(null);
   const [isHovered, setIsHovered] = useState(false);
+  const [thumbnailLoaded, setThumbnailLoaded] = useState(false);
+  const [iconLoaded, setIconLoaded] = useState(false);
 
   const [isInView, setIsInView] = useState(!lazyLoad);
   const cardRootRef = useRef<HTMLDivElement>(null);
@@ -296,19 +308,25 @@ export const Card: React.FC<CardProps> = ({
                   : "sm:rounded-t-[1rem]"
               }`}
             >
-              <img
-                className="w-full h-full object-cover block"
-                src={thumbnail}
-                alt={title}
-                loading="lazy"
-                draggable={false}
-                style={{
-                  WebkitMaskImage:
-                    "linear-gradient(to bottom, black 50%, transparent 100%)",
-                  maskImage:
-                    "linear-gradient(to bottom, black 50%, transparent 100%)",
-                }}
-              />
+              {(!thumbnailLoaded || isLoading) && (
+                <div className="absolute inset-0 bg-[var(--wb-surface-variant)] animate-pulse" />
+              )}
+              {!isLoading && (
+                <img
+                  className={`w-full h-full object-cover block transition-opacity duration-300 ${thumbnailLoaded ? "opacity-100" : "opacity-0"}`}
+                  src={thumbnail}
+                  alt={title}
+                  loading="lazy"
+                  draggable={false}
+                  onLoad={() => setThumbnailLoaded(true)}
+                  style={{
+                    WebkitMaskImage:
+                      "linear-gradient(to bottom, black 50%, transparent 100%)",
+                    maskImage:
+                      "linear-gradient(to bottom, black 50%, transparent 100%)",
+                  }}
+                />
+              )}
             </div>
 
             {/* Mask Container (Opaque with animated overlay) */}
@@ -317,18 +335,26 @@ export const Card: React.FC<CardProps> = ({
                 {/* Overlay that receives the hover color animation */}
                 <div
                   ref={notchOverlayRef}
-                  className="absolute inset-0 pointer-events-none opacity-0"
+                  className="absolute inset-0 pointer-events-none opacity-0 rounded-tl-none rounded-br-[8px]"
                 />
 
                 <div className="relative z-10 w-full h-full flex items-center justify-center p-2">
                   {icon && (
-                    <img
-                      className="object-contain w-full h-full block"
-                      src={icon}
-                      alt="icon"
-                      loading="lazy"
-                      draggable={false}
-                    />
+                    <>
+                      {(!iconLoaded || isLoading) && (
+                        <div className="absolute inset-2 rounded-full bg-[var(--wb-surface-variant)] animate-pulse" />
+                      )}
+                      {!isLoading && (
+                        <img
+                          className={`object-contain w-full h-full block transition-opacity duration-300 ${iconLoaded ? "opacity-100" : "opacity-0"}`}
+                          src={icon}
+                          alt="icon"
+                          loading="lazy"
+                          draggable={false}
+                          onLoad={() => setIconLoaded(true)}
+                        />
+                      )}
+                    </>
                   )}
                 </div>
 
@@ -376,19 +402,35 @@ export const Card: React.FC<CardProps> = ({
       )}
 
       <div className="mt-4 px-0 sm:px-0 flex flex-col gap-1">
-        {/* Title: Uses line-clamp-2 to allow up to 2 lines without a fixed height, letting the description slide up. */}
-        <strong className="text-xl font-bold leading-snug line-clamp-2 select-text">
-          {title}
-        </strong>
-        {/* Description: Sits directly under the title. */}
-        {description && (
-          <h5 className="text-[var(--wb-on-surface-variant)] text-sm truncate">
-            {description}
-          </h5>
+        {isLoading ? (
+          <>
+            <div className="h-6 bg-[var(--wb-surface-variant)] rounded w-3/4 animate-pulse"></div>
+            {description !== undefined && (
+              <div className="h-4 bg-[var(--wb-surface-variant)] rounded w-1/2 mt-1 animate-pulse"></div>
+            )}
+          </>
+        ) : (
+          <>
+            <div className="flex items-start justify-between gap-2">
+              <strong className="text-xl font-bold leading-snug line-clamp-2 select-text">
+                {title}
+              </strong>
+              {isNsfw && (
+                <span className="shrink-0 text-[10px] bg-red-500/20 text-red-500 px-2 py-0.5 rounded-full font-bold tracking-wider mt-1">
+                  NSFW
+                </span>
+              )}
+            </div>
+            {description && (
+              <h5 className="text-[var(--wb-on-surface-variant)] text-sm truncate">
+                {description}
+              </h5>
+            )}
+          </>
         )}
       </div>
 
-      {children && <div className="mt-2">{children}</div>}
+      {!isLoading && children && <div className="mt-2">{children}</div>}
     </div>
   );
 };

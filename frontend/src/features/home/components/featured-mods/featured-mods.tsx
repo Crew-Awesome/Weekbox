@@ -2,7 +2,7 @@ import React from "react";
 import Shared from "@shared";
 import type { GameBananaMod } from "@core";
 import { ChevronLeft, ChevronRight, AlertTriangle } from "lucide-react";
-import { useFeaturedMods } from "./useFeaturedMods";
+import { useFeaturedMods } from "./use-featured-mods";
 
 interface FeaturedModsProps {
   onCardClick?: (mod: GameBananaMod) => void;

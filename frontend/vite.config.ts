@@ -3,6 +3,7 @@ import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
 import fs from "fs";
 import path from "path";
+import { sentryVitePlugin } from "@sentry/vite-plugin";
 
 /**
  * Plugin para inyectar los tokens de Neutralino en desarrollo,
@@ -13,7 +14,7 @@ const neutralinoAuthPlugin = () => {
     name: "neutralino-auth",
     transformIndexHtml(html: string) {
       try {
-        const authPath = path.resolve(__dirname, "../.tmp/auth_info.json");
+        const authPath = path.resolve(import.meta.dirname, "../.tmp/auth_info.json");
         if (fs.existsSync(authPath)) {
           const auth = JSON.parse(fs.readFileSync(authPath, "utf8"));
           return html.replace(
@@ -38,7 +39,7 @@ const cleanAssetsPlugin = () => {
     name: "clean-assets",
     enforce: "pre" as const,
     buildStart() {
-      const assetsPath = path.resolve(__dirname, "../app/assets");
+      const assetsPath = path.resolve(import.meta.dirname, "../app/assets");
       if (fs.existsSync(assetsPath)) {
         const files = fs.readdirSync(assetsPath);
         for (const file of files) {
@@ -63,20 +64,30 @@ const cleanAssetsPlugin = () => {
  * @see https://vite.dev/config/
  */
 export default defineConfig({
+  build: {
+    sourcemap: true, // Sentry necesita sourcemaps
+    outDir: "../app",
+    emptyOutDir: false,
+  },
   plugins: [
     react(),
     tailwindcss(),
     neutralinoAuthPlugin(),
     cleanAssetsPlugin(),
+    sentryVitePlugin({
+      org: process.env.SENTRY_ORG || "your-org",
+      project: process.env.SENTRY_PROJECT || "your-project",
+      authToken: process.env.SENTRY_AUTH_TOKEN
+    }),
   ],
   resolve: {
     alias: {
-      "@shared": path.resolve(__dirname, "./src/shared/shared.tsx"),
-      "@features": path.resolve(__dirname, "./src/features/index.ts"),
-      "@utils": path.resolve(__dirname, "./src/utils/utils.tsx"),
-      "@core": path.resolve(__dirname, "./src/core/index.ts"),
-      "@fs": path.resolve(__dirname, "./src/core/backend/fs/index.ts"),
-      "@http": path.resolve(__dirname, "./src/core/backend/http/index.ts"),
+      "@shared": path.resolve(import.meta.dirname, "./src/shared/shared.tsx"),
+      "@features": path.resolve(import.meta.dirname, "./src/features/index.ts"),
+      "@utils": path.resolve(import.meta.dirname, "./src/utils/utils.tsx"),
+      "@core": path.resolve(import.meta.dirname, "./src/core/index.ts"),
+      "@fs": path.resolve(import.meta.dirname, "./src/core/backend/fs/index.ts"),
+      "@http": path.resolve(import.meta.dirname, "./src/core/backend/http/index.ts"),
     },
   },
   server: {
@@ -95,3 +106,4 @@ export default defineConfig({
     emptyOutDir: false,
   },
 });
+

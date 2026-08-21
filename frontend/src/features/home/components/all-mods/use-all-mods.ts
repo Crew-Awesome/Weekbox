@@ -8,13 +8,20 @@ import Utils from "@utils";
  * Merges regular Discovery mods with Featured "Community Picks" injected mathematically.
  * @returns {object} State and refs required for the infinite scrolling grid.
  */
-export function useAllMods() {
+export function useAllMods(filter: string = "popular", engineId: string = "all") {
   const [mods, setMods] = useState<GameBananaMod[]>([]);
   const [featuredPool, setFeaturedPool] = useState<GameBananaMod[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
+
+  // Cuando cambian los filtros, reseteamos la paginación y limpiamos la lista
+  useEffect(() => {
+    setMods([]);
+    setPage(1);
+    setHasMore(true);
+  }, [filter, engineId]);
 
   const observer = useRef<IntersectionObserver | null>(null);
 
@@ -47,12 +54,15 @@ export function useAllMods() {
     }
   });
 
-  // Pre-load the pool of Community Picks from Ripe
+  // Pre-load the pool of Community Picks based on current filters
   useEffect(() => {
     Core.services.gamebanana
-      .getMods("ripe", 1, 60)
+      .getMods(filter as any, 1, 60, engineId === "all" ? null : engineId)
       .then((ripeMods) => {
-        if (!ripeMods || ripeMods.length === 0) return;
+        if (!ripeMods || ripeMods.length === 0) {
+          setFeaturedPool([]);
+          return;
+        }
 
         const shuffled = [...ripeMods].sort(() => 0.5 - Math.random());
         const pool = shuffled.slice(0, 50).map((mod) => ({
@@ -64,7 +74,7 @@ export function useAllMods() {
         setFeaturedPool(pool);
       })
       .catch(console.error);
-  }, [retryTrigger]);
+  }, [retryTrigger, filter, engineId]);
 
   useEffect(() => {
     let isMounted = true;
@@ -75,9 +85,10 @@ export function useAllMods() {
         else setLoadingMore(true);
 
         const data = await Core.services.gamebanana.getMods(
-          "popular",
+          filter as any,
           page,
           45,
+          engineId === "all" ? null : engineId
         );
 
         if (isMounted) {
@@ -102,7 +113,7 @@ export function useAllMods() {
     return () => {
       isMounted = false;
     };
-  }, [page, retryTrigger]);
+  }, [page, retryTrigger, filter, engineId]);
 
   // Mathematically inject Community Picks between the rows infinitely
   const combinedMods = useMemo(() => {

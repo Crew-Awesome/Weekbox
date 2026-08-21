@@ -3,6 +3,7 @@ import http from "http";
 let deeplinkServer = null;
 
 export const deeplinkApi = {
+  isPrimary: true,
   startServer: (extContext) => {
     if (deeplinkServer) return;
 
@@ -36,6 +37,7 @@ export const deeplinkApi = {
     deeplinkServer.on('error', (e) => {
       // Ignoramos el error, la instancia secundaria se suicidará desde el frontend
       if (e.code === 'EADDRINUSE') {
+        deeplinkApi.isPrimary = false;
         console.log("Deeplink server port in use. Secondary instance will be killed by frontend.");
       }
     });

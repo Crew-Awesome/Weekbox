@@ -54,6 +54,12 @@ export const ENGINE_CATEGORIES: Record<
 export const EXCLUDED_CATEGORIES = new Set([43772, 3833, 44037]);
 
 /**
+ * @description Master toggle to allow or hide NSFW / Adult content.
+ * Currently set to true for testing, can be hooked to user settings later.
+ */
+export const ALLOW_NSFW = true;
+
+/**
  * @description The base URL for GameBanana API v11 requests.
  */
 export const GB_BASE_URL = "https://gamebanana.com/apiv11";

@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from "react";
 import type { ModItem } from "./types";
-import { FeaturedMods } from "./components/FeaturedMods";
-import { AllMods } from "./components/AllMods";
-import { ModDetailsModal } from "./components/ModDetailsModal";
-import { HomeSearchbar } from "./components/HomeSearchbar";
+import { FeaturedMods } from "./components/featured-mods";
+import { AllMods } from "./components/all-mods";
+import { ModDetailsModal } from "./components/mod-details-modal";
+import { HomeSearchbar } from "./components/home-searchbar";
 import { useAppStore } from "../../store";
 
 export const Home: React.FC = () => {

@@ -1,8 +1,9 @@
 import React from "react";
 import Shared from "@shared";
-import { Eye, Download, Clock, User } from "lucide-react";
+import { Eye, Download, Clock, User, Star, Flame, RefreshCcw, Sparkles } from "lucide-react";
 import type { ModItem } from "../../types";
-import { useAllMods } from "./useAllMods";
+import { useAllMods } from "./use-all-mods";
+import { ENGINE_CATEGORIES } from "../../../../core/services/gamebanana/constants";
 
 interface AllModsProps {
   onCardClick: (card: ModItem) => void;
@@ -15,15 +16,93 @@ interface AllModsProps {
  * @param {AllModsProps} props - The component props.
  */
 export const AllMods: React.FC<AllModsProps> = ({ onCardClick }) => {
+  const [sortFilter, setSortFilter] = React.useState("popular");
+  const [categoryFilter, setCategoryFilter] = React.useState("all");
+
   const { mods, loading, loadingMore, hasMore, page, lastElementRef } =
-    useAllMods();
+    useAllMods(sortFilter, categoryFilter);
+
+  const filterControls = (
+    <div className="flex flex-wrap justify-end items-center gap-3">
+      <Shared.molecules.PillDropdown
+        label="Sort by"
+        value={sortFilter}
+        onChange={setSortFilter}
+        options={[
+          { label: "Popular", value: "popular", icon: <Star size={16} /> },
+          { label: "Newest", value: "new", icon: <Sparkles size={16} /> },
+          { label: "Most Ripped", value: "ripe", icon: <Flame size={16} /> },
+          { label: "Recently Updated", value: "updated", icon: <RefreshCcw size={16} /> },
+        ]}
+      />
+      <Shared.organisms.EngineFilterPill
+        value={categoryFilter}
+        onChange={setCategoryFilter}
+      />
+    </div>
+  );
+
+  const sortLabels: Record<string, string> = {
+    popular: "Popular",
+    new: "Newest",
+    ripe: "Most Ripped",
+    updated: "Recently Updated",
+  };
+
+  const dynamicTitle = React.useMemo(() => {
+    const sLabel = sortLabels[sortFilter] || "Discovery";
+    let cLabel = "All Engines";
+    if (categoryFilter !== "all") {
+      // Find the name by matching the string ID
+      const engineKey = Object.keys(ENGINE_CATEGORIES).find(
+        (key) => ENGINE_CATEGORIES[Number(key)].id === categoryFilter
+      );
+      if (engineKey) {
+        cLabel = ENGINE_CATEGORIES[Number(engineKey)].name;
+      }
+    }
+    return `${sLabel} - ${cLabel}`;
+  }, [sortFilter, categoryFilter]);
 
   if (loading && page === 1) {
     return (
       <>
-        <Shared.atoms.Titles title="Discovery (Popular)" />
-        <div className="flex justify-center items-center h-64">
-          <span className="loader text-xl">Loading...</span>
+        <Shared.atoms.Titles title={dynamicTitle}>
+          {filterControls}
+        </Shared.atoms.Titles>
+        <div
+          className="grid gap-4 sm:gap-6 -mx-8 sm:mx-0 h-auto w-auto grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4"
+          style={{ gridAutoFlow: "row dense" }}
+        >
+          {Array.from({ length: 16 }).map((_, i) => {
+            const isBanner = i === 3 || i === 11;
+            if (isBanner) {
+              return (
+                <div key={`skel-${i}`} className="col-span-1 sm:col-span-2 lg:col-span-3 2xl:col-span-4 h-full">
+                  <Shared.molecules.Banner
+                    isLoading
+                    title="Loading"
+                    thumbnail="skeleton"
+                    icon="skeleton"
+                    pillTitle="Loading"
+                    author="Loading"
+                    viewsCount="0"
+                  />
+                </div>
+              );
+            }
+            return (
+              <div key={`skel-${i}`} className="h-full">
+                <Shared.molecules.Card
+                  isLoading
+                  title="Loading"
+                  description="Loading description"
+                  thumbnail="skeleton"
+                  icon="skeleton"
+                />
+              </div>
+            );
+          })}
         </div>
       </>
     );
@@ -31,7 +110,9 @@ export const AllMods: React.FC<AllModsProps> = ({ onCardClick }) => {
 
   return (
     <>
-      <Shared.atoms.Titles title="Discovery (Popular)" />
+      <Shared.atoms.Titles title={dynamicTitle}>
+        {filterControls}
+      </Shared.atoms.Titles>
       <div
         className="grid gap-4 sm:gap-6 -mx-8 sm:mx-0 h-auto w-auto grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4"
         style={{ gridAutoFlow: "row dense" }}
@@ -70,6 +151,7 @@ export const AllMods: React.FC<AllModsProps> = ({ onCardClick }) => {
                     }).format(item.views)}
                     thumbnail={item.thumbnail}
                     icon={item.engineIcon}
+                    isNsfw={item.isNsfw}
                     onClick={() => onCardClick(modItem)}
                     className="mb-8 mt-4 shadow-2xl rounded-none sm:rounded-none"
                   />
@@ -80,6 +162,7 @@ export const AllMods: React.FC<AllModsProps> = ({ onCardClick }) => {
                   description={item.description}
                   thumbnail={item.thumbnail}
                   icon={item.engineIcon}
+                  isNsfw={item.isNsfw}
                   clickableArea="whole-card"
                   onClick={() => onCardClick(modItem)}
                   extractColor={true}

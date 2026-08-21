@@ -1,7 +1,8 @@
 import { useViews } from "./hooks/use-views";
 import { useModals } from "./hooks/use-modals";
-import { useNetwork, useNetworkRecovery } from "./hooks/useNetwork";
-import { useDeeplinkManager } from "./hooks/useDeeplinkManager";
+import { useNetwork, useNetworkRecovery } from "./hooks/use-network";
+import { useDeeplinkManager } from "./hooks/use-deeplink-manager";
+import { extractColor } from "./extract-color";
 
 import { sanitizeHtml, htmlToPlainText } from "./sanitize";
 
@@ -21,6 +22,9 @@ const Utils = {
     sanitizeHtml,
     htmlToPlainText,
   },
+  colors: {
+    extractColor,
+  }
 };
 
 export default Utils;

@@ -3,15 +3,12 @@ import { httpApi as APINodeHttp } from "./node/http/http.mjs";
 import { deeplinkApi as APINodeDeeplink } from "./node/deeplink/deeplink.mjs";
 import { winApi as APINodeWindow } from "./node/win/win.mjs";
 
-let extContext = null;
-let lastPingTime = Date.now();
+import { zombieManager } from "./node/zombie-manager.mjs";
 
-setInterval(() => {
-  if (Date.now() - lastPingTime > 10000) {
-    console.log("No heartbeat received from frontend. Suicide.");
-    process.exit(0);
-  }
-}, 5000);
+let extContext = null;
+
+// Start the zombie manager
+zombieManager.start();
 
 const setExtensionContext = (ext) => {
   extContext = ext;
@@ -31,13 +28,14 @@ const callApi = async (namespace, method, params = {}) => {
 
 const operations = {
   "system.ping": () => {
-    lastPingTime = Date.now();
+    zombieManager.ping();
     return { ok: true };
   },
   "system.suicide": () => {
     console.log("Suicide signal received. Exiting Node.js.");
     process.exit(0);
   },
+  "deeplink.isPrimary": () => APINodeDeeplink.isPrimary,
   "fs.readDirectory": async ({ path }) => APINodeFileSystem.readDirectory(path),
   "fs.readFile": async ({ path }) => APINodeFileSystem.readFile(path),
   "fs.readBinaryFile": async ({ path }) => APINodeFileSystem.readBinaryFile(path),
