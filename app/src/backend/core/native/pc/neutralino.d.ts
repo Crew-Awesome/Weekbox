@@ -277,7 +277,7 @@ export interface NetworkInterfaceAddress {
 	family: NetworkFamily;
 }
 export interface NetworkInterfaceInfo {
-	[key: string]: NetworkInterfaceAddress[];
+	[key: string]: NetworkInterfaceAddress;
 }
 declare function getMemoryInfo(): Promise<MemoryInfo>;
 declare function getArch(): Promise<string>;
