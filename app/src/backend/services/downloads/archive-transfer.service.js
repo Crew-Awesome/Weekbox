@@ -593,10 +593,10 @@ async function find7zBinary() {
   const isWindows = window.NL_OS === "Windows";
   const isDarwin = window.NL_OS === "Darwin";
   const binNames = isWindows
-    ? ["7za.exe", "7z.exe"]
+    ? ["7z.exe", "7za.exe"]
     : isDarwin
-      ? ["7zz-mac", "7za-mac", "7zz"]
-      : ["7zz-linux", "7za-linux", "7zzs", "7zz"];
+      ? ["7zz-mac", "7zz", "7za-mac"]
+      : ["7zz-linux", "7zzs", "7zz", "7za-linux"];
 
   const candidateDirs = new Set();
   if (window.NL_PATH) {
