@@ -22,8 +22,10 @@ function encodePowerShell(script: string) {
 }
 
 /**
- * Registra o desregistra el protocolo custom `weekbox://` en Windows, Linux y macOS.
- * Esto permite abrir la aplicacin al hacer clic en enlaces web como `weekbox://mod/1234`.
+ * @description Registers or unregisters the custom `weekbox://` protocol on Windows, Linux, and macOS.
+ * This allows opening the application by clicking web links like `weekbox://mod/1234`.
+ * @param {boolean} [enabled=true] - Whether to register (true) or unregister (false) the protocol.
+ * @returns {Promise<boolean>} True if successful, false otherwise.
  */
 export async function syncProtocolRegistration(enabled: boolean = true): Promise<boolean> {
   if (platform.platformName !== "desktop" || !window.NL_OS) {
@@ -41,14 +43,14 @@ export async function syncProtocolRegistration(enabled: boolean = true): Promise
   if (osName === "Windows") {
     return await syncWindowsProtocol(executablePath, enabled);
   } else if (osName === "Linux") {
-    /** Delegado a bash para entornos Linux nativos y Crostini (Chromebooks) */
+    /** Delegated to bash for native Linux environments and Crostini (Chromebooks) */
     return await syncLinuxProtocol(executablePath, enabled);
   } else if (osName === "Darwin") {
     /** 
-     * MacOS require ser configurado desde el Info.plist durante el empaquetado (.app).
-     * Si se usa un bundler oficial, se debe inyectar CFBundleURLTypes all.
+     * MacOS requires configuration from Info.plist during packaging (.app).
+     * If using an official bundler, CFBundleURLTypes must be injected there.
      */
-    console.info("En macOS, el protocolo weekbox:// debe ser configurado en el Info.plist (CFBundleURLTypes).");
+    console.info("On macOS, the weekbox:// protocol must be configured in Info.plist (CFBundleURLTypes).");
     return true;
   }
 
@@ -59,8 +61,6 @@ async function syncWindowsProtocol(executablePath: string, enabled: boolean): Pr
   const key = quotePowerShell(PROTOCOL_KEY);
   const executable = quotePowerShell(executablePath);
   
-  // Extraemos el directorio del ejecutable usando PowerShell para pasarlo como --path
-  // Esto arregla el bug donde Neutralino ignora singleInstance si se lanza desde Chrome.
   const script = enabled
     ? [
         `$key = ${key}`,
@@ -134,12 +134,14 @@ update-desktop-database ~/.local/share/applications || true
 }
 
 /**
- * Extrae la informacin del mod desde un array de argumentos (como NL_ARGS o newInstance).
+ * @description Extracts the mod information from an array of arguments (like NL_ARGS or newInstance).
+ * @param {string[]} args - The command line arguments to parse.
+ * @returns {{ type: string; id: number } | null} The parsed mod data or null if invalid.
  */
 export function parseDeeplinkArgs(args: string[]): { type: string; id: number } | null {
   if (!args || !Array.isArray(args)) return null;
   
-  /** Localiza el primer argumento que inicie con la expresin del esquema local */
+  /** Locate the first argument that begins with the local scheme expression */
   const linkArg = args.find(arg => typeof arg === 'string' && arg.toLowerCase().startsWith("weekbox://"));
   if (!linkArg) return null;
 
@@ -164,8 +166,9 @@ export function parseDeeplinkArgs(args: string[]): { type: string; id: number } 
 }
 
 /**
- * Lee los argumentos de inicio (NL_ARGS) y devuelve la informacin del mod si
- * la aplicacin fue iniciada va un enlace deeplink (`weekbox://mod/1234`).
+ * @description Reads the startup arguments (NL_ARGS) and returns the mod information
+ * if the application was started via a deeplink (`weekbox://mod/1234`).
+ * @returns {{ type: string; id: number } | null} The parsed mod data or null.
  */
 export function parseStartupDeeplink(): { type: string; id: number } | null {
   return parseDeeplinkArgs(window.NL_ARGS || []);

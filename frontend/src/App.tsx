@@ -1,10 +1,8 @@
 import Features from "@features";
 import Core from "@core";
 import type { LoadingTask } from "@features";
-//import DiscordRpc from './utils/discordrpc';
 
 function App() {
-  //DiscordRpc("hola", "Testeando funcion");
   const initTasks: LoadingTask[] = [
     {
       name: "Comprobando entorno de ejecución...",
@@ -19,8 +17,6 @@ function App() {
     {
       name: "Obtaining Mods...",
       action: async () => {
-        // Pre-carga los mods populares para guardarlos en el caché de la API
-        // Así cuando la UI inicie, los mostrará instantáneamente.
         await Core.services.gamebanana.getMods("popular", 1, 15);
       },
     },

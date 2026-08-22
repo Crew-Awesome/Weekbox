@@ -4,6 +4,7 @@ import { Eye, Download, User, Clock } from "lucide-react";
 import type { ModItem } from "../../types";
 import { useAllMods } from "./use-all-mods";
 import { ENGINE_CATEGORIES } from "../../../../core/services/gamebanana/constants";
+import { SearchEasterEgg } from "../search-easter-egg/search-easter-egg";
 
 interface AllModsProps {
   onCardClick: (card: ModItem) => void;
@@ -230,6 +231,7 @@ export const AllMods: React.FC<AllModsProps> = ({
           </p>
         </div>
       )}
+      <SearchEasterEgg mods={mods} searchQuery={searchQuery} />
     </>
   );
 };
