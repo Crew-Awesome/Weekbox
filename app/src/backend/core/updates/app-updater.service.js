@@ -42,6 +42,8 @@ function createUnixApplyScript({
   binaryName,
   scriptPath,
   targetExe,
+  nlPort,
+  nlToken,
 }) {
   const target = quoteShellString(appPath);
   const archive = quoteShellString(archivePath);
@@ -58,6 +60,8 @@ archive=${archive}
 update_directory=$(dirname "$archive")
 script_path=${updaterScript}
 expected_hash=${quoteShellString(expectedDigest)}
+nl_port=${Number(nlPort) || 0}
+nl_token=${quoteShellString(String(nlToken || ""))}
 while kill -0 ${Number(window.NL_PID)} 2>/dev/null; do sleep 1; done
 if command -v sha256sum >/dev/null 2>&1; then actual_hash=$(sha256sum "$archive" | awk '{print $1}'); else actual_hash=$(shasum -a 256 "$archive" | awk '{print $1}'); fi
 [ "$actual_hash" = "$expected_hash" ] || { echo 'Downloaded update failed its integrity check.' >&2; exit 1; }
@@ -102,7 +106,7 @@ else
 fi
 launch_attempts=0
 while :; do
-  "$target_binary" >/dev/null 2>&1 &
+  "$target_binary" --nl-port="$nl_port" --nl-token="$nl_token" --path="$target" >/dev/null 2>&1 &
   launch_pid=$!
   sleep 1
   if kill -0 "$launch_pid" 2>/dev/null; then
@@ -281,6 +285,8 @@ appUpdater = {
       binaryName: platform.binary,
       scriptPath,
       targetExe: window.NL_ARGS?.[0] || null,
+      nlPort: window.NL_PORT,
+      nlToken: window.NL_TOKEN,
     });
     await ensureUnixExecutable(window.NL_ARGS?.[0]);
     await Neutralino.filesystem.writeFile(scriptPath, applyScript);
@@ -342,9 +348,10 @@ appUpdater = {
           "WeekBox could not restart because the application path is missing.",
         );
       if (window.NL_OS === "Darwin" && exe.includes(".app/Contents/MacOS/")) {
-        const appBundle = exe.substring(0, exe.indexOf(".app/") + 5);
-        await Neutralino.os.execCommand(`open "${appBundle}"`, {
+        const cmd = `"${exe}" --nl-port=${window.NL_PORT} --nl-token=${window.NL_TOKEN} --path=${window.NL_PATH}`;
+        await Neutralino.os.execCommand(cmd, {
           background: true,
+          cwd: window.NL_PATH,
         });
       } else {
         const cmd = `"${exe}" --nl-port=${window.NL_PORT} --nl-token=${window.NL_TOKEN} --path=${window.NL_PATH}`;
@@ -418,12 +425,16 @@ appUpdater = {
     const escapedZipPath = quotePowerShellLiteral(zipPath);
     const escapedStagingPath = quotePowerShellLiteral(staging);
     const escapedTargetExe = quotePowerShellLiteral(targetExe);
+    const escapedNlPort = quotePowerShellLiteral(String(window.NL_PORT || ""));
+    const escapedNlToken = quotePowerShellLiteral(String(window.NL_TOKEN || ""));
     const script = [
       "$ErrorActionPreference = 'Stop'",
       `$appPath = '${escapedAppPath}'`,
       `$zip = '${escapedZipPath}'`,
       `$staging = '${escapedStagingPath}'`,
       `$targetExe = '${escapedTargetExe}'`,
+      `$nlPort = '${escapedNlPort}'`,
+      `$nlToken = '${escapedNlToken}'`,
       `$pid_app = ${pid}`,
       "while (Get-Process -Id $pid_app -ErrorAction SilentlyContinue) { Start-Sleep -Seconds 1 }",
       "Expand-Archive -Path $zip -DestinationPath $staging -Force",
@@ -442,7 +453,8 @@ appUpdater = {
       "}",
       "Remove-Item $zip -Force -ErrorAction SilentlyContinue",
       "Remove-Item $staging -Recurse -Force -ErrorAction SilentlyContinue",
-      `Start-Process "$appPath\\$targetExe"`,
+      `$launchArgs = @('--nl-port=' + $nlPort, '--nl-token=' + $nlToken, '--path=' + $appPath)`,
+      `Start-Process -FilePath "$appPath\\$targetExe" -ArgumentList $launchArgs`,
     ].join("\r\n");
     await Neutralino.filesystem.writeFile(scriptPath, script);
     onProgress("Restarting WeekBox to apply update\u2026");
