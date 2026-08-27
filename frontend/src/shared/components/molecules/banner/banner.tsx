@@ -7,10 +7,11 @@ export interface BannerProps {
    * The background image/thumbnail URL (placed on the left, fading to right).
    */
   thumbnail: string;
-  /**
-   * Optional URL for the icon image. Displayed in the top-left corner.
-   */
   icon?: string;
+  /**
+   * Optional tooltip text for the icon.
+   */
+  iconTooltip?: string;
   /**
    * Function to execute when the banner is clicked.
    */
@@ -51,6 +52,7 @@ export interface BannerProps {
 export const Banner: React.FC<BannerProps> = ({
   thumbnail,
   icon,
+  iconTooltip,
   onClick,
   className = "",
   extractColor = true,
@@ -71,6 +73,7 @@ export const Banner: React.FC<BannerProps> = ({
   const [hoverColor, setHoverColor] = useState<string | null>(null);
   const [thumbnailLoaded, setThumbnailLoaded] = useState(false);
   const [iconLoaded, setIconLoaded] = useState(false);
+  const [showTooltip, setShowTooltip] = useState(false);
 
   useEffect(() => {
     let isMounted = true;
@@ -188,7 +191,7 @@ export const Banner: React.FC<BannerProps> = ({
 
   return (
     <div
-      className={`relative isolate flex shadow-2xs bg-transparent p-0 sm:p-3 select-none cursor-pointer w-full aspect-[2/1] sm:aspect-[21/9] lg:aspect-[21/8] xl:aspect-[3/1] sm:rounded-[1rem] sm:rounded-tl-none ${className}`}
+      className={`relative isolate flex shadow-2xs bg-transparent p-0 sm:p-3 select-none cursor-pointer w-full aspect-[2/1] sm:aspect-[21/9] lg:aspect-[21/8] xl:aspect-[3/1] sm:rounded-[1rem] sm:rounded-tl-none hover:z-50 ${className}`}
       style={{ fontFamily: "Manrope, sans-serif", fontWeight: 500 }}
       onClick={onClick}
       onMouseEnter={handleMouseEnter}
@@ -223,81 +226,102 @@ export const Banner: React.FC<BannerProps> = ({
             />
           )}
         </div>
-
-        {/* Mask Container (Icon top-left notch) */}
-        {shouldRenderIcon && (
-          <div className="absolute left-0 top-0 w-16 sm:w-20 aspect-square rounded-br-[8px] bg-[var(--wb-bg)] z-10 pointer-events-none">
-            <div
-              ref={notchOverlayRef}
-              className="absolute inset-0 pointer-events-none opacity-0 rounded-tl-none rounded-br-[8px]"
-            />
-            <div className="relative z-10 w-full h-full flex items-center justify-center p-2">
-              {icon && (
-                <>
-                  {(!iconLoaded || isLoading) && (
-                    <div className="absolute inset-2 rounded-full bg-[var(--wb-surface-variant)] animate-pulse" />
-                  )}
-                  {!isLoading && (
-                    <img
-                      className={`object-contain w-full h-full block transition-opacity duration-300 ${iconLoaded ? "opacity-100" : "opacity-0"}`}
-                      src={icon}
-                      alt="icon"
-                      draggable={false}
-                      onLoad={() => setIconLoaded(true)}
-                    />
-                  )}
-                </>
-              )}
-            </div>
-            {/* Notch SVGs */}
-            <svg
-              className="absolute top-0 left-full w-[8px] h-[8px] text-[var(--wb-bg)] pointer-events-none"
-              viewBox="0 0 8 8"
-              fill="none"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <path d="M0 0 H8 A8 8 0 0 0 0 8 V0 Z" fill="currentColor" />
-            </svg>
-            <svg
-              className="absolute top-full left-0 w-[8px] h-[8px] text-[var(--wb-bg)] pointer-events-none"
-              viewBox="0 0 8 8"
-              fill="none"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <path d="M0 0 H8 A8 8 0 0 0 0 8 V0 Z" fill="currentColor" />
-            </svg>
-            {/* Hover Notch SVGs */}
-            <svg
-              ref={notchSvg1Ref}
-              className="absolute top-0 left-full w-[8px] h-[8px] pointer-events-none opacity-0"
-              viewBox="0 0 8 8"
-              fill="none"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <path d="M0 0 H8 A8 8 0 0 0 0 8 V0 Z" fill="currentColor" />
-            </svg>
-            <svg
-              ref={notchSvg2Ref}
-              className="absolute top-full left-0 w-[8px] h-[8px] pointer-events-none opacity-0"
-              viewBox="0 0 8 8"
-              fill="none"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <path d="M0 0 H8 A8 8 0 0 0 0 8 V0 Z" fill="currentColor" />
-            </svg>
-          </div>
-        )}
       </div>
+
+      {/* Mask Container (Icon top-left notch) */}
+      {shouldRenderIcon && (
+        <div className="absolute left-0 top-0 sm:left-3 sm:top-3 w-16 sm:w-20 aspect-square rounded-br-[8px] bg-[var(--wb-bg)] z-20 pointer-events-auto">
+          <div
+            ref={notchOverlayRef}
+            className="absolute inset-0 pointer-events-none opacity-0 rounded-tl-none rounded-br-[8px]"
+          />
+          <div
+            className="relative z-[15] w-full h-full flex items-center justify-center p-2 pointer-events-auto cursor-pointer"
+            onMouseEnter={() => setShowTooltip(true)}
+            onMouseLeave={() => setShowTooltip(false)}
+          >
+            {icon && (
+              <>
+                {(!iconLoaded || isLoading) && (
+                  <div className="absolute inset-2 rounded-full bg-[var(--wb-surface-variant)] animate-pulse" />
+                )}
+                {!isLoading && (
+                  <img
+                    className={`object-contain w-full h-full block transition-opacity duration-300 ${iconLoaded ? "opacity-100" : "opacity-0"}`}
+                    src={icon}
+                    alt="icon"
+                    draggable={false}
+                    onLoad={() => setIconLoaded(true)}
+                  />
+                )}
+                {/* Custom Tooltip */}
+                {iconTooltip && (
+                  <div
+                    className={`absolute left-1/2 top-full -translate-x-1/2 -mt-2 z-[100] pointer-events-none transition-opacity duration-200 flex flex-col items-center ${showTooltip ? "opacity-100" : "opacity-0"}`}
+                  >
+                    <div className="w-0 h-0 border-l-[10px] border-r-[10px] border-b-[10px] border-transparent border-b-[var(--wb-surface-container-highest)] -mb-[1px]" />
+                    <div className="flex px-4 py-2 bg-[var(--wb-surface-container-highest)] text-[var(--wb-on-surface)] text-sm font-bold rounded whitespace-nowrap shadow-xl">
+                      {iconTooltip}
+                    </div>
+                  </div>
+                )}
+              </>
+            )}
+          </div>
+          {/* Notch SVGs */}
+          <svg
+            className="absolute top-0 left-full w-[8px] h-[8px] text-[var(--wb-bg)] pointer-events-none"
+            viewBox="0 0 8 8"
+            fill="none"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <path d="M0 0 H8 A8 8 0 0 0 0 8 V0 Z" fill="currentColor" />
+          </svg>
+          <svg
+            className="absolute top-full left-0 w-[8px] h-[8px] text-[var(--wb-bg)] pointer-events-none"
+            viewBox="0 0 8 8"
+            fill="none"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <path d="M0 0 H8 A8 8 0 0 0 0 8 V0 Z" fill="currentColor" />
+          </svg>
+          {/* Hover Notch SVGs */}
+          <svg
+            ref={notchSvg1Ref}
+            className="absolute top-0 left-full w-[8px] h-[8px] pointer-events-none opacity-0"
+            viewBox="0 0 8 8"
+            fill="none"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <path d="M0 0 H8 A8 8 0 0 0 0 8 V0 Z" fill="currentColor" />
+          </svg>
+          <svg
+            ref={notchSvg2Ref}
+            className="absolute top-full left-0 w-[8px] h-[8px] pointer-events-none opacity-0"
+            viewBox="0 0 8 8"
+            fill="none"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <path d="M0 0 H8 A8 8 0 0 0 0 8 V0 Z" fill="currentColor" />
+          </svg>
+        </div>
+      )}
 
       {/* Content Area */}
       <div className="relative z-10 w-full flex justify-end pr-4 sm:pr-12 md:pr-24 h-full items-center">
         <div className="flex flex-col items-start gap-3">
           {isLoading ? (
             <>
-              {pillTitle && <div className="h-5 w-24 bg-[var(--wb-surface-variant)] rounded-full animate-pulse" />}
+              {pillTitle && (
+                <div className="h-5 w-24 bg-[var(--wb-surface-variant)] rounded-full animate-pulse" />
+              )}
               <div className="h-10 w-48 sm:w-64 bg-[var(--wb-surface-variant)] rounded animate-pulse" />
-              {author && <div className="h-5 w-32 bg-[var(--wb-surface-variant)] rounded animate-pulse mb-2" />}
-              {(timeText || likesCount !== undefined || viewsCount !== undefined) && (
+              {author && (
+                <div className="h-5 w-32 bg-[var(--wb-surface-variant)] rounded animate-pulse mb-2" />
+              )}
+              {(timeText ||
+                likesCount !== undefined ||
+                viewsCount !== undefined) && (
                 <div className="h-8 w-40 bg-[var(--wb-surface-variant)] rounded-full animate-pulse" />
               )}
             </>

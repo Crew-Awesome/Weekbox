@@ -46,7 +46,7 @@ export class DesktopAdapter implements IPlatformBridge {
       neutralino.events.on("ready", () => {
         this._isReady = true;
         this.emitLocalEvent("ready", true);
-        
+
         // Start heartbeat to keep the Node backend alive
         setInterval(() => {
           this.call("system.ping" as any).catch(() => {});

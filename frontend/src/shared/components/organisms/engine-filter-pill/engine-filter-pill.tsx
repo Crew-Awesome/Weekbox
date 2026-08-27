@@ -10,7 +10,11 @@ export interface EngineFilterPillProps {
   isMulti?: boolean;
 }
 
-export const EngineFilterPill: React.FC<EngineFilterPillProps> = ({ value, onChange, isMulti = false }) => {
+export const EngineFilterPill: React.FC<EngineFilterPillProps> = ({
+  value,
+  onChange,
+  isMulti = false,
+}) => {
   const options = useMemo(() => {
     // Mapeamos los engines disponibles desde las constantes del Core
     const engines = Object.keys(ENGINE_CATEGORIES).map((key) => {

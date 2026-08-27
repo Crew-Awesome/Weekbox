@@ -1,4 +1,3 @@
-
 import { getTimeAgo, getEngineIcon } from "../utils";
 import Utils from "@utils";
 import type { GameBananaMod } from "../types";
@@ -30,7 +29,7 @@ export class FeaturedService {
       // y así evitamos posibles cuellos de botella o timeouts en el backend de Node.
       const raw = await fetch(this.url);
       if (!raw.ok) throw new Error(`GitHub HTTP error: ${raw.status}`);
-      
+
       const response = (await raw.json()) as FeaturedSchema;
 
       if (!this.isSupported(response)) {

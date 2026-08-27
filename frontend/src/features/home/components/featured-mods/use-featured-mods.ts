@@ -8,7 +8,10 @@ import Utils from "@utils";
  * Extracts unique categories/labels for rendering carousel indicators.
  * @returns {object} Object containing the fetched array of mods and their unique categories.
  */
-export function useFeaturedMods(searchQuery: string = "", engineIds: string[] = ["all"]) {
+export function useFeaturedMods(
+  searchQuery: string = "",
+  engineIds: string[] = ["all"],
+) {
   const [featuredMods, setFeaturedMods] = useState<GameBananaMod[]>([]);
   const [retryTrigger, setRetryTrigger] = useState(0);
 
@@ -24,7 +27,13 @@ export function useFeaturedMods(searchQuery: string = "", engineIds: string[] = 
       try {
         if (searchQuery.trim().length > 0) {
           // Fetch top 4 results for the carousel
-          const mods = await Core.services.gamebanana.getMods("popular", 1, 4, engineIds, searchQuery);
+          const mods = await Core.services.gamebanana.getMods(
+            "popular",
+            1,
+            4,
+            engineIds,
+            searchQuery,
+          );
           setFeaturedMods(mods);
         } else {
           const mods = await Core.services.gamebanana.getFeaturedMods();

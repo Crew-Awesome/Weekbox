@@ -1,7 +1,6 @@
 import http from "@http";
 import { FNF_GAME_ID, ENGINE_CATEGORIES } from "../constants";
 import { isExcluded } from "../utils";
-
 /**
  * In-memory cache to store the pagination state and records for the "Popular" algorithm.
  */
@@ -14,6 +13,7 @@ const popularCache = new Map<
     isComplete: boolean;
   }
 >();
+const MAX_CACHE_SIZE = 20;
 
 /**
  * @description Fetches "Popular" (Most Downloaded historically) records by querying all allowed categories in parallel.
@@ -27,16 +27,30 @@ export async function fetchPopularRecords(
   maxPages = 4,
   maxRecords = 30,
 ) {
-  const isAll = !targetEngineIds || targetEngineIds.length === 0 || (targetEngineIds.length === 1 && targetEngineIds[0] === "all");
+  const isAll =
+    !targetEngineIds ||
+    targetEngineIds.length === 0 ||
+    (targetEngineIds.length === 1 && targetEngineIds[0] === "all");
   const cacheKey = isAll ? "all" : targetEngineIds!.slice().sort().join(",");
-  
+
   if (!popularCache.has(cacheKey)) {
+    // Si llegamos al límite, eliminamos el más antiguo (el primero insertado)
+    if (popularCache.size >= MAX_CACHE_SIZE) {
+      const oldestKey = popularCache.keys().next().value;
+      if (oldestKey) popularCache.delete(oldestKey);
+    }
+
     popularCache.set(cacheKey, {
       records: [],
       sourcePage: 1,
       modIds: new Set(),
       isComplete: false,
     });
+  } else {
+    // Refrescar la recencia (LRU) moviéndolo al final del Map
+    const val = popularCache.get(cacheKey)!;
+    popularCache.delete(cacheKey);
+    popularCache.set(cacheKey, val);
   }
 
   const state = popularCache.get(cacheKey)!;
@@ -49,10 +63,14 @@ export async function fetchPopularRecords(
 
   let categoryIds = Object.keys(ENGINE_CATEGORIES).map(Number);
   if (!isAll) {
-    categoryIds = targetEngineIds!.map(id => {
-      const match = Object.entries(ENGINE_CATEGORIES).find(([_, cat]) => cat.id === id);
-      return match ? Number(match[0]) : -1;
-    }).filter(id => id !== -1);
+    categoryIds = targetEngineIds!
+      .map((id) => {
+        const match = Object.entries(ENGINE_CATEGORIES).find(
+          ([_, cat]) => cat.id === id,
+        );
+        return match ? Number(match[0]) : -1;
+      })
+      .filter((id) => id !== -1);
   }
 
   while (
@@ -86,7 +104,9 @@ export async function fetchPopularRecords(
       }
 
       // Ordenar localmente por descargas
-      allFetched.sort((a, b) => (b._nDownloadCount || 0) - (a._nDownloadCount || 0));
+      allFetched.sort(
+        (a, b) => (b._nDownloadCount || 0) - (a._nDownloadCount || 0),
+      );
 
       for (const mod of allFetched) {
         if (

@@ -9,7 +9,11 @@ interface TitlesProps {
  * Displays a styled title with diagonal accents and horizontal lines.
  * @param {TitlesProps} props - Component properties.
  */
-export default function Titles({ title, align = "left", children }: TitlesProps) {
+export default function Titles({
+  title,
+  align = "left",
+  children,
+}: TitlesProps) {
   const textNode = (
     <div className="flex items-center border-b-[3px] border-white px-3 shrink-0">
       <h1 className="text-white font-bold text-2xl md:text-3xl whitespace-nowrap leading-none pb-1">

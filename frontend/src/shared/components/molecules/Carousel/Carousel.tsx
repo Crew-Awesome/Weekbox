@@ -88,7 +88,7 @@ export const Carousel: React.FC<CarouselProps> = (props) => {
     <div className={`flex flex-col w-full ${className}`}>
       <div
         ref={containerRef}
-        className="relative overflow-hidden w-full h-full flex-1"
+        className="relative overflow-x-clip overflow-y-visible w-full h-full flex-1"
         style={{
           containerType: "inline-size",
           ...(aspectRatio

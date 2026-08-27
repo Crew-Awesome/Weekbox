@@ -14,7 +14,7 @@ interface AppState {
 export const useAppStore = create<AppState>((set) => ({
   activeDeepLinkModId: null,
   setActiveDeepLinkModId: (id) => set({ activeDeepLinkModId: id }),
-  
+
   activeModItem: null,
   setActiveModItem: (mod) => set({ activeModItem: mod }),
 }));

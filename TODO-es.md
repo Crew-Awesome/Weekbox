@@ -16,7 +16,7 @@
 - **Problema:** Un gestor de mods requiere mantener el seguimiento de multiples estados asincronos y globales (ej. cola de descargas, estado de instalacion de cada mod). Usar Context nativo puede causar re-renderizados innecesarios en toda la app.
 - **Solucion:** Implementar una libreria ligera de estado global como **Zustand**. Esto permite un manejo centralizado y performante de las descargas y el estado de la aplicacion fuera del ciclo de vida de React, sin causar dolores de cabeza por *prop-drilling*.
 
-### - [ ] [Testing] [Core] Tests Automatizados
+### - [x] [Testing] [Core] Tests Automatizados
 - **Problema:** Al contar con una arquitectura desacoplada y madura, cualquier regresion introducida en la logica de Negocio o en el puente IPC puede romper silenciosamente componentes o la aplicacion de escritorio completa.
 - **Solucion:** Implementar un entorno de pruebas unitarias y de integracion (con Vitest o Jest) que cubra minimamente los adaptadores de plataforma en "Core" y el estado de Zustand, validando el correcto funcionamiento sin depender del flujo UI.
 
@@ -26,6 +26,7 @@
 
 ## Prioridad Baja (Low Priority)
 
-### - [ ] [Perf] [Core] Limite para la Cache en Memoria (LRU)
+### - [x] [Perf] [Core] Limite para la Cache en Memoria (LRU)
 - **Problema:** El sistema `popularCache` utiliza un `Map` en memoria que crece infinitamente de acuerdo a las llaves que reciba. Aunque por ahora las llaves (`engineId`) son limitadas, en el futuro puede ser un foco de fuga de memoria (*memory leak*).
 - **Solucion:** Aplicar un patron de cache de tamano maximo (LRU - Least Recently Used). Por ejemplo, limitar la cache a los 20 ultimos resultados, borrando los datos mas antiguos automaticamente para asegurar que el uso de RAM permanezca estable.
+- **Implementación:** Se implementó utilizando la lógica LRU directamente sobre el `Map` nativo de JavaScript. Se descartó usar librerías externas (como `lru-cache`) para evitar errores con el empaquetado y caché de módulos de Vite, y para mantener las dependencias y el peso del proyecto al mínimo.

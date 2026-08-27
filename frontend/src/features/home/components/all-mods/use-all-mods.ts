@@ -2,6 +2,7 @@ import { useEffect, useState, useRef, useCallback, useMemo } from "react";
 import Core from "@core";
 import type { GameBananaMod } from "@core";
 import Utils from "@utils";
+import { useHomeStore } from "../../../../store/home-store";
 
 /**
  * @description Custom hook to manage the state, pagination, and layout injection for the AllMods grid.
@@ -11,21 +12,43 @@ import Utils from "@utils";
 export function useAllMods(
   filter: string = "popular",
   engineIds: string[] = ["all"],
-  searchQuery: string = ""
+  searchQuery: string = "",
 ) {
-  const [mods, setMods] = useState<GameBananaMod[]>([]);
-  const [featuredPool, setFeaturedPool] = useState<GameBananaMod[]>([]);
-  const [loading, setLoading] = useState(true);
+  const {
+    mods,
+    setMods,
+    featuredPool,
+    setFeaturedPool,
+    page,
+    setPage,
+    hasMore,
+    setHasMore,
+  } = useHomeStore();
+
+  const [loading, setLoading] = useState(mods.length === 0);
   const [loadingMore, setLoadingMore] = useState(false);
-  const [page, setPage] = useState(1);
-  const [hasMore, setHasMore] = useState(true);
+
+  const prevFilter = useRef(filter);
+  const prevEngineIds = useRef(engineIds.join(","));
+  const prevSearch = useRef(searchQuery);
 
   // Cuando cambian los filtros o la búsqueda, reseteamos la paginación y limpiamos la lista
   useEffect(() => {
-    setMods([]);
-    setPage(1);
-    setHasMore(true);
-  }, [filter, engineIds, searchQuery]);
+    const filtersChanged =
+      prevFilter.current !== filter ||
+      prevEngineIds.current !== engineIds.join(",") ||
+      prevSearch.current !== searchQuery;
+
+    if (filtersChanged) {
+      setMods([]);
+      setPage(1);
+      setHasMore(true);
+
+      prevFilter.current = filter;
+      prevEngineIds.current = engineIds.join(",");
+      prevSearch.current = searchQuery;
+    }
+  }, [filter, engineIds, searchQuery, setMods, setPage, setHasMore]);
 
   const observer = useRef<IntersectionObserver | null>(null);
 
@@ -92,7 +115,7 @@ export function useAllMods(
           page,
           45,
           engineIds,
-          searchQuery
+          searchQuery,
         );
 
         if (isMounted) {
@@ -102,8 +125,8 @@ export function useAllMods(
             setMods((prev) => {
               if (page === 1) return data;
               // Prevenir duplicados a nivel de paginación
-              const existingIds = new Set(prev.map(m => m.id));
-              const uniqueData = data.filter(m => !existingIds.has(m.id));
+              const existingIds = new Set(prev.map((m) => m.id));
+              const uniqueData = data.filter((m) => !existingIds.has(m.id));
               return [...prev, ...uniqueData];
             });
           }
@@ -130,15 +153,16 @@ export function useAllMods(
     const result = [...mods];
     if (featuredPool.length === 0) return result;
 
-    const existingIds = new Set(result.map(m => m.id));
+    const existingIds = new Set(result.map((m) => m.id));
     let injectedCount = 0;
-    
+
     for (let i = 3; i < result.length; i += 16) {
       let pick: GameBananaMod | null = null;
       let attempts = 0;
-      
+
       while (attempts < featuredPool.length) {
-        const potentialPick = featuredPool[(injectedCount + attempts) % featuredPool.length];
+        const potentialPick =
+          featuredPool[(injectedCount + attempts) % featuredPool.length];
         if (!existingIds.has(potentialPick.id)) {
           pick = potentialPick;
           injectedCount += attempts + 1;
@@ -146,7 +170,7 @@ export function useAllMods(
         }
         attempts++;
       }
-      
+
       if (pick) {
         existingIds.add(pick.id);
         result.splice(i, 0, pick);

@@ -13,17 +13,22 @@ export function useDeeplinkManager() {
   const setActiveModItem = useAppStore((state) => state.setActiveModItem);
 
   useEffect(() => {
-    const checkDeeplink = async (args?: string[], isStartup: boolean = false) => {
-      const deeplink = args ? Core.os.parseDeeplinkArgs(args) : Core.os.parseStartupDeeplink();
+    const checkDeeplink = async (
+      args?: string[],
+      isStartup: boolean = false,
+    ) => {
+      const deeplink = args
+        ? Core.os.parseDeeplinkArgs(args)
+        : Core.os.parseStartupDeeplink();
       if (deeplink) {
         setActiveModId(deeplink.id);
       }
-      
+
       if (isStartup) {
         await Core.window.setSize(1280, 720);
         await Core.window.center();
       }
-      
+
       await Core.window.show();
       await Core.window.unmaximize();
       await Core.window.focus();
@@ -34,11 +39,11 @@ export function useDeeplinkManager() {
         const isPrimary = await Core.platform.call("deeplink.isPrimary" as any);
         if (isPrimary === false) {
           // Somos la SEGUNDA instancia. Enviamos los datos a la principal.
-          await fetch('http://127.0.0.1:45555/deeplink', {
-            method: 'POST',
+          await fetch("http://127.0.0.1:45555/deeplink", {
+            method: "POST",
             body: JSON.stringify(window.NL_ARGS || []),
           }).catch(() => {});
-          
+
           // Salimos silenciosamente y matamos el Node.js backend.
           Core.platform.call("system.suicide" as any).catch(() => {});
           window.Neutralino?.app?.exit();
@@ -53,15 +58,21 @@ export function useDeeplinkManager() {
 
     bootSingleInstanceLock();
 
-    const cleanupListenerNative = Core.platform.onEvent("newInstance", (eventData: any) => {
-      const args = eventData?.detail || [];
-      checkDeeplink(args, false);
-    });
-    
-    const cleanupListenerCustom = Core.platform.onEvent("deeplinkArgs", (eventData: any) => {
-      const args = eventData?.detail || [];
-      checkDeeplink(args, false);
-    });
+    const cleanupListenerNative = Core.platform.onEvent(
+      "newInstance",
+      (eventData: any) => {
+        const args = eventData?.detail || [];
+        checkDeeplink(args, false);
+      },
+    );
+
+    const cleanupListenerCustom = Core.platform.onEvent(
+      "deeplinkArgs",
+      (eventData: any) => {
+        const args = eventData?.detail || [];
+        checkDeeplink(args, false);
+      },
+    );
 
     return () => {
       cleanupListenerNative();
@@ -72,10 +83,13 @@ export function useDeeplinkManager() {
   useEffect(() => {
     if (!activeModId) return;
 
-    Core.services.gamebanana.getModById(activeModId)
+    Core.services.gamebanana
+      .getModById(activeModId)
       .then((mod) => {
         if (!mod) {
-          alert("No se pudo encontrar el mod, o no pertenece a Friday Night Funkin'.");
+          alert(
+            "No se pudo encontrar el mod, o no pertenece a Friday Night Funkin'.",
+          );
         } else {
           // Mapeamos a la interfaz nativa ModItem del Home
           setActiveModItem({
@@ -90,7 +104,9 @@ export function useDeeplinkManager() {
       })
       .catch((err) => {
         if (err.message === "UNSUPPORTED_CATEGORY") {
-          alert("Este mod pertenece a una categoría o motor gráfico que Weekbox actualmente no soporta. ¡Intenta con otro mod!");
+          alert(
+            "Este mod pertenece a una categoría o motor gráfico que Weekbox actualmente no soporta. ¡Intenta con otro mod!",
+          );
         } else {
           alert("Ocurrió un error al intentar cargar el mod desde GameBanana.");
         }

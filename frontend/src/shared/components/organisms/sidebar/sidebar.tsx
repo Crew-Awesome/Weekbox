@@ -3,6 +3,7 @@ import { DesktopSidebar } from "./desktop-sidebar";
 import { MobileNav } from "./mobile-nav";
 import { SidebarModals } from "./modals/sidebar-modals";
 import Utils from "@utils";
+import { useHomeStore } from "../../../../store/home-store";
 
 interface SidebarProps {
   onNavigate?: (view: string) => void;
@@ -31,11 +32,22 @@ export const Sidebar: React.FC<SidebarProps> = ({
     }
   }, [activeMain, onNavigate]);
 
+  const handleMainSet = (id: string) => {
+    if (activeMain === "home" && id === "home") {
+      useHomeStore.getState().resetState();
+      const mainContainer = document.getElementById("main-scroll-container");
+      if (mainContainer) {
+        mainContainer.scrollTop = 0;
+      }
+    }
+    setActiveMain(id);
+  };
+
   const handleMobileSet = (id: string) => {
     if (id === "settings" || id === "info") {
       setActiveSecondary((prev) => (prev === id ? null : id));
     } else {
-      setActiveMain(id);
+      handleMainSet(id);
       setActiveSecondary(null);
     }
   };
@@ -46,7 +58,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
     <>
       <DesktopSidebar
         activeMain={activeMain}
-        setActiveMain={setActiveMain}
+        setActiveMain={handleMainSet}
         activeSecondary={activeSecondary}
         setActiveSecondary={setActiveSecondary}
         onSecondaryClick={handleSecondaryClick}

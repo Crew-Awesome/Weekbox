@@ -22,7 +22,7 @@ import {
 export type ModFilter = "popular" | "new" | "ripe" | "updated";
 
 /**
- * @description Master router for fetching Mods from GameBanana. Acts as a unified entry point 
+ * @description Master router for fetching Mods from GameBanana. Acts as a unified entry point
  * that redirects the request to the appropriate sub-algorithm (search, popular, ripe, discovery).
  * Retrieves shallow list of mods and immediately fetches deep metadata (Mod/Multi) to hydrate UI fields.
  * @param {ModFilter} filter - The active sorting or mode filter (e.g., `"popular"`, `"new"`, `"ripe"`, `"updated"`). Defaults to `"popular"`.
@@ -37,26 +37,50 @@ export async function getMods(
   page = 1,
   perPage = 15,
   engineIds: string[] | string | null = null,
-  searchQuery: string = ""
+  searchQuery: string = "",
 ): Promise<GameBananaMod[]> {
   let rawRecords: any[] = [];
-  
-  const enginesArray = Array.isArray(engineIds) ? engineIds : (engineIds ? [engineIds] : ["all"]);
-  const isAll = enginesArray.length === 0 || (enginesArray.length === 1 && enginesArray[0] === "all");
+
+  const enginesArray = Array.isArray(engineIds)
+    ? engineIds
+    : engineIds
+      ? [engineIds]
+      : ["all"];
+  const isAll =
+    enginesArray.length === 0 ||
+    (enginesArray.length === 1 && enginesArray[0] === "all");
 
   if (searchQuery.trim().length > 0) {
-    rawRecords = await fetchSearchRecords(searchQuery, enginesArray, filter, page, perPage);
+    rawRecords = await fetchSearchRecords(
+      searchQuery,
+      enginesArray,
+      filter,
+      page,
+      perPage,
+    );
   } else if (filter === "popular") {
-    rawRecords = await fetchPopularRecords(isAll ? null : enginesArray, 9999, page * perPage);
+    rawRecords = await fetchPopularRecords(
+      isAll ? null : enginesArray,
+      9999,
+      page * perPage,
+    );
   } else if (filter === "ripe") {
-    rawRecords = await fetchRipeRecords(isAll ? null : enginesArray, 9999, page * perPage);
+    rawRecords = await fetchRipeRecords(
+      isAll ? null : enginesArray,
+      9999,
+      page * perPage,
+    );
   } else if (filter === "new" || filter === "updated") {
     let categoryIds = Object.keys(ENGINE_CATEGORIES).map(Number);
     if (!isAll) {
-      categoryIds = enginesArray.map((id) => {
-        const match = Object.entries(ENGINE_CATEGORIES).find(([_, cat]) => cat.id === id);
-        return match ? Number(match[0]) : -1;
-      }).filter((id) => id !== -1);
+      categoryIds = enginesArray
+        .map((id) => {
+          const match = Object.entries(ENGINE_CATEGORIES).find(
+            ([_, cat]) => cat.id === id,
+          );
+          return match ? Number(match[0]) : -1;
+        })
+        .filter((id) => id !== -1);
     }
 
     const sortStr =
@@ -120,7 +144,7 @@ export async function getMods(
   // GameBanana often fails or truncates when _csvRowIds has too many items, so we chunk them.
   const CHUNK_SIZE = 15;
   let multiData: any[] = [];
-  
+
   try {
     const chunkPromises = [];
     for (let i = 0; i < rawRecords.length; i += CHUNK_SIZE) {
@@ -131,10 +155,10 @@ export async function getMods(
         "/Mod/Multi?_csvRowIds=" +
         modIds +
         "&_csvProperties=_idRow,_nLikeCount,_nViewCount,_nDownloadCount,_sDescription,_sText,_aCredits,_aCategory,_aSuperCategory,_aRootCategory";
-      
+
       chunkPromises.push(http.fetchJson(multiUrl));
     }
-    
+
     const chunkResults = await Promise.all(chunkPromises);
     multiData = chunkResults.flat();
   } catch (e) {

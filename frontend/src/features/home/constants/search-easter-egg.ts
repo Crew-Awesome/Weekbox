@@ -1,11 +1,11 @@
-import type { ModItem } from "../types";
+import type { GameBananaMod } from "@core";
 
 /**
  * @description Configuration for an easter egg.
  */
 export interface EasterEggConfig {
   id: string;
-  match: (mods: ModItem[]) => boolean;
+  match: (mods: GameBananaMod[]) => boolean;
   mainImage: string;
   confettiImages: string[];
 }
@@ -18,7 +18,7 @@ export const EASTER_EGG_BASE_PATH = "/assets/icons/search-easter-egg";
 export const SEARCH_EASTER_EGGS: EasterEggConfig[] = [
   {
     id: "qt",
-    match: (mods: ModItem[]) => {
+    match: (mods: GameBananaMod[]) => {
       return mods.some((mod) => mod.id === 566597);
     },
     mainImage: `${EASTER_EGG_BASE_PATH}/qt/qt.webp`,
@@ -33,12 +33,10 @@ export const SEARCH_EASTER_EGGS: EasterEggConfig[] = [
   },
   {
     id: "whitty",
-    match: (mods: ModItem[]) => {
+    match: (mods: GameBananaMod[]) => {
       return mods.some((mod) => mod.id === 44214);
     },
     mainImage: `${EASTER_EGG_BASE_PATH}/whitty/Whitty_Ballistic.gif`,
-    confettiImages: [
-      `${EASTER_EGG_BASE_PATH}/whitty/Whitty_Icon.webp`,
-    ],
+    confettiImages: [`${EASTER_EGG_BASE_PATH}/whitty/Whitty_Icon.webp`],
   },
 ];

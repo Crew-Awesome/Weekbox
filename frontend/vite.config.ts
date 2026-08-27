@@ -1,4 +1,5 @@
-import { defineConfig } from "vite";
+/// <reference types="vitest" />
+import { defineConfig } from "vitest/config";
 import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
 import fs from "fs";
@@ -6,15 +7,18 @@ import path from "path";
 import { sentryVitePlugin } from "@sentry/vite-plugin";
 
 /**
- * Plugin para inyectar los tokens de Neutralino en desarrollo,
- * permitiendo presionar F5 sin perder la conexión con el backend nativo.
+ * Injects Neutralino tokens during development,
+ * allowing page reloads (F5) without losing connection to the native backend.
  */
 const neutralinoAuthPlugin = () => {
   return {
     name: "neutralino-auth",
     transformIndexHtml(html: string) {
       try {
-        const authPath = path.resolve(import.meta.dirname, "../.tmp/auth_info.json");
+        const authPath = path.resolve(
+          import.meta.dirname,
+          "../.tmp/auth_info.json",
+        );
         if (fs.existsSync(authPath)) {
           const auth = JSON.parse(fs.readFileSync(authPath, "utf8"));
           return html.replace(
@@ -23,7 +27,7 @@ const neutralinoAuthPlugin = () => {
           );
         }
       } catch (err) {
-        console.warn("[Vite] No se pudo inyectar auth de Neutralino:", err);
+        console.warn("Could not inject Neutralino auth:", err);
       }
       return html;
     },
@@ -31,8 +35,8 @@ const neutralinoAuthPlugin = () => {
 };
 
 /**
- * Plugin para limpiar archivos residuales (JS, CSS) del build anterior
- * sin borrar todo el directorio app/ (ya que contiene el backend y config).
+ * Cleans residual Vite build files (JS, CSS, source maps) from the previous build/
+ * without deleting the entire app/ directory (which contains the native backend and config).
  */
 const cleanAssetsPlugin = () => {
   return {
@@ -43,8 +47,6 @@ const cleanAssetsPlugin = () => {
       if (fs.existsSync(assetsPath)) {
         const files = fs.readdirSync(assetsPath);
         for (const file of files) {
-          // Solo borramos js, css o sourcemaps residuales generados por Vite,
-          // mantenemos otros recursos fijos si los hubiera.
           if (
             file.endsWith(".js") ||
             file.endsWith(".css") ||
@@ -59,13 +61,9 @@ const cleanAssetsPlugin = () => {
   };
 };
 
-/**
- * Configuración principal de Vite para el entorno de desarrollo y compilación del frontend.
- * @see https://vite.dev/config/
- */
 export default defineConfig({
   build: {
-    sourcemap: true, // Sentry necesita sourcemaps
+    sourcemap: true, // Required by Sentry package
     outDir: "../app",
     emptyOutDir: false,
   },
@@ -77,7 +75,7 @@ export default defineConfig({
     sentryVitePlugin({
       org: process.env.SENTRY_ORG || "your-org",
       project: process.env.SENTRY_PROJECT || "your-project",
-      authToken: process.env.SENTRY_AUTH_TOKEN
+      authToken: process.env.SENTRY_AUTH_TOKEN,
     }),
   ],
   resolve: {
@@ -86,12 +84,17 @@ export default defineConfig({
       "@features": path.resolve(import.meta.dirname, "./src/features/index.ts"),
       "@utils": path.resolve(import.meta.dirname, "./src/utils/utils.tsx"),
       "@core": path.resolve(import.meta.dirname, "./src/core/index.ts"),
-      "@fs": path.resolve(import.meta.dirname, "./src/core/backend/fs/index.ts"),
-      "@http": path.resolve(import.meta.dirname, "./src/core/backend/http/index.ts"),
+      "@fs": path.resolve(
+        import.meta.dirname,
+        "./src/core/backend/fs/index.ts",
+      ),
+      "@http": path.resolve(
+        import.meta.dirname,
+        "./src/core/backend/http/index.ts",
+      ),
     },
   },
   server: {
-    /** Permite exponer el servidor en la red local para acceder desde dispositivos móviles vía Expo Go */
     host: true,
     port: 5173,
     strictPort: true,
@@ -99,5 +102,7 @@ export default defineConfig({
       allow: [".."],
     },
   },
+  test: {
+    globals: true,
+  },
 });
-

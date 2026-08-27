@@ -23,6 +23,10 @@ export interface CardProps {
    */
   icon?: string;
   /**
+   * Optional tooltip text for the icon.
+   */
+  iconTooltip?: string;
+  /**
    * Explicitly controls whether the icon and its transparent mask are shown. Defaults to true if an icon is provided.
    */
   showIcon?: boolean;
@@ -74,6 +78,7 @@ export const Card: React.FC<CardProps> = ({
   description,
   thumbnail,
   icon,
+  iconTooltip,
   showIcon,
   onClick,
   clickableArea = "whole-card",
@@ -93,6 +98,7 @@ export const Card: React.FC<CardProps> = ({
   const [isHovered, setIsHovered] = useState(false);
   const [thumbnailLoaded, setThumbnailLoaded] = useState(false);
   const [iconLoaded, setIconLoaded] = useState(false);
+  const [showTooltip, setShowTooltip] = useState(false);
 
   const [isInView, setIsInView] = useState(!lazyLoad);
   const cardRootRef = useRef<HTMLDivElement>(null);
@@ -262,7 +268,7 @@ export const Card: React.FC<CardProps> = ({
   return (
     <div
       ref={cardRootRef}
-      className={`relative isolate flex flex-col shadow-2xs bg-transparent p-0 sm:p-3 select-none ${
+      className={`relative isolate flex flex-col shadow-2xs bg-transparent p-0 sm:p-3 select-none hover:z-50 ${
         shouldRenderIcon
           ? "sm:rounded-r-[1rem] sm:rounded-bl-[1rem] sm:rounded-tl-none"
           : "sm:rounded-[1rem]"
@@ -278,126 +284,145 @@ export const Card: React.FC<CardProps> = ({
         className="absolute pointer-events-none z-[-1] sm:rounded-[1rem]"
       />
       {thumbnail && (
-        <div
-          className={`relative overflow-hidden w-full aspect-[16/9] isolate ${
-            shouldRenderIcon
-              ? "sm:rounded-tr-[1rem] sm:rounded-tl-none"
-              : "sm:rounded-t-[1rem]"
-          } ${isThumbnailClickable ? "cursor-pointer" : ""}`}
-          onClick={
-            isThumbnailClickable && !isWholeCardClickable ? onClick : undefined
-          }
-          onMouseEnter={
-            isThumbnailClickable && !isWholeCardClickable
-              ? handleMouseEnter
-              : undefined
-          }
-          onMouseLeave={
-            isThumbnailClickable && !isWholeCardClickable
-              ? handleMouseLeave
-              : undefined
-          }
-        >
-          {/* Base Image Layer */}
-          <div className="absolute inset-0 isolate">
-            <div
-              ref={thumbnailRef}
-              className={`absolute inset-0 ${
-                shouldRenderIcon
-                  ? "sm:rounded-tr-[1rem] sm:rounded-tl-none"
-                  : "sm:rounded-t-[1rem]"
-              }`}
-            >
-              {(!thumbnailLoaded || isLoading) && (
-                <div className="absolute inset-0 bg-[var(--wb-surface-variant)] animate-pulse" />
-              )}
-              {!isLoading && (
-                <img
-                  className={`w-full h-full object-cover block transition-opacity duration-300 ${thumbnailLoaded ? "opacity-100" : "opacity-0"}`}
-                  src={thumbnail}
-                  alt={title}
-                  loading="lazy"
-                  draggable={false}
-                  onLoad={() => setThumbnailLoaded(true)}
-                  style={{
-                    WebkitMaskImage:
-                      "linear-gradient(to bottom, black 50%, transparent 100%)",
-                    maskImage:
-                      "linear-gradient(to bottom, black 50%, transparent 100%)",
-                  }}
-                />
-              )}
-            </div>
-
-            {/* Mask Container (Opaque with animated overlay) */}
-            {shouldRenderIcon && (
-              <div className="absolute left-0 top-0 w-[18%] aspect-square rounded-tl-none rounded-br-[8px] bg-[var(--wb-bg)] z-10 pointer-events-none">
-                {/* Overlay that receives the hover color animation */}
-                <div
-                  ref={notchOverlayRef}
-                  className="absolute inset-0 pointer-events-none opacity-0 rounded-tl-none rounded-br-[8px]"
-                />
-
-                <div className="relative z-10 w-full h-full flex items-center justify-center p-2">
-                  {icon && (
-                    <>
-                      {(!iconLoaded || isLoading) && (
-                        <div className="absolute inset-2 rounded-full bg-[var(--wb-surface-variant)] animate-pulse" />
-                      )}
-                      {!isLoading && (
-                        <img
-                          className={`object-contain w-full h-full block transition-opacity duration-300 ${iconLoaded ? "opacity-100" : "opacity-0"}`}
-                          src={icon}
-                          alt="icon"
-                          loading="lazy"
-                          draggable={false}
-                          onLoad={() => setIconLoaded(true)}
-                        />
-                      )}
-                    </>
-                  )}
-                </div>
-
-                {/* Base SVGs to hide the image underneath */}
-                <svg
-                  className="absolute top-0 left-full w-[8px] h-[8px] text-[var(--wb-bg)] pointer-events-none"
-                  viewBox="0 0 8 8"
-                  fill="none"
-                  xmlns="http://www.w3.org/2000/svg"
-                >
-                  <path d="M0 0 H8 A8 8 0 0 0 0 8 V0 Z" fill="currentColor" />
-                </svg>
-                <svg
-                  className="absolute top-full left-0 w-[8px] h-[8px] text-[var(--wb-bg)] pointer-events-none"
-                  viewBox="0 0 8 8"
-                  fill="none"
-                  xmlns="http://www.w3.org/2000/svg"
-                >
-                  <path d="M0 0 H8 A8 8 0 0 0 0 8 V0 Z" fill="currentColor" />
-                </svg>
-
-                {/* Hover SVGs to apply the hover color seamlessly */}
-                <svg
-                  ref={notchSvg1Ref}
-                  className="absolute top-0 left-full w-[8px] h-[8px] pointer-events-none opacity-0"
-                  viewBox="0 0 8 8"
-                  fill="none"
-                  xmlns="http://www.w3.org/2000/svg"
-                >
-                  <path d="M0 0 H8 A8 8 0 0 0 0 8 V0 Z" fill="currentColor" />
-                </svg>
-                <svg
-                  ref={notchSvg2Ref}
-                  className="absolute top-full left-0 w-[8px] h-[8px] pointer-events-none opacity-0"
-                  viewBox="0 0 8 8"
-                  fill="none"
-                  xmlns="http://www.w3.org/2000/svg"
-                >
-                  <path d="M0 0 H8 A8 8 0 0 0 0 8 V0 Z" fill="currentColor" />
-                </svg>
+        <div className="relative w-full">
+          <div
+            className={`relative overflow-hidden w-full aspect-[16/9] isolate ${
+              shouldRenderIcon
+                ? "sm:rounded-tr-[1rem] sm:rounded-tl-none"
+                : "sm:rounded-t-[1rem]"
+            } ${isThumbnailClickable ? "cursor-pointer" : ""}`}
+            onClick={
+              isThumbnailClickable && !isWholeCardClickable
+                ? onClick
+                : undefined
+            }
+            onMouseEnter={
+              isThumbnailClickable && !isWholeCardClickable
+                ? handleMouseEnter
+                : undefined
+            }
+            onMouseLeave={
+              isThumbnailClickable && !isWholeCardClickable
+                ? handleMouseLeave
+                : undefined
+            }
+          >
+            {/* Base Image Layer */}
+            <div className="absolute inset-0 isolate">
+              <div
+                ref={thumbnailRef}
+                className={`absolute inset-0 ${
+                  shouldRenderIcon
+                    ? "sm:rounded-tr-[1rem] sm:rounded-tl-none"
+                    : "sm:rounded-t-[1rem]"
+                }`}
+              >
+                {(!thumbnailLoaded || isLoading) && (
+                  <div className="absolute inset-0 bg-[var(--wb-surface-variant)] animate-pulse" />
+                )}
+                {!isLoading && (
+                  <img
+                    className={`w-full h-full object-cover block transition-opacity duration-300 ${thumbnailLoaded ? "opacity-100" : "opacity-0"}`}
+                    src={thumbnail}
+                    alt={title}
+                    loading="lazy"
+                    draggable={false}
+                    onLoad={() => setThumbnailLoaded(true)}
+                    style={{
+                      WebkitMaskImage:
+                        "linear-gradient(to bottom, black 50%, transparent 100%)",
+                      maskImage:
+                        "linear-gradient(to bottom, black 50%, transparent 100%)",
+                    }}
+                  />
+                )}
               </div>
-            )}
+            </div>
           </div>
+
+          {/* Mask Container (Opaque with animated overlay) - MOVED OUTSIDE overflow-hidden */}
+          {shouldRenderIcon && (
+            <div className="absolute left-0 top-0 w-[18%] aspect-square rounded-tl-none rounded-br-[8px] bg-[var(--wb-bg)] z-10 pointer-events-auto">
+              {/* Overlay that receives the hover color animation */}
+              <div
+                ref={notchOverlayRef}
+                className="absolute inset-0 pointer-events-none opacity-0 rounded-tl-none rounded-br-[8px]"
+              />
+
+              <div
+                className="relative z-[15] w-full h-full flex items-center justify-center p-2 pointer-events-auto cursor-pointer"
+                onMouseEnter={() => setShowTooltip(true)}
+                onMouseLeave={() => setShowTooltip(false)}
+              >
+                {icon && (
+                  <>
+                    {(!iconLoaded || isLoading) && (
+                      <div className="absolute inset-2 rounded-full bg-[var(--wb-surface-variant)] animate-pulse" />
+                    )}
+                    {!isLoading && (
+                      <img
+                        className={`object-contain w-full h-full block transition-opacity duration-300 ${iconLoaded ? "opacity-100" : "opacity-0"}`}
+                        src={icon}
+                        alt="icon"
+                        loading="lazy"
+                        draggable={false}
+                        onLoad={() => setIconLoaded(true)}
+                      />
+                    )}
+                    {/* Custom Tooltip */}
+                    {iconTooltip && (
+                      <div
+                        className={`absolute left-1/2 top-full -translate-x-1/2 -mt-2 z-[100] pointer-events-none transition-opacity duration-200 flex flex-col items-center ${showTooltip ? "opacity-100" : "opacity-0"}`}
+                      >
+                        <div className="w-0 h-0 border-l-[10px] border-r-[10px] border-b-[10px] border-transparent border-b-[var(--wb-surface-container-highest)] -mb-[1px]" />
+                        <div className="flex px-4 py-2 bg-[var(--wb-surface-container-highest)] text-[var(--wb-on-surface)] text-sm font-bold rounded whitespace-nowrap shadow-xl">
+                          {iconTooltip}
+                        </div>
+                      </div>
+                    )}
+                  </>
+                )}
+              </div>
+
+              {/* Base SVGs to hide the image underneath */}
+              <svg
+                className="absolute top-0 left-full w-[8px] h-[8px] text-[var(--wb-bg)] pointer-events-none"
+                viewBox="0 0 8 8"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path d="M0 0 H8 A8 8 0 0 0 0 8 V0 Z" fill="currentColor" />
+              </svg>
+              <svg
+                className="absolute top-full left-0 w-[8px] h-[8px] text-[var(--wb-bg)] pointer-events-none"
+                viewBox="0 0 8 8"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path d="M0 0 H8 A8 8 0 0 0 0 8 V0 Z" fill="currentColor" />
+              </svg>
+
+              {/* Hover Notch SVGs */}
+              <svg
+                ref={notchSvg1Ref}
+                className="absolute top-0 left-full w-[8px] h-[8px] pointer-events-none opacity-0"
+                viewBox="0 0 8 8"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path d="M0 0 H8 A8 8 0 0 0 0 8 V0 Z" fill="currentColor" />
+              </svg>
+              <svg
+                ref={notchSvg2Ref}
+                className="absolute top-full left-0 w-[8px] h-[8px] pointer-events-none opacity-0"
+                viewBox="0 0 8 8"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path d="M0 0 H8 A8 8 0 0 0 0 8 V0 Z" fill="currentColor" />
+              </svg>
+            </div>
+          )}
         </div>
       )}
 

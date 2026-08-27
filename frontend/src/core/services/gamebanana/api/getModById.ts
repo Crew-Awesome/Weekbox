@@ -19,27 +19,33 @@ import Utils from "@utils";
  */
 export async function getModById(modId: number): Promise<GameBananaMod | null> {
   const url = `${GB_BASE_URL}/Mod/${modId}/ProfilePage`;
-  
+
   try {
     const raw: any = await http.fetchJson(url);
     if (!raw || !raw._idRow) return null;
 
     /** Validar si el Mod est asociado al Game ID oficial de Friday Night Funkin */
     if (raw._aGame && raw._aGame._idRow !== FNF_GAME_ID) {
-      console.warn(`El mod ${modId} no pertenece a FNF (Game ID: ${raw._aGame._idRow})`);
+      console.warn(
+        `El mod ${modId} no pertenece a FNF (Game ID: ${raw._aGame._idRow})`,
+      );
       return null;
     }
 
     const engineId = getEngineId(raw);
     const { ENGINE_CATEGORIES } = await import("../constants");
-    
-    /** 
+
+    /**
      * Verificar estrictamente si el mod pertenece a los Engines autorizados.
      * Si no est listado, bloqueamos la consulta para proteger la experiencia UX.
      */
-    const allowedIds = Object.keys(ENGINE_CATEGORIES).map(id => ENGINE_CATEGORIES[Number(id)].id);
+    const allowedIds = Object.keys(ENGINE_CATEGORIES).map(
+      (id) => ENGINE_CATEGORIES[Number(id)].id,
+    );
     if (!allowedIds.includes(engineId)) {
-      console.warn(`El mod ${modId} pertenece a una categora/engine no soportado por Weekbox: ${engineId}`);
+      console.warn(
+        `El mod ${modId} pertenece a una categora/engine no soportado por Weekbox: ${engineId}`,
+      );
       throw new Error("UNSUPPORTED_CATEGORY");
     }
 
@@ -47,8 +53,12 @@ export async function getModById(modId: number): Promise<GameBananaMod | null> {
       id: raw._idRow,
       gameId: raw._aGame?._idRow || FNF_GAME_ID,
       title: raw._sName || "Unknown Mod",
-      description: Utils.sanitize.htmlToPlainText(raw._sDescription || raw._sText || ""),
-      htmlBody: Utils.sanitize.sanitizeHtml(raw._sText || raw._sDescription || ""),
+      description: Utils.sanitize.htmlToPlainText(
+        raw._sDescription || raw._sText || "",
+      ),
+      htmlBody: Utils.sanitize.sanitizeHtml(
+        raw._sText || raw._sDescription || "",
+      ),
       author: raw._aSubmitter?._sName || "Unknown Creator",
       userId: extractUserId(raw),
       userPfp: extractUserPfp(raw),

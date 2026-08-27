@@ -14,22 +14,25 @@ export interface PillDropdownProps {
   isMulti?: boolean;
 }
 
-export const PillDropdown: React.FC<PillDropdownProps> = ({ 
-  label, 
-  options, 
-  value, 
-  onChange, 
-  icon, 
-  iconPosition = "left", 
+export const PillDropdown: React.FC<PillDropdownProps> = ({
+  label,
+  options,
+  value,
+  onChange,
+  icon,
+  iconPosition = "left",
   align = "left",
-  isMulti = false 
+  isMulti = false,
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
-      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+      if (
+        containerRef.current &&
+        !containerRef.current.contains(e.target as Node)
+      ) {
         setIsOpen(false);
       }
     };
@@ -39,10 +42,22 @@ export const PillDropdown: React.FC<PillDropdownProps> = ({
 
   const renderIcon = (iconItem: string | React.ReactNode, className = "") => {
     if (!iconItem) return null;
-    if (typeof iconItem === 'string') {
-      return <img src={iconItem} alt="icon" className={`w-7 h-7 object-contain rounded-md ${className}`} />;
+    if (typeof iconItem === "string") {
+      return (
+        <img
+          src={iconItem}
+          alt="icon"
+          className={`w-7 h-7 object-contain rounded-md ${className}`}
+        />
+      );
     }
-    return <span className={`flex items-center text-current opacity-70 ${className}`}>{iconItem}</span>;
+    return (
+      <span
+        className={`flex items-center text-current opacity-70 ${className}`}
+      >
+        {iconItem}
+      </span>
+    );
   };
 
   // Determine display label and icon
@@ -94,24 +109,40 @@ export const PillDropdown: React.FC<PillDropdownProps> = ({
   };
 
   return (
-    <div 
-      className="relative inline-block text-left w-full sm:w-auto" 
+    <div
+      className="relative inline-block text-left w-full sm:w-auto"
       ref={containerRef}
       onMouseLeave={() => setIsOpen(false)}
     >
-      <Pill onClick={() => setIsOpen(!isOpen)} isActive={isOpen} className="flex items-center justify-start text-left gap-2 w-full">
+      <Pill
+        onClick={() => setIsOpen(!isOpen)}
+        isActive={isOpen}
+        className="flex items-center justify-start text-left gap-2 w-full"
+      >
         {iconPosition === "left" && displayIcon && renderIcon(displayIcon)}
-        {iconPosition === "left" && icon && !displayIcon && <span className="text-gray-400 flex items-center">{icon}</span>}
-        
+        {iconPosition === "left" && icon && !displayIcon && (
+          <span className="text-gray-400 flex items-center">{icon}</span>
+        )}
+
         <span className="font-semibold">{displayLabel}</span>
-        
-        {iconPosition === "right" && displayIcon && renderIcon(displayIcon, "ml-1")}
-        {iconPosition === "right" && icon && !displayIcon && <span className="text-gray-400 flex items-center ml-1">{icon}</span>}
-        
-        <ChevronDown size={14} className={`transition-transform duration-200 ml-auto sm:ml-0.5 ${isOpen ? "rotate-180" : ""}`} />
+
+        {iconPosition === "right" &&
+          displayIcon &&
+          renderIcon(displayIcon, "ml-1")}
+        {iconPosition === "right" && icon && !displayIcon && (
+          <span className="text-gray-400 flex items-center ml-1">{icon}</span>
+        )}
+
+        <ChevronDown
+          size={14}
+          className={`transition-transform duration-200 ml-auto sm:ml-0.5 ${isOpen ? "rotate-180" : ""}`}
+        />
       </Pill>
-      
-      <Dropdown isOpen={isOpen} className={`w-64 ${align === "right" ? "right-0 origin-top-right" : "left-0 origin-top-left"}`}>
+
+      <Dropdown
+        isOpen={isOpen}
+        className={`w-64 ${align === "right" ? "right-0 origin-top-right" : "left-0 origin-top-left"}`}
+      >
         {options.map((opt) => (
           <button
             key={opt.value}
@@ -120,17 +151,21 @@ export const PillDropdown: React.FC<PillDropdownProps> = ({
               handleOptionClick(opt.value);
             }}
             className={`w-full flex items-center text-left px-5 py-2.5 transition-colors block ${
-              iconPosition === "left" ? "justify-start gap-3" : "justify-between"
+              iconPosition === "left"
+                ? "justify-start gap-3"
+                : "justify-between"
             } ${
               isSelected(opt.value)
-                ? "bg-[var(--wb-primary)]/20 text-[var(--wb-primary)] font-semibold" 
+                ? "bg-[var(--wb-primary)]/20 text-[var(--wb-primary)] font-semibold"
                 : "text-[var(--wb-on-surface-variant)] hover:bg-[var(--wb-surface-variant)] hover:text-[var(--wb-on-surface)]"
             }`}
           >
             {iconPosition === "left" && opt.icon && renderIcon(opt.icon)}
             <span>{opt.label}</span>
             {iconPosition === "right" && opt.icon && renderIcon(opt.icon)}
-            {isMulti && isSelected(opt.value) && <Check size={16} className="ml-auto text-[var(--wb-primary)]" />}
+            {isMulti && isSelected(opt.value) && (
+              <Check size={16} className="ml-auto text-[var(--wb-primary)]" />
+            )}
           </button>
         ))}
       </Dropdown>

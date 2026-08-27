@@ -69,13 +69,13 @@ class NeutralinoExtension {
         method: method,
         accessToken: this.token,
       };
-      
+
       if (data && Object.keys(data).length > 0) {
         d.data = data;
       }
-      
+
       this.pendingRequests.set(id, { resolve, reject });
-      
+
       let msg = JSON.stringify(d);
       this.socket.send(msg);
       this.debugLog(`API CALL: ${msg}`, "out");

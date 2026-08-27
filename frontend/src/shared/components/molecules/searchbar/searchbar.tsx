@@ -4,6 +4,7 @@ import { Search } from "lucide-react";
 interface SearchbarProps {
   placeholders?: string[];
   filterButton?: React.ReactNode;
+  initialValue?: string;
   onSearch?: (query: string) => void;
 }
 
@@ -15,6 +16,7 @@ interface SearchbarProps {
 export default function Searchbar({
   placeholders = ["Search..."],
   filterButton,
+  initialValue = "",
   onSearch,
 }: SearchbarProps) {
   const handleKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
@@ -34,6 +36,7 @@ export default function Searchbar({
           <Search className="w-10 h-10 ml-4 text-[var(--wb-primary)] shrink-0" />
         }
         className="h-14 w-full md:w-[40%] flex-1 md:flex-none"
+        initialValue={initialValue}
         onKeyDown={handleKeyDown}
       />
     </div>

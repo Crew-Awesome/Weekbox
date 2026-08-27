@@ -5,6 +5,7 @@ interface AnimatedInputProps {
   placeholders?: string[];
   icon?: React.ReactNode;
   className?: string;
+  initialValue?: string;
   onInput?: (text: string, html: string) => void;
   onKeyDown?: (e: React.KeyboardEvent<HTMLDivElement>) => void;
 }
@@ -19,12 +20,21 @@ export const AnimatedInput = ({
   placeholders = ["Type here..."],
   icon,
   className = "",
+  initialValue = "",
   onInput,
   onKeyDown,
 }: AnimatedInputProps) => {
   const [placeholderIndex, setPlaceholderIndex] = useState(0);
-  const [isEmpty, setIsEmpty] = useState(true);
+  const [isEmpty, setIsEmpty] = useState(!initialValue);
   const placeholderRef = useRef<HTMLDivElement>(null);
+  const editableRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (editableRef.current && initialValue) {
+      editableRef.current.textContent = initialValue;
+      setIsEmpty(initialValue.trim() === "");
+    }
+  }, [initialValue]);
 
   useEffect(() => {
     if (!placeholders || placeholders.length <= 1) return;
@@ -84,6 +94,7 @@ export const AnimatedInput = ({
         )}
 
         <div
+          ref={editableRef}
           contentEditable="true"
           suppressContentEditableWarning={true}
           onInput={handleInput}

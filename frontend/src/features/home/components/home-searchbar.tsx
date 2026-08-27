@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import Shared from "@shared";
 import { Filter, Star, Sparkles, Flame, RefreshCcw } from "lucide-react";
+import { useHomeStore } from "../../../store/home-store";
 
 interface HomeSearchbarProps {
   onSearchSubmit: (query: string) => void;
@@ -10,16 +11,17 @@ interface HomeSearchbarProps {
   setCategoryFilter: (val: string[]) => void;
 }
 
-export const HomeSearchbar: React.FC<HomeSearchbarProps> = ({ 
+export const HomeSearchbar: React.FC<HomeSearchbarProps> = ({
   onSearchSubmit,
   sortFilter,
   setSortFilter,
   categoryFilter,
-  setCategoryFilter
+  setCategoryFilter,
 }) => {
   const [isSearchVisible, setIsSearchVisible] = useState(true);
   const lastScrollY = useRef(0);
   const [showFilters, setShowFilters] = useState(false);
+  const searchQuery = useHomeStore((state) => state.searchQuery);
 
   useEffect(() => {
     const mainElement = document.querySelector("main");
@@ -54,10 +56,7 @@ export const HomeSearchbar: React.FC<HomeSearchbarProps> = ({
   };
 
   const filterButton = (
-    <div 
-      className="relative"
-      onMouseLeave={() => setShowFilters(false)}
-    >
+    <div className="relative" onMouseLeave={() => setShowFilters(false)}>
       <button
         onClick={() => setShowFilters(!showFilters)}
         className={`transition-colors p-3 rounded-2xl flex items-center justify-center border ${
@@ -72,22 +71,34 @@ export const HomeSearchbar: React.FC<HomeSearchbarProps> = ({
       {showFilters && (
         <div className="absolute top-full left-0 pt-2 z-50">
           <div className="bg-[var(--wb-surface-container)] border border-[var(--wb-outline-variant)] rounded-2xl p-4 shadow-2xl flex flex-row flex-wrap gap-4 min-w-[300px]">
-          <Shared.molecules.PillDropdown
-            label="Sort by"
-            value={sortFilter}
-            onChange={setSortFilter}
-            options={[
-              { label: "Popular", value: "popular", icon: <Star size={16} /> },
-              { label: "Newest", value: "new", icon: <Sparkles size={16} /> },
-              { label: "Most Ripped", value: "ripe", icon: <Flame size={16} /> },
-              { label: "Recently Updated", value: "updated", icon: <RefreshCcw size={16} /> },
-            ]}
-          />
-          <Shared.organisms.EngineFilterPill
-            value={categoryFilter}
-            onChange={setCategoryFilter}
-            isMulti={true}
-          />
+            <Shared.molecules.PillDropdown
+              label="Sort by"
+              value={sortFilter}
+              onChange={setSortFilter}
+              options={[
+                {
+                  label: "Popular",
+                  value: "popular",
+                  icon: <Star size={16} />,
+                },
+                { label: "Newest", value: "new", icon: <Sparkles size={16} /> },
+                {
+                  label: "Most Ripped",
+                  value: "ripe",
+                  icon: <Flame size={16} />,
+                },
+                {
+                  label: "Recently Updated",
+                  value: "updated",
+                  icon: <RefreshCcw size={16} />,
+                },
+              ]}
+            />
+            <Shared.organisms.EngineFilterPill
+              value={categoryFilter}
+              onChange={setCategoryFilter}
+              isMulti={true}
+            />
           </div>
         </div>
       )}
@@ -107,6 +118,7 @@ export const HomeSearchbar: React.FC<HomeSearchbarProps> = ({
           "Search on GameBanana...",
         ]}
         filterButton={filterButton}
+        initialValue={searchQuery}
         onSearch={handleSearch}
       />
     </div>

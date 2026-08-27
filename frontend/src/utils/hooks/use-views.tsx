@@ -11,23 +11,30 @@ export type ViewType = "home" | "library" | "engines" | string;
 export const useViews = (defaultView: ViewType = "home") => {
   const location = useLocation();
   const navigate = useNavigate();
-  
+
   // Extraemos la vista desde el path (/home, /library). Si es "/", usamos defaultView.
   const pathView = location.pathname.substring(1) || defaultView;
   const currentView = pathView;
-  
+
   const [homeKey, setHomeKey] = useState(0);
 
-  const handleSetView = React.useCallback((view: ViewType) => {
-    if (view === "home" && currentView === "home") {
-      setHomeKey((prev) => prev + 1);
-      navigate(`/${view}`);
-      document.getElementById("main-scroll-container")?.scrollTo({ top: 0, behavior: "smooth" });
-    } else {
-      navigate(`/${view}`);
-      document.getElementById("main-scroll-container")?.scrollTo({ top: 0, behavior: "instant" });
-    }
-  }, [currentView, navigate]);
+  const handleSetView = React.useCallback(
+    (view: ViewType) => {
+      if (view === "home" && currentView === "home") {
+        setHomeKey((prev) => prev + 1);
+        navigate(`/${view}`);
+        document
+          .getElementById("main-scroll-container")
+          ?.scrollTo({ top: 0, behavior: "smooth" });
+      } else {
+        navigate(`/${view}`);
+        document
+          .getElementById("main-scroll-container")
+          ?.scrollTo({ top: 0, behavior: "instant" });
+      }
+    },
+    [currentView, navigate],
+  );
 
   const renderView = (children?: React.ReactNode) => {
     if (children) return <>{children}</>;

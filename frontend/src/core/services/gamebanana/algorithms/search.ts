@@ -27,12 +27,15 @@ export async function fetchSearchRecords(
   engineIds: string[] = ["all"],
   sortFilter: string = "popular",
   page: number = 1,
-  perPage: number = 15
+  perPage: number = 15,
 ): Promise<any[]> {
   try {
     const currentEngineIds = engineIds.join(",");
-    const isNewQuery = query !== cachedQuery || currentEngineIds !== cachedEngineIds || sortFilter !== cachedSortFilter;
-    
+    const isNewQuery =
+      query !== cachedQuery ||
+      currentEngineIds !== cachedEngineIds ||
+      sortFilter !== cachedSortFilter;
+
     if (isNewQuery) {
       if (currentFetchPromise) await currentFetchPromise;
       cachedQuery = query;
@@ -50,36 +53,38 @@ export async function fetchSearchRecords(
 
     // Si no tenemos suficientes elementos en caché para la página actual, cargamos más hasta llenar
     let chunksLoadedThisCall = 0;
-    
-    // LIMITAMOS a máximo 2 chunks (150 mods de GameBanana) por llamada para evitar 
+
+    // LIMITAMOS a máximo 2 chunks (150 mods de GameBanana) por llamada para evitar
     // ataques DDOS al servidor si el filtro estricto descarta demasiados mods basura.
     while (
-      cachedRecords.length < page * perPage && 
-      chunkIndex < 50 && 
+      cachedRecords.length < page * perPage &&
+      chunkIndex < 50 &&
       !hasReachedEnd &&
       chunksLoadedThisCall < 2
     ) {
       chunksLoadedThisCall++;
       chunkIndex++;
-      const startGBPage = (chunkIndex * CHUNK_PAGES) + 1;
-      
+      const startGBPage = chunkIndex * CHUNK_PAGES + 1;
+
       currentFetchPromise = (async () => {
-        const requests = Array.from({ length: CHUNK_PAGES }).map(async (_, i) => {
-          const p = startGBPage + i;
-          const url = `${GB_BASE_URL}/Util/Search/Results?_sModelName=Mod&_idGameRow=${FNF_GAME_ID}&_sSearchString=${encodeURIComponent(query)}&_nPage=${p}&_nPerpage=15`;
-          try {
-            const res: any = await http.fetchJson(url);
-            return res?._aRecords || [];
-          } catch {
-            return [];
-          }
-        });
+        const requests = Array.from({ length: CHUNK_PAGES }).map(
+          async (_, i) => {
+            const p = startGBPage + i;
+            const url = `${GB_BASE_URL}/Util/Search/Results?_sModelName=Mod&_idGameRow=${FNF_GAME_ID}&_sSearchString=${encodeURIComponent(query)}&_nPage=${p}&_nPerpage=15`;
+            try {
+              const res: any = await http.fetchJson(url);
+              return res?._aRecords || [];
+            } catch {
+              return [];
+            }
+          },
+        );
 
         // Agregamos los 300 mods más populares de todos los tiempos al pool de búsqueda
         const popularPromise = fetchPopularRecords(null, 10, 300);
 
         const pages = await Promise.all(requests);
-        
+
         let emptyCount = 0;
         for (const p of pages) {
           if (p.length === 0) emptyCount++;
@@ -94,10 +99,14 @@ export async function fetchSearchRecords(
         // Filter by Multiple Engines
         if (!engineIds.includes("all")) {
           // Resolve numeric IDs for the allowed engines
-          const allowedNumericIds = engineIds.map((id) => {
-            const match = Object.entries(ENGINE_CATEGORIES).find(([_, cat]) => cat.id === id);
-            return match ? match[0] : null;
-          }).filter(Boolean);
+          const allowedNumericIds = engineIds
+            .map((id) => {
+              const match = Object.entries(ENGINE_CATEGORIES).find(
+                ([_, cat]) => cat.id === id,
+              );
+              return match ? match[0] : null;
+            })
+            .filter(Boolean);
 
           if (allowedNumericIds.length > 0) {
             newRecords = newRecords.filter((r: any) => {
@@ -105,11 +114,15 @@ export async function fetchSearchRecords(
               if (r.__resolvedEngineId) {
                 return engineIds.includes(r.__resolvedEngineId);
               }
-              
+
               // Para mods nativos de GameBanana, buscar el ID numérico en la URL del perfil de la categoría
-              const c = r._aCategory || r._aSubCategory || r._aRootCategory || r._aSuperCategory;
+              const c =
+                r._aCategory ||
+                r._aSubCategory ||
+                r._aRootCategory ||
+                r._aSuperCategory;
               if (!c || !c._sProfileUrl) return false;
-              
+
               const catId = c._sProfileUrl.split("/").pop();
               return allowedNumericIds.includes(catId);
             });
@@ -117,23 +130,26 @@ export async function fetchSearchRecords(
         }
 
         // "AI-like" Relevance Algorithm (Based on YouTube Recommendations PDF)
-        const queryTerms = query.toLowerCase().split(/[^a-z0-9]+/).filter(Boolean);
+        const queryTerms = query
+          .toLowerCase()
+          .split(/[^a-z0-9]+/)
+          .filter(Boolean);
         const currentTimestamp = Math.floor(Date.now() / 1000);
-        
+
         newRecords.sort((a: any, b: any) => {
           // 1. Feature Representation (Views as engagement surrogate, Age as "Example Age")
           const viewsA = a._nViewCount || 0;
           const viewsB = b._nViewCount || 0;
           const downloadsA = a._nDownloadCount || 0;
           const downloadsB = b._nDownloadCount || 0;
-          
+
           const dateA = a._tsDateAdded || 0;
           const dateB = b._tsDateAdded || 0;
-          
+
           // Age in days
           const ageDaysA = Math.max(1, (currentTimestamp - dateA) / 86400);
           const ageDaysB = Math.max(1, (currentTimestamp - dateB) / 86400);
-          
+
           // 2. Semantic matching (Metadatos y Transcripción AI)
           const nameA = (a._sName || "").toLowerCase();
           const nameB = (b._sName || "").toLowerCase();
@@ -142,27 +158,27 @@ export async function fetchSearchRecords(
 
           // Calculate Match ratio based on words
           const exactMatchScore = (name: string, desc: string) => {
-             let score = 0;
-             const cleanName = name.replace(/[^a-z0-9]/g, "");
-             const cleanFullQuery = queryTerms.join("");
-             
-             if (cleanName.includes(cleanFullQuery)) score += 50;
-             else {
-               let titleMatch = false;
-               queryTerms.forEach(term => {
-                 if (name.includes(term)) {
-                   score += 10;
-                   titleMatch = true;
-                 } else if (desc.includes(term)) {
-                   score += 2;
-                 }
-               });
-               
-               // La gente suele buscar por título. Si el título no tiene absolutamente ninguna
-               // coincidencia con la búsqueda, descartamos el mod para evitar spam popular.
-               if (!titleMatch) return 0;
-             }
-             return score;
+            let score = 0;
+            const cleanName = name.replace(/[^a-z0-9]/g, "");
+            const cleanFullQuery = queryTerms.join("");
+
+            if (cleanName.includes(cleanFullQuery)) score += 50;
+            else {
+              let titleMatch = false;
+              queryTerms.forEach((term) => {
+                if (name.includes(term)) {
+                  score += 10;
+                  titleMatch = true;
+                } else if (desc.includes(term)) {
+                  score += 2;
+                }
+              });
+
+              // La gente suele buscar por título. Si el título no tiene absolutamente ninguna
+              // coincidencia con la búsqueda, descartamos el mod para evitar spam popular.
+              if (!titleMatch) return 0;
+            }
+            return score;
           };
 
           const relevanceA = exactMatchScore(nameA, descA);
@@ -173,8 +189,14 @@ export async function fetchSearchRecords(
           const freshnessB = Math.exp(-ageDaysB / 60) * 50000;
 
           // Score = Relevance * (Downloads*2 + Views + Freshness Boost)
-          let scoreA = relevanceA > 0 ? relevanceA * ((downloadsA * 2) + viewsA + freshnessA) : 0;
-          let scoreB = relevanceB > 0 ? relevanceB * ((downloadsB * 2) + viewsB + freshnessB) : 0;
+          let scoreA =
+            relevanceA > 0
+              ? relevanceA * (downloadsA * 2 + viewsA + freshnessA)
+              : 0;
+          let scoreB =
+            relevanceB > 0
+              ? relevanceB * (downloadsB * 2 + viewsB + freshnessB)
+              : 0;
 
           // Allow strict sorting if requested
           if (sortFilter === "new" || sortFilter === "updated") {
@@ -188,14 +210,17 @@ export async function fetchSearchRecords(
         // Eliminar mods que no tienen absolutamente ninguna relevancia (score 0)
         // a menos que estemos ordenando estrictamente por nuevo/actualizado
         if (sortFilter === "popular") {
-          newRecords = newRecords.filter(r => {
-             const n = (r._sName || "").toLowerCase();
-             const qTerms = query.toLowerCase().split(/[^a-z0-9]+/).filter(Boolean);
-             const cleanFull = qTerms.join("");
-             if (n.replace(/[^a-z0-9]/g, "").includes(cleanFull)) return true;
-             
-             // Estricto: Al menos un término debe estar en el título
-             return qTerms.some(term => n.includes(term));
+          newRecords = newRecords.filter((r) => {
+            const n = (r._sName || "").toLowerCase();
+            const qTerms = query
+              .toLowerCase()
+              .split(/[^a-z0-9]+/)
+              .filter(Boolean);
+            const cleanFull = qTerms.join("");
+            if (n.replace(/[^a-z0-9]/g, "").includes(cleanFull)) return true;
+
+            // Estricto: Al menos un término debe estar en el título
+            return qTerms.some((term) => n.includes(term));
           });
         }
 
@@ -212,7 +237,7 @@ export async function fetchSearchRecords(
 
         cachedRecords = [...cachedRecords, ...newRecords];
       })();
-      
+
       await currentFetchPromise;
       currentFetchPromise = null;
     }

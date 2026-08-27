@@ -8,19 +8,22 @@ import type { BackendOperation } from "../types";
 export const windowApi = {
   async minimize() {
     if (platform.platformName === "web") return;
-    if (window.Neutralino?.window?.minimize) return await window.Neutralino.window.minimize();
+    if (window.Neutralino?.window?.minimize)
+      return await window.Neutralino.window.minimize();
     return await platform.call("window.minimize" as BackendOperation);
   },
 
   async maximize() {
     if (platform.platformName === "web") return;
-    if (window.Neutralino?.window?.maximize) return await window.Neutralino.window.maximize();
+    if (window.Neutralino?.window?.maximize)
+      return await window.Neutralino.window.maximize();
     return await platform.call("window.maximize" as BackendOperation);
   },
 
   async unmaximize() {
     if (platform.platformName === "web") return;
-    if (window.Neutralino?.window?.unmaximize) return await window.Neutralino.window.unmaximize();
+    if (window.Neutralino?.window?.unmaximize)
+      return await window.Neutralino.window.unmaximize();
     return await platform.call("window.unmaximize" as BackendOperation);
   },
 
@@ -29,7 +32,8 @@ export const windowApi = {
       document.documentElement.requestFullscreen?.();
       return;
     }
-    if (window.Neutralino?.window?.setFullScreen) return await window.Neutralino.window.setFullScreen();
+    if (window.Neutralino?.window?.setFullScreen)
+      return await window.Neutralino.window.setFullScreen();
     return await platform.call("window.setFullScreen" as BackendOperation);
   },
 
@@ -38,19 +42,22 @@ export const windowApi = {
       document.exitFullscreen?.();
       return;
     }
-    if (window.Neutralino?.window?.exitFullScreen) return await window.Neutralino.window.exitFullScreen();
+    if (window.Neutralino?.window?.exitFullScreen)
+      return await window.Neutralino.window.exitFullScreen();
     return await platform.call("window.exitFullScreen" as BackendOperation);
   },
 
   async show() {
     if (platform.platformName === "web") return;
-    if (window.Neutralino?.window?.show) return await window.Neutralino.window.show();
+    if (window.Neutralino?.window?.show)
+      return await window.Neutralino.window.show();
     return await platform.call("window.show" as BackendOperation);
   },
 
   async hide() {
     if (platform.platformName === "web") return;
-    if (window.Neutralino?.window?.hide) return await window.Neutralino.window.hide();
+    if (window.Neutralino?.window?.hide)
+      return await window.Neutralino.window.hide();
     return await platform.call("window.hide" as BackendOperation);
   },
 
@@ -59,7 +66,8 @@ export const windowApi = {
       window.focus();
       return;
     }
-    if (window.Neutralino?.window?.focus) return await window.Neutralino.window.focus();
+    if (window.Neutralino?.window?.focus)
+      return await window.Neutralino.window.focus();
     return await platform.call("window.focus" as BackendOperation);
   },
 
@@ -68,7 +76,8 @@ export const windowApi = {
       window.moveTo(x, y);
       return;
     }
-    if (window.Neutralino?.window?.move) return await window.Neutralino.window.move(x, y);
+    if (window.Neutralino?.window?.move)
+      return await window.Neutralino.window.move(x, y);
     return await platform.call("window.move" as BackendOperation, { x, y });
   },
 
@@ -77,37 +86,62 @@ export const windowApi = {
       window.resizeTo(width, height);
       return;
     }
-    if (window.Neutralino?.window?.setSize) return await window.Neutralino.window.setSize(width, height);
-    return await platform.call("window.setSize" as BackendOperation, { width, height });
+    if (window.Neutralino?.window?.setSize)
+      return await window.Neutralino.window.setSize(width, height);
+    return await platform.call("window.setSize" as BackendOperation, {
+      width,
+      height,
+    });
   },
 
   async getSize(): Promise<{ width: number; height: number }> {
     if (platform.platformName === "web") {
       return { width: window.outerWidth, height: window.outerHeight };
     }
-    if (window.Neutralino?.window?.getSize) return await window.Neutralino.window.getSize();
-    return (await platform.call("window.getSize" as BackendOperation)) as { width: number; height: number };
+    if (window.Neutralino?.window?.getSize)
+      return await window.Neutralino.window.getSize();
+    return (await platform.call("window.getSize" as BackendOperation)) as {
+      width: number;
+      height: number;
+    };
   },
 
   async getPosition(): Promise<{ x: number; y: number }> {
     if (platform.platformName === "web") {
       return { x: window.screenX, y: window.screenY };
     }
-    if (window.Neutralino?.window?.getPosition) return await window.Neutralino.window.getPosition();
-    return (await platform.call("window.getPosition" as BackendOperation)) as { x: number; y: number };
+    if (window.Neutralino?.window?.getPosition)
+      return await window.Neutralino.window.getPosition();
+    return (await platform.call("window.getPosition" as BackendOperation)) as {
+      x: number;
+      y: number;
+    };
   },
 
   async getDisplays(): Promise<any[]> {
     if (platform.platformName === "web") {
       // Basic fallback
-      return [{
-         id: 0,
-         resolution: { width: window.screen.width, height: window.screen.height },
-         bounds: { x: 0, y: 0, width: window.screen.width, height: window.screen.height }
-      }];
+      return [
+        {
+          id: 0,
+          resolution: {
+            width: window.screen.width,
+            height: window.screen.height,
+          },
+          bounds: {
+            x: 0,
+            y: 0,
+            width: window.screen.width,
+            height: window.screen.height,
+          },
+        },
+      ];
     }
-    if (window.Neutralino?.computer?.getDisplays) return await window.Neutralino.computer.getDisplays();
-    return (await platform.call("window.getDisplays" as BackendOperation)) as any[];
+    if (window.Neutralino?.computer?.getDisplays)
+      return await window.Neutralino.computer.getDisplays();
+    return (await platform.call(
+      "window.getDisplays" as BackendOperation,
+    )) as any[];
   },
 
   async close() {
@@ -127,7 +161,7 @@ export const windowApi = {
       window.moveTo(x, y);
       return;
     }
-    
+
     // Natively center in frontend
     if (window.Neutralino) {
       try {
@@ -142,13 +176,18 @@ export const windowApi = {
             const by = display.bounds?.y || 0;
             const bw = display.resolution?.width || 1920;
             const bh = display.resolution?.height || 1080;
-            if (pos.x >= bx && pos.x < bx + bw && pos.y >= by && pos.y < by + bh) {
+            if (
+              pos.x >= bx &&
+              pos.x < bx + bw &&
+              pos.y >= by &&
+              pos.y < by + bh
+            ) {
               currentDisplay = display;
               break;
             }
           }
         }
-        
+
         const bx = currentDisplay?.bounds?.x || 0;
         const by = currentDisplay?.bounds?.y || 0;
         const resW = currentDisplay?.resolution?.width || 1920;
@@ -165,7 +204,7 @@ export const windowApi = {
     }
 
     return await platform.call("window.center" as BackendOperation);
-  }
+  },
 };
 
 export default windowApi;

@@ -4,10 +4,10 @@ import {
   SEARCH_EASTER_EGGS,
   type EasterEggConfig,
 } from "../../constants/search-easter-egg";
-import type { ModItem } from "../../types";
+import type { GameBananaMod } from "@core";
 
 interface SearchEasterEggProps {
-  mods: ModItem[];
+  mods: GameBananaMod[];
   searchQuery: string;
 }
 
@@ -35,7 +35,12 @@ export const SearchEasterEgg: React.FC<SearchEasterEggProps> = ({
 
   useEffect(() => {
     // Solo si se está buscando algo explícitamente y hay resultados
-    if (!searchQuery || searchQuery.trim().length === 0 || !mods || mods.length === 0) {
+    if (
+      !searchQuery ||
+      searchQuery.trim().length === 0 ||
+      !mods ||
+      mods.length === 0
+    ) {
       setActiveEgg(null);
       return;
     }
@@ -70,7 +75,7 @@ export const SearchEasterEgg: React.FC<SearchEasterEggProps> = ({
             xPercent: -50, // Mantiene el centrado absoluto (sobrescribe translate-x-1/2 de manera segura en GSAP)
             duration: 1.2,
             ease: "power2.out",
-          }
+          },
         )
         .to(
           mainImageRef.current,
@@ -80,7 +85,7 @@ export const SearchEasterEgg: React.FC<SearchEasterEggProps> = ({
             duration: 1.5,
             ease: "power2.in",
           },
-          "-=0.2" // Empieza a caer justo antes de perder todo el impulso, haciendo el pico más suave
+          "-=0.2", // Empieza a caer justo antes de perder todo el impulso, haciendo el pico más suave
         );
 
       // Confeti saliendo de abajo y cayendo sin salir por el techo
@@ -100,7 +105,7 @@ export const SearchEasterEgg: React.FC<SearchEasterEggProps> = ({
           startX + (Math.random() * window.innerWidth - window.innerWidth / 2);
 
         const rotation = Math.random() * 1080 - 540;
-        
+
         // Base scale and peak scale for the 3D exponential effect
         const baseScale = Math.random() * 0.8 + 0.8;
         const peakScale = baseScale * 1.5;
@@ -116,7 +121,7 @@ export const SearchEasterEgg: React.FC<SearchEasterEggProps> = ({
             duration: 2.8,
             ease: "linear",
             delay: delay,
-          }
+          },
         );
 
         // Movimiento parabólico fluido en Y y Escala
@@ -125,12 +130,17 @@ export const SearchEasterEgg: React.FC<SearchEasterEggProps> = ({
           .fromTo(
             el,
             { y: startY, scale: baseScale },
-            { y: peakY, scale: peakScale, duration: 1.2, ease: "power2.out" }
+            { y: peakY, scale: peakScale, duration: 1.2, ease: "power2.out" },
           )
           .to(
             el,
-            { y: window.innerHeight + 200, scale: baseScale, duration: 1.6, ease: "power2.in" },
-            "-=0.2" // Para que la transición de subir a bajar sea redonda
+            {
+              y: window.innerHeight + 200,
+              scale: baseScale,
+              duration: 1.6,
+              ease: "power2.in",
+            },
+            "-=0.2", // Para que la transición de subir a bajar sea redonda
           );
       });
     }

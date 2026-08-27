@@ -27,9 +27,11 @@ function encodePowerShell(script: string) {
  * @param {boolean} [enabled=true] - Whether to register (true) or unregister (false) the protocol.
  * @returns {Promise<boolean>} True if successful, false otherwise.
  */
-export async function syncProtocolRegistration(enabled: boolean = true): Promise<boolean> {
+export async function syncProtocolRegistration(
+  enabled: boolean = true,
+): Promise<boolean> {
   if (platform.platformName !== "desktop" || !window.NL_OS) {
-    return true; 
+    return true;
   }
 
   const executablePath = getExecutablePath();
@@ -46,21 +48,26 @@ export async function syncProtocolRegistration(enabled: boolean = true): Promise
     /** Delegated to bash for native Linux environments and Crostini (Chromebooks) */
     return await syncLinuxProtocol(executablePath, enabled);
   } else if (osName === "Darwin") {
-    /** 
+    /**
      * MacOS requires configuration from Info.plist during packaging (.app).
      * If using an official bundler, CFBundleURLTypes must be injected there.
      */
-    console.info("On macOS, the weekbox:// protocol must be configured in Info.plist (CFBundleURLTypes).");
+    console.info(
+      "On macOS, the weekbox:// protocol must be configured in Info.plist (CFBundleURLTypes).",
+    );
     return true;
   }
 
   return false;
 }
 
-async function syncWindowsProtocol(executablePath: string, enabled: boolean): Promise<boolean> {
+async function syncWindowsProtocol(
+  executablePath: string,
+  enabled: boolean,
+): Promise<boolean> {
   const key = quotePowerShell(PROTOCOL_KEY);
   const executable = quotePowerShell(executablePath);
-  
+
   const script = enabled
     ? [
         `$key = ${key}`,
@@ -90,11 +97,11 @@ async function syncWindowsProtocol(executablePath: string, enabled: boolean): Pr
   try {
     const encoded = encodePowerShell(script);
     if (!window.Neutralino?.os?.execCommand) return false;
-    
+
     const result = await window.Neutralino.os.execCommand(
-      `powershell.exe -NoProfile -NonInteractive -EncodedCommand ${encoded}`
+      `powershell.exe -NoProfile -NonInteractive -EncodedCommand ${encoded}`,
     );
-    
+
     if (result.exitCode !== 0) throw new Error(result.stdErr);
     return true;
   } catch (error) {
@@ -103,7 +110,10 @@ async function syncWindowsProtocol(executablePath: string, enabled: boolean): Pr
   }
 }
 
-async function syncLinuxProtocol(executablePath: string, enabled: boolean): Promise<boolean> {
+async function syncLinuxProtocol(
+  executablePath: string,
+  enabled: boolean,
+): Promise<boolean> {
   try {
     if (!window.Neutralino?.os?.execCommand) return false;
 
@@ -122,9 +132,13 @@ EOF
 xdg-mime default weekbox-deeplink.desktop x-scheme-handler/weekbox
 update-desktop-database ~/.local/share/applications || true
       `.trim();
-      await window.Neutralino.os.execCommand(`sh -c '${script.replace(/'/g, "'\\''")}'`);
+      await window.Neutralino.os.execCommand(
+        `sh -c '${script.replace(/'/g, "'\\''")}'`,
+      );
     } else {
-      await window.Neutralino.os.execCommand(`sh -c 'rm -f ~/.local/share/applications/weekbox-deeplink.desktop && update-desktop-database ~/.local/share/applications || true'`);
+      await window.Neutralino.os.execCommand(
+        `sh -c 'rm -f ~/.local/share/applications/weekbox-deeplink.desktop && update-desktop-database ~/.local/share/applications || true'`,
+      );
     }
     return true;
   } catch (error) {
@@ -138,26 +152,31 @@ update-desktop-database ~/.local/share/applications || true
  * @param {string[]} args - The command line arguments to parse.
  * @returns {{ type: string; id: number } | null} The parsed mod data or null if invalid.
  */
-export function parseDeeplinkArgs(args: string[]): { type: string; id: number } | null {
+export function parseDeeplinkArgs(
+  args: string[],
+): { type: string; id: number } | null {
   if (!args || !Array.isArray(args)) return null;
-  
+
   /** Locate the first argument that begins with the local scheme expression */
-  const linkArg = args.find(arg => typeof arg === 'string' && arg.toLowerCase().startsWith("weekbox://"));
+  const linkArg = args.find(
+    (arg) =>
+      typeof arg === "string" && arg.toLowerCase().startsWith("weekbox://"),
+  );
   if (!linkArg) return null;
 
   const directMatch = String(linkArg || "")
     .trim()
     .match(/^weekbox:\/\/mod(?:\/|,)(\d+)\/?$/i);
-    
+
   if (directMatch) return { type: "mod", id: Number(directMatch[1]) };
-  
+
   try {
     const url = new URL(linkArg);
     if (url.protocol !== "weekbox:") return null;
-    
+
     const type = url.hostname.toLowerCase();
     const id = Number(url.pathname.replace(/^\//, ""));
-    
+
     if (type !== "mod" || !Number.isInteger(id) || id <= 0) return null;
     return { type, id };
   } catch {

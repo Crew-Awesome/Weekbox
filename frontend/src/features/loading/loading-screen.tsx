@@ -83,7 +83,7 @@ export const LoadingScreen: React.FC<LoadingScreenProps> = ({
     // First, preload the background image so it is fully visible before heavy tasks start
     const preloadImage = new Image();
     preloadImage.src = loadingBg;
-    
+
     const startTasksAfterRender = () => {
       if (isCancelled) return;
       // Give the browser a tiny moment to actually paint the image on the screen

@@ -24,7 +24,7 @@ const Utils = {
   },
   colors: {
     extractColor,
-  }
+  },
 };
 
 export default Utils;

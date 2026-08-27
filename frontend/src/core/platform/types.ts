@@ -42,7 +42,14 @@ declare global {
         getDisplays: () => Promise<any[]>;
       };
       os?: {
-        execCommand: (command: string) => Promise<{ pid: number; exitCode: number; stdOut: string; stdErr: string }>;
+        execCommand: (
+          command: string,
+        ) => Promise<{
+          pid: number;
+          exitCode: number;
+          stdOut: string;
+          stdErr: string;
+        }>;
       };
     };
     NL_ARGS?: string[];

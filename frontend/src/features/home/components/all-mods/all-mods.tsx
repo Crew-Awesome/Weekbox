@@ -42,10 +42,10 @@ export const AllMods: React.FC<AllModsProps> = ({
 
     const sLabel = sortLabels[sortFilter] || "Discovery";
     let cLabel = "All Engines";
-    
+
     if (categoryFilter.length === 1 && categoryFilter[0] !== "all") {
       const engineKey = Object.keys(ENGINE_CATEGORIES).find(
-        (key) => ENGINE_CATEGORIES[Number(key)].id === categoryFilter[0]
+        (key) => ENGINE_CATEGORIES[Number(key)].id === categoryFilter[0],
       );
       if (engineKey) {
         cLabel = ENGINE_CATEGORIES[Number(engineKey)].name;
@@ -53,7 +53,7 @@ export const AllMods: React.FC<AllModsProps> = ({
     } else if (categoryFilter.length > 1) {
       cLabel = `${categoryFilter.length} Engines`;
     }
-    
+
     return `${sLabel} - ${cLabel}`;
   }, [sortFilter, categoryFilter, searchQuery]);
 
@@ -69,7 +69,10 @@ export const AllMods: React.FC<AllModsProps> = ({
             const isBanner = i === 3 || i === 11;
             if (isBanner) {
               return (
-                <div key={`skel-${i}`} className="col-span-1 sm:col-span-2 lg:col-span-3 2xl:col-span-4 h-full">
+                <div
+                  key={`skel-${i}`}
+                  className="col-span-1 sm:col-span-2 lg:col-span-3 2xl:col-span-4 h-full"
+                >
                   <Shared.molecules.Banner
                     isLoading
                     title="Loading"
@@ -94,6 +97,22 @@ export const AllMods: React.FC<AllModsProps> = ({
               </div>
             );
           })}
+        </div>
+      </>
+    );
+  }
+
+  if (!loading && mods.length === 0 && searchQuery.trim().length > 0) {
+    return (
+      <>
+        <Shared.atoms.Titles title={dynamicTitle} />
+        <div className="flex flex-col items-center justify-center py-32 w-full text-center">
+          <span className="text-[var(--wb-on-surface)] text-3xl font-black opacity-80 uppercase tracking-wide">
+            Nothing to see here
+          </span>
+          <span className="text-[var(--wb-on-surface-variant)] text-base mt-3 opacity-60 uppercase tracking-widest">
+            Search for something else
+          </span>
         </div>
       </>
     );
@@ -140,6 +159,13 @@ export const AllMods: React.FC<AllModsProps> = ({
                     }).format(item.views)}
                     thumbnail={item.thumbnail}
                     icon={item.engineIcon}
+                    iconTooltip={
+                      item.engineId
+                        ? Object.values(ENGINE_CATEGORIES).find(
+                            (c) => c.id === item.engineId,
+                          )?.name
+                        : undefined
+                    }
                     isNsfw={item.isNsfw}
                     onClick={() => onCardClick(modItem)}
                     className="mb-8 mt-4 shadow-2xl rounded-none sm:rounded-none"
@@ -151,6 +177,13 @@ export const AllMods: React.FC<AllModsProps> = ({
                   description={item.description}
                   thumbnail={item.thumbnail}
                   icon={item.engineIcon}
+                  iconTooltip={
+                    item.engineId
+                      ? Object.values(ENGINE_CATEGORIES).find(
+                          (c) => c.id === item.engineId,
+                        )?.name
+                      : undefined
+                  }
                   isNsfw={item.isNsfw}
                   clickableArea="whole-card"
                   onClick={() => onCardClick(modItem)}

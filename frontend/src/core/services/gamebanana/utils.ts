@@ -1,4 +1,8 @@
-import { ENGINE_CATEGORIES, EXCLUDED_CATEGORIES, ALLOW_NSFW } from "./constants";
+import {
+  ENGINE_CATEGORIES,
+  EXCLUDED_CATEGORIES,
+  ALLOW_NSFW,
+} from "./constants";
 
 /**
  * @description Converts a Unix timestamp into a human-readable relative time string.
@@ -29,7 +33,8 @@ export function getEngineId(record: any): string {
   const extractId = (cat: any) => {
     if (!cat) return null;
     if (cat._idRow) return cat._idRow;
-    if (cat._sProfileUrl) return parseInt(cat._sProfileUrl.split("/").pop() || "0", 10);
+    if (cat._sProfileUrl)
+      return parseInt(cat._sProfileUrl.split("/").pop() || "0", 10);
     return null;
   };
 
@@ -40,7 +45,7 @@ export function getEngineId(record: any): string {
     extractId(record._aSubCategory),
     record.__injectedCategoryId,
   ];
-  
+
   for (const id of ids) {
     if (id && ENGINE_CATEGORIES[id as keyof typeof ENGINE_CATEGORIES])
       return ENGINE_CATEGORIES[id as keyof typeof ENGINE_CATEGORIES].id;
@@ -65,9 +70,9 @@ export function getEngineIcon(engineId: string): string | undefined {
  */
 export function checkIsNsfw(record: any): boolean {
   if (record._bIsNsfw || record._bContainsNsfw) return true;
-  
+
   // GameBanana's "Not Safe For Work" category ID is often 43772 or we can check the names if available.
-  // For now, if it's in EXCLUDED_CATEGORIES, it might be NSFW. 
+  // For now, if it's in EXCLUDED_CATEGORIES, it might be NSFW.
   // Let's assume 43772 is the explicit NSFW category ID for FNF.
   const ids = [
     record._aCategory?._idRow,

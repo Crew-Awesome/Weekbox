@@ -29,9 +29,12 @@ export async function fetchRipeRecords(
   maxPages = 4,
   maxRecords = 30,
 ) {
-  const isAll = !targetEngineIds || targetEngineIds.length === 0 || (targetEngineIds.length === 1 && targetEngineIds[0] === "all");
+  const isAll =
+    !targetEngineIds ||
+    targetEngineIds.length === 0 ||
+    (targetEngineIds.length === 1 && targetEngineIds[0] === "all");
   const cacheKey = isAll ? "all" : targetEngineIds!.slice().sort().join(",");
-  
+
   if (!ripeCache.has(cacheKey)) {
     ripeCache.set(cacheKey, {
       records: [],
@@ -51,10 +54,14 @@ export async function fetchRipeRecords(
 
   let categoryIds = Object.keys(ENGINE_CATEGORIES).map(Number);
   if (!isAll) {
-    categoryIds = targetEngineIds!.map(id => {
-      const match = Object.entries(ENGINE_CATEGORIES).find(([_, cat]) => cat.id === id);
-      return match ? Number(match[0]) : -1;
-    }).filter(id => id !== -1);
+    categoryIds = targetEngineIds!
+      .map((id) => {
+        const match = Object.entries(ENGINE_CATEGORIES).find(
+          ([_, cat]) => cat.id === id,
+        );
+        return match ? Number(match[0]) : -1;
+      })
+      .filter((id) => id !== -1);
   }
 
   while (

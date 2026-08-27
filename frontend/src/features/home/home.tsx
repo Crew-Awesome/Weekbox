@@ -1,26 +1,28 @@
 import React, { useState, useEffect } from "react";
-import { useSearchParams } from "react-router-dom";
+
 import type { ModItem } from "./types";
 import { FeaturedMods } from "./components/featured-mods";
 import { AllMods } from "./components/all-mods";
 import { ModDetailsModal } from "./components/mod-details-modal";
 import { HomeSearchbar } from "./components/home-searchbar";
 import { useAppStore } from "../../store";
+import { useHomeStore } from "../../store/home-store";
 
 export const Home: React.FC = () => {
   const [selectedCard, setSelectedCard] = useState<ModItem | null>(null);
   const activeModItem = useAppStore((state) => state.activeModItem);
   const setActiveModItem = useAppStore((state) => state.setActiveModItem);
 
-  const [searchParams, setSearchParams] = useSearchParams();
-
-  // Lifted state synchronized with URL
-  const searchQuery = searchParams.get("q") || "";
-  const sortFilter = searchParams.get("sort") || "popular";
-  
-  // Categorías pueden venir separadas por comas en la URL: ?engines=vslice,psych
-  const engineParam = searchParams.get("engines");
-  const categoryFilter = engineParam ? engineParam.split(",") : ["all"];
+  const {
+    searchQuery,
+    setSearchQuery,
+    sortFilter,
+    setSortFilter,
+    categoryFilter,
+    setCategoryFilter,
+    scrollPosition,
+    setScrollPosition,
+  } = useHomeStore();
 
   useEffect(() => {
     if (activeModItem) {
@@ -28,60 +30,43 @@ export const Home: React.FC = () => {
     }
   }, [activeModItem]);
 
-  const updateUrlParams = React.useCallback((updates: Record<string, string | null>) => {
-    const newParams = new URLSearchParams(searchParams);
-    for (const [key, value] of Object.entries(updates)) {
-      if (value === null || value === "" || value === "popular" || value === "all") {
-        newParams.delete(key);
-      } else {
-        newParams.set(key, value);
-      }
+  useEffect(() => {
+    const mainContainer = document.getElementById("main-scroll-container");
+    if (mainContainer && scrollPosition > 0) {
+      requestAnimationFrame(() => {
+        mainContainer.scrollTop = scrollPosition;
+      });
     }
-    setSearchParams(newParams, { replace: true });
-  }, [searchParams, setSearchParams]);
+
+    return () => {
+      if (mainContainer) {
+        setScrollPosition(mainContainer.scrollTop);
+      }
+    };
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleCloseModal = () => {
     setSelectedCard(null);
     setActiveModItem(null);
-    updateUrlParams({ modal: null }); // Si tuviéramos modal en URL
   };
-
-  const handleSearch = (query: string) => {
-    updateUrlParams({ q: query });
-  };
-
-  const handleSetSortFilter = (val: string) => {
-    updateUrlParams({ sort: val });
-  };
-
-  const handleSetCategoryFilter = (val: string[]) => {
-    updateUrlParams({ engines: val.includes("all") ? null : val.join(",") });
-  };
-
-  // Rest of the UI syncs perfectly with modal tracking
-  useEffect(() => {
-    if (selectedCard) {
-      updateUrlParams({ modal: (selectedCard as any).id?.toString() || selectedCard.name });
-    } else {
-      updateUrlParams({ modal: null });
-    }
-  }, [selectedCard]);
-
-  // Si abrimos la URL con ?modal=id, podríamos restaurarlo (WIP)
 
   return (
     <div className="items-center -m-8 justify-center text-white font-sans">
       <div className="relative">
-        <HomeSearchbar 
-          onSearchSubmit={handleSearch} 
+        <HomeSearchbar
+          onSearchSubmit={setSearchQuery}
           sortFilter={sortFilter}
-          setSortFilter={handleSetSortFilter}
+          setSortFilter={setSortFilter}
           categoryFilter={categoryFilter}
-          setCategoryFilter={handleSetCategoryFilter}
+          setCategoryFilter={setCategoryFilter}
         />
 
         <div className="pt-2 sm:pt-8 px-8">
-          <FeaturedMods onCardClick={setSelectedCard as any} searchQuery={searchQuery} engineIds={categoryFilter} />
+          <FeaturedMods
+            onCardClick={setSelectedCard as any}
+            searchQuery={searchQuery}
+            engineIds={categoryFilter}
+          />
           <AllMods
             onCardClick={setSelectedCard}
             searchQuery={searchQuery}
