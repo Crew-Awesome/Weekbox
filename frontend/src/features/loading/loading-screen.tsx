@@ -73,7 +73,7 @@ export const LoadingScreen: React.FC<LoadingScreenProps> = ({
       }
 
       if (isCancelled) return;
-      
+
       setProgress(100);
       setAction("Ready!");
       finishLoading();

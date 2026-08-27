@@ -1,10 +1,10 @@
-import React, { useCallback } from "react";
+import React from "react";
 import Features from "@features";
 import Core from "@core";
 import Shared from "@shared";
 import Utils from "@utils";
 import type { LoadingTask } from "@features";
-import { Outlet, useNavigate } from "react-router-dom";
+import { Outlet } from "react-router-dom";
 
 // Moved outside the component to keep the reference stable across renders.
 // This prevents the LoadingScreen's useEffect from re-triggering unnecessarily.
@@ -34,20 +34,10 @@ const initTasks: LoadingTask[] = [
 ];
 
 function App() {
-  const navigate = useNavigate();
+  const handleNavigate = Utils.hooks.useAppNavigation();
 
   // Activates background deep-link catcher
   Utils.hooks.useDeeplinkManager();
-
-  const handleNavigate = useCallback(
-    (view: string) => {
-      navigate(`/${view}`);
-      document
-        .getElementById("main-scroll-container")
-        ?.scrollTo({ top: 0, behavior: "smooth" });
-    },
-    [navigate],
-  );
 
   return (
     <div className="flex h-screen w-full bg-[var(--wb-bg)] text-[var(--wb-text-main)] overflow-hidden font-sans relative">

@@ -37,34 +37,36 @@ export async function fetchSearchRecords(
       sortFilter !== cachedSortFilter;
 
     if (isNewQuery) {
-      if (currentFetchPromise) await currentFetchPromise;
       cachedQuery = query;
       cachedEngineIds = currentEngineIds;
       cachedSortFilter = sortFilter;
       cachedRecords = [];
       chunkIndex = -1;
       hasReachedEnd = false;
+      currentFetchPromise = null;
     }
 
-    // Wait for any existing fetch before evaluating while loop
-    if (currentFetchPromise) {
-      await currentFetchPromise;
-    }
-
-    // Si no tenemos suficientes elementos en caché para la página actual, cargamos más hasta llenar
     let chunksLoadedThisCall = 0;
 
-    // LIMITAMOS a máximo 2 chunks (150 mods de GameBanana) por llamada para evitar
-    // ataques DDOS al servidor si el filtro estricto descarta demasiados mods basura.
     while (
       cachedRecords.length < page * perPage &&
       chunkIndex < 50 &&
       !hasReachedEnd &&
       chunksLoadedThisCall < 2
     ) {
+      if (currentFetchPromise) {
+        await currentFetchPromise;
+        if (query !== cachedQuery || currentEngineIds !== cachedEngineIds) {
+          return [];
+        }
+        continue;
+      }
+
       chunksLoadedThisCall++;
       chunkIndex++;
       const startGBPage = chunkIndex * CHUNK_PAGES + 1;
+      const expectedQuery = query;
+      const expectedEngineIds = currentEngineIds;
 
       currentFetchPromise = (async () => {
         const requests = Array.from({ length: CHUNK_PAGES }).map(
@@ -80,10 +82,13 @@ export async function fetchSearchRecords(
           },
         );
 
-        // Agregamos los 300 mods más populares de todos los tiempos al pool de búsqueda
         const popularPromise = fetchPopularRecords(null, 10, 300);
-
         const pages = await Promise.all(requests);
+        const popularMods = await popularPromise;
+
+        if (cachedQuery !== expectedQuery || cachedEngineIds !== expectedEngineIds) {
+          return;
+        }
 
         let emptyCount = 0;
         for (const p of pages) {
@@ -93,7 +98,6 @@ export async function fetchSearchRecords(
           hasReachedEnd = true;
         }
 
-        const popularMods = await popularPromise;
         let newRecords = [...pages.flat(), ...popularMods];
 
         // Filter by Multiple Engines

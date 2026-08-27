@@ -6,9 +6,8 @@ export interface ProgressBarProps {
 }
 
 /**
- * @description Atom: Progress Bar.
+ * Atom: Progress Bar.
  * Displays the progress percentage and the current action being executed.
- * @param {ProgressBarProps} props - Component properties.
  */
 export const ProgressBar: React.FC<ProgressBarProps> = ({
   progress,
@@ -25,7 +24,7 @@ export const ProgressBar: React.FC<ProgressBarProps> = ({
       </div>
       <div className="h-2 w-full bg-white/20 rounded-full overflow-hidden backdrop-blur-sm border border-white/10 shadow-inner">
         <div
-          className="h-full bg-[var(--wb-primary)] rounded-full transition-all duration-300 ease-out shadow-[0_0_10px_var(--wb-primary)]"
+          className="h-full bg-[var(--wb-primary)] rounded-full shadow-[0_0_10px_var(--wb-primary)]"
           style={{ width: `${clampedProgress}%` }}
         />
       </div>

@@ -3,7 +3,7 @@ import type { IPlatformBridge, PlatformType } from "./types";
 import neuConfig from "../../../../neutralino.config.json";
 
 /**
- * Adaptador de plataforma para el entorno de Escritorio (Neutralinojs + Extensión Node.js).
+ * Platform adapter for Desktop environments (Neutralinojs + Node.js Extension).
  */
 export class DesktopAdapter implements IPlatformBridge {
   readonly platformName: PlatformType = "desktop";
@@ -14,9 +14,6 @@ export class DesktopAdapter implements IPlatformBridge {
     return this._isReady;
   }
 
-  /**
-   * Inicializa la conexión con Neutralino y la extensión de Node.js.
-   */
   initialize(): void {
     const neutralino = window.Neutralino;
     const NodeExt = window.NodeExtension;
@@ -25,24 +22,20 @@ export class DesktopAdapter implements IPlatformBridge {
       neutralino.init();
       window.NODE = new NodeExt(true);
 
-      /** Listens for ping results from the Node.js extension */
       neutralino.events.on("pingResult", (event: { detail: any }) => {
         this.emitLocalEvent("pingResult", event.detail);
       });
 
-      /** Notifies when a new instance is launched via Deeplink (Native) */
       neutralino.events.on("newInstance", (event: any) => {
         console.log("RECEIVED NEW INSTANCE NATIVELY:", event);
         console.log("DETAIL IS:", event?.detail);
         this.emitLocalEvent("newInstance", event);
       });
 
-      /** Notifies when a new instance is launched via Deeplink (Custom HTTP fallback) */
       neutralino.events.on("deeplinkArgs", (event: any) => {
         this.emitLocalEvent("deeplinkArgs", event);
       });
 
-      /** Notifies when the Neutralino native environment is ready */
       neutralino.events.on("ready", () => {
         this._isReady = true;
         this.emitLocalEvent("ready", true);

@@ -110,7 +110,6 @@ export async function fetchPopularRecords(
 
       for (const mod of allFetched) {
         if (
-          mod?._sModelName !== "Mod" ||
           mod?._bIsTrashed ||
           mod?._bIsDeleted ||
           mod?._sInitialVisibility === "hide" ||

@@ -2,7 +2,7 @@ import type { BackendOperation, BackendResult } from "../backend/types";
 import type { IPlatformBridge, PlatformType } from "./types";
 
 /**
- * Adaptador de plataforma para el entorno Web / Navegador estándar (desarrollo y pruebas en navegador sin Neutralino ni Expo).
+ * Platform adapter for the Web / Standard Browser environment.
  */
 export class WebAdapter implements IPlatformBridge {
   readonly platformName: PlatformType = "web";
@@ -23,11 +23,25 @@ export class WebAdapter implements IPlatformBridge {
     return "1.0.0 (Web)";
   }
 
-  call<Operation extends BackendOperation>(): Promise<
-    BackendResult<Operation>
-  > {
+  async call<Operation extends BackendOperation>(
+    operation: Operation,
+    data?: any
+  ): Promise<BackendResult<Operation>> {
+    // Intercept HTTP operations and perform them natively in the browser via fetch
+    if (operation === "http.fetchJson") {
+      const response = await fetch(data.url, data.options);
+      if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+      return (await response.json()) as BackendResult<Operation>;
+    }
+    
+    if (operation === "http.fetchText") {
+      const response = await fetch(data.url, data.options);
+      if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+      return (await response.text()) as BackendResult<Operation>;
+    }
+
     return Promise.reject(
-      new Error("Backend calls require the desktop platform."),
+      new Error(`Backend operation '${operation}' requires the desktop platform and cannot be run in the browser :(`),
     );
   }
 
