@@ -22,9 +22,10 @@ import {
 export type ModFilter = "popular" | "new" | "ripe" | "updated";
 
 /**
- * @description Master router for fetching Mods from GameBanana. Acts as a unified entry point
+ * Master router for fetching Mods from GameBanana. Acts as a unified entry point
  * that redirects the request to the appropriate sub-algorithm (search, popular, ripe, discovery).
  * Retrieves shallow list of mods and immediately fetches deep metadata (Mod/Multi) to hydrate UI fields.
+ * 
  * @param {ModFilter} filter - The active sorting or mode filter (e.g., `"popular"`, `"new"`, `"ripe"`, `"updated"`). Defaults to `"popular"`.
  * @param {number} page - Current page to request. Defaults to `1`.
  * @param {number} perPage - Number of items to return per page. Defaults to `15`.

@@ -1,7 +1,7 @@
 import type { GameBananaMod } from "@core";
 
 /**
- * @description Configuration for an easter egg.
+ * Configuration for an easter egg.
  */
 export interface EasterEggConfig {
   id: string;
@@ -13,7 +13,7 @@ export interface EasterEggConfig {
 export const EASTER_EGG_BASE_PATH = "/assets/icons/search-easter-egg";
 
 /**
- * @description Array of easter eggs configurations for the home searchbar.
+ * Array of easter eggs configurations for the home searchbar.
  */
 export const SEARCH_EASTER_EGGS: EasterEggConfig[] = [
   {

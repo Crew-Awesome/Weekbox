@@ -12,9 +12,10 @@ let currentFetchPromise: Promise<void> | null = null;
 const CHUNK_PAGES = 5; // Fetches 5 * 15 = 75 items per massive chunk
 
 /**
- * @description Advanced hybrid search algorithm that merges GameBanana's native search results with
+ * Advanced hybrid search algorithm that merges GameBanana's native search results with
  * an offline popular cache. Applies an AI-like relevance scoring inspired by YouTube's recommendation system.
  * Filters strictly by title, supports pagination, multiple engines, and deduplicates automatically.
+ * 
  * @param {string} query - The search string input by the user.
  * @param {string[]} engineIds - An array of engine IDs to filter the results (e.g. `["vslice", "psych"]`). Defaults to `["all"]`.
  * @param {string} sortFilter - The active sort mode (e.g. `"popular"`, `"new"`, `"updated"`). Defaults to `"popular"`.
@@ -133,7 +134,7 @@ export async function fetchSearchRecords(
           }
         }
 
-        // "AI-like" Relevance Algorithm (Based on YouTube Recommendations PDF)
+        // "AI-like" Relevance Algorithm (Based on Deep Neural Networks for YouTube Recomentadions PDF)
         const queryTerms = query
           .toLowerCase()
           .split(/[^a-z0-9]+/)
@@ -154,7 +155,7 @@ export async function fetchSearchRecords(
           const ageDaysA = Math.max(1, (currentTimestamp - dateA) / 86400);
           const ageDaysB = Math.max(1, (currentTimestamp - dateB) / 86400);
 
-          // 2. Semantic matching (Metadatos y Transcripción AI)
+          // 2. Semantic matching (Metadata and AI Transcription)
           const nameA = (a._sName || "").toLowerCase();
           const nameB = (b._sName || "").toLowerCase();
           const descA = JSON.stringify(a).toLowerCase(); // Simulating deep metadata check
@@ -178,8 +179,6 @@ export async function fetchSearchRecords(
                 }
               });
 
-              // La gente suele buscar por título. Si el título no tiene absolutamente ninguna
-              // coincidencia con la búsqueda, descartamos el mod para evitar spam popular.
               if (!titleMatch) return 0;
             }
             return score;
@@ -188,7 +187,7 @@ export async function fetchSearchRecords(
           const relevanceA = exactMatchScore(nameA, descA);
           const relevanceB = exactMatchScore(nameB, descB);
 
-          // 3. Expected Engagement & Freshness (PDF Section 3.3 and 4.2)
+          // 3. Expected Engagement & Freshness (cite:[3.3] cite:[4.2])
           const freshnessA = Math.exp(-ageDaysA / 60) * 50000;
           const freshnessB = Math.exp(-ageDaysB / 60) * 50000;
 

@@ -12,8 +12,9 @@ interface FeaturedModsProps {
 }
 
 /**
- * @description Renders a wide Carousel for Featured Mods (Community Picks, Mods of the Month, etc.).
+ * Renders a wide Carousel for Featured Mods (Community Picks, Mods of the Month, etc.).
  * Maps the custom features from the backend JSON into a sleek, auto-playing UI.
+ * 
  * @param {FeaturedModsProps} props - Component props.
  */
 export const FeaturedMods: React.FC<FeaturedModsProps> = ({
@@ -26,7 +27,10 @@ export const FeaturedMods: React.FC<FeaturedModsProps> = ({
     null,
   );
 
-  if (featuredMods.length === 0) {
+  // Prevent UI explosion by limiting items to 4 when transitioning to search results
+  const displayMods = searchQuery ? featuredMods.slice(0, 4) : featuredMods;
+
+  if (displayMods.length === 0) {
     if (searchQuery.trim().length > 0) {
       return null;
     }
@@ -64,7 +68,7 @@ export const FeaturedMods: React.FC<FeaturedModsProps> = ({
           autoInterval={4500}
           className="aspect-[4/3] sm:aspect-[21/9]"
           onItemClick={(index) => {
-            const item = featuredMods[index];
+            const item = displayMods[index];
             if (item && onCardClick) {
               onCardClick({
                 name: item.title,
@@ -77,18 +81,18 @@ export const FeaturedMods: React.FC<FeaturedModsProps> = ({
           }}
           renderIndicators={(api) => {
             // Determine active category based on the carousel's current index
-            const activeMod = featuredMods[api.activeIndex];
+            const activeMod = displayMods[api.activeIndex];
             const activeLabel = activeMod?.__featuredLabel || categories[0];
 
             const handlePrevCard = () => {
               api.goToLogicalIndex(
-                (api.activeIndex - 1 + featuredMods.length) %
-                  featuredMods.length,
+                (api.activeIndex - 1 + displayMods.length) %
+                  displayMods.length,
               );
             };
 
             const handleNextCard = () => {
-              api.goToLogicalIndex((api.activeIndex + 1) % featuredMods.length);
+              api.goToLogicalIndex((api.activeIndex + 1) % displayMods.length);
             };
 
             return (
@@ -103,8 +107,8 @@ export const FeaturedMods: React.FC<FeaturedModsProps> = ({
                 )}
 
                 {/* Pills (dots) rendered only for the current section */}
-                <div className="flex gap-2 justify-center items-center pointer-events-auto">
-                  {featuredMods
+                <div className="flex gap-2 justify-center items-center pointer-events-auto flex-wrap">
+                  {displayMods
                     .map((m, idx) => ({ ...m, absoluteIndex: idx }))
                     .filter((m) =>
                       !searchQuery ? m.__featuredLabel === activeLabel : true,
@@ -142,7 +146,7 @@ export const FeaturedMods: React.FC<FeaturedModsProps> = ({
             );
           }}
         >
-          {featuredMods.map((item) => (
+          {displayMods.map((item) => (
             <div
               key={`featured-${item.id}`}
               className="w-full h-full p-2 sm:p-4"

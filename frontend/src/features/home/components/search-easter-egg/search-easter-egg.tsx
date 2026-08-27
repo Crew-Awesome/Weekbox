@@ -12,7 +12,8 @@ interface SearchEasterEggProps {
 }
 
 /**
- * @description Listens to the displayed mods and triggers a GSAP-animated easter egg (confetti and main image) if a match is found.
+ * Listens to the displayed mods and triggers a GSAP-animated easter egg (confetti and main image) if a match is found.
+ * 
  * @param {SearchEasterEggProps} props - Component properties.
  * @returns {React.ReactElement | null} The animated overlay or null.
  */
@@ -34,7 +35,7 @@ export const SearchEasterEgg: React.FC<SearchEasterEggProps> = ({
   };
 
   useEffect(() => {
-    // Solo si se está buscando algo explícitamente y hay resultados
+    // Only trigger if the user is explicitly searching and there are results
     if (
       !searchQuery ||
       searchQuery.trim().length === 0 ||
@@ -45,14 +46,14 @@ export const SearchEasterEgg: React.FC<SearchEasterEggProps> = ({
       return;
     }
 
-    // Solo revisa los primeros 4 resultados
+    // Only check the first 4 results
     const topMods = mods.slice(0, 4);
 
-    // Encuentra todos los Easter Eggs que coincidan con alguno de los primeros 4 mods
+    // Find all Easter Eggs that match any of the top 4 mods
     const matchingEggs = SEARCH_EASTER_EGGS.filter((egg) => egg.match(topMods));
 
     if (matchingEggs.length > 0) {
-      // Si hay más de un easter egg que coincide, elige uno aleatorio
+      // Pick a random easter egg if multiple match
       const randomIndex = Math.floor(Math.random() * matchingEggs.length);
       setActiveEgg(matchingEggs[randomIndex]);
     } else {
@@ -62,17 +63,17 @@ export const SearchEasterEgg: React.FC<SearchEasterEggProps> = ({
 
   useEffect(() => {
     if (activeEgg && containerRef.current && mainImageRef.current) {
-      // Imagen Principal (salto fluido sin quedarse congelada)
+      // Main Image (fluid jump without freezing)
       const mainTl = gsap.timeline();
       mainTl
         .fromTo(
           mainImageRef.current,
           { y: "120%", opacity: 1, scale: 0.7, rotation: 0, xPercent: -50 },
           {
-            y: "-30%", // Sube mucho más sin salir de la pantalla
-            scale: 1.05, // Escala sutil para que no crezca exageradamente
-            rotation: Math.random() > 0.5 ? 15 : -15, // Efecto de vuelco sutil
-            xPercent: -50, // Mantiene el centrado absoluto (sobrescribe translate-x-1/2 de manera segura en GSAP)
+            y: "-30%", // Move up without leaving the screen
+            scale: 1.05, // Subtle scaling to avoid exaggeration
+            rotation: Math.random() > 0.5 ? 15 : -15, // Subtle tipping effect
+            xPercent: -50, // Absolute centering (safely overwrites translate-x-1/2 in GSAP)
             duration: 1.2,
             ease: "power2.out",
           },
@@ -80,23 +81,23 @@ export const SearchEasterEgg: React.FC<SearchEasterEggProps> = ({
         .to(
           mainImageRef.current,
           {
-            y: "120%", // Cae de vuelta
-            scale: 0.7, // Vuelve a su tamaño original cayendo
+            y: "120%", // Falls back down
+            scale: 0.7, // Returns to original size while falling
             duration: 1.5,
             ease: "power2.in",
           },
-          "-=0.2", // Empieza a caer justo antes de perder todo el impulso, haciendo el pico más suave
+          "-=0.2", // Starts falling just before losing momentum for a smoother peak
         );
 
-      // Confeti saliendo de abajo y cayendo sin salir por el techo
-      confettiRefs.current.forEach((el, i) => {
+      // Confetti shooting from the bottom and falling without leaving through the top
+      confettiRefs.current.forEach((el) => {
         if (!el) return;
 
         // Start near bottom center
         const startX = window.innerWidth / 2 + (Math.random() * 400 - 200);
         const startY = window.innerHeight + 100;
 
-        // Suben hasta una altura aleatoria, pero SIEMPRE dentro de la pantalla (peakY positivo)
+        // Rises to a random height, but ALWAYS inside the screen (positive peakY)
         const peakY =
           Math.random() * (window.innerHeight * 0.4) + window.innerHeight * 0.1;
 
@@ -111,7 +112,7 @@ export const SearchEasterEgg: React.FC<SearchEasterEggProps> = ({
         const peakScale = baseScale * 1.5;
         const delay = Math.random() * 0.3;
 
-        // Movimiento en X constante
+        // Constant X movement
         gsap.fromTo(
           el,
           { x: startX, rotation: 0, opacity: 1 },
@@ -124,7 +125,7 @@ export const SearchEasterEgg: React.FC<SearchEasterEggProps> = ({
           },
         );
 
-        // Movimiento parabólico fluido en Y y Escala
+        // Fluid parabolic movement in Y and Scale
         const yTl = gsap.timeline({ delay: delay });
         yTl
           .fromTo(
@@ -140,9 +141,15 @@ export const SearchEasterEgg: React.FC<SearchEasterEggProps> = ({
               duration: 1.6,
               ease: "power2.in",
             },
-            "-=0.2", // Para que la transición de subir a bajar sea redonda
+            "-=0.2", // Round transition from rising to falling
           );
       });
+
+      const timeoutId = setTimeout(() => {
+        setActiveEgg(null);
+      }, 3500);
+
+      return () => clearTimeout(timeoutId);
     }
   }, [activeEgg]);
 
