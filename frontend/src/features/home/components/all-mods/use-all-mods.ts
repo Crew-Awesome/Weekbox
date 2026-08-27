@@ -5,8 +5,9 @@ import Utils from "@utils";
 import { useHomeStore } from "../../../../store/home-store";
 
 /**
- * @description Custom hook to manage the state, pagination, and layout injection for the AllMods grid.
+ * Custom hook to manage the state, pagination, and layout injection for the AllMods grid.
  * Merges regular Discovery mods with Featured "Community Picks" injected mathematically.
+ * 
  * @returns {object} State and refs required for the infinite scrolling grid.
  */
 export function useAllMods(
@@ -32,7 +33,7 @@ export function useAllMods(
   const prevEngineIds = useRef(engineIds.join(","));
   const prevSearch = useRef(searchQuery);
 
-  // Cuando cambian los filtros o la búsqueda, reseteamos la paginación y limpiamos la lista
+  // When filters or search query change, reset pagination and clear the list
   useEffect(() => {
     const filtersChanged =
       prevFilter.current !== filter ||
@@ -124,7 +125,7 @@ export function useAllMods(
           } else {
             setMods((prev) => {
               if (page === 1) return data;
-              // Prevenir duplicados a nivel de paginación
+              // Prevent duplicates at the pagination level
               const existingIds = new Set(prev.map((m) => m.id));
               const uniqueData = data.filter((m) => !existingIds.has(m.id));
               return [...prev, ...uniqueData];

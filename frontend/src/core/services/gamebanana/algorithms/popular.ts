@@ -16,7 +16,7 @@ const popularCache = new Map<
 const MAX_CACHE_SIZE = 20;
 
 /**
- * @description Fetches "Popular" (Most Downloaded historically) records by querying all allowed categories in parallel.
+ * Fetches "Popular" (Most Downloaded historically) records by querying all allowed categories in parallel.
  * @param {string[] | null} targetEngineIds - Optional array of engine IDs to filter by. Defaults to `null` (all engines).
  * @param {number} maxPages - Maximum depth of pages to query per execution to avoid hanging.
  * @param {number} maxRecords - Number of valid records needed before returning.
@@ -34,7 +34,7 @@ export async function fetchPopularRecords(
   const cacheKey = isAll ? "all" : targetEngineIds!.slice().sort().join(",");
 
   if (!popularCache.has(cacheKey)) {
-    // Si llegamos al límite, eliminamos el más antiguo (el primero insertado)
+    // If we reach the limit, remove the oldest (first inserted) entry
     if (popularCache.size >= MAX_CACHE_SIZE) {
       const oldestKey = popularCache.keys().next().value;
       if (oldestKey) popularCache.delete(oldestKey);
@@ -47,7 +47,7 @@ export async function fetchPopularRecords(
       isComplete: false,
     });
   } else {
-    // Refrescar la recencia (LRU) moviéndolo al final del Map
+    // Refresh LRU recency by moving it to the end of the Map
     const val = popularCache.get(cacheKey)!;
     popularCache.delete(cacheKey);
     popularCache.set(cacheKey, val);
@@ -60,6 +60,7 @@ export async function fetchPopularRecords(
   }
 
   const indexUrl = "https://gamebanana.com/apiv12/Mod/Index";
+  const multiUrlBase = "https://gamebanana.com/apiv11/Mod/Multi?_csvProperties=_idRow,_nDownloadCount";
 
   let categoryIds = Object.keys(ENGINE_CATEGORIES).map(Number);
   if (!isAll) {
@@ -81,7 +82,7 @@ export async function fetchPopularRecords(
     try {
       // Fetch the current page for all allowed categories simultaneously
       const requests = categoryIds.map(async (catId) => {
-        // Usa Generic_MostDownloaded para representar "Popular" histórico
+        // Use Generic_MostDownloaded to represent historical "Popular"
         const url = `${indexUrl}?_aFilters[Generic_Game]=${FNF_GAME_ID}&_aFilters[Generic_Category]=${catId}&_sSort=Generic_MostDownloaded&_nPerpage=30&_nPage=${state.sourcePage}`;
         try {
           const res: any = await http.fetchJson(url);
@@ -103,10 +104,36 @@ export async function fetchPopularRecords(
         break;
       }
 
-      // Ordenar localmente por descargas
-      allFetched.sort(
-        (a, b) => (b._nDownloadCount || 0) - (a._nDownloadCount || 0),
-      );
+      // GameBanana Mod/Index doesn't return _nDownloadCount or something, so i explicitly fetch it here to sort correctly
+      try {
+        const chunkPromises = [];
+        // GameBanana accepts up to 50 IDs per Multi request
+        for (let i = 0; i < allFetched.length; i += 40) {
+          const chunkIds = allFetched.slice(i, i + 40).map((m: any) => m._idRow).join(",");
+          chunkPromises.push(http.fetchJson(`${multiUrlBase}&_csvRowIds=${chunkIds}`));
+        }
+        
+        const multiResults = await Promise.all(chunkPromises);
+        const multiData = multiResults.flat();
+        
+        const downloadsMap = new Map<number, number>();
+        multiData.forEach((d: any) => {
+          if (d && d._idRow) downloadsMap.set(d._idRow, d._nDownloadCount || 0);
+        });
+
+        allFetched.forEach((mod) => {
+          mod._nDownloadCount = downloadsMap.get(mod._idRow) || 0;
+        });
+      } catch (e) {
+        console.warn("Failed to fetch download counts in popular algorithm", e);
+      }
+
+      // Sort globally by a strong weighted combination of downloads and views to ensure absolute fairness across categories
+      allFetched.sort((a, b) => {
+        const scoreA = (a._nDownloadCount || 0) * 3 + (a._nViewCount || 0);
+        const scoreB = (b._nDownloadCount || 0) * 3 + (b._nViewCount || 0);
+        return scoreB - scoreA;
+      });
 
       for (const mod of allFetched) {
         if (
