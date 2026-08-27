@@ -18,10 +18,9 @@ export interface LoadingScreenProps {
 }
 
 /**
- * @description Loading Screen (Feature).
+ * Loading Screen (Feature).
  * Executes real asynchronous startup tasks and visually displays their progress.
  * Manages its own unmounting lifecycle, applying a smooth fade-out CSS transition upon reaching 100%.
- * @param {LoadingScreenProps} props - The component props.
  */
 export const LoadingScreen: React.FC<LoadingScreenProps> = ({
   isLoading = true,
@@ -62,20 +61,20 @@ export const LoadingScreen: React.FC<LoadingScreenProps> = ({
         const task = tasks[i];
 
         setAction(task.name);
+        // Set progress BEFORE running the task to match the text and current stage
+        const currentProgress = Math.round((i / tasks.length) * 100);
+        setProgress(currentProgress);
 
         try {
           await task.action();
         } catch (error) {
           console.error(`Error executing startup task: ${task.name}`, error);
         }
-
-        if (isCancelled) return;
-
-        const nextProgress = Math.round(((i + 1) / tasks.length) * 100);
-        setProgress(nextProgress);
       }
 
       if (isCancelled) return;
+      
+      setProgress(100);
       setAction("Ready!");
       finishLoading();
     };

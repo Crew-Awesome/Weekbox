@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { useLocation } from "react-router-dom";
 import { DesktopSidebar } from "./desktop-sidebar";
 import { MobileNav } from "./mobile-nav";
 import { SidebarModals } from "./modals/sidebar-modals";
@@ -11,26 +12,32 @@ interface SidebarProps {
 }
 
 /**
- * @description Organism: Sidebar.
+ * Organism: Sidebar.
  * Handles primary application navigation and groups global actions
  * into an interactive interface, delegating responsive UI to Desktop/Mobile counterparts.
- * @param {SidebarProps} props - Component properties.
  */
 export const Sidebar: React.FC<SidebarProps> = ({
   onNavigate,
   onSecondaryClick,
 }) => {
-  const [activeMain, setActiveMain] = useState("home");
+  const location = useLocation();
+  const pathView = location.pathname.substring(1) || "home";
+
+  const [activeMain, setActiveMain] = useState(pathView);
   const [activeSecondary, setActiveSecondary] = useState<string | null>(null);
 
   const { morphModalData, openMorphModal, closeMorphModal } =
     Utils.hooks.useModals();
 
   useEffect(() => {
-    if (onNavigate) {
+    setActiveMain(pathView);
+  }, [pathView]);
+
+  useEffect(() => {
+    if (onNavigate && activeMain !== pathView) {
       onNavigate(activeMain);
     }
-  }, [activeMain, onNavigate]);
+  }, [activeMain, onNavigate, pathView]);
 
   const handleMainSet = (id: string) => {
     if (activeMain === "home" && id === "home") {

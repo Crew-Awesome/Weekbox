@@ -1,12 +1,13 @@
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
-import { HashRouter, Routes, Route } from "react-router-dom";
+import { HashRouter, Routes, Route, Navigate } from "react-router-dom";
 import * as Sentry from "@sentry/react";
 import App from "./App";
+import Features from "@features";
 import "./index.css";
 
 /**
- * @description Initializes Sentry for application monitoring, capturing errors,
+ * Initializes Sentry for application monitoring, capturing errors,
  * performance metrics (Tracing), and session replays. Configured via environment variables.
  */
 Sentry.init({
@@ -27,7 +28,13 @@ if (rootElement) {
     <StrictMode>
       <HashRouter>
         <Routes>
-          <Route path="*" element={<App />} />
+          <Route path="/" element={<App />}>
+            <Route index element={<Navigate to="/home" replace />} />
+            <Route path="home" element={<Features.Home />} />
+            <Route path="library" element={<Features.Library />} />
+            <Route path="engines" element={<Features.Engines />} />
+            <Route path="*" element={<Navigate to="/home" replace />} />
+          </Route>
         </Routes>
       </HashRouter>
     </StrictMode>,

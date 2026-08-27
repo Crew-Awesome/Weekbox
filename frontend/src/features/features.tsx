@@ -1,5 +1,4 @@
 import { LoadingScreen } from "./loading/loading-screen";
-import { Layout } from "./layout";
 
 /**
  * @description API global para acceder a las Características principales (Features) de Weekbox.
@@ -11,10 +10,6 @@ const Features = {
    */
   LoadingScreen,
 
-  /**
-   * @description Contenedor principal de la aplicación.
-   */
-  Layout,
 };
 
 export default Features;
