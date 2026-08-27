@@ -1,10 +1,10 @@
 # Easter Eggs en la Barra de Búsqueda
 
-Este documento describe la convención y el flujo correcto sobre cómo y dónde se deben implementar los "Easter Eggs" (huevos de pascua) interactivos en la barra de búsqueda de mods de Weekbox.
+Este documento describe la convención y el flujo correcto sobre cómo y dónde se deben implementar los Easter Eggs en la barra de búsqueda de mods de Weekbox
 
 ## 1. El Enfoque Correcto (UI Level)
 
-El lugar correcto para interceptar y ejecutar un Easter Egg originado por texto **NO es** en el motor de búsqueda central (`core/services/gamebanana/algorithms/search.ts`), sino en la capa visual de la interfaz de usuario antes de que se dispare la mutación del estado.
+El lugar correcto para interceptar y ejecutar un Easter Egg originado por texto **NO es** en el motor de búsqueda central (en todo caso, ese es este: `core/services/gamebanana/algorithms/search.ts`), sino en la capa visual de la interfaz de usuario antes de que se dispare la mutación del estado.
 
 Específicamente, el componente ideal para esto es `HomeSearchbar` (`frontend/src/features/home/components/home-searchbar.tsx`) o el manejador de envío principal de la vista de inicio.
 
@@ -20,14 +20,14 @@ Específicamente, el componente ideal para esto es `HomeSearchbar` (`frontend/sr
 Para colocar un Easter Egg, se debe interceptar la función `handleSearch` dentro del componente que envuelve la barra de búsqueda (por ejemplo, `HomeSearchbar`).
 
 ```tsx
-// Ubicación: frontend/src/features/home/components/home-searchbar.tsx
+// archivo: frontend/src/features/home/components/home-searchbar.tsx
 
 const handleSearch = (query: string) => {
   const normalizedQuery = query.trim().toLowerCase();
 
   // 1. Intercepción del Easter Egg
   if (normalizedQuery === "do a barrel roll") {
-    // Ejecutar lógica visual (ej. rotar la pantalla usando GSAP o clases CSS)
+    // Ejecutar lógica visual cómo animaciones con GSAP o cosas asi
     document.body.classList.add("barrel-roll-animation");
     
     setTimeout(() => {
@@ -44,7 +44,7 @@ const handleSearch = (query: string) => {
     return;
   }
 
-  // 2. Flujo Normal de Búsqueda
+  // 2. Flujo Normal de Búsqueda y todo eso, normal
   onSearchSubmit(query);
   setShowFilters(false);
 };
