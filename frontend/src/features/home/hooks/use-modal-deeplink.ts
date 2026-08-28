@@ -66,6 +66,7 @@ export const useModalDeeplink = () => {
                 submittedAt: mod.submittedAt,
                 updatedAt: mod.updatedAt,
                 engineId: mod.engineId,
+                files: mod.files || [],
               };
               setSelectedCard(mappedMod);
               setActiveModItem(mappedMod);

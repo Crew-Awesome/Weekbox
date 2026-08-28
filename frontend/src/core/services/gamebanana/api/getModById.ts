@@ -74,6 +74,7 @@ export async function getModById(modId: number): Promise<GameBananaMod | null> {
       thumbnail: extractThumbnail(raw),
       previewMedia: extractPreviewMedia(raw),
       isNsfw: checkIsNsfw(raw),
+      files: raw._aFiles || [],
     };
   } catch (error) {
     console.error(`Error fetching mod ${modId} from GameBanana:`, error);

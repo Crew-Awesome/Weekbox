@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { ExternalLink, Plus, RefreshCw, Download, ChevronLeft, ChevronRight } from "lucide-react";
+import { ExternalLink, Plus, RefreshCw, Download, ChevronLeft, ChevronRight, List, ChevronUp, Loader2 } from "lucide-react";
 import type { ModalViewProps } from "./types";
 
 interface DesktopViewProps extends ModalViewProps {
@@ -25,6 +25,11 @@ export const DesktopView: React.FC<DesktopViewProps> = ({
   thumbnailsRef,
 }) => {
   const [hoverTooltip, setHoverTooltip] = useState<"submitted" | "updated" | null>(null);
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const isLoading = displayCard.files === undefined;
+  const validFiles = Object.values(displayCard.files || {}).filter((file: any) => file._nFilesize >= 5 * 1024 * 1024);
+  const hasMultipleFiles = validFiles.length > 1;
+  const hasNoFiles = validFiles.length === 0;
 
   return (
     <div className="hidden md:block w-full h-full relative">
@@ -143,16 +148,70 @@ export const DesktopView: React.FC<DesktopViewProps> = ({
               <span className="text-[var(--wb-on-surface-variant)] text-xs md:text-sm mt-1">by {displayCard.author || "Unknown"}</span>
               <hr className="border-white/10 my-4 md:my-6" />
               {displayCard.htmlBody ? (
-                <div className="text-[var(--wb-on-surface-variant)] prose prose-invert prose-sm md:prose-base max-w-none pb-4" dangerouslySetInnerHTML={{ __html: displayCard.htmlBody }} />
+                <div className="text-[var(--wb-on-surface-variant)] prose prose-invert prose-sm md:prose-base max-w-full pb-4 overflow-x-hidden break-words [&_*]:max-w-full [&_pre]:whitespace-pre-wrap [&_pre]:break-words [&_table]:block [&_table]:overflow-x-auto" dangerouslySetInnerHTML={{ __html: displayCard.htmlBody }} />
               ) : (
-                <p className="text-[var(--wb-on-surface-variant)] text-sm md:text-base pb-4">{displayCard.description}</p>
+                <p className="text-[var(--wb-on-surface-variant)] text-sm md:text-base pb-4 break-words">{displayCard.description}</p>
               )}
             </div>
-            <div className="pt-4 md:pt-6 mt-auto shrink-0 bg-[var(--wb-surface-container)]">
-              <button className="w-full bg-[var(--wb-primary)] hover:opacity-90 text-[var(--wb-on-primary)] py-3 md:py-4 rounded-xl flex items-center justify-center gap-2 md:gap-3 px-6 transition-opacity font-bold">
-                <Download className="w-5 h-5 md:w-6 md:h-6" />
-                <span className="text-base md:text-lg">Download</span>
-              </button>
+            <div 
+              className="pt-4 md:pt-6 mt-auto shrink-0 bg-[var(--wb-surface-container)]"
+              onMouseLeave={() => setIsDropdownOpen(false)}
+            >
+              <div className="relative w-full">
+                {hasMultipleFiles && isDropdownOpen && (
+                  <div className="absolute bottom-[calc(100%+2px)] left-0 w-full bg-[var(--wb-surface-bright)] border border-white/10 rounded-xl shadow-lg flex flex-col overflow-hidden z-50">
+                    {validFiles.map((file: any) => (
+                      <button key={file._idRow} onClick={() => window.open(file._sDownloadUrl, '_blank')} className="text-left px-4 py-3 hover:bg-white/5 border-b border-white/5 last:border-0 flex flex-col gap-1 transition-colors">
+                        <span className="text-sm font-semibold truncate w-full text-[var(--wb-on-surface)]">{file._sFile}</span>
+                        <span className="text-xs text-[var(--wb-on-surface-variant)]">{Math.round(file._nFilesize / 1024 / 1024)} MB • {file._nDownloadCount} downloads</span>
+                      </button>
+                    ))}
+                  </div>
+                )}
+                {isLoading ? (
+                  <button 
+                    disabled
+                    className="w-full bg-[var(--wb-primary)] text-[var(--wb-on-primary)] py-3 md:py-4 rounded-xl flex items-center justify-center gap-2 md:gap-3 px-6 font-bold opacity-80 cursor-wait"
+                  >
+                    <Loader2 className="w-5 h-5 md:w-6 md:h-6 animate-spin" />
+                    <span className="text-base md:text-lg">Loading...</span>
+                  </button>
+                ) : hasNoFiles ? (
+                  <button 
+                    disabled
+                    className="w-full bg-[var(--wb-surface-variant)] text-[var(--wb-on-surface-variant)] cursor-not-allowed py-3 md:py-4 rounded-xl flex items-center justify-center gap-2 md:gap-3 px-6 font-bold opacity-60"
+                  >
+                    <Download className="w-5 h-5 md:w-6 md:h-6" />
+                    <span className="text-base md:text-lg">No downloads available</span>
+                  </button>
+                ) : (
+                  <button 
+                    onClick={() => {
+                      if (hasMultipleFiles) {
+                        setIsDropdownOpen(!isDropdownOpen);
+                      } else if (validFiles.length === 1) {
+                        window.open(validFiles[0]._sDownloadUrl, '_blank');
+                      }
+                    }}
+                    className="relative w-full bg-[var(--wb-primary)] hover:opacity-90 text-[var(--wb-on-primary)] py-3 md:py-4 rounded-xl flex items-center justify-center px-6 transition-opacity font-bold"
+                  >
+                    {hasMultipleFiles ? (
+                      <>
+                        <div className="flex items-center justify-center gap-2 md:gap-3">
+                          <List className="w-5 h-5 md:w-6 md:h-6" />
+                          <span className="text-base md:text-lg">Multiple Files</span>
+                        </div>
+                        <ChevronUp className={`absolute right-6 w-5 h-5 md:w-6 md:h-6 transition-transform ${isDropdownOpen ? "rotate-180" : ""}`} />
+                      </>
+                    ) : (
+                      <div className="flex items-center justify-center gap-2 md:gap-3">
+                        <Download className="w-5 h-5 md:w-6 md:h-6" />
+                        <span className="text-base md:text-lg">Download</span>
+                      </div>
+                    )}
+                  </button>
+                )}
+              </div>
             </div>
           </div>
         </div>

@@ -1,5 +1,5 @@
-import React from "react";
-import { Download, ChevronLeft, ChevronRight } from "lucide-react";
+import React, { useState } from "react";
+import { Download, ChevronLeft, ChevronRight, List, ChevronUp, Loader2 } from "lucide-react";
 import type { ModalViewProps } from "./types";
 
 interface MobileViewProps extends ModalViewProps {
@@ -20,6 +20,12 @@ export const MobileView: React.FC<MobileViewProps> = ({
   nextImage,
   carouselRef,
 }) => {
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const isLoading = displayCard.files === undefined;
+  const validFiles = Object.values(displayCard.files || {}).filter((file: any) => file._nFilesize >= 5 * 1024 * 1024);
+  const hasMultipleFiles = validFiles.length > 1;
+  const hasNoFiles = validFiles.length === 0;
+
   return (
     <div className="flex md:hidden flex-col w-full h-full p-4 pointer-events-auto">
       <div className="flex items-center justify-between mb-4">
@@ -88,14 +94,71 @@ export const MobileView: React.FC<MobileViewProps> = ({
       <hr className="border-white/10 mb-4" />
       
       {displayCard.htmlBody ? (
-        <div className="text-[var(--wb-on-surface-variant)] prose prose-invert prose-sm max-w-none pb-6" dangerouslySetInnerHTML={{ __html: displayCard.htmlBody }} />
+        <div className="text-[var(--wb-on-surface-variant)] prose prose-invert prose-sm max-w-full pb-6 overflow-x-hidden break-words [&_*]:max-w-full [&_pre]:whitespace-pre-wrap [&_pre]:break-words [&_table]:block [&_table]:overflow-x-auto" dangerouslySetInnerHTML={{ __html: displayCard.htmlBody }} />
       ) : (
-        <p className="text-[var(--wb-on-surface-variant)] text-sm pb-6">{displayCard.description}</p>
+        <p className="text-[var(--wb-on-surface-variant)] text-sm pb-6 break-words">{displayCard.description}</p>
       )}
 
-      <button className="w-full bg-[var(--wb-primary)] text-[var(--wb-on-primary)] py-3 rounded-xl flex items-center justify-center gap-2 font-bold mt-auto shrink-0 sticky bottom-0 z-20">
-        <Download className="w-5 h-5" /> Download
-      </button>
+      <div 
+        className="mt-auto shrink-0 sticky bottom-0 z-20 pt-2"
+        onMouseLeave={() => setIsDropdownOpen(false)}
+      >
+        <div className="relative w-full">
+          {hasMultipleFiles && isDropdownOpen && (
+            <div className="absolute bottom-[calc(100%+2px)] left-0 w-full bg-[var(--wb-surface-bright)] border border-white/10 rounded-xl shadow-lg flex flex-col overflow-hidden z-50">
+              {validFiles.map((file: any) => (
+                <button key={file._idRow} onClick={() => window.open(file._sDownloadUrl, '_blank')} className="text-left px-4 py-3 hover:bg-white/5 border-b border-white/5 last:border-0 flex flex-col gap-1 transition-colors">
+                  <span className="text-sm font-semibold truncate w-full text-[var(--wb-on-surface)]">{file._sFile}</span>
+                  <span className="text-xs text-[var(--wb-on-surface-variant)]">{Math.round(file._nFilesize / 1024 / 1024)} MB • {file._nDownloadCount} downloads</span>
+                </button>
+              ))}
+            </div>
+          )}
+          {isLoading ? (
+            <button 
+              disabled
+              className="w-full bg-[var(--wb-primary)] text-[var(--wb-on-primary)] py-3 rounded-xl flex items-center justify-center gap-2 font-bold opacity-80 cursor-wait px-4"
+            >
+              <Loader2 className="w-5 h-5 animate-spin" />
+              <span>Loading...</span>
+            </button>
+          ) : hasNoFiles ? (
+            <button 
+              disabled
+              className="w-full bg-[var(--wb-surface-variant)] text-[var(--wb-on-surface-variant)] cursor-not-allowed py-3 rounded-xl flex items-center justify-center gap-2 px-4 font-bold opacity-60"
+            >
+              <Download className="w-5 h-5" />
+              <span>No downloads available</span>
+            </button>
+          ) : (
+            <button 
+              onClick={() => {
+                if (hasMultipleFiles) {
+                  setIsDropdownOpen(!isDropdownOpen);
+                } else if (validFiles.length === 1) {
+                  window.open(validFiles[0]._sDownloadUrl, '_blank');
+                }
+              }}
+              className="relative w-full bg-[var(--wb-primary)] text-[var(--wb-on-primary)] py-3 rounded-xl flex items-center justify-center px-4 font-bold transition-opacity hover:opacity-90"
+            >
+              {hasMultipleFiles ? (
+                <>
+                  <div className="flex items-center justify-center gap-2">
+                    <List className="w-5 h-5" />
+                    <span>Multiple Files</span>
+                  </div>
+                  <ChevronUp className={`absolute right-4 w-5 h-5 transition-transform ${isDropdownOpen ? "rotate-180" : ""}`} />
+                </>
+              ) : (
+                <div className="flex items-center justify-center gap-2">
+                  <Download className="w-5 h-5" />
+                  <span>Download</span>
+                </div>
+              )}
+            </button>
+          )}
+        </div>
+      </div>
     </div>
   );
 };

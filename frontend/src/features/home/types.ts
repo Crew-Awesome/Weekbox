@@ -11,4 +11,5 @@ export interface ModItem {
   submittedAt?: number;
   updatedAt?: number;
   engineId?: string;
+  files?: any[];
 }

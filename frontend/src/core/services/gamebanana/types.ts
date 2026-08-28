@@ -17,6 +17,7 @@ export interface GameBananaItem {
   thumbnail: string;
   isNsfw: boolean;
   previewMedia?: string[];
+  files?: any[];
 }
 
 export interface GameBananaMod extends GameBananaItem {
