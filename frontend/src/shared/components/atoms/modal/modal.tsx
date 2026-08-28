@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import ReactDOM from "react-dom";
 import { X } from "lucide-react";
 
 /**
@@ -40,6 +41,14 @@ export interface ModalProps {
   heightClass?: string;
   svgBackgrounds?: React.ReactNode;
   /**
+   * If true, removes the default solid background so custom SVG cutouts can be used.
+   */
+  hideDefaultBackground?: boolean;
+  /**
+   * Class name for the content wrapper. Defaults to 'p-8 flex-1 overflow-y-auto'.
+   */
+  contentClassName?: string;
+  /**
    * Defines how far the modal is separated from the screen edge.
    * If provided, the modal will automatically stretch to fill the remaining space.
    */
@@ -55,6 +64,8 @@ export const Modal: React.FC<ModalProps> = ({
   widthClass = "w-[90vw] sm:w-[80vw] md:w-[60vw]",
   heightClass = "h-[90vh] sm:h-[80vh] md:h-[70vh]",
   svgBackgrounds,
+  hideDefaultBackground = false,
+  contentClassName = "p-8 flex-1 overflow-y-auto mobile-no-scrollbar",
   edgeSpacing,
 }) => {
   const [isRendered, setIsRendered] = useState(isOpen);
@@ -76,8 +87,10 @@ export const Modal: React.FC<ModalProps> = ({
 
     if (isOpen) {
       setIsRendered(true);
-      // Use double requestAnimationFrame to ensure the browser paints the initial state
-      // with opacity-0 before changing to opacity-100 to trigger the CSS transition.
+      /* 
+       * Use double requestAnimationFrame to ensure the browser paints the initial state
+       * with opacity-0 before changing to opacity-100 to trigger the CSS transition.
+       */
       rafId = requestAnimationFrame(() => {
         rafId = requestAnimationFrame(() => {
           setIsVisible(true);
@@ -85,7 +98,7 @@ export const Modal: React.FC<ModalProps> = ({
       });
     } else {
       setIsVisible(false);
-      timeoutId = setTimeout(() => setIsRendered(false), 300);
+      timeoutId = setTimeout(() => setIsRendered(false), 75);
     }
 
     return () => {
@@ -96,17 +109,17 @@ export const Modal: React.FC<ModalProps> = ({
 
   if (!isRendered) return null;
 
-  // Helper to parse SpacingValue to CSS padding string
+  /* Helper to parse SpacingValue to CSS padding string */
   const parseSpacing = (spacing?: SpacingValue, fallback: string = "0px") => {
     if (!spacing) return fallback;
     if (Array.isArray(spacing)) {
-      // spacing is [horizontal, vertical] => CSS padding: "vertical horizontal"
+      /* spacing is [horizontal, vertical] => CSS padding: "vertical horizontal" */
       return `${spacing[1]} ${spacing[0]}`;
     }
     return spacing;
   };
 
-  // Determine active spacing/size configuration
+  /* Determine active spacing/size configuration */
   const currentConfig = edgeSpacing
     ? isDesktop
       ? edgeSpacing.desktop
@@ -132,36 +145,36 @@ export const Modal: React.FC<ModalProps> = ({
     }
   }
 
-  // Determine active classes for the modal body
+  /* Determine active classes for the modal body */
   let activeWidthClass = widthClass;
   let activeHeightClass = heightClass;
 
   if (edgeSpacing) {
     if (!isStatic) {
-      // Dynamic Edge Spacing: expand to fill the padding limits
+      /* Dynamic Edge Spacing: expand to fill the padding limits */
       activeWidthClass = "w-full max-w-full";
       activeHeightClass = "h-full max-h-full";
     } else {
-      // Static Size: clear tailwind width/height classes so inline styles apply cleanly
+      /* Static Size: clear tailwind width/height classes so inline styles apply cleanly */
       activeWidthClass = "";
       activeHeightClass = "";
     }
   }
 
-  return (
+  return ReactDOM.createPortal(
     <div
-      className={`fixed inset-0 z-[100] flex items-center justify-center transition-opacity duration-300 ease-out ${isVisible ? "opacity-100" : "opacity-0"} ${overlayClassName}`}
+      className={`fixed inset-0 z-[100] flex items-center justify-center transition-opacity duration-75 ease-out ${isVisible ? "opacity-100" : "opacity-0"} ${overlayClassName}`}
       onClick={onClose}
       style={overlayPadding ? { padding: overlayPadding } : undefined}
     >
       <div className="absolute inset-0 bg-black/40 backdrop-blur-md z-[-1]" />
 
       <div
-        className={`relative flex flex-col ${activeWidthClass} ${activeHeightClass} ${modalClassName} transition-all duration-300 ease-out transform ${isVisible ? "scale-100 translate-y-0 opacity-100" : "scale-[0.97] translate-y-4 opacity-0"}`}
+        className={`relative flex flex-col ${activeWidthClass} ${activeHeightClass} ${modalClassName} transition-all duration-75 ease-out transform ${isVisible ? "scale-100 translate-y-0 opacity-100" : "scale-[0.97] translate-y-4 opacity-0"}`}
         onClick={(e) => e.stopPropagation()}
         style={staticModalStyle}
       >
-        <div className="absolute inset-0 bg-[var(--wb-surface)] rounded-2xl shadow-[0_8px_32px_rgba(0,0,0,0.6)] border border-white/10 overflow-hidden z-0">
+        <div className={`absolute inset-0 ${!hideDefaultBackground ? "bg-[var(--wb-surface)] rounded-2xl shadow-[0_8px_32px_rgba(0,0,0,0.6)] border border-white/10" : ""} overflow-hidden z-0`}>
           {svgBackgrounds && (
             <div className="absolute inset-0 pointer-events-none z-0 overflow-hidden">
               {svgBackgrounds}
@@ -169,7 +182,7 @@ export const Modal: React.FC<ModalProps> = ({
           )}
         </div>
 
-        <div className="relative flex flex-col z-10 text-[var(--wb-on-surface)] h-full">
+        <div className="relative flex flex-col z-10 text-[var(--wb-on-surface)] h-full overflow-hidden">
           <button
             onClick={onClose}
             className="absolute top-4 right-4 p-2 rounded-full text-[var(--wb-icon-default)] hover:text-[var(--wb-icon-hover)] hover:bg-[var(--wb-surface-bright)] transition-colors z-[15]"
@@ -178,11 +191,12 @@ export const Modal: React.FC<ModalProps> = ({
             <X className="w-5 h-5" />
           </button>
 
-          <div className="p-8 flex-1 overflow-y-auto mobile-no-scrollbar">
+          <div className={contentClassName}>
             {children}
           </div>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };

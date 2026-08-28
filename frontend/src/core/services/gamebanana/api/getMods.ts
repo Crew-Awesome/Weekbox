@@ -8,6 +8,7 @@ import {
   isExcluded,
   extractAuthors,
   extractThumbnail,
+  extractPreviewMedia,
   extractUserId,
   extractUserPfp,
   checkIsNsfw,
@@ -111,7 +112,7 @@ export async function getMods(
 
     const allRecords = (await Promise.all(requests)).flat();
 
-    // De-duplicate in case of overlap between categories
+    /* De-duplicate in case of overlap between categories */
     const uniqueRecords = Array.from(
       new Map(allRecords.map((r) => [r._idRow, r])).values(),
     );
@@ -132,7 +133,7 @@ export async function getMods(
   }
 
   if (searchQuery.trim().length > 0) {
-    // fetchSearchRecords already slices correctly internally
+    /* fetchSearchRecords already slices correctly internally */
   } else if (filter === "new" || filter === "updated") {
     rawRecords = rawRecords.slice(0, perPage);
   } else {
@@ -141,8 +142,10 @@ export async function getMods(
 
   if (rawRecords.length === 0) return [];
 
-  // Batch fetch secondary statistics and full descriptions using the Mod/Multi endpoint
-  // GameBanana often fails or truncates when _csvRowIds has too many items, so we chunk them.
+  /* 
+   * Batch fetch secondary statistics and full descriptions using the Mod/Multi endpoint.
+   * GameBanana often fails or truncates when _csvRowIds has too many items, so we chunk them.
+   */
   const CHUNK_SIZE = 15;
   let multiData: any[] = [];
 
@@ -196,10 +199,12 @@ export async function getMods(
       views: mod._nViewCount || meta._nViewCount || 0,
       downloads: meta._nDownloadCount || 0,
       submittedAt: mod._tsDateAdded,
+      updatedAt: mod._tsDateUpdated || mod._tsDateAdded,
       timeAgo: getTimeAgo(mod._tsDateAdded),
       engineId: finalEngineId,
       engineIcon: getEngineIcon(finalEngineId),
       thumbnail: extractThumbnail(mod),
+      previewMedia: extractPreviewMedia(meta),
       isNsfw: checkIsNsfw(mod),
     };
   });

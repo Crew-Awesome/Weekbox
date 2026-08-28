@@ -70,13 +70,20 @@ export const FeaturedMods: React.FC<FeaturedModsProps> = ({
           onItemClick={(index) => {
             const item = displayMods[index];
             if (item && onCardClick) {
-              onCardClick({
+              const modItem = {
+                id: item.id,
                 name: item.title,
                 description: item.description,
                 htmlBody: item.htmlBody,
                 img: item.thumbnail,
                 icon: item.engineIcon,
-              } as any);
+                previewMedia: item.previewMedia,
+                author: item.author,
+                submittedAt: item.submittedAt,
+                updatedAt: item.updatedAt,
+                engineId: item.engineId,
+              };
+              onCardClick(modItem as any);
             }
           }}
           renderIndicators={(api) => {

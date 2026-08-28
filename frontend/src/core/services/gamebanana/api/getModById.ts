@@ -7,6 +7,7 @@ import {
   getEngineIcon,
   extractAuthors,
   extractThumbnail,
+  extractPreviewMedia,
   extractUserId,
   extractUserPfp,
   checkIsNsfw,
@@ -14,8 +15,7 @@ import {
 import Utils from "@utils";
 
 /**
- * Obtiene los detalles completos de un Mod por su ID y mapea la respuesta
- * al formato estandar de `GameBananaMod`.
+ * Fetches full mod details by ID and maps the response to the standard `GameBananaMod` format.
  */
 export async function getModById(modId: number): Promise<GameBananaMod | null> {
   const url = `${GB_BASE_URL}/Mod/${modId}/ProfilePage`;
@@ -24,10 +24,10 @@ export async function getModById(modId: number): Promise<GameBananaMod | null> {
     const raw: any = await http.fetchJson(url);
     if (!raw || !raw._idRow) return null;
 
-    /** Validar si el Mod est asociado al Game ID oficial de Friday Night Funkin */
+    /* Validate if the Mod is associated with the official Friday Night Funkin Game ID */
     if (raw._aGame && raw._aGame._idRow !== FNF_GAME_ID) {
       console.warn(
-        `El mod ${modId} no pertenece a FNF (Game ID: ${raw._aGame._idRow})`,
+        `Mod ${modId} does not belong to FNF (Game ID: ${raw._aGame._idRow})`,
       );
       return null;
     }
@@ -35,16 +35,16 @@ export async function getModById(modId: number): Promise<GameBananaMod | null> {
     const engineId = getEngineId(raw);
     const { ENGINE_CATEGORIES } = await import("../constants");
 
-    /**
-     * Verificar estrictamente si el mod pertenece a los Engines autorizados.
-     * Si no est listado, bloqueamos la consulta para proteger la experiencia UX.
+    /* 
+     * Strictly verify if the mod belongs to authorized engines. 
+     * If not listed, block the query to protect the UX experience. 
      */
     const allowedIds = Object.keys(ENGINE_CATEGORIES).map(
       (id) => ENGINE_CATEGORIES[Number(id)].id,
     );
     if (!allowedIds.includes(engineId)) {
       console.warn(
-        `El mod ${modId} pertenece a una categora/engine no soportado por Weekbox: ${engineId}`,
+        `Mod ${modId} belongs to an unsupported category/engine for Weekbox: ${engineId}`,
       );
       throw new Error("UNSUPPORTED_CATEGORY");
     }
@@ -67,10 +67,12 @@ export async function getModById(modId: number): Promise<GameBananaMod | null> {
       views: raw._nViewCount || 0,
       downloads: raw._nDownloadCount || 0,
       submittedAt: raw._tsDateAdded,
+      updatedAt: raw._tsDateUpdated || raw._tsDateAdded,
       timeAgo: getTimeAgo(raw._tsDateAdded),
       engineId,
       engineIcon: getEngineIcon(engineId),
       thumbnail: extractThumbnail(raw),
+      previewMedia: extractPreviewMedia(raw),
       isNsfw: checkIsNsfw(raw),
     };
   } catch (error) {

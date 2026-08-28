@@ -1,17 +1,13 @@
-import React, { useState, useEffect } from "react";
+import React, { useEffect } from "react";
 
-import type { ModItem } from "./types";
 import { FeaturedMods } from "./components/featured-mods";
 import { AllMods } from "./components/all-mods";
 import { ModDetailsModal } from "./components/mod-details-modal";
 import { HomeSearchbar } from "./components/home-searchbar";
-import { useAppStore } from "../../store";
 import { useHomeStore } from "../../store/home-store";
+import { useModalDeeplink } from "./hooks/use-modal-deeplink";
 
 export const Home: React.FC = () => {
-  const [selectedCard, setSelectedCard] = useState<ModItem | null>(null);
-  const activeModItem = useAppStore((state) => state.activeModItem);
-  const setActiveModItem = useAppStore((state) => state.setActiveModItem);
 
   const {
     searchQuery,
@@ -24,11 +20,7 @@ export const Home: React.FC = () => {
     setScrollPosition,
   } = useHomeStore();
 
-  useEffect(() => {
-    if (activeModItem) {
-      setSelectedCard(activeModItem);
-    }
-  }, [activeModItem]);
+  const { selectedCard, handleCardClick, handleCloseModal } = useModalDeeplink();
 
   useEffect(() => {
     const mainContainer = document.getElementById("main-scroll-container");
@@ -43,12 +35,7 @@ export const Home: React.FC = () => {
         setScrollPosition(mainContainer.scrollTop);
       }
     };
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
-
-  const handleCloseModal = () => {
-    setSelectedCard(null);
-    setActiveModItem(null);
-  };
+  }, []); /* eslint-disable-line react-hooks/exhaustive-deps */
 
   return (
     <div className="items-center -m-8 justify-center text-white font-sans">
@@ -63,12 +50,12 @@ export const Home: React.FC = () => {
 
         <div className="pt-2 sm:pt-8 px-8">
           <FeaturedMods
-            onCardClick={setSelectedCard as any}
+            onCardClick={handleCardClick as any}
             searchQuery={searchQuery}
             engineIds={categoryFilter}
           />
           <AllMods
-            onCardClick={setSelectedCard}
+            onCardClick={handleCardClick}
             searchQuery={searchQuery}
             sortFilter={sortFilter}
             categoryFilter={categoryFilter}

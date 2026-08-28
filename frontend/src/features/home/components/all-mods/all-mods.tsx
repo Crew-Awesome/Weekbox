@@ -127,11 +127,17 @@ export const AllMods: React.FC<AllModsProps> = ({
       >
         {mods.map((item, index) => {
           const modItem: ModItem = {
+            id: item.id,
             name: item.title,
             description: item.description,
             htmlBody: item.htmlBody,
             img: item.thumbnail,
             icon: item.engineIcon,
+            previewMedia: item.previewMedia,
+            author: item.author,
+            submittedAt: item.submittedAt,
+            updatedAt: item.updatedAt,
+            engineId: item.engineId,
           };
 
           const isLastElement = index === mods.length - 1;

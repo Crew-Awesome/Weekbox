@@ -129,6 +129,19 @@ export function extractAuthors(metaCredits: any): string[] {
 }
 
 /**
+ * Extracts all preview images into a string array.
+ * @param {any} record - The raw GameBanana mod record.
+ * @returns {string[]} Array of image URLs.
+ */
+export function extractPreviewMedia(record: any): string[] {
+  const images = record._aPreviewMedia?._aImages;
+  if (images && Array.isArray(images)) {
+    return images.map((img: any) => `${img._sBaseUrl}/${img._sFile}`);
+  }
+  return [];
+}
+
+/**
  * @description Extracts the primary thumbnail URL from a GameBanana record.
  * @param {any} record - The raw GameBanana mod record.
  * @returns {string} The full URL to the thumbnail, or a local placeholder.

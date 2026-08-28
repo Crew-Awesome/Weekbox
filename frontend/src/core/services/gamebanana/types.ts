@@ -12,9 +12,11 @@ export interface GameBananaItem {
   views: number;
   downloads: number;
   submittedAt: number;
+  updatedAt?: number;
   timeAgo: string;
   thumbnail: string;
   isNsfw: boolean;
+  previewMedia?: string[];
 }
 
 export interface GameBananaMod extends GameBananaItem {
