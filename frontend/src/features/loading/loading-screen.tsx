@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
-import { ProgressBar } from "../../shared/components/atoms/progress-bar/progress-bar";
-import { AppVersion } from "../../shared/components/atoms/app-version/app-version";
+import Shared from "@shared";
 import loadingBg from "/assets/images/loading.webp";
+import Utils from "@utils";
 
 export interface LoadingTask {
   name: string;
@@ -27,6 +27,7 @@ export const LoadingScreen: React.FC<LoadingScreenProps> = ({
   tasks = [],
   onComplete,
 }) => {
+  Utils.hooks.useShowWindow();
   const [progress, setProgress] = useState(0);
   const [action, setAction] = useState("Initializing environment...");
 
@@ -41,11 +42,12 @@ export const LoadingScreen: React.FC<LoadingScreenProps> = ({
 
     const finishLoading = () => {
       setIsFadingOut(true);
+
       setTimeout(() => {
         if (isCancelled) return;
         setIsMounted(false);
         onComplete?.();
-      }, 500); // 500ms to match CSS transition
+      }, 500);
     };
 
     const runTasks = async () => {
@@ -61,7 +63,6 @@ export const LoadingScreen: React.FC<LoadingScreenProps> = ({
         const task = tasks[i];
 
         setAction(task.name);
-        // Set progress BEFORE running the task to match the text and current stage
         const currentProgress = Math.round((i / tasks.length) * 100);
         setProgress(currentProgress);
 
@@ -79,20 +80,18 @@ export const LoadingScreen: React.FC<LoadingScreenProps> = ({
       finishLoading();
     };
 
-    // First, preload the background image so it is fully visible before heavy tasks start
     const preloadImage = new Image();
     preloadImage.src = loadingBg;
 
     const startTasksAfterRender = () => {
       if (isCancelled) return;
-      // Give the browser a tiny moment to actually paint the image on the screen
       requestAnimationFrame(() => {
         setTimeout(runTasks, 100);
       });
     };
 
     preloadImage.onload = startTasksAfterRender;
-    preloadImage.onerror = startTasksAfterRender; // Fallback so we don't hang if image is missing
+    preloadImage.onerror = startTasksAfterRender;
 
     return () => {
       isCancelled = true;
@@ -113,13 +112,11 @@ export const LoadingScreen: React.FC<LoadingScreenProps> = ({
         backgroundRepeat: "no-repeat",
       }}
     >
-      {/* Darkening layer (Gradient) to make version text pop */}
       <div className="absolute inset-0 bg-gradient-to-t from-[#0e1415]/90 via-[#0e1415]/20 to-[#0e1415]/50 z-0" />
-      <AppVersion />
+      <Shared.atoms.AppVersion />
 
-      {/* Progress bar */}
       <div className="relative z-10 w-full px-8 md:px-32 flex justify-center">
-        <ProgressBar progress={progress} actionText={action} />
+        <Shared.atoms.ProgressBar progress={progress} actionText={action} />
       </div>
     </div>
   );

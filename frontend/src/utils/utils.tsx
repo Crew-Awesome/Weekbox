@@ -2,6 +2,7 @@ import { useModals } from "./hooks/use-modals";
 import { useNetwork, useNetworkRecovery } from "./hooks/use-network";
 import { useDeeplinkManager } from "./hooks/use-deeplink-manager";
 import { useAppNavigation } from "./hooks/use-app-navigation";
+import { useShowWindow } from "./hooks/use-show-window";
 import { extractColor } from "./extract-color";
 
 import { sanitizeHtml, htmlToPlainText } from "./sanitize";
@@ -17,6 +18,7 @@ const Utils = {
     useNetworkRecovery,
     useDeeplinkManager,
     useAppNavigation,
+    useShowWindow,
   },
   sanitize: {
     sanitizeHtml,
