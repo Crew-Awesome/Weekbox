@@ -393,7 +393,7 @@
   "updates.now": "Mettre à jour maintenant",
   "updates.retry": "Réessayer la mise à jour",
   "updates.versionUnavailable": "Version de WeekBox indisponible",
-  "updates.unavailable": "Les mises à jour automatique ne sont pas disponible sur cette platforme.",
+  "updates.unavailable": "Les mises à jour automatique ne sont pas disponible sur cette plateforme.",
   "updates.readyToInstall": "La version {{version}} de WeekBox est prête à s'installer.",
   "updates.installAndRestart": "Installer et redémarrer",
   "updates.upToDate": "La version {{version}} de WeekBox est à jour.",
