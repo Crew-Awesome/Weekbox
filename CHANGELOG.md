@@ -7,20 +7,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.1.15] - 2026-08-29
+
 ### Added
 
 - Added a Chinese locale placeholder for translators.
+- Added an Oxlint check for classic cyclomatic complexity.
+
+### Changed
+
+- Low-view mods now count less until their like ratio has enough views behind it.
+- Added more French translations and updated Indonesian and Portuguese.
+- Split large download, storage, GameBanana, and UI functions into smaller functions.
+- Updates now keep Neutralino runtime flags when restarting the app on Windows, macOS, and Linux.
 
 ### Fixed
 
-- Fixed failed archive downloads retrying through multiple nested attempts after an integrity failure.
-- Fixed nested archive installs getting stuck in an unbounded extraction loop.
-
-## [2.1.14] - 2026-08-22
-
-### Fixed
-
-- Fixed RAR and RAR5 downloads being rejected because archive verification used the limited 7-Zip binary.
+- RAR and RAR5 archives can now be checked with the full 7-Zip tools.
+- The Credits button now opens the right page.
+- GameBanana discovery now continues to the next page correctly.
+- Archive downloads no longer retry in a loop after an integrity check fails.
+- Nested archive installs no longer get stuck extracting forever.
 
 ## [2.1.13] - 2026-08-14
 
@@ -922,8 +929,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Downloads for Windows, Linux, and macOS.
 - Packages for x64, ARM64, ARMHF, and Universal Macs where available.
 
-[unreleased]: https://github.com/Crew-Awesome/Weekbox/compare/v2.1.14...HEAD
-[2.1.14]: https://github.com/Crew-Awesome/Weekbox/compare/v2.1.13...v2.1.14
+[unreleased]: https://github.com/Crew-Awesome/Weekbox/compare/v2.1.15...HEAD
+[2.1.15]: https://github.com/Crew-Awesome/Weekbox/compare/v2.1.14...v2.1.15
 [2.1.13]: https://github.com/Crew-Awesome/Weekbox/compare/v2.1.12...v2.1.13
 [2.1.12]: https://github.com/Crew-Awesome/Weekbox/compare/v2.1.11...v2.1.12
 [2.1.11]: https://github.com/Crew-Awesome/Weekbox/compare/v2.1.10...v2.1.11
