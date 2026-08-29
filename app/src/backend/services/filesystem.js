@@ -164,10 +164,14 @@ async function prepareLocalModImport(
   const sourceStats = await Neutralino.filesystem.getStats(normalizedSource);
   if (!sourceStats.isDirectory)
     throw new Error("The selected path is not a folder");
+  const isExecutable = Boolean(await service.findExecutable(normalizedSource));
+  const resolvedEngineId = isExecutable ? "executable" : engineId;
   const requestedKind = ["mod", "addon", "dependency"].includes(kind)
-    ? kind
+    ? isExecutable
+      ? "mod"
+      : kind
     : "mod";
-  if (requestedKind === "addon" && engineId !== "codename") {
+  if (requestedKind === "addon" && resolvedEngineId !== "codename") {
     throw new Error("Addons are only available for Codename Engine mods");
   }
   const folderName = await service.getAvailableLocalModFolderName(modName);
@@ -179,7 +183,7 @@ async function prepareLocalModImport(
     folderName,
     destinationPath: `${service.modsPath}/${folderName}`,
     engineFolderName: sanitizePathSegment(modName) || folderName,
-    engineId,
+    engineId: resolvedEngineId,
   };
 }
 
@@ -345,6 +349,9 @@ var _FileSystemService = class _FileSystemService {
       );
       await runPhase("Checking installed mods\u2026", 94, () =>
         this.cleanupInvalidInstalledMods(),
+      );
+      await runPhase("Checking executable mods\u2026", 95, () =>
+        this.maintenance.migrateExecutableMods(),
       );
       await runPhase("Updating mod artwork\u2026", 96, () =>
         this.migrateLegacyModCovers(),
@@ -1246,13 +1253,18 @@ var _FileSystemService = class _FileSystemService {
     if (!this.isInitialized) return [];
     const standaloneMods = [];
     for (const mod of await this.mods.getAll()) {
-      if (mod.kind === "dependency" || mod.kind === "addon") continue;
+      const folderName = getModFolderName(mod);
+      if (!folderName) continue;
       const executable = await this.findExecutable(
-        `${this.modsPath}/${getModFolderName(mod)}`,
+        `${this.modsPath}/${folderName}`,
       );
       if (!executable) continue;
       standaloneMods.push({
         ...mod,
+        engineId: "executable",
+        engineVersion: null,
+        engineLocked: false,
+        kind: "mod",
         exePath: executable,
         icoPath: await this.executables.getIconDataUrl(executable),
       });
@@ -1404,6 +1416,7 @@ var _FileSystemService = class _FileSystemService {
       folderName,
       destinationPath,
       engineFolderName,
+      engineId: resolvedEngineId,
     } = prepared;
     try {
       await Neutralino.filesystem.copy(normalizedSource, destinationPath, {
@@ -1414,8 +1427,11 @@ var _FileSystemService = class _FileSystemService {
       await this.saveInstalledMod(modId, modName, {
         folderName,
         engineFolderName,
-        engineId: engineId || null,
-        engineVersion: engineId ? engineVersion || null : null,
+        engineId: resolvedEngineId || null,
+        engineVersion:
+          resolvedEngineId && resolvedEngineId !== "executable"
+            ? engineVersion || null
+            : null,
         source: "local",
       });
       if (requestedKind !== "mod") {

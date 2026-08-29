@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.1.16] - 2026-08-29
+
+### Fixed
+
+- Executable mods now stay standalone even when their category names another engine.
+
 ## [2.1.15] - 2026-08-29
 
 ### Added
@@ -929,7 +935,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Downloads for Windows, Linux, and macOS.
 - Packages for x64, ARM64, ARMHF, and Universal Macs where available.
 
-[unreleased]: https://github.com/Crew-Awesome/Weekbox/compare/v2.1.15...HEAD
+[unreleased]: https://github.com/Crew-Awesome/Weekbox/compare/v2.1.16...HEAD
+[2.1.16]: https://github.com/Crew-Awesome/Weekbox/compare/v2.1.15...v2.1.16
 [2.1.15]: https://github.com/Crew-Awesome/Weekbox/compare/v2.1.14...v2.1.15
 [2.1.13]: https://github.com/Crew-Awesome/Weekbox/compare/v2.1.12...v2.1.13
 [2.1.12]: https://github.com/Crew-Awesome/Weekbox/compare/v2.1.11...v2.1.12

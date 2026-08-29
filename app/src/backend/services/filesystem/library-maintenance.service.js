@@ -175,6 +175,41 @@ var _LibraryMaintenanceService = class _LibraryMaintenanceService {
       ),
     );
   }
+  async migrateExecutableMods() {
+    const storedMods = await this.mods.getAll();
+    const mods = Array.isArray(storedMods) ? storedMods : [];
+    const engines = await this.getInstalledEngines();
+    let changed = false;
+    for (const mod of mods) {
+      const folderName = getModFolderName(mod);
+      if (!folderName) continue;
+      const executable = await this.findExecutable(
+        `${this.getModsPath()}/${folderName}`,
+      );
+      if (!executable) continue;
+      const needsMigration =
+        mod.engineId !== "executable" ||
+        mod.engineVersion ||
+        mod.engineLocked ||
+        mod.kind === "dependency" ||
+        mod.kind === "addon";
+      if (!needsMigration) continue;
+      if (mod.engineId && mod.engineId !== "executable") {
+        const unlinkResults = await this.injection.unlinkFromInstalledEngines(
+          mod,
+          engines,
+        );
+        if (unlinkResults.some((result) => result.status === "rejected"))
+          continue;
+      }
+      mod.engineId = "executable";
+      mod.engineVersion = null;
+      mod.engineLocked = false;
+      if (mod.kind === "dependency" || mod.kind === "addon") mod.kind = "mod";
+      changed = true;
+    }
+    if (changed) await this.mods.saveAll(mods);
+  }
   async moveImportedPsychOnlineMod(sourcePath, destinationPath) {
     let lastError;
     for (let attempt = 1; attempt <= 3; attempt += 1) {

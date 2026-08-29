@@ -27,6 +27,7 @@ function getCardEngineContext(mod, standaloneModIds, installedEngines) {
   const isExecutable =
     standaloneModIds.has(String(mod.id)) || mod.engineId === "executable";
   const hasEngine = Boolean(
+    !isExecutable &&
     mod.engineId &&
     mod.engineId !== "executable" &&
     ENGINE_DETAILS[mod.engineId],
@@ -39,7 +40,7 @@ function getCardEngineContext(mod, standaloneModIds, installedEngines) {
       )
     : null;
   let engineBadgeHtml = modManagerTemplates.unassignedBadge();
-  if (mod.engineLocked || hasEngine) {
+  if (!isExecutable && (mod.engineLocked || hasEngine)) {
     const engineId = mod.engineLocked ? "psychonline" : mod.engineId;
     const engineInfo = ENGINE_DETAILS[engineId];
     engineBadgeHtml = modManagerTemplates.engineBadge(
@@ -75,7 +76,7 @@ function createModManagerCard(mod, standaloneModIds, installedEngines) {
   card.classList.toggle("is-unassigned", isUnassigned);
   if (mod.hidden) card.style.opacity = "0.5";
 
-  const launchAsStandalone = isExecutable && !hasEngine;
+  const launchAsStandalone = isExecutable;
   const launchLabel =
     launchAsStandalone ||
     getEngineLaunchBehavior(mod.engineId)?.scope === "exclusive-mod"
@@ -84,8 +85,8 @@ function createModManagerCard(mod, standaloneModIds, installedEngines) {
   card.innerHTML = modManagerTemplates.cardContent(
     launchAsStandalone ? "standalone" : "engine",
     mod.id,
-    engine?.id || mod.engineId || "",
-    engine?.version || mod.engineVersion || "",
+    engine?.id || (launchAsStandalone ? "" : mod.engineId || ""),
+    engine?.version || (launchAsStandalone ? "" : mod.engineVersion || ""),
     launchLabel,
     mod.name,
     mod.hidden,

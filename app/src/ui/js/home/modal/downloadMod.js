@@ -184,13 +184,23 @@ async function finalizeInstall(
   if (!(await service.hasExtractedFiles(targetModFolder))) {
     throw new Error(t("downloads.archiveEmpty"));
   }
+  const isExecutable = Boolean(await FS.findExecutable(targetModFolder));
+  const resolvedInstallMetadata = isExecutable
+    ? {
+        ...installMetadata,
+        kind: "mod",
+        engineLocked: false,
+        engineVersion: null,
+      }
+    : installMetadata;
+  const resolvedEngineId = isExecutable ? "executable" : engineId;
   await FS.api.remove(downloadMarkerPath);
   await FS.api.write(`${targetModFolder}/mod_url.txt`, downloadUrl);
   await FS.saveInstalledMod(modId, modName, {
-    engineId,
+    ...resolvedInstallMetadata,
+    engineId: resolvedEngineId,
     folderName: storageFolderName,
     engineFolderName,
-    ...installMetadata,
   });
   service.reportInstallProgress(
     modId,

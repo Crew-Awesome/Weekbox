@@ -211,6 +211,8 @@ var _ModInjectionService = class _ModInjectionService {
     if (!(await this.api.exists(sourcePath))) {
       throw new Error(`Mod files not found for ${mod.name}`);
     }
+    if (await this.executables.find(sourcePath))
+      return { linked: false, standalone: true };
     await this.api.ensureDir(modsPath);
     if (await this.api.exists(linkPath)) {
       const storedMods = await this.modRepository.getAll();

@@ -121,6 +121,7 @@ export function settingsContent({
   tagSuggestions = [],
 }) {
   const hasEngine = Boolean(
+    !isExecutable &&
     mod.engineId &&
     mod.engineId !== "executable" &&
     ENGINE_DETAILS[mod.engineId],
@@ -151,7 +152,7 @@ export function settingsContent({
           readOnly,
           tagsField,
         })}
-        ${mod.engineLocked ? `<p class="mod-settings-note">${t("modSettings.lockedToPsychOnline")}</p>` : ""}
+        ${!isExecutable && mod.engineLocked ? `<p class="mod-settings-note">${t("modSettings.lockedToPsychOnline")}</p>` : ""}
         ${readOnly ? `<p class="mod-settings-note">${t("modSettings.closeEngineToChange")}</p>` : ""}
       </div>
       ${renderSettingsFooter({ canReset, readOnly, resetTitle, isDependency })}
