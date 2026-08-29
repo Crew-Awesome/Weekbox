@@ -278,6 +278,50 @@ async function handleStartupAppUpdate() {
   return false;
 }
 
+function normalizeMessageBoxOptions(choice, icon) {
+  const normalizedChoice = String(choice || "OK")
+    .toUpperCase()
+    .trim();
+  const normalizedIcon = String(icon || "INFO")
+    .toUpperCase()
+    .trim();
+  const choiceMap = {
+    ACEPTAR: "OK",
+    OK: "OK",
+    SI: "YES_NO",
+    YES: "YES_NO",
+    CANCELAR: "OK_CANCEL",
+    CANCEL: "OK_CANCEL",
+    ERROR: "OK",
+    INFO: "OK",
+    WARNING: "OK",
+    WARN: "OK",
+    QUESTION: "YES_NO",
+    "S\u00cd": "YES_NO",
+  };
+  const normalizedChoiceValue = choiceMap[normalizedChoice] || "OK";
+  const iconChoices = ["ERROR", "INFO", "WARNING", "WARN", "QUESTION"];
+  const normalizedMessageBoxIcon = iconChoices.includes(normalizedChoice)
+    ? normalizedChoice === "WARN"
+      ? "WARNING"
+      : normalizedChoice
+    : ["INFO", "WARN", "WARNING", "ERROR", "QUESTION"].includes(normalizedIcon)
+      ? normalizedIcon
+      : "INFO";
+  return { choice: normalizedChoiceValue, icon: normalizedMessageBoxIcon };
+}
+
+function showMessageBoxFallback(title, content, choice) {
+  if (typeof window === "undefined") return "OK";
+  if (choice === "YES_NO" || choice === "OK_CANCEL") {
+    const result = window.confirm(`${title ? `${title}\n\n` : ""}${content}`);
+    if (choice === "YES_NO") return result ? "YES" : "NO";
+    return result ? "OK" : "CANCEL";
+  }
+  window.alert(`${title ? `${title}\n\n` : ""}${content}`);
+  return "OK";
+}
+
 function patchNeutralinoMessageBox() {
   if (typeof Neutralino === "undefined" || !Neutralino.os?.showMessageBox)
     return;
@@ -289,94 +333,22 @@ function patchNeutralinoMessageBox() {
     choice = "OK",
     icon = "INFO",
   ) {
-    let normalizedChoice = String(choice || "OK")
-      .toUpperCase()
-      .trim();
-    let normalizedIcon = String(icon || "INFO")
-      .toUpperCase()
-      .trim();
-
-    const choiceMap = {
-      ACEPTAR: "OK",
-      OK: "OK",
-      SI: "YES_NO",
-      SÍ: "YES_NO",
-      YES: "YES_NO",
-      CANCELAR: "OK_CANCEL",
-      CANCEL: "OK_CANCEL",
-      ERROR: "OK",
-      INFO: "OK",
-      WARNING: "OK",
-      WARN: "OK",
-      QUESTION: "YES_NO",
-    };
-
-    if (choiceMap[normalizedChoice]) {
-      if (
-        ["ERROR", "INFO", "WARNING", "WARN", "QUESTION"].includes(
-          normalizedChoice,
-        )
-      ) {
-        normalizedIcon =
-          normalizedChoice === "WARN" ? "WARNING" : normalizedChoice;
-      }
-      normalizedChoice = choiceMap[normalizedChoice];
-    }
-
-    const validChoices = new Set([
-      "OK",
-      "OK_CANCEL",
-      "YES_NO",
-      "YES_NO_CANCEL",
-      "RETRY_CANCEL",
-      "ABORT_RETRY_IGNORE",
-    ]);
-    if (!validChoices.has(normalizedChoice)) {
-      normalizedChoice = "OK";
-    }
-
-    const validIcons = new Set([
-      "INFO",
-      "WARN",
-      "WARNING",
-      "ERROR",
-      "QUESTION",
-    ]);
-    if (!validIcons.has(normalizedIcon)) {
-      normalizedIcon = "INFO";
-    }
+    const normalized = normalizeMessageBoxOptions(choice, icon);
 
     try {
       return await Neutralino.os._origShowMessageBox.call(
         Neutralino.os,
         String(title ?? ""),
         String(content ?? ""),
-        normalizedChoice,
-        normalizedIcon,
+        normalized.choice,
+        normalized.icon,
       );
     } catch (err) {
       console.warn(
         "Neutralino.os.showMessageBox fallback to alert/confirm:",
         err,
       );
-      if (typeof window !== "undefined") {
-        if (normalizedChoice === "YES_NO" || normalizedChoice === "OK_CANCEL") {
-          const res = window.confirm(
-            `${title ? title + "\n\n" : ""}${content}`,
-          );
-          return res
-            ? normalizedChoice === "YES_NO"
-              ? "YES"
-              : "OK"
-            : normalizedChoice === "YES_NO"
-              ? "NO"
-              : "CANCEL";
-        } else {
-          window.alert(`${title ? title + "\n\n" : ""}${content}`);
-          return "OK";
-        }
-      }
-      return "OK";
+      return showMessageBoxFallback(title, content, normalized.choice);
     }
   };
 }

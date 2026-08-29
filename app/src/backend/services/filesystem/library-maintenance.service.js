@@ -45,6 +45,99 @@ function getImportedPsychOnlineMetadata(folderName, downloadUrl = null) {
   };
 }
 
+function updateLocalPsychOnlineCovers(installedMods) {
+  let changed = false;
+  for (const mod of installedMods) {
+    if (
+      mod.engineId === "psychonline" &&
+      mod.source === "local" &&
+      mod.coverFallback !== "psychonline"
+    ) {
+      mod.coverFallback = "psychonline";
+      changed = true;
+    }
+  }
+  return changed;
+}
+
+function isExistingPsychOnlineMod(installedMods, folderName) {
+  return installedMods.some(
+    (mod) =>
+      normalizeFolderName(getModFolderName(mod)) ===
+        normalizeFolderName(folderName) ||
+      normalizeFolderName(getEngineModFolderName(mod)) ===
+        normalizeFolderName(folderName),
+  );
+}
+
+async function importPsychOnlineEntry(
+  service,
+  engine,
+  engineModsPath,
+  entry,
+  installedMods,
+) {
+  const folderName = sanitizePathSegment(entry.entry);
+  if (!folderName || isExistingPsychOnlineMod(installedMods, folderName))
+    return;
+  const sourcePath = `${engineModsPath}/${entry.entry}`;
+  const urlPath = `${sourcePath}/mod_url.txt`;
+  const downloadUrl = (await service.api.exists(urlPath))
+    ? (await service.api.read(urlPath)).trim()
+    : null;
+  if (downloadUrl && !/^https?:\/\//i.test(downloadUrl)) return;
+  const destinationPath = `${service.getModsPath()}/${folderName}`;
+  if (await service.api.exists(destinationPath)) return;
+  let metadata;
+  try {
+    metadata = getImportedPsychOnlineMetadata(folderName, downloadUrl);
+  } catch {
+    return;
+  }
+  if (installedMods.some((mod) => sameId(mod.id, metadata.id))) return;
+  if (
+    !(await service.api.exists(sourcePath)) ||
+    (await service.api.exists(destinationPath))
+  )
+    return;
+  if (!(await service.moveImportedPsychOnlineMod(sourcePath, destinationPath)))
+    return;
+  try {
+    await service.injection.link(metadata, engine.id, engine.version);
+  } catch (error) {
+    if (!String(error?.message || error).includes("Engine folder conflict"))
+      throw error;
+    metadata.hidden = true;
+  }
+  await service.mods.add(metadata.id, metadata.name, metadata);
+  installedMods.push({ ...metadata, hidden: Boolean(metadata.hidden) });
+}
+
+async function importPsychOnlineEngine(service, engine, installedMods) {
+  if (service.isEngineRunning(engine.id, engine.version)) return;
+  const engineModsPath = await service.getEngineModsPath(
+    engine.id,
+    engine.version,
+  );
+  let entries;
+  try {
+    entries = getRealEntries(
+      await Neutralino.filesystem.readDirectory(engineModsPath),
+    );
+  } catch {
+    return;
+  }
+  for (const entry of entries.filter((item) => item.type === "DIRECTORY")) {
+    await importPsychOnlineEntry(
+      service,
+      engine,
+      engineModsPath,
+      entry,
+      installedMods,
+    );
+  }
+}
+
 var _LibraryMaintenanceService = class _LibraryMaintenanceService {
   constructor({
     api,
@@ -117,94 +210,10 @@ var _LibraryMaintenanceService = class _LibraryMaintenanceService {
     const engines = installedEngines || (await this.getInstalledEngines());
     const storedMods = await this.mods.getAll();
     const installedMods = Array.isArray(storedMods) ? storedMods : [];
-    let updatedLocalCovers = false;
-    for (const mod of installedMods) {
-      if (
-        mod.engineId === "psychonline" &&
-        mod.source === "local" &&
-        mod.coverFallback !== "psychonline"
-      ) {
-        mod.coverFallback = "psychonline";
-        updatedLocalCovers = true;
-      }
-    }
-    if (updatedLocalCovers) await this.mods.saveAll(installedMods);
-    for (const engine of engines.filter((item) => item.id === "psychonline")) {
-      if (this.isEngineRunning(engine.id, engine.version)) continue;
-      const engineModsPath = await this.getEngineModsPath(
-        engine.id,
-        engine.version,
-      );
-      let entries;
-      try {
-        entries = getRealEntries(
-          await Neutralino.filesystem.readDirectory(engineModsPath),
-        );
-      } catch {
-        continue;
-      }
-      for (const entry of entries.filter((item) => item.type === "DIRECTORY")) {
-        const folderName = sanitizePathSegment(entry.entry);
-        if (!folderName) continue;
-        // An installed mod can keep its library folder under one name while
-        // using a different folder name inside Psych Online.  Treat either
-        // name as the same existing entry; otherwise re-importing its link
-        // turns into an engine-folder conflict during startup.
-        const existing = installedMods.find(
-          (mod) =>
-            normalizeFolderName(getModFolderName(mod)) ===
-              normalizeFolderName(folderName) ||
-            normalizeFolderName(getEngineModFolderName(mod)) ===
-              normalizeFolderName(folderName),
-        );
-        if (existing) {
-          // The folder is already present in the Psych Online installation.
-          // It may belong to a different installed mod that uses the same
-          // engine folder name, so attempting to link it again can turn a
-          // recoverable duplicate into a startup-blocking conflict.
-          continue;
-        }
-        const sourcePath = `${engineModsPath}/${entry.entry}`;
-        const urlPath = `${sourcePath}/mod_url.txt`;
-        const downloadUrl = (await this.api.exists(urlPath))
-          ? (await this.api.read(urlPath)).trim()
-          : null;
-        if (downloadUrl && !/^https?:\/\//i.test(downloadUrl)) continue;
-        const destinationPath = `${this.getModsPath()}/${folderName}`;
-        if (await this.api.exists(destinationPath)) continue;
-        let metadata;
-        try {
-          metadata = getImportedPsychOnlineMetadata(folderName, downloadUrl);
-        } catch {
-          continue;
-        }
-        if (installedMods.some((mod) => sameId(mod.id, metadata.id))) continue;
-        if (
-          !(await this.api.exists(sourcePath)) ||
-          (await this.api.exists(destinationPath))
-        )
-          continue;
-        const moved = await this.moveImportedPsychOnlineMod(
-          sourcePath,
-          destinationPath,
-        );
-        if (!moved) continue;
-        try {
-          await this.injection.link(metadata, engine.id, engine.version);
-        } catch (error) {
-          if (
-            !String(error?.message || error).includes("Engine folder conflict")
-          )
-            throw error;
-          // A locally discovered optional Psych Online mod must not prevent
-          // WeekBox from starting. Keep it in the library, hidden, so the
-          // user can resolve the conflict later without losing its files.
-          metadata.hidden = true;
-        }
-        await this.mods.add(metadata.id, metadata.name, metadata);
-        installedMods.push({ ...metadata, hidden: Boolean(metadata.hidden) });
-      }
-    }
+    if (updateLocalPsychOnlineCovers(installedMods))
+      await this.mods.saveAll(installedMods);
+    for (const engine of engines.filter((item) => item.id === "psychonline"))
+      await importPsychOnlineEngine(this, engine, installedMods);
   }
   async cleanupIncompleteDownloads() {
     try {

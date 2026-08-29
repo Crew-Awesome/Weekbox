@@ -8,36 +8,36 @@ title = document.getElementById("startup-loading-title");
 percentage = document.getElementById("startup-loading-percentage");
 versionEl = document.getElementById("startup-loading-version");
 
+async function readConfigVersion() {
+  try {
+    const res = await fetch("neutralino.config.json");
+    if (res.ok) return (await res.json())?.version || "";
+  } catch {}
+  return "";
+}
+
+async function readNeutralinoVersion() {
+  if (
+    typeof window === "undefined" ||
+    !window.NL_TOKEN ||
+    typeof Neutralino === "undefined" ||
+    !Neutralino.app?.getConfig
+  )
+    return "";
+  try {
+    return (await Neutralino.app.getConfig())?.version || "";
+  } catch {
+    return "";
+  }
+}
+
 async function initVersion() {
   if (!versionEl) return;
-  let ver = "";
-  if (typeof window !== "undefined" && window.NL_APPVERSION) {
-    ver = window.NL_APPVERSION;
-  }
-  if (!ver) {
-    try {
-      const res = await fetch("neutralino.config.json");
-      if (res.ok) {
-        const config = await res.json();
-        ver = config?.version || "";
-      }
-    } catch {}
-  }
-  if (
-    !ver &&
-    typeof window !== "undefined" &&
-    window.NL_TOKEN &&
-    typeof Neutralino !== "undefined" &&
-    Neutralino.app?.getConfig
-  ) {
-    try {
-      const config = await Neutralino.app.getConfig();
-      ver = config?.version || "";
-    } catch {}
-  }
-  if (ver && versionEl) {
-    versionEl.textContent = ver.startsWith("v") ? ver : `v${ver}`;
-  }
+  const ver =
+    (typeof window !== "undefined" && window.NL_APPVERSION) ||
+    (await readConfigVersion()) ||
+    (await readNeutralinoVersion());
+  if (ver) versionEl.textContent = ver.startsWith("v") ? ver : `v${ver}`;
 }
 
 initVersion();

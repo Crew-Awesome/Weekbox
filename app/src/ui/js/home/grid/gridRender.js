@@ -32,6 +32,172 @@ function selectFeaturedPosition(grid, cardCount) {
     : null;
 }
 
+function getGridPageSize() {
+  return !gridState.isSearchMode &&
+    ["ripe", "new", "updated"].includes(gridState.currentFilter)
+    ? 24
+    : 12;
+}
+
+function resetGridForInitialRender(grid) {
+  gridState.discoveryController?.abort();
+  gridState.discoveryController = new AbortController();
+  gridState.discoverySnapshotId = null;
+  gridState.currentPage = 1;
+  gridState.hasMore = true;
+  grid.replaceChildren();
+  gridState.featuredCandidates = [];
+  gridState.featuredIds.clear();
+  gridState.featuredEngineIds.clear();
+  grid.classList.remove("grid-empty", "grid-error");
+}
+
+async function fetchGridPage(requestedPage, pageSize) {
+  if (gridState.isSearchMode) {
+    return gameBananaApi.searchMods(gridState.searchQuery, requestedPage, 12);
+  }
+  return gameBananaApi.getGridMods(
+    gridState.currentFilter,
+    requestedPage,
+    gridState.currentCategoryId,
+    {
+      snapshotId: gridState.discoverySnapshotId,
+      signal: gridState.discoveryController?.signal,
+      pageSize,
+    },
+  );
+}
+
+function renderEmptyGrid(grid, result) {
+  if (result.sourceErrors?.length) {
+    grid.textContent = t("home.discoveryUnavailable");
+    grid.classList.add("grid-error");
+    gridState.status = "error";
+  } else {
+    grid.textContent = t("home.noModsFound");
+    grid.classList.add("grid-empty");
+  }
+}
+
+function getFeaturedGridData(grid, mods, requestedPage, isInitial) {
+  if (
+    isInitial &&
+    !gridState.isSearchMode &&
+    gridState.currentFilter === "popular"
+  ) {
+    gridState.featuredCandidates = mods;
+  }
+  const showFeatured =
+    !gridState.isSearchMode &&
+    Math.random() < 0.5 &&
+    ((isInitial && gridState.currentFilter === "popular") ||
+      requestedPage % 3 === 0);
+  const featuredSource =
+    gridState.currentFilter === "popular" && gridState.featuredCandidates.length
+      ? gridState.featuredCandidates
+      : mods;
+  const featured = showFeatured
+    ? selectFeaturedMod(
+        featuredSource,
+        gridState.featuredIds,
+        gridState.featuredEngineIds,
+      )
+    : null;
+  const featuredPosition = featured
+    ? selectFeaturedPosition(grid, mods.length)
+    : null;
+  const featuredLabelKey =
+    gridState.currentFilter === "updated"
+      ? "home.recentlyUpdated"
+      : gridState.currentFilter === "new"
+        ? "home.newRelease"
+        : "home.popularCommunityPick";
+  return { featured, featuredPosition, featuredLabelKey };
+}
+
+function updateGridState(result, requestedPage, mods, pageSize) {
+  if (result.snapshotId) gridState.discoverySnapshotId = result.snapshotId;
+  gridState.currentPage = requestedPage;
+  gridState.hasMore = !result.exhausted && mods.length === pageSize;
+  gridState.status = result.stale
+    ? "stale"
+    : result.partial
+      ? "partial"
+      : result.exhausted
+        ? "exhausted"
+        : "ready";
+}
+
+function appendGridPage(
+  grid,
+  result,
+  mods,
+  requestedPage,
+  isInitial,
+  pageSize,
+) {
+  const cards = document.createDocumentFragment();
+  const { featured, featuredPosition, featuredLabelKey } = getFeaturedGridData(
+    grid,
+    mods,
+    requestedPage,
+    isInitial,
+  );
+  if (featured && featuredPosition !== null) {
+    gridState.featuredIds.add(featured.id);
+    if (featured.engineId) gridState.featuredEngineIds.add(featured.engineId);
+  }
+  const cardElements = mods.map((mod, index) => createCard(mod, index));
+  if (featured && featuredPosition !== null) {
+    cardElements.splice(
+      featuredPosition,
+      0,
+      createFeaturedCard(featured, featuredLabelKey),
+    );
+  }
+  cards.append(...cardElements);
+  grid.appendChild(cards);
+  updateGridState(result, requestedPage, mods, pageSize);
+}
+
+async function loadGridPages(
+  grid,
+  renderVersion,
+  pageSize,
+  isInitial,
+  pagesToLoad,
+) {
+  let pagesLoaded = 0;
+  while (pagesLoaded < pagesToLoad) {
+    if (renderVersion !== gridState.renderVersion) break;
+    if (!gridState.hasMore && !isInitial) break;
+
+    const requestedPage = isInitial ? 1 : gridState.currentPage + 1;
+    const response = await fetchGridPage(requestedPage, pageSize);
+    const result = Array.isArray(response)
+      ? { mods: response, exhausted: response.length < pageSize }
+      : response;
+    const mods = result.mods;
+
+    if (renderVersion !== gridState.renderVersion) return false;
+    if (mods.length === 0 && isInitial) {
+      renderEmptyGrid(grid, result);
+      return false;
+    }
+
+    grid.classList.remove("grid-empty", "grid-error");
+    if (mods.length === 0) {
+      gridState.hasMore = false;
+      break;
+    }
+
+    appendGridPage(grid, result, mods, requestedPage, isInitial, pageSize);
+    pagesLoaded++;
+    if (isInitial) break;
+  }
+  return true;
+}
+
 export const gridRender = {
   ensureEngineTooltip(grid) {
     if (!gridState.engineTooltip) {
@@ -139,141 +305,21 @@ export const gridRender = {
     if (!grid) return;
     this.ensureEngineTooltip(grid);
     const renderVersion = ++gridState.renderVersion;
-    const pageSize =
-      !gridState.isSearchMode &&
-      ["ripe", "new", "updated"].includes(gridState.currentFilter)
-        ? 24
-        : 12;
+    const pageSize = getGridPageSize();
 
-    if (isInitial) {
-      gridState.discoveryController?.abort();
-      gridState.discoveryController = new AbortController();
-      gridState.discoverySnapshotId = null;
-      gridState.currentPage = 1;
-      gridState.hasMore = true;
-      grid.replaceChildren();
-      gridState.featuredCandidates = [];
-      gridState.featuredIds.clear();
-      gridState.featuredEngineIds.clear();
-      grid.classList.remove("grid-empty", "grid-error");
-    }
+    if (isInitial) resetGridForInitialRender(grid);
 
     gridState.isLoading = true;
     if (!isInitial) this.showLoadMoreIndicator(grid);
 
     try {
-      let pagesLoaded = 0;
-      while (pagesLoaded < pagesToLoad) {
-        if (renderVersion !== gridState.renderVersion) break;
-        if (!gridState.hasMore && !isInitial) break;
-
-        const requestedPage = isInitial ? 1 : gridState.currentPage + 1;
-        const response = gridState.isSearchMode
-          ? await gameBananaApi.searchMods(
-              gridState.searchQuery,
-              requestedPage,
-              12,
-            )
-          : await gameBananaApi.getGridMods(
-              gridState.currentFilter,
-              requestedPage,
-              gridState.currentCategoryId,
-              {
-                snapshotId: gridState.discoverySnapshotId,
-                signal: gridState.discoveryController?.signal,
-                pageSize,
-              },
-            );
-        const result = Array.isArray(response)
-          ? { mods: response, exhausted: response.length < pageSize }
-          : response;
-        const mods = result.mods;
-
-        if (renderVersion !== gridState.renderVersion) return;
-
-        if (mods.length === 0 && isInitial) {
-          if (result.sourceErrors?.length) {
-            grid.textContent = t("home.discoveryUnavailable");
-            grid.classList.add("grid-error");
-            gridState.status = "error";
-          } else {
-            grid.textContent = t("home.noModsFound");
-            grid.classList.add("grid-empty");
-          }
-          return;
-        }
-
-        grid.classList.remove("grid-empty", "grid-error");
-        if (mods.length === 0) {
-          gridState.hasMore = false;
-          break;
-        }
-
-        if (
-          isInitial &&
-          !gridState.isSearchMode &&
-          gridState.currentFilter === "popular"
-        ) {
-          gridState.featuredCandidates = mods;
-        }
-
-        const cards = document.createDocumentFragment();
-        const showFeatured =
-          !gridState.isSearchMode &&
-          Math.random() < 0.5 &&
-          ((isInitial && gridState.currentFilter === "popular") ||
-            requestedPage % 3 === 0);
-        const featuredSource =
-          gridState.currentFilter === "popular" &&
-          gridState.featuredCandidates.length
-            ? gridState.featuredCandidates
-            : mods;
-        const featured = showFeatured
-          ? selectFeaturedMod(
-              featuredSource,
-              gridState.featuredIds,
-              gridState.featuredEngineIds,
-            )
-          : null;
-        const featuredPosition = featured
-          ? selectFeaturedPosition(grid, mods.length)
-          : null;
-        const featuredLabelKey =
-          gridState.currentFilter === "updated"
-            ? "home.recentlyUpdated"
-            : gridState.currentFilter === "new"
-              ? "home.newRelease"
-              : "home.popularCommunityPick";
-        if (featured && featuredPosition !== null) {
-          gridState.featuredIds.add(featured.id);
-          if (featured.engineId)
-            gridState.featuredEngineIds.add(featured.engineId);
-        }
-        const cardElements = mods.map((mod, index) => createCard(mod, index));
-        if (featured && featuredPosition !== null) {
-          cardElements.splice(
-            featuredPosition,
-            0,
-            createFeaturedCard(featured, featuredLabelKey),
-          );
-        }
-        cards.append(...cardElements);
-        grid.appendChild(cards);
-        if (result.snapshotId) gridState.discoverySnapshotId = result.snapshotId;
-        gridState.currentPage = requestedPage;
-        gridState.hasMore = !result.exhausted && mods.length === pageSize;
-        gridState.status = result.stale
-          ? "stale"
-          : result.partial
-            ? "partial"
-            : result.exhausted
-              ? "exhausted"
-              : "ready";
-
-        pagesLoaded++;
-        if (isInitial) break;
-      }
-      return true;
+      return await loadGridPages(
+        grid,
+        renderVersion,
+        pageSize,
+        isInitial,
+        pagesToLoad,
+      );
     } catch (error) {
       if (error?.kind === "aborted") return false;
       if (isInitial && renderVersion === gridState.renderVersion) {

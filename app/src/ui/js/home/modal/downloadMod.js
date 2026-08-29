@@ -21,6 +21,213 @@ function setModalButtonState(btn, iconClass, text, disabled) {
   btn.replaceChildren(icon, document.createTextNode(" " + text));
 }
 
+function getArchiveExtension(downloadUrl) {
+  const lowerUrl = String(downloadUrl || "").toLowerCase();
+  if (lowerUrl.includes(".rar")) return ".rar";
+  if (lowerUrl.includes(".7z")) return ".7z";
+  if (lowerUrl.includes(".tar.gz") || lowerUrl.includes(".tgz")) {
+    return ".tar.gz";
+  }
+  return lowerUrl.includes(".tar") ? ".tar" : ".zip";
+}
+
+function assertInstallActive(service, modId) {
+  if (service.activeTasks.get(modId)?.cancelled) throw new Error("Cancelled");
+}
+
+function isNestedArchive(entry) {
+  const name = String(entry || "").toLowerCase();
+  return [".zip", ".rar", ".7z", ".tar", ".gz"].some((extension) =>
+    name.endsWith(extension),
+  );
+}
+
+async function extractNestedInstallArchives(
+  service,
+  { modId, targetModFolder, modsBasePath },
+) {
+  const maxDepth = 10;
+  let depth = 0;
+  while (true) {
+    const files = await Neutralino.filesystem.readDirectory(targetModFolder);
+    const realFiles = files.filter(
+      (file) =>
+        file.entry !== "." &&
+        file.entry !== ".." &&
+        file.entry !== ".downloading",
+    );
+    const nestedFile =
+      realFiles.length === 1 &&
+      realFiles[0].type === "FILE" &&
+      isNestedArchive(realFiles[0].entry)
+        ? realFiles[0]
+        : null;
+    if (!nestedFile) return;
+    depth += 1;
+    if (depth > maxDepth) {
+      throw new Error(
+        "WeekBox found too many nested archives. The download may be invalid.",
+      );
+    }
+
+    const innerZipPath = `${targetModFolder}/${nestedFile.entry}`;
+    toastDownloadMod.update(modId, 98, t("downloads.extractingNested"));
+    const innerTempPath = `${modsBasePath}/temp_inner_${modId}`;
+    await FS.api.ensureDir(innerTempPath);
+    await extractArchive({
+      archivePath: innerZipPath,
+      destinationPath: innerTempPath,
+      getTask: () => service.activeTasks.get(modId),
+      onEntry: (file) => {
+        toastDownloadMod.update(
+          modId,
+          98,
+          t("downloads.extractingNestedFile", { file }),
+        );
+      },
+    });
+    try {
+      assertInstallActive(service, modId);
+    } catch (error) {
+      await FS.api.remove(innerTempPath).catch(() => {});
+      throw error;
+    }
+    await FS.api.remove(innerZipPath).catch(() => {});
+    const extractedFiles =
+      await Neutralino.filesystem.readDirectory(innerTempPath);
+    await service.moveEntries(extractedFiles, innerTempPath, targetModFolder);
+    await FS.api.remove(innerTempPath).catch(() => {});
+  }
+}
+
+async function prepareInstalledFolder(
+  service,
+  { modId, targetModFolder, modsBasePath, fallbackFolderName, taskKey },
+) {
+  toastDownloadMod.update(modId, 99, t("downloads.preparingFolder"));
+  const extractedEntries =
+    await Neutralino.filesystem.readDirectory(targetModFolder);
+  const realEntries = extractedEntries.filter(
+    (entry) =>
+      entry.entry !== "." &&
+      entry.entry !== ".." &&
+      entry.entry !== ".downloading",
+  );
+  const wrapper =
+    realEntries.length === 1 && realEntries[0].type === "DIRECTORY"
+      ? realEntries[0]
+      : null;
+  const engineFolderName = wrapper
+    ? sanitizePathSegment(wrapper.entry) || fallbackFolderName
+    : fallbackFolderName;
+  const storageFolderName = wrapper
+    ? `${sanitizeModFolderName(wrapper.entry, fallbackFolderName)}--${taskKey}`
+    : `${fallbackFolderName}--${taskKey}`;
+  const finalModFolder = `${modsBasePath}/${storageFolderName}`;
+  const activeTask = service.activeTasks.get(modId);
+  if (activeTask) activeTask.finalModFolder = finalModFolder;
+  if (await FS.api.exists(finalModFolder)) {
+    await FS.api.remove(finalModFolder).catch(() => {});
+  }
+  await new Promise((resolve) => setTimeout(resolve, 150));
+  if (wrapper) {
+    await FS.api.move(`${targetModFolder}/${wrapper.entry}`, finalModFolder);
+  } else {
+    await FS.api.ensureDir(finalModFolder);
+    await service.moveEntries(realEntries, targetModFolder, finalModFolder);
+  }
+  await FS.api.remove(targetModFolder).catch(() => {});
+  await FS.api.ensureDir(finalModFolder);
+  const downloadMarkerPath = `${finalModFolder}/.downloading`;
+  await FS.api.write(downloadMarkerPath, "1");
+  if (activeTask) activeTask.targetModFolder = finalModFolder;
+  return {
+    targetModFolder: finalModFolder,
+    finalModFolder,
+    storageFolderName,
+    engineFolderName,
+    downloadMarkerPath,
+  };
+}
+
+function markInstallModalComplete() {
+  const modalBtn = document.getElementById("modal-download-btn");
+  if (
+    modalBtn &&
+    document.getElementById("mod-modal")?.classList.contains("show")
+  ) {
+    setModalButtonState(
+      modalBtn,
+      "fa-solid fa-check",
+      t("modModal.alreadyInstalled"),
+      true,
+    );
+  }
+}
+
+async function finalizeInstall(
+  service,
+  {
+    modId,
+    modName,
+    downloadUrl,
+    engineId,
+    installMetadata,
+    targetModFolder,
+    downloadMarkerPath,
+    tempFilePath,
+    storageFolderName,
+    engineFolderName,
+    coverUrlPromise,
+  },
+) {
+  if (!(await service.hasExtractedFiles(targetModFolder))) {
+    throw new Error(t("downloads.archiveEmpty"));
+  }
+  await FS.api.remove(downloadMarkerPath);
+  await FS.api.write(`${targetModFolder}/mod_url.txt`, downloadUrl);
+  await FS.saveInstalledMod(modId, modName, {
+    engineId,
+    folderName: storageFolderName,
+    engineFolderName,
+    ...installMetadata,
+  });
+  service.reportInstallProgress(
+    modId,
+    modName,
+    t("downloads.preparingCover"),
+    99,
+  );
+  const coverUrl = await coverUrlPromise.catch(() => null);
+  const localCover = await service
+    .cacheModCover(modId, coverUrl)
+    .catch(() => null);
+  primeModCover(modId, localCover);
+  assertInstallActive(service, modId);
+  const injectionResults = await FS.injectModIntoInstalledEngines(modId);
+  injectionResults
+    .filter((result) => result.status === "rejected")
+    .forEach((result) =>
+      console.warn("Could not inject mod into engine:", result.reason),
+    );
+  assertInstallActive(service, modId);
+  service.reportInstallProgress(
+    modId,
+    modName,
+    t("downloads.installed"),
+    100,
+    localCover,
+  );
+  await new Promise((resolve) => setTimeout(resolve, 320));
+  service.reportInstallProgress(modId, modName, "complete", 100);
+  document.dispatchEvent(new CustomEvent("mods-updated"));
+  toastDownloadMod.success(modId);
+  markInstallModalComplete();
+  await FS.api.remove(tempFilePath);
+  service.activeTasks.delete(modId);
+  return true;
+}
+
 export const downloadMod = {
   activeTasks: new Map(),
 
@@ -228,13 +435,7 @@ export const downloadMod = {
     let engineFolderName = fallbackFolderName;
     let targetModFolder = `${modsBasePath}/.extract_${taskKey}`;
     let finalModFolder = null;
-    let archiveExt = ".zip";
-    const lowerUrl = String(downloadUrl || "").toLowerCase();
-    if (lowerUrl.includes(".rar")) archiveExt = ".rar";
-    else if (lowerUrl.includes(".7z")) archiveExt = ".7z";
-    else if (lowerUrl.includes(".tar.gz") || lowerUrl.includes(".tgz"))
-      archiveExt = ".tar.gz";
-    else if (lowerUrl.includes(".tar")) archiveExt = ".tar";
+    const archiveExt = getArchiveExtension(downloadUrl);
     const tempFilePath = `${modsBasePath}/temp_${taskKey}${archiveExt}`;
     let downloadMarkerPath = `${targetModFolder}/.downloading`;
 
@@ -265,7 +466,7 @@ export const downloadMod = {
       await FS.api.ensureDir(modsBasePath);
       await FS.api.ensureDir(targetModFolder);
       await FS.api.write(downloadMarkerPath, "1");
-      if (this.activeTasks.get(modId)?.cancelled) throw new Error("Cancelled");
+      assertInstallActive(this, modId);
       toastDownloadMod.update(modId, 2, t("downloads.connecting"));
 
       const archiveStats = await downloadArchive({
@@ -282,7 +483,7 @@ export const downloadMod = {
 
       if (!archiveStats.size) throw new Error("Downloaded archive is empty");
 
-      if (this.activeTasks.get(modId)?.cancelled) throw new Error("Cancelled");
+      assertInstallActive(this, modId);
       toastDownloadMod.update(modId, 98, t("downloads.extracting"));
       this.reportInstallProgress(modId, modName, t("downloads.installing"), 98);
 
@@ -300,189 +501,42 @@ export const downloadMod = {
         },
       });
 
-      if (this.activeTasks.get(modId)?.cancelled) throw new Error("Cancelled");
+      assertInstallActive(this, modId);
 
-      const MAX_NESTED_ARCHIVE_DEPTH = 10;
-      let nestedArchiveDepth = 0;
-      let hasNestedArchive = true;
-      while (hasNestedArchive) {
-        hasNestedArchive = false;
-        const files =
-          await Neutralino.filesystem.readDirectory(targetModFolder);
-        const realFiles = files.filter(
-          (f) =>
-            f.entry !== "." && f.entry !== ".." && f.entry !== ".downloading",
-        );
-
-        if (realFiles.length === 1 && realFiles[0].type === "FILE") {
-          const entryName = realFiles[0].entry.toLowerCase();
-          if (
-            entryName.endsWith(".zip") ||
-            entryName.endsWith(".rar") ||
-            entryName.endsWith(".7z") ||
-            entryName.endsWith(".tar") ||
-            entryName.endsWith(".gz")
-          ) {
-            hasNestedArchive = true;
-            nestedArchiveDepth += 1;
-            if (nestedArchiveDepth > MAX_NESTED_ARCHIVE_DEPTH) {
-              throw new Error(
-                "WeekBox found too many nested archives. The download may be invalid.",
-              );
-            }
-            const innerZipPath = `${targetModFolder}/${realFiles[0].entry}`;
-            toastDownloadMod.update(modId, 98, t("downloads.extractingNested"));
-
-            const innerTempPath = `${modsBasePath}/temp_inner_${modId}`;
-            await FS.api.ensureDir(innerTempPath);
-
-            await extractArchive({
-              archivePath: innerZipPath,
-              destinationPath: innerTempPath,
-              getTask: () => this.activeTasks.get(modId),
-              onEntry: (file) => {
-                toastDownloadMod.update(
-                  modId,
-                  98,
-                  t("downloads.extractingNestedFile", { file }),
-                );
-              },
-            });
-
-            if (this.activeTasks.get(modId)?.cancelled) {
-              await FS.api.remove(innerTempPath).catch(() => {});
-              throw new Error("Cancelled");
-            }
-
-            await FS.api.remove(innerZipPath).catch(() => {});
-
-            const extractedFiles =
-              await Neutralino.filesystem.readDirectory(innerTempPath);
-            await this.moveEntries(
-              extractedFiles,
-              innerTempPath,
-              targetModFolder,
-            );
-            await FS.api.remove(innerTempPath).catch(() => {});
-          }
-        }
-      }
-
-      if (this.activeTasks.get(modId)?.cancelled) throw new Error("Cancelled");
-      toastDownloadMod.update(modId, 99, t("downloads.preparingFolder"));
-      const extractedEntries =
-        await Neutralino.filesystem.readDirectory(targetModFolder);
-      const realEntries = extractedEntries.filter(
-        (entry) =>
-          entry.entry !== "." &&
-          entry.entry !== ".." &&
-          entry.entry !== ".downloading",
-      );
-      const wrapper =
-        realEntries.length === 1 && realEntries[0].type === "DIRECTORY"
-          ? realEntries[0]
-          : null;
-
-      if (wrapper) {
-        engineFolderName =
-          sanitizePathSegment(wrapper.entry) || fallbackFolderName;
-        storageFolderName = `${sanitizeModFolderName(wrapper.entry, fallbackFolderName)}--${taskKey}`;
-      }
-
-      const stagingFolder = targetModFolder;
-      finalModFolder = `${modsBasePath}/${storageFolderName}`;
-      const activeTask = this.activeTasks.get(modId);
-      if (activeTask) activeTask.finalModFolder = finalModFolder;
-
-      /**
-       * @fix 2026-08-05T03:47:55.251Z - Fix "This mod is already installed" false positive on unindexed/stale folder
-       */
-      if (await FS.api.exists(finalModFolder)) {
-        await FS.api.remove(finalModFolder).catch(() => {});
-      }
-
-      await new Promise((resolve) => setTimeout(resolve, 150));
-      /**
-       * @fix 2026-08-05T03:31:10.964Z - Fix NE_FS_MOVEERR during folder move
-       */
-      if (wrapper) {
-        await FS.api.move(`${stagingFolder}/${wrapper.entry}`, finalModFolder);
-      } else {
-        await FS.api.ensureDir(finalModFolder);
-        await this.moveEntries(realEntries, stagingFolder, finalModFolder);
-      }
-      await FS.api.remove(stagingFolder).catch(() => {});
-      targetModFolder = finalModFolder;
-      downloadMarkerPath = `${targetModFolder}/.downloading`;
-      if (activeTask) activeTask.targetModFolder = targetModFolder;
-      await FS.api.ensureDir(targetModFolder);
-      await FS.api.write(downloadMarkerPath, "1");
-
-      if (this.activeTasks.get(modId)?.cancelled) throw new Error("Cancelled");
-      toastDownloadMod.update(modId, 99, t("downloads.deletingTemp"));
-      await FS.api.remove(tempFilePath);
-
-      const hasExtractedFiles = await this.hasExtractedFiles(targetModFolder);
-      if (!hasExtractedFiles) {
-        throw new Error(t("downloads.archiveEmpty"));
-      }
-      await FS.api.remove(downloadMarkerPath);
-      await FS.api.write(`${targetModFolder}/mod_url.txt`, downloadUrl);
-
-      await FS.saveInstalledMod(modId, modName, {
-        engineId,
-        folderName: storageFolderName,
-        engineFolderName,
-        ...installMetadata,
+      assertInstallActive(this, modId);
+      await extractNestedInstallArchives(this, {
+        modId,
+        targetModFolder,
+        modsBasePath,
       });
-
-      this.reportInstallProgress(
+      assertInstallActive(this, modId);
+      const prepared = await prepareInstalledFolder(this, {
+        modId,
+        targetModFolder,
+        modsBasePath,
+        fallbackFolderName,
+        taskKey,
+      });
+      targetModFolder = prepared.targetModFolder;
+      finalModFolder = prepared.finalModFolder;
+      storageFolderName = prepared.storageFolderName;
+      engineFolderName = prepared.engineFolderName;
+      downloadMarkerPath = prepared.downloadMarkerPath;
+      assertInstallActive(this, modId);
+      toastDownloadMod.update(modId, 99, t("downloads.deletingTemp"));
+      return await finalizeInstall(this, {
         modId,
         modName,
-        t("downloads.preparingCover"),
-        99,
-      );
-      const coverUrl = await coverUrlPromise.catch(() => null);
-      const localCover = await this.cacheModCover(modId, coverUrl).catch(
-        () => null,
-      );
-      primeModCover(modId, localCover);
-      if (this.activeTasks.get(modId)?.cancelled) throw new Error("Cancelled");
-
-      const injectionResults = await FS.injectModIntoInstalledEngines(modId);
-      injectionResults
-        .filter((result) => result.status === "rejected")
-        .forEach((result) =>
-          console.warn("Could not inject mod into engine:", result.reason),
-        );
-
-      if (this.activeTasks.get(modId)?.cancelled) throw new Error("Cancelled");
-      this.reportInstallProgress(
-        modId,
-        modName,
-        t("downloads.installed"),
-        100,
-        localCover,
-      );
-      await new Promise((resolve) => setTimeout(resolve, 320));
-      this.reportInstallProgress(modId, modName, "complete", 100);
-      document.dispatchEvent(new CustomEvent("mods-updated"));
-      toastDownloadMod.success(modId);
-
-      const modalBtn = document.getElementById("modal-download-btn");
-      if (
-        modalBtn &&
-        document.getElementById("mod-modal")?.classList.contains("show")
-      ) {
-        setModalButtonState(
-          modalBtn,
-          "fa-solid fa-check",
-          t("modModal.alreadyInstalled"),
-          true,
-        );
-      }
-      this.activeTasks.delete(modId);
-      return true;
+        downloadUrl,
+        engineId,
+        installMetadata,
+        targetModFolder,
+        downloadMarkerPath,
+        tempFilePath,
+        storageFolderName,
+        engineFolderName,
+        coverUrlPromise,
+      });
     } catch (error) {
       this.reportInstallProgress(modId, modName, "cancelled", 0);
       if (error.message !== "Cancelled") {

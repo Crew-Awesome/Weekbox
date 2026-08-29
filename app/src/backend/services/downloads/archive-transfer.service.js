@@ -169,129 +169,73 @@ function getUsefulProcessOutput(output) {
   );
 }
 
+function createDownloadProcessError(message, exitCode, httpStatus, detail) {
+  const error = new Error(message);
+  error.downloadDiagnostics = {
+    curlCode: Number(exitCode),
+    httpStatus: httpStatus ? Number(httpStatus) : null,
+    stderr: detail,
+  };
+  return error;
+}
+
+function getDownloadProcessMessage(code, detail, httpStatus) {
+  const messages = {
+    23: "The download could not be written to storage. The folder may be missing, locked, read-only, or out of space.",
+    28: "GameBanana's download server is unavailable right now. Try again in a few minutes.",
+    6: "WeekBox could not find the download server. Check your DNS or connection and try again.",
+    7: "WeekBox could not connect to the GameBanana download server. Try again in a few minutes.",
+    35: "The connection to the download server was reset. Try again in a few minutes.",
+    1: "The download was interrupted before it finished. Try again.",
+    18: "The download was incomplete. WeekBox will retry it.",
+    "-1": "The download process ended unexpectedly. WeekBox will retry it.",
+    56: "The connection to the download server was interrupted. Try again.",
+    60: "The download server certificate could not be trusted. Check the system date, network, VPN, proxy, and antivirus HTTPS inspection settings.",
+    52: "The download server closed the connection without sending a file. WeekBox will retry it.",
+  };
+  if (code === 22 && /\b404\b/.test(detail)) {
+    return "This download is no longer available (404). The file may have been removed, replaced, or made private.";
+  }
+  if (code === 22 && /\b(?:408|503|504)\b/.test(detail)) {
+    return "The download server is temporarily unavailable. WeekBox will retry it.";
+  }
+  if (code === 22) {
+    return `The download server rejected this file${httpStatus ? ` (HTTP ${httpStatus})` : ""}. Choose another download or try again later.`;
+  }
+  return messages[code] || null;
+}
+
+function getExtractionProcessError(exitCode, detail) {
+  if (Number(exitCode) === 127 && detail.includes("7z")) {
+    return "To install .7z or .rar mods on Linux, you must install the p7zip package (e.g. sudo apt install p7zip-full).";
+  }
+  if (Number(exitCode) === 126 && /7z|ld\.so|permission denied/i.test(detail)) {
+    return "WeekBox could not run the bundled archive extractor. Its executable permission or Linux runtime is unavailable.";
+  }
+  if (/LZMA codec is unsupported|LZMA.*not supported/i.test(detail)) {
+    return "WeekBox could not unpack this LZMA archive with the available extractor. Update WeekBox or ask the mod author for a ZIP download.";
+  }
+  if (!detail && window.NL_OS === "Linux") {
+    return `WeekBox could not extract this archive on Linux (exit code ${exitCode}). Install unzip or p7zip and try again.`;
+  }
+  return null;
+}
+
 function createProcessError(operation, exitCode, output) {
   const detail = getUsefulProcessOutput(output);
   const httpStatus =
     detail.match(/\bHTTP\/\S+\s+(\d{3})\b|\b(\d{3})\b/)?.[1] ||
     detail.match(/\b(\d{3})\b/)?.[1] ||
     null;
-  const createDownloadError = (message) => {
-    const error = new Error(message);
-    error.downloadDiagnostics = {
-      curlCode: Number(exitCode),
-      httpStatus: httpStatus ? Number(httpStatus) : null,
-      stderr: detail,
-    };
-    return error;
-  };
-  if (operation === "Download" && Number(exitCode) === 23) {
-    return createDownloadError(
-      "The download could not be written to storage. The folder may be missing, locked, read-only, or out of space.",
-    );
+  const code = Number(exitCode);
+  if (operation === "Download") {
+    const message = getDownloadProcessMessage(code, detail, httpStatus);
+    if (message)
+      return createDownloadProcessError(message, exitCode, httpStatus, detail);
   }
-  if (
-    operation === "Extraction" &&
-    Number(exitCode) === 127 &&
-    detail.includes("7z")
-  ) {
-    return new Error(
-      "To install .7z or .rar mods on Linux, you must install the p7zip package (e.g. sudo apt install p7zip-full).",
-    );
-  }
-  if (
-    operation === "Extraction" &&
-    Number(exitCode) === 126 &&
-    /7z|ld\.so|permission denied/i.test(detail)
-  ) {
-    return new Error(
-      "WeekBox could not run the bundled archive extractor. Its executable permission or Linux runtime is unavailable.",
-    );
-  }
-  if (
-    operation === "Extraction" &&
-    /LZMA codec is unsupported|LZMA.*not supported/i.test(detail)
-  ) {
-    return new Error(
-      "WeekBox could not unpack this LZMA archive with the available extractor. Update WeekBox or ask the mod author for a ZIP download.",
-    );
-  }
-  if (operation === "Download" && Number(exitCode) === 28) {
-    return createDownloadError(
-      "GameBanana's download server is unavailable right now. Try again in a few minutes.",
-    );
-  }
-  if (operation === "Download" && Number(exitCode) === 6) {
-    return createDownloadError(
-      "WeekBox could not find the download server. Check your DNS or connection and try again.",
-    );
-  }
-  if (operation === "Download" && Number(exitCode) === 7) {
-    return createDownloadError(
-      "WeekBox could not connect to the GameBanana download server. Try again in a few minutes.",
-    );
-  }
-  if (operation === "Download" && Number(exitCode) === 35) {
-    return createDownloadError(
-      "The connection to the download server was reset. Try again in a few minutes.",
-    );
-  }
-  if (operation === "Download" && Number(exitCode) === 1) {
-    return createDownloadError(
-      "The download was interrupted before it finished. Try again.",
-    );
-  }
-  if (operation === "Download" && Number(exitCode) === 18) {
-    return createDownloadError(
-      "The download was incomplete. WeekBox will retry it.",
-    );
-  }
-  if (operation === "Download" && Number(exitCode) === -1) {
-    return createDownloadError(
-      "The download process ended unexpectedly. WeekBox will retry it.",
-    );
-  }
-  if (operation === "Download" && Number(exitCode) === 56) {
-    return createDownloadError(
-      "The connection to the download server was interrupted. Try again.",
-    );
-  }
-  if (operation === "Download" && Number(exitCode) === 60) {
-    return createDownloadError(
-      "The download server certificate could not be trusted. Check the system date, network, VPN, proxy, and antivirus HTTPS inspection settings.",
-    );
-  }
-  if (
-    operation === "Download" &&
-    Number(exitCode) === 22 &&
-    /\b404\b/.test(detail)
-  ) {
-    return createDownloadError(
-      "This download is no longer available (404). The file may have been removed, replaced, or made private.",
-    );
-  }
-  if (operation === "Download" && Number(exitCode) === 52) {
-    return createDownloadError(
-      "The download server closed the connection without sending a file. WeekBox will retry it.",
-    );
-  }
-  if (
-    operation === "Download" &&
-    Number(exitCode) === 22 &&
-    /\b(?:408|503|504)\b/.test(detail)
-  ) {
-    return createDownloadError(
-      "The download server is temporarily unavailable. WeekBox will retry it.",
-    );
-  }
-  if (operation === "Download" && Number(exitCode) === 22) {
-    return createDownloadError(
-      `The download server rejected this file${httpStatus ? ` (HTTP ${httpStatus})` : ""}. Choose another download or try again later.`,
-    );
-  }
-  if (operation === "Extraction" && !detail && window.NL_OS === "Linux") {
-    return new Error(
-      `WeekBox could not extract this archive on Linux (exit code ${exitCode}). Install unzip or p7zip and try again.`,
-    );
+  if (operation === "Extraction") {
+    const message = getExtractionProcessError(exitCode, detail);
+    if (message) return new Error(message);
   }
   return new Error(
     `${operation} failed with exit code ${exitCode}${detail ? `: ${detail}` : ": no native error output was returned"}`,
@@ -593,15 +537,13 @@ async function prepareArchiveTool(binaryPath) {
   return binaryPath;
 }
 
-async function find7zBinary() {
-  const isWindows = window.NL_OS === "Windows";
-  const isDarwin = window.NL_OS === "Darwin";
-  const binNames = isWindows
-    ? ["7z.exe", "7za.exe"]
-    : isDarwin
-      ? ["7zz-mac", "7zz", "7za-mac"]
-      : ["7zz-linux", "7zzs", "7zz", "7za-linux"];
+function getArchiveToolNames() {
+  if (window.NL_OS === "Windows") return ["7z.exe", "7za.exe"];
+  if (window.NL_OS === "Darwin") return ["7zz-mac", "7zz", "7za-mac"];
+  return ["7zz-linux", "7zzs", "7zz", "7za-linux"];
+}
 
+function getArchiveToolPaths(binNames) {
   const candidateDirs = new Set();
   if (window.NL_PATH) {
     candidateDirs.add(window.NL_PATH);
@@ -616,11 +558,10 @@ async function find7zBinary() {
     candidateDirs.add(exeDir);
     candidateDirs.add(`${exeDir}/..`);
   }
-
-  const pathsToTry = [];
+  const paths = [];
   for (const dir of candidateDirs) {
     for (const bin of binNames) {
-      pathsToTry.push(
+      paths.push(
         `${dir}/app/assets/bin/${bin}`,
         `${dir}/assets/bin/${bin}`,
         `${dir}/resources/app/assets/bin/${bin}`,
@@ -629,60 +570,55 @@ async function find7zBinary() {
       );
     }
   }
-  for (const bin of binNames) {
-    pathsToTry.push(`app/assets/bin/${bin}`, `assets/bin/${bin}`);
-  }
-  if (isWindows) {
-    pathsToTry.push(
+  for (const bin of binNames)
+    paths.push(`app/assets/bin/${bin}`, `assets/bin/${bin}`);
+  if (window.NL_OS === "Windows") {
+    paths.push(
       "C:/Program Files/7-Zip/7z.exe",
       "C:/Program Files (x86)/7-Zip/7z.exe",
     );
   }
+  return paths;
+}
 
-  for (const rawPath of pathsToTry) {
+async function findArchiveTool(paths) {
+  for (const rawPath of paths) {
     const normalized = rawPath.replace(/\\/g, "/");
     try {
       const stats = await Neutralino.filesystem.getStats(normalized);
-      if (stats?.isFile || stats?.type === "FILE") {
+      if (stats?.isFile || stats?.type === "FILE")
         return prepareArchiveTool(normalized);
-      }
     } catch {}
   }
+  return null;
+}
+
+async function extractBundledArchiveTools() {
+  if (!window.NL_DATAPATH || !Neutralino.resources?.extractDirectory)
+    return null;
+  const destination = `${window.NL_DATAPATH}/.weekbox-tools`;
+  try {
+    await Neutralino.filesystem.createDirectory(destination).catch(() => {});
+    await Neutralino.resources.extractDirectory("/app/assets/bin", destination);
+    return destination;
+  } catch (error) {
+    console.warn("Could not extract the bundled archive tools", error);
+    return null;
+  }
+}
+
+async function find7zBinary() {
+  const binNames = getArchiveToolNames();
+  const directTool = await findArchiveTool(getArchiveToolPaths(binNames));
+  if (directTool) return directTool;
 
   if (!bundledArchiveToolsPromise) {
-    bundledArchiveToolsPromise = (async () => {
-      const destination = `${window.NL_DATAPATH || ""}/.weekbox-tools`;
-      if (!window.NL_DATAPATH || !Neutralino.resources?.extractDirectory) {
-        return null;
-      }
-      try {
-        await Neutralino.filesystem
-          .createDirectory(destination)
-          .catch(() => {});
-        await Neutralino.resources.extractDirectory(
-          "/app/assets/bin",
-          destination,
-        );
-        return destination;
-      } catch (error) {
-        console.warn("Could not extract the bundled archive tools", error);
-        return null;
-      }
-    })();
+    bundledArchiveToolsPromise = extractBundledArchiveTools();
   }
   const bundledDirectory = await bundledArchiveToolsPromise;
-  if (bundledDirectory) {
-    for (const bin of binNames) {
-      const normalized = `${bundledDirectory}/${bin}`.replace(/\\/g, "/");
-      try {
-        const stats = await Neutralino.filesystem.getStats(normalized);
-        if (stats?.isFile || stats?.type === "FILE") {
-          return prepareArchiveTool(normalized);
-        }
-      } catch {}
-    }
-  }
-  return null;
+  return bundledDirectory
+    ? findArchiveTool(binNames.map((bin) => `${bundledDirectory}/${bin}`))
+    : null;
 }
 
 function getPowerShellExtractCommand(archivePath, destinationPath) {
@@ -749,6 +685,96 @@ function getNestedExtractionCommand(archivePath, destinationPath) {
   return `tar ${flags} "${archive}" -C "${dest}"`;
 }
 
+async function extractOneNestedArchive(
+  archivePath,
+  getTask,
+  onEntry,
+  reportEntry,
+) {
+  if (getTask?.()?.cancelled) throw new Error("Cancelled");
+  const parentDir = archivePath.slice(0, archivePath.lastIndexOf("/"));
+  if (window.NL_OS === "Darwin" && /\.dmg$/i.test(archivePath)) {
+    await extractArchive({
+      archivePath,
+      destinationPath: parentDir,
+      getTask,
+      onEntry,
+      extractNested: false,
+    });
+    await Neutralino.filesystem.remove(archivePath).catch(() => {});
+    return;
+  }
+  const command = getNestedExtractionCommand(archivePath, parentDir);
+  const executeNested = async (cmd) => {
+    const process = await spawnProcessWithShell(cmd);
+    const activeTask = getTask?.();
+    if (activeTask) activeTask.pid = getOsProcessId(process);
+    let processOutput = "";
+    await listenForProcess(
+      process,
+      getTask,
+      (event, handler, resolve, reject) => {
+        if (event.action === "stdOut" || event.action === "stdErr") {
+          const output = String(event.data || "");
+          processOutput = appendProcessOutput(processOutput, output);
+          const trimmedOutput = output.trim();
+          if (trimmedOutput) reportEntry(trimmedOutput);
+          return;
+        }
+        if (event.action !== "exit") return;
+        Neutralino.events.off("spawnedProcess", handler);
+        if (event.data === 0) resolve();
+        else
+          reject(
+            createProcessError("Nested extraction", event.data, processOutput),
+          );
+      },
+    );
+  };
+  try {
+    await executeNested(command);
+    await Neutralino.filesystem.remove(archivePath).catch(() => {});
+    return;
+  } catch (error) {
+    let recovered = false;
+    if (
+      window.NL_OS === "Windows" &&
+      String(error).includes("resolve failed")
+    ) {
+      const fallbackCommand = command.includes("tar.exe")
+        ? command.replace("tar.exe -xf", "tar.exe --force-local -xf")
+        : command.replace("tar ", "tar --force-local ");
+      if (!command.includes("--force-local")) {
+        try {
+          await executeNested(fallbackCommand);
+          recovered = true;
+        } catch (retryError) {
+          error = retryError;
+        }
+      }
+    }
+    if (
+      !recovered &&
+      window.NL_OS === "Windows" &&
+      String(archivePath).toLowerCase().endsWith(".zip")
+    ) {
+      try {
+        await executeNested(
+          getPowerShellExtractCommand(archivePath, parentDir),
+        );
+        recovered = true;
+      } catch (psError) {
+        error = psError;
+      }
+    }
+    if (recovered) {
+      await Neutralino.filesystem.remove(archivePath).catch(() => {});
+    } else {
+      console.warn("Could not extract nested archive:", archivePath, error);
+    }
+  }
+}
+
 async function extractNestedArchives(destinationPath, getTask, onEntry) {
   const MAX_PASSES = 10;
   const reportEntry = createThrottledEntryReporter(onEntry);
@@ -757,92 +783,8 @@ async function extractNestedArchives(destinationPath, getTask, onEntry) {
     if (task?.cancelled) throw new Error("Cancelled");
     const archives = await collectArchiveFiles(destinationPath);
     if (!archives.length) break;
-    for (const archivePath of archives) {
-      if (getTask?.()?.cancelled) throw new Error("Cancelled");
-      const parentDir = archivePath.slice(0, archivePath.lastIndexOf("/"));
-      if (window.NL_OS === "Darwin" && /\.dmg$/i.test(archivePath)) {
-        await extractArchive({
-          archivePath,
-          destinationPath: parentDir,
-          getTask,
-          onEntry,
-          extractNested: false,
-        });
-        await Neutralino.filesystem.remove(archivePath).catch(() => {});
-        continue;
-      }
-      const command = getNestedExtractionCommand(archivePath, parentDir);
-      const executeNested = async (cmd) => {
-        const process = await spawnProcessWithShell(cmd);
-        const activeTask = getTask?.();
-        if (activeTask) activeTask.pid = getOsProcessId(process);
-        let processOutput = "";
-        await listenForProcess(
-          process,
-          getTask,
-          (event, handler, resolve, reject) => {
-            if (event.action === "stdOut" || event.action === "stdErr") {
-              const output = String(event.data || "");
-              processOutput = appendProcessOutput(processOutput, output);
-              const trimmedOutput = output.trim();
-              if (trimmedOutput) reportEntry(trimmedOutput);
-              return;
-            }
-            if (event.action !== "exit") return;
-            Neutralino.events.off("spawnedProcess", handler);
-            if (event.data === 0) resolve();
-            else
-              reject(
-                createProcessError(
-                  "Nested extraction",
-                  event.data,
-                  processOutput,
-                ),
-              );
-          },
-        );
-      };
-      try {
-        await executeNested(command);
-        await Neutralino.filesystem.remove(archivePath).catch(() => {});
-      } catch (error) {
-        let recovered = false;
-        if (window.NL_OS === "Windows") {
-          if (
-            String(error).includes("resolve failed") &&
-            !command.includes("--force-local")
-          ) {
-            try {
-              const fallbackCommand = command.includes("tar.exe")
-                ? command.replace("tar.exe -xf", "tar.exe --force-local -xf")
-                : command.replace("tar ", "tar --force-local ");
-              await executeNested(fallbackCommand);
-              recovered = true;
-            } catch (retryError) {
-              error = retryError;
-            }
-          }
-          if (
-            !recovered &&
-            String(archivePath).toLowerCase().endsWith(".zip")
-          ) {
-            try {
-              await executeNested(
-                getPowerShellExtractCommand(archivePath, parentDir),
-              );
-              recovered = true;
-            } catch (psError) {
-              error = psError;
-            }
-          }
-        }
-        if (recovered) {
-          await Neutralino.filesystem.remove(archivePath).catch(() => {});
-        } else {
-          console.warn("Could not extract nested archive:", archivePath, error);
-        }
-      }
-    }
+    for (const archivePath of archives)
+      await extractOneNestedArchive(archivePath, getTask, onEntry, reportEntry);
   }
 }
 
@@ -1022,6 +964,441 @@ function getContentRangeTotal(headers) {
   return Number(matches.at(-1)?.[1] || 0);
 }
 
+async function probeGoogleDriveArchive(fileId, cookiePath, probePath, getTask) {
+  const initialUrl = `https://drive.usercontent.google.com/download?id=${encodeURIComponent(fileId)}&export=download`;
+  await runCurlDownload(
+    `curl --globoff -s -L ${GDRIVE_CURL_HEADERS} -c ${quoteCommandArgument(cookiePath)} -b ${quoteCommandArgument(cookiePath)} ${quoteCommandArgument(initialUrl)} -o ${quoteCommandArgument(probePath)}`,
+    getTask,
+    () => {},
+  );
+  let probeSize = 0;
+  let htmlContent = "";
+  try {
+    const stats = await Neutralino.filesystem.getStats(probePath);
+    probeSize = Number(stats.size) || 0;
+    if (stats.size > 0) {
+      htmlContent = new TextDecoder().decode(
+        await Neutralino.filesystem.readBinaryFile(probePath, {
+          pos: 0,
+          size: Math.min(stats.size, 131072),
+        }),
+      );
+    }
+  } catch {}
+  return {
+    probeSize,
+    htmlContent,
+    isHtml: looksLikeHtmlResponse(htmlContent),
+  };
+}
+
+function getGoogleDriveFormUrl(fileId, htmlContent) {
+  const formActionMatch =
+    htmlContent.match(/<form[^>]+action=["']([^"']+)["']/i) ||
+    htmlContent.match(/action=["']([^"']*(?:download|uc)[^"']*)["']/i);
+  let actionUrl = formActionMatch
+    ? formActionMatch[1].replaceAll("&amp;", "&")
+    : "https://drive.usercontent.google.com/download";
+  if (!actionUrl.startsWith("http")) {
+    actionUrl = `https://drive.usercontent.google.com${actionUrl.startsWith("/") ? "" : "/"}${actionUrl}`;
+  }
+  const formParams = new URLSearchParams({
+    id: fileId,
+    export: "download",
+    confirm: "t",
+  });
+  const inputRegex =
+    /<input[^>]+(?:name=["']([^"']+)["'][^>]+value=["']([^"']*)["']|value=["']([^"']*)["'][^>]+name=["']([^"']+)["'])/gi;
+  let match;
+  while ((match = inputRegex.exec(htmlContent)) !== null) {
+    const name = match[1] || match[4];
+    const value = match[2] || match[3] || "";
+    if (name && name !== "uuid") formParams.set(name, value);
+  }
+  const atMatch =
+    htmlContent.match(/name=["']at["']\s+value=["']([^"']+)["']/i) ||
+    htmlContent.match(/at=([^&"'\s<]+)/i);
+  if (atMatch && !formParams.get("at")) formParams.set("at", atMatch[1]);
+  return `${actionUrl}${actionUrl.includes("?") ? "&" : "?"}${formParams}`;
+}
+
+function getGoogleDriveConfirmationUrl(fileId, htmlContent) {
+  const directLinkMatch =
+    htmlContent.match(
+      /<a[^>]+id=["']uc-download-link["'][^>]+href=["']([^"']+)["']/i,
+    ) ||
+    htmlContent.match(
+      /<a[^>]+href=["']([^"']*(?:export=download|drive\.usercontent\.google\.com\/download)[^"']*)["']/i,
+    );
+  if (directLinkMatch) {
+    let linkHref = directLinkMatch[1].replaceAll("&amp;", "&");
+    if (linkHref.startsWith("/"))
+      linkHref = `https://drive.google.com${linkHref}`;
+    return {
+      url: linkHref,
+      hasFormOrLink: true,
+    };
+  }
+  return {
+    url: getGoogleDriveFormUrl(fileId, htmlContent),
+    hasFormOrLink: isGoogleDriveConfirmationPage(htmlContent),
+  };
+}
+
+function validateGoogleDriveConfirmation(htmlContent, hasFormOrLink) {
+  if (!hasFormOrLink && isGoogleDriveQuotaError(htmlContent)) {
+    throw new Error(
+      "Google Drive: Este archivo ha superado su cuota de descargas porque demasiados usuarios lo han descargado recientemente. Inténtalo más tarde o prueba con otro enlace de descarga.",
+    );
+  }
+  if (
+    !hasFormOrLink &&
+    ["Access denied", "You need access", "Sign in to continue"].some((text) =>
+      htmlContent.includes(text),
+    )
+  ) {
+    throw new Error(
+      "Google Drive: Este archivo requiere permisos de acceso o inicio de sesión en Google.",
+    );
+  }
+  if (
+    !hasFormOrLink &&
+    [
+      "File not found",
+      "Sorry, the file you have requested does not exist",
+    ].some((text) => htmlContent.includes(text))
+  ) {
+    throw new Error(
+      "Google Drive: El archivo no existe o fue eliminado de Google Drive.",
+    );
+  }
+  const htmlError = getHtmlResponseError(htmlContent);
+  if (!hasFormOrLink && htmlError) throw htmlError;
+}
+
+function logGoogleDriveConfirmation(url, hasFormOrLink) {
+  let confirmedUrlDetails = {};
+  try {
+    const confirmedUrl = new URL(url);
+    confirmedUrlDetails = {
+      host: confirmedUrl.hostname,
+      path: confirmedUrl.pathname,
+      queryKeys: [...confirmedUrl.searchParams.keys()].sort(),
+      hasUuid: confirmedUrl.searchParams.has("uuid"),
+    };
+  } catch {}
+  logGoogleDriveDebug("confirmation", {
+    hasFormOrLink,
+    ...confirmedUrlDetails,
+  });
+}
+
+async function downloadGoogleDriveRangedArchive({
+  url,
+  outPath,
+  rangeHeadersPath,
+  rangeProbePath,
+  cookiePath,
+  getTask,
+  onProgress,
+}) {
+  onProgress?.("Downloading mod from Google Drive...", 5);
+  const rangeCheck = await Neutralino.os.execCommand(
+    `curl --globoff -sS -L --fail --show-error ${GDRIVE_CURL_HEADERS} -b ${quoteCommandArgument(cookiePath)} -c ${quoteCommandArgument(cookiePath)} --range 0-0 -D ${quoteCommandArgument(rangeHeadersPath)} ${quoteCommandArgument(url)} -o ${quoteCommandArgument(rangeProbePath)}`,
+    { background: false },
+  );
+  if (rangeCheck.exitCode !== 0)
+    throw createProcessError(
+      "Download",
+      rangeCheck.exitCode,
+      rangeCheck.stdErr || rangeCheck.stdOut,
+    );
+  const rangeHeaders = await Neutralino.filesystem.readFile(rangeHeadersPath);
+  const rangedTotalBytes = getContentRangeTotal(rangeHeaders);
+  if (!rangedTotalBytes) {
+    const rangeSample = new TextDecoder().decode(
+      await Neutralino.filesystem.readBinaryFile(rangeProbePath, {
+        pos: 0,
+        size: 8192,
+      }),
+    );
+    throw (
+      getHtmlResponseError(rangeSample) ||
+      new Error("Google Drive did not return a ranged archive response.")
+    );
+  }
+  logGoogleDriveDebug("range-check", { totalBytes: rangedTotalBytes });
+  try {
+    await downloadSegmentedArchive({
+      url,
+      outPath,
+      totalBytes: rangedTotalBytes,
+      getTask,
+      onProgress,
+      curlOptions: GDRIVE_CURL_HEADERS,
+      parallel: false,
+    });
+  } catch (error) {
+    if (getTask()?.cancelled) throw error;
+    await Neutralino.filesystem.remove(outPath).catch(() => {});
+    onProgress?.("Ranged download failed. Retrying with one connection...", 2);
+    await downloadGoogleDriveFile({
+      url,
+      outPath,
+      cookiePath,
+      totalBytes: rangedTotalBytes,
+      getTask,
+      onProgress,
+    });
+  }
+  await waitForDownloadedArchive(outPath);
+  const downloadedStats = await verifyDownloadedArchiveContent(
+    outPath,
+    rangedTotalBytes,
+  );
+  logGoogleDriveDebug("download-complete", {
+    bytes: Number(downloadedStats?.size) || 0,
+  });
+}
+
+async function extractDiskImage(
+  archivePath,
+  destinationPath,
+  getTask,
+  onEntry,
+) {
+  const mountPath = `${destinationPath}/.weekbox-dmg-${Date.now()}`;
+  let attached = false;
+  let processOutput = "";
+  try {
+    await Neutralino.filesystem.createDirectory(mountPath);
+    const process = await spawnProcessWithShell(
+      `hdiutil attach -nobrowse -readonly -mountpoint ${quoteCommandArgument(mountPath)} ${quoteCommandArgument(archivePath)}`,
+    );
+    const task = getTask();
+    if (task) task.pid = getOsProcessId(process);
+    await listenForProcess(
+      process,
+      getTask,
+      (event, handler, resolve, reject) => {
+        if (event.action === "stdOut" || event.action === "stdErr") {
+          processOutput = appendProcessOutput(processOutput, event.data);
+          return;
+        }
+        if (event.action !== "exit") return;
+        Neutralino.events.off("spawnedProcess", handler);
+        if (event.data === 0) resolve();
+        else
+          reject(
+            createProcessError(
+              "Mounting disk image",
+              event.data,
+              processOutput,
+            ),
+          );
+      },
+    );
+    attached = true;
+    const entries = await Neutralino.filesystem.readDirectory(mountPath);
+    const app = entries.find(
+      (entry) =>
+        entry.type === "DIRECTORY" && /\.app$/i.test(String(entry.entry)),
+    );
+    if (!app)
+      throw new Error("The disk image does not contain a macOS application");
+    onEntry?.(app.entry);
+    await Neutralino.filesystem.copy(
+      `${mountPath}/${app.entry}`,
+      `${destinationPath}/${app.entry}`,
+      { recursive: true, overwrite: false },
+    );
+  } finally {
+    if (attached) {
+      const result = await Neutralino.os.execCommand(
+        `hdiutil detach ${quoteCommandArgument(mountPath)}`,
+        { background: false },
+      );
+      if (result.exitCode !== 0)
+        console.warn("Could not detach WeekBox disk image:", result.stdErr);
+    }
+    await Neutralino.filesystem.remove(mountPath).catch(() => {});
+  }
+}
+
+function getArchiveExtractionCommand({
+  portable7z,
+  archivePath,
+  destinationPath,
+  archiveFormat,
+  isWindows,
+}) {
+  if (portable7z)
+    return get7zExtractionCommand(portable7z, archivePath, destinationPath);
+  if (isWindows)
+    return getWindowsExtractionCommand(archivePath, destinationPath);
+  if (archiveFormat === "tar" || archiveFormat === "gzip") {
+    return `tar -xf ${quoteCommandArgument(archivePath)} -C ${quoteCommandArgument(destinationPath)}`;
+  }
+  if (archiveFormat === "rar" || archiveFormat === "7z") {
+    return window.NL_OS === "Darwin"
+      ? `tar -xf ${quoteCommandArgument(archivePath)} -C ${quoteCommandArgument(destinationPath)}`
+      : `7z x -y -aoa -o${quoteCommandArgument(destinationPath)} ${quoteCommandArgument(archivePath)}`;
+  }
+  return `unzip -oq ${quoteCommandArgument(archivePath)} -d ${quoteCommandArgument(destinationPath)}`;
+}
+
+function createExtractionExecutor({ getTask, reportEntry, isWindows }) {
+  return async (cmd) => {
+    const process = await spawnProcessWithShell(cmd);
+    const task = getTask();
+    if (task) task.pid = getOsProcessId(process);
+    let processOutput = "";
+    await listenForProcess(
+      process,
+      getTask,
+      (event, handler, resolve, reject) => {
+        if (event.action === "stdOut" || event.action === "stdErr") {
+          const output = String(event.data || "");
+          processOutput = appendProcessOutput(processOutput, output);
+          const trimmedOutput = output.trim();
+          if (trimmedOutput) reportEntry(trimmedOutput);
+          return;
+        }
+        if (event.action !== "exit") return;
+        Neutralino.events.off("spawnedProcess", handler);
+        const tolerated =
+          !isWindows &&
+          isNonFatalUnzipFilenameWarning(event.data, processOutput);
+        if (event.data === 0 || tolerated) resolve();
+        else
+          reject(createProcessError("Extraction", event.data, processOutput));
+      },
+    );
+  };
+}
+
+async function tryWindowsExtractionFallbacks({
+  execute,
+  archivePath,
+  destinationPath,
+  archiveFormat,
+  portable7z,
+}) {
+  if (portable7z) return false;
+  for (const sys7z of [
+    "7z",
+    "7za",
+    "C:\\Program Files\\7-Zip\\7z.exe",
+    "C:\\Program Files (x86)\\7-Zip\\7z.exe",
+  ]) {
+    try {
+      await execute(
+        get7zExtractionCommand(sys7z, archivePath, destinationPath),
+      );
+      if (await hasExtractedPayload(destinationPath)) return true;
+    } catch {}
+  }
+  try {
+    await execute(getWindowsExtractionCommand(archivePath, destinationPath));
+    if (await hasExtractedPayload(destinationPath)) return true;
+  } catch {}
+  const isZip =
+    String(archivePath).toLowerCase().endsWith(".zip") ||
+    archiveFormat === "zip" ||
+    archiveFormat === "unknown";
+  if (!isZip) return false;
+  try {
+    await execute(getPowerShellExtractCommand(archivePath, destinationPath));
+    return await hasExtractedPayload(destinationPath);
+  } catch {
+    return false;
+  }
+}
+
+async function tryUnixExtractionFallbacks({
+  execute,
+  archivePath,
+  destinationPath,
+  archiveFormat,
+}) {
+  if (archiveFormat !== "unknown" && archiveFormat !== "zip") return false;
+  const fallbackCommands = [
+    `tar -xf ${quoteCommandArgument(archivePath)} -C ${quoteCommandArgument(destinationPath)}`,
+  ];
+  if (window.NL_OS !== "Darwin") {
+    fallbackCommands.push(
+      `7z x -y -aoa -o${quoteCommandArgument(destinationPath)} ${quoteCommandArgument(archivePath)}`,
+    );
+  }
+  for (const fallbackCommand of fallbackCommands) {
+    try {
+      await execute(fallbackCommand);
+      if (await hasExtractedPayload(destinationPath)) return true;
+    } catch {}
+  }
+  return false;
+}
+
+async function extractArchiveContents({
+  archivePath,
+  destinationPath,
+  archiveFormat,
+  getTask,
+  reportEntry,
+}) {
+  const isWindows = window.NL_OS === "Windows";
+  const portable7z = await find7zBinary();
+  const command = getArchiveExtractionCommand({
+    portable7z,
+    archivePath,
+    destinationPath,
+    archiveFormat,
+    isWindows,
+  });
+  const execute = createExtractionExecutor({ getTask, reportEntry, isWindows });
+  let primaryError = null;
+  try {
+    await execute(command);
+    if (await hasExtractedPayload(destinationPath)) return;
+  } catch (error) {
+    primaryError = error;
+  }
+  let recovered = await hasExtractedPayload(destinationPath);
+  if (!recovered && isWindows) {
+    recovered = await tryWindowsExtractionFallbacks({
+      execute,
+      archivePath,
+      destinationPath,
+      archiveFormat,
+      portable7z,
+    });
+  } else if (!recovered) {
+    recovered = await tryUnixExtractionFallbacks({
+      execute,
+      archivePath,
+      destinationPath,
+      archiveFormat,
+    });
+  }
+  if (
+    !recovered &&
+    window.NL_OS === "Darwin" &&
+    ["rar", "7z"].includes(archiveFormat)
+  ) {
+    throw new Error(
+      `This ${archiveFormat.toUpperCase()} download cannot be unpacked by this version of macOS. Ask the mod author for a ZIP download.`,
+    );
+  }
+  if (!recovered) {
+    throw (
+      primaryError ||
+      new Error(
+        "WeekBox could not extract the downloaded archive files to storage.",
+      )
+    );
+  }
+}
+
 /**
  * @fix 2026-08-05T03:31:10.964Z - Fix Google Drive quota detection and confirmation handling
  */
@@ -1039,211 +1416,45 @@ async function downloadGoogleDriveArchive({
   try {
     logGoogleDriveDebug("start", { fileId, totalBytes });
     onProgress?.("Authorizing Google Drive download...", 2);
-    const initialUrl = `https://drive.usercontent.google.com/download?id=${encodeURIComponent(fileId)}&export=download`;
-
-    // Request download with cookie jar and browser headers
-    await runCurlDownload(
-      `curl --globoff -s -L ${GDRIVE_CURL_HEADERS} -c ${quoteCommandArgument(cookiePath)} -b ${quoteCommandArgument(cookiePath)} ${quoteCommandArgument(initialUrl)} -o ${quoteCommandArgument(probePath)}`,
+    const probe = await probeGoogleDriveArchive(
+      fileId,
+      cookiePath,
+      probePath,
       getTask,
-      () => {},
     );
 
-    let isHtml = false;
-    let htmlContent = "";
-    let probeSize = 0;
-    try {
-      const stats = await Neutralino.filesystem.getStats(probePath);
-      probeSize = Number(stats.size) || 0;
-      if (stats.size > 0) {
-        const readSize = Math.min(stats.size, 131072);
-        htmlContent = new TextDecoder().decode(
-          await Neutralino.filesystem.readBinaryFile(probePath, {
-            pos: 0,
-            size: readSize,
-          }),
-        );
-        isHtml = looksLikeHtmlResponse(htmlContent);
-      }
-    } catch {}
-
     logGoogleDriveDebug("probe", {
-      bytes: probeSize,
-      isHtml,
-      hasConfirmation: isGoogleDriveConfirmationPage(htmlContent),
-      hasQuotaText: isGoogleDriveQuotaError(htmlContent),
+      bytes: probe.probeSize,
+      isHtml: probe.isHtml,
+      hasConfirmation: isGoogleDriveConfirmationPage(probe.htmlContent),
+      hasQuotaText: isGoogleDriveQuotaError(probe.htmlContent),
     });
 
-    if (isHtml) {
-      // Check if there is a direct download link or confirmation form
-      let confirmedDownloadUrl = null;
-
-      const directLinkMatch =
-        htmlContent.match(
-          /<a[^>]+id=["']uc-download-link["'][^>]+href=["']([^"']+)["']/i,
-        ) ||
-        htmlContent.match(
-          /<a[^>]+href=["']([^"']*(?:export=download|drive\.usercontent\.google\.com\/download)[^"']*)["']/i,
-        );
-
-      if (directLinkMatch) {
-        let linkHref = directLinkMatch[1].replaceAll("&amp;", "&");
-        if (linkHref.startsWith("/")) {
-          linkHref = `https://drive.google.com${linkHref}`;
-        }
-        confirmedDownloadUrl = linkHref;
-      }
-
-      if (!confirmedDownloadUrl) {
-        const formActionMatch =
-          htmlContent.match(/<form[^>]+action=["']([^"']+)["']/i) ||
-          htmlContent.match(/action=["']([^"']*(?:download|uc)[^"']*)["']/i);
-        let actionUrl = formActionMatch
-          ? formActionMatch[1].replaceAll("&amp;", "&")
-          : "https://drive.usercontent.google.com/download";
-        if (!actionUrl.startsWith("http")) {
-          actionUrl = `https://drive.usercontent.google.com${actionUrl.startsWith("/") ? "" : "/"}${actionUrl}`;
-        }
-
-        const formParams = new URLSearchParams();
-        formParams.set("id", fileId);
-        formParams.set("export", "download");
-        formParams.set("confirm", "t");
-
-        const inputRegex =
-          /<input[^>]+(?:name=["']([^"']+)["'][^>]+value=["']([^"']*)["']|value=["']([^"']*)["'][^>]+name=["']([^"']+)["'])/gi;
-        let match;
-        while ((match = inputRegex.exec(htmlContent)) !== null) {
-          const name = match[1] || match[4];
-          const value = match[2] || match[3] || "";
-          // Google returns a quota page for this form's one-time UUID when
-          // submitted by curl; the canonical endpoint works without it.
-          if (name && name !== "uuid") formParams.set(name, value);
-        }
-
-        const atMatch =
-          htmlContent.match(/name=["']at["']\s+value=["']([^"']+)["']/i) ||
-          htmlContent.match(/at=([^&"'\s<]+)/i);
-        if (atMatch && !formParams.get("at")) {
-          formParams.set("at", atMatch[1]);
-        }
-
-        confirmedDownloadUrl = `${actionUrl}${actionUrl.includes("?") ? "&" : "?"}${formParams.toString()}`;
-      }
-
-      const hasFormOrLink = Boolean(
-        isGoogleDriveConfirmationPage(htmlContent) || directLinkMatch,
+    if (probe.isHtml) {
+      const confirmation = getGoogleDriveConfirmationUrl(
+        fileId,
+        probe.htmlContent,
       );
+      logGoogleDriveConfirmation(confirmation.url, confirmation.hasFormOrLink);
 
-      let confirmedUrlDetails = {};
-      try {
-        const confirmedUrl = new URL(confirmedDownloadUrl);
-        confirmedUrlDetails = {
-          host: confirmedUrl.hostname,
-          path: confirmedUrl.pathname,
-          queryKeys: [...confirmedUrl.searchParams.keys()].sort(),
-          hasUuid: confirmedUrl.searchParams.has("uuid"),
-        };
-      } catch {}
-      logGoogleDriveDebug("confirmation", {
-        hasFormOrLink,
-        ...confirmedUrlDetails,
-      });
-
-      if (!hasFormOrLink) {
-        if (isGoogleDriveQuotaError(htmlContent)) {
-          throw new Error(
-            "Google Drive: Este archivo ha superado su cuota de descargas porque demasiados usuarios lo han descargado recientemente. Inténtalo más tarde o prueba con otro enlace de descarga.",
-          );
-        }
-        if (
-          htmlContent.includes("Access denied") ||
-          htmlContent.includes("You need access") ||
-          htmlContent.includes("Sign in to continue")
-        ) {
-          throw new Error(
-            "Google Drive: Este archivo requiere permisos de acceso o inicio de sesión en Google.",
-          );
-        }
-        if (
-          htmlContent.includes("File not found") ||
-          htmlContent.includes(
-            "Sorry, the file you have requested does not exist",
-          )
-        ) {
-          throw new Error(
-            "Google Drive: El archivo no existe o fue eliminado de Google Drive.",
-          );
-        }
-      }
-
-      const htmlError = getHtmlResponseError(htmlContent);
-      if (!hasFormOrLink && htmlError) throw htmlError;
+      validateGoogleDriveConfirmation(
+        probe.htmlContent,
+        confirmation.hasFormOrLink,
+      );
 
       await Neutralino.filesystem.remove(probePath).catch(() => {});
-      onProgress?.("Downloading mod from Google Drive...", 5);
-      const rangeCheck = await Neutralino.os.execCommand(
-        `curl --globoff -sS -L --fail --show-error ${GDRIVE_CURL_HEADERS} -b ${quoteCommandArgument(cookiePath)} -c ${quoteCommandArgument(cookiePath)} --range 0-0 -D ${quoteCommandArgument(rangeHeadersPath)} ${quoteCommandArgument(confirmedDownloadUrl)} -o ${quoteCommandArgument(rangeProbePath)}`,
-        { background: false },
-      );
-      if (rangeCheck.exitCode !== 0) {
-        throw createProcessError(
-          "Download",
-          rangeCheck.exitCode,
-          rangeCheck.stdErr || rangeCheck.stdOut,
-        );
-      }
-      const rangeHeaders =
-        await Neutralino.filesystem.readFile(rangeHeadersPath);
-      const rangedTotalBytes = getContentRangeTotal(rangeHeaders);
-      if (!rangedTotalBytes) {
-        const rangeSample = new TextDecoder().decode(
-          await Neutralino.filesystem.readBinaryFile(rangeProbePath, {
-            pos: 0,
-            size: 8192,
-          }),
-        );
-        throw (
-          getHtmlResponseError(rangeSample) ||
-          new Error("Google Drive did not return a ranged archive response.")
-        );
-      }
-      logGoogleDriveDebug("range-check", { totalBytes: rangedTotalBytes });
-      try {
-        await downloadSegmentedArchive({
-          url: confirmedDownloadUrl,
-          outPath,
-          totalBytes: rangedTotalBytes,
-          getTask,
-          onProgress,
-          curlOptions: GDRIVE_CURL_HEADERS,
-          parallel: false,
-        });
-      } catch (error) {
-        if (getTask()?.cancelled) throw error;
-        await Neutralino.filesystem.remove(outPath).catch(() => {});
-        onProgress?.(
-          "Ranged download failed. Retrying with one connection...",
-          2,
-        );
-        await downloadGoogleDriveFile({
-          url: confirmedDownloadUrl,
-          outPath,
-          cookiePath,
-          totalBytes: rangedTotalBytes,
-          getTask,
-          onProgress,
-        });
-      }
-      await waitForDownloadedArchive(outPath);
-      const downloadedStats = await verifyDownloadedArchiveContent(
+      await downloadGoogleDriveRangedArchive({
+        url: confirmation.url,
         outPath,
-        rangedTotalBytes,
-      );
-      logGoogleDriveDebug("download-complete", {
-        bytes: Number(downloadedStats?.size) || 0,
+        rangeHeadersPath,
+        rangeProbePath,
+        cookiePath,
+        totalBytes,
+        getTask,
+        onProgress,
       });
     } else {
-      logGoogleDriveDebug("probe-was-file", { bytes: probeSize });
+      logGoogleDriveDebug("probe-was-file", { bytes: probe.probeSize });
       await finalizeDownloadedArchive(probePath, outPath);
     }
   } catch (error) {
@@ -1462,28 +1673,10 @@ async function finalizeDownloadedArchive(partPath, outPath) {
   }
 }
 
-async function downloadArchive({
-  url,
-  outPath,
-  getTask,
-  onProgress,
-  sourceType,
-  onDiagnostic,
-  expectedSize = 0,
-  validateArchive = true,
-}) {
-  if (!String(url || "").trim()) {
-    throw new Error("This download does not have a valid link");
-  }
-  if (!String(outPath || "").trim()) {
-    throw new Error("WeekBox could not prepare the download destination");
-  }
+async function prepareDownloadDestination(outPath) {
   const destinationDir = getParentPath(outPath);
   requireValue(destinationDir, "download destination folder");
   const partPath = `${outPath}.part`;
-  /**
-   * @fix 2026-08-05T04:49:46.409Z - Fix download could not be written to storage error
-   */
   await ensureDirectoryExists(destinationDir);
   try {
     await Neutralino.filesystem.writeFile(`${partPath}.write-check`, "");
@@ -1504,39 +1697,53 @@ async function downloadArchive({
     }
   }
   await Neutralino.filesystem.remove(partPath).catch(() => {});
+  return { destinationDir, partPath };
+}
+
+async function resolveArchiveDownloadUrl(
+  url,
+  sourceType,
+  onProgress,
+  onDiagnostic,
+) {
   if (sourceType === "external") {
     onProgress?.("Preparing external download...", 2);
     url = await resolveExternalDownloadUrl(url, (...args) =>
       Neutralino.os.execCommand(...args),
     );
   }
-  const isNightlyLink = /^https?:\/\/nightly\.link\//i.test(String(url));
-
   const isGoogleDriveUrl =
     url.includes("drive.google.com") ||
     url.includes("drive.usercontent.google.com") ||
     url.includes("docs.google.com");
-
-  if (sourceType === "external" && !isGoogleDriveUrl) {
-    const contentType = await getDownloadContentType(url);
-    onDiagnostic?.({
-      resolvedUrl: url,
-      contentType,
-    });
-    if (/^(?:text\/html|application\/xhtml\+xml)\b/i.test(contentType || "")) {
-      const error = new Error(
-        "The download server returned a web page instead of the archive. Select another download link and try again.",
-      );
-      error.archiveDiagnostics = {
-        stage: "headers",
-        contentType,
-        retryable: false,
-      };
-      throw error;
-    }
+  if (sourceType !== "external" || isGoogleDriveUrl) {
+    return { url, isGoogleDriveUrl };
   }
+  const contentType = await getDownloadContentType(url);
+  onDiagnostic?.({ resolvedUrl: url, contentType });
+  if (/^(?:text\/html|application\/xhtml\+xml)\b/i.test(contentType || "")) {
+    const error = new Error(
+      "The download server returned a web page instead of the archive. Select another download link and try again.",
+    );
+    error.archiveDiagnostics = {
+      stage: "headers",
+      contentType,
+      retryable: false,
+    };
+    throw error;
+  }
+  return { url, isGoogleDriveUrl };
+}
 
-  const useMultithreadDownloads = appSettings.get("multithreadDownloads");
+async function getVerifiedRemoteSize({
+  url,
+  isGoogleDriveUrl,
+  useMultithreadDownloads,
+  expectedSize,
+  getTask,
+  onProgress,
+  onDiagnostic,
+}) {
   let remoteFileSize = Number(expectedSize) || 0;
   let verifiedRemoteFileSize = 0;
   if (
@@ -1561,13 +1768,22 @@ async function downloadArchive({
       if (getTask()?.cancelled) throw error;
     }
   }
+  return { remoteFileSize, verifiedRemoteFileSize };
+}
 
-  const cleanupDownloadAttempt = async () => {
-    await Promise.all([
-      Neutralino.filesystem.remove(partPath).catch(() => {}),
-      Neutralino.filesystem.remove(outPath).catch(() => {}),
-    ]);
-  };
+function createArchiveDownloadAttempt({
+  url,
+  partPath,
+  outPath,
+  remoteFileSize,
+  verifiedRemoteFileSize,
+  useMultithreadDownloads,
+  isGoogleDriveUrl,
+  getTask,
+  onProgress,
+  onDiagnostic,
+  validateArchive,
+}) {
   const finalizeAndVerifyDownload = async () => {
     onProgress?.("Finalizing downloaded file...", 98);
     await finalizeDownloadedArchive(partPath, outPath);
@@ -1587,7 +1803,7 @@ async function downloadArchive({
     });
     return stats;
   };
-  const performDownload = async () => {
+  return async () => {
     if (
       useMultithreadDownloads &&
       !isGoogleDriveUrl &&
@@ -1601,12 +1817,10 @@ async function downloadArchive({
           getTask,
           onProgress,
         });
-        // Validate the merged file before accepting the multipart transfer.
-        // Some CDNs return correctly-sized but incorrect range bodies.
         return await finalizeAndVerifyDownload();
       } catch (error) {
         if (getTask()?.cancelled) throw error;
-        await cleanupDownloadAttempt();
+        await Neutralino.filesystem.remove(partPath).catch(() => {});
         onProgress?.(
           "Parallel download failed. Retrying with one connection...",
           2,
@@ -1631,6 +1845,66 @@ async function downloadArchive({
     }
     return finalizeAndVerifyDownload();
   };
+}
+
+async function downloadArchive({
+  url,
+  outPath,
+  getTask,
+  onProgress,
+  sourceType,
+  onDiagnostic,
+  expectedSize = 0,
+  validateArchive = true,
+}) {
+  if (!String(url || "").trim()) {
+    throw new Error("This download does not have a valid link");
+  }
+  if (!String(outPath || "").trim()) {
+    throw new Error("WeekBox could not prepare the download destination");
+  }
+  const { partPath } = await prepareDownloadDestination(outPath);
+  const resolved = await resolveArchiveDownloadUrl(
+    url,
+    sourceType,
+    onProgress,
+    onDiagnostic,
+  );
+  url = resolved.url;
+  const { isGoogleDriveUrl } = resolved;
+  const isNightlyLink = /^https?:\/\/nightly\.link\//i.test(String(url));
+
+  const useMultithreadDownloads = appSettings.get("multithreadDownloads");
+  const { remoteFileSize, verifiedRemoteFileSize } =
+    await getVerifiedRemoteSize({
+      url,
+      isGoogleDriveUrl,
+      useMultithreadDownloads,
+      expectedSize,
+      getTask,
+      onProgress,
+      onDiagnostic,
+    });
+
+  const cleanupDownloadAttempt = async () => {
+    await Promise.all([
+      Neutralino.filesystem.remove(partPath).catch(() => {}),
+      Neutralino.filesystem.remove(outPath).catch(() => {}),
+    ]);
+  };
+  const performDownload = createArchiveDownloadAttempt({
+    url,
+    partPath,
+    outPath,
+    remoteFileSize,
+    verifiedRemoteFileSize,
+    useMultithreadDownloads,
+    isGoogleDriveUrl,
+    getTask,
+    onProgress,
+    onDiagnostic,
+    validateArchive,
+  });
   try {
     return await retryTransientDownload(
       performDownload,
@@ -1649,15 +1923,7 @@ async function downloadArchive({
   }
 }
 
-async function verifyDownloadedArchiveContent(
-  archivePath,
-  expectedSize = 0,
-  validateArchive = true,
-) {
-  const stats = await Neutralino.filesystem.getStats(archivePath);
-  if (stats.size === 0) {
-    throw new Error("The downloaded archive is empty (0 bytes).");
-  }
+async function validateArchiveResponse(archivePath, stats) {
   const sample = new TextDecoder().decode(
     await Neutralino.filesystem.readBinaryFile(archivePath, {
       pos: 0,
@@ -1679,62 +1945,50 @@ async function verifyDownloadedArchiveContent(
     };
     throw htmlError;
   }
-  if (looksLikeHtmlResponse(sample)) {
-    const error = new Error(
-      "The download server returned a web page instead of the archive. Select another download link and try again.",
-    );
-    error.archiveDiagnostics = {
-      stage: "html-response",
-      retryable: false,
-    };
-    throw error;
-  }
-  if (Number(expectedSize) > 0 && Number(stats.size) !== Number(expectedSize)) {
-    const error = new Error(
-      `The downloaded archive was incomplete. Expected ${expectedSize} bytes but found ${stats.size}. Try the download again.`,
-    );
-    error.archiveDiagnostics = { stage: "size", retryable: true };
-    throw error;
-  }
-  if (stats.size < 500 * 1024) {
-    try {
-      const sample = await Neutralino.filesystem.readFile(archivePath);
-      if (
-        sample.includes("<!DOCTYPE html") ||
-        sample.includes("<!doctype html") ||
-        sample.includes("<html") ||
-        sample.includes("<HTML")
-      ) {
-        if (isGoogleDriveQuotaError(sample)) {
-          throw new Error(
-            "Google Drive: Este archivo ha superado la cuota de descargas porque demasiados usuarios lo han descargado recientemente. Inténtalo más tarde o prueba con otro enlace.",
-          );
-        }
-        const titleMatch = sample.match(/<title[^>]*>([^<]+)<\/title>/i);
-        const headingMatch = sample.match(/<h1[^>]*>([^<]+)<\/h1>/i);
-        const pMatch = sample.match(
-          /<p[^>]*class="[^"]*error[^"]*"[^>]*>([^<]+)<\/p>/i,
-        );
-        const errorReason =
-          pMatch?.[1]?.trim() ||
-          headingMatch?.[1]?.trim() ||
-          titleMatch?.[1]?.trim() ||
-          "Web page returned";
-        throw new Error(
-          `La descarga falló: El servidor devolvió una página web ('${errorReason}') en lugar de un archivo de mod.`,
-        );
-      }
-    } catch (e) {
-      if (
-        e.message?.includes("Google Drive:") ||
-        e.message?.includes("La descarga falló:") ||
-        e.message?.includes("The downloaded archive is empty")
-      ) {
-        throw e;
-      }
+  if (!looksLikeHtmlResponse(sample)) return;
+  const error = new Error(
+    "The download server returned a web page instead of the archive. Select another download link and try again.",
+  );
+  error.archiveDiagnostics = {
+    stage: "html-response",
+    retryable: false,
+  };
+  throw error;
+}
+
+async function validateSmallArchiveResponse(archivePath) {
+  try {
+    const sample = await Neutralino.filesystem.readFile(archivePath);
+    if (!/<!(?:DOCTYPE html|doctype html)|<html|<HTML/.test(sample)) return;
+    if (isGoogleDriveQuotaError(sample)) {
+      throw new Error(
+        "Google Drive: Este archivo ha superado la cuota de descargas porque demasiados usuarios lo han descargado recientemente. Inténtalo más tarde o prueba con otro enlace.",
+      );
     }
+    const titleMatch = sample.match(/<title[^>]*>([^<]+)<\/title>/i);
+    const headingMatch = sample.match(/<h1[^>]*>([^<]+)<\/h1>/i);
+    const pMatch = sample.match(
+      /<p[^>]*class="[^"]*error[^\"]*"[^>]*>([^<]+)<\/p>/i,
+    );
+    const errorReason =
+      pMatch?.[1]?.trim() ||
+      headingMatch?.[1]?.trim() ||
+      titleMatch?.[1]?.trim() ||
+      "Web page returned";
+    throw new Error(
+      `La descarga falló: El servidor devolvió una página web ('${errorReason}') en lugar de un archivo de mod.`,
+    );
+  } catch (error) {
+    if (
+      error.message?.includes("Google Drive:") ||
+      error.message?.includes("La descarga falló:") ||
+      error.message?.includes("The downloaded archive is empty")
+    )
+      throw error;
   }
-  if (!validateArchive) return stats;
+}
+
+async function verifyArchiveFormat(archivePath) {
   const archiveFormat = /\.dmg$/i.test(String(archivePath))
     ? "dmg"
     : await detectArchiveFormat(archivePath);
@@ -1749,6 +2003,28 @@ async function verifyDownloadedArchiveContent(
     throw error;
   }
   await verifyArchiveReadable(archivePath, archiveFormat);
+}
+
+async function verifyDownloadedArchiveContent(
+  archivePath,
+  expectedSize = 0,
+  validateArchive = true,
+) {
+  const stats = await Neutralino.filesystem.getStats(archivePath);
+  if (stats.size === 0) {
+    throw new Error("The downloaded archive is empty (0 bytes).");
+  }
+  await validateArchiveResponse(archivePath, stats);
+  if (Number(expectedSize) > 0 && Number(stats.size) !== Number(expectedSize)) {
+    throw Object.assign(
+      new Error(
+        `The downloaded archive was incomplete. Expected ${expectedSize} bytes but found ${stats.size}. Try the download again.`,
+      ),
+      { archiveDiagnostics: { stage: "size", retryable: true } },
+    );
+  }
+  if (stats.size < 500 * 1024) await validateSmallArchiveResponse(archivePath);
+  if (validateArchive) await verifyArchiveFormat(archivePath);
   return stats;
 }
 
@@ -1774,222 +2050,17 @@ async function extractArchive({
   const isDiskImage =
     window.NL_OS === "Darwin" && /\.dmg$/i.test(String(archivePath));
   if (isDiskImage) {
-    const mountPath = `${destinationPath}/.weekbox-dmg-${Date.now()}`;
-    let attached = false;
-    let processOutput = "";
-    try {
-      await Neutralino.filesystem.createDirectory(mountPath);
-      const process = await spawnProcessWithShell(
-        `hdiutil attach -nobrowse -readonly -mountpoint ${quoteCommandArgument(mountPath)} ${quoteCommandArgument(archivePath)}`,
-      );
-      const task = getTask();
-      if (task) task.pid = getOsProcessId(process);
-      await listenForProcess(
-        process,
-        getTask,
-        (event, handler, resolve, reject) => {
-          if (event.action === "stdOut" || event.action === "stdErr") {
-            processOutput = appendProcessOutput(processOutput, event.data);
-            return;
-          }
-          if (event.action !== "exit") return;
-          Neutralino.events.off("spawnedProcess", handler);
-          if (event.data === 0) resolve();
-          else
-            reject(
-              createProcessError(
-                "Mounting disk image",
-                event.data,
-                processOutput,
-              ),
-            );
-        },
-      );
-      attached = true;
-      const entries = await Neutralino.filesystem.readDirectory(mountPath);
-      const app = entries.find(
-        (entry) =>
-          entry.type === "DIRECTORY" && /\.app$/i.test(String(entry.entry)),
-      );
-      if (!app) {
-        throw new Error("The disk image does not contain a macOS application");
-      }
-      onEntry?.(app.entry);
-      await Neutralino.filesystem.copy(
-        `${mountPath}/${app.entry}`,
-        `${destinationPath}/${app.entry}`,
-        { recursive: true, overwrite: false },
-      );
-    } finally {
-      if (attached) {
-        const result = await Neutralino.os.execCommand(
-          `hdiutil detach ${quoteCommandArgument(mountPath)}`,
-          { background: false },
-        );
-        if (result.exitCode !== 0) {
-          console.warn("Could not detach WeekBox disk image:", result.stdErr);
-        }
-      }
-      await Neutralino.filesystem.remove(mountPath).catch(() => {});
-    }
+    await extractDiskImage(archivePath, destinationPath, getTask, onEntry);
     return;
   }
-  const isWindows = window.NL_OS === "Windows";
   const archiveFormat = await detectArchiveFormat(archivePath);
-  const portable7z = await find7zBinary();
-
-  const command = portable7z
-    ? get7zExtractionCommand(portable7z, archivePath, destinationPath)
-    : isWindows
-      ? getWindowsExtractionCommand(archivePath, destinationPath)
-      : archiveFormat === "tar" || archiveFormat === "gzip"
-        ? `tar -xf ${quoteCommandArgument(archivePath)} -C ${quoteCommandArgument(destinationPath)}`
-        : archiveFormat === "rar" || archiveFormat === "7z"
-          ? window.NL_OS === "Darwin"
-            ? `tar -xf ${quoteCommandArgument(archivePath)} -C ${quoteCommandArgument(destinationPath)}`
-            : `7z x -y -aoa -o${quoteCommandArgument(destinationPath)} ${quoteCommandArgument(archivePath)}`
-          : `unzip -oq ${quoteCommandArgument(archivePath)} -d ${quoteCommandArgument(destinationPath)}`;
-
-  const execute = async (cmd) => {
-    const process = await spawnProcessWithShell(cmd);
-    const task = getTask();
-    if (task) task.pid = getOsProcessId(process);
-    let processOutput = "";
-    await listenForProcess(
-      process,
-      getTask,
-      (event, handler, resolve, reject) => {
-        if (event.action === "stdOut" || event.action === "stdErr") {
-          const output = String(event.data || "");
-          processOutput = appendProcessOutput(processOutput, output);
-          const trimmedOutput = output.trim();
-          if (trimmedOutput) reportEntry(trimmedOutput);
-          return;
-        }
-        if (event.action !== "exit") return;
-        Neutralino.events.off("spawnedProcess", handler);
-        if (
-          event.data === 0 ||
-          (!isWindows &&
-            isNonFatalUnzipFilenameWarning(event.data, processOutput))
-        )
-          resolve();
-        else
-          reject(createProcessError("Extraction", event.data, processOutput));
-      },
-    );
-  };
-
-  let primarySucceeded = false;
-  let primaryError = null;
-  try {
-    await execute(command);
-    if (await hasExtractedPayload(destinationPath)) {
-      primarySucceeded = true;
-    }
-  } catch (error) {
-    primaryError = error;
-  }
-
-  if (!primarySucceeded) {
-    let recovered = false;
-    if (await hasExtractedPayload(destinationPath)) {
-      recovered = true;
-    }
-
-    if (!recovered && isWindows) {
-      // If portable7z wasn't used or failed, try system 7z if available
-      if (!portable7z) {
-        for (const sys7z of [
-          "7z",
-          "7za",
-          "C:\\Program Files\\7-Zip\\7z.exe",
-          "C:\\Program Files (x86)\\7-Zip\\7z.exe",
-        ]) {
-          try {
-            await execute(
-              get7zExtractionCommand(sys7z, archivePath, destinationPath),
-            );
-            if (await hasExtractedPayload(destinationPath)) {
-              recovered = true;
-              break;
-            }
-          } catch {}
-        }
-      }
-
-      // Try native tar
-      if (!recovered) {
-        try {
-          await execute(
-            getWindowsExtractionCommand(archivePath, destinationPath),
-          );
-          if (await hasExtractedPayload(destinationPath)) {
-            recovered = true;
-          }
-        } catch {}
-      }
-
-      // Try PowerShell Expand-Archive for zip/unknown archives
-      if (
-        !recovered &&
-        (String(archivePath).toLowerCase().endsWith(".zip") ||
-          archiveFormat === "zip" ||
-          archiveFormat === "unknown")
-      ) {
-        try {
-          await execute(
-            getPowerShellExtractCommand(archivePath, destinationPath),
-          );
-          if (await hasExtractedPayload(destinationPath)) {
-            recovered = true;
-          }
-        } catch (psError) {
-          primaryError = psError;
-        }
-      }
-    } else if (
-      !recovered &&
-      (archiveFormat === "unknown" || archiveFormat === "zip")
-    ) {
-      const fallbackCommands = [
-        `tar -xf ${quoteCommandArgument(archivePath)} -C ${quoteCommandArgument(destinationPath)}`,
-      ];
-      if (window.NL_OS !== "Darwin") {
-        fallbackCommands.push(
-          `7z x -y -aoa -o${quoteCommandArgument(destinationPath)} ${quoteCommandArgument(archivePath)}`,
-        );
-      }
-      for (const fallbackCommand of fallbackCommands) {
-        try {
-          await execute(fallbackCommand);
-          if (await hasExtractedPayload(destinationPath)) {
-            recovered = true;
-            break;
-          }
-        } catch {}
-      }
-    }
-
-    if (
-      !recovered &&
-      window.NL_OS === "Darwin" &&
-      (archiveFormat === "rar" || archiveFormat === "7z")
-    ) {
-      throw new Error(
-        `This ${archiveFormat.toUpperCase()} download cannot be unpacked by this version of macOS. Ask the mod author for a ZIP download.`,
-      );
-    }
-
-    if (!recovered) {
-      throw (
-        primaryError ||
-        new Error(
-          "WeekBox could not extract the downloaded archive files to storage.",
-        )
-      );
-    }
-  }
+  await extractArchiveContents({
+    archivePath,
+    destinationPath,
+    archiveFormat,
+    getTask,
+    reportEntry,
+  });
   if (extractNested) {
     await extractNestedArchives(destinationPath, getTask, onEntry);
   }

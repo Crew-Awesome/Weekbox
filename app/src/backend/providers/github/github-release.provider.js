@@ -79,11 +79,12 @@ function getCurrentPlatformKeys() {
 function filterVersionsForCurrentPlatform(versions, engineId) {
   const platforms = getCurrentPlatformKeys();
   if (!platforms.length) return versions;
-  return versions.filter((version) =>
-    platforms.some((platform) => Boolean(version[platform])) ||
-    (engineId === "fpsplus" &&
-      version.fallbackPlatform &&
-      version[version.fallbackPlatform]),
+  return versions.filter(
+    (version) =>
+      platforms.some((platform) => Boolean(version[platform])) ||
+      (engineId === "fpsplus" &&
+        version.fallbackPlatform &&
+        version[version.fallbackPlatform]),
   );
 }
 
@@ -125,8 +126,7 @@ function normalizeRelease(release, source) {
     }
   }
   return Object.keys(result).some(
-    (key) =>
-      key !== "version" && key !== "releasedAt" && key !== "assetSizes",
+    (key) => key !== "version" && key !== "releasedAt" && key !== "assetSizes",
   )
     ? result
     : null;
@@ -174,6 +174,35 @@ async function getLatestSuccessfulRun(source, artifact) {
   return (await response.json()).workflow_runs?.[0] || null;
 }
 
+function applyNightlyResults(version, results, source) {
+  for (const result of results) {
+    if (result.status !== "fulfilled" || !result.value) continue;
+    const { platform, artifact, run } = result.value;
+    const name = encodeURIComponent(artifact.artifact);
+    const workflow = encodeURIComponent(
+      artifact.workflow.replace(/\.(?:ya?ml)$/i, ""),
+    );
+    const branch = encodeURIComponent(source.nightly.branch);
+    version[platform] =
+      `https://nightly.link/${source.repository}/workflows/${workflow}/${branch}/${name}.zip`;
+    version.nightlyInfo = {
+      ...(version.nightlyInfo || {}),
+      [platform]: {
+        commit: run.head_sha,
+        message: run.head_commit?.message?.split(/\r?\n/, 1)[0] || "",
+        runUrl:
+          run.html_url ||
+          `https://github.com/${source.repository}/actions/runs/${run.id}`,
+        commitUrl: `https://github.com/${source.repository}/commit/${run.head_sha}`,
+      },
+    };
+    version.updateKeys[platform] = `nightly:${run.head_sha}`;
+    if (!version.releasedAt || run.updated_at > version.releasedAt) {
+      version.releasedAt = run.updated_at || run.created_at || null;
+    }
+  }
+}
+
 function getCurrentNightlyPlatform(source) {
   const assets = source.nightly.assets;
   const os = window.NL_OS;
@@ -214,34 +243,7 @@ async function getLatestNightly(source) {
     }),
   );
 
-  for (const result of results) {
-    if (result.status !== "fulfilled" || !result.value) continue;
-    const { platform, artifact, run } = result.value;
-    const name = encodeURIComponent(artifact.artifact);
-    const workflow = encodeURIComponent(
-      artifact.workflow.replace(/\.(?:ya?ml)$/i, ""),
-    );
-    const branch = encodeURIComponent(source.nightly.branch);
-    // Keep the run SHA as the update key, but use nightly.link's workflow URL
-    // so a stale run-specific artifact route cannot strand the Nightly entry.
-    version[platform] =
-      `https://nightly.link/${source.repository}/workflows/${workflow}/${branch}/${name}.zip`;
-    version.nightlyInfo = {
-      ...(version.nightlyInfo || {}),
-      [platform]: {
-        commit: run.head_sha,
-        message: run.head_commit?.message?.split(/\r?\n/, 1)[0] || "",
-        runUrl:
-          run.html_url ||
-          `https://github.com/${source.repository}/actions/runs/${run.id}`,
-        commitUrl: `https://github.com/${source.repository}/commit/${run.head_sha}`,
-      },
-    };
-    version.updateKeys[platform] = `nightly:${run.head_sha}`;
-    if (!version.releasedAt || run.updated_at > version.releasedAt) {
-      version.releasedAt = run.updated_at || run.created_at || null;
-    }
-  }
+  applyNightlyResults(version, results, source);
 
   if (!Object.keys(version.updateKeys).length) {
     const unavailable = { version: null, savedAt: Date.now() };

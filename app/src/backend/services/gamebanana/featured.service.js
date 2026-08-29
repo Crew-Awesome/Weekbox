@@ -26,22 +26,7 @@ export class FeaturedService {
       featured?.schemaVersion === 3 &&
       typeof featured?.revision === "string" &&
       Array.isArray(featured.rankings) &&
-      featured.rankings.every(
-        (ranking) =>
-          Array.isArray(ranking?.mods) &&
-          ranking.mods.every(
-            (mod) =>
-              Number.isFinite(Number(mod?.id)) &&
-              typeof mod?.title === "string" &&
-              typeof mod?.author === "string" &&
-              typeof mod?.image === "string" &&
-              typeof mod?.engine?.id === "string" &&
-              typeof mod?.engine?.name === "string" &&
-              typeof mod?.engine?.icon === "string" &&
-              Number.isFinite(Number(mod?.category?.id)) &&
-              typeof mod?.category?.name === "string",
-          ),
-      )
+      featured.rankings.every(isSupportedRanking)
     );
   }
 
@@ -59,4 +44,40 @@ export class FeaturedService {
       }),
     );
   }
+}
+
+function isSupportedRanking(ranking) {
+  return Array.isArray(ranking?.mods) && ranking.mods.every(isSupportedMod);
+}
+
+function isSupportedMod(mod) {
+  return (
+    isSupportedModIdentity(mod) &&
+    isSupportedModEngine(mod) &&
+    isSupportedModCategory(mod)
+  );
+}
+
+function isSupportedModIdentity(mod) {
+  return (
+    Number.isFinite(Number(mod?.id)) &&
+    typeof mod?.title === "string" &&
+    typeof mod?.author === "string" &&
+    typeof mod?.image === "string"
+  );
+}
+
+function isSupportedModEngine(mod) {
+  return (
+    typeof mod?.engine?.id === "string" &&
+    typeof mod?.engine?.name === "string" &&
+    typeof mod?.engine?.icon === "string"
+  );
+}
+
+function isSupportedModCategory(mod) {
+  return (
+    Number.isFinite(Number(mod?.category?.id)) &&
+    typeof mod?.category?.name === "string"
+  );
 }

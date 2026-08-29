@@ -101,7 +101,12 @@ function resetModal() {
   const button = document.getElementById("modal-download-btn");
   if (button) {
     button.onclick = null;
-    setModalDownloadButton(button, "fa-solid fa-download", t("common.download"), true);
+    setModalDownloadButton(
+      button,
+      "fa-solid fa-download",
+      t("common.download"),
+      true,
+    );
   }
   const engineBadge = document.getElementById("modal-engine-badge");
   if (engineBadge) engineBadge.hidden = true;
@@ -140,6 +145,54 @@ function linkifyDescriptionSubmissionUrls(content) {
   });
 }
 
+function renderModalDescription(description, data) {
+  const doc = new DOMParser().parseFromString(
+    data.description || "",
+    "text/html",
+  );
+  doc.body
+    .querySelectorAll(
+      "img, picture, video, audio, iframe, embed, object, source",
+    )
+    .forEach((element) => element.remove());
+  linkifyDescriptionSubmissionUrls(doc.body);
+  description.replaceChildren(...doc.body.childNodes);
+  enhanceContentLinks(description, {
+    onGameBanana: async (submission, reference) => {
+      try {
+        await modModal.openSubmission(submission);
+      } catch (error) {
+        console.warn("Could not open GameBanana submission reference", error);
+        errorHandler.show({
+          error,
+          action: "Open GameBanana reference",
+          item: reference.title,
+        });
+      }
+    },
+  });
+}
+
+function updateModalGameBananaLink(link, data) {
+  const sourceUrl = data.source === "peo" ? data.sourceUrl : data.gameBananaUrl;
+  if (sourceUrl) link.href = sourceUrl;
+  else link.removeAttribute("href");
+  link.hidden = !sourceUrl;
+  if (data.source === "peo") {
+    const image = link.querySelector("img");
+    if (image) image.src = "assets/icons/psychonline.png";
+    link.setAttribute(
+      "aria-label",
+      t("modModal.openOnPsychOnline", { title: data.title }),
+    );
+    link.title = t("modModal.openOnPsychOnline", { title: data.title });
+  }
+  link.onclick = (event) => {
+    event.preventDefault();
+    if (sourceUrl) Neutralino.os.open(sourceUrl).catch(() => {});
+  };
+}
+
 function showModData(data, isInstalled, onDownload) {
   const titleEl = document.getElementById("modal-title");
   if (titleEl) titleEl.textContent = data.title;
@@ -164,56 +217,12 @@ function showModData(data, isInstalled, onDownload) {
       data.source === "peo" ? "fa-solid fa-download" : "fa-solid fa-eye";
   }
   const description = document.getElementById("modal-description");
-  if (description) {
-    const doc = new DOMParser().parseFromString(data.description || "", "text/html");
-    doc.body
-      .querySelectorAll(
-        "img, picture, video, audio, iframe, embed, object, source",
-      )
-      .forEach((element) => element.remove());
-    linkifyDescriptionSubmissionUrls(doc.body);
-    description.replaceChildren(...doc.body.childNodes);
-    enhanceContentLinks(description, {
-      onGameBanana: async (submission, reference) => {
-        try {
-          await modModal.openSubmission(submission);
-        } catch (error) {
-          console.warn("Could not open GameBanana submission reference", error);
-          errorHandler.show({
-            error,
-            action: "Open GameBanana reference",
-            item: reference.title,
-          });
-        }
-      },
-    });
-  }
+  if (description) renderModalDescription(description, data);
   const imgLoader = document.getElementById("modal-image-loader");
   if (imgLoader) imgLoader.style.display = "none";
 
   const gameBananaLink = document.getElementById("modal-gamebanana-link");
-  if (gameBananaLink) {
-    const sourceUrl =
-      data.source === "peo" ? data.sourceUrl : data.gameBananaUrl;
-    if (sourceUrl) gameBananaLink.href = sourceUrl;
-    else gameBananaLink.removeAttribute("href");
-    gameBananaLink.hidden = !sourceUrl;
-    if (data.source === "peo") {
-      const gbImg = gameBananaLink.querySelector("img");
-      if (gbImg) gbImg.src = "assets/icons/psychonline.png";
-      gameBananaLink.setAttribute(
-        "aria-label",
-        t("modModal.openOnPsychOnline", { title: data.title }),
-      );
-      gameBananaLink.title = t("modModal.openOnPsychOnline", {
-        title: data.title,
-      });
-    }
-    gameBananaLink.onclick = (event) => {
-      event.preventDefault();
-      if (sourceUrl) Neutralino.os.open(sourceUrl).catch(() => {});
-    };
-  }
+  if (gameBananaLink) updateModalGameBananaLink(gameBananaLink, data);
   const engine = ENGINE_DETAILS[data.engineId];
   const engineBadge = document.getElementById("modal-engine-badge");
   const engineIcon = document.getElementById("modal-engine-icon");

@@ -147,250 +147,278 @@ function formatDownloadDiagnostics(error) {
   return `Download diagnostics:\n${JSON.stringify(diagnostics, null, 2)}`;
 }
 
+function hasAny(text, values) {
+  return values.some((value) => text.includes(value));
+}
+
+function issueText(title, summary, tag, extra = {}) {
+  return { title: t(title), summary: t(summary), tag: t(tag), ...extra };
+}
+
+const DOWNLOAD_UNAVAILABLE = () =>
+  issueText(
+    "errors.downloadUnavailableTitle",
+    "errors.downloadUnavailableSummary",
+    "errors.downloadUnavailableTag",
+    { reportable: false },
+  );
+
+const ISSUE_RULES = [
+  {
+    matches: (lower) =>
+      hasAny(lower, [
+        "integrity verification",
+        "not a recognized archive",
+        "web page instead of the archive",
+        "devolvió una página web",
+        "devolviÃ³ una pÃ¡gina web",
+        "file sharing and storage made simple",
+      ]),
+    create: (lower) =>
+      issueText(
+        "errors.unpackTitle",
+        "errors.unpackSummary",
+        "errors.archiveProblemTag",
+        {
+          reportable: lower.includes("integrity verification")
+            ? undefined
+            : false,
+        },
+      ),
+  },
+  {
+    matches: (lower) =>
+      hasAny(lower, [
+        "crypt_e_no_revocation_check",
+        "exit code 60",
+        "certificate could not be trusted",
+        "untrusted_root",
+      ]) ||
+      (lower.includes("schannel") && lower.includes("exit code 35")),
+    create: () =>
+      issueText(
+        "errors.certificateTitle",
+        "errors.certificateSummary",
+        "errors.certificateTag",
+        { reportable: false },
+      ),
+  },
+  {
+    matches: (lower) =>
+      lower.includes("onedrive") || lower.includes("exit code 23"),
+    create: () =>
+      issueText(
+        "errors.oneDriveTitle",
+        "errors.oneDriveSummary",
+        "errors.storageLocationTag",
+        { actionLabel: t("errors.openStorageSettings"), action: "storage" },
+      ),
+  },
+  {
+    matches: (lower) =>
+      !lower.includes("bundled archive extractor") &&
+      hasAny(lower, [
+        "access is denied",
+        "permission",
+        "file is in use",
+        "directory is not empty",
+        "could not be written to storage",
+        "could not write ",
+        "could not create its storage folder",
+        "could not prepare the download destination",
+        "could not finalize the temporary download",
+      ]),
+    create: () =>
+      issueText(
+        "errors.writeFolderTitle",
+        "errors.writeFolderSummary",
+        "errors.folderAccessTag",
+        { actionLabel: t("errors.openStorageSettings"), action: "storage" },
+      ),
+  },
+  {
+    matches: (lower) =>
+      hasAny(lower, [
+        "could not access the engine folder",
+        "filesystem error",
+        "storage migration paused",
+      ]),
+    create: () =>
+      issueText(
+        "errors.storageDriveTitle",
+        "errors.storageDriveSummary",
+        "errors.storageDriveTag",
+        { actionLabel: t("errors.openStorageSettings"), action: "storage" },
+      ),
+  },
+  {
+    matches: (lower) =>
+      hasAny(lower, [
+        "download server is unavailable",
+        "download server is temporarily unavailable",
+        "download server rejected this file",
+        "could not find the download server",
+        "could not connect to the gamebanana download server",
+        "connection to the download server",
+        "download server closed the connection",
+        "download process ended unexpectedly",
+        "download was interrupted",
+        "download was incomplete",
+        "downloaded archive was incomplete",
+        "complete temporary download after it completed",
+      ]),
+    create: DOWNLOAD_UNAVAILABLE,
+  },
+  {
+    matches: (lower) =>
+      lower.includes("exit code 22") || /\b(?:403|404)\b/.test(lower),
+    create: DOWNLOAD_UNAVAILABLE,
+  },
+  {
+    matches: (_lower, message) => isGoogleDriveQuotaError(message),
+    create: () =>
+      issueText(
+        "errors.quotaExceededTitle",
+        "errors.quotaExceededSummary",
+        "errors.quotaExceededTag",
+        { reportable: false },
+      ),
+  },
+  {
+    matches: (lower) =>
+      hasAny(lower, [
+        "mediafire:",
+        "no se encuentra disponible en mediafire",
+        "este archivo fue eliminado",
+        "this mediafire link could not be opened",
+        "this mediafire link is not supported",
+      ]),
+    create: DOWNLOAD_UNAVAILABLE,
+  },
+  {
+    matches: (lower) =>
+      hasAny(lower, [
+        "already installed",
+        "ya está instalado",
+        "bereits installiert",
+      ]),
+    create: () =>
+      issueText(
+        "modModal.alreadyInstalled",
+        "downloads.alreadyInstalled",
+        "modModal.alreadyInstalled",
+        { reportable: false },
+      ),
+  },
+  {
+    matches: (lower) =>
+      hasAny(lower, [
+        "download link is missing",
+        "download link is invalid",
+        "download does not have a valid link",
+        "could not find the google drive file id",
+        "does not point to a downloadable file",
+      ]),
+    create: () =>
+      issueText(
+        "errors.invalidLinkTitle",
+        "errors.invalidLinkSummary",
+        "errors.invalidLinkTag",
+        { reportable: false },
+      ),
+  },
+  {
+    matches: (lower) =>
+      hasAny(lower, [
+        "cannot be unpacked by this version of macos",
+        "bundled archive extractor",
+      ]),
+    create: () =>
+      issueText(
+        "errors.unpackTitle",
+        "errors.unpackSummary",
+        "errors.archiveProblemTag",
+      ),
+  },
+  {
+    matches: (lower) =>
+      !hasAny(lower, [
+        "end-of-central-directory signature not found",
+        "cannot find zipfile directory",
+      ]) &&
+      hasAny(lower, ["extraction failed", "invalid archive", "archive file"]),
+    create: () =>
+      issueText(
+        "errors.unpackTitle",
+        "errors.unpackSummary",
+        "errors.archiveProblemTag",
+      ),
+  },
+  {
+    matches: (lower) =>
+      hasAny(lower, [
+        "downloaded archive is empty",
+        "downloaded archive did not contain any files",
+      ]),
+    create: () =>
+      issueText(
+        "errors.emptyDownloadTitle",
+        "errors.emptyDownloadSummary",
+        "errors.emptyDownloadTag",
+        { reportable: false },
+      ),
+  },
+  {
+    matches: (lower) =>
+      lower.includes("disk image does not contain a macos application"),
+    create: () =>
+      issueText(
+        "errors.invalidMacInstallerTitle",
+        "errors.invalidMacInstallerSummary",
+        "errors.invalidMacInstallerTag",
+      ),
+  },
+  {
+    matches: (lower) =>
+      hasAny(lower, [
+        "web page instead of an archive",
+        "end-of-central-directory signature not found",
+        "cannot find zipfile directory",
+      ]),
+    create: () =>
+      issueText(
+        "errors.notZipTitle",
+        "errors.notZipSummary",
+        "errors.invalidDownloadFileTag",
+      ),
+  },
+  {
+    matches: (lower) => lower.includes("does not contain a runnable engine"),
+    create: () => {
+      const os = { Darwin: "macOS", Linux: "Linux" }[window.NL_OS] || "Windows";
+      return issueText(
+        "errors.unsupportedBuildTitle",
+        "errors.unsupportedBuildSummary",
+        "errors.unsupportedBuildTag",
+        { summary: t("errors.unsupportedBuildSummary", { os }) },
+      );
+    },
+  },
+];
+
 function describeIssue(error) {
   const message = getMessage(error);
   const lower = message.toLowerCase();
-
-  if (
-    lower.includes("integrity verification") ||
-    lower.includes("not a recognized archive") ||
-    lower.includes("web page instead of the archive") ||
-    lower.includes("devolvió una página web") ||
-    lower.includes("devolviÃ³ una pÃ¡gina web") ||
-    lower.includes("file sharing and storage made simple")
-  ) {
-    const isArchiveTestFailure = lower.includes("integrity verification");
-    return {
-      title: t("errors.unpackTitle"),
-      summary: t("errors.unpackSummary"),
-      tag: t("errors.archiveProblemTag"),
-      reportable: isArchiveTestFailure ? undefined : false,
-    };
-  }
-
-  if (
-    lower.includes("crypt_e_no_revocation_check") ||
-    (lower.includes("schannel") && lower.includes("exit code 35")) ||
-    lower.includes("exit code 60") ||
-    lower.includes("certificate could not be trusted") ||
-    lower.includes("untrusted_root")
-  ) {
-    return {
-      title: t("errors.certificateTitle"),
-      summary: t("errors.certificateSummary"),
-      tag: t("errors.certificateTag"),
-      reportable: false,
-    };
-  }
-  if (lower.includes("onedrive") || lower.includes("exit code 23")) {
-    return {
-      title: t("errors.oneDriveTitle"),
-      summary: t("errors.oneDriveSummary"),
-      actionLabel: t("errors.openStorageSettings"),
-      action: "storage",
-      tag: t("errors.storageLocationTag"),
-    };
-  }
-  /**
-   * @fix 2026-08-05T04:49:46.409Z - Fix download could not be written to storage error
-   */
-  if (
-    !lower.includes("bundled archive extractor") &&
-    (lower.includes("access is denied") ||
-      lower.includes("permission") ||
-      lower.includes("file is in use") ||
-      lower.includes("directory is not empty") ||
-      lower.includes("could not be written to storage") ||
-      lower.includes("could not write ") ||
-      lower.includes("could not create its storage folder") ||
-      lower.includes("could not prepare the download destination") ||
-      lower.includes("could not finalize the temporary download"))
-  ) {
-    return {
-      title: t("errors.writeFolderTitle"),
-      summary: t("errors.writeFolderSummary"),
-      actionLabel: t("errors.openStorageSettings"),
-      action: "storage",
-      tag: t("errors.folderAccessTag"),
-    };
-  }
-  if (
-    lower.includes("could not access the engine folder") ||
-    lower.includes("filesystem error")
-  ) {
-    return {
-      title: t("errors.storageDriveTitle"),
-      summary: t("errors.storageDriveSummary"),
-      actionLabel: t("errors.openStorageSettings"),
-      action: "storage",
-      tag: t("errors.storageDriveTag"),
-    };
-  }
-  if (lower.includes("storage migration paused")) {
-    return {
-      title: t("errors.storageDriveTitle"),
-      summary: t("errors.storageDriveSummary"),
-      actionLabel: t("errors.openStorageSettings"),
-      action: "storage",
-      tag: t("errors.storageDriveTag"),
-    };
-  }
-  if (
-    lower.includes("download server is unavailable") ||
-    lower.includes("download server is temporarily unavailable") ||
-    lower.includes("download server rejected this file") ||
-    lower.includes("could not find the download server") ||
-    lower.includes("could not connect to the gamebanana download server") ||
-    lower.includes("connection to the download server") ||
-    lower.includes("download server closed the connection") ||
-    lower.includes("download process ended unexpectedly") ||
-    lower.includes("download was interrupted") ||
-    lower.includes("download was incomplete") ||
-    lower.includes("downloaded archive was incomplete") ||
-    lower.includes("complete temporary download after it completed")
-  ) {
-    return {
-      title: t("errors.downloadUnavailableTitle"),
-      summary: t("errors.downloadUnavailableSummary"),
-      tag: t("errors.downloadUnavailableTag"),
-      reportable: false,
-    };
-  }
-  if (lower.includes("exit code 22") || /\b(?:403|404)\b/.test(lower)) {
-    return {
-      title: t("errors.downloadUnavailableTitle"),
-      summary: t("errors.downloadUnavailableSummary"),
-      tag: t("errors.downloadUnavailableTag"),
-      reportable: false,
-    };
-  }
-  /**
-   * @fix 2026-08-05T03:31:10.964Z - Fix Google Drive download quota exceeded error reporting
-   */
-  if (isGoogleDriveQuotaError(message)) {
-    return {
-      title: t("errors.quotaExceededTitle"),
-      summary: t("errors.quotaExceededSummary"),
-      tag: t("errors.quotaExceededTag"),
-      reportable: false,
-    };
-  }
-  if (
-    lower.includes("mediafire:") ||
-    lower.includes("no se encuentra disponible en mediafire") ||
-    lower.includes("este archivo fue eliminado") ||
-    lower.includes("this mediafire link could not be opened") ||
-    lower.includes("this mediafire link is not supported")
-  ) {
-    return {
-      title: t("errors.downloadUnavailableTitle"),
-      summary: t("errors.downloadUnavailableSummary"),
-      tag: t("errors.downloadUnavailableTag"),
-      reportable: false,
-    };
-  }
-  /**
-   * @fix 2026-08-05T03:47:55.251Z - Fix "This mod is already installed" unexpected error dialog
-   */
-  if (
-    lower.includes("already installed") ||
-    lower.includes("ya está instalado") ||
-    lower.includes("bereits installiert")
-  ) {
-    return {
-      title: t("modModal.alreadyInstalled"),
-      summary: t("downloads.alreadyInstalled"),
-      tag: t("modModal.alreadyInstalled"),
-      reportable: false,
-    };
-  }
-  if (
-    lower.includes("download link is missing") ||
-    lower.includes("download link is invalid") ||
-    lower.includes("download does not have a valid link") ||
-    lower.includes("could not find the google drive file id") ||
-    lower.includes("does not point to a downloadable file")
-  ) {
-    return {
-      title: t("errors.invalidLinkTitle"),
-      summary: t("errors.invalidLinkSummary"),
-      tag: t("errors.invalidLinkTag"),
-      reportable: false,
-    };
-  }
-  if (
-    lower.includes("cannot be unpacked by this version of macos") ||
-    lower.includes("bundled archive extractor")
-  ) {
-    return {
-      title: t("errors.unpackTitle"),
-      summary: t("errors.unpackSummary"),
-      tag: t("errors.archiveProblemTag"),
-    };
-  }
-  if (
-    !lower.includes("end-of-central-directory signature not found") &&
-    !lower.includes("cannot find zipfile directory") &&
-    (lower.includes("extraction failed") ||
-      lower.includes("invalid archive") ||
-      lower.includes("archive file"))
-  ) {
-    return {
-      title: t("errors.unpackTitle"),
-      summary: t("errors.unpackSummary"),
-      tag: t("errors.archiveProblemTag"),
-    };
-  }
-  if (
-    lower.includes("downloaded archive is empty") ||
-    lower.includes("downloaded archive did not contain any files")
-  ) {
-    return {
-      title: t("errors.emptyDownloadTitle"),
-      summary: t("errors.emptyDownloadSummary"),
-      tag: t("errors.emptyDownloadTag"),
-      // This is a bad or empty upload, not an application failure. Do not send
-      // a stack trace to diagnostics (or its webhook) for it.
-      reportable: false,
-    };
-  }
-  if (lower.includes("disk image does not contain a macos application")) {
-    return {
-      title: t("errors.invalidMacInstallerTitle"),
-      summary: t("errors.invalidMacInstallerSummary"),
-      tag: t("errors.invalidMacInstallerTag"),
-    };
-  }
-  if (
-    lower.includes("web page instead of an archive") ||
-    lower.includes("end-of-central-directory signature not found") ||
-    lower.includes("cannot find zipfile directory")
-  ) {
-    return {
-      title: t("errors.notZipTitle"),
-      summary: t("errors.notZipSummary"),
-      tag: t("errors.invalidDownloadFileTag"),
-    };
-  }
-  if (lower.includes("does not contain a runnable engine")) {
-    return {
-      title: t("errors.unsupportedBuildTitle"),
-      summary: t("errors.unsupportedBuildSummary", {
-        os:
-          window.NL_OS === "Darwin"
-            ? "macOS"
-            : window.NL_OS === "Linux"
-              ? "Linux"
-              : "Windows",
-      }),
-      tag: t("errors.unsupportedBuildTag"),
-    };
-  }
-  return {
-    title: t("errors.unexpectedTitle"),
-    summary: t("errors.unexpectedSummary"),
-    tag: t("errors.unexpectedTag"),
-  };
+  const rule = ISSUE_RULES.find((candidate) =>
+    candidate.matches(lower, message),
+  );
+  return rule
+    ? rule.create(lower, message)
+    : issueText(
+        "errors.unexpectedTitle",
+        "errors.unexpectedSummary",
+        "errors.unexpectedTag",
+      );
 }
 
 function createReport({

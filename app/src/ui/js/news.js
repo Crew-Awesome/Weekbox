@@ -54,6 +54,63 @@ function renderNewsMarkdown(value) {
   return sanitizeReleaseHtml(html);
 }
 
+function renderNewsMeta(meta, post) {
+  meta.replaceChildren();
+  const date = newsDate(post.publishedAt);
+  if (date)
+    meta.appendChild(
+      Object.assign(document.createElement("span"), { textContent: date }),
+    );
+  if (post.tags?.length)
+    meta.appendChild(
+      Object.assign(document.createElement("span"), {
+        textContent: String(post.tags[0]),
+      }),
+    );
+}
+
+function applyNewsCover(modal, image, post, coverUrl) {
+  modal.style.setProperty("--card-color", "rgba(255, 255, 255, 0.08)");
+  modal.style.setProperty("--news-accent", "var(--primary)");
+  image.hidden = !coverUrl;
+  image.src = coverUrl;
+  image.alt = post.title ? `${post.title} cover` : "";
+  setModalBackdrop(modal, coverUrl);
+  if (!coverUrl) return;
+  const colorProbe = new Image();
+  colorProbe.crossOrigin = "anonymous";
+  colorProbe.src = coverUrl;
+  applyDominantColor(colorProbe, modal, {
+    alpha: 0.2,
+    fallback: "rgba(255, 255, 255, 0.08)",
+    accentVar: "--news-accent",
+  });
+}
+
+function applyCachedNews(view, cached, badgeOnly) {
+  if (cached) {
+    view.updateUnreadBadge(cached.posts);
+    if (!badgeOnly) {
+      view.render(cached);
+      view.markNewsRead(cached.posts);
+    }
+    return;
+  }
+  if (!badgeOnly) view.setStatus(t("news.loading"));
+}
+
+function handleNewsLoadError(view, error, cached, badgeOnly) {
+  if (badgeOnly) {
+    console.warn("WeekBox news badge unavailable", error);
+  } else if (cached) {
+    view.setStatus(t("news.refreshFailedCached"), "error");
+  } else {
+    view.render({ posts: [] });
+    view.setStatus(t("news.unavailable"), "error");
+  }
+  console.warn("WeekBox news feed unavailable", error);
+}
+
 export const newsView = {
   request: null,
   detailRequest: null,
@@ -118,18 +175,7 @@ export const newsView = {
       });
     };
     title.textContent = String(post.title || t("nav.news"));
-    meta.replaceChildren();
-    const date = newsDate(post.publishedAt);
-    if (date)
-      meta.appendChild(
-        Object.assign(document.createElement("span"), { textContent: date }),
-      );
-    if (post.tags?.length)
-      meta.appendChild(
-        Object.assign(document.createElement("span"), {
-          textContent: String(post.tags[0]),
-        }),
-      );
+    renderNewsMeta(meta, post);
     excerpt.textContent = String(post.excerpt || "");
     excerpt.hidden = !post.excerpt;
     body.textContent = post.excerpt || t("news.loadingArticle");
@@ -139,22 +185,7 @@ export const newsView = {
       Neutralino.os.open(link.href).catch(() => {});
     };
     const coverUrl = safeNewsUrl(post.coverUrl);
-    modal.style.setProperty("--card-color", "rgba(255, 255, 255, 0.08)");
-    modal.style.setProperty("--news-accent", "var(--primary)");
-    image.hidden = !coverUrl;
-    image.src = coverUrl;
-    image.alt = post.title ? `${post.title} cover` : "";
-    setModalBackdrop(modal, coverUrl);
-    if (coverUrl) {
-      const colorProbe = new Image();
-      colorProbe.crossOrigin = "anonymous";
-      colorProbe.src = coverUrl;
-      applyDominantColor(colorProbe, modal, {
-        alpha: 0.2,
-        fallback: "rgba(255, 255, 255, 0.08)",
-        accentVar: "--news-accent",
-      });
-    }
+    applyNewsCover(modal, image, post, coverUrl);
     modal.style.display = "flex";
     requestAnimationFrame(() => {
       modal.classList.add("show");
@@ -344,13 +375,7 @@ export const newsView = {
   async load({ badgeOnly = false } = {}) {
     if (!badgeOnly && (!this.grid || !this.status)) return;
     const cached = this.readCache();
-    if (cached) {
-      this.updateUnreadBadge(cached.posts);
-      if (!badgeOnly) {
-        this.render(cached);
-        this.markNewsRead(cached.posts);
-      }
-    } else if (!badgeOnly) this.setStatus(t("news.loading"));
+    applyCachedNews(this, cached, badgeOnly);
     this.request?.abort();
     const controller = new AbortController();
     this.request = controller;
@@ -375,15 +400,7 @@ export const newsView = {
         this.setStatus("");
       }
     } catch (error) {
-      if (badgeOnly) {
-        console.warn("WeekBox news badge unavailable", error);
-      } else if (cached) {
-        this.setStatus(t("news.refreshFailedCached"), "error");
-      } else {
-        this.render({ posts: [] });
-        this.setStatus(t("news.unavailable"), "error");
-      }
-      console.warn("WeekBox news feed unavailable", error);
+      handleNewsLoadError(this, error, cached, badgeOnly);
     } finally {
       clearTimeout(timeout);
       if (this.request === controller) this.request = null;
@@ -393,8 +410,9 @@ export const newsView = {
 };
 
 export function registerNewsView() {
-  appEvents.addEventListener("news:refresh-badge", () =>
-    void newsView.load({ badgeOnly: true }),
+  appEvents.addEventListener(
+    "news:refresh-badge",
+    () => void newsView.load({ badgeOnly: true }),
   );
   appEvents.addEventListener("view:loaded", (event) => {
     if (event.detail === "news") newsView.init();

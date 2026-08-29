@@ -51,11 +51,7 @@ function getRelativeLuminance(r, g, b) {
 }
 
 function applyColorToElement(targetElement, colorData, options = {}) {
-  const {
-    cssVar = "--card-color",
-    alpha = 0.5,
-    accentVar = "",
-  } = options;
+  const { cssVar = "--card-color", alpha = 0.5, accentVar = "" } = options;
   const { r, g, b, accentR, accentG, accentB } = colorData;
   targetElement.style.setProperty(
     cssVar,
@@ -70,6 +66,84 @@ function applyColorToElement(targetElement, colorData, options = {}) {
       accentVar,
       `rgb(${finalAccentR}, ${finalAccentG}, ${finalAccentB})`,
     );
+  }
+}
+
+function readDominantColor(img) {
+  const canvas = document.createElement("canvas");
+  try {
+    const ctx = canvas.getContext("2d", { willReadFrequently: true });
+    const sourceWidth = img.naturalWidth || 64;
+    const sourceHeight = img.naturalHeight || 64;
+    const scale = Math.min(1, 64 / Math.max(sourceWidth, sourceHeight));
+    canvas.width = Math.max(1, Math.round(sourceWidth * scale));
+    canvas.height = Math.max(1, Math.round(sourceHeight * scale));
+    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+    const data = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
+    const swatches = /* @__PURE__ */ new Map();
+    let accentR = 0;
+    let accentG = 0;
+    let accentB = 0;
+    let accentWeight = 0;
+    for (let index = 0; index < data.length; index += 64) {
+      const r = data[index];
+      const g = data[index + 1];
+      const b = data[index + 2];
+      const max = Math.max(r, g, b);
+      const min = Math.min(r, g, b);
+      const luma = 0.299 * r + 0.587 * g + 0.114 * b;
+      const saturation = max ? (max - min) / max : 0;
+      if (luma >= 35 && luma <= 225 && saturation >= 0.18) {
+        const weight = 0.35 + saturation;
+        accentR += r * weight;
+        accentG += g * weight;
+        accentB += b * weight;
+        accentWeight += weight;
+      }
+      if (luma < 35 || luma > 225 || saturation < 0.18) continue;
+      const key = `${Math.floor(r / 32)}:${Math.floor(g / 32)}:${Math.floor(b / 32)}`;
+      const swatch = swatches.get(key) || {
+        weight: 0,
+        r: 0,
+        g: 0,
+        b: 0,
+        count: 0,
+      };
+      const weight = 0.2 + saturation ** 3 * 2;
+      swatch.weight += weight;
+      swatch.r += r * weight;
+      swatch.g += g * weight;
+      swatch.b += b * weight;
+      swatch.count += weight;
+      swatches.set(key, swatch);
+    }
+    const strongest = [...swatches.values()].reduce(
+      (best, swatch) => (!best || swatch.weight > best.weight ? swatch : best),
+      null,
+    );
+    if (!strongest) return null;
+    const sourceR = strongest.r / strongest.count;
+    const sourceG = strongest.g / strongest.count;
+    const sourceB = strongest.b / strongest.count;
+    let r = sourceR * 0.76;
+    let g = sourceG * 0.76;
+    let b = sourceB * 0.76;
+    while (getRelativeLuminance(r, g, b) > 0.09) {
+      r *= 0.92;
+      g *= 0.92;
+      b *= 0.92;
+    }
+    return {
+      r,
+      g,
+      b,
+      accentR: accentWeight ? accentR / accentWeight : sourceR,
+      accentG: accentWeight ? accentG / accentWeight : sourceG,
+      accentB: accentWeight ? accentB / accentWeight : sourceB,
+    };
+  } finally {
+    canvas.width = 0;
+    canvas.height = 0;
   }
 }
 
@@ -94,100 +168,26 @@ function applyDominantColor(img, targetElement, options = {}) {
 
   const processColor = () => {
     scheduleColorJob(() => {
-      let canvas = null;
       try {
         if (src && dominantColorCache.has(src)) {
-          applyColorToElement(targetElement, dominantColorCache.get(src), options);
+          applyColorToElement(
+            targetElement,
+            dominantColorCache.get(src),
+            options,
+          );
           return;
         }
-        canvas = document.createElement("canvas");
-        const ctx = canvas.getContext("2d", { willReadFrequently: true });
-        const sourceWidth = img.naturalWidth || 64;
-        const sourceHeight = img.naturalHeight || 64;
-        const scale = Math.min(1, 64 / Math.max(sourceWidth, sourceHeight));
-        canvas.width = Math.max(1, Math.round(sourceWidth * scale));
-        canvas.height = Math.max(1, Math.round(sourceHeight * scale));
-        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-        const data = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
-        const swatches = /* @__PURE__ */ new Map();
-        let accentR = 0;
-        let accentG = 0;
-        let accentB = 0;
-        let accentWeight = 0;
-        for (let index = 0; index < data.length; index += 64) {
-          const r2 = data[index];
-          const g2 = data[index + 1];
-          const b2 = data[index + 2];
-          const max = Math.max(r2, g2, b2);
-          const min = Math.min(r2, g2, b2);
-          const luma = 0.299 * r2 + 0.587 * g2 + 0.114 * b2;
-          const saturation = max ? (max - min) / max : 0;
-          if (luma >= 35 && luma <= 225 && saturation >= 0.18) {
-            const weight = 0.35 + saturation;
-            accentR += r2 * weight;
-            accentG += g2 * weight;
-            accentB += b2 * weight;
-            accentWeight += weight;
-          }
-          if (luma < 35 || luma > 225 || saturation < 0.18) continue;
-          const key = `${Math.floor(r2 / 32)}:${Math.floor(g2 / 32)}:${Math.floor(b2 / 32)}`;
-          const swatch = swatches.get(key) || {
-            weight: 0,
-            r: 0,
-            g: 0,
-            b: 0,
-            count: 0,
-          };
-          const weight = 0.2 + saturation ** 3 * 2;
-          swatch.weight += weight;
-          swatch.r += r2 * weight;
-          swatch.g += g2 * weight;
-          swatch.b += b2 * weight;
-          swatch.count += weight;
-          swatches.set(key, swatch);
-        }
-        const strongest = [...swatches.values()].reduce(
-          (best, swatch) =>
-            !best || swatch.weight > best.weight ? swatch : best,
-          null,
-        );
-        if (!strongest) {
+        const colorData = readDominantColor(img);
+        if (!colorData) {
           setFallback();
           return;
         }
-        const sourceR = strongest.r / strongest.count;
-        const sourceG = strongest.g / strongest.count;
-        const sourceB = strongest.b / strongest.count;
-        let r = sourceR * 0.76;
-        let g = sourceG * 0.76;
-        let b = sourceB * 0.76;
-        while (getRelativeLuminance(r, g, b) > 0.09) {
-          r *= 0.92;
-          g *= 0.92;
-          b *= 0.92;
-        }
-        const accentSourceR = accentWeight ? accentR / accentWeight : sourceR;
-        const accentSourceG = accentWeight ? accentG / accentWeight : sourceG;
-        const accentSourceB = accentWeight ? accentB / accentWeight : sourceB;
-        const colorData = {
-          r,
-          g,
-          b,
-          accentR: accentSourceR,
-          accentG: accentSourceG,
-          accentB: accentSourceB,
-        };
         if (src) {
           setCachedDominantColor(src, colorData);
         }
         applyColorToElement(targetElement, colorData, options);
       } catch {
         setFallback();
-      } finally {
-        if (canvas) {
-          canvas.width = 0;
-          canvas.height = 0;
-        }
       }
     });
   };

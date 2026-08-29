@@ -83,6 +83,140 @@ function getDataUrlMimeType(path) {
       : "image/png";
 }
 
+async function prepareStorageMove(service, basePath) {
+  const destinationBasePath = service.getStorageDestinationPath(basePath);
+  if (!destinationBasePath) throw new Error("Choose a storage folder first");
+  if (
+    normalizeComparablePath(destinationBasePath) ===
+    normalizeComparablePath(service.basePath)
+  ) {
+    return { samePath: service.weekboxPath };
+  }
+  await service.assertStoragePathAllowed(destinationBasePath);
+  if (service.hasRunningProcesses()) {
+    throw new Error("Close running engines before moving WeekBox files");
+  }
+  await service.api.ensureDir(destinationBasePath);
+  if (!(await service.api.exists(destinationBasePath))) {
+    throw new Error("Selected storage folder is unavailable");
+  }
+  if (pathsOverlap(destinationBasePath, service.basePath)) {
+    throw new Error(
+      "Choose a storage folder outside the current storage folder.",
+    );
+  }
+  const destinationStagePath = `${destinationBasePath}.moving`;
+  if (pathsOverlap(destinationStagePath, service.basePath)) {
+    throw new Error("Choose a storage folder outside the current library.");
+  }
+  return {
+    destinationBasePath,
+    destinationStagePath,
+    storageOnlyMove: service.isStorageInExecutableDirectory(),
+  };
+}
+
+async function prepareExistingDestination(
+  service,
+  destinationBasePath,
+  options,
+) {
+  if (!(await service.api.exists(destinationBasePath))) return null;
+  const entries = getRealEntries(
+    await Neutralino.filesystem.readDirectory(destinationBasePath),
+  );
+  if (!entries.length) {
+    await service.api.remove(destinationBasePath);
+    return null;
+  }
+  if (!options.replaceExisting) {
+    throw new Error(
+      "The selected folder already contains files. Choose a different folder or replace it after making a backup.",
+    );
+  }
+  const backupPath = storageBackupPath(destinationBasePath);
+  await service.api.move(destinationBasePath, backupPath);
+  return backupPath;
+}
+
+async function prepareLocalModImport(
+  service,
+  { sourcePath, name, engineId, kind },
+) {
+  if (!service.isInitialized) throw new Error("WeekBox storage is not ready");
+  const modName = String(name || "").trim();
+  if (!modName) throw new Error("Give the mod a name");
+  const normalizedSource = String(sourcePath || "")
+    .replace(/\\/g, "/")
+    .replace(/\/+$/, "");
+  const normalizedModsPath = service.modsPath
+    .replace(/\\/g, "/")
+    .replace(/\/+$/, "");
+  if (!normalizedSource) throw new Error("Choose a mod folder first");
+  if (
+    normalizedSource.toLowerCase() === normalizedModsPath.toLowerCase() ||
+    normalizedSource
+      .toLowerCase()
+      .startsWith(`${normalizedModsPath.toLowerCase()}/`)
+  ) {
+    throw new Error("Choose a folder outside your WeekBox mods library");
+  }
+  const sourceStats = await Neutralino.filesystem.getStats(normalizedSource);
+  if (!sourceStats.isDirectory)
+    throw new Error("The selected path is not a folder");
+  const requestedKind = ["mod", "addon", "dependency"].includes(kind)
+    ? kind
+    : "mod";
+  if (requestedKind === "addon" && engineId !== "codename") {
+    throw new Error("Addons are only available for Codename Engine mods");
+  }
+  const folderName = await service.getAvailableLocalModFolderName(modName);
+  return {
+    modId: `local-${crypto.randomUUID()}`,
+    modName,
+    normalizedSource,
+    requestedKind,
+    folderName,
+    destinationPath: `${service.modsPath}/${folderName}`,
+    engineFolderName: sanitizePathSegment(modName) || folderName,
+    engineId,
+  };
+}
+
+async function removeModFiles(service, mod, folderName) {
+  if (
+    !folderName ||
+    /[\\/]/.test(folderName) ||
+    folderName === "." ||
+    folderName === ".."
+  ) {
+    throw new Error(`Invalid mod folder for ${mod.name}`);
+  }
+  const modPath = `${service.modsPath}/${folderName}`;
+  if (!(await service.api.exists(modPath))) return;
+  const command =
+    window.NL_OS === "Windows"
+      ? `cmd /c rmdir /S /Q "${modPath.replace(/\//g, "\\")}"`
+      : `rm -rf "${modPath}"`;
+  let result;
+  for (let attempt = 1; attempt <= 3; attempt += 1) {
+    result = await Neutralino.os.execCommand(command, { background: false });
+    if (result.exitCode === 0 || !(await service.api.exists(modPath))) return;
+    if (attempt < 3)
+      await new Promise((resolve) => setTimeout(resolve, attempt * 400));
+  }
+  if (result?.exitCode !== 0 && (await service.api.exists(modPath))) {
+    const detail = String(result?.stdErr || result?.stdOut || "")
+      .replace(/[\0\r]+/g, " ")
+      .trim();
+    throw new Error(
+      detail
+        ? `Could not remove mod files because a file is in use: ${detail}`
+        : `Could not remove mod files for ${mod.name}. Close any program using this mod and try again.`,
+    );
+  }
+}
+
 var RETIRED_ENGINE_IDS = /* @__PURE__ */ new Set(["alepsych"]);
 var _FileSystemService = class _FileSystemService {
   constructor() {
@@ -531,33 +665,9 @@ var _FileSystemService = class _FileSystemService {
   }
   async moveStorageTo(basePath, onProgress = () => {}, options = {}) {
     this.assertStorageUnlocked();
-    const destinationBasePath = this.getStorageDestinationPath(basePath);
-    if (!destinationBasePath) throw new Error("Choose a storage folder first");
-    if (
-      normalizeComparablePath(destinationBasePath) ===
-      normalizeComparablePath(this.basePath)
-    ) {
-      return this.weekboxPath;
-    }
-    await this.assertStoragePathAllowed(destinationBasePath);
-    if (this.hasRunningProcesses()) {
-      throw new Error("Close running engines before moving WeekBox files");
-    }
-    await this.api.ensureDir(destinationBasePath);
-    if (!(await this.api.exists(destinationBasePath))) {
-      throw new Error("Selected storage folder is unavailable");
-    }
-    if (pathsOverlap(destinationBasePath, this.basePath)) {
-      throw new Error(
-        "Choose a storage folder outside the current storage folder.",
-      );
-    }
-    const destinationStagePath = `${destinationBasePath}.moving`;
-    if (pathsOverlap(destinationStagePath, this.basePath)) {
-      throw new Error("Choose a storage folder outside the current library.");
-    }
-    const storageOnlyMove = this.isStorageInExecutableDirectory();
-    let replacedStorageBackupPath = null;
+    const move = await prepareStorageMove(this, basePath);
+    if (move.samePath) return move.samePath;
+    const { destinationBasePath, destinationStagePath, storageOnlyMove } = move;
     this.isStorageMoveInProgress = true;
     const previousBasePath = this.basePath;
     const previousSettingsPath = appSettings.path;
@@ -609,22 +719,7 @@ var _FileSystemService = class _FileSystemService {
         throw new Error("WeekBox storage move did not pass verification");
       }
 
-      if (await this.api.exists(destinationBasePath)) {
-        const entries = getRealEntries(
-          await Neutralino.filesystem.readDirectory(destinationBasePath),
-        );
-        if (entries.length) {
-          if (!options.replaceExisting) {
-            throw new Error(
-              "The selected folder already contains files. Choose a different folder or replace it after making a backup.",
-            );
-          }
-          replacedStorageBackupPath = storageBackupPath(destinationBasePath);
-          await this.api.move(destinationBasePath, replacedStorageBackupPath);
-        } else {
-          await this.api.remove(destinationBasePath);
-        }
-      }
+      await prepareExistingDestination(this, destinationBasePath, options);
       await this.api.move(destinationStagePath, destinationBasePath);
 
       try {
@@ -1295,37 +1390,21 @@ var _FileSystemService = class _FileSystemService {
     coverUrl,
   }) {
     this.assertStorageUnlocked();
-    if (!this.isInitialized) throw new Error("WeekBox storage is not ready");
-    const modName = String(name || "").trim();
-    if (!modName) throw new Error("Give the mod a name");
-    const normalizedSource = String(sourcePath || "")
-      .replace(/\\/g, "/")
-      .replace(/\/+$/, "");
-    const normalizedModsPath = this.modsPath
-      .replace(/\\/g, "/")
-      .replace(/\/+$/, "");
-    if (!normalizedSource) throw new Error("Choose a mod folder first");
-    if (
-      normalizedSource.toLowerCase() === normalizedModsPath.toLowerCase() ||
-      normalizedSource
-        .toLowerCase()
-        .startsWith(`${normalizedModsPath.toLowerCase()}/`)
-    ) {
-      throw new Error("Choose a folder outside your WeekBox mods library");
-    }
-    const sourceStats = await Neutralino.filesystem.getStats(normalizedSource);
-    if (!sourceStats.isDirectory) {
-      throw new Error("The selected path is not a folder");
-    }
-    const modId = `local-${crypto.randomUUID()}`;
-    const requestedKind = ["mod", "addon", "dependency"].includes(kind)
-      ? kind
-      : "mod";
-    if (requestedKind === "addon" && engineId !== "codename") {
-      throw new Error("Addons are only available for Codename Engine mods");
-    }
-    const folderName = await this.getAvailableLocalModFolderName(modName);
-    const destinationPath = `${this.modsPath}/${folderName}`;
+    const prepared = await prepareLocalModImport(this, {
+      sourcePath,
+      name,
+      engineId,
+      kind,
+    });
+    const {
+      modId,
+      modName,
+      normalizedSource,
+      requestedKind,
+      folderName,
+      destinationPath,
+      engineFolderName,
+    } = prepared;
     try {
       await Neutralino.filesystem.copy(normalizedSource, destinationPath, {
         recursive: true,
@@ -1334,7 +1413,7 @@ var _FileSystemService = class _FileSystemService {
       });
       await this.saveInstalledMod(modId, modName, {
         folderName,
-        engineFolderName: sanitizePathSegment(modName) || folderName,
+        engineFolderName,
         engineId: engineId || null,
         engineVersion: engineId ? engineVersion || null : null,
         source: "local",
@@ -1567,41 +1646,7 @@ var _FileSystemService = class _FileSystemService {
       (result) => result.status === "rejected",
     );
     if (unlinkFailure) throw unlinkFailure.reason;
-    const folderName = getModFolderName(mod);
-    if (
-      !folderName ||
-      /[\\/]/.test(folderName) ||
-      folderName === "." ||
-      folderName === ".."
-    ) {
-      throw new Error(`Invalid mod folder for ${mod.name}`);
-    }
-    const modPath = `${this.modsPath}/${folderName}`;
-    if (await this.api.exists(modPath)) {
-      const command =
-        window.NL_OS === "Windows"
-          ? `cmd /c rmdir /S /Q "${modPath.replace(/\//g, "\\")}"`
-          : `rm -rf "${modPath}"`;
-      let result;
-      for (let attempt = 1; attempt <= 3; attempt += 1) {
-        result = await Neutralino.os.execCommand(command, {
-          background: false,
-        });
-        if (result.exitCode === 0 || !(await this.api.exists(modPath))) break;
-        if (attempt < 3)
-          await new Promise((resolve) => setTimeout(resolve, attempt * 400));
-      }
-      if (result?.exitCode !== 0 && (await this.api.exists(modPath))) {
-        const detail = String(result?.stdErr || result?.stdOut || "")
-          .replace(/[\0\r]+/g, " ")
-          .trim();
-        throw new Error(
-          detail
-            ? `Could not remove mod files because a file is in use: ${detail}`
-            : `Could not remove mod files for ${mod.name}. Close any program using this mod and try again.`,
-        );
-      }
-    }
+    await removeModFiles(this, mod, getModFolderName(mod));
     await this.mods.remove(modId);
     await this.covers.remove(modId).catch(() => {});
     if (Array.isArray(mod.dependencies)) {

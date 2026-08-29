@@ -15,6 +15,226 @@ import {
 } from "./processUiSync.js";
 import { getEngineLabel, i18n, t } from "../i18n/index.js";
 
+function formatVersionLabel(version) {
+  if (!version) return "v 0.0.1";
+  const clean = String(version).trim();
+  if (/^v\s+/i.test(clean)) return clean;
+  if (/^v/i.test(clean)) return `v ${clean.slice(1).trim()}`;
+  return `v ${clean}`;
+}
+
+function getCardEngineContext(mod, standaloneModIds, installedEngines) {
+  const isExecutable =
+    standaloneModIds.has(String(mod.id)) || mod.engineId === "executable";
+  const hasEngine = Boolean(
+    mod.engineId &&
+    mod.engineId !== "executable" &&
+    ENGINE_DETAILS[mod.engineId],
+  );
+  const engine = hasEngine
+    ? installedEngines.find(
+        (item) =>
+          item.id === mod.engineId &&
+          (!mod.engineVersion || item.version === mod.engineVersion),
+      )
+    : null;
+  let engineBadgeHtml = modManagerTemplates.unassignedBadge();
+  if (mod.engineLocked || hasEngine) {
+    const engineId = mod.engineLocked ? "psychonline" : mod.engineId;
+    const engineInfo = ENGINE_DETAILS[engineId];
+    engineBadgeHtml = modManagerTemplates.engineBadge(
+      formatVersionLabel(mod.engineVersion || engine?.version),
+      engineInfo.icon,
+    );
+  } else if (isExecutable) {
+    engineBadgeHtml = modManagerTemplates.executableBadge();
+  }
+  return { isExecutable, hasEngine, engine, engineBadgeHtml };
+}
+
+function createModManagerCard(mod, standaloneModIds, installedEngines) {
+  const context = getCardEngineContext(mod, standaloneModIds, installedEngines);
+  const { isExecutable, hasEngine, engine, engineBadgeHtml } = context;
+  const isUnassigned = !isExecutable && !hasEngine;
+  const eyeIcon = mod.hidden ? "fa-eye-slash" : "fa-eye";
+  const card = document.createElement("div");
+  card.className = "mod-manager-card";
+  card.dataset.modId = String(mod.id);
+  card.dataset.modSearch = [
+    mod.name,
+    ...(Array.isArray(mod.tags) ? mod.tags.map((tag) => `#${tag}`) : []),
+  ]
+    .filter(Boolean)
+    .join(" ")
+    .toLocaleLowerCase();
+  card.classList.toggle("is-hidden", Boolean(mod.hidden));
+  card.classList.toggle(
+    "is-non-playable",
+    mod.kind === "dependency" || mod.kind === "addon",
+  );
+  card.classList.toggle("is-unassigned", isUnassigned);
+  if (mod.hidden) card.style.opacity = "0.5";
+
+  const launchAsStandalone = isExecutable && !hasEngine;
+  const launchLabel =
+    launchAsStandalone ||
+    getEngineLaunchBehavior(mod.engineId)?.scope === "exclusive-mod"
+      ? t("modManager.launchMod")
+      : t("modManager.launchEngine");
+  card.innerHTML = modManagerTemplates.cardContent(
+    launchAsStandalone ? "standalone" : "engine",
+    mod.id,
+    engine?.id || mod.engineId || "",
+    engine?.version || mod.engineVersion || "",
+    launchLabel,
+    mod.name,
+    mod.hidden,
+    isUnassigned,
+    eyeIcon,
+    engineBadgeHtml,
+  );
+  card.classList.add("is-cover-loading");
+  loadModCardImage({
+    mod,
+    card,
+    fetchDetails: gameBananaApi.getModDetails.bind(gameBananaApi),
+    applyDominantColor,
+  });
+  return {
+    card,
+    engine,
+    isExecutable,
+    launchAsStandalone,
+    launchBtn: card.querySelector(".mod-manager-launch-btn"),
+    deleteBtn: card.querySelector(".mod-manager-delete-btn"),
+    settingsBtn: card.querySelector(".mod-manager-settings-btn"),
+    visBtn: card.querySelector(".mod-manager-vis-btn"),
+  };
+}
+
+function bindModManagerCardActions({
+  context,
+  mod,
+  allMods,
+  installedEngines,
+  gridContainer,
+  onModDeleted,
+  onSettingsSaved,
+  refreshLaunchButtons,
+  refreshChangeButtons,
+}) {
+  const {
+    card,
+    engine,
+    isExecutable,
+    launchAsStandalone,
+    launchBtn,
+    deleteBtn,
+    settingsBtn,
+    visBtn,
+  } = context;
+  launchBtn.addEventListener("click", async () => {
+    launchBtn.disabled = true;
+    try {
+      if (
+        FS.getModLaunchState(mod, engine, launchAsStandalone) === "unavailable"
+      ) {
+        const engineInfo = ENGINE_DETAILS[mod.engineId];
+        engineUpdateToast.missingEngine(
+          mod.engineId,
+          getEngineLabel(
+            mod.engineId,
+            engineInfo?.name || t("engineUpdates.assignedEngine"),
+          ),
+          engineInfo?.icon,
+        );
+        return;
+      }
+      await FS.toggleModLaunch(mod, engine, launchAsStandalone, () => {
+        refreshLaunchButtons();
+        refreshChangeButtons();
+      });
+    } catch (error) {
+      console.error(error);
+    } finally {
+      launchBtn.disabled = false;
+      refreshLaunchButtons();
+      refreshChangeButtons();
+    }
+  });
+
+  deleteBtn.addEventListener("click", async () => {
+    if (FS.isModLockedForChanges(mod, allMods)) return;
+    deleteBtn.disabled = true;
+    deleteBtn.innerHTML = modManagerTemplates.deleteSpinner();
+    try {
+      await FS.removeInstalledMod(mod.id);
+      onModDeleted(mod.id);
+      card.style.transform = "scale(0.8) translateY(10px)";
+      card.style.opacity = "0";
+      setTimeout(() => {
+        if (!card.isConnected || !gridContainer.isConnected) return;
+        card.remove();
+        if (gridContainer.children.length === 0 && gridContainer.parentNode) {
+          gridContainer.outerHTML = modManagerTemplates.emptyState(
+            t("modManager.noModsInstalled"),
+          );
+        }
+      }, 300);
+      document.dispatchEvent(new CustomEvent("mods-updated"));
+    } catch (error) {
+      deleteBtn.disabled = false;
+      deleteBtn.innerHTML = modManagerTemplates.deleteIcon();
+    }
+  });
+
+  settingsBtn.addEventListener("click", async () => {
+    if (settingsBtn.disabled) return;
+    settingsBtn.disabled = true;
+    settingsBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
+    try {
+      await modSettingsModal.open({
+        mod,
+        isExecutable,
+        installedEngines,
+        onSaved: onSettingsSaved,
+        readOnly: false,
+        fileLocked: FS.isModLockedForChanges(mod, allMods),
+      });
+    } finally {
+      settingsBtn.disabled = false;
+      settingsBtn.innerHTML = '<i class="fa-solid fa-gear"></i>';
+    }
+  });
+
+  visBtn.addEventListener("click", async () => {
+    if (FS.isModLockedForChanges(mod, allMods)) return;
+    visBtn.disabled = true;
+    const isNowHidden = !mod.hidden;
+    mod.hidden = isNowHidden;
+    card.classList.toggle("is-hidden", isNowHidden);
+    launchBtn.disabled = isNowHidden;
+    card.style.opacity = isNowHidden ? "0.5" : "1";
+    visBtn.querySelector("i").className = isNowHidden
+      ? "fa-solid fa-eye-slash"
+      : "fa-solid fa-eye";
+    try {
+      await FS.setModHidden(mod.id, isNowHidden);
+      document.dispatchEvent(new CustomEvent("mods-updated"));
+    } catch (error) {
+      mod.hidden = !isNowHidden;
+      card.classList.toggle("is-hidden", mod.hidden);
+      launchBtn.disabled = mod.hidden;
+      card.style.opacity = mod.hidden ? "0.5" : "1";
+      visBtn.querySelector("i").className = mod.hidden
+        ? "fa-solid fa-eye-slash"
+        : "fa-solid fa-eye";
+    } finally {
+      visBtn.disabled = false;
+    }
+  });
+}
+
 export const cardRenderer = {
   async renderCards(
     gridContainer,
@@ -95,213 +315,23 @@ export const cardRenderer = {
     );
 
     for (const mod of modsToRender) {
-      const isExecutable =
-        standaloneModIds.has(String(mod.id)) || mod.engineId === "executable";
-      const hasEngine = Boolean(
-        mod.engineId &&
-        mod.engineId !== "executable" &&
-        ENGINE_DETAILS[mod.engineId],
-      );
-      const engine = hasEngine
-        ? installedEngines.find(
-            (item) =>
-              item.id === mod.engineId &&
-              (!mod.engineVersion || item.version === mod.engineVersion),
-          )
-        : null;
-
-      const formatVersionLabel = (version) => {
-        if (!version) return "v 0.0.1";
-        const clean = String(version).trim();
-        if (/^v\s+/i.test(clean)) return clean;
-        if (/^v/i.test(clean)) return `v ${clean.slice(1).trim()}`;
-        return `v ${clean}`;
-      };
-
-      let engineBadgeHtml = modManagerTemplates.unassignedBadge();
-
-      if (mod.engineLocked) {
-        const engineInfo = ENGINE_DETAILS.psychonline;
-        const versionLabel = formatVersionLabel(
-          mod.engineVersion || engine?.version,
-        );
-        engineBadgeHtml = modManagerTemplates.engineBadge(
-          versionLabel,
-          engineInfo.icon,
-        );
-      } else if (hasEngine) {
-        const engineInfo = ENGINE_DETAILS[mod.engineId];
-        const versionLabel = formatVersionLabel(
-          mod.engineVersion || engine?.version,
-        );
-        engineBadgeHtml = modManagerTemplates.engineBadge(
-          versionLabel,
-          engineInfo.icon,
-        );
-      } else if (isExecutable) {
-        engineBadgeHtml = modManagerTemplates.executableBadge();
-      }
-
-      const isHidden = mod.hidden;
-      const isUnassigned = !isExecutable && !hasEngine;
-      const eyeIcon = mod.hidden ? "fa-eye-slash" : "fa-eye";
-      const card = document.createElement("div");
-      card.className = "mod-manager-card";
-      card.dataset.modId = String(mod.id);
-      card.dataset.modSearch = [
-        mod.name,
-        ...(Array.isArray(mod.tags) ? mod.tags.map((tag) => `#${tag}`) : []),
-      ]
-        .filter(Boolean)
-        .join(" ")
-        .toLocaleLowerCase();
-      card.classList.toggle("is-hidden", Boolean(mod.hidden));
-      card.classList.toggle(
-        "is-non-playable",
-        mod.kind === "dependency" || mod.kind === "addon",
-      );
-      card.classList.toggle("is-unassigned", isUnassigned);
-      if (mod.hidden) {
-        card.style.opacity = "0.5";
-      }
-
-      const launchAsStandalone = isExecutable && !hasEngine;
-      const launchLabel =
-        launchAsStandalone ||
-        getEngineLaunchBehavior(mod.engineId)?.scope === "exclusive-mod"
-          ? t("modManager.launchMod")
-          : t("modManager.launchEngine");
-
-      card.innerHTML = modManagerTemplates.cardContent(
-        launchAsStandalone ? "standalone" : "engine",
-        mod.id,
-        engine?.id || mod.engineId || "",
-        engine?.version || mod.engineVersion || "",
-        launchLabel,
-        mod.name,
-        mod.hidden,
-        isUnassigned,
-        eyeIcon,
-        engineBadgeHtml,
-      );
-      card.classList.add("is-cover-loading");
-
-      loadModCardImage({
+      const context = createModManagerCard(
         mod,
-        card,
-        fetchDetails: gameBananaApi.getModDetails.bind(gameBananaApi),
-        applyDominantColor,
+        standaloneModIds,
+        installedEngines,
+      );
+      bindModManagerCardActions({
+        context,
+        mod,
+        allMods,
+        installedEngines,
+        gridContainer,
+        onModDeleted,
+        onSettingsSaved,
+        refreshLaunchButtons,
+        refreshChangeButtons,
       });
-
-      const deleteBtn = card.querySelector(".mod-manager-delete-btn");
-      const launchBtn = card.querySelector(".mod-manager-launch-btn");
-      launchBtn.addEventListener("click", async () => {
-        launchBtn.disabled = true;
-        try {
-          if (
-            FS.getModLaunchState(mod, engine, launchAsStandalone) ===
-            "unavailable"
-          ) {
-            const engineInfo = ENGINE_DETAILS[mod.engineId];
-            engineUpdateToast.missingEngine(
-              mod.engineId,
-              getEngineLabel(
-                mod.engineId,
-                engineInfo?.name || t("engineUpdates.assignedEngine"),
-              ),
-              engineInfo?.icon,
-            );
-            return;
-          }
-          await FS.toggleModLaunch(mod, engine, launchAsStandalone, () => {
-            refreshLaunchButtons();
-            refreshChangeButtons();
-          });
-        } catch (error) {
-          console.error(error);
-        } finally {
-          launchBtn.disabled = false;
-          refreshLaunchButtons();
-          refreshChangeButtons();
-        }
-      });
-
-      deleteBtn.addEventListener("click", async () => {
-        if (FS.isModLockedForChanges(mod, allMods)) return;
-        deleteBtn.disabled = true;
-        deleteBtn.innerHTML = modManagerTemplates.deleteSpinner();
-        try {
-          await FS.removeInstalledMod(mod.id);
-          onModDeleted(mod.id);
-          card.style.transform = "scale(0.8) translateY(10px)";
-          card.style.opacity = "0";
-          setTimeout(() => {
-            if (!card.isConnected || !gridContainer.isConnected) return;
-            card.remove();
-            if (
-              gridContainer.children.length === 0 &&
-              gridContainer.parentNode
-            ) {
-              gridContainer.outerHTML = modManagerTemplates.emptyState(
-                t("modManager.noModsInstalled"),
-              );
-            }
-          }, 300);
-          document.dispatchEvent(new CustomEvent("mods-updated"));
-        } catch (error) {
-          deleteBtn.disabled = false;
-          deleteBtn.innerHTML = modManagerTemplates.deleteIcon();
-        }
-      });
-
-      const settingsBtn = card.querySelector(".mod-manager-settings-btn");
-      settingsBtn.addEventListener("click", async () => {
-        if (settingsBtn.disabled) return;
-        settingsBtn.disabled = true;
-        settingsBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
-        try {
-          await modSettingsModal.open({
-            mod,
-            isExecutable,
-            installedEngines,
-            onSaved: onSettingsSaved,
-            readOnly: false,
-            fileLocked: FS.isModLockedForChanges(mod, allMods),
-          });
-        } finally {
-          settingsBtn.disabled = false;
-          settingsBtn.innerHTML = '<i class="fa-solid fa-gear"></i>';
-        }
-      });
-
-      const visBtn = card.querySelector(".mod-manager-vis-btn");
-      visBtn.addEventListener("click", async () => {
-        if (FS.isModLockedForChanges(mod, allMods)) return;
-        visBtn.disabled = true;
-        const isNowHidden = !mod.hidden;
-        mod.hidden = isNowHidden;
-        card.classList.toggle("is-hidden", isNowHidden);
-        launchBtn.disabled = isNowHidden;
-        card.style.opacity = isNowHidden ? "0.5" : "1";
-        visBtn.querySelector("i").className = isNowHidden
-          ? "fa-solid fa-eye-slash"
-          : "fa-solid fa-eye";
-        try {
-          await FS.setModHidden(mod.id, isNowHidden);
-          document.dispatchEvent(new CustomEvent("mods-updated"));
-        } catch (error) {
-          mod.hidden = !isNowHidden;
-          card.classList.toggle("is-hidden", mod.hidden);
-          launchBtn.disabled = mod.hidden;
-          card.style.opacity = mod.hidden ? "0.5" : "1";
-          visBtn.querySelector("i").className = mod.hidden
-            ? "fa-solid fa-eye-slash"
-            : "fa-solid fa-eye";
-        } finally {
-          visBtn.disabled = false;
-        }
-      });
-
+      const { card } = context;
       fragment.appendChild(card);
     }
 

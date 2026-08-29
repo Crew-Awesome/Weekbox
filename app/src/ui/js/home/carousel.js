@@ -22,6 +22,120 @@ function getFeaturedLabelKey(label) {
   );
 }
 
+function createCarouselSlideFallback() {
+  const slide = document.createElement("div");
+  slide.className = "carousel-slide";
+  const overlay = document.createElement("div");
+  overlay.className = "carousel-overlay";
+  const engineBadge = document.createElement("div");
+  engineBadge.className = "home-engine-badge";
+  const engineImg = document.createElement("img");
+  engineImg.alt = "";
+  const engineNameSpan = document.createElement("span");
+  engineNameSpan.className = "home-engine-name";
+  engineBadge.append(engineImg, engineNameSpan);
+  const content = document.createElement("div");
+  content.className = "carousel-content";
+  const badge = document.createElement("span");
+  badge.className = "badge";
+  const h1 = document.createElement("h1");
+  const p = document.createElement("p");
+  p.className = "carousel-author";
+  const btn = document.createElement("button");
+  btn.className = "action-btn download-mod-btn";
+  btn.type = "button";
+  const icon = document.createElement("i");
+  icon.className = "fa-solid fa-download";
+  const btnLabel = document.createElement("span");
+  btnLabel.className = "btn-label";
+  btnLabel.textContent = t("common.download");
+  btn.append(icon, btnLabel);
+  content.append(badge, h1, p, btn);
+  slide.append(overlay, engineBadge, content);
+  return slide;
+}
+
+function loadCarouselImage(slide, imageUrl) {
+  if (!imageUrl) return;
+  const preloader = new Image();
+  preloader.onload = () => {
+    slide.style.backgroundImage = `url('${imageUrl}')`;
+    preloader.onload = null;
+    preloader.onerror = null;
+  };
+  preloader.onerror = () => {
+    slide.style.backgroundImage = "url('assets/img/placeholder-mini.jpg')";
+    preloader.onload = null;
+    preloader.onerror = null;
+  };
+  preloader.src = imageUrl;
+}
+
+function populateCarouselEngine(slide, mod) {
+  const engineBadge = slide.querySelector(".home-engine-badge");
+  const engineIcon = engineBadge?.querySelector("img");
+  const engineNameEl = engineBadge?.querySelector(".home-engine-name");
+  const engineName = getEngineLabel(mod.engineId, mod.engine?.name);
+  const engineLabelKey = getEngineLabelKey(mod.engineId);
+  if (engineNameEl) {
+    engineNameEl.textContent = engineName;
+    if (engineLabelKey) engineNameEl.dataset.i18n = engineLabelKey;
+  }
+  if (engineBadge) engineBadge.title = engineName;
+  if (engineIcon && mod.engine?.icon)
+    engineIcon.src = `assets/icons/${mod.engine.icon}`;
+  if (engineBadge && !engineName && !mod.engine?.icon)
+    engineBadge.hidden = true;
+}
+
+function populateCarouselSlide(slide, mod) {
+  const badge = slide.querySelector(".badge");
+  const labelKey = getFeaturedLabelKey(mod.label);
+  if (badge) {
+    badge.textContent = labelKey ? t(labelKey) : mod.label || "";
+    if (labelKey) badge.dataset.i18n = labelKey;
+  }
+  const title = slide.querySelector("h1");
+  if (title) title.textContent = mod.title || "";
+  const author = slide.querySelector(".carousel-author");
+  if (author) {
+    author.textContent = t("home.byAuthor", { author: mod.author });
+    author.dataset.i18n = "home.byAuthor";
+    author.dataset.i18nVars = JSON.stringify({ author: mod.author });
+  }
+}
+
+function createCarouselSlide(mod, slideTpl) {
+  const slide = slideTpl
+    ? slideTpl.content.firstElementChild.cloneNode(true)
+    : createCarouselSlideFallback();
+
+  slide.style.backgroundImage = "url('assets/img/placeholder-mini.jpg')";
+  loadCarouselImage(slide, mod.image);
+  populateCarouselEngine(slide, mod);
+  populateCarouselSlide(slide, mod);
+  return slide;
+}
+
+function appendCarouselMod(
+  mod,
+  index,
+  slideTpl,
+  track,
+  dotsContainer,
+  goToSlide,
+) {
+  const slide = createCarouselSlide(mod, slideTpl);
+  slide.querySelector(".download-mod-btn")?.addEventListener("click", () => {
+    modModal.open(mod.id);
+  });
+  track.appendChild(slide);
+  const dot = document.createElement("div");
+  dot.className = "dot";
+  dot.addEventListener("click", () => goToSlide(index));
+  dotsContainer.appendChild(dot);
+}
+
 export const homeCarousel = {
   currentSlideIndex: 0,
   slideInterval: null,
@@ -61,101 +175,16 @@ export const homeCarousel = {
 
       const slideTpl = document.getElementById("tpl-home-carousel-slide");
 
-      mods.forEach((mod, index) => {
-        const engineName = getEngineLabel(mod.engineId, mod.engine?.name);
-        const engineLabelKey = getEngineLabelKey(mod.engineId);
-
-        let slide;
-        if (slideTpl) {
-          slide = slideTpl.content.firstElementChild.cloneNode(true);
-        } else {
-          slide = document.createElement("div");
-          slide.className = "carousel-slide";
-          const overlay = document.createElement("div");
-          overlay.className = "carousel-overlay";
-          const engineBadge = document.createElement("div");
-          engineBadge.className = "home-engine-badge";
-          const engineImg = document.createElement("img");
-          engineImg.alt = "";
-          const engineNameSpan = document.createElement("span");
-          engineNameSpan.className = "home-engine-name";
-          engineBadge.append(engineImg, engineNameSpan);
-          const content = document.createElement("div");
-          content.className = "carousel-content";
-          const badge = document.createElement("span");
-          badge.className = "badge";
-          const h1 = document.createElement("h1");
-          const p = document.createElement("p");
-          p.className = "carousel-author";
-          const btn = document.createElement("button");
-          btn.className = "action-btn download-mod-btn";
-          btn.type = "button";
-          const icon = document.createElement("i");
-          icon.className = "fa-solid fa-download";
-          const btnLabel = document.createElement("span");
-          btnLabel.className = "btn-label";
-          btnLabel.textContent = t("common.download");
-          btn.append(icon, btnLabel);
-          content.append(badge, h1, p, btn);
-          slide.append(overlay, engineBadge, content);
-        }
-
-        slide.style.backgroundImage = "url('assets/img/placeholder-mini.jpg')";
-        if (mod.image) {
-          const preloader = new Image();
-          preloader.onload = () => {
-            slide.style.backgroundImage = `url('${mod.image}')`;
-            preloader.onload = null;
-            preloader.onerror = null;
-          };
-          preloader.onerror = () => {
-            slide.style.backgroundImage = "url('assets/img/placeholder-mini.jpg')";
-            preloader.onload = null;
-            preloader.onerror = null;
-          };
-          preloader.src = mod.image;
-        }
-
-        const engineBadge = slide.querySelector(".home-engine-badge");
-        const engineIcon = engineBadge?.querySelector("img");
-        const engineNameEl = engineBadge?.querySelector(".home-engine-name");
-        if (engineNameEl) {
-          engineNameEl.textContent = engineName;
-          if (engineLabelKey) engineNameEl.dataset.i18n = engineLabelKey;
-        }
-        if (engineBadge) engineBadge.title = engineName;
-        if (engineIcon && mod.engine?.icon) {
-          engineIcon.src = `assets/icons/${mod.engine.icon}`;
-        }
-        if (engineBadge && !engineName && !mod.engine?.icon) {
-          engineBadge.hidden = true;
-        }
-        const badge = slide.querySelector(".badge");
-        const labelKey = getFeaturedLabelKey(mod.label);
-        if (badge) {
-          badge.textContent = labelKey ? t(labelKey) : mod.label || "";
-          if (labelKey) badge.dataset.i18n = labelKey;
-        }
-        const title = slide.querySelector("h1");
-        if (title) title.textContent = mod.title || "";
-        const author = slide.querySelector(".carousel-author");
-        if (author) {
-          author.textContent = t("home.byAuthor", { author: mod.author });
-          author.dataset.i18n = "home.byAuthor";
-          author.dataset.i18nVars = JSON.stringify({ author: mod.author });
-        }
-
-        const downloadBtn = slide.querySelector(".download-mod-btn");
-        downloadBtn?.addEventListener("click", () => {
-          modModal.open(mod.id);
-        });
-        track.appendChild(slide);
-
-        const dot = document.createElement("div");
-        dot.className = "dot";
-        dot.addEventListener("click", () => this.goToSlide(index));
-        dotsContainer.appendChild(dot);
-      });
+      mods.forEach((mod, index) =>
+        appendCarouselMod(
+          mod,
+          index,
+          slideTpl,
+          track,
+          dotsContainer,
+          (slideIndex) => this.goToSlide(slideIndex),
+        ),
+      );
 
       this.setupControls();
       this.updateDots();
@@ -204,9 +233,8 @@ export const homeCarousel = {
   },
 
   updateDots() {
-    const dots = document
-      .getElementById("carousel-dots")
-      ?.querySelectorAll(".dot") || [];
+    const dots =
+      document.getElementById("carousel-dots")?.querySelectorAll(".dot") || [];
     if (dots.length === 0) return;
     dots.forEach((d) => {
       d.classList.remove("active");

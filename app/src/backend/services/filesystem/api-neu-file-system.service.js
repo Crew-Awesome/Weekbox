@@ -6,6 +6,80 @@ function quoteShellArgument(value) {
   return `'${argument.replaceAll("'", "'\"'\"'")}'`;
 }
 
+function getRemovalCommand(path, isDirectory) {
+  if (window.NL_OS !== "Windows") {
+    return `rm -rf ${quoteShellArgument(path)}`;
+  }
+  const windowsPath = quoteShellArgument(path.replace(/\//g, "\\"));
+  return isDirectory
+    ? `cmd /c rmdir /S /Q ${windowsPath}`
+    : `cmd /c del /F /Q ${windowsPath}`;
+}
+
+async function removeWithCommand(path) {
+  const stats = await Neutralino.filesystem.getStats(path).catch(() => null);
+  const command = getRemovalCommand(path, Boolean(stats?.isDirectory));
+  await Neutralino.os.execCommand(command, { background: false });
+}
+
+async function waitForMoveSource(api, source, destination, maxAttempts) {
+  for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+    if (await api.exists(source)) return true;
+    if (await api.exists(destination)) return false;
+    if (attempt < maxAttempts) {
+      await new Promise((resolve) => setTimeout(resolve, attempt * 150));
+    }
+  }
+  return false;
+}
+
+async function moveWithRetries(source, destination, maxAttempts) {
+  let lastError = null;
+  for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+    try {
+      await Neutralino.filesystem.move(source, destination);
+      return null;
+    } catch (error) {
+      lastError = error;
+      if (attempt < maxAttempts) {
+        await new Promise((resolve) => setTimeout(resolve, attempt * 150));
+      }
+    }
+  }
+  return lastError;
+}
+
+async function copyMoveFallback(api, source, destination, lastError) {
+  let isDirectory = false;
+  try {
+    const stats = await Neutralino.filesystem.getStats(source);
+    isDirectory = Boolean(stats?.isDirectory || stats?.type === "DIRECTORY");
+  } catch {
+    try {
+      await Neutralino.filesystem.readDirectory(source);
+      isDirectory = true;
+    } catch {}
+  }
+
+  if (isDirectory) {
+    await api.ensureDir(destination);
+  } else {
+    const separator = destination.lastIndexOf("/");
+    if (separator > 0) await api.ensureDir(destination.slice(0, separator));
+  }
+  await Neutralino.filesystem.copy(source, destination, {
+    recursive: isDirectory,
+    overwrite: true,
+    skip: false,
+  });
+  if (await api.exists(destination)) {
+    await api.remove(source).catch(() => {});
+    return true;
+  }
+  if (lastError) throw lastError;
+  return false;
+}
+
 var APIneuFileSystem = {
   /**
    * Comprueba si un archivo o directorio existe.
@@ -140,16 +214,7 @@ var APIneuFileSystem = {
     for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
       if (!(await this.exists(normalizedPath))) return;
       try {
-        const isWin = window.NL_OS === "Windows";
-        const stats = await Neutralino.filesystem
-          .getStats(normalizedPath)
-          .catch(() => null);
-        const command = isWin
-          ? stats?.isDirectory
-            ? `cmd /c rmdir /S /Q ${quoteShellArgument(normalizedPath.replace(/\//g, "\\"))}`
-            : `cmd /c del /F /Q ${quoteShellArgument(normalizedPath.replace(/\//g, "\\"))}`
-          : `rm -rf ${quoteShellArgument(normalizedPath)}`;
-        await Neutralino.os.execCommand(command, { background: false });
+        await removeWithCommand(normalizedPath);
         if (!(await this.exists(normalizedPath))) return;
       } catch (cmdError) {
         console.warn("Recursive removal fallback failed:", cmdError);
@@ -191,82 +256,44 @@ var APIneuFileSystem = {
 
     const maxAttempts =
       options.maxAttempts || (window.NL_OS === "Windows" ? 8 : 5);
-    let sourceExists = false;
     // Neutralino can expose extracted paths late; bounded polling avoids a move race.
-    for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
-      if (await this.exists(normalizedSource)) {
-        sourceExists = true;
-        break;
-      }
+    if (
+      !(await waitForMoveSource(
+        this,
+        normalizedSource,
+        normalizedDest,
+        maxAttempts,
+      ))
+    ) {
       if (await this.exists(normalizedDest)) return;
-      if (attempt < maxAttempts) {
-        await new Promise((resolve) => setTimeout(resolve, attempt * 150));
-      }
-    }
-    if (!sourceExists) {
       throw new Error(
         `WeekBox could not move ${normalizedSource} because it does not exist.`,
       );
     }
 
-    let lastError = null;
-    for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
-      try {
-        await Neutralino.filesystem.move(normalizedSource, normalizedDest);
-        return;
-      } catch (error) {
-        lastError = error;
-        if (
-          !(await this.exists(normalizedSource)) &&
-          (await this.exists(normalizedDest))
-        ) {
-          return;
-        }
-        if (attempt < maxAttempts) {
-          await new Promise((resolve) => setTimeout(resolve, attempt * 150));
-        }
-      }
+    const lastError = await moveWithRetries(
+      normalizedSource,
+      normalizedDest,
+      maxAttempts,
+    );
+    if (!lastError) return;
+    if (
+      !(await this.exists(normalizedSource)) &&
+      (await this.exists(normalizedDest))
+    ) {
+      return;
     }
 
     try {
-      let isDirectory = false;
-      try {
-        const stats = await Neutralino.filesystem.getStats(normalizedSource);
-        isDirectory = Boolean(
-          stats?.isDirectory || stats?.type === "DIRECTORY",
-        );
-      } catch {
-        try {
-          await Neutralino.filesystem.readDirectory(normalizedSource);
-          isDirectory = true;
-        } catch {
-          isDirectory = false;
-        }
-      }
-
-      if (isDirectory) {
-        await this.ensureDir(normalizedDest);
-        await Neutralino.filesystem.copy(normalizedSource, normalizedDest, {
-          recursive: true,
-          overwrite: true,
-          skip: false,
-        });
-      } else {
-        const separator = normalizedDest.lastIndexOf("/");
-        if (separator > 0) {
-          await this.ensureDir(normalizedDest.slice(0, separator));
-        }
-        await Neutralino.filesystem.copy(normalizedSource, normalizedDest, {
-          recursive: false,
-          overwrite: true,
-          skip: false,
-        });
-      }
-
-      if (await this.exists(normalizedDest)) {
-        await this.remove(normalizedSource).catch(() => {});
+      if (
+        await copyMoveFallback(
+          this,
+          normalizedSource,
+          normalizedDest,
+          lastError,
+        )
+      )
         return;
-      }
     } catch (fallbackError) {
       throw lastError || fallbackError;
     }

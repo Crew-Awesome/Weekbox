@@ -7,6 +7,56 @@ function isStartupActive() {
   return Boolean(el && !el.classList.contains("startup-loading--complete"));
 }
 
+function bindToastEvents(system, toast, id, onSelect, onCancel) {
+  toast
+    .querySelector(".toast-system-cancel")
+    ?.addEventListener("click", (event) => {
+      event.stopPropagation();
+      system.clearTimer(id);
+      onCancel?.(id);
+    });
+  toast
+    .querySelector(".toast-system-collapse")
+    ?.addEventListener("click", (event) => {
+      event.stopPropagation();
+      const compact = toast.classList.toggle("compact");
+      if (compact) {
+        toast.setAttribute("aria-label", t("toast.showFullDownload"));
+        toast.tabIndex = 0;
+      } else {
+        toast.removeAttribute("aria-label");
+        toast.removeAttribute("tabindex");
+      }
+    });
+  toast.addEventListener("click", () => {
+    if (!toast.classList.contains("compact")) return;
+    toast.classList.remove("compact");
+    toast.removeAttribute("aria-label");
+    toast.removeAttribute("tabindex");
+  });
+  toast.addEventListener("keydown", (event) => {
+    if (
+      toast.classList.contains("compact") &&
+      (event.key === "Enter" || event.key === " ")
+    ) {
+      event.preventDefault();
+      toast.click();
+    }
+  });
+  if (!onSelect) return;
+  const select = () => {
+    system.clearTimer(id);
+    onSelect();
+  };
+  toast.addEventListener("click", select, { once: true });
+  toast.addEventListener("keydown", (event) => {
+    if (event.key === "Enter" || event.key === " ") {
+      event.preventDefault();
+      select();
+    }
+  });
+}
+
 export const toastSystem = {
   toasts: new Map(),
   pendingToasts: new Map(),
@@ -122,55 +172,7 @@ export const toastSystem = {
     if (entry.percent) entry.percent.hidden = indeterminate;
     this.toasts.set(id, entry);
     this.ensureContainer().appendChild(toast);
-
-    toast
-      .querySelector(".toast-system-cancel")
-      ?.addEventListener("click", (event) => {
-        event.stopPropagation();
-        this.clearTimer(id);
-        onCancel?.(id);
-      });
-    toast
-      .querySelector(".toast-system-collapse")
-      ?.addEventListener("click", (event) => {
-        event.stopPropagation();
-        const compact = toast.classList.toggle("compact");
-        if (compact) {
-          toast.setAttribute("aria-label", t("toast.showFullDownload"));
-          toast.tabIndex = 0;
-        } else {
-          toast.removeAttribute("aria-label");
-          toast.removeAttribute("tabindex");
-        }
-      });
-    toast.addEventListener("click", () => {
-      if (!toast.classList.contains("compact")) return;
-      toast.classList.remove("compact");
-      toast.removeAttribute("aria-label");
-      toast.removeAttribute("tabindex");
-    });
-    toast.addEventListener("keydown", (event) => {
-      if (
-        toast.classList.contains("compact") &&
-        (event.key === "Enter" || event.key === " ")
-      ) {
-        event.preventDefault();
-        toast.click();
-      }
-    });
-    if (onSelect) {
-      const select = () => {
-        this.clearTimer(id);
-        onSelect();
-      };
-      toast.addEventListener("click", select, { once: true });
-      toast.addEventListener("keydown", (event) => {
-        if (event.key === "Enter" || event.key === " ") {
-          event.preventDefault();
-          select();
-        }
-      });
-    }
+    bindToastEvents(this, toast, id, onSelect, onCancel);
 
     if (typeof duration === "number" && duration > 0) {
       this.setTimer(id, () => this.hide(id), duration);
@@ -185,12 +187,14 @@ export const toastSystem = {
       const pending = this.pendingToasts.get(id);
       if (message !== undefined) pending.options.message = message;
       if (progress !== undefined) pending.options.progress = progress;
-      if (indeterminate !== undefined) pending.options.indeterminate = indeterminate;
+      if (indeterminate !== undefined)
+        pending.options.indeterminate = indeterminate;
       return;
     }
     const entry = this.toasts.get(id);
     if (!entry) return;
-    if (message !== undefined && entry.message) entry.message.textContent = message;
+    if (message !== undefined && entry.message)
+      entry.message.textContent = message;
     if (indeterminate !== undefined) {
       entry.toast.classList.toggle("is-indeterminate", indeterminate);
       if (entry.percent) entry.percent.hidden = indeterminate;
@@ -218,7 +222,8 @@ export const toastSystem = {
     entry.toast.classList.remove(...TOAST_STATES);
     if (state) entry.toast.classList.add(state);
     if (badgeHtml && entry.badge) entry.badge.innerHTML = badgeHtml;
-    if (showProgress !== undefined && entry.track) entry.track.hidden = !showProgress;
+    if (showProgress !== undefined && entry.track)
+      entry.track.hidden = !showProgress;
   },
 
   hide(id) {

@@ -20,6 +20,98 @@ function usesAddonsDirectory(mod, engineId) {
   );
 }
 
+async function removeEngineModLinkAttempt({
+  api,
+  isEngineRunning,
+  mod,
+  engineId,
+  version,
+  linkPath,
+  isCopiedLink,
+}) {
+  if (isEngineRunning?.(engineId, version)) {
+    throw new Error(
+      `Close the ${engineId} engine before removing ${mod.name}.`,
+    );
+  }
+  if (isCopiedLink) {
+    await api.remove(linkPath).catch(async () => {
+      if (window.NL_OS !== "Windows")
+        throw new Error("Could not remove copied mod link");
+      await Neutralino.os.execCommand(
+        `rmdir /S /Q "${linkPath.replace(/\//g, "\\")}"`,
+        { background: false },
+      );
+    });
+  } else {
+    const command =
+      window.NL_OS === "Windows"
+        ? `cmd /c rmdir /S /Q "${linkPath.replace(/\//g, "\\")}"`
+        : window.NL_OS === "Darwin"
+          ? `rm -f "${linkPath}"`
+          : `rm -rf "${linkPath}"`;
+    const result = await Neutralino.os.execCommand(command, {
+      background: false,
+    });
+    if (result.exitCode !== 0)
+      throw new Error(
+        result.stdErr || result.stdOut || "The directory is not empty",
+      );
+  }
+  if (await api.exists(linkPath)) throw new Error("The directory is not empty");
+}
+
+async function removeEngineModLink({
+  api,
+  isEngineRunning,
+  mod,
+  engineId,
+  version,
+  linkPath,
+}) {
+  const linkCheck =
+    window.NL_OS === "Windows"
+      ? `cmd /c fsutil reparsepoint query "${linkPath.replace(/\//g, "\\")}"`
+      : `test -L "${linkPath}"`;
+  const isLink = await Neutralino.os
+    .execCommand(linkCheck, { background: false })
+    .then((result) => result.exitCode === 0)
+    .catch(() => false);
+  const isCopiedLink = await api.exists(`${linkPath}/.weekbox-copy-link`);
+  if (!isLink && !isCopiedLink) return false;
+
+  let lastError;
+  for (let attempt = 1; attempt <= 3; attempt += 1) {
+    try {
+      await removeEngineModLinkAttempt({
+        api,
+        isEngineRunning,
+        mod,
+        engineId,
+        version,
+        linkPath,
+        isCopiedLink,
+      });
+      return true;
+    } catch (error) {
+      lastError = error;
+      if (attempt < 3)
+        await new Promise((resolve) => setTimeout(resolve, attempt * 350));
+    }
+  }
+  if (await api.exists(linkPath)) {
+    const detail = String(lastError?.message || lastError || "")
+      .replace(/[\0\r]+/g, " ")
+      .trim();
+    throw new Error(
+      detail
+        ? `Could not remove mod link because a file is in use: ${detail}`
+        : `Could not remove mod link for ${mod.name}. Close the engine and try again.`,
+    );
+  }
+  return true;
+}
+
 var _ModInjectionService = class _ModInjectionService {
   constructor({
     api,
@@ -217,73 +309,17 @@ var _ModInjectionService = class _ModInjectionService {
     let removed = false;
     for (const linkPath of paths) {
       if (!(await this.api.exists(linkPath))) continue;
-      const linkCheck =
-        window.NL_OS === "Windows"
-          ? `cmd /c fsutil reparsepoint query "${linkPath.replace(/\//g, "\\")}"`
-          : `test -L "${linkPath}"`;
-      const isLink = await Neutralino.os
-        .execCommand(linkCheck, {
-          background: false,
-        })
-        .then((result) => result.exitCode === 0)
-        .catch(() => false);
-      const isCopiedLink = await this.api.exists(
-        `${linkPath}/.weekbox-copy-link`,
-      );
       // Directly downloaded engine mods are normal folders. They do not belong
       // to this WeekBox library entry, so never delete them as if they were links.
-      if (!isLink && !isCopiedLink) continue;
-      let lastError;
-      for (let attempt = 1; attempt <= 3; attempt += 1) {
-        try {
-          if (this.isEngineRunning?.(engineId, version)) {
-            throw new Error(
-              `Close the ${engineId} engine before removing ${mod.name}.`,
-            );
-          }
-          if (isCopiedLink) {
-            await this.api.remove(linkPath).catch(async () => {
-              if (window.NL_OS !== "Windows")
-                throw new Error("Could not remove copied mod link");
-              await Neutralino.os.execCommand(
-                `rmdir /S /Q "${linkPath.replace(/\//g, "\\")}"`,
-                { background: false },
-              );
-            });
-          } else {
-            const command =
-              window.NL_OS === "Windows"
-                ? `cmd /c rmdir /S /Q "${linkPath.replace(/\//g, "\\")}"`
-                : window.NL_OS === "Darwin"
-                  ? `rm -f "${linkPath}"`
-                  : `rm -rf "${linkPath}"`;
-            const result = await Neutralino.os.execCommand(command, {
-              background: false,
-            });
-            if (result.exitCode !== 0)
-              throw new Error(
-                result.stdErr || result.stdOut || "The directory is not empty",
-              );
-          }
-          if (!(await this.api.exists(linkPath))) break;
-          throw new Error("The directory is not empty");
-        } catch (error) {
-          lastError = error;
-          if (attempt < 3)
-            await new Promise((resolve) => setTimeout(resolve, attempt * 350));
-        }
-      }
-      if (await this.api.exists(linkPath)) {
-        const detail = String(lastError?.message || lastError || "")
-          .replace(/[\0\r]+/g, " ")
-          .trim();
-        throw new Error(
-          detail
-            ? `Could not remove mod link because a file is in use: ${detail}`
-            : `Could not remove mod link for ${mod.name}. Close the engine and try again.`,
-        );
-      }
-      removed = true;
+      removed =
+        (await removeEngineModLink({
+          api: this.api,
+          isEngineRunning: (...args) => this.isEngineRunning?.(...args),
+          mod,
+          engineId,
+          version,
+          linkPath,
+        })) || removed;
     }
     return removed;
   }
