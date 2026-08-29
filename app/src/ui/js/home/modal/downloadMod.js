@@ -302,6 +302,8 @@ export const downloadMod = {
 
       if (this.activeTasks.get(modId)?.cancelled) throw new Error("Cancelled");
 
+      const MAX_NESTED_ARCHIVE_DEPTH = 10;
+      let nestedArchiveDepth = 0;
       let hasNestedArchive = true;
       while (hasNestedArchive) {
         hasNestedArchive = false;
@@ -322,6 +324,12 @@ export const downloadMod = {
             entryName.endsWith(".gz")
           ) {
             hasNestedArchive = true;
+            nestedArchiveDepth += 1;
+            if (nestedArchiveDepth > MAX_NESTED_ARCHIVE_DEPTH) {
+              throw new Error(
+                "WeekBox found too many nested archives. The download may be invalid.",
+              );
+            }
             const innerZipPath = `${targetModFolder}/${realFiles[0].entry}`;
             toastDownloadMod.update(modId, 98, t("downloads.extractingNested"));
 

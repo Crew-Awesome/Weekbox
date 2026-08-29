@@ -107,6 +107,7 @@ function listenForProcess(process, getTask, onEvent) {
 
 var MIN_SEGMENTED_DOWNLOAD_BYTES = 8 * 1024 * 1024;
 var MAX_DOWNLOAD_SEGMENTS = 4;
+var MAX_DOWNLOAD_ATTEMPTS = 4;
 var archiveFinalizations = new Map();
 var bundledArchiveToolsPromise = null;
 function quoteCommandArgument(value) {
@@ -335,8 +336,12 @@ function isTransientDownloadError(error) {
 }
 
 function isRetryableArchiveValidationError(error) {
-  if (error?.archiveDiagnostics?.retryable === true) return true;
-  if (error?.downloadDiagnostics?.retryable === true) return true;
+  if (typeof error?.archiveDiagnostics?.retryable === "boolean") {
+    return error.archiveDiagnostics.retryable;
+  }
+  if (typeof error?.downloadDiagnostics?.retryable === "boolean") {
+    return error.downloadDiagnostics.retryable;
+  }
   return /downloaded archive (?:is empty|was incomplete)|web page instead of the archive/i.test(
     String(error?.message || error),
   );
@@ -383,9 +388,8 @@ async function retryTransientDownload(
   // CDN mirrors can briefly return 503/504 while a replacement mirror is
   // becoming available. Give that recovery enough time instead of retrying
   // three times within a second and immediately surfacing a failure.
-  const attempts = 4;
   let lastError;
-  for (let attempt = 1; attempt <= attempts; attempt += 1) {
+  for (let attempt = 1; attempt <= MAX_DOWNLOAD_ATTEMPTS; attempt += 1) {
     if (getTask?.()?.cancelled) throw new Error("Cancelled");
     try {
       return await operation();
@@ -393,10 +397,10 @@ async function retryTransientDownload(
       lastError = error;
       if (error?.downloadDiagnostics)
         error.downloadDiagnostics.retryCount = attempt - 1;
-      if (!shouldRetry(error) || attempt === attempts) throw error;
+      if (!shouldRetry(error) || attempt === MAX_DOWNLOAD_ATTEMPTS) throw error;
       await cleanup?.();
       onProgress?.(
-        `Download server is busy. Retrying (${attempt + 1}/${attempts})...`,
+        `Download server is busy. Retrying (${attempt + 1}/${MAX_DOWNLOAD_ATTEMPTS})...`,
         2,
       );
       await waitForRetry(1000 * 2 ** (attempt - 1), getTask);
@@ -465,7 +469,7 @@ async function verifyArchiveReadable(archivePath, archiveFormat) {
       error.archiveDiagnostics = {
         stage: "archive-test",
         format: archiveFormat,
-        retryable: true,
+        retryable: false,
         output: getUsefulProcessOutput(processOutput),
       };
       reject(error);
@@ -994,17 +998,11 @@ async function downloadGoogleDriveFile({
   getTask,
   onProgress,
 }) {
-  await retryTransientDownload(
-    () =>
-      runCurlDownload(
-        `curl --globoff -# --fail --show-error ${GDRIVE_CURL_HEADERS} -b ${quoteCommandArgument(cookiePath)} -c ${quoteCommandArgument(cookiePath)} -L ${quoteCommandArgument(url)} -o ${quoteCommandArgument(outPath)}`,
-        getTask,
-        onProgress,
-        createFileProgressReader(outPath, totalBytes),
-      ),
+  await runCurlDownload(
+    `curl --globoff -# --fail --show-error ${GDRIVE_CURL_HEADERS} -b ${quoteCommandArgument(cookiePath)} -c ${quoteCommandArgument(cookiePath)} -L ${quoteCommandArgument(url)} -o ${quoteCommandArgument(outPath)}`,
     getTask,
     onProgress,
-    () => Neutralino.filesystem.remove(outPath).catch(() => {}),
+    createFileProgressReader(outPath, totalBytes),
   );
 }
 
@@ -1044,16 +1042,10 @@ async function downloadGoogleDriveArchive({
     const initialUrl = `https://drive.usercontent.google.com/download?id=${encodeURIComponent(fileId)}&export=download`;
 
     // Request download with cookie jar and browser headers
-    await retryTransientDownload(
-      () =>
-        runCurlDownload(
-          `curl --globoff -s -L ${GDRIVE_CURL_HEADERS} -c ${quoteCommandArgument(cookiePath)} -b ${quoteCommandArgument(cookiePath)} ${quoteCommandArgument(initialUrl)} -o ${quoteCommandArgument(probePath)}`,
-          getTask,
-          () => {},
-        ),
+    await runCurlDownload(
+      `curl --globoff -s -L ${GDRIVE_CURL_HEADERS} -c ${quoteCommandArgument(cookiePath)} -b ${quoteCommandArgument(cookiePath)} ${quoteCommandArgument(initialUrl)} -o ${quoteCommandArgument(probePath)}`,
       getTask,
-      onProgress,
-      () => Neutralino.filesystem.remove(probePath).catch(() => {}),
+      () => {},
     );
 
     let isHtml = false;
@@ -1295,27 +1287,16 @@ async function downloadSingleArchive({
     }
   }
 
-  const isNightlyLink = /^https?:\/\/nightly\.link\//i.test(String(url));
-
-  await retryTransientDownload(
-    () =>
-      runCurlDownload(
-        // Keep curl's progress bar enabled. `runCurlDownload` consumes its
-        // percentage updates; using -s here suppressed them and left every
-        // single-connection transfer looking like it was stuck at 2%.
-        // Use a low-speed timeout instead of an absolute transfer limit so a
-        // legitimate large or slow download is not aborted after two minutes.
-        `curl --globoff -# -L --fail --show-error -A ${quoteCommandArgument(BROWSER_USER_AGENT)} -H "Accept-Language: en-US,en;q=0.9" --connect-timeout 15 --speed-time 60 --speed-limit 1024 ${quoteCommandArgument(url)} -o ${quoteCommandArgument(outPath)}`,
-        getTask,
-        onProgress,
-        createFileProgressReader(outPath, totalBytes),
-      ),
+  // Keep curl's progress bar enabled. `runCurlDownload` consumes its
+  // percentage updates; using -s here suppressed them and left every
+  // single-connection transfer looking like it was stuck at 2%.
+  // Use a low-speed timeout instead of an absolute transfer limit so a
+  // legitimate large or slow download is not aborted after two minutes.
+  await runCurlDownload(
+    `curl --globoff -# -L --fail --show-error -A ${quoteCommandArgument(BROWSER_USER_AGENT)} -H "Accept-Language: en-US,en;q=0.9" --connect-timeout 15 --speed-time 60 --speed-limit 1024 ${quoteCommandArgument(url)} -o ${quoteCommandArgument(outPath)}`,
     getTask,
     onProgress,
-    () => Neutralino.filesystem.remove(outPath).catch(() => {}),
-    (error) =>
-      isTransientDownloadError(error) ||
-      (isNightlyLink && Number(error?.downloadDiagnostics?.httpStatus) === 404),
+    createFileProgressReader(outPath, totalBytes),
   );
 }
 
@@ -1339,17 +1320,11 @@ async function downloadSegmentedArchive({
       2,
     );
     const downloadPart = (part) =>
-      retryTransientDownload(
-        () =>
-          runCurlDownload(
-            `curl --globoff -# --fail --show-error ${curlOptions} -L --range ${part.start}-${part.end} -o ${quoteCommandArgument(part.path)} ${quoteCommandArgument(url)}`,
-            getTask,
-            onProgress,
-            getProgress,
-          ),
+      runCurlDownload(
+        `curl --globoff -# --fail --show-error ${curlOptions} -L --range ${part.start}-${part.end} -o ${quoteCommandArgument(part.path)} ${quoteCommandArgument(url)}`,
         getTask,
         onProgress,
-        () => removeParts(parts),
+        getProgress,
       );
     if (parallel) {
       const requests = parts
@@ -1358,17 +1333,11 @@ async function downloadSegmentedArchive({
             `-L --range ${part.start}-${part.end} -o ${quoteCommandArgument(part.path)} ${quoteCommandArgument(url)}`,
         )
         .join(" --next ");
-      await retryTransientDownload(
-        () =>
-          runCurlDownload(
-            `curl --globoff -# --fail --show-error --parallel --parallel-max ${parts.length} ${curlOptions} ${requests}`,
-            getTask,
-            onProgress,
-            getProgress,
-          ),
+      await runCurlDownload(
+        `curl --globoff -# --fail --show-error --parallel --parallel-max ${parts.length} ${curlOptions} ${requests}`,
         getTask,
         onProgress,
-        () => removeParts(parts),
+        getProgress,
       );
     } else {
       for (const part of parts) await downloadPart(part);
@@ -1541,6 +1510,7 @@ async function downloadArchive({
       Neutralino.os.execCommand(...args),
     );
   }
+  const isNightlyLink = /^https?:\/\/nightly\.link\//i.test(String(url));
 
   const isGoogleDriveUrl =
     url.includes("drive.google.com") ||
@@ -1669,6 +1639,8 @@ async function downloadArchive({
       cleanupDownloadAttempt,
       (error) =>
         isTransientDownloadError(error) ||
+        (isNightlyLink &&
+          Number(error?.downloadDiagnostics?.httpStatus) === 404) ||
         isRetryableArchiveValidationError(error),
     );
   } catch (error) {
@@ -1703,9 +1675,7 @@ async function verifyDownloadedArchiveContent(
   if (htmlError) {
     htmlError.archiveDiagnostics = {
       stage: "html-response",
-      retryable: !/quota|does not exist|requires permissions|sign in/i.test(
-        htmlError.message,
-      ),
+      retryable: false,
     };
     throw htmlError;
   }
@@ -1715,7 +1685,7 @@ async function verifyDownloadedArchiveContent(
     );
     error.archiveDiagnostics = {
       stage: "html-response",
-      retryable: true,
+      retryable: false,
     };
     throw error;
   }
