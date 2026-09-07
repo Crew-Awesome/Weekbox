@@ -10,11 +10,17 @@ import { httpCache } from './http-cache.mjs';
  * @param {number} timeoutMs - Milisegundos antes de abortar.
  * @returns {Promise<Response>} 
  */
-const fetchWithTimeout = async (url, options = {}, timeoutMs = 30000, retries = 1) => {
+const fetchWithTimeout = async (url, options = {}, timeoutMs = 30000, retries = 1, externalSignal = null) => {
   let lastError;
   for (let i = 0; i <= retries; i++) {
     const controller = new AbortController();
     const id = setTimeout(() => controller.abort(), timeoutMs);
+    
+    if (externalSignal) {
+      if (externalSignal.aborted) controller.abort();
+      externalSignal.addEventListener('abort', () => controller.abort(), { once: true });
+    }
+
     try {
       const response = await fetch(url, { ...options, signal: controller.signal });
       clearTimeout(id);
@@ -45,7 +51,7 @@ export const httpApi = {
    * @param {{url: string, options?: RequestInit}} params
    * @returns {Promise<any>}
    */
-  async fetchJson({ url, options = {} }) {
+  async fetchJson({ url, options = {}, signal }) {
     const isGet = !options.method || options.method.toUpperCase() === 'GET';
     
     // Si es GET, revisamos la caché primero
@@ -54,7 +60,9 @@ export const httpApi = {
       if (cached) return cached;
     }
 
-    const res = await fetchWithTimeout(url, options);
+    const timeoutMs = options.timeoutMs || 30000;
+    const retries = options.retries !== undefined ? options.retries : 1;
+    const res = await fetchWithTimeout(url, options, timeoutMs, retries, signal);
     if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
     const data = await res.json();
     
@@ -67,38 +75,49 @@ export const httpApi = {
 
   /**
    * Obtiene texto crudo de una URL.
-   * @param {{url: string, options?: RequestInit}} params
+   * @param {{url: string, options?: RequestInit, signal?: AbortSignal}} params
    * @returns {Promise<string>}
    */
-  async fetchText({ url, options = {} }) {
-    const res = await fetchWithTimeout(url, options);
+  async fetchText({ url, options = {}, signal }) {
+    const res = await fetchWithTimeout(url, options, 30000, 1, signal);
     if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
     return await res.text();
   },
 
   /**
    * Descarga un archivo y lo guarda directamente en disco usando Streams, emitiendo progreso opcionalmente.
-   * @param {{url: string, destPath: string, options?: RequestInit, onProgress?: (downloaded: number, total: number) => void}} params
+   * @param {{url: string, destPath: string, options?: RequestInit, signal?: AbortSignal, onProgress?: (downloaded: number, total: number) => void}} params
    * @returns {Promise<void>}
    */
-  async downloadToFile({ url, destPath, options = {}, onProgress }) {
+  async downloadToFile({ url, destPath, options = {}, signal, onProgress }) {
     // 5 min timeout para descargas grandes
-    const res = await fetchWithTimeout(url, options, 300000);
+    const res = await fetchWithTimeout(url, options, 300000, 1, signal);
     if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
     
     const total = Number(res.headers.get('content-length')) || 0;
-    let downloaded = 0;
     
-    // Stream intermedio para reportar progreso
-    const progressStream = new Transform({
-      transform(chunk, encoding, callback) {
-        downloaded += chunk.length;
-        if (onProgress) onProgress(downloaded, total);
-        callback(null, chunk);
+    const nodeStream = Readable.fromWeb(res.body);
+    const writeStream = fs.createWriteStream(destPath);
+
+    let downloaded = 0;
+    let lastReportTime = 0;
+
+    nodeStream.on('data', (chunk) => {
+      downloaded += chunk.length;
+      const now = Date.now();
+      if (onProgress && now - lastReportTime > 250) { // throttle to max 4 times per second
+        onProgress(downloaded, total);
+        lastReportTime = now;
       }
     });
-
-    const nodeStream = Readable.fromWeb(res.body);
-    await pipeline(nodeStream, progressStream, fs.createWriteStream(destPath));
+    
+    try {
+      await pipeline(nodeStream, writeStream);
+      if (onProgress) onProgress(downloaded, downloaded); // ensure we report 100% even if total was 0
+    } catch (error) {
+      // Si la descarga falla o es cancelada, borramos el archivo parcial
+      await fs.promises.rm(destPath, { force: true }).catch(() => {});
+      throw error;
+    }
   }
 };

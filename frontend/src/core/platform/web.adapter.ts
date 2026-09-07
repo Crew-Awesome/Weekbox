@@ -25,17 +25,18 @@ export class WebAdapter implements IPlatformBridge {
 
   async call<Operation extends BackendOperation>(
     operation: Operation,
-    data?: any
+    data?: any,
+    signal?: AbortSignal
   ): Promise<BackendResult<Operation>> {
     // Intercept HTTP operations and perform them natively in the browser via fetch
     if (operation === "http.fetchJson") {
-      const response = await fetch(data.url, data.options);
+      const response = await fetch(data.url, { ...data.options, signal });
       if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
       return (await response.json()) as BackendResult<Operation>;
     }
     
     if (operation === "http.fetchText") {
-      const response = await fetch(data.url, data.options);
+      const response = await fetch(data.url, { ...data.options, signal });
       if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
       return (await response.text()) as BackendResult<Operation>;
     }
@@ -61,5 +62,31 @@ export class WebAdapter implements IPlatformBridge {
     if (listeners) {
       listeners.forEach((callback) => callback(data));
     }
+  }
+
+  async downloadMod(url: string, modId?: string, modName?: string, onProgress?: (progress: number) => void, signal?: AbortSignal): Promise<void> {
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `mod_${modId || Date.now()}_${modName || "unknown"}.zip`; // Basic fallback for web
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+  }
+
+  async openUrl(url: string): Promise<void> {
+    window.open(url, "_blank");
+  }
+
+  async registerInstalledMod(modData: any): Promise<void> {
+    // For web, we might use IndexedDB later. For now, do nothing.
+    console.log("Registered installed mod (Web):", modData);
+  }
+
+  async isModInstalled(modId: string): Promise<boolean> {
+    return false;
+  }
+
+  async uninstallMod(modId: string): Promise<void> {
+    console.log("Uninstall mod (Web):", modId);
   }
 }

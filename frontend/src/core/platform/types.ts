@@ -50,6 +50,7 @@ declare global {
           stdOut: string;
           stdErr: string;
         }>;
+        open: (url: string) => Promise<void>;
       };
     };
     NL_ARGS?: string[];
@@ -102,5 +103,21 @@ export interface IPlatformBridge {
   call<Operation extends BackendOperation>(
     operation: Operation,
     params?: unknown,
+    signal?: AbortSignal
   ): Promise<BackendResult<Operation>>;
+
+  /** Downloads a mod archive. Implementations vary by platform. */
+  downloadMod(url: string, modId?: string, modName?: string, onProgress?: (progress: number) => void, signal?: AbortSignal): Promise<void>;
+
+  /** Opens a URL in the default web browser. */
+  openUrl(url: string): Promise<void>;
+
+  /** Registers a mod as installed in the data directory. */
+  registerInstalledMod(modData: any): Promise<void>;
+
+  /** Checks if a mod is installed by reading the registry. */
+  isModInstalled(modId: string): Promise<boolean>;
+
+  /** Uninstalls a mod (removes from registry and deletes files). */
+  uninstallMod(modId: string): Promise<void>;
 }

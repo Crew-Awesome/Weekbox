@@ -46,9 +46,9 @@ const operations = {
   "fs.getStats": async ({ path }) => APINodeFileSystem.getStats(path),
   "fs.createDirectory": async ({ path }) => APINodeFileSystem.createDirectory(path),
   "fs.extractArchive": async ({ archivePath, destFolder }) => APINodeFileSystem.extractArchive(archivePath, destFolder),
-  "http.fetchJson": async ({ url, options }) => APINodeHttp.fetchJson({ url, options }),
-  "http.fetchText": async ({ url, options }) => APINodeHttp.fetchText({ url, options }),
-  "http.downloadToFile": async ({ url, destPath, options }, onProgress) => APINodeHttp.downloadToFile({ url, destPath, options, onProgress }),
+  "http.fetchJson": async ({ url, options, signal }) => APINodeHttp.fetchJson({ url, options, signal }),
+  "http.fetchText": async ({ url, options, signal }) => APINodeHttp.fetchText({ url, options, signal }),
+  "http.downloadToFile": async ({ url, destPath, progressId, options, signal }, onProgress) => APINodeHttp.downloadToFile({ url, destPath, options, signal, onProgress: (downloaded, total) => onProgress({ downloaded, total, progressId }) }),
   
   // Window API
   "window.minimize": async () => APINodeWindow.minimize(callApi),

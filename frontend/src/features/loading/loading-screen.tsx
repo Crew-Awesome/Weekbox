@@ -67,7 +67,10 @@ export const LoadingScreen: React.FC<LoadingScreenProps> = ({
         setProgress(currentProgress);
 
         try {
-          await task.action();
+          await Promise.race([
+            task.action(),
+            new Promise((_, reject) => setTimeout(() => reject(new Error(`Task ${task.name} timed out`)), 15000))
+          ]);
         } catch (error) {
           console.error(`Error executing startup task: ${task.name}`, error);
         }

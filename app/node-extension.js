@@ -26,7 +26,7 @@ class NodeExtension {
         */
     window.Neutralino.extensions.dispatch("extNode", "runNode", data);
   }
-  call(operation, params, timeoutMs = 45000) {
+  call(operation, params, timeoutMs = 300000, signal) {
     const requestId =
       globalThis.crypto?.randomUUID?.() || `${Date.now()}-${Math.random()}`;
     return new Promise((resolve, reject) => {
@@ -34,6 +34,21 @@ class NodeExtension {
         this.pending.delete(requestId);
         reject(new Error(`Backend request timed out: ${operation}`));
       }, timeoutMs);
+
+      const abortHandler = () => {
+        this.run("backend.cancel", { requestId });
+        this.pending.delete(requestId);
+        clearTimeout(timeout);
+        reject(new Error("Cancelled"));
+      };
+
+      if (signal) {
+        if (signal.aborted) {
+          return abortHandler();
+        }
+        signal.addEventListener("abort", abortHandler, { once: true });
+      }
+
       this.pending.set(requestId, { resolve, reject, timeout });
       this.run("backend.call", { requestId, operation, params });
     });

@@ -7,7 +7,7 @@ console.log("STARTING NODE MAIN.JS");
 
 const NeutralinoExtension = require("./neutralino-extension");
 const discordRPC = require("./discord/discordRPC");
-const DEBUG = true; // Print incoming event messages to the console
+const DEBUG = false; // Print incoming event messages to the console
 const backendModule = import("../host.mjs");
 
 // Initialize Discord RPC
@@ -32,6 +32,8 @@ function ping(d) {
   ext.sendMessage("pingResult", `Node says PONG, in reply to "${d}"`);
 }
 
+const activeRequests = new Map();
+
 async function processAppEvent(data) {
   // Handle Neutralino app events.
   // :param d: data package as JSON dict.
@@ -42,8 +44,22 @@ async function processAppEvent(data) {
     const eventName = data.data.function;
     const eventData = data.data.parameter;
 
+    if (eventName === "backend.cancel") {
+      const requestId = eventData?.requestId;
+      if (requestId && activeRequests.has(requestId)) {
+        activeRequests.get(requestId).abort();
+        activeRequests.delete(requestId);
+      }
+      return;
+    }
+
     if (eventName === "backend.call") {
       const requestId = eventData?.requestId || null;
+      const controller = new AbortController();
+      if (requestId) {
+        activeRequests.set(requestId, controller);
+      }
+      
       try {
         const { handleRequest, setExtensionContext } = await backendModule;
         // Inject ext context so host operations can use callApi
@@ -51,15 +67,26 @@ async function processAppEvent(data) {
           setExtensionContext(ext);
         }
 
+        // We inject the signal into the params so host.mjs can use it
+        const params = eventData?.params || {};
+        params.signal = controller.signal;
+
         const result = await handleRequest(
           eventData?.operation,
-          eventData?.params,
-          (downloaded, total) => {
-            ext.sendMessage("download:progress", {
-              requestId,
-              downloaded,
-              total,
-            });
+          params,
+          (payloadOrDownloaded, totalOpt) => {
+            if (typeof payloadOrDownloaded === 'object' && payloadOrDownloaded !== null) {
+              ext.sendMessage("download:progress", {
+                requestId,
+                ...payloadOrDownloaded
+              });
+            } else {
+              ext.sendMessage("download:progress", {
+                requestId,
+                downloaded: payloadOrDownloaded,
+                total: totalOpt,
+              });
+            }
           },
         );
         ext.sendMessage("backend:response", {
@@ -76,6 +103,10 @@ async function processAppEvent(data) {
             message: error?.message || String(error),
           },
         });
+      } finally {
+        if (requestId) {
+          activeRequests.delete(requestId);
+        }
       }
       return;
     }

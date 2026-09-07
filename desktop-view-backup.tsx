@@ -1,11 +1,15 @@
 import React, { useState, useEffect } from "react";
-import { ExternalLink, Plus, RefreshCw, Download, ChevronLeft, ChevronRight, List, ChevronUp, Loader2, Play, Trash2 } from "lucide-react";
+import { ExternalLink, Plus, RefreshCw, Download, ChevronLeft, ChevronRight, List, ChevronUp, Loader2, Play, Trash2, X } from "lucide-react";
 import type { ModalViewProps } from "./types";
 import Core from "../../../../core";
 
 interface DesktopViewProps extends ModalViewProps {
   carouselRef: React.RefObject<HTMLDivElement | null>;
   thumbnailsRef: React.RefObject<HTMLDivElement | null>;
+  activeIndex: number;
+  scrollToIndex: (index: number) => void;
+  prevImage: () => void;
+  nextImage: () => void;
 }
 
 /**
@@ -34,93 +38,18 @@ export const DesktopView: React.FC<DesktopViewProps> = ({
   const [isUninstalling, setIsUninstalling] = useState(false);
 
   useEffect(() => {
-    const checkInstall = async () => {
-      if (displayCard.id) {
-        const installed = await Core.Platform.isModInstalled(displayCard.id.toString());
-        setIsInstalled(installed);
-      }
-    };
-    checkInstall();
-  }, [displayCard.id]);
-
-  const handleDownload = async (url: string, id: string) => {
-    if (downloadProgress[id] !== undefined) {
-      if (abortControllersRef.current[id]) {
-        abortControllersRef.current[id].abort();
-        delete abortControllersRef.current[id];
-        setDownloadProgress(prev => ({ ...prev, [id]: -1 })); // Use -1 to indicate canceling state
-      }
-      return;
+    if (displayCard?.id) {
+      Core.platform.isModInstalled(displayCard.id.toString()).then(setIsInstalled);
     }
-    
-    setDownloadProgress(prev => ({ ...prev, [id]: 0 }));
-    const controller = new AbortController();
-    abortControllersRef.current[id] = controller;
-    
-    try {
-      if (!displayCard.id) throw new Error("No mod ID");
-      
-      const payload = {
-        id: displayCard.id,
-        gameId: displayCard.gameId,
-        title: displayCard.name,
-        description: displayCard.description,
-        htmlBody: displayCard.htmlBody,
-        author: displayCard.author,
-        userId: displayCard.userId,
-        userPfp: displayCard.userPfp,
-        authors: displayCard.authors,
-        likes: displayCard.likes,
-        views: displayCard.views,
-        downloads: displayCard.downloads,
-        submittedAt: displayCard.submittedAt,
-        updatedAt: displayCard.updatedAt,
-        timeAgo: displayCard.timeAgo,
-        thumbnail: displayCard.thumbnail,
-        isNsfw: displayCard.isNsfw,
-        previewMedia: displayCard.previewMedia,
-        files: displayCard.files,
-        engineName: engineName,
-        formatDate: formatDate,
-        formatFullDate: formatFullDate,
-      };
-
-      await Core.Platform.downloadMod(url, id, displayCard.id.toString(), payload, controller.signal, (progress) => {
-        setDownloadProgress(prev => {
-          if (prev[id] === -1) return prev; // If it's canceling, ignore progress updates
-          return { ...prev, [id]: progress };
-        });
-      });
-      
-      setIsInstalled(true);
-      setDownloadProgress(prev => {
-        const next = { ...prev };
-        delete next[id];
-        return next;
-      });
-    } catch (err: any) {
-      // Ignore Cancelled errors since they are intentional
-      if (err?.message !== "Cancelled") {
-        console.error("Error downloading mod:", err);
-      }
-      setDownloadProgress(prev => {
-        const next = { ...prev };
-        delete next[id];
-        return next;
-      });
-    } finally {
-      delete abortControllersRef.current[id];
-    }
-  };
+  }, [displayCard?.id]);
 
   const handleUninstall = async () => {
-    if (!displayCard.id) return;
     setIsUninstalling(true);
     try {
-      await Core.Platform.uninstallMod(displayCard.id.toString());
+      await Core.platform.uninstallMod(displayCard.id.toString());
       setIsInstalled(false);
-    } catch (err) {
-      console.error(err);
+    } catch (e) {
+      console.warn("Error uninstalling:", e);
     } finally {
       setIsUninstalling(false);
     }
@@ -130,9 +59,63 @@ export const DesktopView: React.FC<DesktopViewProps> = ({
   const validFiles = Object.values(displayCard.files || {}).filter((file: any) => file._nFilesize >= 5 * 1024 * 1024);
   const hasMultipleFiles = validFiles.length > 1;
   const hasNoFiles = validFiles.length === 0;
-
+  
   const singleFileId = validFiles[0]?._idRow;
   const singleFileProgress = singleFileId ? downloadProgress[singleFileId] : undefined;
+
+  const handleDownload = async (url: string, id: string) => {
+    if (downloadProgress[id] !== undefined) {
+      if (abortControllersRef.current[id]) {
+        setDownloadProgress((prev) => ({ ...prev, [id]: -1 }));
+        abortControllersRef.current[id].abort();
+        delete abortControllersRef.current[id];
+      }
+      return;
+    }
+
+    const controller = new AbortController();
+    abortControllersRef.current[id] = controller;
+    setDownloadProgress((prev) => ({ ...prev, [id]: 0 }));
+    
+    try {
+      await Core.platform.downloadMod(url, displayCard.id.toString(), displayCard.name, (progress) => {
+        if (!abortControllersRef.current[id]) return;
+        setDownloadProgress((prev) => ({ ...prev, [id]: progress }));
+      }, controller.signal);
+      
+      await Core.platform.registerInstalledMod(displayCard).catch(e => console.warn("Failed to register mod", e));
+      setIsInstalled(true);
+
+      setTimeout(() => {
+        setDownloadProgress((prev) => {
+          const newState = { ...prev };
+          delete newState[id];
+          return newState;
+        });
+      }, 3000);
+    } catch (err) {
+      const wasCanceled = !abortControllersRef.current[id];
+      if (wasCanceled) {
+        setTimeout(() => {
+          setDownloadProgress((prev) => {
+            const newState = { ...prev };
+            delete newState[id];
+            return newState;
+          });
+        }, 1000);
+      } else {
+        setDownloadProgress((prev) => {
+          const newState = { ...prev };
+          delete newState[id];
+          return newState;
+        });
+      }
+    } finally {
+      if (abortControllersRef.current[id]) {
+        delete abortControllersRef.current[id];
+      }
+    }
+  };
 
   return (
     <div className="hidden md:block w-full h-full relative">
@@ -260,6 +243,7 @@ export const DesktopView: React.FC<DesktopViewProps> = ({
               className="pt-4 md:pt-6 mt-auto shrink-0 bg-[var(--wb-surface-container)]"
               onMouseLeave={() => setIsDropdownOpen(false)}
             >
+              <div className="relative w-full">
               <div className="relative w-full">
                 {isInstalled ? (
                   <div className="flex gap-3 w-full">
