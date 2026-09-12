@@ -222,3 +222,43 @@ jobs:
             --max-time 30 \
             'https://fnfweekbox.vercel.app/api/revalidate-release' \
             --header "Authorization: Bearer $REVALIDATE_SECRET"
+
+  announce-discord:
+    needs: [build-and-upload, package-macos, package-linux]
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
+      DISCORD_WEBHOOK: ${{ secrets.DISCORD_RELEASE_WEBHOOK }}
+      RELEASE_TAG: ${{ github.event.release.tag_name || inputs.tag }}
+    steps:
+      - name: Verify release and announce on Discord
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          if [ -z "$DISCORD_WEBHOOK" ]; then
+            echo "::error::DISCORD_RELEASE_WEBHOOK is not configured."
+            exit 1
+          fi
+
+          release="$(gh release view "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --json isDraft,publishedAt,assets,url,name)"
+          is_draft="$(jq -r '.isDraft' <<< "$release")"
+          published_at="$(jq -r '.publishedAt // empty' <<< "$release")"
+          asset_count="$(jq '.assets | length' <<< "$release")"
+
+          if [ "$is_draft" != "false" ] || [ -z "$published_at" ] || [ "$asset_count" -eq 0 ]; then
+            echo "::error::Release $RELEASE_TAG is not published or has no assets."
+            exit 1
+          fi
+
+          payload="$(jq -n \
+            --arg name "$(jq -r '.name // .tagName' <<< "$release")" \
+            --arg url "$(jq -r '.url' <<< "$release")" \
+            --arg assets "$asset_count" \
+            '{embeds: [{title: ("WeekBox " + $name), url: $url, description: ("Release assets are uploaded and verified (" + $assets + " assets)."), color: 5793266}]}')"
+
+          curl --fail-with-body --silent --show-error \
+            --request POST \
+            --header "Content-Type: application/json" \
+            --data "$payload" \
+            "$DISCORD_WEBHOOK"
