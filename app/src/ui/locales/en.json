@@ -84,6 +84,8 @@
   "settings.blurOutOfFocusDescription": "Apply a blur effect to the background when the window loses focus.",
   "settings.hideOnLaunch": "Hide window when launching",
   "settings.hideOnLaunchDescription": "Hide WeekBox while an engine is running.",
+  "settings.closeToTray": "Close to tray",
+  "settings.closeToTrayDescription": "Keep WeekBox running in the system tray when you close the window.",
   "settings.wineVersion": "Wine version",
   "settings.wineVersionDescription": "Choose the Wine version used for Windows `.exe` mods.",
   "settings.findWineVersions": "Find Wine versions",

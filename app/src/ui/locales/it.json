@@ -1,5 +1,4 @@
 {
-  "whatsNew.title": "WeekBox {{version}}",
   "app.loading": "Caricamento",
   "app.startupProgress": "Inizializzazione in progresso",
   "app.starting": "Inizializzando WeekBox",
@@ -85,6 +84,8 @@
   "settings.blurOutOfFocusDescription": "Applica un'effetto di sfocatura quando la finestra è inattiva.",
   "settings.hideOnLaunch": "Riduci finestra durante esecuzione",
   "settings.hideOnLaunchDescription": "Riduce WeekBox mentre un'engine è in esecuzione.",
+  "settings.closeToTray": "Close to tray",
+  "settings.closeToTrayDescription": "Keep WeekBox running in the system tray when you close the window.",
   "settings.wineVersion": "Versione Wine",
   "settings.wineVersionDescription": "Scegli la versione wine usata per mod in file `.exe`.",
   "settings.findWineVersions": "Trova versioni in Wine",
@@ -452,6 +453,7 @@
   "updates.checkFailed": "Fallito a controllare per nuovi aggiornamenti.",
   "updates.tryAgain": "Riprova",
   "updates.installFailed": "Installamento dell'aggiornamento fallito.",
+  "whatsNew.title": "WeekBox {{version}}",
   "settings.checkingForUpdates": "Controllando nuovi aggiornamenti…",
   "network.youAreOffline": "Sei offline",
   "network.offlineDetails": "Scoprire, cercare, installare e controllare il rilascio di engine richiede una conessione internet. Le tue mod ed engine locali sono ancora disponibili via i loro manager.",

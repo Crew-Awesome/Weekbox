@@ -1,5 +1,4 @@
 {
-  "whatsNew.title": "WeekBox {{version}}",
   "app.loading": "Загрузка",
   "app.startupProgress": "Процесс запуска WeekBox",
   "app.starting": "Запуск WeekBox",
@@ -85,6 +84,8 @@
   "settings.blurOutOfFocusDescription": "Применять эффект размытия к фону, когда окно теряет фокус.",
   "settings.hideOnLaunch": "Скрывать окно при запуске",
   "settings.hideOnLaunchDescription": "Скрывать WeekBox во время работы движка.",
+  "settings.closeToTray": "Close to tray",
+  "settings.closeToTrayDescription": "Keep WeekBox running in the system tray when you close the window.",
   "settings.wineVersion": "Версия Wine",
   "settings.wineVersionDescription": "Выберите версию Wine для Windows `.exe` модов.",
   "settings.findWineVersions": "Найти версии Wine",
@@ -452,6 +453,7 @@
   "updates.checkFailed": "Не удалось проверить обновления.",
   "updates.tryAgain": "Попробовать снова",
   "updates.installFailed": "Не удалось установить обновление.",
+  "whatsNew.title": "WeekBox {{version}}",
   "settings.checkingForUpdates": "Проверка обновлений…",
   "network.youAreOffline": "Вы офлайн",
   "network.offlineDetails": "Обзор, поиск, загрузки и проверка релизов движков требуют подключения к интернету. Ваши локальные моды и движки всё ещё доступны в их менеджерах.",

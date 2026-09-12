@@ -1,7 +1,5 @@
 import { appSettings } from "../core/system/settings.service.js";
 
-const ENGINE_ORDER_KEY = "weekbox_engine_order";
-
 export const DEFAULT_ENGINE_ORDER = [
   "vslice",
   "codename",
@@ -21,9 +19,16 @@ function readJsonSetting(key, fallback) {
 }
 
 function readEngineOrder() {
+  const preferences = readJsonSetting("engineVersionPreferences", {});
+  if (Array.isArray(preferences.engineOrder)) return preferences.engineOrder;
   try {
-    const value = JSON.parse(localStorage.getItem(ENGINE_ORDER_KEY) || "[]");
-    return Array.isArray(value) ? value : [];
+    const legacy = JSON.parse(
+      localStorage.getItem("weekbox_engine_order") || "[]",
+    );
+    if (!Array.isArray(legacy)) return [];
+    preferences.engineOrder = legacy;
+    appSettings.set("engineVersionPreferences", JSON.stringify(preferences));
+    return legacy;
   } catch {
     return [];
   }
@@ -37,10 +42,17 @@ export function getEngineOrder(availableIds = DEFAULT_ENGINE_ORDER) {
   );
 }
 
+// who would even remember me if i died one day
+// all it is, all i am
+// a annoyance to a lot
+// and i wish to not be what most people think i am
+// but im just forgetable
+// i will never be happy :c
+
 export function setEngineOrder(order) {
-  try {
-    localStorage.setItem(ENGINE_ORDER_KEY, JSON.stringify([...new Set(order)]));
-  } catch {}
+  const preferences = readJsonSetting("engineVersionPreferences", {});
+  preferences.engineOrder = [...new Set(order)];
+  appSettings.set("engineVersionPreferences", JSON.stringify(preferences));
 }
 
 export function getEngineVersionOrder(engineId, versions) {

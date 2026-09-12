@@ -189,23 +189,23 @@ export const customEngineModal = {
         </header>
         <div class="engine-custom-body">
           <div class="engine-custom-family-preview">
-            <img class="engine-custom-family-preview-icon" src="${escapeHtml(iconSource)}" alt="">
-            <strong>${escapeHtml(engine.name)}</strong>
-          </div>
-          <div class="engine-custom-fields">
-            <label><span>${t("engineManager.customEngineName")}</span><input class="engine-custom-family-name" maxlength="80" value="${escapeHtml(engine.name)}" required></label>
-            <div class="engine-custom-icon-field">
-              <span>${t("engineManager.engineFamilyIcon")}</span>
-              <div class="engine-custom-icon-actions">
-                <button type="button" class="engine-custom-icon-button"><img class="engine-custom-icon-preview" src="${escapeHtml(iconSource)}" alt=""><span>${t("engineManager.chooseIcon")}</span></button>
-                <button type="button" class="engine-custom-icon-clear">${t("engineManager.removeIcon")}</button>
-              </div>
-            </div>
+            <button
+              type="button"
+              class="engine-custom-family-preview-button"
+              aria-label="${t("engineManager.chooseIcon")}"
+              title="${t("engineManager.chooseIcon")}"
+            >
+              <img class="engine-custom-family-preview-icon" src="${escapeHtml(iconSource)}" alt="">
+            </button>
+            <label class="engine-custom-family-name-control">
+              <input class="engine-custom-family-name" maxlength="80" value="${escapeHtml(engine.name)}" aria-label="${t("engineManager.customEngineName")}" required>
+            </label>
           </div>
           <p class="engine-custom-status" role="status"></p>
         </div>
         <footer class="engine-custom-actions">
           <button type="button" class="engine-custom-cancel">${t("common.cancel")}</button>
+          <button type="button" class="engine-custom-reset">${t("common.reset")}</button>
           <button type="submit" class="engine-custom-submit">${t("common.save")}</button>
         </footer>
       </form>`;
@@ -214,10 +214,10 @@ export const customEngineModal = {
       .querySelector(".engine-custom-cancel")
       .addEventListener("click", () => this.close());
     this.overlay
-      .querySelector(".engine-custom-icon-button")
+      .querySelector(".engine-custom-family-preview-button")
       .addEventListener("click", () => void this.chooseIcon());
     this.overlay
-      .querySelector(".engine-custom-icon-clear")
+      .querySelector(".engine-custom-reset")
       .addEventListener("click", () => {
         this.iconValue = "";
         this.updateIconPreview();
@@ -259,9 +259,7 @@ export const customEngineModal = {
   updateIconPreview() {
     const source = this.iconValue || "assets/icons/exe.png";
     this.overlay
-      ?.querySelectorAll(
-        ".engine-custom-icon-preview, .engine-custom-family-preview-icon",
-      )
+      ?.querySelectorAll(".engine-custom-family-preview-icon")
       .forEach((image) => {
         image.src = source;
       });

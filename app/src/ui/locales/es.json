@@ -1,5 +1,4 @@
 {
-  "whatsNew.title": "WeekBox {{version}}",
   "app.loading": "Cargando",
   "app.startupProgress": "Progreso de inicio de WeekBox",
   "app.starting": "Iniciando WeekBox",
@@ -85,6 +84,8 @@
   "settings.blurOutOfFocusDescription": "Aplica un efecto de desenfoque al fondo de WeekBox cuando la ventana pierde el foco.",
   "settings.hideOnLaunch": "Ocultar WeekBox al iniciar",
   "settings.hideOnLaunchDescription": "Oculta WeekBox mientras un motor está en ejecución.",
+  "settings.closeToTray": "Close to tray",
+  "settings.closeToTrayDescription": "Keep WeekBox running in the system tray when you close the window.",
   "settings.wineVersion": "Versión de Wine",
   "settings.wineVersionDescription": "Selecciona la versión de Wine usada para mods de Windows en formato `.exe`.",
   "settings.findWineVersions": "Buscar versiones de Wine",
@@ -452,6 +453,7 @@
   "updates.checkFailed": "No se pudieron buscar actualizaciones.",
   "updates.tryAgain": "Intentar de nuevo",
   "updates.installFailed": "No se pudo instalar la actualización.",
+  "whatsNew.title": "WeekBox {{version}}",
   "settings.checkingForUpdates": "Buscando actualizaciones…",
   "network.youAreOffline": "No tienes conexión",
   "network.offlineDetails": "Descubrir, la búsqueda, las descargas y la comprobación de versiones de motores requieren internet. Tus mods y motores locales siguen disponibles desde sus administradores.",

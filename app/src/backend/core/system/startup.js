@@ -1,7 +1,10 @@
 import { appSettings } from "./settings.service.js";
 import { networkStatus } from "./network-status.service.js";
 import { startupLoader } from "./startup-loader.service.js";
-import { syncWindowsProtocolRegistration } from "./windows-protocol.util.js";
+import {
+  syncWindowsProtocolRegistration,
+  syncWindowsStartupRegistration,
+} from "./windows-protocol.util.js";
 import {
   disableProductionRefreshShortcuts,
   isDevelopmentRun,
@@ -450,7 +453,11 @@ async function startApp() {
     });
 
     Neutralino.events.on("windowClose", async () => {
-      if (!allowAppExit && window.NL_OS === "Windows") {
+      if (
+        !allowAppExit &&
+        window.NL_OS === "Windows" &&
+        appSettings.get("closeToTray")
+      ) {
         await Neutralino.window.hide();
         return;
       }
@@ -468,6 +475,9 @@ async function startApp() {
     );
     await appSettings.init(settingsDataPath);
     i18n.init();
+    syncWindowsStartupRegistration(appSettings.get("launchOnStartup")).catch(
+      () => {},
+    );
     if (window.NL_OS === "Windows") {
       await Neutralino.os
         .setTray({

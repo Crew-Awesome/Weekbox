@@ -1,5 +1,4 @@
 {
-  "whatsNew.title": "WeekBox {{version}}",
   "app.loading": "Loading",
   "app.startupProgress": "WeekBox startup progress",
   "app.starting": "Starting WeekBox",
@@ -85,6 +84,8 @@
   "settings.blurOutOfFocusDescription": "Apply a blur effect to the background when the window loses focus.",
   "settings.hideOnLaunch": "Hide window when launching",
   "settings.hideOnLaunchDescription": "Hide WeekBox while an engine is running.",
+  "settings.closeToTray": "Close to tray",
+  "settings.closeToTrayDescription": "Keep WeekBox running in the system tray when you close the window.",
   "settings.wineVersion": "Wine version",
   "settings.wineVersionDescription": "Choose the Wine version used for Windows `.exe` mods.",
   "settings.findWineVersions": "Find Wine versions",
@@ -452,6 +453,7 @@
   "updates.checkFailed": "Could not check for updates.",
   "updates.tryAgain": "Try again",
   "updates.installFailed": "Could not install the update.",
+  "whatsNew.title": "WeekBox {{version}}",
   "settings.checkingForUpdates": "Checking for updates…",
   "network.youAreOffline": "You are offline",
   "network.offlineDetails": "Discover, search, downloads, and engine release checks need an internet connection. Your local mods and engines are still available from their managers.",

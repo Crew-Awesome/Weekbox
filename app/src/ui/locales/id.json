@@ -1,5 +1,4 @@
 {
-  "whatsNew.title": "WeekBox {{version}}",
   "app.loading": "Memuat",
   "app.startupProgress": "Proses awal WeekBox",
   "app.starting": "Memulai WeekBox",
@@ -85,6 +84,8 @@
   "settings.blurOutOfFocusDescription": "Terapkan efek blur pada latar belakang saat jendela kehilangan fokus.",
   "settings.hideOnLaunch": "Sembunyikan jendela saat meluncurkan",
   "settings.hideOnLaunchDescription": "Sembunyikan WeekBox saat engine sedang berjalan.",
+  "settings.closeToTray": "Close to tray",
+  "settings.closeToTrayDescription": "Keep WeekBox running in the system tray when you close the window.",
   "settings.wineVersion": "Versi Wine",
   "settings.wineVersionDescription": "Pilih versi Wine yang digunakan untuk mod Windows `.exe`.",
   "settings.findWineVersions": "Cari versi Wine",
@@ -452,6 +453,7 @@
   "updates.checkFailed": "Tidak dapat memeriksa pembaruan.",
   "updates.tryAgain": "Coba lagi",
   "updates.installFailed": "Tidak dapat memasang pembaruan.",
+  "whatsNew.title": "WeekBox {{version}}",
   "settings.checkingForUpdates": "Memeriksa pembaruan…",
   "network.youAreOffline": "Anda sedang luring",
   "network.offlineDetails": "Temukan, cari, unduhan, dan pemeriksaan rilis engine memerlukan koneksi internet. Mod dan engine lokal Anda masih tersedia dari pengelolanya masing-masing.",

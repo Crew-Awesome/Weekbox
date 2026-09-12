@@ -9,7 +9,10 @@ import { AppUpdateController } from "./appUpdateController.js";
 import { StorageMoveFeedback } from "./storageMoveFeedback.js";
 import { existingStorageModal } from "../existingStorageModal.js";
 import { networkStatus } from "../../../backend/core/system/network-status.service.js";
-import { syncWindowsProtocolRegistration } from "../../../backend/core/system/windows-protocol.util.js";
+import {
+  syncWindowsProtocolRegistration,
+  syncWindowsStartupRegistration,
+} from "../../../backend/core/system/windows-protocol.util.js";
 import { sidebar } from "../sidebar.js";
 import { getLocaleCoverage, i18n, LANGUAGES, t } from "../i18n/index.js";
 import { firstRunLanguageModal } from "../firstRunLanguageModal.js";
@@ -228,6 +231,7 @@ export const configModal = {
       "registerProtocolLinks",
       "blurOutOfFocus",
       "hideOnLaunch",
+      "closeToTray",
       "autoStartAfterDownload",
       "multithreadDownloads",
       "multithreadStorageMoves",
@@ -321,6 +325,7 @@ export const configModal = {
       "registerProtocolLinks",
       "blurOutOfFocus",
       "hideOnLaunch",
+      "closeToTray",
       "autoStartAfterDownload",
       "multithreadDownloads",
       "multithreadStorageMoves",
@@ -644,39 +649,7 @@ export const configModal = {
     }
   },
 
-  async handleStartupToggle(enabled) {
-    if (window.NL_OS !== "Windows") return false;
-    try {
-      const runningExe = String(window.NL_ARGS?.[0] || "")
-        .trim()
-        .replace(/^"|"$/g, "");
-      const exePath = runningExe || `${window.NL_PATH}\\WeekBox.exe`;
-
-      if (enabled && exePath) {
-        try {
-          await Neutralino.filesystem.getStats(exePath);
-        } catch {
-          // If direct stats check fails in development or with specific pathing, continue
-        }
-      }
-
-      const command = enabled
-        ? `cmd /c reg add "HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Run" /v "WeekBox" /t REG_SZ /d "\\"${exePath}\\"" /f`
-        : `cmd /c reg delete "HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Run" /v "WeekBox" /f`;
-      const result = await Neutralino.os.execCommand(command, {
-        background: false,
-      });
-      if (result.exitCode !== 0) {
-        throw new Error(
-          result.stdErr || t("settings.startupRegistrationFailed"),
-        );
-      }
-      return true;
-    } catch (error) {
-      console.warn("Could not configure Windows startup", error);
-      return false;
-    }
-  },
+  handleStartupToggle: syncWindowsStartupRegistration,
 
   async open() {
     await this.init();

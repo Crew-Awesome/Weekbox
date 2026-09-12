@@ -57,8 +57,29 @@ async function syncWindowsProtocolRegistration(enabled) {
     return false;
   }
 }
+async function syncWindowsStartupRegistration(enabled) {
+  if (window.NL_OS !== "Windows") return true;
+  const runningExe = String(window.NL_ARGS?.[0] || "")
+    .trim()
+    .replace(/^"|"$/g, "");
+  const exePath = runningExe || `${window.NL_PATH}\\WeekBox.exe`;
+  const command = enabled
+    ? `cmd /c reg add "HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Run" /v "WeekBox" /t REG_SZ /d "\\"${exePath}\\"" /f`
+    : `cmd /c reg delete "HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Run" /v "WeekBox" /f`;
+  try {
+    const result = await Neutralino.os.execCommand(command, {
+      background: false,
+    });
+    if (result.exitCode !== 0)
+      throw new Error(result.stdErr || "Windows startup registration failed");
+    return true;
+  } catch (error) {
+    console.warn("Could not configure Windows startup", error);
+    return false;
+  }
+}
 var PROTOCOL_KEY;
 
 PROTOCOL_KEY = "HKCU:\\Software\\Classes\\weekbox";
 
-export { syncWindowsProtocolRegistration };
+export { syncWindowsProtocolRegistration, syncWindowsStartupRegistration };
