@@ -5,7 +5,7 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [2.3.4] - 2026-09-12
 
 ### Changed
 
@@ -1079,7 +1079,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Downloads for Windows, Linux, and macOS.
 - Packages for x64, ARM64, ARMHF, and Universal Macs where available.
 
-[unreleased]: https://github.com/Crew-Awesome/Weekbox/compare/v2.3.3...HEAD
+[unreleased]: https://github.com/Crew-Awesome/Weekbox/compare/v2.3.4...HEAD
+[2.3.4]: https://github.com/Crew-Awesome/Weekbox/compare/v2.3.3...v2.3.4
 [2.3.3]: https://github.com/Crew-Awesome/Weekbox/compare/v2.3.2...v2.3.3
 [2.3.2]: https://github.com/Crew-Awesome/Weekbox/compare/v2.3.1...v2.3.2
 [2.3.1]: https://github.com/Crew-Awesome/Weekbox/compare/v2.3.0...v2.3.1

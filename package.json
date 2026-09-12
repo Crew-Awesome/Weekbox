@@ -1,6 +1,6 @@
 {
   "name": "weekbox",
-  "version": "2.3.3",
+  "version": "2.3.4",
   "description": "A Re-Imagined Original FNF Mod Launcher",
   "main": "index.js",
   "scripts": {
