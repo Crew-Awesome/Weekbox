@@ -182,40 +182,49 @@ var _LibraryMaintenanceService = class _LibraryMaintenanceService {
     const mods = Array.isArray(storedMods) ? storedMods : [];
     const engines = await this.getInstalledEngines();
     let changed = false;
-    for (const mod of mods) {
+    const candidates = mods.flatMap((mod) => {
       const folderName = getModFolderName(mod);
-      if (!folderName) continue;
-      const executable = await this.findExecutable(
-        `${this.getModsPath()}/${folderName}`,
+      return folderName
+        ? [{ mod, path: `${this.getModsPath()}/${folderName}` }]
+        : [];
+    });
+    for (let index = 0; index < candidates.length; index += 4) {
+      const results = await Promise.all(
+        candidates.slice(index, index + 4).map(async ({ mod, path }) => ({
+          mod,
+          executable: await this.findExecutable(path),
+        })),
       );
-      if (!executable) {
-        if (mod.engineId !== "executable") continue;
-        mod.engineId = null;
+      for (const { mod, executable } of results) {
+        if (!executable) {
+          if (mod.engineId !== "executable") continue;
+          mod.engineId = null;
+          mod.engineVersion = null;
+          mod.engineLocked = false;
+          changed = true;
+          continue;
+        }
+        const needsMigration =
+          mod.engineId !== "executable" ||
+          mod.engineVersion ||
+          mod.engineLocked ||
+          mod.kind === "dependency" ||
+          mod.kind === "addon";
+        if (!needsMigration) continue;
+        if (mod.engineId && mod.engineId !== "executable") {
+          const unlinkResults = await this.injection.unlinkFromInstalledEngines(
+            mod,
+            engines,
+          );
+          if (unlinkResults.some((result) => result.status === "rejected"))
+            continue;
+        }
+        mod.engineId = "executable";
         mod.engineVersion = null;
         mod.engineLocked = false;
+        if (mod.kind === "dependency" || mod.kind === "addon") mod.kind = "mod";
         changed = true;
-        continue;
       }
-      const needsMigration =
-        mod.engineId !== "executable" ||
-        mod.engineVersion ||
-        mod.engineLocked ||
-        mod.kind === "dependency" ||
-        mod.kind === "addon";
-      if (!needsMigration) continue;
-      if (mod.engineId && mod.engineId !== "executable") {
-        const unlinkResults = await this.injection.unlinkFromInstalledEngines(
-          mod,
-          engines,
-        );
-        if (unlinkResults.some((result) => result.status === "rejected"))
-          continue;
-      }
-      mod.engineId = "executable";
-      mod.engineVersion = null;
-      mod.engineLocked = false;
-      if (mod.kind === "dependency" || mod.kind === "addon") mod.kind = "mod";
-      changed = true;
     }
     if (changed) await this.mods.saveAll(mods);
   }
@@ -301,24 +310,31 @@ var _LibraryMaintenanceService = class _LibraryMaintenanceService {
       );
       await cleanupTemporaryArchives(enginesPath);
       const engines = await Neutralino.filesystem.readDirectory(enginesPath);
-      for (const engine of getRealEntries(engines)) {
-        if (engine.type !== "DIRECTORY") continue;
-        const versions = await Neutralino.filesystem.readDirectory(
-          `${enginesPath}/${engine.entry}`,
-        );
-        for (const version of getRealEntries(versions)) {
-          if (version.type !== "DIRECTORY") continue;
-          const versionPath = `${enginesPath}/${engine.entry}/${version.entry}`;
-          if (!(await this.api.exists(`${versionPath}/.downloading`))) continue;
-          const command =
-            window.NL_OS === "Windows"
-              ? `rmdir /S /Q "${versionPath.replace(/\//g, "\\")}"`
-              : `rm -rf "${versionPath}"`;
-          await Neutralino.os
-            .execCommand(command, { background: true })
-            .catch(() => {});
-        }
-      }
+      await Promise.all(
+        getRealEntries(engines)
+          .filter((engine) => engine.type === "DIRECTORY")
+          .map(async (engine) => {
+            const versions = await Neutralino.filesystem.readDirectory(
+              `${enginesPath}/${engine.entry}`,
+            );
+            await Promise.all(
+              getRealEntries(versions)
+                .filter((version) => version.type === "DIRECTORY")
+                .map(async (version) => {
+                  const versionPath = `${enginesPath}/${engine.entry}/${version.entry}`;
+                  if (!(await this.api.exists(`${versionPath}/.downloading`)))
+                    return;
+                  const command =
+                    window.NL_OS === "Windows"
+                      ? `rmdir /S /Q "${versionPath.replace(/\//g, "\\")}"`
+                      : `rm -rf "${versionPath}"`;
+                  await Neutralino.os
+                    .execCommand(command, { background: true })
+                    .catch(() => {});
+                }),
+            );
+          }),
+      );
     } catch (error) {
       console.warn("Could not clean up incomplete downloads", error);
     }

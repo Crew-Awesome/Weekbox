@@ -59,17 +59,36 @@ async function syncWindowsProtocolRegistration(enabled) {
 }
 async function syncWindowsStartupRegistration(enabled) {
   if (window.NL_OS !== "Windows") return true;
-  const runningExe = String(window.NL_ARGS?.[0] || "")
-    .trim()
-    .replace(/^"|"$/g, "");
-  const exePath = runningExe || `${window.NL_PATH}\\WeekBox.exe`;
-  const command = enabled
-    ? `cmd /c reg add "HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Run" /v "WeekBox" /t REG_SZ /d "\\"${exePath}\\"" /f`
-    : `cmd /c reg delete "HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Run" /v "WeekBox" /f`;
+  const argumentPath = getExecutablePath();
+  const exePath = /\.exe$/i.test(argumentPath)
+    ? argumentPath
+    : `${window.NL_PATH}\\WeekBox.exe`;
+  const key = quotePowerShell(
+    "HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Run",
+  );
+  const executable = quotePowerShell(exePath);
+  const script = enabled
+    ? [
+        "$ProgressPreference = 'SilentlyContinue'",
+        "$ErrorActionPreference = 'Stop'",
+        `$key = ${key}`,
+        `$exe = ${executable}`,
+        `$command = '"' + $exe + '"'`,
+        "New-Item -Path $key -Force | Out-Null",
+        "New-ItemProperty -Path $key -Name 'WeekBox' -Value $command -PropertyType String -Force | Out-Null",
+      ].join("; ")
+    : [
+        "$ProgressPreference = 'SilentlyContinue'",
+        "$ErrorActionPreference = 'Stop'",
+        `$key = ${key}`,
+        "$property = Get-ItemProperty -LiteralPath $key -ErrorAction SilentlyContinue",
+        "if ($property -and $null -ne $property.PSObject.Properties['WeekBox']) { Remove-ItemProperty -LiteralPath $key -Name 'WeekBox' -ErrorAction Stop }",
+      ].join("; ");
   try {
-    const result = await Neutralino.os.execCommand(command, {
-      background: false,
-    });
+    const encoded = encodePowerShell(script);
+    const result = await Neutralino.os.execCommand(
+      `cmd /c powershell.exe -NoLogo -NoProfile -NonInteractive -EncodedCommand ${encoded} 2>NUL`,
+    );
     if (result.exitCode !== 0)
       throw new Error(result.stdErr || "Windows startup registration failed");
     return true;

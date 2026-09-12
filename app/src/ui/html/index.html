@@ -590,6 +590,39 @@
                   <span class="slider round"></span>
                 </label>
               </div>
+              <div
+                class="setting-item setting-item-storage setting-item-danger"
+              >
+                <div class="setting-info">
+                  <h4 data-i18n="settings.clearLibrary">Clear library data</h4>
+                  <p data-i18n="settings.clearLibraryDescription">
+                    Permanently remove all installed mods or engines. Running
+                    games will be closed first.
+                  </p>
+                </div>
+                <div class="storage-location-actions">
+                  <button
+                    type="button"
+                    class="storage-location-button storage-location-button-danger"
+                    id="delete-all-mods"
+                  >
+                    <i class="fa-solid fa-trash" aria-hidden="true"></i>
+                    <span data-i18n="settings.deleteAllMods"
+                      >Delete all mods</span
+                    >
+                  </button>
+                  <button
+                    type="button"
+                    class="storage-location-button storage-location-button-danger"
+                    id="delete-all-engines"
+                  >
+                    <i class="fa-solid fa-trash-can" aria-hidden="true"></i>
+                    <span data-i18n="settings.deleteAllEngines"
+                      >Delete all engines</span
+                    >
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
 
@@ -676,6 +709,42 @@
         </div>
       </main>
     </div>
+  </div>
+</template>
+<template id="tpl-library-delete-modal">
+  <div class="library-delete-overlay" hidden>
+    <section
+      class="library-delete-dialog"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="library-delete-title"
+    >
+      <div class="library-delete-icon" aria-hidden="true">
+        <i class="fa-solid fa-triangle-exclamation"></i>
+      </div>
+      <div class="library-delete-copy">
+        <p class="library-delete-step" id="library-delete-step"></p>
+        <h2 id="library-delete-title"></h2>
+        <p id="library-delete-description"></p>
+        <p
+          class="library-delete-status"
+          id="library-delete-status"
+          role="status"
+        ></p>
+        <div class="library-delete-actions">
+          <button
+            type="button"
+            class="library-delete-cancel"
+            id="library-delete-cancel"
+          ></button>
+          <button
+            type="button"
+            class="library-delete-confirm"
+            id="library-delete-confirm"
+          ></button>
+        </div>
+      </div>
+    </section>
   </div>
 </template>
 <template id="tpl-engine-manager">
@@ -1046,8 +1115,7 @@
                 >
                   <span class="filter-engine-icon" aria-hidden="true"
                     ><i class="fa-solid fa-ellipsis"></i></span
-                  ><span data-i18n="home.otherMisc">Other/Misc</span
-                  >
+                  ><span data-i18n="home.otherMisc">Other/Misc</span>
                 </button>
               </div>
             </div>

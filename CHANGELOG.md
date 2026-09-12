@@ -10,6 +10,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - Discovery now keeps loading past the previous page limit.
+- Library settings can now safely delete all installed mods or engines.
+- Startup maintenance no longer blocks the app from opening.
+- Empty engine lists no longer show a dashed panel.
 
 ## [2.3.3] - 2026-09-12
 

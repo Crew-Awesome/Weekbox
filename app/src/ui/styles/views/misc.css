@@ -2013,8 +2013,6 @@ body.window-unfocused::after {
   color: var(--text-muted);
   font-size: 1.1rem;
   background-color: transparent;
-  border-radius: var(--border-radius);
-  border: 2px dashed var(--border-color);
   width: 100%;
 }
 
