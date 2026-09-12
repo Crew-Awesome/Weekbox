@@ -18,6 +18,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - Added a setting to turn desktop notifications on or off.
+- Added play and stop controls for installed engines in Engine Manager.
+
+### Fixed
+
+- macOS now stores WeekBox data inside its own folder under Application Support.
 
 ## [2.3.3] - 2026-09-12
 

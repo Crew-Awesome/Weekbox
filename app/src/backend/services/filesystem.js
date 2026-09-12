@@ -742,7 +742,14 @@ var _FileSystemService = class _FileSystemService {
       await Neutralino.os.getPath("data").catch(() => ""),
     );
     const applicationDataPath = trimPath(window.NL_DATAPATH);
-    for (const candidate of [nativeDataPath, applicationDataPath]) {
+    const defaultCandidates = [nativeDataPath, applicationDataPath]
+      .filter(Boolean)
+      .map((candidate) =>
+        window.NL_OS === "Darwin" && !/(?:^|[\\/])WeekBox$/i.test(candidate)
+          ? `${candidate}/WeekBox`
+          : candidate,
+      );
+    for (const candidate of defaultCandidates) {
       if (!candidate) continue;
       try {
         await this.assertStoragePathAllowed(candidate);
