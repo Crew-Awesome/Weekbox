@@ -56,6 +56,7 @@ settingDefinitions = {
   blurOutOfFocus: { type: "boolean", defaultValue: true },
   hideOnLaunch: { type: "boolean", defaultValue: false },
   closeToTray: { type: "boolean", defaultValue: false },
+  desktopNotifications: { type: "boolean", defaultValue: true },
   autoStartAfterDownload: { type: "boolean", defaultValue: false },
   multithreadDownloads: { type: "boolean", defaultValue: true },
   multithreadStorageMoves: { type: "boolean", defaultValue: true },

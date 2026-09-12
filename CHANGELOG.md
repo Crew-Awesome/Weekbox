@@ -13,6 +13,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Library settings can now safely delete all installed mods or engines.
 - Startup maintenance no longer blocks the app from opening.
 - Empty engine lists no longer show a dashed panel.
+- Settings are organized into clearer categories.
+
+### Added
+
+- Added a setting to turn desktop notifications on or off.
 
 ## [2.3.3] - 2026-09-12
 

@@ -278,12 +278,26 @@
         </div>
         <nav class="config-nav">
           <button class="config-tab-btn active" data-tab-target="general">
-            <i class="fa-solid fa-window-maximize"></i>
-            <span data-i18n="settings.general">App &amp; window</span>
+            <i class="fa-solid fa-sliders"></i>
+            <span data-i18n="settings.general">General</span>
+          </button>
+          <button class="config-tab-btn" data-tab-target="appearance">
+            <i class="fa-solid fa-palette"></i>
+            <span data-i18n="settings.appearance"
+              >Appearance &amp; behavior</span
+            >
+          </button>
+          <button class="config-tab-btn" data-tab-target="notifications">
+            <i class="fa-solid fa-bell"></i>
+            <span data-i18n="settings.notifications">Notifications</span>
           </button>
           <button class="config-tab-btn" data-tab-target="downloads">
             <i class="fa-solid fa-download"></i>
             <span data-i18n="settings.downloads">Downloads</span>
+          </button>
+          <button class="config-tab-btn" data-tab-target="engines">
+            <i class="fa-solid fa-gamepad"></i>
+            <span data-i18n="settings.engines">Engines &amp; mods</span>
           </button>
           <button class="config-tab-btn" data-tab-target="library">
             <i class="fa-solid fa-folder-tree"></i>
@@ -310,7 +324,7 @@
       <main class="config-main">
         <header class="config-header">
           <h3 id="config-section-title" data-i18n="settings.general">
-            App &amp; window
+            General
           </h3>
           <button
             class="config-close-btn"
@@ -402,7 +416,16 @@
                   <span class="slider round"></span>
                 </label>
               </div>
+            </div>
+          </div>
 
+          <!-- APPEARANCE & BEHAVIOR TAB -->
+          <div
+            id="config-appearance"
+            class="config-tab-content"
+            style="display: none"
+          >
+            <div class="settings-list">
               <div class="setting-item">
                 <div class="setting-info">
                   <h4 data-i18n="settings.blurOutOfFocus">Blur out of focus</h4>
@@ -416,7 +439,6 @@
                   <span class="slider round"></span>
                 </label>
               </div>
-
               <div class="setting-item">
                 <div class="setting-info">
                   <h4 data-i18n="settings.hideOnLaunch">
@@ -431,7 +453,6 @@
                   <span class="slider round"></span>
                 </label>
               </div>
-
               <div class="setting-item">
                 <div class="setting-info">
                   <h4 data-i18n="settings.closeToTray">Close to tray</h4>
@@ -445,35 +466,30 @@
                   <span class="slider round"></span>
                 </label>
               </div>
+            </div>
+          </div>
 
-              <div class="setting-item wine-setting" id="wine-setting" hidden>
+          <!-- NOTIFICATIONS TAB -->
+          <div
+            id="config-notifications"
+            class="config-tab-content"
+            style="display: none"
+          >
+            <div class="settings-list">
+              <div class="setting-item">
                 <div class="setting-info">
-                  <h4 data-i18n="settings.wineVersion">Wine version</h4>
-                  <p data-i18n="settings.wineVersionDescription">
-                    Choose the Wine version used for Windows `.exe` mods.
+                  <h4 data-i18n="settings.desktopNotifications">
+                    Desktop notifications
+                  </h4>
+                  <p data-i18n="settings.desktopNotificationsDescription">
+                    Show notifications for downloads, installs, updates, and
+                    tray actions.
                   </p>
                 </div>
-                <div class="wine-setting-control">
-                  <select
-                    id="setting-wineCommand"
-                    data-i18n-attr="aria-label:settings.wineVersion"
-                    aria-label="Wine version"
-                  ></select>
-                  <button
-                    type="button"
-                    id="refresh-wine-versions"
-                    data-i18n-attr="title:settings.findWineVersions,aria-label:settings.findWineVersions"
-                    title="Find Wine versions"
-                    aria-label="Find Wine versions"
-                  >
-                    <i class="fa-solid fa-rotate" aria-hidden="true"></i>
-                  </button>
-                </div>
-                <p
-                  class="wine-setting-status"
-                  id="wine-setting-status"
-                  role="status"
-                ></p>
+                <label class="switch">
+                  <input type="checkbox" id="setting-desktopNotifications" />
+                  <span class="slider round"></span>
+                </label>
               </div>
             </div>
           </div>
@@ -510,6 +526,76 @@
                 </div>
                 <label class="switch">
                   <input type="checkbox" id="setting-autoStartAfterDownload" />
+                  <span class="slider round"></span>
+                </label>
+              </div>
+            </div>
+          </div>
+
+          <!-- ENGINES & MODS TAB -->
+          <div
+            id="config-engines"
+            class="config-tab-content"
+            style="display: none"
+          >
+            <div class="settings-list">
+              <div class="setting-item wine-setting" id="wine-setting" hidden>
+                <div class="setting-info">
+                  <h4 data-i18n="settings.wineVersion">Wine version</h4>
+                  <p data-i18n="settings.wineVersionDescription">
+                    Choose the Wine version used for Windows `.exe` mods.
+                  </p>
+                </div>
+                <div class="wine-setting-control">
+                  <select
+                    id="setting-wineCommand"
+                    data-i18n-attr="aria-label:settings.wineVersion"
+                    aria-label="Wine version"
+                  ></select>
+                  <button
+                    type="button"
+                    id="refresh-wine-versions"
+                    data-i18n-attr="title:settings.findWineVersions,aria-label:settings.findWineVersions"
+                    title="Find Wine versions"
+                    aria-label="Find Wine versions"
+                  >
+                    <i class="fa-solid fa-rotate" aria-hidden="true"></i>
+                  </button>
+                </div>
+                <p
+                  class="wine-setting-status"
+                  id="wine-setting-status"
+                  role="status"
+                ></p>
+              </div>
+              <div class="setting-item">
+                <div class="setting-info">
+                  <h4 data-i18n="settings.checkUpdatesOnStartup">
+                    Check engine updates on startup
+                  </h4>
+                  <p data-i18n="settings.checkUpdatesOnStartupDescription">
+                    Look for updates to installed engines when WeekBox opens.
+                  </p>
+                </div>
+                <label class="switch">
+                  <input type="checkbox" id="setting-checkUpdatesOnStartup" />
+                  <span class="slider round"></span>
+                </label>
+              </div>
+              <div class="setting-item">
+                <div class="setting-info">
+                  <h4 data-i18n="settings.checkUpdatesInBackground">
+                    Check engine updates in background
+                  </h4>
+                  <p data-i18n="settings.checkUpdatesInBackgroundDescription">
+                    Look again every three hours while WeekBox is open.
+                  </p>
+                </div>
+                <label class="switch">
+                  <input
+                    type="checkbox"
+                    id="setting-checkUpdatesInBackground"
+                  />
                   <span class="slider round"></span>
                 </label>
               </div>
@@ -667,39 +753,6 @@
                   <input
                     type="checkbox"
                     id="setting-checkAppUpdatesOnStartup"
-                  />
-                  <span class="slider round"></span>
-                </label>
-              </div>
-
-              <div class="setting-item">
-                <div class="setting-info">
-                  <h4 data-i18n="settings.checkUpdatesOnStartup">
-                    Check engine updates on startup
-                  </h4>
-                  <p data-i18n="settings.checkUpdatesOnStartupDescription">
-                    Look for updates to installed engines when WeekBox opens.
-                  </p>
-                </div>
-                <label class="switch">
-                  <input type="checkbox" id="setting-checkUpdatesOnStartup" />
-                  <span class="slider round"></span>
-                </label>
-              </div>
-
-              <div class="setting-item">
-                <div class="setting-info">
-                  <h4 data-i18n="settings.checkUpdatesInBackground">
-                    Check engine updates in background
-                  </h4>
-                  <p data-i18n="settings.checkUpdatesInBackgroundDescription">
-                    Look again every three hours while WeekBox is open.
-                  </p>
-                </div>
-                <label class="switch">
-                  <input
-                    type="checkbox"
-                    id="setting-checkUpdatesInBackground"
                   />
                   <span class="slider round"></span>
                 </label>
