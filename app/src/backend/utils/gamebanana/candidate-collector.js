@@ -32,29 +32,23 @@ export class CandidateCollector {
       {
         name: "newest",
         sort: "Generic_Newest",
-        pages: isGroupedCategory ? 1 : this.config.newestMaxPagesPerCategory,
       },
       {
         name: "mostLiked",
         sort: "Generic_MostLiked",
-        pages: isGroupedCategory ? 1 : this.config.mostLikedMaxPagesPerCategory,
       },
     ];
     const maxConcurrentRequests = isGroupedCategory
       ? Math.max(this.config.maxConcurrentRequests, categories.length)
       : this.config.maxConcurrentRequests;
-    const maxRequestsPerSnapshot = isGroupedCategory
-      ? categories.length * sources.length
-      : this.config.maxRequestsPerSnapshot;
+    const maxRequestsPerSnapshot = this.config.maxRequestsPerSnapshot;
     const tasks = [];
     for (const source of sources) {
-      for (let page = 1; page <= source.pages; page += 1) {
-        for (const id of categories) {
-          const key = `${id}:${source.name}`;
-          const cursor = Number(snapshot.sourceCursors[key] || 0);
-          if (snapshot.sourceExhausted[key] || page <= cursor) continue;
-          tasks.push({ id, page, source, key });
-        }
+      for (const id of categories) {
+        const key = `${id}:${source.name}`;
+        if (snapshot.sourceExhausted[key]) continue;
+        const page = Number(snapshot.sourceCursors[key] || 0) + 1;
+        tasks.push({ id, page, source, key });
       }
     }
     const errors = [];
@@ -115,14 +109,6 @@ export class CandidateCollector {
           }
         }
       });
-    }
-
-    for (const source of sources) {
-      for (const id of categories) {
-        const key = `${id}:${source.name}`;
-        const cursor = Number(snapshot.sourceCursors[key] || 0);
-        if (cursor >= source.pages) snapshot.sourceExhausted[key] = true;
-      }
     }
 
     snapshot.errors.push(...errors);
