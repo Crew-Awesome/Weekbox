@@ -192,23 +192,6 @@ body.window-unfocused::after {
   font-size: 1.25rem;
 }
 
-.browse-category-notice {
-  display: flex;
-  margin: calc(var(--spacing-md) * -0.25) 0 0;
-  padding: 12px 14px;
-  border: 1px solid rgb(255 190 92 / 28%);
-  border-radius: var(--border-radius);
-  background: rgb(255 190 92 / 8%);
-  color: var(--text-muted);
-  font-size: 0.9rem;
-  line-height: 1.45;
-  text-wrap: pretty;
-}
-
-.browse-category-notice[hidden] {
-  display: none;
-}
-
 .mod-card {
   background-color: transparent;
   border: none;

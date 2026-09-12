@@ -3,6 +3,7 @@ export class CandidateCollector {
     transport,
     gameId,
     categoryRoots,
+    categoryGroups = {},
     getRecords,
     isExcluded,
     normalizeCandidate,
@@ -12,6 +13,7 @@ export class CandidateCollector {
       transport,
       gameId,
       categoryRoots,
+      categoryGroups,
       getRecords,
       isExcluded: isExcluded || (() => false),
       normalizeCandidate,
@@ -20,21 +22,30 @@ export class CandidateCollector {
   }
 
   async collect(snapshot, { categoryId, signal }) {
-    const categories = this.categoryRoots.includes(categoryId)
-      ? [categoryId]
-      : this.categoryRoots;
+    const isGroupedCategory = Boolean(this.categoryGroups[categoryId]);
+    const categories =
+      this.categoryGroups[categoryId] ||
+      (this.categoryRoots.includes(categoryId)
+        ? [categoryId]
+        : this.categoryRoots);
     const sources = [
       {
         name: "newest",
         sort: "Generic_Newest",
-        pages: this.config.newestMaxPagesPerCategory,
+        pages: isGroupedCategory ? 1 : this.config.newestMaxPagesPerCategory,
       },
       {
         name: "mostLiked",
         sort: "Generic_MostLiked",
-        pages: this.config.mostLikedMaxPagesPerCategory,
+        pages: isGroupedCategory ? 1 : this.config.mostLikedMaxPagesPerCategory,
       },
     ];
+    const maxConcurrentRequests = isGroupedCategory
+      ? Math.max(this.config.maxConcurrentRequests, categories.length)
+      : this.config.maxConcurrentRequests;
+    const maxRequestsPerSnapshot = isGroupedCategory
+      ? categories.length * sources.length
+      : this.config.maxRequestsPerSnapshot;
     const tasks = [];
     for (const source of sources) {
       for (let page = 1; page <= source.pages; page += 1) {
@@ -53,12 +64,12 @@ export class CandidateCollector {
     let requests = 0;
     let added = 0;
 
-    while (pending.length && requests < this.config.maxRequestsPerSnapshot) {
+    while (pending.length && requests < maxRequestsPerSnapshot) {
       const group = [];
       while (
         pending.length &&
-        group.length < this.config.maxConcurrentRequests &&
-        requests + group.length < this.config.maxRequestsPerSnapshot
+        group.length < maxConcurrentRequests &&
+        requests + group.length < maxRequestsPerSnapshot
       ) {
         const task = pending[0];
         if (blockedKeys.has(task.key)) {
