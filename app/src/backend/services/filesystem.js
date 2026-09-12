@@ -573,7 +573,6 @@ async function importCustomEngineContent(service, install, engineId, version) {
   return imported;
 }
 
-var RETIRED_ENGINE_IDS = /* @__PURE__ */ new Set(["alepsych"]);
 var _FileSystemService = class _FileSystemService {
   constructor() {
     this.basePath = "";
@@ -695,40 +694,35 @@ var _FileSystemService = class _FileSystemService {
       }
     };
     this.startupMaintenancePromise = (async () => {
-      await runPhase(
-        "Checking for retired engines\u2026",
-        90,
-        (reportProgress) => this.removeRetiredEngines(reportProgress),
-      );
-      await runPhase("Cleaning incomplete downloads\u2026", 91, () =>
+      await runPhase("Cleaning incomplete downloads\u2026", 90, () =>
         this.cleanupIncompleteDownloads(),
       );
-      await runPhase("Checking installed engines\u2026", 92, () =>
+      await runPhase("Checking installed engines\u2026", 91, () =>
         this.cleanupInvalidEngineInstallations(),
       );
-      await runPhase("Cleaning empty custom engine families\u2026", 93, () =>
+      await runPhase("Cleaning empty custom engine families\u2026", 92, () =>
         this.cleanupEmptyCustomEngineFamilies(),
       );
-      await runPhase("Checking installed mods\u2026", 94, () =>
+      await runPhase("Checking installed mods\u2026", 93, () =>
         this.cleanupInvalidInstalledMods(),
       );
-      await runPhase("Checking executable mods\u2026", 95, () =>
+      await runPhase("Checking executable mods\u2026", 94, () =>
         this.maintenance.migrateExecutableMods(),
       );
-      await runPhase("Updating mod artwork\u2026", 96, () =>
+      await runPhase("Updating mod artwork\u2026", 95, () =>
         this.migrateLegacyModCovers(),
       );
       let installedEngines = [];
-      await runPhase("Scanning engine versions\u2026", 97, async () => {
+      await runPhase("Scanning engine versions\u2026", 96, async () => {
         installedEngines = await this.getInstalledEngines();
       });
-      await runPhase("Updating custom engine icons\u2026", 97, () =>
+      await runPhase("Updating custom engine icons\u2026", 96, () =>
         this.refreshCustomEngineIcons(installedEngines),
       );
-      await runPhase("Updating engine mod folders\u2026", 98, async () => {
+      await runPhase("Updating engine mod folders\u2026", 97, async () => {
         await this.injection.migrateLegacyEngineModsFor(installedEngines);
       });
-      await runPhase("Importing Psych Online mods\u2026", 99, () =>
+      await runPhase("Importing Psych Online mods\u2026", 98, () =>
         this.importPsychOnlineEngineMods(installedEngines),
       );
       await runPhase("Cleaning stale mod links\u2026", 99, () =>
@@ -736,33 +730,6 @@ var _FileSystemService = class _FileSystemService {
       );
     })();
     return this.startupMaintenancePromise;
-  }
-  async removeRetiredEngines(reportProgress) {
-    const mods = await this.mods.getAll();
-    const retiredEnginePath = `${this.enginesPath}/alepsych`;
-    const hasRetiredEngine = await this.api.exists(retiredEnginePath);
-    const hasAssignedMods = mods.some((mod) =>
-      RETIRED_ENGINE_IDS.has(mod.engineId),
-    );
-    if (hasRetiredEngine || hasAssignedMods) {
-      reportProgress?.(
-        "Removing a retired engine and updating its mods\u2026",
-        90,
-      );
-    }
-    let changed = false;
-    for (const mod of mods) {
-      if (!RETIRED_ENGINE_IDS.has(mod.engineId)) continue;
-      mod.engineId = null;
-      mod.engineVersion = null;
-      changed = true;
-    }
-    if (changed) await this.mods.saveAll(mods);
-    await Promise.all(
-      [...RETIRED_ENGINE_IDS].map((engineId) =>
-        this.api.remove(`${this.enginesPath}/${engineId}`),
-      ),
-    );
   }
   async getDefaultStoragePath() {
     if (window.NL_OS === "Windows") {
@@ -775,7 +742,14 @@ var _FileSystemService = class _FileSystemService {
       await Neutralino.os.getPath("data").catch(() => ""),
     );
     const applicationDataPath = trimPath(window.NL_DATAPATH);
-    for (const candidate of [nativeDataPath, applicationDataPath]) {
+    const defaultCandidates = [nativeDataPath, applicationDataPath]
+      .filter(Boolean)
+      .map((candidate) =>
+        window.NL_OS === "Darwin" && !/(?:^|[\\/])WeekBox$/i.test(candidate)
+          ? `${candidate}/WeekBox`
+          : candidate,
+      );
+    for (const candidate of defaultCandidates) {
       if (!candidate) continue;
       try {
         await this.assertStoragePathAllowed(candidate);
@@ -1351,6 +1325,39 @@ var _FileSystemService = class _FileSystemService {
   }
   async cleanupIncompleteDownloads() {
     return this.maintenance.cleanupIncompleteDownloads();
+  }
+  async clearInstalledLibrary(target) {
+    this.assertStorageUnlocked();
+    if (!this.isInitialized) throw new Error("WeekBox storage is not ready");
+    if (target !== "mods" && target !== "engines")
+      throw new Error("Unknown library cleanup target");
+    if (!(await this.processes.closeAll()))
+      throw new Error("Close running engines before deleting library files.");
+
+    if (target === "mods") {
+      const mods = await this.mods.getAll();
+      const engines = await this.getInstalledEngines();
+      const unlinkResults = await Promise.allSettled(
+        mods.map((mod) =>
+          this.injection.unlinkFromInstalledEngines(mod, engines),
+        ),
+      );
+      const unlinkFailure = unlinkResults.find(
+        (result) => result.status === "rejected",
+      );
+      if (unlinkFailure) throw unlinkFailure.reason;
+      await this.api.remove(this.modsPath);
+      await this.api.ensureDir(this.modsPath);
+      await this.api.remove(this.covers.coversPath);
+      await this.mods.saveAll([]);
+    } else {
+      await this.api.remove(this.enginesPath);
+      await this.api.ensureDir(this.enginesPath);
+      while (this.customEngines.getAll().length)
+        await this.customEngines.remove(this.customEngines.getAll()[0].id);
+    }
+    this.activeEngineMods.clear();
+    return true;
   }
   async hasModFiles(mod) {
     return this.maintenance.hasModFiles(mod);

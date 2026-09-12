@@ -268,6 +268,15 @@ var _ModInjectionService = class _ModInjectionService {
     if (result.exitCode !== 0) {
       if (
         window.NL_OS === "Windows" &&
+        /already exists|cannot create a file when that file already exists/i.test(
+          String(result.stdErr || result.stdOut || ""),
+        ) &&
+        (await this.api.exists(linkPath))
+      ) {
+        return { linked: false, path: linkPath };
+      }
+      if (
+        window.NL_OS === "Windows" &&
         /local ntfs volumes are required|not supported/i.test(
           String(result.stdErr || ""),
         )

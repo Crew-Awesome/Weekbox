@@ -1,0 +1,64 @@
+name: Test Discord release announcement
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Optional release tag (blank uses the latest release)
+        required: false
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  announce-discord:
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
+      DISCORD_WEBHOOK: ${{ secrets.DISCORD_RELEASE_WEBHOOK }}
+      RELEASE_TAG: ${{ inputs.tag }}
+    steps:
+      - name: Verify release and send test post
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          if [ -z "$DISCORD_WEBHOOK" ]; then
+            echo "::error::DISCORD_RELEASE_WEBHOOK is not configured."
+            exit 1
+          fi
+
+          if [ -n "$RELEASE_TAG" ]; then
+            release="$(gh release view "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --json isDraft,publishedAt,assets,url,name,tagName,body)"
+          else
+            release="$(gh release view --repo "$GITHUB_REPOSITORY" --json isDraft,publishedAt,assets,url,name,tagName,body)"
+          fi
+
+          is_draft="$(jq -r '.isDraft' <<< "$release")"
+          published_at="$(jq -r '.publishedAt // empty' <<< "$release")"
+          asset_count="$(jq '.assets | length' <<< "$release")"
+
+          if [ "$is_draft" != "false" ] || [ -z "$published_at" ] || [ "$asset_count" -eq 0 ]; then
+            echo "::error::The selected release is not published or has no assets."
+            exit 1
+          fi
+
+          payload="$(jq -n \
+            --arg name "$(jq -r '.name // .tagName' <<< "$release")" \
+            --arg body "$(jq -r '.body // ""' <<< "$release")" \
+            --arg url "$(jq -r '.url' <<< "$release")" \
+            --arg assets "$asset_count" \
+            'def trim: if length > 4096 then .[0:4093] + "..." else . end;
+             {content: "<@&1530430162871783614>", allowed_mentions: {parse: [], roles: ["1530430162871783614"]}, embeds: [{
+               title: $name,
+               url: $url,
+               description: (if ($body | length) > 0 then ($body | trim) else ("Release assets are uploaded and verified (" + $assets + " assets).") end),
+               color: 5793266
+             }], components: [{type: 1, components: [{type: 2, style: 5, label: "Download on GitHub", url: $url}]}]}')"
+
+          curl --fail-with-body --silent --show-error \
+            --request POST \
+            --header "Content-Type: application/json" \
+            --data "$payload" \
+            "$DISCORD_WEBHOOK?with_components=true"

@@ -88,7 +88,7 @@ function setButtonIcon(button, iconClass) {
   if (!icon.parentNode) button.appendChild(icon);
 }
 
-function bindCustomVersionActions({
+function bindVersionActions({
   item,
   engineId,
   version,
@@ -100,11 +100,7 @@ function bindCustomVersionActions({
     const running = FS.isEngineRunning(engineId, version);
     if (!launchBtn) return;
     launchBtn.innerHTML = `<i class="fa-solid ${running ? "fa-stop" : "fa-play"}" aria-hidden="true"></i>`;
-    launchBtn.title = t(
-      running
-        ? "engineManager.closeCustomEngine"
-        : "engineManager.launchCustomEngine",
-    );
+    launchBtn.title = t(running ? "common.close" : "engines.launch");
     launchBtn.setAttribute("aria-label", launchBtn.title);
   };
   updateLaunchButton();
@@ -125,7 +121,7 @@ function bindCustomVersionActions({
     } catch (error) {
       errorHandler.show({
         error,
-        action: t("engineManager.launchCustomEngine"),
+        action: t("engines.launch"),
         item: displayName,
         version,
         storagePath: FS.weekboxPath,
@@ -137,25 +133,20 @@ function bindCustomVersionActions({
   });
 }
 
-function configureCustomVersionActions({
+function configureVersionActions({
   item,
   engineId,
   version,
   displayName,
   onProcessFinished,
 }) {
-  const launchBtn = item.querySelector(".engine-launch-btn");
-  if (FS.isCustomEngine(engineId)) {
-    bindCustomVersionActions({
-      item,
-      engineId,
-      version,
-      displayName,
-      onProcessFinished,
-    });
-    return;
-  }
-  launchBtn?.remove();
+  bindVersionActions({
+    item,
+    engineId,
+    version,
+    displayName,
+    onProcessFinished,
+  });
 }
 
 function renameInstalledVersion(engineId, version, onSaved) {
@@ -1266,7 +1257,7 @@ export const engineManagerModal = {
           item.append(versionText, actions);
         }
 
-        configureCustomVersionActions({
+        configureVersionActions({
           item,
           engineId,
           version,

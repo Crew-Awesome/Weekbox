@@ -51,10 +51,12 @@ LEGACY_SETTINGS_PATH_KEY = "weekbox-settings-data-path";
 settingDefinitions = {
   language: { type: "string", defaultValue: "en" },
   firstRunLanguageSetupComplete: { type: "boolean", defaultValue: false },
-  launchOnStartup: { type: "boolean", defaultValue: false },
+  launchOnStartup: { type: "boolean", defaultValue: true },
   registerProtocolLinks: { type: "boolean", defaultValue: true },
   blurOutOfFocus: { type: "boolean", defaultValue: true },
   hideOnLaunch: { type: "boolean", defaultValue: false },
+  closeToTray: { type: "boolean", defaultValue: false },
+  desktopNotifications: { type: "boolean", defaultValue: true },
   autoStartAfterDownload: { type: "boolean", defaultValue: false },
   multithreadDownloads: { type: "boolean", defaultValue: true },
   multithreadStorageMoves: { type: "boolean", defaultValue: true },

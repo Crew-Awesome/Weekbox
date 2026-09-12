@@ -781,12 +781,147 @@
   outline: none;
 }
 
+.library-delete-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 22000;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: rgb(0 0 0 / 78%);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  opacity: 0;
+  transition: opacity 220ms ease;
+}
+
+.library-delete-overlay[hidden] {
+  display: none;
+}
+
+.library-delete-overlay.show {
+  opacity: 1;
+}
+
+.library-delete-dialog {
+  display: grid;
+  grid-template-columns: 68px minmax(0, 1fr);
+  width: min(560px, 100%);
+  overflow: hidden;
+  border: 1px solid color-mix(in srgb, var(--danger) 50%, var(--border-color));
+  border-radius: 16px;
+  background: var(--bg-panel);
+  box-shadow: 0 24px 80px rgb(0 0 0 / 58%);
+  transform: scale(0.96);
+  transition: transform 220ms ease;
+}
+
+.library-delete-overlay.show .library-delete-dialog {
+  transform: scale(1);
+}
+
+.library-delete-icon {
+  display: grid;
+  place-items: start center;
+  padding-top: 28px;
+  background: var(--danger-container);
+  color: var(--danger);
+  font-size: 1.35rem;
+}
+
+.library-delete-copy {
+  padding: 25px 27px 24px;
+}
+
+.library-delete-step {
+  margin: 0 0 6px;
+  color: var(--danger);
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+}
+
+.library-delete-copy h2 {
+  margin: 0;
+  color: var(--text-main);
+  font-size: 1.4rem;
+}
+
+.library-delete-copy > p:not(.library-delete-step):not(.library-delete-status) {
+  margin: 14px 0 20px;
+  color: var(--text-muted);
+  line-height: 1.55;
+}
+
+.library-delete-status {
+  min-height: 1.3em;
+  margin: -8px 0 16px;
+  color: var(--danger);
+  font-size: 0.84rem;
+}
+
+.library-delete-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.library-delete-actions button {
+  min-height: 38px;
+  padding: 0 15px;
+  border-radius: 8px;
+  font: inherit;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.library-delete-cancel {
+  border: 1px solid var(--border-color);
+  background: transparent;
+  color: var(--text-main);
+}
+
+.library-delete-confirm {
+  border: 1px solid var(--danger);
+  background: var(--danger);
+  color: #190606;
+}
+
+.library-delete-confirm:hover,
+.library-delete-confirm:focus-visible {
+  background: color-mix(in srgb, var(--danger) 78%, white);
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+
+.library-delete-actions button:disabled {
+  cursor: wait;
+  opacity: 0.62;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .library-delete-overlay,
+  .library-delete-dialog {
+    transition: none;
+  }
+}
+
 @media (max-width: 560px) {
   .base-game-warning-dialog {
     grid-template-columns: 1fr;
   }
 
   .base-game-warning-icon {
+    display: block;
+    padding: 16px 22px 0;
+  }
+
+  .library-delete-dialog {
+    grid-template-columns: 1fr;
+  }
+
+  .library-delete-icon {
     display: block;
     padding: 16px 22px 0;
   }

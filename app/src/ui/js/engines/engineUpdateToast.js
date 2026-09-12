@@ -2,6 +2,7 @@ import { toastSystem } from "../toasts/toastSystem.js";
 import { ENGINE_DETAILS } from "../../../backend/config/engines.config.js";
 import { FS } from "../../../backend/services/filesystem.js";
 import { t } from "../i18n/index.js";
+import { notifyDesktop } from "../desktopNotifications.js";
 
 function getIconSource(icon, engineId = null) {
   if (engineId) return FS.getEngineIconSource(engineId);
@@ -32,7 +33,7 @@ export const engineUpdateToast = {
     });
   },
 
-  complete(engineId) {
+  complete(engineId, name = ENGINE_DETAILS[engineId]?.name || engineId) {
     const id = getToastId(engineId);
     toastSystem.setState(id, "complete", {
       badgeHtml: '<i class="fa-solid fa-check"></i>',
@@ -41,6 +42,10 @@ export const engineUpdateToast = {
       message: t("engineUpdates.updated"),
       progress: 100,
     });
+    notifyDesktop(
+      t("notifications.engineUpdatedTitle"),
+      t("notifications.engineUpdatedMessage", { name }),
+    );
     setTimeout(() => this.hide(engineId), 4200);
   },
 
@@ -69,14 +74,23 @@ export const engineUpdateToast = {
       },
     });
     toastSystem.setState(id, "offer");
+    notifyDesktop(
+      t("notifications.engineUpdateAvailableTitle"),
+      t("notifications.engineUpdateAvailableMessage", { name }),
+    );
   },
 
-  error(engineId) {
+  error(engineId, name = ENGINE_DETAILS[engineId]?.name || engineId) {
     const id = getToastId(engineId);
     toastSystem.setState(id, "error", {
       badgeHtml: '<i class="fa-solid fa-xmark"></i>',
     });
     toastSystem.update(id, { message: t("engineUpdates.failedKept") });
+    notifyDesktop(
+      t("notifications.engineUpdateFailedTitle"),
+      t("notifications.engineUpdateFailedMessage", { name }),
+      "ERROR",
+    );
     setTimeout(() => this.hide(engineId), 5200);
   },
 

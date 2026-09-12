@@ -15,6 +15,7 @@ export class CategoryFeedService {
     transport,
     gameId,
     categoryRoots,
+    categoryGroups = {},
     defaultCategoryRoots = categoryRoots,
     getRecords,
     toGridMod,
@@ -25,6 +26,7 @@ export class CategoryFeedService {
     this.transport = transport;
     this.gameId = gameId;
     this.categoryRoots = categoryRoots;
+    this.categoryGroups = categoryGroups;
     this.defaultCategoryRoots = defaultCategoryRoots;
     this.getRecords = getRecords;
     this.toGridMod = toGridMod;
@@ -36,6 +38,7 @@ export class CategoryFeedService {
       transport,
       gameId,
       categoryRoots,
+      categoryGroups,
       getRecords,
       isExcluded: this.isExcluded,
       normalizeCandidate: (raw, context) =>
@@ -48,9 +51,12 @@ export class CategoryFeedService {
   }
 
   getCategories(categoryId) {
-    return this.categoryRoots.includes(categoryId)
-      ? [categoryId]
-      : this.defaultCategoryRoots;
+    return (
+      this.categoryGroups[categoryId] ||
+      (this.categoryRoots.includes(categoryId)
+        ? [categoryId]
+        : this.defaultCategoryRoots)
+    );
   }
 
   getSortValue(mod, sort) {

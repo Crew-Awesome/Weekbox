@@ -45,7 +45,11 @@ export const ENGINE_CATEGORY_IDS = {
 export const ENGINE_CATEGORY_ROOTS =
   Object.keys(ENGINE_CATEGORY_IDS).map(Number);
 
-export const CATEGORY_ROOTS = [...ENGINE_CATEGORY_ROOTS, 43772, 43773];
+export const CATEGORY_ROOTS = [...ENGINE_CATEGORY_ROOTS, 43773];
+
+export const CATEGORY_GROUPS = {
+  43773: [43773, 3046, 3828, 43772],
+};
 
 export const MOD_KIND_CATEGORY_IDS = {
   43803: "dependency",

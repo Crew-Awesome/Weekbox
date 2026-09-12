@@ -63,6 +63,7 @@ startupLoader = {
   isComplete: false,
   initVersion,
   setPhase(message, progress) {
+    if (this.isComplete) return;
     if (label) label.textContent = message;
     if (bar) {
       const value = Math.max(

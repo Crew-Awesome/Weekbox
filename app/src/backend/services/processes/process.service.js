@@ -380,6 +380,16 @@ var _ProcessService = class _ProcessService {
       return false;
     }
   }
+  async closeAll(onStateChange) {
+    const keys = [...this.activeProcesses.keys()];
+    const results = await Promise.all(
+      keys.map(async (key) => {
+        const closed = await this.closeAndWait(key, onStateChange);
+        return closed || !this.activeProcesses.has(key);
+      }),
+    );
+    return results.every(Boolean);
+  }
   isRunning(key) {
     return this.activeProcesses.has(key);
   }

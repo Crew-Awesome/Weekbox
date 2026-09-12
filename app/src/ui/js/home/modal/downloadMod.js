@@ -12,6 +12,7 @@ import {
 import { toastDownloadMod } from "./toastDownloadMod.js";
 import { errorHandler } from "../../errors/errorHandler.js";
 import { t } from "../../i18n/index.js";
+import { notifyDesktop } from "../../desktopNotifications.js";
 
 function setModalButtonState(btn, iconClass, text, disabled) {
   if (!btn) return;
@@ -221,6 +222,10 @@ async function finalizeInstall(
   service.reportInstallProgress(modId, modName, "complete", 100);
   document.dispatchEvent(new CustomEvent("mods-updated"));
   toastDownloadMod.success(modId);
+  notifyDesktop(
+    t("notifications.modInstalledTitle"),
+    t("notifications.modInstalledMessage", { name: modName }),
+  );
   await FS.api.remove(tempFilePath);
   service.activeTasks.delete(modId);
   return modId;
@@ -540,6 +545,11 @@ export const downloadMod = {
           item: modName,
           storagePath: FS.weekboxPath,
         });
+        notifyDesktop(
+          t("notifications.modInstallFailedTitle"),
+          t("notifications.modInstallFailedMessage", { name: modName }),
+          "ERROR",
+        );
         this.activeTasks.delete(modId);
       }
       return false;

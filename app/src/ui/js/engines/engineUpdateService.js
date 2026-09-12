@@ -201,10 +201,10 @@ export const engineUpdateService = {
         update.candidate,
         installedVersion,
       );
-      engineUpdateToast.complete(engineId);
+      engineUpdateToast.complete(engineId, name);
       return { status: "updated" };
     }
-    engineUpdateToast.error(engineId);
+    engineUpdateToast.error(engineId, name);
     return { status: "error" };
   },
 

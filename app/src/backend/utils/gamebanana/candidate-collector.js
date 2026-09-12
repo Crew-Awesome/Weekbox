@@ -3,6 +3,7 @@ export class CandidateCollector {
     transport,
     gameId,
     categoryRoots,
+    categoryGroups = {},
     getRecords,
     isExcluded,
     normalizeCandidate,
@@ -12,6 +13,7 @@ export class CandidateCollector {
       transport,
       gameId,
       categoryRoots,
+      categoryGroups,
       getRecords,
       isExcluded: isExcluded || (() => false),
       normalizeCandidate,
@@ -20,30 +22,33 @@ export class CandidateCollector {
   }
 
   async collect(snapshot, { categoryId, signal }) {
-    const categories = this.categoryRoots.includes(categoryId)
-      ? [categoryId]
-      : this.categoryRoots;
+    const isGroupedCategory = Boolean(this.categoryGroups[categoryId]);
+    const categories =
+      this.categoryGroups[categoryId] ||
+      (this.categoryRoots.includes(categoryId)
+        ? [categoryId]
+        : this.categoryRoots);
     const sources = [
       {
         name: "newest",
         sort: "Generic_Newest",
-        pages: this.config.newestMaxPagesPerCategory,
       },
       {
         name: "mostLiked",
         sort: "Generic_MostLiked",
-        pages: this.config.mostLikedMaxPagesPerCategory,
       },
     ];
+    const maxConcurrentRequests = isGroupedCategory
+      ? Math.max(this.config.maxConcurrentRequests, categories.length)
+      : this.config.maxConcurrentRequests;
+    const maxRequestsPerSnapshot = this.config.maxRequestsPerSnapshot;
     const tasks = [];
     for (const source of sources) {
-      for (let page = 1; page <= source.pages; page += 1) {
-        for (const id of categories) {
-          const key = `${id}:${source.name}`;
-          const cursor = Number(snapshot.sourceCursors[key] || 0);
-          if (snapshot.sourceExhausted[key] || page <= cursor) continue;
-          tasks.push({ id, page, source, key });
-        }
+      for (const id of categories) {
+        const key = `${id}:${source.name}`;
+        if (snapshot.sourceExhausted[key]) continue;
+        const page = Number(snapshot.sourceCursors[key] || 0) + 1;
+        tasks.push({ id, page, source, key });
       }
     }
     const errors = [];
@@ -53,12 +58,12 @@ export class CandidateCollector {
     let requests = 0;
     let added = 0;
 
-    while (pending.length && requests < this.config.maxRequestsPerSnapshot) {
+    while (pending.length && requests < maxRequestsPerSnapshot) {
       const group = [];
       while (
         pending.length &&
-        group.length < this.config.maxConcurrentRequests &&
-        requests + group.length < this.config.maxRequestsPerSnapshot
+        group.length < maxConcurrentRequests &&
+        requests + group.length < maxRequestsPerSnapshot
       ) {
         const task = pending[0];
         if (blockedKeys.has(task.key)) {
@@ -104,14 +109,6 @@ export class CandidateCollector {
           }
         }
       });
-    }
-
-    for (const source of sources) {
-      for (const id of categories) {
-        const key = `${id}:${source.name}`;
-        const cursor = Number(snapshot.sourceCursors[key] || 0);
-        if (cursor >= source.pages) snapshot.sourceExhausted[key] = true;
-      }
     }
 
     snapshot.errors.push(...errors);

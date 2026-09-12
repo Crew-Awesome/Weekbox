@@ -1650,63 +1650,54 @@
   background: var(--bg-color);
 }
 
-.engine-custom-family-preview-icon,
-.engine-custom-icon-preview {
+.engine-custom-family-preview-button {
+  display: grid;
+  width: 52px;
+  height: 52px;
+  flex: 0 0 52px;
+  place-items: center;
+  padding: 3px;
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  background: var(--bg-color);
+  cursor: pointer;
+}
+
+.engine-custom-family-preview-button:hover,
+.engine-custom-family-preview-button:focus-visible {
+  border-color: transparent;
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+
+.engine-custom-family-preview-icon {
   width: 44px;
   height: 44px;
-  flex: 0 0 44px;
   object-fit: contain;
   border-radius: 9px;
 }
 
-.engine-custom-icon-field {
-  display: grid;
-  gap: 7px;
-  color: var(--text-muted);
-  font-size: 0.82rem;
-  font-weight: 700;
+.engine-custom-family-name-control {
+  min-width: 0;
+  flex: 1;
 }
 
-.engine-custom-icon-actions {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 9px;
-}
-
-.engine-custom-icon-button {
-  display: inline-flex;
-  min-height: 44px;
-  align-items: center;
-  gap: 9px;
-  padding: 0 12px 0 6px;
+.engine-custom-family-name {
+  width: 100%;
+  min-height: 42px;
+  box-sizing: border-box;
+  padding: 0 12px;
   border: 1px solid var(--border-color);
-  border-radius: 10px;
+  border-radius: 9px;
   background: var(--bg-color);
   color: var(--text-main);
-  cursor: pointer;
   font: inherit;
-  font-weight: 700;
-}
-
-.engine-custom-icon-button:hover,
-.engine-custom-icon-button:focus-visible,
-.engine-custom-icon-clear:hover,
-.engine-custom-icon-clear:focus-visible {
-  border-color: var(--primary);
   outline: none;
 }
 
-.engine-custom-icon-clear {
-  min-height: 36px;
-  padding: 0 10px;
-  border: 1px solid var(--border-color);
-  border-radius: 8px;
-  background: transparent;
-  color: var(--text-muted);
-  cursor: pointer;
-  font: inherit;
-  font-size: 0.8rem;
+.engine-custom-family-name:focus {
+  border-color: transparent;
+  box-shadow: 0 0 0 3px var(--primary);
 }
 
 .engine-custom-family-actions {

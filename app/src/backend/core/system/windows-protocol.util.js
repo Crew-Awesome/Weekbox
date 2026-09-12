@@ -57,8 +57,48 @@ async function syncWindowsProtocolRegistration(enabled) {
     return false;
   }
 }
+async function syncWindowsStartupRegistration(enabled) {
+  if (window.NL_OS !== "Windows") return true;
+  const argumentPath = getExecutablePath();
+  const exePath = /\.exe$/i.test(argumentPath)
+    ? argumentPath
+    : `${window.NL_PATH}\\WeekBox.exe`;
+  const key = quotePowerShell(
+    "HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Run",
+  );
+  const executable = quotePowerShell(exePath);
+  const script = enabled
+    ? [
+        "$ProgressPreference = 'SilentlyContinue'",
+        "$ErrorActionPreference = 'Stop'",
+        `$key = ${key}`,
+        `$exe = ${executable}`,
+        `$command = '"' + $exe + '"'`,
+        "New-Item -Path $key -Force | Out-Null",
+        "New-ItemProperty -Path $key -Name 'WeekBox' -Value $command -PropertyType String -Force | Out-Null",
+      ].join("; ")
+    : [
+        "$ProgressPreference = 'SilentlyContinue'",
+        "$ErrorActionPreference = 'Stop'",
+        `$key = ${key}`,
+        "$property = Get-ItemProperty -LiteralPath $key -ErrorAction SilentlyContinue",
+        "if ($property -and $null -ne $property.PSObject.Properties['WeekBox']) { Remove-ItemProperty -LiteralPath $key -Name 'WeekBox' -ErrorAction Stop }",
+      ].join("; ");
+  try {
+    const encoded = encodePowerShell(script);
+    const result = await Neutralino.os.execCommand(
+      `cmd /c powershell.exe -NoLogo -NoProfile -NonInteractive -EncodedCommand ${encoded} 2>NUL`,
+    );
+    if (result.exitCode !== 0)
+      throw new Error(result.stdErr || "Windows startup registration failed");
+    return true;
+  } catch (error) {
+    console.warn("Could not configure Windows startup", error);
+    return false;
+  }
+}
 var PROTOCOL_KEY;
 
 PROTOCOL_KEY = "HKCU:\\Software\\Classes\\weekbox";
 
-export { syncWindowsProtocolRegistration };
+export { syncWindowsProtocolRegistration, syncWindowsStartupRegistration };

@@ -16,10 +16,8 @@ const labelKeys = {
   Discovery: "home.discovery",
   New: "home.newest",
   Updated: "home.updated",
-  "Legacy Categories": "home.legacyCategories",
-  "Other/Misc Mod Folders": "home.otherMiscModFolders",
+  "Other/Misc": "home.otherMisc",
 };
-const LEGACY_CATEGORY_ID = 43772;
 
 export const filterManager = {
   filterClickHandler: null,
@@ -123,9 +121,6 @@ export const filterManager = {
         ...[...icon.childNodes].map((node) => node.cloneNode(true)),
       );
     }
-    const notice = document.getElementById("legacy-category-notice");
-    if (notice)
-      notice.hidden = gridState.currentCategoryId !== LEGACY_CATEGORY_ID;
   },
 
   syncSortFilter() {

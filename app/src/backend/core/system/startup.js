@@ -1,7 +1,10 @@
 import { appSettings } from "./settings.service.js";
 import { networkStatus } from "./network-status.service.js";
 import { startupLoader } from "./startup-loader.service.js";
-import { syncWindowsProtocolRegistration } from "./windows-protocol.util.js";
+import {
+  syncWindowsProtocolRegistration,
+  syncWindowsStartupRegistration,
+} from "./windows-protocol.util.js";
 import {
   disableProductionRefreshShortcuts,
   isDevelopmentRun,
@@ -26,6 +29,7 @@ import { firstRunStorageModal } from "../../../ui/js/firstRunStorageModal.js";
 import { firstRunLanguageModal } from "../../../ui/js/firstRunLanguageModal.js";
 import { whatsNewModal } from "../../../ui/js/updates/whatsNewModal.js";
 import { i18n, t } from "../../../ui/js/i18n/index.js";
+import { notifyDesktop } from "../../../ui/js/desktopNotifications.js";
 
 const SINGLE_INSTANCE_MUTEX = "Global\\WeekBox-com.weekbox.app";
 
@@ -450,8 +454,18 @@ async function startApp() {
     });
 
     Neutralino.events.on("windowClose", async () => {
-      if (!allowAppExit && window.NL_OS === "Windows") {
+      if (
+        !allowAppExit &&
+        window.NL_OS === "Windows" &&
+        appSettings.get("closeToTray")
+      ) {
         await Neutralino.window.hide();
+        notifyDesktop(
+          t("tray.runningInTrayTitle"),
+          t("tray.runningInTrayMessage"),
+          "INFO",
+          true,
+        );
         return;
       }
       await handleAppExit();
@@ -468,6 +482,9 @@ async function startApp() {
     );
     await appSettings.init(settingsDataPath);
     i18n.init();
+    syncWindowsStartupRegistration(appSettings.get("launchOnStartup")).catch(
+      () => {},
+    );
     if (window.NL_OS === "Windows") {
       await Neutralino.os
         .setTray({
@@ -487,10 +504,6 @@ async function startApp() {
     syncWindowsProtocolRegistration(
       appSettings.get("registerProtocolLinks"),
     ).catch(() => {});
-    if (appSettings.get("checkAppUpdatesOnStartup")) {
-      startupLoader.setPhase(t("startup.checkingAppUpdates"), 36);
-      if (await handleStartupAppUpdate()) return;
-    }
     startupLoader.setPhase(t("startup.openingLibrary"), 42);
     startupStep = "preparing the WeekBox library";
     await FS.init({ deferMaintenance: true });
@@ -517,10 +530,6 @@ async function startApp() {
     startupLoader.setPhase(t("startup.preparingModManager"), 70);
     const modManagerReady = modManagerModal.preload();
     startupLoader.setPhase(t("startup.loadingHome"), 72);
-    const maintenance = FS.runStartupMaintenance({
-      onProgress: (message, progress) =>
-        startupLoader.setPhase(message, progress),
-    });
     {
       let timeoutHandle;
       await Promise.race([
@@ -532,11 +541,17 @@ async function startApp() {
         if (timeoutHandle) clearTimeout(timeoutHandle);
       });
     }
-    startupStep = "checking the WeekBox library";
-    await maintenance.catch((error) =>
+    await startupLoader.complete();
+    void FS.runStartupMaintenance({
+      onProgress: (message, progress) =>
+        startupLoader.setPhase(message, progress),
+    }).catch((error) =>
       console.warn("Background library maintenance failed", error),
     );
-    await startupLoader.complete();
+    if (appSettings.get("checkAppUpdatesOnStartup"))
+      void handleStartupAppUpdate().catch((error) =>
+        console.warn("Could not check for a WeekBox update", error),
+      );
     await whatsNewModal
       .showIfNeeded()
       .catch((error) =>

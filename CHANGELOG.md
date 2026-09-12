@@ -5,6 +5,42 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.3.4] - 2026-09-12
+
+### Changed
+
+- Discovery now keeps loading past the previous page limit.
+- Library settings can now safely delete all installed mods or engines.
+- Startup maintenance no longer blocks the app from opening.
+- Empty engine lists no longer show a dashed panel.
+- Settings are organized into clearer categories.
+
+### Added
+
+- Added a setting to turn desktop notifications on or off.
+- Added play and stop controls for installed engines in Engine Manager.
+
+### Fixed
+
+- macOS now stores WeekBox data inside its own folder under Application Support.
+
+## [2.3.3] - 2026-09-12
+
+### Changed
+
+- WeekBox starts with Windows by default and stays open when closed.
+- Engine settings now save between sessions.
+- Engine family editing now keeps the name and icon together.
+- Closing to the tray now shows a desktop notification.
+- Background downloads and engine updates now show desktop notifications.
+- Other/Misc now includes the extra and legacy GameBanana categories while excluding engine-specific mods.
+
+## [2.3.2] - 2026-09-11
+
+### Fixed
+
+- Repeated mod injection no longer reports an existing-link error.
+
 ## [2.3.1] - 2026-09-11
 
 ### Added
@@ -26,7 +62,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Empty custom engine families and missing versions are cleaned up on startup.
 - Leftover multipart engine and mod downloads are cleaned up on startup.
 - Windows no longer treats extensionless mod files as executables.
-
 ## [2.3.0] - 2026-09-11
 
 ### Added
@@ -1044,7 +1079,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Downloads for Windows, Linux, and macOS.
 - Packages for x64, ARM64, ARMHF, and Universal Macs where available.
 
-[unreleased]: https://github.com/Crew-Awesome/Weekbox/compare/v2.3.1...HEAD
+[unreleased]: https://github.com/Crew-Awesome/Weekbox/compare/v2.3.4...HEAD
+[2.3.4]: https://github.com/Crew-Awesome/Weekbox/compare/v2.3.3...v2.3.4
+[2.3.3]: https://github.com/Crew-Awesome/Weekbox/compare/v2.3.2...v2.3.3
+[2.3.2]: https://github.com/Crew-Awesome/Weekbox/compare/v2.3.1...v2.3.2
 [2.3.1]: https://github.com/Crew-Awesome/Weekbox/compare/v2.3.0...v2.3.1
 [2.3.0]: https://github.com/Crew-Awesome/Weekbox/compare/v2.2.0...v2.3.0
 [2.2.0]: https://github.com/Crew-Awesome/Weekbox/compare/v2.1.18...v2.2.0

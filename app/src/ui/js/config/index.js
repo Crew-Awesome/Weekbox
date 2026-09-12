@@ -9,7 +9,10 @@ import { AppUpdateController } from "./appUpdateController.js";
 import { StorageMoveFeedback } from "./storageMoveFeedback.js";
 import { existingStorageModal } from "../existingStorageModal.js";
 import { networkStatus } from "../../../backend/core/system/network-status.service.js";
-import { syncWindowsProtocolRegistration } from "../../../backend/core/system/windows-protocol.util.js";
+import {
+  syncWindowsProtocolRegistration,
+  syncWindowsStartupRegistration,
+} from "../../../backend/core/system/windows-protocol.util.js";
 import { sidebar } from "../sidebar.js";
 import { getLocaleCoverage, i18n, LANGUAGES, t } from "../i18n/index.js";
 import { firstRunLanguageModal } from "../firstRunLanguageModal.js";
@@ -134,6 +137,12 @@ export const configModal = {
     document
       .getElementById("cleanup-incomplete-downloads")
       ?.addEventListener("click", () => this.cleanupIncompleteDownloads());
+    document
+      .getElementById("delete-all-mods")
+      ?.addEventListener("click", () => this.showLibraryDeleteModal("mods"));
+    document
+      .getElementById("delete-all-engines")
+      ?.addEventListener("click", () => this.showLibraryDeleteModal("engines"));
 
     document
       .getElementById("setting-language")
@@ -228,6 +237,8 @@ export const configModal = {
       "registerProtocolLinks",
       "blurOutOfFocus",
       "hideOnLaunch",
+      "closeToTray",
+      "desktopNotifications",
       "autoStartAfterDownload",
       "multithreadDownloads",
       "multithreadStorageMoves",
@@ -321,6 +332,8 @@ export const configModal = {
       "registerProtocolLinks",
       "blurOutOfFocus",
       "hideOnLaunch",
+      "closeToTray",
+      "desktopNotifications",
       "autoStartAfterDownload",
       "multithreadDownloads",
       "multithreadStorageMoves",
@@ -413,6 +426,98 @@ export const configModal = {
       button.disabled = false;
       button.textContent = t("common.cleanUp");
     }, 1800);
+  },
+
+  showLibraryDeleteModal(target) {
+    if (target !== "mods" && target !== "engines") return;
+    const template = document.getElementById("tpl-library-delete-modal");
+    if (!template) return;
+    const wrapper = document.createElement("div");
+    wrapper.innerHTML = template.innerHTML;
+    const overlay = wrapper.firstElementChild;
+    if (!overlay) return;
+    const dialog = overlay.querySelector(".library-delete-dialog");
+    const stepLabel = overlay.querySelector("#library-delete-step");
+    const title = overlay.querySelector("#library-delete-title");
+    const description = overlay.querySelector("#library-delete-description");
+    const status = overlay.querySelector("#library-delete-status");
+    const cancel = overlay.querySelector("#library-delete-cancel");
+    const confirm = overlay.querySelector("#library-delete-confirm");
+    const targetLabel = t(
+      target === "mods" ? "settings.modsLabel" : "settings.enginesLabel",
+    );
+    let step = 1;
+    let closed = false;
+
+    const close = (restoreFocus = true) => {
+      if (closed) return;
+      closed = true;
+      deactivateCheckoutDialog(overlay, restoreFocus);
+      overlay.remove();
+    };
+
+    const renderStep = () => {
+      stepLabel.textContent = t("settings.clearLibraryStep", { step });
+      title.textContent = t(
+        step === 1
+          ? "settings.clearLibraryFirstTitle"
+          : step === 2
+            ? "settings.clearLibrarySecondTitle"
+            : "settings.clearLibraryFinalTitle",
+        { target: targetLabel },
+      );
+      description.textContent = t(
+        step === 1
+          ? "settings.clearLibraryFirstDescription"
+          : step === 2
+            ? "settings.clearLibrarySecondDescription"
+            : "settings.clearLibraryFinalDescription",
+        { target: targetLabel },
+      );
+      status.textContent = "";
+      cancel.textContent = t("settings.clearLibraryCancel");
+      confirm.textContent = t(
+        step === 3
+          ? "settings.clearLibraryFinalButton"
+          : step === 2
+            ? "settings.clearLibraryUnderstand"
+            : "settings.clearLibraryContinue",
+        { target: targetLabel },
+      );
+    };
+
+    cancel.addEventListener("click", () => close());
+    confirm.addEventListener("click", async () => {
+      if (step < 3) {
+        step += 1;
+        renderStep();
+        return;
+      }
+      if (this.hasActiveDownloads()) {
+        status.textContent = t("settings.clearLibraryStopDownloads");
+        return;
+      }
+      confirm.disabled = true;
+      cancel.disabled = true;
+      status.textContent = t("settings.clearLibraryDeleting");
+      try {
+        await FS.clearInstalledLibrary(target);
+        close(false);
+        window.location.reload();
+      } catch (error) {
+        confirm.disabled = false;
+        cancel.disabled = false;
+        status.textContent = error?.message || t("settings.clearLibraryFailed");
+      }
+    });
+    overlay.addEventListener("click", (event) => {
+      if (event.target === overlay) close();
+    });
+    document.body.appendChild(overlay);
+    overlay.hidden = false;
+    renderStep();
+    requestAnimationFrame(() => overlay.classList.add("show"));
+    activateCheckoutDialog(overlay, dialog, confirm, () => close());
   },
 
   async openStorageLocation() {
@@ -644,39 +749,7 @@ export const configModal = {
     }
   },
 
-  async handleStartupToggle(enabled) {
-    if (window.NL_OS !== "Windows") return false;
-    try {
-      const runningExe = String(window.NL_ARGS?.[0] || "")
-        .trim()
-        .replace(/^"|"$/g, "");
-      const exePath = runningExe || `${window.NL_PATH}\\WeekBox.exe`;
-
-      if (enabled && exePath) {
-        try {
-          await Neutralino.filesystem.getStats(exePath);
-        } catch {
-          // If direct stats check fails in development or with specific pathing, continue
-        }
-      }
-
-      const command = enabled
-        ? `cmd /c reg add "HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Run" /v "WeekBox" /t REG_SZ /d "\\"${exePath}\\"" /f`
-        : `cmd /c reg delete "HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Run" /v "WeekBox" /f`;
-      const result = await Neutralino.os.execCommand(command, {
-        background: false,
-      });
-      if (result.exitCode !== 0) {
-        throw new Error(
-          result.stdErr || t("settings.startupRegistrationFailed"),
-        );
-      }
-      return true;
-    } catch (error) {
-      console.warn("Could not configure Windows startup", error);
-      return false;
-    }
-  },
+  handleStartupToggle: syncWindowsStartupRegistration,
 
   async open() {
     await this.init();

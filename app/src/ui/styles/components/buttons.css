@@ -86,6 +86,17 @@
   opacity: 0.6;
 }
 
+.storage-location-button-danger {
+  border-color: color-mix(in srgb, var(--danger) 55%, var(--border-color));
+  color: var(--danger);
+}
+
+.storage-location-button-danger:hover,
+.storage-location-button-danger:focus-visible {
+  border-color: var(--danger);
+  background: var(--danger-container);
+}
+
 @media (max-width: 720px) {
   .setting-item-storage {
     grid-template-columns: 1fr;
