@@ -12,6 +12,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - WeekBox starts with Windows by default and stays open when closed.
 - Engine settings now save between sessions.
 - Engine family editing now keeps the name and icon together.
+- Closing to the tray now shows a desktop notification.
+- Background downloads and engine updates now show desktop notifications.
 
 ## [2.3.2] - 2026-09-11
 

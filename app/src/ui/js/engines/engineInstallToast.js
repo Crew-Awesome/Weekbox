@@ -1,6 +1,7 @@
 import { toastDownloadMod } from "../home/modal/toastDownloadMod.js";
 import { FS } from "../../../backend/services/filesystem.js";
 import { t } from "../i18n/index.js";
+import { notifyDesktop } from "../desktopNotifications.js";
 
 function getToastId(engineId, version) {
   return `engine-install:${engineId}:${version}`;
@@ -34,6 +35,10 @@ export const engineInstallToast = {
     const toastId = this.show(install);
     if (!toastId) return;
     toastDownloadMod.success(toastId);
+    notifyDesktop(
+      t("notifications.engineInstalledTitle"),
+      t("notifications.engineInstalledMessage", install),
+    );
   },
 
   cancel(install) {
@@ -46,6 +51,11 @@ export const engineInstallToast = {
     const toastId = this.show(install);
     if (!toastId) return;
     toastDownloadMod.error(toastId, message);
+    notifyDesktop(
+      t("notifications.engineInstallFailedTitle"),
+      t("notifications.engineInstallFailedMessage", install),
+      "ERROR",
+    );
   },
 
   hide(install) {

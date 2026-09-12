@@ -29,6 +29,7 @@ import { firstRunStorageModal } from "../../../ui/js/firstRunStorageModal.js";
 import { firstRunLanguageModal } from "../../../ui/js/firstRunLanguageModal.js";
 import { whatsNewModal } from "../../../ui/js/updates/whatsNewModal.js";
 import { i18n, t } from "../../../ui/js/i18n/index.js";
+import { notifyDesktop } from "../../../ui/js/desktopNotifications.js";
 
 const SINGLE_INSTANCE_MUTEX = "Global\\WeekBox-com.weekbox.app";
 
@@ -459,6 +460,12 @@ async function startApp() {
         appSettings.get("closeToTray")
       ) {
         await Neutralino.window.hide();
+        notifyDesktop(
+          t("tray.runningInTrayTitle"),
+          t("tray.runningInTrayMessage"),
+          "INFO",
+          true,
+        );
         return;
       }
       await handleAppExit();
