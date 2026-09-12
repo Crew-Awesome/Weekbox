@@ -28,7 +28,6 @@ export class WebAdapter implements IPlatformBridge {
     data?: any,
     signal?: AbortSignal
   ): Promise<BackendResult<Operation>> {
-    // Intercept HTTP operations and perform them natively in the browser via fetch
     if (operation === "http.fetchJson") {
       const response = await fetch(data.url, { ...data.options, signal });
       if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
@@ -64,10 +63,10 @@ export class WebAdapter implements IPlatformBridge {
     }
   }
 
-  async downloadMod(url: string, modId?: string, modName?: string, onProgress?: (progress: number) => void, signal?: AbortSignal): Promise<void> {
+  async downloadMod(url: string, modId?: string, modName?: string, _onProgress?: (progress: number, statusText?: string) => void, _signal?: AbortSignal): Promise<void> {
     const a = document.createElement("a");
     a.href = url;
-    a.download = `mod_${modId || Date.now()}_${modName || "unknown"}.zip`; // Basic fallback for web
+    a.download = `mod_${modId || Date.now()}_${modName || "unknown"}.zip`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -78,11 +77,10 @@ export class WebAdapter implements IPlatformBridge {
   }
 
   async registerInstalledMod(modData: any): Promise<void> {
-    // For web, we might use IndexedDB later. For now, do nothing.
     console.log("Registered installed mod (Web):", modData);
   }
 
-  async isModInstalled(modId: string): Promise<boolean> {
+  async isModInstalled(_modId: string): Promise<boolean> {
     return false;
   }
 

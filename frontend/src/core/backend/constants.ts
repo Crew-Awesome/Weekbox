@@ -9,7 +9,7 @@
  * @returns {Promise<string>} La ruta absoluta a la carpeta de datos de Weekbox.
  */
 export const getWeekboxAppDataPath = async (): Promise<string> => {
-  if (typeof window.Neutralino !== "undefined") {
+  if (typeof window.Neutralino !== "undefined" && window.Neutralino.os?.getPath) {
     const dataPath = await window.Neutralino.os.getPath("data");
     const weekboxPath = `${dataPath}/Weekbox`.replace(/\\/g, "/");
 
@@ -22,6 +22,5 @@ export const getWeekboxAppDataPath = async (): Promise<string> => {
     return weekboxPath;
   }
 
-  // Fallback para entornos web donde Neutralino no est� disponible
   return "Weekbox";
 };

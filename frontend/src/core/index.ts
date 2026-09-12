@@ -3,6 +3,7 @@ import { fs } from "./backend/fs";
 import { http } from "./backend/http";
 import { windowApi } from "./backend/window";
 import { osApi } from "./backend/os";
+import { notificationApi } from "./backend/notification";
 import { gameBananaApi } from "./services/gamebanana";
 
 export * from "./services/gamebanana/types";
@@ -16,6 +17,8 @@ const Core = {
    * @description Adaptador principal de la plataforma (detecta Neutralino o Web automáticamente).
    */
   platform,
+  Platform: platform,
+
 
   /**
    * @description Módulos y utilidades del sistema de archivos unificado (Neutralino + Node).
@@ -24,6 +27,7 @@ const Core = {
   http,
   window: windowApi,
   os: osApi,
+  notification: notificationApi,
 
   /**
    * @description Servicios externos para consumo de APIs (GameBanana, GameJolt, etc.).

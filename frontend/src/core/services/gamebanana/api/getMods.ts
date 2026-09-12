@@ -112,7 +112,6 @@ export async function getMods(
 
     const allRecords = (await Promise.all(requests)).flat();
 
-    /* De-duplicate in case of overlap between categories */
     const uniqueRecords = Array.from(
       new Map(allRecords.map((r) => [r._idRow, r])).values(),
     );
@@ -133,7 +132,6 @@ export async function getMods(
   }
 
   if (searchQuery.trim().length > 0) {
-    /* fetchSearchRecords already slices correctly internally */
   } else if (filter === "new" || filter === "updated") {
     rawRecords = rawRecords.slice(0, perPage);
   } else {
@@ -142,10 +140,6 @@ export async function getMods(
 
   if (rawRecords.length === 0) return [];
 
-  /* 
-   * Batch fetch secondary statistics and full descriptions using the Mod/Multi endpoint.
-   * GameBanana often fails or truncates when _csvRowIds has too many items, so we chunk them.
-   */
   const CHUNK_SIZE = 15;
   let multiData: any[] = [];
 

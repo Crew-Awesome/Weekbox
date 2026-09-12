@@ -3,6 +3,7 @@ import { constants } from "node:fs";
 import os from "node:os";
 import { exec } from "node:child_process";
 import { promisify } from "node:util";
+import { flattenFolder } from "./flattener.mjs";
 
 const execAsync = promisify(exec);
 const isWin = process.platform === "win32";
@@ -206,8 +207,30 @@ export const fsApi = {
       ? archivePath.replace(/\//g, "\\")
       : archivePath;
     const normalizedDest = isWin ? destFolder.replace(/\//g, "\\") : destFolder;
-    // tar nativo de Windows extrae zip, tar, gz perfectamente
     const command = `tar -xf ${quoteShellArgument(normalizedArchive)} -C ${quoteShellArgument(normalizedDest)}`;
-    await execAsync(command);
+    try {
+      await execAsync(command);
+    } catch (tarErr) {
+      if (isWin) {
+        const psCommand = `powershell -NoProfile -NonInteractive -Command "Expand-Archive -LiteralPath '${normalizedArchive.replace(/'/g, "''")}' -DestinationPath '${normalizedDest.replace(/'/g, "''")}' -Force"`;
+        await execAsync(psCommand);
+      } else {
+        throw tarErr;
+      }
+    }
+
+    try {
+      await flattenFolder(destFolder);
+    } catch (flattenErr) {
+      console.warn(`[fs.extractArchive] Warning: Failed to flatten folder "${destFolder}":`, flattenErr);
+    }
+  },
+
+  /**
+   * Aplanes las carpetas anidadas de un mod buscando .json o .exe como fondo.
+   * @param {string} targetFolder - Carpeta a aplanar.
+   */
+  async flattenFolder(targetFolder) {
+    return await flattenFolder(targetFolder);
   },
 };

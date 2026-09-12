@@ -41,7 +41,6 @@ export async function getTools(
 
   if (records.length === 0) return [];
 
-  // Fetch expanded details for the tools obtained
   const toolIds = records.map((r: any) => r._idRow).join(",");
   const multiUrl =
     GB_BASE_URL +

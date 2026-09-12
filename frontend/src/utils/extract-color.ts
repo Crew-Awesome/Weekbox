@@ -37,7 +37,6 @@ const getBgColors = (): number[][] => {
 
 const colorCache = new Map<string, string>();
 
-// TODO: En un futuro, esto se conectará a las opciones de usuario (Settings/Zustand)
 const IS_ACTIVE = false;
 
 /**
@@ -72,7 +71,6 @@ export const extractColor = (
     img.crossOrigin = "Anonymous";
 
     img.onload = () => {
-      // Ceder el control al hilo principal para evitar el stuttering en el renderizado (yield)
       setTimeout(() => {
         try {
           const canvas = document.createElement("canvas");
@@ -83,7 +81,6 @@ export const extractColor = (
             return;
           }
 
-          // Reducción para rendimiento (24px es suficiente para sacar el color predominante)
           const maxDim = 24;
           let width = img.width;
           let height = img.height;
@@ -111,7 +108,6 @@ export const extractColor = (
           const colorCounts: Record<string, { count: number; rgb: number[] }> =
             {};
 
-          // Leer pixeles saltando de a 16 (4 píxeles reales)
           for (let i = 0; i < data.length; i += 16) {
             const r = data[i];
             const g = data[i + 1];
@@ -172,7 +168,7 @@ export const extractColor = (
         } catch (err) {
           reject(new Error("Canvas image data extraction failed."));
         }
-      }, 50); // Yield to allow UI to render first
+      }, 50);
     };
 
     img.onerror = () => {

@@ -2,13 +2,10 @@ const fs = require('fs');
 const path = require('path');
 const prettier = require('prettier');
 
-// Target folders to format
 const TARGET_FOLDERS = ['frontend', 'extensions'];
 
-// Supported file extensions
 const EXTENSIONS = ['.js', '.jsx', '.ts', '.tsx', '.json', '.css', '.md'];
 
-// Folders to safely ignore
 const IGNORED_FOLDERS = ['node_modules', 'dist', 'build', '.git', '.tmp'];
 
 /**
@@ -61,21 +58,17 @@ async function runFormatter() {
     try {
       const source = fs.readFileSync(file, 'utf8');
       
-      // Resolve prettier config specific to the file's location
       const options = await prettier.resolveConfig(file) || {};
       options.filepath = file;
 
-      // Check if the file already conforms to Prettier rules
       const isFormatted = await prettier.check(source, options);
       
       if (!isFormatted) {
-        // File is not formatted, so we format and overwrite it
         console.log(`Formatting: ${path.relative(path.join(__dirname, '..'), file)}`);
         const formatted = await prettier.format(source, options);
         fs.writeFileSync(file, formatted, 'utf8');
         formattedCount++;
       } else {
-        // File is already perfectly formatted, omit it
         skippedCount++;
       }
     } catch (error) {

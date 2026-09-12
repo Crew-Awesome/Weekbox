@@ -1,6 +1,7 @@
 import React, { useRef, useState, useEffect } from "react";
 import gsap from "gsap";
 import Shared from "@shared";
+import placeholderImg from "/assets/images/placeholder-mini.webp";
 
 /**
  * Configuration properties for the Card component.
@@ -18,6 +19,11 @@ export interface CardProps {
    * Optional URL for the background image thumbnail.
    */
   thumbnail?: string;
+  /**
+   * Explicitly controls whether the thumbnail area is shown.
+   * If true and no thumbnail is provided, defaults to the placeholder image.
+   */
+  showThumbnail?: boolean;
   /**
    * Optional URL for the icon image. Displayed in the top-left corner.
    */
@@ -77,6 +83,7 @@ export const Card: React.FC<CardProps> = ({
   title,
   description,
   thumbnail,
+  showThumbnail = false,
   icon,
   iconTooltip,
   showIcon,
@@ -89,6 +96,7 @@ export const Card: React.FC<CardProps> = ({
   isLoading = false,
   isNsfw = false,
 }) => {
+  const displayThumbnail = thumbnail || (showThumbnail ? placeholderImg : undefined);
   const thumbnailRef = useRef<HTMLDivElement>(null);
   const hoverBgRef = useRef<HTMLDivElement>(null);
   const notchOverlayRef = useRef<HTMLDivElement>(null);
@@ -103,7 +111,6 @@ export const Card: React.FC<CardProps> = ({
   const [isInView, setIsInView] = useState(!lazyLoad);
   const cardRootRef = useRef<HTMLDivElement>(null);
 
-  // Lazy Load Observer (prevents color extraction if not in viewport)
   useEffect(() => {
     if (!lazyLoad) return;
 
@@ -122,9 +129,9 @@ export const Card: React.FC<CardProps> = ({
 
   useEffect(() => {
     let isMounted = true;
-    if (isInView && extractColor && thumbnail) {
+    if (isInView && extractColor && displayThumbnail) {
       Shared.utils
-        .extractColor(thumbnail, 0.3)
+        .extractColor(displayThumbnail, 0.3)
         .then((color) => {
           if (isMounted) setHoverColor(color);
         })
@@ -133,9 +140,8 @@ export const Card: React.FC<CardProps> = ({
     return () => {
       isMounted = false;
     };
-  }, [isInView, extractColor, thumbnail]);
+  }, [isInView, extractColor, displayThumbnail]);
 
-  // Set initial inset state based on responsive padding
   useEffect(() => {
     if (hoverBgRef.current) {
       const paddingPixels = window.innerWidth >= 640 ? 12 : 0;
@@ -149,7 +155,6 @@ export const Card: React.FC<CardProps> = ({
     }
   }, []);
 
-  // Update hover color dynamically if it arrives while already hovering
   useEffect(() => {
     if (isHovered && hoverColor) {
       if (hoverBgRef.current)
@@ -174,7 +179,6 @@ export const Card: React.FC<CardProps> = ({
   }, [hoverColor, isHovered]);
 
   const handleMouseEnter = () => {
-    // Disable hover effects on touch/mobile devices
     if (window.matchMedia("(hover: none)").matches) return;
     setIsHovered(true);
 
@@ -198,7 +202,6 @@ export const Card: React.FC<CardProps> = ({
         ease: "power2.inOut",
       });
     }
-    // Synchronize the notch overlay to look like a transparent hole
     if (notchOverlayRef.current) {
       gsap.to(notchOverlayRef.current, {
         opacity: 1,
@@ -262,13 +265,12 @@ export const Card: React.FC<CardProps> = ({
   const isWholeCardClickable = clickableArea === "whole-card";
   const isThumbnailClickable = clickableArea === "thumbnail";
 
-  // Define if the mask and icon container should be rendered
   const shouldRenderIcon = showIcon ?? !!icon;
 
   return (
     <div
       ref={cardRootRef}
-      className={`relative isolate flex flex-col shadow-2xs bg-transparent p-0 sm:p-3 select-none hover:z-50 ${
+      className={`relative isolate flex flex-col shadow-none bg-transparent p-0 sm:p-3 select-none hover:z-50 ${
         shouldRenderIcon
           ? "sm:rounded-r-[1rem] sm:rounded-bl-[1rem] sm:rounded-tl-none"
           : "sm:rounded-[1rem]"
@@ -278,12 +280,11 @@ export const Card: React.FC<CardProps> = ({
       onMouseEnter={isWholeCardClickable ? handleMouseEnter : undefined}
       onMouseLeave={isWholeCardClickable ? handleMouseLeave : undefined}
     >
-      {/* Hover Background Layer */}
       <div
         ref={hoverBgRef}
         className="absolute pointer-events-none z-[-1] sm:rounded-[1rem]"
       />
-      {thumbnail && (
+      {displayThumbnail && (
         <div className="relative w-full">
           <div
             className={`relative overflow-hidden w-full aspect-[16/9] isolate ${
@@ -307,7 +308,6 @@ export const Card: React.FC<CardProps> = ({
                 : undefined
             }
           >
-            {/* Base Image Layer */}
             <div className="absolute inset-0 isolate">
               <div
                 ref={thumbnailRef}
@@ -318,16 +318,36 @@ export const Card: React.FC<CardProps> = ({
                 }`}
               >
                 {(!thumbnailLoaded || isLoading) && (
-                  <div className="absolute inset-0 bg-[var(--wb-surface-variant)] animate-pulse" />
+                  <img
+                    className="absolute inset-0 w-full h-full object-cover block opacity-40 filter blur-[0.5px]"
+                    src={placeholderImg}
+                    alt=""
+                    draggable={false}
+                    style={{
+                      WebkitMaskImage:
+                        "linear-gradient(to bottom, black 50%, transparent 100%)",
+                      maskImage:
+                        "linear-gradient(to bottom, black 50%, transparent 100%)",
+                    }}
+                  />
+                )}
+                {(!thumbnailLoaded || isLoading) && (
+                  <div className="absolute inset-0 bg-[var(--wb-surface-variant)]/40 animate-pulse" />
                 )}
                 {!isLoading && (
                   <img
                     className={`w-full h-full object-cover block transition-opacity duration-300 ${thumbnailLoaded ? "opacity-100" : "opacity-0"}`}
-                    src={thumbnail}
+                    src={displayThumbnail}
                     alt={title}
                     loading="lazy"
                     draggable={false}
                     onLoad={() => setThumbnailLoaded(true)}
+                    onError={(e) => {
+                      if (e.currentTarget.src !== placeholderImg) {
+                        e.currentTarget.src = placeholderImg;
+                        setThumbnailLoaded(true);
+                      }
+                    }}
                     style={{
                       WebkitMaskImage:
                         "linear-gradient(to bottom, black 50%, transparent 100%)",
@@ -340,10 +360,8 @@ export const Card: React.FC<CardProps> = ({
             </div>
           </div>
 
-          {/* Mask Container (Opaque with animated overlay) - MOVED OUTSIDE overflow-hidden */}
           {shouldRenderIcon && (
             <div className="absolute left-0 top-0 w-[18%] aspect-square rounded-tl-none rounded-br-[8px] bg-[var(--wb-bg)] z-10 pointer-events-auto">
-              {/* Overlay that receives the hover color animation */}
               <div
                 ref={notchOverlayRef}
                 className="absolute inset-0 pointer-events-none opacity-0 rounded-tl-none rounded-br-[8px]"
@@ -369,13 +387,12 @@ export const Card: React.FC<CardProps> = ({
                         onLoad={() => setIconLoaded(true)}
                       />
                     )}
-                    {/* Custom Tooltip */}
                     {iconTooltip && (
                       <div
                         className={`absolute left-1/2 top-full -translate-x-1/2 -mt-2 z-[100] pointer-events-none transition-opacity duration-200 flex flex-col items-center ${showTooltip ? "opacity-100" : "opacity-0"}`}
                       >
                         <div className="w-0 h-0 border-l-[10px] border-r-[10px] border-b-[10px] border-transparent border-b-[var(--wb-surface-container-highest)] -mb-[1px]" />
-                        <div className="flex px-4 py-2 bg-[var(--wb-surface-container-highest)] text-[var(--wb-on-surface)] text-sm font-bold rounded whitespace-nowrap shadow-xl">
+                        <div className="flex px-4 py-2 bg-[var(--wb-surface-container-highest)] text-[var(--wb-on-surface)] text-sm font-bold rounded whitespace-nowrap border border-white/10">
                           {iconTooltip}
                         </div>
                       </div>
@@ -384,7 +401,6 @@ export const Card: React.FC<CardProps> = ({
                 )}
               </div>
 
-              {/* Base SVGs to hide the image underneath */}
               <svg
                 className="absolute top-0 left-full w-[8px] h-[8px] text-[var(--wb-bg)] pointer-events-none"
                 viewBox="0 0 8 8"
@@ -402,7 +418,6 @@ export const Card: React.FC<CardProps> = ({
                 <path d="M0 0 H8 A8 8 0 0 0 0 8 V0 Z" fill="currentColor" />
               </svg>
 
-              {/* Hover Notch SVGs */}
               <svg
                 ref={notchSvg1Ref}
                 className="absolute top-0 left-full w-[8px] h-[8px] pointer-events-none opacity-0"
@@ -437,7 +452,7 @@ export const Card: React.FC<CardProps> = ({
         ) : (
           <>
             <div className="flex items-start justify-between gap-2">
-              <strong className="text-xl font-bold leading-snug line-clamp-2 select-text">
+              <strong className="text-xl font-bold leading-snug line-clamp-2 select-text text-[var(--wb-on-surface)]">
                 {title}
               </strong>
               {isNsfw && (

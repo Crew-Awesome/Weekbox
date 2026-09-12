@@ -45,7 +45,6 @@ export function scoreCandidate(
     Math.log1p(likes) / Math.log1p(RANKER_CONFIG.likeSaturation),
   );
 
-  // New mods receive a freshness boost, but older high-ranking mods can still compete fairly
   const freshness =
     0.35 + 0.65 * 2 ** (-ageDays / RANKER_CONFIG.freshnessHalfLifeDays);
 

@@ -1,6 +1,7 @@
 import type { BackendOperation, BackendResult } from "../backend/types";
 import type { IPlatformBridge, PlatformType } from "./types";
 import neuConfig from "../../../../neutralino.config.json";
+import { DownloadStatus } from "../../store/download-constants";
 
 /**
  * Platform adapter for Desktop environments (Neutralinojs + Node.js Extension).
@@ -44,7 +45,6 @@ export class DesktopAdapter implements IPlatformBridge {
         this._isReady = true;
         this.emitLocalEvent("ready", true);
 
-        // Start heartbeat to keep the Node backend alive
         setInterval(() => {
           this.call("system.ping" as any).catch(() => {});
         }, 5000);
@@ -85,29 +85,29 @@ export class DesktopAdapter implements IPlatformBridge {
     }
   }
 
-  async downloadMod(url: string, modId?: string, modName?: string, onProgress?: (progress: number) => void, signal?: AbortSignal): Promise<void> {
+  async downloadMod(url: string, modId?: string, modName?: string, onProgress?: (progress: number, statusText?: string) => void, signal?: AbortSignal): Promise<void> {
     let basePath = window.NL_CWD || window.NL_PATH || "";
     try {
       if (window.Neutralino?.os?.getPath) {
         const dataPath = await window.Neutralino.os.getPath("data");
-        // Ensure it saves in a "WeekBox" subfolder inside AppData
         basePath = `${dataPath}/WeekBox`;
       }
     } catch (e) {
       console.warn("Could not get OS data path, falling back to CWD");
     }
     
-    // Normalize mod name: no accents, remove spaces and special chars
     const safeName = (modName || "unknown")
       .normalize("NFD")
-      .replace(/[\u0300-\u036f]/g, "") // remove accents
-      .replace(/[^a-zA-Z0-9]/g, "") // alphanumeric only
+      .replace(/[\u0300-\u036f]/g, "")
+      .replace(/[^a-zA-Z0-9]/g, "")
       .toLowerCase();
 
+    const id = modId || Date.now();
     const modsDir = `${basePath}/mods`;
-    const destPath = `${modsDir}/mod_${modId || Date.now()}_${safeName}.zip`;
+    const targetFolder = `${modsDir}/mod_${id}_${safeName}`;
+    const tempArchivePath = `${modsDir}/_temp_${id}_${safeName}.zip`;
 
-    console.log(`Downloading mod to ${destPath}`);
+    console.log(`Downloading mod to ${tempArchivePath} for extraction into ${targetFolder}`);
 
     let unsubscribe: (() => void) | undefined;
     const progressId = `dl_${Date.now()}_${Math.random()}`;
@@ -117,31 +117,49 @@ export class DesktopAdapter implements IPlatformBridge {
         if (data && data.progressId === progressId) {
            let percent = 0;
            if (data.total > 0) {
-             percent = Math.round((data.downloaded / data.total) * 100);
+             percent = Math.min(98, Math.round((data.downloaded / data.total) * 98));
            } else {
-             // Fallback if content-length is missing: 1% per MB, up to 99%
-             percent = Math.min(99, Math.round(data.downloaded / (1024 * 1024)));
+             percent = Math.min(98, Math.round(data.downloaded / (1024 * 1024)));
            }
-           onProgress(percent);
+           onProgress(percent, "Downloading...");
         }
       });
     }
 
     try {
-      // Ensure the directory exists
       await this.call("fs.createDirectory" as any, { path: modsDir }).catch(() => {});
       
-      // Delegate to the Node backend's HTTP client
       await this.call("http.downloadToFile" as any, {
         url,
-        destPath,
-        progressId, // tell backend to tag progress events with this ID
+        destPath: tempArchivePath,
+        progressId,
         options: {},
       }, signal);
-    } catch (error: any) {
-      if (error?.message !== "Cancelled") {
-        console.error("Error downloading mod:", error);
+
+      if (signal?.aborted) {
+        await this.call("fs.remove" as any, { path: tempArchivePath }).catch(() => {});
+        return;
       }
+
+      onProgress?.(99, DownloadStatus.EXTRACTING);
+
+      await this.call("fs.extractArchive" as any, {
+        archivePath: tempArchivePath,
+        destFolder: targetFolder,
+      }, signal);
+
+      await this.call("fs.remove" as any, { path: tempArchivePath }).catch(() => {});
+
+      onProgress?.(99, DownloadStatus.FLATTENING);
+      await this.call("fs.flattenFolder" as any, { path: targetFolder }, signal).catch(() => {});
+
+      onProgress?.(100, DownloadStatus.COMPLETED);
+    } catch (error: any) {
+      await this.call("fs.remove" as any, { path: tempArchivePath }).catch(() => {});
+      if (error?.message !== "Cancelled") {
+        console.error("Error downloading/extracting mod:", error);
+      }
+      throw error;
     } finally {
       if (unsubscribe) unsubscribe();
     }
@@ -169,10 +187,8 @@ export class DesktopAdapter implements IPlatformBridge {
     const dataDir = `${basePath}/data`;
     const registryPath = `${dataDir}/mod-installed.json`;
 
-    // Ensure directory exists
     await this.call("fs.createDirectory" as any, { path: dataDir }).catch(() => {});
 
-    // Compress thumbnail to base64 WebP
     let compressedThumb = "";
     if (modData.thumbnail || modData.img) {
       try {
@@ -182,7 +198,6 @@ export class DesktopAdapter implements IPlatformBridge {
         
         const bitmap = await createImageBitmap(blob);
         const canvas = document.createElement("canvas");
-        // Resize while keeping aspect ratio, max width 400
         const MAX_WIDTH = 400;
         let width = bitmap.width;
         let height = bitmap.height;
@@ -196,14 +211,13 @@ export class DesktopAdapter implements IPlatformBridge {
         const ctx = canvas.getContext("2d");
         if (ctx) {
           ctx.drawImage(bitmap, 0, 0, width, height);
-          compressedThumb = canvas.toDataURL("image/webp", 0.6); // Compress to webp at 60% quality
+          compressedThumb = canvas.toDataURL("image/webp", 0.6);
         }
       } catch (e) {
         console.warn("Failed to compress thumbnail for mod registry", e);
       }
     }
 
-    // Prepare registry entry
     const entry = {
       installed: true,
       installedAt: Date.now(),
@@ -228,17 +242,14 @@ export class DesktopAdapter implements IPlatformBridge {
       thumbnailBase64: compressedThumb
     };
 
-    // Read existing registry or create new
     let registry: any[] = [];
     try {
       const existing = await this.call("fs.readFile" as any, { path: registryPath });
       registry = JSON.parse(existing as unknown as string);
       if (!Array.isArray(registry)) registry = [];
     } catch (e) {
-      // File probably doesn't exist yet
     }
 
-    // Update or push
     const existingIndex = registry.findIndex(m => m.id === modData.id);
     if (existingIndex >= 0) {
       registry[existingIndex] = entry;
@@ -246,7 +257,6 @@ export class DesktopAdapter implements IPlatformBridge {
       registry.push(entry);
     }
 
-    // Write back
     await this.call("fs.writeFile" as any, { 
       path: registryPath, 
       content: JSON.stringify(registry, null, 2) 
@@ -288,7 +298,6 @@ export class DesktopAdapter implements IPlatformBridge {
     const modsDir = `${basePath}/mods`;
 
     try {
-      // 1. Remove from registry
       const existing = await this.call("fs.readFile" as any, { path: registryPath });
       let registry = JSON.parse(existing as unknown as string);
       if (Array.isArray(registry)) {
@@ -299,11 +308,10 @@ export class DesktopAdapter implements IPlatformBridge {
         });
       }
 
-      // 2. Delete related zip files
       const dirContents = await this.call("fs.readDirectory" as any, { path: modsDir });
       if (Array.isArray(dirContents)) {
         for (const file of dirContents) {
-          if (file.type === "FILE" && file.entry.startsWith(`mod_${modId}_`)) {
+          if (file.entry.startsWith(`mod_${modId}_`) || file.entry.startsWith(`_temp_${modId}_`)) {
             await this.call("fs.remove" as any, { path: `${modsDir}/${file.entry}` });
           }
         }

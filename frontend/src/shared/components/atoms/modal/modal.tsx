@@ -81,24 +81,37 @@ export const Modal: React.FC<ModalProps> = ({
     return () => window.removeEventListener("resize", handleResize);
   }, []);
 
+  const handleClose = React.useCallback((e?: React.MouseEvent) => {
+    if (e) {
+      e.stopPropagation();
+    }
+    setIsVisible(false);
+    onClose();
+  }, [onClose]);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        handleClose();
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [isOpen, handleClose]);
+
   useEffect(() => {
     let timeoutId: ReturnType<typeof setTimeout>;
     let rafId: number;
 
     if (isOpen) {
       setIsRendered(true);
-      /* 
-       * Use double requestAnimationFrame to ensure the browser paints the initial state
-       * with opacity-0 before changing to opacity-100 to trigger the CSS transition.
-       */
       rafId = requestAnimationFrame(() => {
-        rafId = requestAnimationFrame(() => {
-          setIsVisible(true);
-        });
+        setIsVisible(true);
       });
     } else {
       setIsVisible(false);
-      timeoutId = setTimeout(() => setIsRendered(false), 75);
+      timeoutId = setTimeout(() => setIsRendered(false), 150);
     }
 
     return () => {
@@ -109,17 +122,14 @@ export const Modal: React.FC<ModalProps> = ({
 
   if (!isRendered) return null;
 
-  /* Helper to parse SpacingValue to CSS padding string */
   const parseSpacing = (spacing?: SpacingValue, fallback: string = "0px") => {
     if (!spacing) return fallback;
     if (Array.isArray(spacing)) {
-      /* spacing is [horizontal, vertical] => CSS padding: "vertical horizontal" */
       return `${spacing[1]} ${spacing[0]}`;
     }
     return spacing;
   };
 
-  /* Determine active spacing/size configuration */
   const currentConfig = edgeSpacing
     ? isDesktop
       ? edgeSpacing.desktop
@@ -145,17 +155,14 @@ export const Modal: React.FC<ModalProps> = ({
     }
   }
 
-  /* Determine active classes for the modal body */
   let activeWidthClass = widthClass;
   let activeHeightClass = heightClass;
 
   if (edgeSpacing) {
     if (!isStatic) {
-      /* Dynamic Edge Spacing: expand to fill the padding limits */
       activeWidthClass = "w-full max-w-full";
       activeHeightClass = "h-full max-h-full";
     } else {
-      /* Static Size: clear tailwind width/height classes so inline styles apply cleanly */
       activeWidthClass = "";
       activeHeightClass = "";
     }
@@ -163,14 +170,12 @@ export const Modal: React.FC<ModalProps> = ({
 
   return ReactDOM.createPortal(
     <div
-      className={`fixed inset-0 z-[100] flex items-center justify-center transition-opacity duration-75 ease-out ${isVisible ? "opacity-100" : "opacity-0"} ${overlayClassName}`}
-      onClick={onClose}
+      className={`fixed inset-0 z-[100] flex items-center justify-center transition-opacity duration-150 ease-out ${isVisible ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"} ${overlayClassName}`}
+      onClick={handleClose}
       style={overlayPadding ? { padding: overlayPadding } : undefined}
     >
-      <div className="absolute inset-0 bg-black/40 backdrop-blur-md z-[-1]" />
-
       <div
-        className={`relative flex flex-col ${activeWidthClass} ${activeHeightClass} ${modalClassName} transition-all duration-75 ease-out transform ${isVisible ? "scale-100 translate-y-0 opacity-100" : "scale-[0.97] translate-y-4 opacity-0"}`}
+        className={`relative flex flex-col ${activeWidthClass} ${activeHeightClass} ${modalClassName} transition-[opacity,transform] duration-150 ease-out transform ${isVisible ? "scale-100 translate-y-0 opacity-100" : "scale-[0.97] translate-y-2 opacity-0"}`}
         onClick={(e) => e.stopPropagation()}
         style={staticModalStyle}
       >
@@ -184,7 +189,7 @@ export const Modal: React.FC<ModalProps> = ({
 
         <div className="relative flex flex-col z-10 text-[var(--wb-on-surface)] h-full overflow-hidden">
           <button
-            onClick={onClose}
+            onClick={handleClose}
             className="absolute top-4 right-4 p-2 rounded-full text-[var(--wb-icon-default)] hover:text-[var(--wb-icon-hover)] hover:bg-[var(--wb-surface-bright)] transition-colors z-[15]"
             aria-label="Close modal"
           >

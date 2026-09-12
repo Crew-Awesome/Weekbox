@@ -51,7 +51,7 @@ export async function fetchRipeRecords(
     return state.records.slice(0, maxRecords);
   }
 
-  const indexUrl = "https://gamebanana.com/apiv12/Mod/Index";
+  const indexUrl = "https://gamebanana.com/apiv11/Mod/Index";
 
   let categoryIds = Object.keys(ENGINE_CATEGORIES).map(Number);
   if (!isAll) {
@@ -71,31 +71,55 @@ export async function fetchRipeRecords(
     state.sourcePage <= maxPages
   ) {
     try {
-      // Fetch the current page for all allowed categories simultaneously
-      const requests = categoryIds.map(async (catId) => {
-        const url = `${indexUrl}?_aFilters[Generic_Game]=${FNF_GAME_ID}&_aFilters[Generic_Category]=${catId}&_sSort=Generic_MostLiked&_nPerpage=30&_nPage=${state.sourcePage}`;
+      let allFetched: any[] = [];
+
+      let hasNetworkError = false;
+
+      if (isAll) {
+        const perPageToFetch = Math.max(15, Math.min(30, maxRecords));
+        const url = `${indexUrl}?_aFilters[Generic_Game]=${FNF_GAME_ID}&_sSort=Generic_MostLiked&_nPerpage=${perPageToFetch}&_nPage=${state.sourcePage}`;
         try {
           const res: any = await http.fetchJson(url);
-          const records = res?._aRecords || [];
-          // Resolve engine id to avoid "unknown"
-          return records.map((r: any) => ({
-            ...r,
-            __resolvedEngineId: ENGINE_CATEGORIES[catId].id,
-          }));
-        } catch {
-          return [];
+          allFetched = res?._aRecords || [];
+        } catch (err) {
+          console.warn("fetchRipeRecords failed for all engines:", err);
+          hasNetworkError = true;
+          allFetched = [];
         }
-      });
+      } else {
+        const perCatPerPage = Math.max(10, Math.ceil(maxRecords / categoryIds.length));
+        const requests = categoryIds.map(async (catId) => {
+          const url = `${indexUrl}?_aFilters[Generic_Game]=${FNF_GAME_ID}&_aFilters[Generic_Category]=${catId}&_sSort=Generic_MostLiked&_nPerpage=${perCatPerPage}&_nPage=${state.sourcePage}`;
+          try {
+            const res: any = await http.fetchJson(url);
+            const records = res?._aRecords || [];
+            return records.map((r: any) => ({
+              ...r,
+              __resolvedEngineId: ENGINE_CATEGORIES[catId]?.id,
+            }));
+          } catch (err) {
+            hasNetworkError = true;
+            return [];
+          }
+        });
 
-      const results = await Promise.all(requests);
-      const allFetched = results.flat();
+        const results = await Promise.all(requests);
+        allFetched = results.flat();
+      }
+
+      if (hasNetworkError && allFetched.length === 0) {
+        if (state.records.length === 0) {
+          ripeCache.delete(cacheKey);
+          throw new Error("Failed to fetch ripe mods from GameBanana (network error or timeout)");
+        }
+        break;
+      }
 
       if (allFetched.length === 0) {
         state.isComplete = true;
         break;
       }
 
-      // Sort by likes locally since we merged multiple categories
       allFetched.sort((a, b) => (b._nLikeCount || 0) - (a._nLikeCount || 0));
 
       for (const mod of allFetched) {
@@ -121,3 +145,8 @@ export async function fetchRipeRecords(
 
   return state.records.slice(0, maxRecords);
 }
+
+export function clearRipeCache() {
+  ripeCache.clear();
+}
+

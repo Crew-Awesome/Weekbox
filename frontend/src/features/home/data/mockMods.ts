@@ -2,6 +2,7 @@ import type { ModItem } from "../types";
 
 export const MOCK_MODS: ModItem[] = [
   {
+    id: 1001,
     name: "Friday Night Funkidsasadsdaasdsadsaaaaaaaaaaaaaasdasdasdasdasdassdasddn': Mod Title",
     description:
       "Mod asdsdaadsDescription that's very long but very very very long",
@@ -10,6 +11,7 @@ export const MOCK_MODS: ModItem[] = [
     showIcon: true,
   },
   {
+    id: 1002,
     name: "No Icon Card",
     description: "This card explicitly hides the icon and its mask.",
     img: "/assets/images/placeholder-mini.jpg",
@@ -17,6 +19,7 @@ export const MOCK_MODS: ModItem[] = [
     showIcon: false,
   },
   {
+    id: 1003,
     name: "Different Icon Card",
     description: "This card uses a different customizable icon.",
     img: "/assets/images/placeholder-mini.jpg",
@@ -24,6 +27,7 @@ export const MOCK_MODS: ModItem[] = [
     showIcon: true,
   },
   {
+    id: 1004,
     name: "Standard Card",
     description: "Another regular card.",
     img: "/assets/images/placeholder-mini.jpg",

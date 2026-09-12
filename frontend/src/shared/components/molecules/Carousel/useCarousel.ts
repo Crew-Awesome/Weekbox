@@ -121,7 +121,6 @@ export function useCarousel(props: CarouselProps) {
         !dragState.current.isDown &&
         isAuto
       ) {
-        // We use setTimeout to avoid React state update collision within the same render cycle
         setTimeout(() => playAuto(), 0);
       }
     }
@@ -146,7 +145,6 @@ export function useCarousel(props: CarouselProps) {
       pauseAuto();
       dragState.current.isAnimating = true;
 
-      // Temporarily disable CSS scroll snapping so it doesn't fight the GSAP tween
       scroller.style.scrollSnapType = "none";
 
       const targetScrollLeft = targetIndex * scroller.clientWidth;
@@ -162,7 +160,7 @@ export function useCarousel(props: CarouselProps) {
         },
         onComplete: () => {
           dragState.current.isAnimating = false;
-          scroller.style.scrollSnapType = ""; // Restore native snapping
+          scroller.style.scrollSnapType = "";
 
           if (isInfinite) {
             handleInfiniteScrollWrap();
@@ -284,14 +282,13 @@ export function useCarousel(props: CarouselProps) {
         dragState.current.hasDragged = true;
       }
 
-      // Determine direction lock on first few pixels of movement
       if (isHorizontalSwipe === null && (dx > 5 || dy > 5)) {
         isHorizontalSwipe = dx > dy;
       }
 
       if (isHorizontalSwipe) {
         if (moveEvent.cancelable) {
-          moveEvent.preventDefault(); // Block vertical scroll only if horizontally swiping
+          moveEvent.preventDefault();
         }
         const walk = (dragState.current.startX - moveEvent.pageX) * 1.5;
         scroller.scrollLeft = dragState.current.scrollLeft + walk;
@@ -324,14 +321,12 @@ export function useCarousel(props: CarouselProps) {
         if (isHorizontalSwipe) {
           if (dx > 50) snapIndex = startIndex + 1;
           else if (dx < -50) snapIndex = startIndex - 1;
-          else snapIndex = startIndex; // Return to start if swipe wasn't strong enough
+          else snapIndex = startIndex;
 
-          // Clamp to strictly +/- 1 card from where the drag started
           if (snapIndex > startIndex + 1) snapIndex = startIndex + 1;
           if (snapIndex < startIndex - 1) snapIndex = startIndex - 1;
         }
       } else {
-        // Desktop free dragging: allow jumping multiple cards
         if (isHorizontalSwipe) {
           if (dx > 50) {
             snapIndex = Math.ceil(currentIndexFloat);
@@ -367,7 +362,6 @@ export function useCarousel(props: CarouselProps) {
   };
 
   const onTouchEnd = () => {
-    // When touch swipe ends, resume auto play since native scroll-snap handles the snapping
     playAuto();
   };
 

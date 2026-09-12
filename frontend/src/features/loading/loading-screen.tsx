@@ -1,105 +1,26 @@
-import React, { useState, useEffect } from "react";
+import React from "react";
 import Shared from "@shared";
 import loadingBg from "/assets/images/loading.webp";
-import Utils from "@utils";
+import { useLoadingTasks } from "./hooks/use-loading-tasks";
+import type { LoadingScreenProps } from "./types";
 
-export interface LoadingTask {
-  name: string;
-  action: () => Promise<void> | void;
-}
-
-export interface LoadingScreenProps {
-  /** Indicates if the loading screen should be shown (for backwards compatibility) */
-  isLoading?: boolean;
-  /** Actual tasks to execute during loading */
-  tasks?: LoadingTask[];
-  /** Optional callback upon loading completion */
-  onComplete?: () => void;
-}
+export type { LoadingTask, LoadingScreenProps } from "./types";
 
 /**
- * Loading Screen (Feature).
- * Executes real asynchronous startup tasks and visually displays their progress.
- * Manages its own unmounting lifecycle, applying a smooth fade-out CSS transition upon reaching 100%.
+ * Loading Screen (Feature Presentation Component).
+ * Visually displays startup progress, background artwork, and application version.
+ * Task execution and lifecycle transitions are delegated to `useLoadingTasks`.
  */
 export const LoadingScreen: React.FC<LoadingScreenProps> = ({
   isLoading = true,
   tasks = [],
   onComplete,
 }) => {
-  Utils.hooks.useShowWindow();
-  const [progress, setProgress] = useState(0);
-  const [action, setAction] = useState("Initializing environment...");
-
-  // States to control smooth unmounting
-  const [isFadingOut, setIsFadingOut] = useState(false);
-  const [isMounted, setIsMounted] = useState(isLoading);
-
-  useEffect(() => {
-    if (!isLoading) return;
-
-    let isCancelled = false;
-
-    const finishLoading = () => {
-      setIsFadingOut(true);
-
-      setTimeout(() => {
-        if (isCancelled) return;
-        setIsMounted(false);
-        onComplete?.();
-      }, 500);
-    };
-
-    const runTasks = async () => {
-      if (tasks.length === 0) {
-        setProgress(100);
-        setAction("Ready!");
-        finishLoading();
-        return;
-      }
-
-      for (let i = 0; i < tasks.length; i++) {
-        if (isCancelled) return;
-        const task = tasks[i];
-
-        setAction(task.name);
-        const currentProgress = Math.round((i / tasks.length) * 100);
-        setProgress(currentProgress);
-
-        try {
-          await Promise.race([
-            task.action(),
-            new Promise((_, reject) => setTimeout(() => reject(new Error(`Task ${task.name} timed out`)), 15000))
-          ]);
-        } catch (error) {
-          console.error(`Error executing startup task: ${task.name}`, error);
-        }
-      }
-
-      if (isCancelled) return;
-
-      setProgress(100);
-      setAction("Ready!");
-      finishLoading();
-    };
-
-    const preloadImage = new Image();
-    preloadImage.src = loadingBg;
-
-    const startTasksAfterRender = () => {
-      if (isCancelled) return;
-      requestAnimationFrame(() => {
-        setTimeout(runTasks, 100);
-      });
-    };
-
-    preloadImage.onload = startTasksAfterRender;
-    preloadImage.onerror = startTasksAfterRender;
-
-    return () => {
-      isCancelled = true;
-    };
-  }, [isLoading, tasks, onComplete]);
+  const { progress, action, isFadingOut, isMounted } = useLoadingTasks({
+    isLoading,
+    tasks,
+    onComplete,
+  });
 
   if (!isMounted) return null;
 
@@ -124,3 +45,5 @@ export const LoadingScreen: React.FC<LoadingScreenProps> = ({
     </div>
   );
 };
+
+export default LoadingScreen;

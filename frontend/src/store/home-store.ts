@@ -63,12 +63,11 @@ export const useHomeStore = create<HomeState>((set) => ({
   setScrollPosition: (pos) => set({ scrollPosition: pos }),
 
   resetState: () =>
-    set((state) => ({
+    set({
       searchQuery: "",
       mods: [],
       page: 1,
       hasMore: true,
       scrollPosition: 0,
-      // categoryFilter and sortFilter are left untouched as requested by the user
-    })),
+    }),
 }));

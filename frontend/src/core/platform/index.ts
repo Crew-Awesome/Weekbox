@@ -27,7 +27,6 @@ function createPlatformBridge(): IPlatformBridge {
  */
 export const platform: IPlatformBridge = createPlatformBridge();
 
-// Automatically initialize the platform to simplify usage
 platform.initialize();
 
 export type * from "./types";

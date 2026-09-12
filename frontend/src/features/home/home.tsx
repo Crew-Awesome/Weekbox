@@ -6,8 +6,10 @@ import { ModDetailsModal } from "./components/mod-details-modal";
 import { HomeSearchbar } from "./components/home-searchbar";
 import { useHomeStore } from "../../store/home-store";
 import { useModalDeeplink } from "./hooks/use-modal-deeplink";
+import { useHomeUrlFilters } from "./hooks/use-home-url-filters";
 
 export const Home: React.FC = () => {
+  useHomeUrlFilters();
 
   const {
     searchQuery,
@@ -35,7 +37,7 @@ export const Home: React.FC = () => {
         setScrollPosition(mainContainer.scrollTop);
       }
     };
-  }, []); /* eslint-disable-line react-hooks/exhaustive-deps */
+  }, []);
 
   return (
     <div className="items-center -m-8 justify-center text-white font-sans">

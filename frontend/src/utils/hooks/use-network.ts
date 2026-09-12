@@ -61,10 +61,8 @@ export function useNetworkRecovery(onReconnect: () => void) {
 
   useEffect(() => {
     if (!wasOffline.current && !isOnline) {
-      // Network just went down
       wasOffline.current = true;
     } else if (wasOffline.current && isOnline) {
-      // Network just came back online!
       wasOffline.current = false;
       onReconnect();
     }

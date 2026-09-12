@@ -1,10 +1,8 @@
-/// <reference types="vitest" />
 import { defineConfig } from "vitest/config";
 import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
 import fs from "fs";
 import path from "path";
-import { sentryVitePlugin } from "@sentry/vite-plugin";
 
 /**
  * Injects Neutralino tokens during development,
@@ -63,7 +61,7 @@ const cleanAssetsPlugin = () => {
 
 export default defineConfig({
   build: {
-    sourcemap: true, // Required by Sentry package
+    sourcemap: true,
     outDir: "../app",
     emptyOutDir: false,
   },
@@ -72,12 +70,8 @@ export default defineConfig({
     tailwindcss(),
     neutralinoAuthPlugin(),
     cleanAssetsPlugin(),
-    sentryVitePlugin({
-      org: process.env.SENTRY_ORG || "your-org",
-      project: process.env.SENTRY_PROJECT || "your-project",
-      authToken: process.env.SENTRY_AUTH_TOKEN,
-    }),
   ],
+
   resolve: {
     alias: {
       "@shared": path.resolve(import.meta.dirname, "./src/shared/shared.tsx"),

@@ -6,7 +6,7 @@ interface TitlesProps {
 
 /**
  * @description Atom: Titles.
- * Displays a styled title with diagonal accents and horizontal lines.
+ * Displays a styled title with diagonal accents and horizontal lines using theme CSS variables.
  * @param {TitlesProps} props - Component properties.
  */
 export default function Titles({
@@ -15,8 +15,8 @@ export default function Titles({
   children,
 }: TitlesProps) {
   const textNode = (
-    <div className="flex items-center border-b-[3px] border-white px-3 shrink-0">
-      <h1 className="text-white font-bold text-2xl md:text-3xl whitespace-nowrap leading-none pb-1">
+    <div className="flex items-center border-b-[3px] border-[var(--wb-primary)] px-3 shrink-0">
+      <h1 className="text-[var(--wb-on-surface)] font-bold text-2xl md:text-3xl whitespace-nowrap leading-none pb-1">
         {title}
       </h1>
     </div>
@@ -34,7 +34,7 @@ export default function Titles({
           y1="100"
           x2="100"
           y2="0"
-          stroke="white"
+          stroke="var(--wb-primary)"
           strokeWidth="3"
           vectorEffect="non-scaling-stroke"
         />
@@ -54,7 +54,7 @@ export default function Titles({
           y1="0"
           x2="100"
           y2="100"
-          stroke="white"
+          stroke="var(--wb-primary)"
           strokeWidth="3"
           vectorEffect="non-scaling-stroke"
         />
@@ -63,7 +63,7 @@ export default function Titles({
   );
 
   const lineTop = (
-    <div className="flex-1 border-t-[3px] border-white min-w-[20px] pt-3 pr-2 flex justify-end">
+    <div className="flex-1 border-t-[3px] border-[var(--wb-primary)] min-w-[20px] pt-3 pr-2 flex justify-end">
       {children}
     </div>
   );

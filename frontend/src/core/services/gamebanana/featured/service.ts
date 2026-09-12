@@ -25,8 +25,6 @@ export class FeaturedService {
    */
   public async getCarousel(): Promise<GameBananaMod[]> {
     try {
-      // Usamos el fetch nativo del navegador porque GitHub Raw soporta CORS
-      // y así evitamos posibles cuellos de botella o timeouts en el backend de Node.
       const raw = await fetch(this.url);
       if (!raw.ok) throw new Error(`GitHub HTTP error: ${raw.status}`);
 
@@ -42,7 +40,6 @@ export class FeaturedService {
       return mods;
     } catch (error) {
       console.warn("FeaturedService error (static JSON failed):", error);
-      // Retornamos array vacío para no hacer peticiones masivas a GameBanana
       return [];
     }
   }
@@ -110,7 +107,6 @@ export class FeaturedService {
           engineId: mod.engine.id,
           engineIcon: resolvedIcon,
           thumbnail: mod.image,
-          // Custom featured properties we might want to pass
           __featuredLabel: ranking.label,
           __featuredCategoryId: mod.category.id,
         } as GameBananaMod;

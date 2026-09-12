@@ -16,7 +16,6 @@ export const EngineFilterPill: React.FC<EngineFilterPillProps> = ({
   isMulti = false,
 }) => {
   const options = useMemo(() => {
-    // Mapeamos los engines disponibles desde las constantes del Core
     const engines = Object.keys(ENGINE_CATEGORIES).map((key) => {
       const engine = ENGINE_CATEGORIES[Number(key)];
       return {

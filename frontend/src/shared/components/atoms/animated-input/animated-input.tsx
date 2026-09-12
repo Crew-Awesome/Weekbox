@@ -59,7 +59,7 @@ export const AnimatedInput = ({
           },
         });
       }
-    }, 3500); // Wait 3.5s before changing
+    }, 3500);
 
     return () => clearInterval(interval);
   }, [placeholders]);
@@ -77,10 +77,10 @@ export const AnimatedInput = ({
 
   return (
     <div
-      className={`bg-black rounded-2xl flex items-center overflow-hidden ${className}`}
+      className={`bg-[var(--wb-surface-container-high)] border border-[var(--wb-outline-variant)]/60 text-[var(--wb-on-surface)] rounded-2xl flex items-center overflow-hidden transition-colors ${className}`}
     >
       {icon && (
-        <div className="shrink-0 flex items-center justify-center">{icon}</div>
+        <div className="shrink-0 flex items-center justify-center text-[var(--wb-icon-default)]">{icon}</div>
       )}
 
       <div className="relative w-full ml-3 mr-3 flex items-center">

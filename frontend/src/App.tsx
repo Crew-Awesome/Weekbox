@@ -1,16 +1,16 @@
-import React from "react";
 import Features from "@features";
 import Core from "@core";
 import Shared from "@shared";
 import Utils from "@utils";
 import type { LoadingTask } from "@features";
 import { Outlet } from "react-router-dom";
+import { useHomeStore } from "./store/home-store";
 
-// Moved outside the component to keep the reference stable across renders.
-// This prevents the LoadingScreen's useEffect from re-triggering unnecessarily.
 const initTasks: LoadingTask[] = [
   {
     name: "Initializing environment...",
+    timeoutMs: 10000,
+    retries: 1,
     action: async () => {
       try {
         await Core.os.syncProtocolRegistration(true);
@@ -21,14 +21,60 @@ const initTasks: LoadingTask[] = [
   },
   {
     name: "Obtaining Featured Mods...",
+    retryName: "Retrying to obtain featured mods",
+    timeoutMs: 18000,
+    retries: 3,
     action: async () => {
-      await Core.services.gamebanana.getMods("ripe", 1, 15);
+      const featured = await Core.services.gamebanana.getFeaturedMods();
+      if (featured && featured.length > 0) {
+        const pool = featured.map((mod) => ({
+          ...mod,
+          __isCommunityPick: true,
+          __featuredLabel: mod.__featuredLabel || "Featured",
+        })) as any;
+        useHomeStore.getState().setFeaturedPool(pool);
+      }
+    },
+    onAttemptComplete: async () => {
+      if (useHomeStore.getState().featuredPool.length === 0) {
+        try {
+          const featured = await Core.services.gamebanana.getFeaturedMods();
+          if (featured && featured.length > 0) {
+            useHomeStore.getState().setFeaturedPool(
+              featured.map((mod) => ({
+                ...mod,
+                __isCommunityPick: true,
+                __featuredLabel: mod.__featuredLabel || "Featured",
+              })) as any,
+            );
+          }
+        } catch {}
+      }
     },
   },
   {
     name: "Obtaining Gamebanana Mods...",
+    retryName: "Retrying to obtain GameBanana mods",
+    timeoutMs: 30000,
+    retries: 3,
     action: async () => {
-      await Core.services.gamebanana.getMods("popular", 1, 15);
+      const mods = await Core.services.gamebanana.getMods("popular", 1, 45);
+      if (mods && mods.length > 0) {
+        useHomeStore.getState().setMods(mods);
+      }
+    },
+    onAttemptComplete: async (attempt, success) => {
+      const currentMods = useHomeStore.getState().mods;
+      if (currentMods.length === 0) {
+        try {
+          const fallback = await Core.services.gamebanana.getMods("popular", 1, 15);
+          if (fallback && fallback.length > 0) {
+            useHomeStore.getState().setMods(fallback);
+          }
+        } catch (e) {
+          console.warn(`[App initTasks] Attempt ${attempt} (success=${success}) fallback could not fetch mods:`, e);
+        }
+      }
     },
   },
 ];
@@ -36,12 +82,12 @@ const initTasks: LoadingTask[] = [
 function App() {
   const handleNavigate = Utils.hooks.useAppNavigation();
 
-  // Activates background deep-link catcher
   Utils.hooks.useDeeplinkManager();
 
   return (
     <div className="flex h-screen w-full bg-[var(--wb-bg)] text-[var(--wb-text-main)] overflow-hidden font-sans relative">
       <Features.LoadingScreen tasks={initTasks} />
+      <Shared.molecules.ToastContainer />
       <Shared.organisms.Sidebar onNavigate={handleNavigate} />
       <main
         id="main-scroll-container"
@@ -56,3 +102,4 @@ function App() {
 }
 
 export default App;
+

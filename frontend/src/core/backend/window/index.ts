@@ -120,7 +120,6 @@ export const windowApi = {
 
   async getDisplays(): Promise<any[]> {
     if (platform.platformName === "web") {
-      // Basic fallback
       return [
         {
           id: 0,
@@ -155,14 +154,12 @@ export const windowApi = {
 
   async center() {
     if (platform.platformName === "web") {
-      // Fallback center logic for web popups
       const x = (window.screen.width - window.outerWidth) / 2;
       const y = (window.screen.height - window.outerHeight) / 2;
       window.moveTo(x, y);
       return;
     }
 
-    // Natively center in frontend
     if (window.Neutralino) {
       try {
         const size = await windowApi.getSize();

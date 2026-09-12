@@ -38,7 +38,7 @@ export const HomeSearchbar: React.FC<HomeSearchbarProps> = ({
 
       if (currentScrollY > lastScrollY.current && currentScrollY > 50) {
         setIsSearchVisible(false);
-        setShowFilters(false); // Close filters when scrolling down
+        setShowFilters(false);
       } else if (currentScrollY < lastScrollY.current) {
         setIsSearchVisible(true);
       }
@@ -70,7 +70,7 @@ export const HomeSearchbar: React.FC<HomeSearchbarProps> = ({
 
       {showFilters && (
         <div className="absolute top-full left-0 pt-2 z-50">
-          <div className="bg-[var(--wb-surface-container)] border border-[var(--wb-outline-variant)] rounded-2xl p-4 shadow-2xl flex flex-row flex-wrap gap-4 min-w-[300px]">
+          <div className="bg-[var(--wb-surface-container)] border border-[var(--wb-outline-variant)] rounded-2xl p-4 shadow-none flex flex-row flex-wrap gap-4 min-w-[300px]">
             <Shared.molecules.PillDropdown
               label="Sort by"
               value={sortFilter}

@@ -2,7 +2,6 @@ import { describe, it, expect, beforeEach } from "vitest";
 import { useAppStore } from "./index";
 
 describe("useAppStore", () => {
-  // Reset the store before each test
   beforeEach(() => {
     useAppStore.setState({
       activeDeepLinkModId: null,

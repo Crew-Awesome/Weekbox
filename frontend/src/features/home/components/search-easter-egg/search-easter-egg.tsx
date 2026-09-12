@@ -35,7 +35,6 @@ export const SearchEasterEgg: React.FC<SearchEasterEggProps> = ({
   };
 
   useEffect(() => {
-    // Only trigger if the user is explicitly searching and there are results
     if (
       !searchQuery ||
       searchQuery.trim().length === 0 ||
@@ -46,14 +45,11 @@ export const SearchEasterEgg: React.FC<SearchEasterEggProps> = ({
       return;
     }
 
-    // Only check the first 4 results
     const topMods = mods.slice(0, 4);
 
-    // Find all Easter Eggs that match any of the top 4 mods
     const matchingEggs = SEARCH_EASTER_EGGS.filter((egg) => egg.match(topMods));
 
     if (matchingEggs.length > 0) {
-      // Pick a random easter egg if multiple match
       const randomIndex = Math.floor(Math.random() * matchingEggs.length);
       setActiveEgg(matchingEggs[randomIndex]);
     } else {
@@ -63,17 +59,16 @@ export const SearchEasterEgg: React.FC<SearchEasterEggProps> = ({
 
   useEffect(() => {
     if (activeEgg && containerRef.current && mainImageRef.current) {
-      // Main Image (fluid jump without freezing)
       const mainTl = gsap.timeline();
       mainTl
         .fromTo(
           mainImageRef.current,
           { y: "120%", opacity: 1, scale: 0.7, rotation: 0, xPercent: -50 },
           {
-            y: "-30%", // Move up without leaving the screen
-            scale: 1.05, // Subtle scaling to avoid exaggeration
-            rotation: Math.random() > 0.5 ? 15 : -15, // Subtle tipping effect
-            xPercent: -50, // Absolute centering (safely overwrites translate-x-1/2 in GSAP)
+            y: "-30%",
+            scale: 1.05,
+            rotation: Math.random() > 0.5 ? 15 : -15,
+            xPercent: -50,
             duration: 1.2,
             ease: "power2.out",
           },
@@ -81,38 +76,32 @@ export const SearchEasterEgg: React.FC<SearchEasterEggProps> = ({
         .to(
           mainImageRef.current,
           {
-            y: "120%", // Falls back down
-            scale: 0.7, // Returns to original size while falling
+            y: "120%",
+            scale: 0.7,
             duration: 1.5,
             ease: "power2.in",
           },
-          "-=0.2", // Starts falling just before losing momentum for a smoother peak
+          "-=0.2",
         );
 
-      // Confetti shooting from the bottom and falling without leaving through the top
       confettiRefs.current.forEach((el) => {
         if (!el) return;
 
-        // Start near bottom center
         const startX = window.innerWidth / 2 + (Math.random() * 400 - 200);
         const startY = window.innerHeight + 100;
 
-        // Rises to a random height, but ALWAYS inside the screen (positive peakY)
         const peakY =
           Math.random() * (window.innerHeight * 0.4) + window.innerHeight * 0.1;
 
-        // Land randomly across width
         const endX =
           startX + (Math.random() * window.innerWidth - window.innerWidth / 2);
 
         const rotation = Math.random() * 1080 - 540;
 
-        // Base scale and peak scale for the 3D exponential effect
         const baseScale = Math.random() * 0.8 + 0.8;
         const peakScale = baseScale * 1.5;
         const delay = Math.random() * 0.3;
 
-        // Constant X movement
         gsap.fromTo(
           el,
           { x: startX, rotation: 0, opacity: 1 },
@@ -125,7 +114,6 @@ export const SearchEasterEgg: React.FC<SearchEasterEggProps> = ({
           },
         );
 
-        // Fluid parabolic movement in Y and Scale
         const yTl = gsap.timeline({ delay: delay });
         yTl
           .fromTo(
@@ -141,7 +129,7 @@ export const SearchEasterEgg: React.FC<SearchEasterEggProps> = ({
               duration: 1.6,
               ease: "power2.in",
             },
-            "-=0.2", // Round transition from rising to falling
+            "-=0.2",
           );
       });
 

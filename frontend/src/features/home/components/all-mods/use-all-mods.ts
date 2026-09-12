@@ -33,7 +33,6 @@ export function useAllMods(
   const prevEngineIds = useRef(engineIds.join(","));
   const prevSearch = useRef(searchQuery);
 
-  // When filters or search query change, reset pagination and clear the list
   useEffect(() => {
     const filtersChanged =
       prevFilter.current !== filter ||
@@ -58,7 +57,6 @@ export function useAllMods(
       if (loading || loadingMore) return;
       if (observer.current) observer.current.disconnect();
 
-      // rootMargin: '600px' triggers the next page load roughly half a screen before reaching the bottom
       observer.current = new IntersectionObserver(
         (entries) => {
           if (entries[0].isIntersecting && hasMore) {
@@ -75,15 +73,14 @@ export function useAllMods(
 
   const [retryTrigger, setRetryTrigger] = useState(0);
 
-  // Auto-reload logic if connection is restored and we have no content
   Utils.hooks.useNetworkRecovery(() => {
     if (mods.length === 0) {
       setRetryTrigger((prev) => prev + 1);
     }
   });
 
-  // Pre-load the pool of Community Picks from the official featured list
   useEffect(() => {
+    if (featuredPool.length > 0) return;
     Core.services.gamebanana
       .getFeaturedMods()
       .then((featuredItems) => {
@@ -95,19 +92,48 @@ export function useAllMods(
         const pool = featuredItems.map((mod) => ({
           ...mod,
           __isCommunityPick: true,
-          __featuredLabel: "Community Pick",
+          __featuredLabel: mod.__featuredLabel || "Featured",
         })) as GameBananaMod[];
 
         setFeaturedPool(pool);
       })
       .catch(console.error);
-  }, [retryTrigger]);
+  }, [retryTrigger, featuredPool.length, setFeaturedPool]);
+
+  const [hasError, setHasError] = useState(false);
+
+  useEffect(() => {
+    if (mods.length > 0) {
+      setHasError(false);
+      setLoading(false);
+    }
+  }, [mods.length]);
+
+  const retry = useCallback(() => {
+    setLoading(true);
+    setHasError(false);
+    setHasMore(true);
+    setRetryTrigger((prev) => prev + 1);
+  }, []);
 
   useEffect(() => {
     let isMounted = true;
 
     const fetchMods = async () => {
       try {
+        setHasError(false);
+
+        const isDefaultFilter =
+          filter === "popular" &&
+          (engineIds.length === 0 || (engineIds.length === 1 && engineIds[0] === "all")) &&
+          !searchQuery.trim();
+
+        if (page === 1 && mods.length > 0 && isDefaultFilter) {
+          setLoading(false);
+          setHasError(false);
+          return;
+        }
+
         if (page === 1) setLoading(true);
         else setLoadingMore(true);
 
@@ -125,7 +151,6 @@ export function useAllMods(
           } else {
             setMods((prev) => {
               if (page === 1) return data;
-              // Prevent duplicates at the pagination level
               const existingIds = new Set(prev.map((m) => m.id));
               const uniqueData = data.filter((m) => !existingIds.has(m.id));
               return [...prev, ...uniqueData];
@@ -134,6 +159,18 @@ export function useAllMods(
         }
       } catch (error) {
         console.error("Failed to fetch mods:", error);
+        if (isMounted) {
+          setHasError(true);
+        }
+        if (page === 1 && mods.length === 0) {
+          Utils.toast.error(
+            "Could not fetch mods from GameBanana. Check your internet connection.",
+            {
+              title: "Network Warning",
+              duration: 5000,
+            }
+          );
+        }
       } finally {
         if (isMounted) {
           setLoading(false);
@@ -149,7 +186,6 @@ export function useAllMods(
     };
   }, [page, retryTrigger, filter, engineIds, searchQuery]);
 
-  // Mathematically inject Community Picks between the rows infinitely
   const combinedMods = useMemo(() => {
     const result = [...mods];
     if (featuredPool.length === 0) return result;
@@ -175,7 +211,7 @@ export function useAllMods(
       if (pick) {
         existingIds.add(pick.id);
         result.splice(i, 0, pick);
-        i++; // Skip the newly injected item
+        i++;
       }
     }
 
@@ -187,6 +223,8 @@ export function useAllMods(
     loading,
     loadingMore,
     hasMore,
+    hasError,
+    retry,
     page,
     lastElementRef,
   };

@@ -14,9 +14,7 @@ export function sanitizeHtml(dirtyHtml: string): string {
  */
 export function htmlToPlainText(html: string): string {
   if (!html) return "";
-  // Strip tags safely
   const clean = DOMPurify.sanitize(html, { ALLOWED_TAGS: [] });
-  // Decode remaining HTML entities if any
   const textarea = document.createElement("textarea");
   textarea.innerHTML = clean;
   return textarea.value;

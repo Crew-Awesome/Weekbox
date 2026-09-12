@@ -1,6 +1,7 @@
 import React, { useRef, useState, useEffect } from "react";
 import gsap from "gsap";
 import Shared from "@shared";
+import placeholderImg from "/assets/images/placeholder-mini.webp";
 
 export interface BannerProps {
   /**
@@ -197,13 +198,11 @@ export const Banner: React.FC<BannerProps> = ({
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
     >
-      {/* Hover Background Layer */}
       <div
         ref={hoverBgRef}
         className="absolute pointer-events-none z-[-1] sm:rounded-[1rem]"
       />
 
-      {/* Background Image Container with static mask */}
       <div
         className="absolute left-0 top-0 bottom-0 sm:left-3 sm:top-3 sm:bottom-3 w-[65%] sm:w-[calc(65%-12px)] overflow-hidden isolate pointer-events-none z-0 rounded-bl-[1rem] sm:rounded-bl-[1rem]"
         style={{
@@ -214,7 +213,15 @@ export const Banner: React.FC<BannerProps> = ({
       >
         <div ref={thumbnailRef} className="absolute inset-0">
           {(!thumbnailLoaded || isLoading) && (
-            <div className="absolute inset-0 bg-[var(--wb-surface-variant)] animate-pulse" />
+            <img
+              className="absolute inset-0 w-full h-full object-cover block opacity-40 filter blur-[0.5px]"
+              src={placeholderImg}
+              alt=""
+              draggable={false}
+            />
+          )}
+          {(!thumbnailLoaded || isLoading) && (
+            <div className="absolute inset-0 bg-[var(--wb-surface-variant)]/40 animate-pulse" />
           )}
           {!isLoading && (
             <img
@@ -223,12 +230,17 @@ export const Banner: React.FC<BannerProps> = ({
               alt="Banner background"
               draggable={false}
               onLoad={() => setThumbnailLoaded(true)}
+              onError={(e) => {
+                if (e.currentTarget.src !== placeholderImg) {
+                  e.currentTarget.src = placeholderImg;
+                  setThumbnailLoaded(true);
+                }
+              }}
             />
           )}
         </div>
       </div>
 
-      {/* Mask Container (Icon top-left notch) */}
       {shouldRenderIcon && (
         <div className="absolute left-0 top-0 sm:left-3 sm:top-3 w-16 sm:w-20 aspect-square rounded-br-[8px] bg-[var(--wb-bg)] z-20 pointer-events-auto">
           <div
@@ -254,7 +266,6 @@ export const Banner: React.FC<BannerProps> = ({
                     onLoad={() => setIconLoaded(true)}
                   />
                 )}
-                {/* Custom Tooltip */}
                 {iconTooltip && (
                   <div
                     className={`absolute left-1/2 top-full -translate-x-1/2 -mt-2 z-[100] pointer-events-none transition-opacity duration-200 flex flex-col items-center ${showTooltip ? "opacity-100" : "opacity-0"}`}
@@ -268,7 +279,6 @@ export const Banner: React.FC<BannerProps> = ({
               </>
             )}
           </div>
-          {/* Notch SVGs */}
           <svg
             className="absolute top-0 left-full w-[8px] h-[8px] text-[var(--wb-bg)] pointer-events-none"
             viewBox="0 0 8 8"
@@ -285,7 +295,6 @@ export const Banner: React.FC<BannerProps> = ({
           >
             <path d="M0 0 H8 A8 8 0 0 0 0 8 V0 Z" fill="currentColor" />
           </svg>
-          {/* Hover Notch SVGs */}
           <svg
             ref={notchSvg1Ref}
             className="absolute top-0 left-full w-[8px] h-[8px] pointer-events-none opacity-0"
@@ -307,7 +316,6 @@ export const Banner: React.FC<BannerProps> = ({
         </div>
       )}
 
-      {/* Content Area */}
       <div className="relative z-10 w-full flex justify-end pr-4 sm:pr-12 md:pr-24 h-full items-center">
         <div className="flex flex-col items-start gap-3">
           {isLoading ? (
@@ -350,7 +358,6 @@ export const Banner: React.FC<BannerProps> = ({
                 </p>
               )}
 
-              {/* Stats */}
               {(timeText ||
                 likesCount !== undefined ||
                 viewsCount !== undefined) && (

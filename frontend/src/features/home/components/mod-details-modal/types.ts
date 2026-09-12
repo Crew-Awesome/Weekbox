@@ -12,3 +12,13 @@ export interface ModalViewProps {
   prevImage: (e: React.MouseEvent) => void;
   nextImage: (e: React.MouseEvent) => void;
 }
+
+export const formatFileSize = (bytes?: number): string => {
+  if (!bytes || bytes <= 0) return "";
+  const mb = bytes / (1024 * 1024);
+  if (mb >= 1024) {
+    return `${(mb / 1024).toFixed(1)} GB`;
+  }
+  return mb < 10 ? `${mb.toFixed(1)} MB` : `${Math.round(mb)} MB`;
+};
+

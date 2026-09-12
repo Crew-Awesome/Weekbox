@@ -60,7 +60,6 @@ export const PillDropdown: React.FC<PillDropdownProps> = ({
     );
   };
 
-  // Determine display label and icon
   let displayLabel = label;
   let displayIcon: React.ReactNode = null;
 

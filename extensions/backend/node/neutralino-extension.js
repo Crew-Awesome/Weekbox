@@ -1,8 +1,3 @@
-// NeutralinoExtension
-//
-// A Node extension engine for Neutralino.
-//
-// (c)2023-2024 Harald Schneider - marketmix.com
 
 class NeutralinoExtension {
   constructor(debug = false) {
@@ -10,9 +5,9 @@ class NeutralinoExtension {
     this.debug = debug;
     this.pendingRequests = new Map();
 
-    this.debugTermColors = true; // Use terminal colors
-    this.debugTermColorCALL = "\x1b[91m"; // Red: Incoming function calls
-    this.debugTermColorOUT = "\x1b[33m"; // Yellow: Outgoing events
+    this.debugTermColors = true;
+    this.debugTermColorCALL = "\x1b[91m";
+    this.debugTermColorOUT = "\x1b[33m";
 
     if (process.argv.length > 2) {
       this.port = process.argv[2].split("=")[1];
@@ -22,7 +17,7 @@ class NeutralinoExtension {
       this.urlSocket = `ws://127.0.0.1:${this.port}?extensionId=${this.idExtension}`;
     } else {
       let fs = require("fs");
-      let d = fs.readFileSync(0, "utf-8"); // Read from stdin
+      let d = fs.readFileSync(0, "utf-8");
       let conf = JSON.parse(d);
 
       this.port = conf.nlPort;
@@ -34,18 +29,12 @@ class NeutralinoExtension {
 
     this.socket = undefined;
 
-    this.termOnWindowClose = true; // Terminate on windowCloseEvent message
+    this.termOnWindowClose = true;
 
     this.debugLog(`${this.idExtension} running on port ${this.port}`);
   }
 
   sendMessage(event, data = null) {
-    //
-    // Add a data package to the sending queue.
-    // Triggers an event in the parent app.
-    // :param event: Event name as string
-    // :param data: Event data
-    // :return: --
 
     let d = {
       id: crypto.randomUUID(),
@@ -99,7 +88,6 @@ class NeutralinoExtension {
         msg = JSON.parse(msg);
       } catch (e) {}
 
-      // Handle API responses
       if (msg.id && self.pendingRequests.has(msg.id)) {
         self.debugLog(`API RESPONSE: ${JSON.stringify(msg)}`, "in");
         const { resolve, reject } = self.pendingRequests.get(msg.id);
@@ -107,7 +95,6 @@ class NeutralinoExtension {
         if (msg.error) {
           reject(msg.error);
         } else {
-          // Send the full raw message back to host.mjs so it can parse whatever Neutralino actually returned
           resolve(msg);
         }
         return;
@@ -138,8 +125,6 @@ class NeutralinoExtension {
     });
   }
   isEvent(e, eventName) {
-    //
-    // Checks data package for a particular event.
 
     if ("event" in e && e.event === eventName) {
       return true;
@@ -148,11 +133,6 @@ class NeutralinoExtension {
   }
 
   debugLog(msg, tag = "info") {
-    //
-    // Log messages to terminal.
-    // :param msg: Message string
-    // :param tag: Type of log entry
-    // :return: --
 
     let cIN = "";
     let cCALL = "";
@@ -186,7 +166,6 @@ class NeutralinoExtension {
       console.log(`${cOUT}OUT: ${msg}${cRST}`);
       return;
     }
-    //console.log(msg);
   }
 }
 

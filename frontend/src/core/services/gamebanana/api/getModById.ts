@@ -14,17 +14,22 @@ import {
 } from "../utils";
 import Utils from "@utils";
 
+const modProfileCache = new Map<number, GameBananaMod>();
+
 /**
  * Fetches full mod details by ID and maps the response to the standard `GameBananaMod` format.
  */
 export async function getModById(modId: number): Promise<GameBananaMod | null> {
+  if (modProfileCache.has(modId)) {
+    return modProfileCache.get(modId)!;
+  }
+
   const url = `${GB_BASE_URL}/Mod/${modId}/ProfilePage`;
 
   try {
     const raw: any = await http.fetchJson(url);
     if (!raw || !raw._idRow) return null;
 
-    /* Validate if the Mod is associated with the official Friday Night Funkin Game ID */
     if (raw._aGame && raw._aGame._idRow !== FNF_GAME_ID) {
       console.warn(
         `Mod ${modId} does not belong to FNF (Game ID: ${raw._aGame._idRow})`,
@@ -33,23 +38,8 @@ export async function getModById(modId: number): Promise<GameBananaMod | null> {
     }
 
     const engineId = getEngineId(raw);
-    const { ENGINE_CATEGORIES } = await import("../constants");
 
-    /* 
-     * Strictly verify if the mod belongs to authorized engines. 
-     * If not listed, block the query to protect the UX experience. 
-     */
-    const allowedIds = Object.keys(ENGINE_CATEGORIES).map(
-      (id) => ENGINE_CATEGORIES[Number(id)].id,
-    );
-    if (!allowedIds.includes(engineId)) {
-      console.warn(
-        `Mod ${modId} belongs to an unsupported category/engine for Weekbox: ${engineId}`,
-      );
-      throw new Error("UNSUPPORTED_CATEGORY");
-    }
-
-    return {
+    const result = {
       id: raw._idRow,
       gameId: raw._aGame?._idRow || FNF_GAME_ID,
       title: raw._sName || "Unknown Mod",
@@ -76,6 +66,8 @@ export async function getModById(modId: number): Promise<GameBananaMod | null> {
       isNsfw: checkIsNsfw(raw),
       files: raw._aFiles || [],
     };
+    modProfileCache.set(modId, result);
+    return result;
   } catch (error) {
     console.error(`Error fetching mod ${modId} from GameBanana:`, error);
     return null;

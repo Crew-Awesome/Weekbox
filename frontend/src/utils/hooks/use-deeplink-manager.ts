@@ -38,19 +38,16 @@ export function useDeeplinkManager() {
       try {
         const isPrimary = await Core.platform.call("deeplink.isPrimary" as any);
         if (isPrimary === false) {
-          // Somos la SEGUNDA instancia. Enviamos los datos a la principal.
           await fetch("http://127.0.0.1:45555/deeplink", {
             method: "POST",
             body: JSON.stringify(window.NL_ARGS || []),
           }).catch(() => {});
 
-          // Salimos silenciosamente y matamos el Node.js backend.
           Core.platform.call("system.suicide" as any).catch(() => {});
           window.Neutralino?.app?.exit();
           return;
         }
       } catch (e) {
-        // Ignoramos errores. Asumimos que somos la principal si algo falla.
       }
 
       checkDeeplink(undefined, true);
@@ -91,14 +88,20 @@ export function useDeeplinkManager() {
             "No se pudo encontrar el mod, o no pertenece a Friday Night Funkin'.",
           );
         } else {
-          // Mapeamos a la interfaz nativa ModItem del Home
           setActiveModItem({
+            id: mod.id,
             name: mod.title,
             description: mod.description,
             htmlBody: mod.htmlBody,
             img: mod.thumbnail || "",
             icon: mod.engineIcon,
             showIcon: !!mod.engineIcon,
+            previewMedia: mod.previewMedia,
+            files: mod.files,
+            author: mod.author,
+            submittedAt: mod.submittedAt,
+            updatedAt: mod.updatedAt,
+            engineId: mod.engineId,
           });
         }
       })
@@ -112,7 +115,7 @@ export function useDeeplinkManager() {
         }
       })
       .finally(() => {
-        setActiveModId(null); // Consumido
+        setActiveModId(null);
       });
   }, [activeModId, setActiveModId, setActiveModItem]);
 }

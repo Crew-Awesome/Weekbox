@@ -44,7 +44,6 @@ body {
   --wb-scrim: #000000;
   --wb-shadow: #000000;
 
-  /* Mapping for Sidebar & App Layout (Legacy fallbacks) */
   --wb-bg: var(--wb-surface-dim);
   --wb-front-bg: var(--wb-surface-container-lowest);
   --wb-back-bg: var(--wb-surface-container);
@@ -58,6 +57,129 @@ body {
 
   --wb-item-hover: var(--wb-surface-container-high);
   --wb-item-active: var(--wb-secondary-container);
+
+  --wb-carousel-arrow-bg: var(--wb-surface-container-high);
+  --wb-carousel-arrow-hover: var(--wb-surface-container-highest);
+  --wb-carousel-arrow-text: var(--wb-on-surface);
+  --wb-carousel-arrow-border: rgba(255, 255, 255, 0.1);
+  --wb-carousel-dot-inactive: rgba(255, 255, 255, 0.25);
+  --wb-carousel-dot-active: var(--wb-primary);
+  --wb-carousel-dot-hover: rgba(255, 255, 255, 0.5);
+
+  --wb-scrollbar-width: 2px;
+  --wb-scrollbar-height: 2px;
+  --wb-scrollbar-track: transparent;
+  --wb-scrollbar-thumb: var(--wb-primary);
+  --wb-scrollbar-thumb-hover: var(--wb-primary-container);
+  --wb-scrollbar-thumb-radius: 2px;
+
+  --wb-toast-info-bg: rgba(8, 47, 73, 0.95);
+  --wb-toast-info-border: rgba(6, 182, 212, 0.7);
+  --wb-toast-info-accent: #22d3ee;
+  --wb-toast-info-icon: #22d3ee;
+
+  --wb-toast-success-bg: rgba(2, 44, 34, 0.95);
+  --wb-toast-success-border: rgba(16, 185, 129, 0.7);
+  --wb-toast-success-accent: #34d399;
+  --wb-toast-success-icon: #34d399;
+
+  --wb-toast-warning-bg: rgba(69, 26, 3, 0.95);
+  --wb-toast-warning-border: rgba(245, 158, 11, 0.7);
+  --wb-toast-warning-accent: #fbbf24;
+  --wb-toast-warning-icon: #fbbf24;
+
+  --wb-toast-error-bg: rgba(69, 10, 10, 0.95);
+  --wb-toast-error-border: rgba(239, 68, 68, 0.7);
+  --wb-toast-error-accent: #f87171;
+  --wb-toast-error-icon: #f87171;
+}
+
+:root[data-theme="light"],
+.light {
+  color-scheme: light;
+
+  --wb-primary: #006874;
+  --wb-secondary: #4a6267;
+  --wb-tertiary: #525e7d;
+  --wb-on-primary: #ffffff;
+  --wb-on-secondary: #ffffff;
+  --wb-on-tertiary: #ffffff;
+  --wb-error: #ba1a1a;
+  --wb-on-error: #ffffff;
+  --wb-primary-container: #9eeffd;
+  --wb-secondary-container: #cde7ec;
+  --wb-tertiary-container: #dae2ff;
+  --wb-on-primary-container: #001f24;
+  --wb-on-secondary-container: #051f23;
+  --wb-on-tertiary-container: #0e1b37;
+  --wb-error-container: #ffdad6;
+  --wb-on-error-container: #410002;
+  --wb-surface-dim: #d5dbdc;
+  --wb-surface: #f5fafb;
+  --wb-surface-bright: #ffffff;
+  --wb-inverse-surface: #2b3133;
+  --wb-surface-container-lowest: #ffffff;
+  --wb-surface-container-low: #eff5f6;
+  --wb-surface-container: #e9eff0;
+  --wb-surface-container-high: #e3e9ea;
+  --wb-surface-container-highest: #dee3e5;
+  --wb-on-surface: #171d1e;
+  --wb-on-surface-variant: #3f484a;
+  --wb-outline: #6f797a;
+  --wb-outline-variant: #bfc8ca;
+  --wb-inverse-on-surface: #eff5f6;
+  --wb-inverse-primary: #82d3e0;
+  --wb-scrim: #000000;
+  --wb-shadow: #000000;
+
+  --wb-bg: var(--wb-surface-dim);
+  --wb-front-bg: var(--wb-surface-container-lowest);
+  --wb-back-bg: var(--wb-surface-container);
+
+  --wb-text-main: var(--wb-on-surface);
+  --wb-text-muted: var(--wb-on-surface-variant);
+
+  --wb-icon-default: var(--wb-on-surface-variant);
+  --wb-icon-active: var(--wb-primary);
+  --wb-icon-hover: var(--wb-on-surface);
+
+  --wb-item-hover: var(--wb-surface-container-high);
+  --wb-item-active: var(--wb-secondary-container);
+
+  --wb-carousel-arrow-bg: var(--wb-surface-container-high);
+  --wb-carousel-arrow-hover: var(--wb-surface-container-highest);
+  --wb-carousel-arrow-text: var(--wb-on-surface);
+  --wb-carousel-arrow-border: rgba(0, 0, 0, 0.1);
+  --wb-carousel-dot-inactive: rgba(0, 0, 0, 0.2);
+  --wb-carousel-dot-active: var(--wb-primary);
+  --wb-carousel-dot-hover: rgba(0, 0, 0, 0.4);
+
+  --wb-scrollbar-width: 2px;
+  --wb-scrollbar-height: 2px;
+  --wb-scrollbar-track: transparent;
+  --wb-scrollbar-thumb: var(--wb-primary);
+  --wb-scrollbar-thumb-hover: var(--wb-primary-container);
+  --wb-scrollbar-thumb-radius: 2px;
+
+  --wb-toast-info-bg: rgba(224, 242, 254, 0.97);
+  --wb-toast-info-border: rgba(14, 165, 233, 0.7);
+  --wb-toast-info-accent: #0284c7;
+  --wb-toast-info-icon: #0284c7;
+
+  --wb-toast-success-bg: rgba(236, 253, 245, 0.97);
+  --wb-toast-success-border: rgba(16, 185, 129, 0.7);
+  --wb-toast-success-accent: #059669;
+  --wb-toast-success-icon: #059669;
+
+  --wb-toast-warning-bg: rgba(254, 252, 232, 0.97);
+  --wb-toast-warning-border: rgba(234, 179, 8, 0.7);
+  --wb-toast-warning-accent: #d97706;
+  --wb-toast-warning-icon: #d97706;
+
+  --wb-toast-error-bg: rgba(254, 242, 242, 0.97);
+  --wb-toast-error-border: rgba(239, 68, 68, 0.7);
+  --wb-toast-error-accent: #dc2626;
+  --wb-toast-error-icon: #dc2626;
 }
 
 * {
@@ -67,7 +189,7 @@ body {
 html {
   font-size: calc(
     100vh / 55
-  ); /* Scales rem units based on window height, slightly larger */
+  );
 }
 
 body {
@@ -86,36 +208,48 @@ button {
   font-family: inherit;
 }
 
-button:active {
+button:active:not(:disabled) {
   transform: translateY(1px);
 }
 
-/* Custom Scrollbar (Global) */
+button:disabled,
+button[disabled] {
+  cursor: not-allowed !important;
+  pointer-events: auto;
+  transform: none !important;
+}
+
+button:disabled:hover,
+button[disabled]:hover,
+button:disabled:active,
+button[disabled]:active {
+  cursor: not-allowed !important;
+  transform: none !important;
+}
+
 ::-webkit-scrollbar {
-  width: 2px;
-  height: 2px;
+  width: var(--wb-scrollbar-width, 2px);
+  height: var(--wb-scrollbar-height, 2px);
 }
 
 ::-webkit-scrollbar-track {
-  background: transparent;
+  background: var(--wb-scrollbar-track, transparent);
 }
 
 ::-webkit-scrollbar-thumb {
-  background: var(--wb-primary); /* Use primary to make it stand out */
-  border-radius: 2px;
+  background: var(--wb-scrollbar-thumb, var(--wb-primary));
+  border-radius: var(--wb-scrollbar-thumb-radius, 2px);
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: var(--wb-primary-container);
+  background: var(--wb-scrollbar-thumb-hover, var(--wb-primary-container));
 }
 
-/* Firefox fallback */
 * {
   scrollbar-width: thin;
-  scrollbar-color: var(--wb-primary) transparent;
+  scrollbar-color: var(--wb-scrollbar-thumb, var(--wb-primary)) var(--wb-scrollbar-track, transparent);
 }
 
-/* Hide scrollbar on mobile but keep functionality */
 @media (max-width: 768px) {
   .mobile-no-scrollbar::-webkit-scrollbar {
     display: none;

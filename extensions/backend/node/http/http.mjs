@@ -28,14 +28,14 @@ const fetchWithTimeout = async (url, options = {}, timeoutMs = 30000, retries = 
         if (response.status === 429 || response.status >= 500) {
           throw new Error(`HTTP error! status: ${response.status}`);
         }
-        return response; // Si es 404 o 403 que lo maneje el caller
+        return response;
       }
       return response;
     } catch (error) {
       clearTimeout(id);
       lastError = error;
       if (i < retries) {
-        await new Promise(resolve => setTimeout(resolve, 2000)); // Esperar 2s antes de reintentar
+        await new Promise(resolve => setTimeout(resolve, 2000));
       }
     }
   }
@@ -54,7 +54,6 @@ export const httpApi = {
   async fetchJson({ url, options = {}, signal }) {
     const isGet = !options.method || options.method.toUpperCase() === 'GET';
     
-    // Si es GET, revisamos la caché primero
     if (isGet) {
       const cached = httpCache.get(url);
       if (cached) return cached;
@@ -90,7 +89,6 @@ export const httpApi = {
    * @returns {Promise<void>}
    */
   async downloadToFile({ url, destPath, options = {}, signal, onProgress }) {
-    // 5 min timeout para descargas grandes
     const res = await fetchWithTimeout(url, options, 300000, 1, signal);
     if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
     
@@ -105,7 +103,7 @@ export const httpApi = {
     nodeStream.on('data', (chunk) => {
       downloaded += chunk.length;
       const now = Date.now();
-      if (onProgress && now - lastReportTime > 250) { // throttle to max 4 times per second
+      if (onProgress && now - lastReportTime > 250) {
         onProgress(downloaded, total);
         lastReportTime = now;
       }
@@ -113,9 +111,8 @@ export const httpApi = {
     
     try {
       await pipeline(nodeStream, writeStream);
-      if (onProgress) onProgress(downloaded, downloaded); // ensure we report 100% even if total was 0
+      if (onProgress) onProgress(downloaded, downloaded);
     } catch (error) {
-      // Si la descarga falla o es cancelada, borramos el archivo parcial
       await fs.promises.rm(destPath, { force: true }).catch(() => {});
       throw error;
     }

@@ -4,6 +4,7 @@ import type { ModItem } from "../../types";
 import { ENGINE_CATEGORIES } from "../../../../core/services/gamebanana/constants";
 import { MobileView } from "./mobile-view";
 import { DesktopView } from "./desktop-view";
+import { useDownloadStore } from "../../../../store";
 
 interface ModDetailsModalProps {
   selectedCard: ModItem | null;
@@ -18,15 +19,30 @@ export const ModDetailsModal: React.FC<ModDetailsModalProps> = ({
   selectedCard,
   onClose,
 }) => {
+  const setModalOpen = useDownloadStore((s) => s.setModalOpen);
   const mobileCarouselRef = useRef<HTMLDivElement>(null);
   const desktopCarouselRef = useRef<HTMLDivElement>(null);
   const thumbnailsRef = useRef<HTMLDivElement>(null);
   const [activeIndex, setActiveIndex] = useState(0);
-  const [displayCard, setDisplayCard] = useState<ModItem | null>(selectedCard);
 
   React.useEffect(() => {
-    if (selectedCard) {
-      setDisplayCard(selectedCard);
+    if (selectedCard && selectedCard.id) {
+      setModalOpen(selectedCard.id.toString());
+    } else {
+      setModalOpen(null);
+    }
+  }, [selectedCard, setModalOpen]);
+
+  const lastNonNullCardRef = useRef<ModItem | null>(selectedCard);
+  if (selectedCard) {
+    lastNonNullCardRef.current = selectedCard;
+  }
+  const displayCard = selectedCard || lastNonNullCardRef.current;
+
+  const prevModIdRef = useRef<number | null>(null);
+  React.useEffect(() => {
+    if (selectedCard && selectedCard.id !== prevModIdRef.current) {
+      prevModIdRef.current = selectedCard.id;
       setActiveIndex(0);
     }
   }, [selectedCard]);
@@ -42,17 +58,17 @@ export const ModDetailsModal: React.FC<ModDetailsModalProps> = ({
     }
   }, [activeIndex, displayCard]);
 
-  // Auto-scroll functionality
   React.useEffect(() => {
+    if (!selectedCard) return;
     const media = displayCard?.previewMedia;
     if (!media || media.length <= 1) return;
     const intervalId = setInterval(() => {
       const nextIndex = (activeIndex + 1) % media.length;
       scrollToIndex(nextIndex);
-    }, 3500); // 3.5 seconds auto-scroll
+    }, 3500);
 
     return () => clearInterval(intervalId);
-  }, [activeIndex, displayCard]);
+  }, [activeIndex, displayCard, selectedCard]);
 
   if (!displayCard) {
     return null;

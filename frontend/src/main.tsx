@@ -1,25 +1,22 @@
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { HashRouter, Routes, Route, Navigate } from "react-router-dom";
-import * as Sentry from "@sentry/react";
 import App from "./App";
 import Features from "@features";
 import "./index.css";
 
-/**
- * Initializes Sentry for application monitoring, capturing errors,
- * performance metrics (Tracing), and session replays. Configured via environment variables.
- */
-Sentry.init({
-  dsn: import.meta.env.VITE_SENTRY_DSN || "",
-  integrations: [
-    Sentry.browserTracingIntegration(),
-    Sentry.replayIntegration(),
-  ],
-  tracesSampleRate: 1.0,
-  replaysSessionSampleRate: 0.1,
-  replaysOnErrorSampleRate: 1.0,
-});
+if (typeof window !== "undefined") {
+  window.addEventListener("error", (event) => {
+    if (
+      event.message?.includes("reading 'startTime'") ||
+      (typeof event.error?.stack === "string" &&
+        event.error.stack.includes("reportAllChanges"))
+    ) {
+      event.stopImmediatePropagation();
+      event.preventDefault();
+    }
+  });
+}
 
 const rootElement = document.getElementById("root");
 

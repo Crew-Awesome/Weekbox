@@ -1,6 +1,6 @@
 import React from "react";
 import Shared from "@shared";
-import { Eye, Download, User, Clock } from "lucide-react";
+import { Eye, Download, User, Clock, AlertCircle, RotateCcw } from "lucide-react";
 import type { ModItem } from "../../types";
 import { useAllMods } from "./use-all-mods";
 import { ENGINE_CATEGORIES } from "../../../../core/services/gamebanana/constants";
@@ -19,13 +19,13 @@ interface AllModsProps {
  * and interpolates Community Picks continuously within the grid.
  * @param {AllModsProps} props - The component props.
  */
-export const AllMods: React.FC<AllModsProps> = ({
+export const AllMods: React.FC<AllModsProps> = React.memo(({
   onCardClick,
   searchQuery = "",
   sortFilter = "popular",
   categoryFilter = ["all"],
 }) => {
-  const { mods, loading, loadingMore, hasMore, page, lastElementRef } =
+  const { mods, loading, loadingMore, hasMore, page, lastElementRef, retry } =
     useAllMods(sortFilter, categoryFilter, searchQuery);
 
   const sortLabels: Record<string, string> = {
@@ -102,17 +102,44 @@ export const AllMods: React.FC<AllModsProps> = ({
     );
   }
 
-  if (!loading && mods.length === 0 && searchQuery.trim().length > 0) {
+  if (!loading && mods.length === 0) {
+    if (searchQuery.trim().length > 0) {
+      return (
+        <>
+          <Shared.atoms.Titles title={dynamicTitle} />
+          <div className="flex flex-col items-center justify-center py-32 w-full text-center">
+            <span className="text-[var(--wb-on-surface)] text-3xl font-black opacity-80 uppercase tracking-wide">
+              Nothing to see here
+            </span>
+            <span className="text-[var(--wb-on-surface-variant)] text-base mt-3 opacity-60 uppercase tracking-widest">
+              Search for something else
+            </span>
+          </div>
+        </>
+      );
+    }
+
     return (
       <>
         <Shared.atoms.Titles title={dynamicTitle} />
-        <div className="flex flex-col items-center justify-center py-32 w-full text-center">
-          <span className="text-[var(--wb-on-surface)] text-3xl font-black opacity-80 uppercase tracking-wide">
-            Nothing to see here
+        <div className="flex flex-col items-center justify-center py-24 px-4 w-full text-center">
+          <div className="w-16 h-16 rounded-2xl bg-[var(--wb-surface-container)] flex items-center justify-center mb-4 border border-white/5 shadow-none">
+            <AlertCircle className="w-8 h-8 text-amber-400 opacity-90" />
+          </div>
+          <span className="text-[var(--wb-on-surface)] text-xl font-bold tracking-wide">
+            No se pudieron cargar los mods
           </span>
-          <span className="text-[var(--wb-on-surface-variant)] text-base mt-3 opacity-60 uppercase tracking-widest">
-            Search for something else
+          <span className="text-[var(--wb-on-surface-variant)] text-sm mt-2 max-w-md opacity-70">
+            Hubo un problema al conectar con GameBanana o la solicitud tardó demasiado.
           </span>
+          <button
+            type="button"
+            onClick={retry}
+            className="mt-6 flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[var(--wb-surface-container-high)] hover:bg-[var(--wb-surface-container-highest)] border border-white/10 text-sm font-semibold text-[var(--wb-on-surface)] transition-all hover:scale-105 active:scale-95 cursor-pointer shadow-none"
+          >
+            <RotateCcw className="w-4 h-4" />
+            Reintentar
+          </button>
         </div>
       </>
     );
@@ -174,7 +201,7 @@ export const AllMods: React.FC<AllModsProps> = ({
                     }
                     isNsfw={item.isNsfw}
                     onClick={() => onCardClick(modItem)}
-                    className="mb-8 mt-4 shadow-2xl rounded-none sm:rounded-none"
+                    className="mb-8 mt-4 shadow-none rounded-none sm:rounded-none"
                   />
                 </div>
               ) : (
@@ -197,12 +224,11 @@ export const AllMods: React.FC<AllModsProps> = ({
                   lazyLoad={true}
                 >
                   <div className="flex items-center gap-3 mt-2">
-                    {/* Avatar (Left Column) */}
                     {item.userPfp ? (
                       <img
                         src={item.userPfp}
                         alt={item.author}
-                        className="w-10 h-10 rounded-full object-cover shrink-0 shadow-sm border border-white/5"
+                        className="w-10 h-10 rounded-full object-cover shrink-0 shadow-none border border-white/5"
                       />
                     ) : (
                       <div className="w-10 h-10 rounded-full bg-[var(--wb-surface-variant)] flex items-center justify-center shrink-0 border border-white/5">
@@ -213,7 +239,6 @@ export const AllMods: React.FC<AllModsProps> = ({
                       </div>
                     )}
 
-                    {/* Info (Right Column, 2 Rows) */}
                     <div className="flex flex-col justify-center overflow-hidden">
                       <span className="text-[var(--wb-on-surface-variant)] text-sm font-semibold truncate leading-tight">
                         {item.author}
@@ -273,4 +298,4 @@ export const AllMods: React.FC<AllModsProps> = ({
       <SearchEasterEgg mods={mods} searchQuery={searchQuery} />
     </>
   );
-};
+});

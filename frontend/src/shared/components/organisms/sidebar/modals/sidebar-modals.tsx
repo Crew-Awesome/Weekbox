@@ -1,6 +1,5 @@
 import React from "react";
-import { InfoModal } from "./info-modal";
-import { ConfigModal } from "./config-modal";
+import Features from "@features";
 import type { MorphModalData } from "src/utils/hooks/use-modals";
 
 interface SidebarModalsProps {
@@ -14,14 +13,15 @@ export const SidebarModals: React.FC<SidebarModalsProps> = ({
 }) => {
   return (
     <>
-      <InfoModal
+      <Features.InfoModal
         isOpen={morphModalData?.id === "info"}
         onClose={closeMorphModal}
       />
-      <ConfigModal
+      <Features.SettingsModal
         isOpen={morphModalData?.id === "settings"}
         onClose={closeMorphModal}
       />
     </>
   );
 };
+

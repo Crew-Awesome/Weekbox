@@ -61,11 +61,9 @@ export async function fetchDiscoveryRecords(
   const responses = await Promise.all(requests);
   const allRecords = responses.flat();
 
-  // Deduplicate records based on their unique Row ID
   const uniqueRecords = Array.from(
     new Map(allRecords.map((r) => [r._idRow, r])).values(),
   );
 
-  // Filter out globally excluded mods (e.g. adult content, trash)
   return uniqueRecords.filter((r) => !isExcluded(r));
 }

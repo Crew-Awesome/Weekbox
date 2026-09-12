@@ -52,33 +52,54 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
   const handleMobileSet = (id: string) => {
     if (id === "settings" || id === "info") {
-      setActiveSecondary((prev) => (prev === id ? null : id));
+      if (morphModalData?.id === id) {
+        closeMorphModal();
+        setActiveSecondary(null);
+      } else {
+        openMorphModal(id, null);
+        setActiveSecondary(id);
+      }
     } else {
       handleMainSet(id);
       setActiveSecondary(null);
     }
   };
 
-  const handleSecondaryClick = onSecondaryClick || openMorphModal;
+  const handleSecondaryClick = (id: string, el: HTMLElement | null) => {
+    if (onSecondaryClick) {
+      onSecondaryClick(id, el);
+    } else if (morphModalData?.id === id) {
+      closeMorphModal();
+      setActiveSecondary(null);
+    } else {
+      openMorphModal(id, el);
+      setActiveSecondary(id);
+    }
+  };
+
+  const handleCloseMorphModal = () => {
+    closeMorphModal();
+    setActiveSecondary(null);
+  };
 
   return (
     <>
       <DesktopSidebar
         activeMain={activeMain}
         setActiveMain={handleMainSet}
-        activeSecondary={activeSecondary}
+        activeSecondary={morphModalData?.id || activeSecondary}
         setActiveSecondary={setActiveSecondary}
         onSecondaryClick={handleSecondaryClick}
       />
       <MobileNav
-        activeItem={activeSecondary || activeMain}
+        activeItem={morphModalData?.id || activeSecondary || activeMain}
         setActiveItem={handleMobileSet}
         onSecondaryClick={handleSecondaryClick}
       />
 
       <SidebarModals
         morphModalData={morphModalData}
-        closeMorphModal={closeMorphModal}
+        closeMorphModal={handleCloseMorphModal}
       />
     </>
   );

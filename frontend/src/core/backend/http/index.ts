@@ -49,7 +49,6 @@ export const http = {
   ) {
     const { onProgress, ...fetchOptions } = options || {};
 
-    // If there is a progress callback, temporarily subscribe to IPC progress events
     let unsub = () => {};
     if (onProgress) {
       unsub = platform.onEvent("download:progress", (data) => {

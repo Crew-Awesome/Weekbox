@@ -9,7 +9,7 @@ let cachedRecords: any[] = [];
 let chunkIndex = 0;
 let hasReachedEnd = false;
 let currentFetchPromise: Promise<void> | null = null;
-const CHUNK_PAGES = 5; // Fetches 5 * 15 = 75 items per massive chunk
+const CHUNK_PAGES = 5;
 
 /**
  * Advanced hybrid search algorithm that merges GameBanana's native search results with
@@ -101,9 +101,7 @@ export async function fetchSearchRecords(
 
         let newRecords = [...pages.flat(), ...popularMods];
 
-        // Filter by Multiple Engines
         if (!engineIds.includes("all")) {
-          // Resolve numeric IDs for the allowed engines
           const allowedNumericIds = engineIds
             .map((id) => {
               const match = Object.entries(ENGINE_CATEGORIES).find(
@@ -115,12 +113,10 @@ export async function fetchSearchRecords(
 
           if (allowedNumericIds.length > 0) {
             newRecords = newRecords.filter((r: any) => {
-              // Si es un mod del pool de populares, ya trae el engineId resuelto
               if (r.__resolvedEngineId) {
                 return engineIds.includes(r.__resolvedEngineId);
               }
 
-              // Para mods nativos de GameBanana, buscar el ID numérico en la URL del perfil de la categoría
               const c =
                 r._aCategory ||
                 r._aSubCategory ||
@@ -134,7 +130,6 @@ export async function fetchSearchRecords(
           }
         }
 
-        // "AI-like" Relevance Algorithm (Based on Deep Neural Networks for YouTube Recomentadions PDF)
         const queryTerms = query
           .toLowerCase()
           .split(/[^a-z0-9]+/)
@@ -142,7 +137,6 @@ export async function fetchSearchRecords(
         const currentTimestamp = Math.floor(Date.now() / 1000);
 
         newRecords.sort((a: any, b: any) => {
-          // 1. Feature Representation (Views as engagement surrogate, Age as "Example Age")
           const viewsA = a._nViewCount || 0;
           const viewsB = b._nViewCount || 0;
           const downloadsA = a._nDownloadCount || 0;
@@ -151,17 +145,14 @@ export async function fetchSearchRecords(
           const dateA = a._tsDateAdded || 0;
           const dateB = b._tsDateAdded || 0;
 
-          // Age in days
           const ageDaysA = Math.max(1, (currentTimestamp - dateA) / 86400);
           const ageDaysB = Math.max(1, (currentTimestamp - dateB) / 86400);
 
-          // 2. Semantic matching (Metadata and AI Transcription)
           const nameA = (a._sName || "").toLowerCase();
           const nameB = (b._sName || "").toLowerCase();
-          const descA = JSON.stringify(a).toLowerCase(); // Simulating deep metadata check
+          const descA = JSON.stringify(a).toLowerCase();
           const descB = JSON.stringify(b).toLowerCase();
 
-          // Calculate Match ratio based on words
           const exactMatchScore = (name: string, desc: string) => {
             let score = 0;
             const cleanName = name.replace(/[^a-z0-9]/g, "");
@@ -187,11 +178,9 @@ export async function fetchSearchRecords(
           const relevanceA = exactMatchScore(nameA, descA);
           const relevanceB = exactMatchScore(nameB, descB);
 
-          // 3. Expected Engagement & Freshness (cite:[3.3] cite:[4.2])
           const freshnessA = Math.exp(-ageDaysA / 60) * 50000;
           const freshnessB = Math.exp(-ageDaysB / 60) * 50000;
 
-          // Score = Relevance * (Downloads*2 + Views + Freshness Boost)
           let scoreA =
             relevanceA > 0
               ? relevanceA * (downloadsA * 2 + viewsA + freshnessA)
@@ -201,7 +190,6 @@ export async function fetchSearchRecords(
               ? relevanceB * (downloadsB * 2 + viewsB + freshnessB)
               : 0;
 
-          // Allow strict sorting if requested
           if (sortFilter === "new" || sortFilter === "updated") {
             scoreA = dateA;
             scoreB = dateB;
@@ -210,8 +198,6 @@ export async function fetchSearchRecords(
           return scoreB - scoreA;
         });
 
-        // Eliminar mods que no tienen absolutamente ninguna relevancia (score 0)
-        // a menos que estemos ordenando estrictamente por nuevo/actualizado
         if (sortFilter === "popular") {
           newRecords = newRecords.filter((r) => {
             const n = (r._sName || "").toLowerCase();
@@ -222,12 +208,10 @@ export async function fetchSearchRecords(
             const cleanFull = qTerms.join("");
             if (n.replace(/[^a-z0-9]/g, "").includes(cleanFull)) return true;
 
-            // Estricto: Al menos un término debe estar en el título
             return qTerms.some((term) => n.includes(term));
           });
         }
 
-        // Avoid duplicates both globally and internally
         const existingIds = new Set(cachedRecords.map((r) => r._idRow));
         const uniqueNewRecords = [];
         for (const r of newRecords) {

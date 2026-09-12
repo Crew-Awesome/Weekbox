@@ -2,12 +2,12 @@ import { fsApi as APINodeFileSystem } from "./node/fs/fs.mjs";
 import { httpApi as APINodeHttp } from "./node/http/http.mjs";
 import { deeplinkApi as APINodeDeeplink } from "./node/deeplink/deeplink.mjs";
 import { winApi as APINodeWindow } from "./node/win/win.mjs";
+import { notificationApi as APINodeNotification } from "./node/notification/notification.mjs";
 
 import { zombieManager } from "./node/zombie-manager.mjs";
 
 let extContext = null;
 
-// Start the zombie manager
 zombieManager.start();
 
 const setExtensionContext = (ext) => {
@@ -46,11 +46,11 @@ const operations = {
   "fs.getStats": async ({ path }) => APINodeFileSystem.getStats(path),
   "fs.createDirectory": async ({ path }) => APINodeFileSystem.createDirectory(path),
   "fs.extractArchive": async ({ archivePath, destFolder }) => APINodeFileSystem.extractArchive(archivePath, destFolder),
+  "fs.flattenFolder": async ({ path }) => APINodeFileSystem.flattenFolder(path),
   "http.fetchJson": async ({ url, options, signal }) => APINodeHttp.fetchJson({ url, options, signal }),
   "http.fetchText": async ({ url, options, signal }) => APINodeHttp.fetchText({ url, options, signal }),
   "http.downloadToFile": async ({ url, destPath, progressId, options, signal }, onProgress) => APINodeHttp.downloadToFile({ url, destPath, options, signal, onProgress: (downloaded, total) => onProgress({ downloaded, total, progressId }) }),
   
-  // Window API
   "window.minimize": async () => APINodeWindow.minimize(callApi),
   "window.maximize": async () => APINodeWindow.maximize(callApi),
   "window.unmaximize": async () => APINodeWindow.unmaximize(callApi),
@@ -66,7 +66,10 @@ const operations = {
   "window.getPosition": async () => APINodeWindow.getPosition(callApi),
   "window.getDisplays": async () => APINodeWindow.getDisplays(callApi),
   "window.close": async () => APINodeWindow.close(callApi),
-  "window.center": async () => APINodeWindow.center(callApi)
+  "window.center": async () => APINodeWindow.center(callApi),
+
+  "notification.show": async ({ title, content, icon }) =>
+    APINodeNotification.show(callApi, { title, content, icon })
 };
 
 async function handleRequest(operation, params = {}, onProgress = null) {

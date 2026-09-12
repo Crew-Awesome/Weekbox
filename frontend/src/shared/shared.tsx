@@ -10,7 +10,9 @@ import Banner from "./components/molecules/banner/banner";
 import { Modal } from "./components/atoms/modal/modal";
 import { Pill } from "./components/atoms/pill/pill";
 import { Dropdown } from "./components/atoms/dropdown/dropdown";
+import { Toast } from "./components/atoms/toast";
 import { PillDropdown } from "./components/molecules/pill-dropdown/pill-dropdown";
+import { ToastContainer } from "./components/molecules/toast-container";
 import { EngineFilterPill } from "./components/organisms/engine-filter-pill/engine-filter-pill";
 import Utils from "@utils";
 
@@ -30,6 +32,7 @@ const Shared = {
     Modal,
     Pill,
     Dropdown,
+    Toast,
   },
 
   /**
@@ -41,6 +44,7 @@ const Shared = {
     Carousel,
     Banner,
     PillDropdown,
+    ToastContainer,
   },
 
   /**
@@ -60,3 +64,4 @@ const Shared = {
 };
 
 export default Shared;
+

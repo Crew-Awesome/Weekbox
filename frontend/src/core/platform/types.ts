@@ -11,6 +11,7 @@ declare global {
         operation: string,
         params?: unknown,
         timeoutMs?: number,
+        signal?: AbortSignal,
       ) => Promise<T>;
       stop: () => void;
     };
@@ -51,16 +52,21 @@ declare global {
           stdErr: string;
         }>;
         open: (url: string) => Promise<void>;
+        getPath?: (name: string) => Promise<string>;
+        showNotification?: (title: string, content: string, icon?: string) => Promise<void>;
       };
     };
     NL_ARGS?: string[];
     NL_OS?: string;
+    NL_CWD?: string;
+    NL_PATH?: string;
     NodeExtension?: new (debug?: boolean) => {
       run: (func: string, param?: any) => void;
       call: <T = unknown>(
         operation: string,
         params?: unknown,
         timeoutMs?: number,
+        signal?: AbortSignal,
       ) => Promise<T>;
       stop: () => void;
     };
@@ -107,7 +113,7 @@ export interface IPlatformBridge {
   ): Promise<BackendResult<Operation>>;
 
   /** Downloads a mod archive. Implementations vary by platform. */
-  downloadMod(url: string, modId?: string, modName?: string, onProgress?: (progress: number) => void, signal?: AbortSignal): Promise<void>;
+  downloadMod(url: string, modId?: string, modName?: string, onProgress?: (progress: number, statusText?: string) => void, signal?: AbortSignal): Promise<void>;
 
   /** Opens a URL in the default web browser. */
   openUrl(url: string): Promise<void>;

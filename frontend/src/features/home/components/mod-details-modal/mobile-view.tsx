@@ -1,7 +1,10 @@
 import React, { useState, useEffect } from "react";
-import { Download, ChevronLeft, ChevronRight, List, ChevronUp, Loader2, Play, Trash2 } from "lucide-react";
-import type { ModalViewProps } from "./types";
-import Core from "../../../../core";
+import { Download, List, ChevronUp, Loader2, SlidersHorizontal, Trash2 } from "lucide-react";
+import { type ModalViewProps, formatFileSize } from "./types";
+import { ModMediaCarousel, ModThumbnailStrip } from "./components/mod-media-carousel";
+import Core from "@core";
+import Utils from "@utils";
+import { useDownloadStore, DownloadStatus } from "../../../../store";
 
 interface MobileViewProps extends ModalViewProps {
   carouselRef: React.RefObject<HTMLDivElement | null>;
@@ -22,24 +25,48 @@ export const MobileView: React.FC<MobileViewProps> = ({
   carouselRef,
 }) => {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-  const abortControllersRef = React.useRef<{ [key: string]: AbortController }>({});
-  const [downloadProgress, setDownloadProgress] = useState<{ [key: string]: number }>({});
   const [isInstalled, setIsInstalled] = useState(false);
   const [isUninstalling, setIsUninstalling] = useState(false);
+
+  const downloadTasks = useDownloadStore((s) => s.tasks);
+  const startDownloadTask = useDownloadStore((s) => s.startDownload);
+  const cancelDownloadTask = useDownloadStore((s) => s.cancelDownload);
+
+  const downloadProgress = React.useMemo(() => {
+    const map: { [key: string]: number } = {};
+    Object.keys(downloadTasks).forEach((key) => {
+      map[key] = downloadTasks[key].progress;
+    });
+    return map;
+  }, [downloadTasks]);
+
+  const downloadStatus = React.useMemo(() => {
+    const map: { [key: string]: string } = {};
+    Object.keys(downloadTasks).forEach((key) => {
+      map[key] = downloadTasks[key].status;
+    });
+    return map;
+  }, [downloadTasks]);
 
   useEffect(() => {
     if (displayCard?.id) {
       Core.platform.isModInstalled(displayCard.id.toString()).then(setIsInstalled);
     }
-  }, [displayCard?.id]);
+  }, [displayCard?.id, downloadTasks]);
 
   const handleUninstall = async () => {
     setIsUninstalling(true);
     try {
       await Core.platform.uninstallMod(displayCard.id.toString());
       setIsInstalled(false);
+      Utils.toast.info(`"${displayCard.name}" uninstalled.`, {
+        title: "Mod Uninstalled",
+      });
     } catch (e) {
       console.warn("Error uninstalling:", e);
+      Utils.toast.error("Failed to uninstall mod.", {
+        title: "Uninstall Error",
+      });
     } finally {
       setIsUninstalling(false);
     }
@@ -52,73 +79,51 @@ export const MobileView: React.FC<MobileViewProps> = ({
 
   const singleFileId = validFiles[0]?._idRow;
   const singleFileProgress = singleFileId ? downloadProgress[singleFileId] : undefined;
+  const singleFileStatus = singleFileId ? downloadStatus[singleFileId] : undefined;
 
   const handleDownload = async (url: string, id: string) => {
-    if (downloadProgress[id] !== undefined) {
-      if (abortControllersRef.current[id]) {
-        abortControllersRef.current[id].abort();
-        delete abortControllersRef.current[id];
-        setDownloadProgress(prev => ({ ...prev, [id]: -1 }));
-      }
+    if (downloadTasks[id] !== undefined) {
+      cancelDownloadTask(id);
       return;
     }
     
-    setDownloadProgress(prev => ({ ...prev, [id]: 0 }));
-    const controller = new AbortController();
-    abortControllersRef.current[id] = controller;
-    
-    try {
-      if (!displayCard.id) throw new Error("No mod ID");
-      
-      const payload = {
-        id: displayCard.id,
-        gameId: displayCard.gameId,
-        title: displayCard.name,
-        description: displayCard.description,
-        htmlBody: displayCard.htmlBody,
-        author: displayCard.author,
-        userId: displayCard.userId,
-        userPfp: displayCard.userPfp,
-        authors: displayCard.authors,
-        likes: displayCard.likes,
-        views: displayCard.views,
-        downloads: displayCard.downloads,
-        submittedAt: displayCard.submittedAt,
-        updatedAt: displayCard.updatedAt,
-        timeAgo: displayCard.timeAgo,
-        thumbnail: displayCard.thumbnail,
-        isNsfw: displayCard.isNsfw,
-        previewMedia: displayCard.previewMedia,
-        files: displayCard.files,
-        engineName: engineName,
-        formatDate: () => "", // not used in payload
-        formatFullDate: () => "", // not used in payload
-      };
+    if (!displayCard.id) return;
+    const card = displayCard as any;
+    const payload = {
+      id: displayCard.id,
+      gameId: card.gameId,
+      title: displayCard.name,
+      description: displayCard.description,
+      htmlBody: displayCard.htmlBody,
+      author: displayCard.author,
+      userId: card.userId,
+      userPfp: card.userPfp,
+      authors: card.authors,
+      likes: card.likes,
+      views: card.views,
+      downloads: card.downloads,
+      submittedAt: card.submittedAt,
+      updatedAt: card.updatedAt,
+      timeAgo: card.timeAgo,
+      thumbnail: card.thumbnail,
+      isNsfw: card.isNsfw,
+      previewMedia: card.previewMedia,
+      files: displayCard.files,
+      engineName: engineName,
+      formatDate: () => "",
+      formatFullDate: () => "",
+    };
 
-      await Core.platform.downloadMod(url, id, displayCard.id.toString(), payload, controller.signal, (progress) => {
-        setDownloadProgress(prev => {
-          if (prev[id] === -1) return prev; // Ignore if canceling
-          return { ...prev, [id]: progress };
-        });
-      });
-      
-      setIsInstalled(true);
-      setDownloadProgress(prev => {
-        const next = { ...prev };
-        delete next[id];
-        return next;
-      });
-    } catch (err: any) {
-      if (err?.message !== "Cancelled") {
-        console.error("Error downloading mod:", err);
-      }
-      setDownloadProgress(prev => {
-        const next = { ...prev };
-        delete next[id];
-        return next;
-      });
-    } finally {
-      delete abortControllersRef.current[id];
+    await startDownloadTask({
+      url,
+      fileId: id,
+      modId: displayCard.id.toString(),
+      modName: displayCard.name,
+      payload,
+    });
+
+    if (displayCard.id) {
+      Core.platform.isModInstalled(displayCard.id.toString()).then(setIsInstalled).catch(() => {});
     }
   };
 
@@ -145,47 +150,23 @@ export const MobileView: React.FC<MobileViewProps> = ({
         </div>
       </div>
 
-      <div className="w-full aspect-[16/9] relative rounded-2xl overflow-hidden bg-black/20 shrink-0 mb-4 group">
-        {displayCard.previewMedia && displayCard.previewMedia.length > 0 ? (
-          <>
-            <div
-              ref={carouselRef}
-              onScroll={handleScroll}
-              className="w-full h-full flex overflow-hidden snap-x snap-mandatory [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]"
-            >
-              {displayCard.previewMedia.map((src, i) => (
-                <div key={i} className="w-full h-full shrink-0 snap-center relative flex items-center justify-center bg-black">
-                  <img src={src} className="w-full h-full object-cover" />
-                </div>
-              ))}
-            </div>
-            {displayCard.previewMedia.length > 1 && (
-              <>
-                <button onClick={prevImage} className="absolute left-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-black/60 text-white z-10"><ChevronLeft className="w-5 h-5 mx-auto" /></button>
-                <button onClick={nextImage} className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-black/60 text-white z-10"><ChevronRight className="w-5 h-5 mx-auto" /></button>
-              </>
-            )}
-          </>
-        ) : (
-          displayCard.img && <img src={displayCard.img} className="w-full h-full object-cover" />
-        )}
-      </div>
+      <ModMediaCarousel
+        media={displayCard.previewMedia}
+        fallbackImage={displayCard.img}
+        title={displayCard.name}
+        carouselRef={carouselRef}
+        onScroll={handleScroll}
+        onPrev={prevImage}
+        onNext={nextImage}
+        roundedClassName="rounded-2xl mb-4"
+      />
 
-      {displayCard.previewMedia && displayCard.previewMedia.length > 1 && (
-        <div className="flex gap-2 w-full overflow-x-auto touch-pan-x pb-4 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
-          {displayCard.previewMedia.map((src, i) => (
-            <button
-              key={i}
-              onClick={() => scrollToIndex(i)}
-              className={`shrink-0 w-20 h-12 rounded-lg overflow-hidden border-[2px] ${
-                activeIndex === i ? "border-[var(--wb-primary)]" : "border-transparent opacity-60"
-              }`}
-            >
-              <img src={src} className="w-full h-full object-cover" />
-            </button>
-          ))}
-        </div>
-      )}
+      <ModThumbnailStrip
+        media={displayCard.previewMedia || []}
+        activeIndex={activeIndex}
+        onSelectIndex={scrollToIndex}
+        variant="mobile"
+      />
 
       <h1 className="text-2xl font-bold text-[var(--wb-on-surface)] mb-1 leading-tight">{displayCard.name}</h1>
       <span className="text-[var(--wb-on-surface-variant)] text-xs mb-4 block">by {displayCard.author || "Unknown"}</span>
@@ -205,8 +186,8 @@ export const MobileView: React.FC<MobileViewProps> = ({
           {isInstalled ? (
             <div className="flex gap-2 w-full">
               <button className="flex-1 bg-[var(--wb-primary)] hover:opacity-90 text-[var(--wb-on-primary)] py-3 rounded-xl flex items-center justify-center gap-2 font-bold transition-all duration-300">
-                <Play className="w-5 h-5" fill="currentColor" />
-                <span className="text-base">Play</span>
+                <SlidersHorizontal className="w-5 h-5" />
+                <span className="text-base">Manage</span>
               </button>
               <button 
                 onClick={handleUninstall}
@@ -227,6 +208,7 @@ export const MobileView: React.FC<MobileViewProps> = ({
                 <div className="absolute bottom-[calc(100%+2px)] left-0 w-full bg-[var(--wb-surface-bright)] border border-white/10 rounded-xl shadow-lg flex flex-col overflow-hidden z-50">
                   {validFiles.map((file: any) => {
                     const prog = downloadProgress[file._idRow];
+                    const status = downloadStatus[file._idRow];
                     const isDownloading = prog !== undefined && prog >= 0 && prog < 100;
                     const isCanceling = prog === -1;
                     return (
@@ -245,7 +227,17 @@ export const MobileView: React.FC<MobileViewProps> = ({
                           </div>
                         )}
                         <span className={`text-sm font-semibold truncate w-full text-[var(--wb-on-surface)] relative z-10 transition-opacity ${isDownloading ? "group-hover:opacity-0" : ""}`}>
-                          {isCanceling ? "Canceling..." : prog !== undefined ? (prog === 100 ? "Completed" : `Downloading... ${prog}%`) : file._sFile}
+                          {isCanceling
+                            ? "Canceling..."
+                            : prog !== undefined
+                            ? prog === 100
+                              ? "Completed"
+                              : status && status !== DownloadStatus.DOWNLOADING
+                              ? status
+                              : prog === 99
+                              ? "Extracting archive..."
+                              : `Downloading... ${prog}%`
+                            : file._sFile}
                         </span>
                         <span className={`text-xs text-[var(--wb-on-surface-variant)] relative z-10 transition-opacity ${isDownloading ? "group-hover:opacity-0" : ""}`}>{Math.round(file._nFilesize / 1024 / 1024)} MB - {file._nDownloadCount} downloads</span>
                       </button>
@@ -264,10 +256,10 @@ export const MobileView: React.FC<MobileViewProps> = ({
               ) : hasNoFiles ? (
                 <button 
                   disabled
-                  className="w-full bg-[var(--wb-surface-variant)] text-[var(--wb-on-surface-variant)] cursor-not-allowed py-3 rounded-xl flex items-center justify-center gap-2 px-4 font-bold opacity-60"
+                  className="w-full bg-[var(--wb-surface-variant)] text-[var(--wb-on-surface-variant)] cursor-not-allowed py-3 rounded-xl flex items-center justify-center gap-2 px-4 font-bold opacity-60 select-none pointer-events-auto transition-none shadow-none hover:bg-[var(--wb-surface-variant)] hover:opacity-60 hover:transform-none active:transform-none"
                 >
-                  <Download className="w-5 h-5" />
-                  <span>No downloads available</span>
+                  <Download className="w-5 h-5 pointer-events-none" />
+                  <span className="pointer-events-none">No downloads available</span>
                 </button>
               ) : (
                 <button 
@@ -311,6 +303,11 @@ export const MobileView: React.FC<MobileViewProps> = ({
                         </>
                       ) : singleFileProgress === 100 ? (
                         <span>Completed</span>
+                      ) : (singleFileStatus && singleFileStatus !== DownloadStatus.DOWNLOADING) || singleFileProgress === 99 ? (
+                        <>
+                          <Loader2 className="w-5 h-5 animate-spin" />
+                          <span className="text-base">{singleFileStatus || "Extracting archive..."}</span>
+                        </>
                       ) : singleFileProgress !== undefined ? (
                         <>
                           <Loader2 className="w-5 h-5 animate-spin" />
@@ -318,8 +315,15 @@ export const MobileView: React.FC<MobileViewProps> = ({
                         </>
                       ) : (
                         <>
-                          <Download className="w-5 h-5" />
-                          <span>Download</span>
+                          <Download className="w-5 h-5 shrink-0" />
+                          <div className="flex flex-col items-start leading-tight">
+                            <span className="text-base leading-tight">Download</span>
+                            {validFiles[0]?._nFilesize ? (
+                              <span className="text-xs font-normal opacity-80 leading-none mt-0.5">
+                                {formatFileSize(validFiles[0]._nFilesize)}
+                              </span>
+                            ) : null}
+                          </div>
                         </>
                       )}
                     </div>

@@ -28,5 +28,4 @@ export interface GameBananaMod extends GameBananaItem {
 }
 
 export interface GameBananaTool extends GameBananaItem {
-  // Las tools no dependen de engineId, asi que mantenemos su propia interfaz
 }

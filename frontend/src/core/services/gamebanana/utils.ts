@@ -71,9 +71,6 @@ export function getEngineIcon(engineId: string): string | undefined {
 export function checkIsNsfw(record: any): boolean {
   if (record._bIsNsfw || record._bContainsNsfw) return true;
 
-  // GameBanana's "Not Safe For Work" category ID is often 43772 or we can check the names if available.
-  // For now, if it's in EXCLUDED_CATEGORIES, it might be NSFW.
-  // Let's assume 43772 is the explicit NSFW category ID for FNF.
   const ids = [
     record._aCategory?._idRow,
     record._aSuperCategory?._idRow,
@@ -101,7 +98,6 @@ export function isExcluded(record: any): boolean {
   ];
   for (const id of ids) {
     if (id && EXCLUDED_CATEGORIES.has(id)) {
-      // If NSFW is allowed, do not exclude the NSFW category!
       if (ALLOW_NSFW && id === 43772) continue;
       return true;
     }
@@ -151,7 +147,7 @@ export function extractThumbnail(record: any): string {
   if (images && images.length > 0) {
     return images[0]._sBaseUrl + "/" + images[0]._sFile;
   }
-  return "assets/img/placeholder-mini.jpg";
+  return "/assets/images/placeholder-mini.webp";
 }
 
 /**
@@ -184,7 +180,6 @@ export function extractUserPfp(record: any): string {
 
   if (!url) return "";
 
-  // GameBanana injects default avatars that look ugly, filter them out so UI uses our Lucide icon
   const lowerUrl = url.toLowerCase();
   if (lowerUrl.includes("default") || lowerUrl.includes("avatar.png")) {
     return "";

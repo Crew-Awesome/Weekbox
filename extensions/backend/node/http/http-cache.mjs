@@ -4,7 +4,7 @@
  */
 
 const cache = new Map();
-const DEFAULT_TTL_MS = 180000; // 3 minutos
+const DEFAULT_TTL_MS = 180000;
 
 export const httpCache = {
   /**
@@ -16,7 +16,6 @@ export const httpCache = {
     const item = cache.get(key);
     if (!item) return null;
     
-    // Si ha pasado el TTL, invalidamos la caché
     if (Date.now() - item.timestamp > DEFAULT_TTL_MS) {
       cache.delete(key);
       return null;

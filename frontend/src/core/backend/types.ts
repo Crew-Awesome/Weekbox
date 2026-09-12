@@ -11,6 +11,7 @@ export type BackendOperation =
   | "fs.remove"
   | "fs.getStats"
   | "fs.extractArchive"
+  | "fs.flattenFolder"
   | "http.fetchJson"
   | "http.fetchText"
   | "http.downloadToFile"
@@ -29,7 +30,8 @@ export type BackendOperation =
   | "window.getPosition"
   | "window.getDisplays"
   | "window.close"
-  | "window.center";
+  | "window.center"
+  | "notification.show";
 
 export interface BackendRequest {
   requestId: string;
@@ -54,11 +56,13 @@ export interface BackendResultMap {
   "fs.readFile": string;
   "fs.exists": boolean;
   "fs.extractArchive": void;
+  "fs.flattenFolder": { flattened: boolean; originalRoot: string; targetFolder: string };
   "http.downloadToFile": void;
   "window.isMaximized": boolean;
   "window.getSize": { width: number; height: number };
   "window.getPosition": { x: number; y: number };
   "window.getDisplays": any[];
+  "notification.show": { ok: boolean; method?: string; error?: string };
 }
 
 export type BackendResult<Operation extends BackendOperation> =

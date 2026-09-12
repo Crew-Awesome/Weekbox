@@ -13,7 +13,6 @@ export const ProgressBar: React.FC<ProgressBarProps> = ({
   progress,
   actionText,
 }) => {
-  // Ensure progress is clamped between 0 and 100
   const clampedProgress = Math.min(Math.max(progress, 0), 100);
 
   return (
