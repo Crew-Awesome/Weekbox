@@ -116,7 +116,6 @@ export const DesktopView: React.FC<DesktopViewProps> = ({
           icon: cat.icon,
           defaultEngineId: defaultEngineId,
         });
-        Utils.toast.success(`Engine changed to "${cat.name}"`, { duration: 2500 });
       }
     },
     [engineName, displayCard.engineId, displayCard.defaultEngineId, onUpdateMod]

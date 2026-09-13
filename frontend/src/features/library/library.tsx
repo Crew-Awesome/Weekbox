@@ -504,15 +504,15 @@ export const Library: React.FC = () => {
               <button
                 type="button"
                 onClick={() => setShowFavoritesOnly(!showFavoritesOnly)}
-                className={`flex items-center gap-2 px-4 py-2.5 rounded-full text-xs font-semibold border transition-all cursor-pointer ${
+                className={`flex items-center gap-2 px-4 py-2 rounded-full font-semibold transition-all duration-200 border outline-none cursor-pointer select-none ${
                   showFavoritesOnly
                     ? "bg-red-500/20 border-red-500/50 text-red-500 shadow-sm"
-                    : "bg-[var(--wb-surface-container-high)] hover:bg-[var(--wb-surface-container-highest)] border-[var(--wb-outline-variant)]/40 text-[var(--wb-on-surface)] hover:text-red-400"
+                    : "bg-[var(--wb-surface-container-high)] hover:bg-[var(--wb-surface-container-highest)] border-[var(--wb-outline-variant)]/60 text-[var(--wb-on-surface-variant)] hover:text-red-400"
                 }`}
               >
                 <Heart
-                  size={14}
-                  className={showFavoritesOnly ? "fill-red-500 text-red-500" : ""}
+                  size={16}
+                  className={showFavoritesOnly ? "fill-red-500 text-red-500" : "opacity-80"}
                 />
                 <span>Favorites</span>
               </button>
