@@ -1,9 +1,5 @@
-import React from "react";
+import { Instances } from "../instances/instances";
 
-export const Engines: React.FC = () => {
-  return (
-    <div className="text-white text-center mt-20 text-2xl font-bold">
-      Engines View (WIP)
-    </div>
-  );
-};
+export const Engines = Instances;
+export default Engines;
+

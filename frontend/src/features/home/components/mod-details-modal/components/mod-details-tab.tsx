@@ -12,7 +12,7 @@ import {
   Hash,
   Layers,
   Loader2,
-  SlidersHorizontal,
+  Play,
 } from "lucide-react";
 import type { ModItem } from "../../../types";
 import { formatFileSize } from "../types";
@@ -113,8 +113,8 @@ export const ModDetailsTab: React.FC<ModDetailsTabProps> = ({
                           onClick={() => onManageFile?.(file)}
                           className="shrink-0 flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all bg-[var(--wb-primary)] hover:opacity-90 text-[var(--wb-on-primary)] cursor-pointer shadow-sm"
                         >
-                          <SlidersHorizontal className="w-3.5 h-3.5 shrink-0" />
-                          <span>Manage</span>
+                          <Play className="w-3.5 h-3.5 shrink-0 fill-current" />
+                          <span>Play</span>
                         </button>
                       ) : onDownloadFile ? (
                         <button

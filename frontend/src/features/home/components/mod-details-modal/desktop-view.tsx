@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
-import { ExternalLink, Plus, RefreshCw, Download, List, ChevronUp, Loader2, SlidersHorizontal, Trash2, HardDrive, Languages, Heart, Pencil, ChevronDown } from "lucide-react";
+import { ExternalLink, Plus, RefreshCw, Download, List, ChevronUp, Loader2, Trash2, HardDrive, Languages, Heart, Pencil, ChevronDown, Tag, Play } from "lucide-react";
 import { type ModalViewProps, formatFileSize } from "./types";
 import { ModMediaCarousel, ModThumbnailStrip } from "./components/mod-media-carousel";
 import { ModNavPills, type ModModalTab } from "./components/mod-nav-pills";
@@ -54,6 +54,17 @@ export const DesktopView: React.FC<DesktopViewProps> = ({
   const [descInput, setDescInput] = useState(displayCard.htmlBody || displayCard.description || "");
   const [isEngineDropdownOpen, setIsEngineDropdownOpen] = useState(false);
   const engineDropdownRef = useRef<HTMLDivElement>(null);
+  const [isVersionDropdownOpen, setIsVersionDropdownOpen] = useState(false);
+  const versionDropdownRef = useRef<HTMLDivElement>(null);
+  const [selectedVersion, setSelectedVersion] = useState<string>(
+    (displayCard as any).engineVersion || "Any version"
+  );
+
+  const isExecutable = React.useMemo(() => {
+    const eid = String(displayCard.engineId || "").toLowerCase();
+    const ename = (engineName || "").toLowerCase();
+    return eid === "executable" || eid === "3827" || ename.includes("executable");
+  }, [displayCard.engineId, engineName]);
 
   useEffect(() => {
     setIsInstalled(Boolean(isInstalledProp));
@@ -79,6 +90,28 @@ export const DesktopView: React.FC<DesktopViewProps> = ({
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [isEngineDropdownOpen]);
+
+  useEffect(() => {
+    if (!isVersionDropdownOpen) return;
+    const handleClickOutside = (e: MouseEvent) => {
+      if (versionDropdownRef.current && !versionDropdownRef.current.contains(e.target as Node)) {
+        setIsVersionDropdownOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [isVersionDropdownOpen]);
+
+  const handleSelectVersion = useCallback(
+    (ver: string) => {
+      setSelectedVersion(ver);
+      setIsVersionDropdownOpen(false);
+      if (onUpdateMod) {
+        onUpdateMod({ engineVersion: ver });
+      }
+    },
+    [onUpdateMod]
+  );
 
   const handleSaveTitle = useCallback(() => {
     setIsEditingTitle(false);
@@ -315,28 +348,28 @@ export const DesktopView: React.FC<DesktopViewProps> = ({
 
       <div className="flex flex-col h-full overflow-hidden text-[var(--wb-on-surface)] w-full relative z-10 filter drop-shadow-[0_8px_32px_rgba(0,0,0,0.6)] pointer-events-none">
         <div className="relative z-30 flex items-center px-4 md:px-6 pt-2 pb-3 md:pt-3 md:pb-4 shrink-0 bg-[var(--wb-surface-container)] min-h-[56px] pr-16 md:pr-4 rounded-t-2xl pointer-events-auto">
-          <div className="flex items-center gap-2 md:gap-3 flex-wrap z-10">
-            <a href={`https://gamebanana.com/mods/${displayCard.id}`} target="_blank" rel="noopener noreferrer" className="flex items-center justify-center w-8 h-8 md:w-10 md:h-10 rounded-full bg-[var(--wb-surface-bright)] hover:bg-white/10 transition-colors relative group shrink-0">
-              <img src="/assets/icons/app/gamebanana.webp" alt="GameBanana" className="w-4 h-4 md:w-5 md:h-5 object-contain opacity-80" />
+          <div className="flex items-center gap-1.5 md:gap-2 flex-wrap z-10">
+            <a href={`https://gamebanana.com/mods/${displayCard.id}`} target="_blank" rel="noopener noreferrer" className="flex items-center justify-center w-8 h-8 rounded-full bg-[var(--wb-surface-bright)] hover:bg-white/10 transition-colors relative group shrink-0">
+              <img src="/assets/icons/app/gamebanana.webp" alt="GameBanana" className="w-4 h-4 object-contain opacity-80" />
               <div className="absolute -bottom-1 -right-1 bg-[var(--wb-surface-container)] rounded-full p-[2px]">
                 <ExternalLink className="w-3 h-3 text-[var(--wb-on-surface-variant)] group-hover:text-[var(--wb-on-surface)]" />
               </div>
             </a>
-            <div className="w-[1px] h-6 bg-[var(--wb-outline-variant)]/60 mx-1" />
+            <div className="w-[1px] h-5 bg-[var(--wb-outline-variant)]/40 mx-0.5" />
             {displayCard.icon && (
               <div className="relative z-40 shrink-0" ref={engineDropdownRef}>
                 <div
                   onClick={() => isInstalled && setIsEngineDropdownOpen((prev) => !prev)}
-                  className={`flex items-center gap-2.5 px-3.5 md:px-4.5 py-1.5 md:py-2 rounded-[4px] bg-[var(--wb-primary)]/15 text-[var(--wb-primary)] border border-[var(--wb-primary)]/30 shrink-0 ${
+                  className={`flex items-center gap-1.5 px-2.5 md:px-3 py-1 md:py-1.5 rounded-[4px] bg-[var(--wb-primary)]/15 text-[var(--wb-primary)] border border-[var(--wb-primary)]/30 shrink-0 ${
                     isInstalled ? "cursor-pointer hover:bg-[var(--wb-primary)]/25 transition-all select-none group" : ""
                   }`}
                   title={isInstalled ? "Click to change engine" : engineName}
                 >
-                  <img src={displayCard.icon} alt={engineName} className="w-5 h-5 object-contain brightness-150 shrink-0" />
-                  <span className="text-sm md:text-base font-semibold leading-none">{engineName}</span>
+                  <img src={displayCard.icon} alt={engineName} className="w-4 h-4 object-contain brightness-150 shrink-0" />
+                  <span className="text-xs md:text-sm font-semibold leading-none truncate max-w-[120px]">{engineName}</span>
                   {isInstalled && (
                     <ChevronDown
-                      className={`w-4 h-4 opacity-70 group-hover:opacity-100 transition-transform duration-200 ${
+                      className={`w-3.5 h-3.5 opacity-70 group-hover:opacity-100 transition-transform duration-200 ${
                         isEngineDropdownOpen ? "rotate-180" : ""
                       }`}
                     />
@@ -359,13 +392,13 @@ export const DesktopView: React.FC<DesktopViewProps> = ({
                           key={cat.id}
                           type="button"
                           onClick={() => handleSelectEngine(cat)}
-                          className={`flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-xs font-semibold transition-colors cursor-pointer text-left w-full ${
+                          className={`flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs font-semibold transition-colors cursor-pointer text-left w-full ${
                             isSelected
                               ? "bg-[var(--wb-primary)]/20 text-[var(--wb-primary)]"
                               : "text-[var(--wb-on-surface-variant)] hover:text-[var(--wb-on-surface)] hover:bg-[var(--wb-surface-container-high)]"
                           }`}
                         >
-                          <img src={cat.icon} alt={cat.name} className="w-5 h-5 object-contain brightness-125 shrink-0" />
+                          <img src={cat.icon} alt={cat.name} className="w-4 h-4 object-contain brightness-125 shrink-0" />
                           <span className="truncate">{cat.name}</span>
                           {isDefault && (
                             <span className="ml-auto text-[10px] font-bold px-1.5 py-0.5 rounded bg-[var(--wb-primary)]/20 text-[var(--wb-primary)] uppercase tracking-wider shrink-0">
@@ -379,15 +412,56 @@ export const DesktopView: React.FC<DesktopViewProps> = ({
                 )}
               </div>
             )}
+            {!isExecutable && (
+              <div className="relative z-40 shrink-0" ref={versionDropdownRef}>
+                <div
+                  onClick={() => setIsVersionDropdownOpen((prev) => !prev)}
+                  className="flex items-center gap-1.5 px-2.5 md:px-3 py-1 md:py-1.5 rounded-[4px] bg-[var(--wb-surface-bright)]/70 hover:bg-[var(--wb-surface-bright)] text-[var(--wb-on-surface)] border border-[var(--wb-outline-variant)]/40 hover:border-[var(--wb-primary)]/40 shrink-0 cursor-pointer transition-all select-none group"
+                  title="Select engine version"
+                >
+                  <Tag className="w-3.5 h-3.5 text-[var(--wb-primary)] shrink-0" />
+                  <span className="text-xs md:text-sm font-semibold leading-none truncate max-w-[100px]">{selectedVersion}</span>
+                  <ChevronDown
+                    className={`w-3.5 h-3.5 opacity-70 group-hover:opacity-100 transition-transform duration-200 ${
+                      isVersionDropdownOpen ? "rotate-180" : ""
+                    }`}
+                  />
+                </div>
+
+                {isVersionDropdownOpen && (
+                  <div className="absolute left-0 top-full mt-1.5 z-50 min-w-[210px] bg-[var(--wb-surface-container-highest)] border border-[var(--wb-outline-variant)]/60 rounded-xl shadow-2xl p-1.5 flex flex-col gap-1 animate-in fade-in slide-in-from-top-1 duration-150">
+                    <div className="px-2 py-1 text-[10px] font-bold text-[var(--wb-on-surface-variant)] uppercase tracking-wider">
+                      Engine Version
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => handleSelectVersion("Any version")}
+                      className="flex items-center justify-between gap-2 px-2 py-1.5 rounded-lg text-xs font-semibold bg-[var(--wb-primary)]/20 text-[var(--wb-primary)] cursor-pointer text-left w-full transition-colors"
+                    >
+                      <div className="flex items-center gap-2 truncate">
+                        <Tag className="w-3.5 h-3.5 text-[var(--wb-primary)] shrink-0" />
+                        <span className="truncate">Any version</span>
+                      </div>
+                      <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-[var(--wb-primary)]/30 text-[var(--wb-primary)] uppercase tracking-wider shrink-0">
+                        Default
+                      </span>
+                    </button>
+                    <div className="px-2 py-1.5 mt-0.5 rounded-lg bg-[var(--wb-surface-container-high)] text-[11px] text-[var(--wb-on-surface-variant)] opacity-75 leading-relaxed">
+                      No other downloaded versions available for this engine.
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
           <div className="absolute inset-0 flex items-center justify-center pointer-events-none hidden md:flex">
-            <div className="flex items-center gap-2 pointer-events-auto shrink-0">
+            <div className="flex items-center gap-1.5 pointer-events-auto shrink-0">
               <div 
-                className="relative flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[var(--wb-surface-bright)] border border-[var(--wb-outline-variant)]/30 text-[var(--wb-on-surface-variant)] text-sm select-none cursor-default"
+                className="relative flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[var(--wb-surface-bright)] border border-[var(--wb-outline-variant)]/30 text-[var(--wb-on-surface-variant)] text-xs select-none cursor-default"
                 onMouseEnter={() => setHoverTooltip("submitted")}
                 onMouseLeave={() => setHoverTooltip(null)}
               >
-                <Plus className="w-3.5 h-3.5" />
+                <Plus className="w-3 h-3" />
                 <span>{formatDate(displayCard.submittedAt)}</span>
                 <div className={`absolute left-1/2 top-full -translate-x-1/2 mt-2 z-[100] pointer-events-none transition-opacity duration-200 flex flex-col items-center ${hoverTooltip === "submitted" ? "opacity-100" : "opacity-0"}`}>
                   <div className="w-0 h-0 border-l-[4px] border-l-transparent border-r-[4px] border-r-transparent border-b-[4px] border-b-[var(--wb-surface-container-highest)]"></div>
@@ -399,11 +473,11 @@ export const DesktopView: React.FC<DesktopViewProps> = ({
 
               {displayCard.updatedAt && displayCard.updatedAt !== displayCard.submittedAt && (
                 <div 
-                  className="relative flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[var(--wb-surface-bright)] border border-[var(--wb-outline-variant)]/30 text-[var(--wb-on-surface-variant)] text-sm select-none cursor-default"
+                  className="relative flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[var(--wb-surface-bright)] border border-[var(--wb-outline-variant)]/30 text-[var(--wb-on-surface-variant)] text-xs select-none cursor-default hidden lg:flex"
                   onMouseEnter={() => setHoverTooltip("updated")}
                   onMouseLeave={() => setHoverTooltip(null)}
                 >
-                  <RefreshCw className="w-3.5 h-3.5" />
+                  <RefreshCw className="w-3 h-3" />
                   <span>{formatDate(displayCard.updatedAt)}</span>
                   <div className={`absolute left-1/2 top-full -translate-x-1/2 mt-2 z-[100] pointer-events-none transition-opacity duration-200 flex flex-col items-center ${hoverTooltip === "updated" ? "opacity-100" : "opacity-0"}`}>
                     <div className="w-0 h-0 border-l-[4px] border-l-transparent border-r-[4px] border-r-transparent border-b-[4px] border-b-[var(--wb-surface-container-highest)]"></div>
@@ -416,11 +490,11 @@ export const DesktopView: React.FC<DesktopViewProps> = ({
 
               {isInstalled && localInstalledAt && (
                 <div 
-                  className="relative flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[var(--wb-surface-bright)] border border-[var(--wb-outline-variant)]/30 text-[var(--wb-on-surface-variant)] text-sm select-none cursor-default"
+                  className="relative flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[var(--wb-surface-bright)] border border-[var(--wb-outline-variant)]/30 text-[var(--wb-on-surface-variant)] text-xs select-none cursor-default"
                   onMouseEnter={() => setHoverTooltip("installed")}
                   onMouseLeave={() => setHoverTooltip(null)}
                 >
-                  <HardDrive className="w-3.5 h-3.5 text-[var(--wb-primary)]" />
+                  <HardDrive className="w-3 h-3 text-[var(--wb-primary)]" />
                   <span>Installed: {formatDate(localInstalledAt)}</span>
                   <div className={`absolute left-1/2 top-full -translate-x-1/2 mt-2 z-[100] pointer-events-none transition-opacity duration-200 flex flex-col items-center ${hoverTooltip === "installed" ? "opacity-100" : "opacity-0"}`}>
                     <div className="w-0 h-0 border-l-[4px] border-l-transparent border-r-[4px] border-r-transparent border-b-[4px] border-b-[var(--wb-surface-container-highest)]"></div>
@@ -670,8 +744,8 @@ export const DesktopView: React.FC<DesktopViewProps> = ({
                       onClick={handleManage}
                       className="flex-1 bg-[var(--wb-primary)] hover:opacity-90 text-[var(--wb-on-primary)] py-3 md:py-4 rounded-xl flex items-center justify-center gap-2 md:gap-3 px-6 transition-all duration-300 font-bold cursor-pointer"
                     >
-                      <SlidersHorizontal className="w-5 h-5 md:w-6 md:h-6" />
-                      <span className="text-base md:text-lg">Manage</span>
+                      <Play className="w-5 h-5 md:w-6 md:h-6 fill-current" />
+                      <span className="text-base md:text-lg">Play</span>
                     </button>
                     <button 
                       onClick={handleUninstall}

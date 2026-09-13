@@ -3,6 +3,7 @@ import Shared from "@shared";
 import { Download, Loader2, User } from "lucide-react";
 import { useDownloadStore } from "../../../store";
 import type { ModItem } from "../../home/types";
+import { ENGINE_CATEGORIES } from "../../../core/services/gamebanana/constants";
 
 interface DownloadingModCardProps {
   /**
@@ -66,6 +67,15 @@ export const DownloadingModCard: React.FC<DownloadingModCardProps> = ({
     </div>
   );
 
+  const engineCategory = task.payload?.engineId
+    ? Object.values(ENGINE_CATEGORIES).find(
+        (c) =>
+          String(c.id).toLowerCase() === String(task.payload.engineId).toLowerCase() ||
+          c.name.toLowerCase() === String(task.payload.engineId).toLowerCase()
+      )
+    : null;
+  const engineTooltip = engineCategory?.name || (task.payload?.engineId ? String(task.payload.engineId) : undefined);
+
   return (
     <div className="h-full">
       <Shared.molecules.Card
@@ -73,6 +83,7 @@ export const DownloadingModCard: React.FC<DownloadingModCardProps> = ({
         description={modItem.description}
         thumbnail={modItem.img}
         icon={modItem.icon}
+        iconTooltip={engineTooltip}
         isNsfw={task.payload?.isNsfw}
         clickableArea="whole-card"
         onClick={() => onCardClick(modItem)}

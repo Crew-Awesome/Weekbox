@@ -6,7 +6,6 @@ import {
   FolderDown,
   Compass,
   RefreshCw,
-  SlidersHorizontal,
   User,
   Filter,
   Clock,
@@ -15,6 +14,7 @@ import {
   Star,
   Heart,
   Download,
+  Play,
 } from "lucide-react";
 import { useModalDeeplink } from "../home/hooks/use-modal-deeplink";
 import { ModDetailsModal } from "../home/components/mod-details-modal";
@@ -703,6 +703,15 @@ export const Library: React.FC = () => {
                 files: item.files,
               };
 
+              const engineCategory = item.engineId
+                ? Object.values(ENGINE_CATEGORIES).find(
+                    (c) =>
+                      String(c.id).toLowerCase() === String(item.engineId).toLowerCase() ||
+                      c.name.toLowerCase() === String(item.engineId).toLowerCase()
+                  )
+                : null;
+              const engineTooltip = engineCategory?.name || (item.engineId ? String(item.engineId) : undefined);
+
               return (
                 <div key={`lib-mod-${item.id}`} className="h-full">
                   <Shared.molecules.Card
@@ -710,6 +719,7 @@ export const Library: React.FC = () => {
                     description={modItem.description}
                     thumbnail={item.thumbnailBase64 || modItem.img}
                     icon={modItem.icon}
+                    iconTooltip={engineTooltip}
                     isNsfw={item.isNsfw}
                     isFavorite={isItemFavorite}
                     clickableArea="whole-card"
@@ -738,8 +748,8 @@ export const Library: React.FC = () => {
                       <div className="flex items-center gap-1 shrink-0">
                         {isItemInstalled ? (
                           <div className="flex items-center gap-1 text-[var(--wb-primary)] text-xs font-bold">
-                            <SlidersHorizontal size={13} />
-                            <span>Manage</span>
+                            <Play size={13} className="fill-current" />
+                            <span>Play</span>
                           </div>
                         ) : (
                           <div className="flex items-center gap-1 text-emerald-400 text-xs font-bold">

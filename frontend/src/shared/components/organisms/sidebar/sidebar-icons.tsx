@@ -36,7 +36,7 @@ export const LibraryIcon = ({ className }: { className?: string }) => (
   </svg>
 );
 
-export const EnginesIcon = ({ className }: { className?: string }) => (
+export const InstancesIcon = ({ className }: { className?: string }) => (
   <svg
     xmlns="http://www.w3.org/2000/svg"
     width="24"
@@ -53,6 +53,8 @@ export const EnginesIcon = ({ className }: { className?: string }) => (
     <polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76" />
   </svg>
 );
+
+export const EnginesIcon = InstancesIcon;
 
 export const SettingsIcon = ({ className }: { className?: string }) => (
   <svg
@@ -94,5 +96,5 @@ export const InfoIcon = ({ className }: { className?: string }) => (
 export const navItems = [
   { id: "home", label: "Home", icon: HomeIcon },
   { id: "library", label: "Library", icon: LibraryIcon },
-  { id: "engines", label: "Engines", icon: EnginesIcon },
+  { id: "instances", label: "Instances", icon: InstancesIcon },
 ];
