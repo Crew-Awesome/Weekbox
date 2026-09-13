@@ -1314,11 +1314,33 @@
             <span id="modal-engine-name"></span>
           </div>
 
-          <div class="modal-stats">
+          <div class="modal-dates">
             <span
-              ><i class="fa-regular fa-clock"></i>
-              <span id="modal-time">--</span></span
+              class="modal-date"
+              data-i18n-attr="title:modModal.submitted"
             >
+              <i class="fa-regular fa-clock" aria-hidden="true"></i>
+              <span id="modal-time">--</span>
+            </span>
+            <span
+              class="modal-date"
+              id="modal-modified-date"
+              data-i18n-attr="title:modModal.modified"
+            >
+              <i class="fa-solid fa-pen" aria-hidden="true"></i>
+              <span id="modal-modified-time">--</span>
+            </span>
+            <span
+              class="modal-date"
+              id="modal-updated-date"
+              data-i18n-attr="title:modModal.updated"
+            >
+              <i class="fa-solid fa-rotate" aria-hidden="true"></i>
+              <span id="modal-updated-time">--</span>
+            </span>
+          </div>
+
+          <div class="modal-stats">
             <span
               ><i class="fa-solid fa-heart"></i>
               <span id="modal-likes">--</span></span

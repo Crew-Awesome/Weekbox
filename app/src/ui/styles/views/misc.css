@@ -346,12 +346,6 @@ body.window-unfocused::after {
   mask-repeat: no-repeat, no-repeat, no-repeat;
 }
 
-#popular-grid .mod-card--featured .mod-card-bg,
-#popular-grid .mod-card--featured .mod-image {
-  -webkit-mask-image: none !important;
-  mask-image: none !important;
-}
-
 .mod-info {
   padding: var(--spacing-md);
   display: flex;
@@ -565,6 +559,11 @@ body.window-unfocused::after {
   box-shadow: 0 12px 28px rgb(0 0 0 / 22%);
 }
 
+#popular-grid .mod-card--featured .mod-card-bg {
+  -webkit-mask-image: none !important;
+  mask-image: none !important;
+}
+
 #popular-grid .mod-card--featured .mod-card-bg::before {
   display: none;
 }
@@ -597,6 +596,7 @@ body.window-unfocused::after {
   margin-right: -13%;
   height: 100%;
   min-height: 280px;
+  background: transparent;
   border-radius: var(--border-radius) 0 0 var(--border-radius);
   overflow: hidden;
   z-index: 0;
@@ -616,8 +616,6 @@ body.window-unfocused::after {
   object-fit: cover;
   object-position: center;
   border-radius: inherit;
-  -webkit-mask-image: none !important;
-  mask-image: none !important;
 }
 
 #popular-grid .mod-card--featured .mod-info {
@@ -675,6 +673,7 @@ body.window-unfocused::after {
   #popular-grid .mod-card--featured .mod-info {
     padding: 16px;
   }
+
 }
 
 .chunk-loader {
@@ -1073,6 +1072,15 @@ body.window-unfocused::after {
   gap: var(--spacing-md);
   color: var(--text-muted);
   font-size: 0.85rem;
+}
+
+.modal-dates {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px var(--spacing-md);
+  margin-bottom: 6px;
+  color: var(--text-muted);
+  font-size: 0.8rem;
 }
 
 .modal-description {
