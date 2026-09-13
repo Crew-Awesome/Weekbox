@@ -26,6 +26,15 @@ export function formatDownloadStatus(
   if (progress === -1) {
     return DownloadStatus.CANCELING;
   }
+  if (
+    status &&
+    (status === DownloadStatus.FLATTENING ||
+      status === DownloadStatus.EXTRACTING ||
+      status === DownloadStatus.FINALIZING ||
+      status === DownloadStatus.STARTING)
+  ) {
+    return status;
+  }
   if (progress === 100) {
     return DownloadStatus.COMPLETED;
   }

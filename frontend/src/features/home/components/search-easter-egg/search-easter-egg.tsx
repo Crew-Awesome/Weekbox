@@ -45,7 +45,7 @@ export const SearchEasterEgg: React.FC<SearchEasterEggProps> = ({
       return;
     }
 
-    const topMods = mods.slice(0, 4);
+    const topMods = mods.slice(0, 10);
 
     const matchingEggs = SEARCH_EASTER_EGGS.filter((egg) => egg.match(topMods));
 

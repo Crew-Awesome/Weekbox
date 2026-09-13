@@ -11,6 +11,7 @@ import path from "path";
 const neutralinoAuthPlugin = () => {
   return {
     name: "neutralino-auth",
+    apply: "serve" as const,
     transformIndexHtml(html: string) {
       try {
         const authPath = path.resolve(
@@ -94,6 +95,13 @@ export default defineConfig({
     strictPort: true,
     fs: {
       allow: [".."],
+    },
+    proxy: {
+      "/api/translate": {
+        target: "https://translate.googleapis.com",
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api\/translate/, "/translate_a/single"),
+      },
     },
   },
   test: {

@@ -2,6 +2,10 @@ import React, { useState, useEffect, useRef } from "react";
 import Shared from "@shared";
 import { Filter, Star, Sparkles, Flame, RefreshCcw } from "lucide-react";
 import { useHomeStore } from "../../../store/home-store";
+import {
+  extractModIdOrUrl,
+  handleDirectModLookup,
+} from "@utils";
 
 interface HomeSearchbarProps {
   onSearchSubmit: (query: string) => void;
@@ -50,19 +54,27 @@ export const HomeSearchbar: React.FC<HomeSearchbarProps> = ({
     return () => mainElement.removeEventListener("scroll", handleScroll);
   }, []);
 
-  const handleSearch = (query: string) => {
+  const handleSearch = async (query: string) => {
+    const directId = extractModIdOrUrl(query);
+    if (directId !== null) {
+      onSearchSubmit("");
+      setShowFilters(false);
+      await handleDirectModLookup(directId);
+      return;
+    }
     onSearchSubmit(query);
     setShowFilters(false);
   };
 
   const filterButton = (
-    <div className="relative" onMouseLeave={() => setShowFilters(false)}>
+    <div className="relative z-50" onMouseLeave={() => setShowFilters(false)}>
       <button
         onClick={() => setShowFilters(!showFilters)}
-        className={`transition-colors p-3 rounded-2xl flex items-center justify-center border ${
+        title="Filter & Sort"
+        className={`transition-colors p-3 rounded-2xl flex items-center justify-center border cursor-pointer ${
           showFilters
-            ? "bg-[var(--wb-primary)] border-[var(--wb-primary)] text-[var(--wb-on-primary)]"
-            : "bg-[var(--wb-surface-container)] hover:bg-[var(--wb-surface-container-highest)] border-[var(--wb-outline-variant)] text-[var(--wb-on-surface)]"
+            ? "bg-[var(--wb-primary)] border-[var(--wb-primary)] text-[var(--wb-on-primary)] shadow-sm"
+            : "bg-[var(--wb-surface-container-high)] hover:bg-[var(--wb-surface-container-highest)] border-[var(--wb-outline-variant)]/60 text-[var(--wb-on-surface)]"
         }`}
       >
         <Filter className="w-6 h-6" />
@@ -70,7 +82,7 @@ export const HomeSearchbar: React.FC<HomeSearchbarProps> = ({
 
       {showFilters && (
         <div className="absolute top-full left-0 pt-2 z-50">
-          <div className="bg-[var(--wb-surface-container)] border border-[var(--wb-outline-variant)] rounded-2xl p-4 shadow-none flex flex-row flex-wrap gap-4 min-w-[300px]">
+          <div className="bg-[var(--wb-surface-container)] border border-[var(--wb-outline-variant)]/60 rounded-2xl p-4 shadow-2xl flex flex-row flex-wrap gap-3 min-w-[320px] backdrop-blur-xl">
             <Shared.molecules.PillDropdown
               label="Sort by"
               value={sortFilter}

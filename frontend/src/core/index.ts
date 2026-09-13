@@ -5,8 +5,10 @@ import { windowApi } from "./backend/window";
 import { osApi } from "./backend/os";
 import { notificationApi } from "./backend/notification";
 import { gameBananaApi } from "./services/gamebanana";
+import { translateModText } from "./services/translation";
 
 export * from "./services/gamebanana/types";
+export * from "./services/translation";
 
 /**
  * @description API global para acceder al Núcleo (Core) de Weekbox.
@@ -34,6 +36,9 @@ const Core = {
    */
   services: {
     gamebanana: gameBananaApi,
+    translation: {
+      translateModText,
+    },
     backend: {
       call: platform.call.bind(platform),
     },

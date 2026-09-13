@@ -14,7 +14,7 @@ export const Dropdown: React.FC<DropdownProps> = ({
   if (!isOpen) return null;
   return (
     <div className={`absolute z-50 pt-2 min-w-[12rem] ${className}`}>
-      <div className="rounded-xl border border-white/10 bg-[#121212] shadow-2xl py-2 overflow-hidden">
+      <div className="rounded-2xl border border-[var(--wb-outline-variant)]/60 bg-[var(--wb-surface-container)] text-[var(--wb-on-surface)] shadow-2xl py-2 overflow-hidden backdrop-blur-xl">
         {children}
       </div>
     </div>

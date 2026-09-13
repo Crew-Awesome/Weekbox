@@ -77,6 +77,21 @@ declare global {
 export type PlatformType = "desktop" | "web";
 
 /**
+ * Detailed progress information for an active download or extraction task.
+ */
+export interface DownloadProgressDetails {
+  downloaded?: number;
+  total?: number;
+  currentFile?: string;
+}
+
+export type DownloadProgressCallback = (
+  progress: number,
+  statusText?: string,
+  details?: DownloadProgressDetails
+) => void;
+
+/**
  * Definición del contrato común de la plataforma.
  * Permite a cualquier componente de la UI interactuar con servicios nativos
  * de forma agnóstica sin acoplarse a Neutralino, React Native o Web.
@@ -113,7 +128,13 @@ export interface IPlatformBridge {
   ): Promise<BackendResult<Operation>>;
 
   /** Downloads a mod archive. Implementations vary by platform. */
-  downloadMod(url: string, modId?: string, modName?: string, onProgress?: (progress: number, statusText?: string) => void, signal?: AbortSignal): Promise<void>;
+  downloadMod(
+    url: string,
+    modId?: string,
+    modName?: string,
+    onProgress?: DownloadProgressCallback,
+    signal?: AbortSignal
+  ): Promise<void>;
 
   /** Opens a URL in the default web browser. */
   openUrl(url: string): Promise<void>;
@@ -124,6 +145,21 @@ export interface IPlatformBridge {
   /** Checks if a mod is installed by reading the registry. */
   isModInstalled(modId: string): Promise<boolean>;
 
+  /** Retrieves a specific installed mod by its ID, or null if not installed. */
+  getInstalledMod(modId: string): Promise<any | null>;
+
+  /** Retrieves all installed mods from the registry. */
+  getInstalledMods(): Promise<any[]>;
+
   /** Uninstalls a mod (removes from registry and deletes files). */
   uninstallMod(modId: string): Promise<void>;
+
+  /** Opens the installation folder for a specific mod in the file manager. */
+  openModFolder?(modId: string, modName?: string): Promise<void>;
+
+  /** Updates the favorite flag in the installed mod's JSON files. */
+  setModFavorite?(modId: string, isFavorite: boolean): Promise<void>;
+
+  /** Updates customized properties (name, description, engine, etc.) of an installed mod. */
+  updateInstalledMod?(modId: string, updates: Record<string, any>): Promise<any | null>;
 }

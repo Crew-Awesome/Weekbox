@@ -6,6 +6,23 @@
     <link rel="icon" type="image/png" href="/assets/icons/app/launcher-icon.png" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>WeekBox</title>
+    <script>
+      /**
+       * Catch and suppress external DevTools or Web Vitals profiler layout errors.
+       */
+      window.addEventListener('error', function(event) {
+        if (event.message && (event.message.includes('startTime') || event.message.includes('reportAllChanges'))) {
+          event.stopImmediatePropagation();
+          event.preventDefault();
+        }
+      }, true);
+      window.addEventListener('unhandledrejection', function(event) {
+        if (event.reason && (String(event.reason).includes('startTime') || String(event.reason).includes('reportAllChanges'))) {
+          event.stopImmediatePropagation();
+          event.preventDefault();
+        }
+      }, true);
+    </script>
   </head>
   <body>
     <div id="root"></div>

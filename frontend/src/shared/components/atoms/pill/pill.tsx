@@ -13,10 +13,10 @@ export const Pill: React.FC<PillProps> = ({
 }) => {
   return (
     <button
-      className={`px-5 py-2 rounded-full font-medium transition-colors border outline-none ${
+      className={`px-4 py-2 rounded-full font-medium transition-all duration-200 border outline-none cursor-pointer select-none ${
         isActive
-          ? "bg-[var(--wb-primary)] text-white border-[var(--wb-primary)]"
-          : "bg-white/5 text-gray-300 border-white/10 hover:bg-white/10 focus:ring-2 focus:ring-white/20"
+          ? "bg-[var(--wb-primary)] text-[var(--wb-on-primary)] border-[var(--wb-primary)] shadow-sm font-semibold"
+          : "bg-[var(--wb-surface-container-high)] text-[var(--wb-on-surface-variant)] border-[var(--wb-outline-variant)]/60 hover:bg-[var(--wb-surface-container-highest)] hover:text-[var(--wb-on-surface)] hover:border-[var(--wb-outline-variant)] focus:ring-2 focus:ring-[var(--wb-primary)]/20"
       } ${className}`}
       {...props}
     >

@@ -10,6 +10,12 @@ export type ToastPosition =
 
 type ToastListener = (toasts: ToastItem[]) => void;
 type PositionListener = (position: ToastPosition) => void;
+export interface ToastSettings {
+  enabled: boolean;
+  detailed: boolean;
+  minimized: boolean;
+}
+type SettingsListener = (settings: ToastSettings) => void;
 
 interface ToastOptions {
   title?: string;
@@ -25,8 +31,12 @@ class ToastManager {
   private toasts: ToastItem[] = [];
   private listeners: Set<ToastListener> = new Set();
   private positionListeners: Set<PositionListener> = new Set();
+  private settingsListeners: Set<SettingsListener> = new Set();
   private maxToasts = 5;
   private position: ToastPosition = "top-right";
+  private enabled = true;
+  private detailed = true;
+  private minimized = false;
 
   constructor() {
     if (typeof window !== "undefined") {
@@ -44,6 +54,16 @@ class ToastManager {
           ].includes(saved)
         ) {
           this.position = saved;
+        }
+
+        const savedEnabled = localStorage.getItem("wb_toasts_enabled");
+        if (savedEnabled !== null) {
+          this.enabled = savedEnabled !== "false";
+        }
+
+        const savedDetailed = localStorage.getItem("wb_toasts_detailed");
+        if (savedDetailed !== null) {
+          this.detailed = savedDetailed !== "false";
         }
       } catch {}
     }
@@ -81,6 +101,68 @@ class ToastManager {
       } catch {}
     }
     this.positionListeners.forEach((listener) => listener(this.position));
+  }
+
+  private notifySettings() {
+    const currentSettings: ToastSettings = {
+      enabled: this.enabled,
+      detailed: this.detailed,
+      minimized: this.minimized,
+    };
+    this.settingsListeners.forEach((listener) => listener(currentSettings));
+  }
+
+  public subscribeSettings(listener: SettingsListener): () => void {
+    this.settingsListeners.add(listener);
+    listener({
+      enabled: this.enabled,
+      detailed: this.detailed,
+      minimized: this.minimized,
+    });
+    return () => {
+      this.settingsListeners.delete(listener);
+    };
+  }
+
+  public isEnabled(): boolean {
+    return this.enabled;
+  }
+
+  public setEnabled(val: boolean): void {
+    this.enabled = val;
+    if (typeof window !== "undefined") {
+      try {
+        localStorage.setItem("wb_toasts_enabled", String(val));
+      } catch {}
+    }
+    this.notifySettings();
+  }
+
+  public isDetailed(): boolean {
+    return this.detailed;
+  }
+
+  public setDetailed(val: boolean): void {
+    this.detailed = val;
+    if (typeof window !== "undefined") {
+      try {
+        localStorage.setItem("wb_toasts_detailed", String(val));
+      } catch {}
+    }
+    this.notifySettings();
+  }
+
+  public isMinimized(): boolean {
+    return this.minimized;
+  }
+
+  public setMinimized(val: boolean): void {
+    this.minimized = val;
+    this.notifySettings();
+  }
+
+  public toggleMinimized(): void {
+    this.setMinimized(!this.minimized);
   }
 
   public getToasts(): ToastItem[] {

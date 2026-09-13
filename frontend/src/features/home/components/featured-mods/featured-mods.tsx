@@ -78,6 +78,8 @@ export const FeaturedMods: React.FC<FeaturedModsProps> = React.memo(({
                 icon: item.engineIcon,
                 previewMedia: item.previewMedia,
                 author: item.author,
+                authors: item.authors,
+                credits: (item as any).credits,
                 submittedAt: item.submittedAt,
                 updatedAt: item.updatedAt,
                 engineId: item.engineId,

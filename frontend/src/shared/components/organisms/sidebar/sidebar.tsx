@@ -21,7 +21,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onSecondaryClick,
 }) => {
   const location = useLocation();
-  const pathView = location.pathname.substring(1) || "home";
+  const pathView = location.pathname.substring(1).split("/")[0] || "home";
 
   const [activeMain, setActiveMain] = useState(pathView);
   const [activeSecondary, setActiveSecondary] = useState<string | null>(null);

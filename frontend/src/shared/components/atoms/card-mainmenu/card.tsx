@@ -1,6 +1,8 @@
-import React, { useRef, useState, useEffect } from "react";
+import React, { useRef, useState, useEffect, useCallback } from "react";
 import gsap from "gsap";
+import { Heart } from "lucide-react";
 import Shared from "@shared";
+import Utils from "@utils";
 import placeholderImg from "/assets/images/placeholder-mini.webp";
 
 /**
@@ -73,6 +75,18 @@ export interface CardProps {
    * If true, displays a red NSFW pill next to the title.
    */
   isNsfw?: boolean;
+  /**
+   * Optional custom overlay rendered on top of the thumbnail.
+   */
+  thumbnailOverlay?: React.ReactNode;
+  /**
+   * If true, renders the card in a muted/dimmed presentation style.
+   */
+  isDimmed?: boolean;
+  /**
+   * If true, displays favorite heart badge in the top-right corner of the thumbnail.
+   */
+  isFavorite?: boolean;
 }
 
 /**
@@ -95,6 +109,9 @@ export const Card: React.FC<CardProps> = ({
   lazyLoad = false,
   isLoading = false,
   isNsfw = false,
+  thumbnailOverlay,
+  isDimmed = false,
+  isFavorite = false,
 }) => {
   const displayThumbnail = thumbnail || (showThumbnail ? placeholderImg : undefined);
   const thumbnailRef = useRef<HTMLDivElement>(null);
@@ -110,6 +127,7 @@ export const Card: React.FC<CardProps> = ({
 
   const [isInView, setIsInView] = useState(!lazyLoad);
   const cardRootRef = useRef<HTMLDivElement>(null);
+  const { isExtractActive } = Utils.hooks.useExtractColor();
 
   useEffect(() => {
     if (!lazyLoad) return;
@@ -127,20 +145,31 @@ export const Card: React.FC<CardProps> = ({
     return () => observer.disconnect();
   }, [lazyLoad]);
 
+  const getDefaultHoverColor = useCallback(() => {
+    if (typeof window === "undefined") return "rgba(255, 255, 255, 0.1)";
+    const style = getComputedStyle(cardRootRef.current || document.documentElement);
+    const val =
+      style.getPropertyValue("--wb-card-hover-default").trim() ||
+      style.getPropertyValue("--wb-card-hover-bg").trim();
+    return val || "rgba(255, 255, 255, 0.1)";
+  }, []);
+
   useEffect(() => {
     let isMounted = true;
-    if (isInView && extractColor && displayThumbnail) {
+    if (isInView && extractColor && isExtractActive && displayThumbnail) {
       Shared.utils
         .extractColor(displayThumbnail, 0.3)
         .then((color) => {
-          if (isMounted) setHoverColor(color);
+          if (isMounted) setHoverColor(color || null);
         })
         .catch(console.error);
+    } else {
+      setHoverColor(null);
     }
     return () => {
       isMounted = false;
     };
-  }, [isInView, extractColor, displayThumbnail]);
+  }, [isInView, extractColor, displayThumbnail, isExtractActive]);
 
   useEffect(() => {
     if (hoverBgRef.current) {
@@ -156,27 +185,28 @@ export const Card: React.FC<CardProps> = ({
   }, []);
 
   useEffect(() => {
-    if (isHovered && hoverColor) {
+    if (isHovered) {
+      const activeColor = hoverColor || getDefaultHoverColor();
       if (hoverBgRef.current)
         gsap.to(hoverBgRef.current, {
-          backgroundColor: hoverColor,
+          backgroundColor: activeColor,
           duration: 0.3,
           ease: "power2.inOut",
         });
       if (notchOverlayRef.current)
         gsap.to(notchOverlayRef.current, {
-          backgroundColor: hoverColor,
+          backgroundColor: activeColor,
           duration: 0.3,
           ease: "power2.inOut",
         });
       if (notchSvg1Ref.current && notchSvg2Ref.current)
         gsap.to([notchSvg1Ref.current, notchSvg2Ref.current], {
-          color: hoverColor,
+          color: activeColor,
           duration: 0.3,
           ease: "power2.inOut",
         });
     }
-  }, [hoverColor, isHovered]);
+  }, [hoverColor, isHovered, getDefaultHoverColor]);
 
   const handleMouseEnter = () => {
     if (window.matchMedia("(hover: none)").matches) return;
@@ -189,7 +219,7 @@ export const Card: React.FC<CardProps> = ({
         ease: "power2.out",
       });
     }
-    const finalColor = hoverColor || "rgba(255, 255, 255, 0.1)";
+    const finalColor = hoverColor || getDefaultHoverColor();
     if (hoverBgRef.current) {
       gsap.to(hoverBgRef.current, {
         top: 0,
@@ -270,11 +300,13 @@ export const Card: React.FC<CardProps> = ({
   return (
     <div
       ref={cardRootRef}
-      className={`relative isolate flex flex-col shadow-none bg-transparent p-0 sm:p-3 select-none hover:z-50 ${
+      className={`relative isolate flex flex-col shadow-none bg-transparent p-0 sm:p-3 select-none hover:z-20 ${
         shouldRenderIcon
           ? "sm:rounded-r-[1rem] sm:rounded-bl-[1rem] sm:rounded-tl-none"
           : "sm:rounded-[1rem]"
-      } ${isWholeCardClickable ? "cursor-pointer" : ""} h-full ${className}`}
+      } ${isWholeCardClickable ? "cursor-pointer" : ""} ${
+        isDimmed ? "opacity-75 saturate-75" : ""
+      } h-full ${className}`}
       style={{ fontFamily: "Manrope, sans-serif", fontWeight: 500 }}
       onClick={isWholeCardClickable ? onClick : undefined}
       onMouseEnter={isWholeCardClickable ? handleMouseEnter : undefined}
@@ -336,7 +368,7 @@ export const Card: React.FC<CardProps> = ({
                 )}
                 {!isLoading && (
                   <img
-                    className={`w-full h-full object-cover block transition-opacity duration-300 ${thumbnailLoaded ? "opacity-100" : "opacity-0"}`}
+                    className={`w-full h-full object-cover block transition-opacity duration-300 ${isDimmed ? "brightness-75 opacity-60" : thumbnailLoaded ? "opacity-100" : "opacity-0"}`}
                     src={displayThumbnail}
                     alt={title}
                     loading="lazy"
@@ -357,6 +389,26 @@ export const Card: React.FC<CardProps> = ({
                   />
                 )}
               </div>
+              {thumbnailOverlay && (
+                <div
+                  className={`absolute inset-0 z-20 pointer-events-none ${
+                    shouldRenderIcon
+                      ? "sm:rounded-tr-[1rem] sm:rounded-tl-none"
+                      : "sm:rounded-t-[1rem]"
+                  } overflow-hidden`}
+                >
+                  {thumbnailOverlay}
+                </div>
+              )}
+              {isFavorite && (
+                <div
+                  className="absolute right-2.5 top-2.5 z-30 pointer-events-none flex items-center justify-center w-7 h-7 rounded-full bg-black/65 backdrop-blur-md border border-red-500/40 shadow-md transition-transform duration-200"
+                  title="Favorite mod"
+                  aria-label="Favorite mod"
+                >
+                  <Heart className="w-3.5 h-3.5 fill-red-500 text-red-500" />
+                </div>
+              )}
             </div>
           </div>
 
@@ -379,7 +431,7 @@ export const Card: React.FC<CardProps> = ({
                     )}
                     {!isLoading && (
                       <img
-                        className={`object-contain w-full h-full block transition-opacity duration-300 ${iconLoaded ? "opacity-100" : "opacity-0"}`}
+                        className={`object-contain w-full h-full block transition-opacity duration-300 ${isDimmed ? "brightness-75 grayscale-[40%] opacity-60" : iconLoaded ? "opacity-100" : "opacity-0"}`}
                         src={icon}
                         alt="icon"
                         loading="lazy"
@@ -452,8 +504,11 @@ export const Card: React.FC<CardProps> = ({
         ) : (
           <>
             <div className="flex items-start justify-between gap-2">
-              <strong className="text-xl font-bold leading-snug line-clamp-2 select-text text-[var(--wb-on-surface)]">
-                {title}
+              <strong
+                className="text-xl font-bold leading-snug line-clamp-2 select-text text-[var(--wb-on-surface)]"
+                title={title}
+              >
+                <span>{title}</span>
               </strong>
               {isNsfw && (
                 <span className="shrink-0 text-[10px] bg-red-500/20 text-red-500 px-2 py-0.5 rounded-full font-bold tracking-wider mt-1">

@@ -58,6 +58,9 @@ body {
   --wb-item-hover: var(--wb-surface-container-high);
   --wb-item-active: var(--wb-secondary-container);
 
+  --wb-card-hover-default: rgba(255, 255, 255, 0.1);
+  --wb-card-hover-bg: var(--wb-card-hover-default);
+
   --wb-carousel-arrow-bg: var(--wb-surface-container-high);
   --wb-carousel-arrow-hover: var(--wb-surface-container-highest);
   --wb-carousel-arrow-text: var(--wb-on-surface);
@@ -145,6 +148,9 @@ body {
 
   --wb-item-hover: var(--wb-surface-container-high);
   --wb-item-active: var(--wb-secondary-container);
+
+  --wb-card-hover-default: rgba(0, 0, 0, 0.08);
+  --wb-card-hover-bg: var(--wb-card-hover-default);
 
   --wb-carousel-arrow-bg: var(--wb-surface-container-high);
   --wb-carousel-arrow-hover: var(--wb-surface-container-highest);

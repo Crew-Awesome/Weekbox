@@ -1,5 +1,5 @@
 import type { BackendOperation, BackendResult } from "../backend/types";
-import type { IPlatformBridge, PlatformType } from "./types";
+import type { IPlatformBridge, PlatformType, DownloadProgressCallback } from "./types";
 import neuConfig from "../../../../neutralino.config.json";
 import { DownloadStatus } from "../../store/download-constants";
 
@@ -45,9 +45,31 @@ export class DesktopAdapter implements IPlatformBridge {
         this._isReady = true;
         this.emitLocalEvent("ready", true);
 
-        setInterval(() => {
+        let lastPingCheck = Date.now();
+        const sendHeartbeat = () => {
           this.call("system.ping" as any).catch(() => {});
+        };
+
+        sendHeartbeat();
+
+        setInterval(() => {
+          const now = Date.now();
+          if (now - lastPingCheck > 12000) {
+            sendHeartbeat();
+          }
+          lastPingCheck = now;
+          sendHeartbeat();
         }, 5000);
+
+        if (typeof window !== "undefined") {
+          window.addEventListener("focus", sendHeartbeat);
+          window.addEventListener("online", sendHeartbeat);
+          document.addEventListener("visibilitychange", () => {
+            if (document.visibilityState === "visible") {
+              sendHeartbeat();
+            }
+          });
+        }
       });
     }
   }
@@ -59,12 +81,24 @@ export class DesktopAdapter implements IPlatformBridge {
   call<Operation extends BackendOperation>(
     operation: Operation,
     params?: unknown,
-    signal?: AbortSignal
+    signal?: AbortSignal,
+    timeoutMs?: number
   ): Promise<BackendResult<Operation>> {
     if (!window.NODE?.call) {
       return Promise.reject(new Error("The Node backend is not available."));
     }
-    return window.NODE.call<BackendResult<Operation>>(operation, params, 300000, signal);
+    const defaultTimeout =
+      operation === "http.downloadToFile" ||
+      operation === "fs.extractArchive" ||
+      operation === "fs.flattenFolder"
+        ? 0
+        : 300000;
+    return window.NODE.call<BackendResult<Operation>>(
+      operation,
+      params,
+      timeoutMs ?? defaultTimeout,
+      signal
+    );
   }
 
   onEvent(eventName: string, listener: (data: any) => void): () => void {
@@ -85,7 +119,13 @@ export class DesktopAdapter implements IPlatformBridge {
     }
   }
 
-  async downloadMod(url: string, modId?: string, modName?: string, onProgress?: (progress: number, statusText?: string) => void, signal?: AbortSignal): Promise<void> {
+  async downloadMod(
+    url: string,
+    modId?: string,
+    modName?: string,
+    onProgress?: DownloadProgressCallback,
+    signal?: AbortSignal
+  ): Promise<void> {
     let basePath = window.NL_CWD || window.NL_PATH || "";
     try {
       if (window.Neutralino?.os?.getPath) {
@@ -115,13 +155,32 @@ export class DesktopAdapter implements IPlatformBridge {
     if (onProgress) {
       unsubscribe = this.onEvent("download:progress", (data: any) => {
         if (data && data.progressId === progressId) {
-           let percent = 0;
-           if (data.total > 0) {
-             percent = Math.min(98, Math.round((data.downloaded / data.total) * 98));
-           } else {
-             percent = Math.min(98, Math.round(data.downloaded / (1024 * 1024)));
-           }
-           onProgress(percent, "Downloading...");
+          if (
+            data.flattening ||
+            data.status === DownloadStatus.FLATTENING ||
+            data.status === "Flattening folder structure..."
+          ) {
+            onProgress(99, DownloadStatus.FLATTENING);
+            return;
+          }
+
+          if (data.currentFile) {
+            onProgress(99, DownloadStatus.EXTRACTING, {
+              currentFile: data.currentFile,
+            });
+            return;
+          }
+
+          let percent = 0;
+          if (data.total > 0) {
+            percent = Math.min(98, Math.round((data.downloaded / data.total) * 98));
+          } else {
+            percent = Math.min(98, Math.round(data.downloaded / (1024 * 1024)));
+          }
+          onProgress(percent, "Downloading...", {
+            downloaded: data.downloaded,
+            total: data.total,
+          });
         }
       });
     }
@@ -134,7 +193,7 @@ export class DesktopAdapter implements IPlatformBridge {
         destPath: tempArchivePath,
         progressId,
         options: {},
-      }, signal);
+      }, signal, 0);
 
       if (signal?.aborted) {
         await this.call("fs.remove" as any, { path: tempArchivePath }).catch(() => {});
@@ -146,18 +205,19 @@ export class DesktopAdapter implements IPlatformBridge {
       await this.call("fs.extractArchive" as any, {
         archivePath: tempArchivePath,
         destFolder: targetFolder,
-      }, signal);
+        progressId,
+      }, signal, 0);
 
       await this.call("fs.remove" as any, { path: tempArchivePath }).catch(() => {});
 
       onProgress?.(99, DownloadStatus.FLATTENING);
-      await this.call("fs.flattenFolder" as any, { path: targetFolder }, signal).catch(() => {});
+      await this.call("fs.flattenFolder" as any, { path: targetFolder, progressId }, signal, 0).catch(() => {});
 
       onProgress?.(100, DownloadStatus.COMPLETED);
     } catch (error: any) {
       await this.call("fs.remove" as any, { path: tempArchivePath }).catch(() => {});
       if (error?.message !== "Cancelled") {
-        console.error("Error downloading/extracting mod:", error);
+        console.error(`[Download/Extract Failed] Mod "${modName}" (ID: ${id}):`, error);
       }
       throw error;
     } finally {
@@ -220,9 +280,10 @@ export class DesktopAdapter implements IPlatformBridge {
 
     const entry = {
       installed: true,
-      installedAt: Date.now(),
+      installedAt: modData.installedAt || Date.now(),
       id: modData.id,
       gameId: modData.gameId,
+      name: modData.name || modData.title,
       title: modData.name || modData.title,
       description: modData.description,
       htmlBody: modData.htmlBody,
@@ -230,6 +291,15 @@ export class DesktopAdapter implements IPlatformBridge {
       userId: modData.userId,
       userPfp: modData.userPfp,
       authors: modData.authors,
+      credits: modData.credits,
+      version: modData.version,
+      updatesCount: modData.updatesCount,
+      updates: modData.updates,
+      externalLinks: modData.externalLinks,
+      studio: modData.studio,
+      categoryName: modData.categoryName,
+      engineId: modData.engineId,
+      engineName: modData.engineName,
       likes: modData.likes,
       views: modData.views,
       downloads: modData.downloads,
@@ -239,7 +309,10 @@ export class DesktopAdapter implements IPlatformBridge {
       isNsfw: modData.isNsfw,
       previewMedia: modData.previewMedia,
       files: modData.files,
-      thumbnailBase64: compressedThumb
+      img: modData.img,
+      icon: modData.icon,
+      thumbnailBase64: compressedThumb || modData.thumbnailBase64,
+      favorite: modData.favorite !== undefined ? modData.favorite : false,
     };
 
     let registry: any[] = [];
@@ -261,6 +334,13 @@ export class DesktopAdapter implements IPlatformBridge {
       path: registryPath, 
       content: JSON.stringify(registry, null, 2) 
     });
+
+    this.emitLocalEvent("mods:changed", { action: "installed", mod: entry });
+    if (typeof window !== "undefined") {
+      window.dispatchEvent(
+        new CustomEvent("wb:mods-changed", { detail: { action: "installed", mod: entry } })
+      );
+    }
   }
 
   async isModInstalled(modId: string): Promise<boolean> {
@@ -283,6 +363,33 @@ export class DesktopAdapter implements IPlatformBridge {
       return false;
     }
     return false;
+  }
+
+  async getInstalledMod(modId: string): Promise<any | null> {
+    const list = await this.getInstalledMods();
+    return list.find((m) => String(m.id) === String(modId)) || null;
+  }
+
+  async getInstalledMods(): Promise<any[]> {
+    let basePath = window.NL_CWD || window.NL_PATH || "";
+    try {
+      if (window.Neutralino?.os?.getPath) {
+        const dataPath = await window.Neutralino.os.getPath("data");
+        basePath = `${dataPath}/WeekBox`;
+      }
+    } catch (e) {}
+
+    const registryPath = `${basePath}/data/mod-installed.json`;
+    try {
+      const existing = await this.call("fs.readFile" as any, { path: registryPath });
+      const registry = JSON.parse(existing as unknown as string);
+      if (Array.isArray(registry)) {
+        return registry;
+      }
+    } catch (e) {
+      return [];
+    }
+    return [];
   }
 
   async uninstallMod(modId: string): Promise<void> {
@@ -308,6 +415,13 @@ export class DesktopAdapter implements IPlatformBridge {
         });
       }
 
+      this.emitLocalEvent("mods:changed", { action: "uninstalled", modId });
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(
+          new CustomEvent("wb:mods-changed", { detail: { action: "uninstalled", modId } })
+        );
+      }
+
       const dirContents = await this.call("fs.readDirectory" as any, { path: modsDir });
       if (Array.isArray(dirContents)) {
         for (const file of dirContents) {
@@ -320,4 +434,179 @@ export class DesktopAdapter implements IPlatformBridge {
       console.warn("Failed to uninstall mod completely", e);
     }
   }
+
+  /**
+   * Opens the installation directory for a specific mod in the operating system file manager.
+   * @param {string} modId - The ID of the mod.
+   * @param {string} [modName] - The display name of the mod.
+   */
+  async openModFolder(modId: string, _modName?: string): Promise<void> {
+    let basePath = window.NL_CWD || window.NL_PATH || "";
+    try {
+      if (window.Neutralino?.os?.getPath) {
+        const dataPath = await window.Neutralino.os.getPath("data");
+        basePath = `${dataPath}/WeekBox`;
+      }
+    } catch (e) {}
+
+    const modsDir = `${basePath}/mods`;
+    try {
+      const dirContents = await this.call("fs.readDirectory" as any, { path: modsDir });
+      if (Array.isArray(dirContents)) {
+        const match = dirContents.find((f: any) => f.entry.startsWith(`mod_${modId}_`));
+        if (match && window.Neutralino?.os?.open) {
+          await window.Neutralino.os.open(`${modsDir}/${match.entry}`);
+          return;
+        }
+      }
+      if (window.Neutralino?.os?.open) {
+        await window.Neutralino.os.open(modsDir);
+      }
+    } catch {
+      if (window.Neutralino?.os?.open) {
+        await window.Neutralino.os.open(modsDir);
+      }
+    }
+  }
+
+  /**
+   * Updates the favorite flag in the installed mods registry and inside the mod's folder JSON.
+   * @param {string} modId - The ID of the mod.
+   * @param {boolean} isFavorite - Whether the mod is marked as favorite.
+   */
+  async setModFavorite(modId: string, isFavorite: boolean): Promise<void> {
+    let basePath = window.NL_CWD || window.NL_PATH || "";
+    try {
+      if (window.Neutralino?.os?.getPath) {
+        const dataPath = await window.Neutralino.os.getPath("data");
+        basePath = `${dataPath}/WeekBox`;
+      }
+    } catch (e) {}
+
+    const registryPath = `${basePath}/data/mod-installed.json`;
+    try {
+      const existing = await this.call("fs.readFile" as any, { path: registryPath });
+      let registry = JSON.parse(existing as unknown as string);
+      if (Array.isArray(registry)) {
+        const idx = registry.findIndex((m) => String(m.id) === String(modId));
+        if (idx >= 0) {
+          registry[idx] = { ...registry[idx], favorite: isFavorite };
+          await this.call("fs.writeFile" as any, {
+            path: registryPath,
+            content: JSON.stringify(registry, null, 2),
+          });
+
+          this.emitLocalEvent("mods:changed", { action: "updated", mod: registry[idx] });
+          if (typeof window !== "undefined") {
+            window.dispatchEvent(
+              new CustomEvent("wb:mods-changed", {
+                detail: { action: "updated", mod: registry[idx] },
+              })
+            );
+          }
+        }
+      }
+    } catch (e) {
+      console.warn("Failed to update favorite in mod-installed.json:", e);
+    }
+
+    const modsDir = `${basePath}/mods`;
+    try {
+      const dirContents = await this.call("fs.readDirectory" as any, { path: modsDir });
+      if (Array.isArray(dirContents)) {
+        for (const file of dirContents) {
+          if (file.entry.startsWith(`mod_${modId}_`)) {
+            const folderPath = `${modsDir}/${file.entry}`;
+            const modJsonPath = `${folderPath}/mod.json`;
+            let modJson: any = {};
+            try {
+              const raw = await this.call("fs.readFile" as any, { path: modJsonPath });
+              modJson = JSON.parse(raw as unknown as string);
+            } catch {
+              modJson = { id: modId };
+            }
+            modJson.favorite = isFavorite;
+            await this.call("fs.writeFile" as any, {
+              path: modJsonPath,
+              content: JSON.stringify(modJson, null, 2),
+            });
+          }
+        }
+      }
+    } catch (e) {}
+  }
+
+  /**
+   * Updates arbitrary properties (name, description, engine, etc.) of an installed mod in both
+   * the central registry (mod-installed.json) and the local mod.json.
+   * @param {string} modId - The ID of the mod.
+   * @param {Record<string, any>} updates - Key-value pairs to update.
+   * @returns {Promise<any | null>} The updated mod entry.
+   */
+  async updateInstalledMod(modId: string, updates: Record<string, any>): Promise<any | null> {
+    let basePath = window.NL_CWD || window.NL_PATH || "";
+    try {
+      if (window.Neutralino?.os?.getPath) {
+        const dataPath = await window.Neutralino.os.getPath("data");
+        basePath = `${dataPath}/WeekBox`;
+      }
+    } catch (e) {}
+
+    let updatedEntry: any = null;
+    const registryPath = `${basePath}/data/mod-installed.json`;
+    try {
+      const existing = await this.call("fs.readFile" as any, { path: registryPath });
+      let registry = JSON.parse(existing as unknown as string);
+      if (Array.isArray(registry)) {
+        const idx = registry.findIndex((m) => String(m.id) === String(modId));
+        if (idx >= 0) {
+          registry[idx] = { ...registry[idx], ...updates };
+          updatedEntry = registry[idx];
+          await this.call("fs.writeFile" as any, {
+            path: registryPath,
+            content: JSON.stringify(registry, null, 2),
+          });
+
+          this.emitLocalEvent("mods:changed", { action: "updated", mod: registry[idx] });
+          if (typeof window !== "undefined") {
+            window.dispatchEvent(
+              new CustomEvent("wb:mods-changed", {
+                detail: { action: "updated", mod: registry[idx] },
+              })
+            );
+          }
+        }
+      }
+    } catch (e) {
+      console.warn("Failed to update mod in mod-installed.json:", e);
+    }
+
+    const modsDir = `${basePath}/mods`;
+    try {
+      const dirContents = await this.call("fs.readDirectory" as any, { path: modsDir });
+      if (Array.isArray(dirContents)) {
+        for (const file of dirContents) {
+          if (file.entry.startsWith(`mod_${modId}_`)) {
+            const folderPath = `${modsDir}/${file.entry}`;
+            const modJsonPath = `${folderPath}/mod.json`;
+            let modJson: any = {};
+            try {
+              const raw = await this.call("fs.readFile" as any, { path: modJsonPath });
+              modJson = JSON.parse(raw as unknown as string);
+            } catch {
+              modJson = { id: modId };
+            }
+            modJson = { ...modJson, ...updates };
+            await this.call("fs.writeFile" as any, {
+              path: modJsonPath,
+              content: JSON.stringify(modJson, null, 2),
+            });
+          }
+        }
+      }
+    } catch (e) {}
+
+    return updatedEntry;
+  }
 }
+

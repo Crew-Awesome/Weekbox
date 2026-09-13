@@ -1,3 +1,5 @@
+import { useState, useEffect, useCallback } from "react";
+
 /**
  * Obtiene los colores de fondo CSS para evitar colisiones
  */
@@ -37,7 +39,76 @@ const getBgColors = (): number[][] => {
 
 const colorCache = new Map<string, string>();
 
-const IS_ACTIVE = false;
+const EXTRACT_COLOR_STORAGE_KEY = "wb_extract_color_active";
+
+type ExtractColorListener = (active: boolean) => void;
+const listeners = new Set<ExtractColorListener>();
+
+/**
+ * Checks whether dynamic color extraction is active in settings.
+ */
+export function isExtractColorActive(): boolean {
+  if (typeof window === "undefined") return false;
+  try {
+    const item = localStorage.getItem(EXTRACT_COLOR_STORAGE_KEY);
+    if (item === null) return false;
+    return item === "true";
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Persists the dynamic color extraction setting and notifies all subscribers.
+ */
+export function setExtractColorActive(active: boolean): void {
+  if (typeof window === "undefined") return;
+  try {
+    localStorage.setItem(EXTRACT_COLOR_STORAGE_KEY, String(active));
+  } catch {}
+  listeners.forEach((fn) => fn(active));
+  window.dispatchEvent(
+    new CustomEvent("wb:extract-color-changed", { detail: { active } })
+  );
+}
+
+/**
+ * Subscribes to changes in the dynamic color extraction setting.
+ */
+export function subscribeExtractColor(listener: ExtractColorListener): () => void {
+  listeners.add(listener);
+  return () => {
+    listeners.delete(listener);
+  };
+}
+
+/**
+ * Hook to reactively consume and toggle dynamic thumbnail color extraction.
+ */
+export function useExtractColor(): {
+  isExtractActive: boolean;
+  setExtractActive: (active: boolean) => void;
+  toggleExtractActive: () => void;
+} {
+  const [isExtractActive, setIsExtractActive] = useState<boolean>(isExtractColorActive);
+
+  useEffect(() => {
+    const unsubscribe = subscribeExtractColor((active) => {
+      setIsExtractActive(active);
+    });
+    return unsubscribe;
+  }, []);
+
+  const toggleExtractActive = useCallback(() => {
+    setExtractColorActive(!isExtractColorActive());
+  }, []);
+
+  return {
+    isExtractActive,
+    setExtractActive: setExtractColorActive,
+    toggleExtractActive,
+  };
+}
 
 /**
  * Extracts the predominant color from an image URL.
@@ -52,7 +123,7 @@ export const extractColor = (
   opacity?: number,
 ): Promise<string> => {
   return new Promise((resolve, reject) => {
-    if (!IS_ACTIVE || typeof document === "undefined") {
+    if (!isExtractColorActive() || typeof document === "undefined") {
       resolve(
         opacity !== undefined
           ? `rgba(255, 255, 255, ${opacity * 0.5})`

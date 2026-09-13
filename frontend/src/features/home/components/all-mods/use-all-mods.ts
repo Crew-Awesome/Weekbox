@@ -24,31 +24,35 @@ export function useAllMods(
     setPage,
     hasMore,
     setHasMore,
+    loadedParamsKey,
+    setLoadedParamsKey,
   } = useHomeStore();
 
-  const [loading, setLoading] = useState(mods.length === 0);
+  const currentParamsKey = useMemo(() => {
+    const sortedEngines = [...engineIds].sort().join(",");
+    return `${filter}::${sortedEngines}::${searchQuery.trim()}`;
+  }, [filter, engineIds, searchQuery]);
+
+  const isCurrentKeyLoaded = loadedParamsKey === currentParamsKey && mods.length > 0;
+  const [loading, setLoading] = useState(!isCurrentKeyLoaded);
   const [loadingMore, setLoadingMore] = useState(false);
+  const [hasError, setHasError] = useState(false);
+  const [retryTrigger, setRetryTrigger] = useState(0);
 
-  const prevFilter = useRef(filter);
-  const prevEngineIds = useRef(engineIds.join(","));
-  const prevSearch = useRef(searchQuery);
+  const prevKeyRef = useRef(currentParamsKey);
 
+  /**
+   * Reset pagination and active loading state when search or filter parameters change.
+   */
   useEffect(() => {
-    const filtersChanged =
-      prevFilter.current !== filter ||
-      prevEngineIds.current !== engineIds.join(",") ||
-      prevSearch.current !== searchQuery;
-
-    if (filtersChanged) {
-      setMods([]);
+    if (prevKeyRef.current !== currentParamsKey) {
+      prevKeyRef.current = currentParamsKey;
       setPage(1);
       setHasMore(true);
-
-      prevFilter.current = filter;
-      prevEngineIds.current = engineIds.join(",");
-      prevSearch.current = searchQuery;
+      setLoading(true);
+      setHasError(false);
     }
-  }, [filter, engineIds, searchQuery, setMods, setPage, setHasMore]);
+  }, [currentParamsKey, setPage, setHasMore]);
 
   const observer = useRef<IntersectionObserver | null>(null);
 
@@ -68,10 +72,8 @@ export function useAllMods(
 
       if (node) observer.current.observe(node);
     },
-    [loading, loadingMore, hasMore],
+    [loading, loadingMore, hasMore, setPage],
   );
-
-  const [retryTrigger, setRetryTrigger] = useState(0);
 
   Utils.hooks.useNetworkRecovery(() => {
     if (mods.length === 0) {
@@ -100,8 +102,6 @@ export function useAllMods(
       .catch(console.error);
   }, [retryTrigger, featuredPool.length, setFeaturedPool]);
 
-  const [hasError, setHasError] = useState(false);
-
   useEffect(() => {
     if (mods.length > 0) {
       setHasError(false);
@@ -123,19 +123,18 @@ export function useAllMods(
       try {
         setHasError(false);
 
-        const isDefaultFilter =
-          filter === "popular" &&
-          (engineIds.length === 0 || (engineIds.length === 1 && engineIds[0] === "all")) &&
-          !searchQuery.trim();
-
-        if (page === 1 && mods.length > 0 && isDefaultFilter) {
+        /** Avoid re-fetching page 1 if data for the current query parameters is already loaded in store */
+        if (page === 1 && loadedParamsKey === currentParamsKey && mods.length > 0) {
           setLoading(false);
           setHasError(false);
           return;
         }
 
-        if (page === 1) setLoading(true);
-        else setLoadingMore(true);
+        if (page === 1) {
+          setLoading(true);
+        } else {
+          setLoadingMore(true);
+        }
 
         const data = await Core.services.gamebanana.getMods(
           filter as any,
@@ -148,6 +147,10 @@ export function useAllMods(
         if (isMounted) {
           if (data.length === 0) {
             setHasMore(false);
+            if (page === 1) {
+              setMods([]);
+              setLoadedParamsKey(currentParamsKey);
+            }
           } else {
             setMods((prev) => {
               if (page === 1) return data;
@@ -155,6 +158,7 @@ export function useAllMods(
               const uniqueData = data.filter((m) => !existingIds.has(m.id));
               return [...prev, ...uniqueData];
             });
+            setLoadedParamsKey(currentParamsKey);
           }
         }
       } catch (error) {
@@ -168,7 +172,7 @@ export function useAllMods(
             {
               title: "Network Warning",
               duration: 5000,
-            }
+            },
           );
         }
       } finally {
@@ -184,11 +188,13 @@ export function useAllMods(
     return () => {
       isMounted = false;
     };
-  }, [page, retryTrigger, filter, engineIds, searchQuery]);
+  }, [page, retryTrigger, currentParamsKey, filter, engineIds, searchQuery, loadedParamsKey, mods.length, setMods, setHasMore, setLoadedParamsKey]);
 
   const combinedMods = useMemo(() => {
     const result = [...mods];
-    if (featuredPool.length === 0) return result;
+    if (searchQuery.trim().length > 0 || featuredPool.length === 0) {
+      return result;
+    }
 
     const existingIds = new Set(result.map((m) => m.id));
     let injectedCount = 0;
@@ -216,7 +222,7 @@ export function useAllMods(
     }
 
     return result;
-  }, [mods, featuredPool]);
+  }, [mods, featuredPool, searchQuery]);
 
   return {
     mods: combinedMods,

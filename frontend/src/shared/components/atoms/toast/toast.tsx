@@ -17,6 +17,7 @@ export interface ToastItem {
 }
 
 export interface ToastProps extends ToastItem {
+  isDetailed?: boolean;
   onClose: (id: string) => void;
 }
 
@@ -63,6 +64,7 @@ export const Toast: React.FC<ToastProps> = ({
   duration = 4000,
   progress: taskProgress,
   action,
+  isDetailed = true,
   onClose,
 }) => {
   const [isMounted, setIsMounted] = useState(false);
@@ -108,11 +110,23 @@ export const Toast: React.FC<ToastProps> = ({
     return () => clearInterval(interval);
   }, [duration, isPaused]);
 
+  const displayMessage = React.useMemo(() => {
+    if (isDetailed) return message;
+    if (typeof message === "string") {
+      return message.split("\n")[0];
+    }
+    return message;
+  }, [message, isDetailed]);
+
   return (
     <div
       onMouseEnter={() => setIsPaused(true)}
       onMouseLeave={() => setIsPaused(false)}
-      className={`pointer-events-auto relative w-full min-w-[280px] sm:min-w-[340px] overflow-hidden rounded-xl border backdrop-blur-md p-4 shadow-2xl transition-all duration-200 ease-out select-none ${
+      className={`pointer-events-auto relative w-full ${
+        isDetailed
+          ? "min-w-[280px] sm:min-w-[340px] p-4"
+          : "min-w-[240px] sm:min-w-[280px] p-3"
+      } overflow-hidden rounded-xl border backdrop-blur-md shadow-2xl transition-all duration-200 ease-out select-none ${
         config.bgColor
       } ${config.borderColor} ${
         !isMounted
@@ -123,20 +137,27 @@ export const Toast: React.FC<ToastProps> = ({
       }`}
       role="alert"
     >
-
-      <div className="flex items-start gap-3.5">
+      <div className="flex items-start gap-3">
         <div className={`mt-0.5 shrink-0 ${config.iconColor}`}>
-          <IconComponent className="w-5 h-5" />
+          <IconComponent className={isDetailed ? "w-5 h-5" : "w-4 h-4"} />
         </div>
 
         <div className="flex-1 min-w-0 pr-2">
           {title && (
-            <h4 className="text-sm font-semibold text-[var(--wb-text-main)] mb-0.5 tracking-wide">
+            <h4
+              className={`font-semibold text-[var(--wb-text-main)] tracking-wide ${
+                isDetailed ? "text-sm mb-0.5" : "text-xs mb-0.5"
+              }`}
+            >
               {title}
             </h4>
           )}
-          <div className="text-xs text-[var(--wb-text-muted)] leading-relaxed break-words font-medium">
-            {message}
+          <div
+            className={`text-xs text-[var(--wb-text-muted)] font-medium ${
+              isDetailed ? "leading-relaxed break-words" : "truncate"
+            }`}
+          >
+            {displayMessage}
           </div>
 
           {action && (

@@ -53,14 +53,14 @@ export function useNotifications() {
     getStoredBoolean(TOAST_NOTIFY_KEY, true)
   );
   const [soundEffects, setSoundEffectsState] = useState<boolean>(() =>
-    getStoredBoolean(SOUND_EFFECTS_KEY, false)
+    getStoredBoolean(SOUND_EFFECTS_KEY, true)
   );
 
   useEffect(() => {
     const handleSync = () => {
       setOsNotifyState(getStoredBoolean(OS_NOTIFY_KEY, true));
       setToastNotifyState(getStoredBoolean(TOAST_NOTIFY_KEY, true));
-      setSoundEffectsState(getStoredBoolean(SOUND_EFFECTS_KEY, false));
+      setSoundEffectsState(getStoredBoolean(SOUND_EFFECTS_KEY, true));
     };
 
     listeners.add(handleSync);

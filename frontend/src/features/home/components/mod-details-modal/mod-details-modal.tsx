@@ -1,5 +1,7 @@
-import React, { useRef, useState } from "react";
+import React, { useRef, useState, useEffect, useCallback } from "react";
 import Shared from "@shared";
+import Utils from "@utils";
+import Core from "@core";
 import type { ModItem } from "../../types";
 import { ENGINE_CATEGORIES } from "../../../../core/services/gamebanana/constants";
 import { MobileView } from "./mobile-view";
@@ -19,11 +21,19 @@ export const ModDetailsModal: React.FC<ModDetailsModalProps> = ({
   selectedCard,
   onClose,
 }) => {
+  const { isCirclePatternActive } = Utils.hooks.useModalPattern();
+  const { isModalBackdropActive } = Utils.hooks.useModalBackdrop();
   const setModalOpen = useDownloadStore((s) => s.setModalOpen);
   const mobileCarouselRef = useRef<HTMLDivElement>(null);
   const desktopCarouselRef = useRef<HTMLDivElement>(null);
   const thumbnailsRef = useRef<HTMLDivElement>(null);
   const [activeIndex, setActiveIndex] = useState(0);
+  const [isCarouselHovered, setIsCarouselHovered] = useState(false);
+
+  const { autoTranslate, targetLanguage } = Utils.hooks.useTranslationSettings();
+  const [translatedHtml, setTranslatedHtml] = useState<string | null>(null);
+  const [isTranslating, setIsTranslating] = useState<boolean>(false);
+  const [showTranslated, setShowTranslated] = useState<boolean>(true);
 
   React.useEffect(() => {
     if (selectedCard && selectedCard.id) {
@@ -37,13 +47,96 @@ export const ModDetailsModal: React.FC<ModDetailsModalProps> = ({
   if (selectedCard) {
     lastNonNullCardRef.current = selectedCard;
   }
-  const displayCard = selectedCard || lastNonNullCardRef.current;
+  const baseCard = selectedCard || lastNonNullCardRef.current;
+  const [customCardData, setCustomCardData] = useState<Partial<ModItem>>({});
+  const displayCard = baseCard
+    ? {
+        ...baseCard,
+        defaultEngineId:
+          baseCard.defaultEngineId || (baseCard as any).originalEngineId || baseCard.engineId,
+        ...customCardData,
+      }
+    : null;
+
+  const [isInstalled, setIsInstalled] = useState<boolean>(Boolean(selectedCard?.isInstalled));
+
+  useEffect(() => {
+    if (!displayCard?.id) return;
+    let isMounted = true;
+    Core.platform.getInstalledMod(displayCard.id.toString()).then((mod) => {
+      if (isMounted) {
+        setIsInstalled(Boolean(mod));
+      }
+    });
+    return () => {
+      isMounted = false;
+    };
+  }, [displayCard?.id]);
+
+  const handleUpdateMod = useCallback(
+    async (updates: Record<string, any>) => {
+      if (!displayCard?.id) return;
+      setCustomCardData((prev) => ({ ...prev, ...updates }));
+      if (Core.platform.updateInstalledMod) {
+        await Core.platform.updateInstalledMod(displayCard.id.toString(), updates);
+      }
+    },
+    [displayCard?.id]
+  );
+
+  const performTranslation = useCallback(
+    async (textToTranslate: string) => {
+      if (!textToTranslate || !textToTranslate.trim()) return;
+      if (typeof navigator !== "undefined" && !navigator.onLine) return;
+
+      setIsTranslating(true);
+      try {
+        const res = await Core.services.translation.translateModText({
+          text: textToTranslate,
+          targetLang: targetLanguage,
+        });
+        if (res && res.translated) {
+          setTranslatedHtml(res.translated);
+          setShowTranslated(true);
+        }
+      } catch {
+        setTranslatedHtml(null);
+      } finally {
+        setIsTranslating(false);
+      }
+    },
+    [targetLanguage]
+  );
+
+  useEffect(() => {
+    setTranslatedHtml(null);
+    setShowTranslated(true);
+
+    const sourceContent = displayCard?.htmlBody || displayCard?.description || "";
+    if (autoTranslate && sourceContent && selectedCard) {
+      performTranslation(sourceContent);
+    }
+  }, [
+    displayCard?.id,
+    displayCard?.htmlBody,
+    displayCard?.description,
+    selectedCard,
+    autoTranslate,
+    targetLanguage,
+    performTranslation,
+  ]);
+
+  const handleManualTranslate = useCallback(() => {
+    const sourceContent = displayCard?.htmlBody || displayCard?.description || "";
+    performTranslation(sourceContent);
+  }, [displayCard?.htmlBody, displayCard?.description, performTranslation]);
 
   const prevModIdRef = useRef<number | null>(null);
   React.useEffect(() => {
     if (selectedCard && selectedCard.id !== prevModIdRef.current) {
       prevModIdRef.current = selectedCard.id;
       setActiveIndex(0);
+      setCustomCardData({});
     }
   }, [selectedCard]);
 
@@ -59,98 +152,86 @@ export const ModDetailsModal: React.FC<ModDetailsModalProps> = ({
   }, [activeIndex, displayCard]);
 
   React.useEffect(() => {
-    if (!selectedCard) return;
+    if (!selectedCard || isCarouselHovered) return;
     const media = displayCard?.previewMedia;
     if (!media || media.length <= 1) return;
     const intervalId = setInterval(() => {
-      const nextIndex = (activeIndex + 1) % media.length;
-      scrollToIndex(nextIndex);
+      setActiveIndex((prev) => (prev + 1) % media.length);
     }, 3500);
 
     return () => clearInterval(intervalId);
-  }, [activeIndex, displayCard, selectedCard]);
+  }, [displayCard, selectedCard, isCarouselHovered]);
 
   if (!displayCard) {
     return null;
   }
 
   const engineInfo = Object.values(ENGINE_CATEGORIES).find(
-    (c) => c.id === displayCard.engineId
+    (c) => c.id === displayCard.engineId || String(c.name).toLowerCase() === String(displayCard.engineName).toLowerCase()
   );
-  const engineName = engineInfo?.name || "Unknown Engine";
+  const engineName = displayCard.engineName || engineInfo?.name || "Unknown Engine";
+
+  const normalizeTimestamp = (timestamp?: number) => {
+    if (!timestamp) return null;
+    const num = Number(timestamp);
+    if (isNaN(num) || num <= 0) return null;
+    return num < 10000000000 ? num * 1000 : num;
+  };
 
   const formatDate = (timestamp?: number) => {
-    if (!timestamp) return "Unknown";
-    return new Date(timestamp * 1000).toLocaleDateString("en-US", {
+    const ms = normalizeTimestamp(timestamp);
+    if (!ms) return "Unknown";
+    return new Date(ms).toLocaleDateString(undefined, {
       month: "short",
       day: "numeric",
-      year: "numeric"
+      year: "numeric",
     });
   };
 
   const formatFullDate = (timestamp?: number) => {
-    if (!timestamp) return "Unknown";
-    return new Date(timestamp * 1000).toLocaleString("en-US", {
-      month: "long",
+    const ms = normalizeTimestamp(timestamp);
+    if (!ms) return "Unknown";
+    return new Date(ms).toLocaleString(undefined, {
+      month: "short",
       day: "numeric",
       year: "numeric",
       hour: "numeric",
-      minute: "2-digit"
+      minute: "2-digit",
     });
-  };
-
-  const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
-    const el = e.currentTarget;
-    const scrollLeft = el.scrollLeft;
-    const width = el.clientWidth;
-    if (width === 0) return;
-    const index = Math.round(scrollLeft / width);
-    if (index !== activeIndex) {
-      setActiveIndex(index);
-    }
   };
 
   const scrollToIndex = (index: number) => {
     setActiveIndex(index);
-    if (mobileCarouselRef.current) {
-      const container = mobileCarouselRef.current;
-      const child = container.children[index] as HTMLElement;
-      if (child) {
-        const scrollLeft = child.offsetLeft - container.clientWidth / 2 + child.clientWidth / 2;
-        container.scrollTo({ left: scrollLeft, behavior: "smooth" });
-      }
-    }
-    if (desktopCarouselRef.current) {
-      const container = desktopCarouselRef.current;
-      const child = container.children[index] as HTMLElement;
-      if (child) {
-        const scrollLeft = child.offsetLeft - container.clientWidth / 2 + child.clientWidth / 2;
-        container.scrollTo({ left: scrollLeft, behavior: "smooth" });
-      }
-    }
   };
 
-  const nextImage = (e: React.MouseEvent) => {
-    e.stopPropagation();
+  const nextImage = (e?: React.MouseEvent) => {
+    e?.stopPropagation();
     const media = displayCard?.previewMedia;
-    if (!media) return;
-    const next = (activeIndex + 1) % media.length;
-    scrollToIndex(next);
+    if (!media || media.length === 0) return;
+    setActiveIndex((prev) => (prev + 1) % media.length);
   };
 
-  const prevImage = (e: React.MouseEvent) => {
-    e.stopPropagation();
+  const prevImage = (e?: React.MouseEvent) => {
+    e?.stopPropagation();
     const media = displayCard?.previewMedia;
-    if (!media) return;
-    const prev = (activeIndex - 1 + media.length) % media.length;
-    scrollToIndex(prev);
+    if (!media || media.length === 0) return;
+    setActiveIndex((prev) => (prev - 1 + media.length) % media.length);
   };
+
+  const handleMouseEnterCarousel = () => setIsCarouselHovered(true);
+  const handleMouseLeaveCarousel = () => setIsCarouselHovered(false);
 
   return (
     <Shared.atoms.Modal
       isOpen={!!selectedCard}
       onClose={onClose}
       hideDefaultBackground={true}
+      showCirclePattern={isCirclePatternActive}
+      backdropImage={
+        isModalBackdropActive
+          ? displayCard?.img || (displayCard?.previewMedia && displayCard.previewMedia[0])
+          : undefined
+      }
       contentClassName="flex flex-col flex-1 overflow-y-auto md:overflow-hidden p-0"
       edgeSpacing={{
         isStaticSize: true,
@@ -165,11 +246,20 @@ export const ModDetailsModal: React.FC<ModDetailsModalProps> = ({
         formatDate={formatDate}
         formatFullDate={formatFullDate}
         activeIndex={activeIndex}
-        handleScroll={handleScroll}
         scrollToIndex={scrollToIndex}
         prevImage={prevImage}
         nextImage={nextImage}
+        onMouseEnterCarousel={handleMouseEnterCarousel}
+        onMouseLeaveCarousel={handleMouseLeaveCarousel}
         carouselRef={mobileCarouselRef}
+        translatedHtml={translatedHtml}
+        isTranslating={isTranslating}
+        showTranslated={showTranslated}
+        setShowTranslated={setShowTranslated}
+        onManualTranslate={handleManualTranslate}
+        targetLanguage={targetLanguage}
+        isInstalled={isInstalled}
+        onUpdateMod={handleUpdateMod}
       />
       
       <DesktopView
@@ -178,13 +268,24 @@ export const ModDetailsModal: React.FC<ModDetailsModalProps> = ({
         formatDate={formatDate}
         formatFullDate={formatFullDate}
         activeIndex={activeIndex}
-        handleScroll={handleScroll}
         scrollToIndex={scrollToIndex}
         prevImage={prevImage}
         nextImage={nextImage}
+        onMouseEnterCarousel={handleMouseEnterCarousel}
+        onMouseLeaveCarousel={handleMouseLeaveCarousel}
         carouselRef={desktopCarouselRef}
         thumbnailsRef={thumbnailsRef}
+        translatedHtml={translatedHtml}
+        isTranslating={isTranslating}
+        showTranslated={showTranslated}
+        setShowTranslated={setShowTranslated}
+        onManualTranslate={handleManualTranslate}
+        targetLanguage={targetLanguage}
+        isInstalled={isInstalled}
+        onUpdateMod={handleUpdateMod}
       />
     </Shared.atoms.Modal>
   );
 };
+
+export default ModDetailsModal;

@@ -70,25 +70,46 @@ export async function fetchSearchRecords(
       const expectedEngineIds = currentEngineIds;
 
       currentFetchPromise = (async () => {
-        const requests = Array.from({ length: CHUNK_PAGES }).map(
-          async (_, i) => {
-            const p = startGBPage + i;
-            const url = `${GB_BASE_URL}/Util/Search/Results?_sModelName=Mod&_idGameRow=${FNF_GAME_ID}&_sSearchString=${encodeURIComponent(query)}&_nPage=${p}&_nPerpage=15`;
-            try {
-              const res: any = await http.fetchJson(url);
-              return res?._aRecords || [];
-            } catch {
-              return [];
-            }
-          },
+        const fetchPage = async (p: number, q: string) => {
+          const url = `${GB_BASE_URL}/Util/Search/Results?_sModelName=Mod&_idGameRow=${FNF_GAME_ID}&_sSearchString=${encodeURIComponent(q)}&_nPage=${p}&_nPerpage=15`;
+          try {
+            const res: any = await http.fetchJson(url);
+            return res?._aRecords || [];
+          } catch {
+            return [];
+          }
+        };
+
+        const requests = Array.from({ length: CHUNK_PAGES }).map((_, i) =>
+          fetchPage(startGBPage + i, query),
         );
 
         const popularPromise = fetchPopularRecords(null, 10, 300);
-        const pages = await Promise.all(requests);
+        let pages = await Promise.all(requests);
         const popularMods = await popularPromise;
 
         if (cachedQuery !== expectedQuery || cachedEngineIds !== expectedEngineIds) {
           return;
+        }
+
+        let fetchedRecords = pages.flat();
+
+        if (
+          fetchedRecords.length === 0 &&
+          startGBPage === 1 &&
+          /[\[\]()\-_:]/.test(query)
+        ) {
+          const sanitizedQuery = query
+            .replace(/[\[\]()\-_:]+/g, " ")
+            .replace(/\s+/g, " ")
+            .trim();
+          if (sanitizedQuery.length > 0 && sanitizedQuery !== query) {
+            const fallbackRequests = Array.from({ length: CHUNK_PAGES }).map((_, i) =>
+              fetchPage(startGBPage + i, sanitizedQuery),
+            );
+            pages = await Promise.all(fallbackRequests);
+            fetchedRecords = pages.flat();
+          }
         }
 
         let emptyCount = 0;
@@ -99,7 +120,7 @@ export async function fetchSearchRecords(
           hasReachedEnd = true;
         }
 
-        let newRecords = [...pages.flat(), ...popularMods];
+        let newRecords = [...fetchedRecords, ...popularMods];
 
         if (!engineIds.includes("all")) {
           const allowedNumericIds = engineIds

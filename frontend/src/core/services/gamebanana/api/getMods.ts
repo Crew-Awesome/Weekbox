@@ -7,6 +7,7 @@ import {
   getEngineIcon,
   isExcluded,
   extractAuthors,
+  extractCreditGroups,
   extractThumbnail,
   extractPreviewMedia,
   extractUserId,
@@ -19,6 +20,7 @@ import {
   fetchPopularRecords,
   fetchSearchRecords,
 } from "../algorithms";
+import { getModById } from "./getModById";
 
 export type ModFilter = "popular" | "new" | "ripe" | "updated";
 
@@ -53,6 +55,26 @@ export async function getMods(
     (enginesArray.length === 1 && enginesArray[0] === "all");
 
   if (searchQuery.trim().length > 0) {
+    const rawIdMatch = searchQuery
+      .trim()
+      .match(/^(?:https?:\/\/gamebanana\.com\/mods\/|mods\/)?(\d+)(?:[/?#]|$)/i);
+
+    if (rawIdMatch) {
+      if (page === 1) {
+        const modId = Number(rawIdMatch[1]);
+        const singleMod = await getModById(modId);
+        if (
+          singleMod &&
+          (isAll ||
+            (singleMod.engineId && enginesArray.includes(singleMod.engineId)))
+        ) {
+          return [singleMod];
+        }
+      } else {
+        return [];
+      }
+    }
+
     rawRecords = await fetchSearchRecords(
       searchQuery,
       enginesArray,
@@ -189,6 +211,7 @@ export async function getMods(
       userId: extractUserId(mod),
       userPfp: extractUserPfp(mod),
       authors: extractAuthors(meta._aCredits),
+      credits: extractCreditGroups(meta._aCredits),
       likes: mod._nLikeCount || meta._nLikeCount || 0,
       views: mod._nViewCount || meta._nViewCount || 0,
       downloads: meta._nDownloadCount || 0,
@@ -202,6 +225,12 @@ export async function getMods(
       isNsfw: checkIsNsfw(mod),
     };
   });
+
+  if (searchQuery.trim().length > 0 && !isAll) {
+    finalMods = finalMods.filter(
+      (m) => m.engineId && enginesArray.includes(m.engineId),
+    );
+  }
 
   return finalMods;
 }

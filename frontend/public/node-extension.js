@@ -7,7 +7,7 @@ class NodeExtension {
       const pending = this.pending.get(response.requestId);
       if (!pending) return;
       this.pending.delete(response.requestId);
-      clearTimeout(pending.timeout);
+      if (pending.timeout) clearTimeout(pending.timeout);
       if (response.ok) pending.resolve(response.data);
       else
         pending.reject(
@@ -26,15 +26,18 @@ class NodeExtension {
     const requestId =
       globalThis.crypto?.randomUUID?.() || `${Date.now()}-${Math.random()}`;
     return new Promise((resolve, reject) => {
-      const timeout = setTimeout(() => {
-        this.pending.delete(requestId);
-        reject(new Error(`Backend request timed out: ${operation}`));
-      }, timeoutMs);
+      const timeout =
+        timeoutMs > 0
+          ? setTimeout(() => {
+              this.pending.delete(requestId);
+              reject(new Error(`Backend request timed out: ${operation}`));
+            }, timeoutMs)
+          : null;
 
       const abortHandler = () => {
         this.run("backend.cancel", { requestId });
         this.pending.delete(requestId);
-        clearTimeout(timeout);
+        if (timeout) clearTimeout(timeout);
         reject(new Error("Cancelled"));
       };
 

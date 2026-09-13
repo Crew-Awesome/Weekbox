@@ -45,7 +45,16 @@ const operations = {
   "fs.exists": async ({ path }) => APINodeFileSystem.exists(path),
   "fs.getStats": async ({ path }) => APINodeFileSystem.getStats(path),
   "fs.createDirectory": async ({ path }) => APINodeFileSystem.createDirectory(path),
-  "fs.extractArchive": async ({ archivePath, destFolder }) => APINodeFileSystem.extractArchive(archivePath, destFolder),
+  "fs.extractArchive": async ({ archivePath, destFolder, progressId }, onProgress) =>
+    APINodeFileSystem.extractArchive(archivePath, destFolder, (file) => {
+      if (onProgress) {
+        if (file === "__FLATTENING_START__") {
+          onProgress({ progressId, status: "Flattening folder structure...", flattening: true });
+        } else {
+          onProgress({ currentFile: file, progressId, status: "Extracting archive..." });
+        }
+      }
+    }),
   "fs.flattenFolder": async ({ path }) => APINodeFileSystem.flattenFolder(path),
   "http.fetchJson": async ({ url, options, signal }) => APINodeHttp.fetchJson({ url, options, signal }),
   "http.fetchText": async ({ url, options, signal }) => APINodeHttp.fetchText({ url, options, signal }),

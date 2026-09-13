@@ -6,6 +6,7 @@ import {
   getEngineId,
   getEngineIcon,
   extractAuthors,
+  extractCreditGroups,
   extractThumbnail,
   extractPreviewMedia,
   extractUserId,
@@ -53,6 +54,7 @@ export async function getModById(modId: number): Promise<GameBananaMod | null> {
       userId: extractUserId(raw),
       userPfp: extractUserPfp(raw),
       authors: extractAuthors(raw._aCredits),
+      credits: extractCreditGroups(raw._aCredits),
       likes: raw._nLikeCount || 0,
       views: raw._nViewCount || 0,
       downloads: raw._nDownloadCount || 0,
@@ -65,6 +67,12 @@ export async function getModById(modId: number): Promise<GameBananaMod | null> {
       previewMedia: extractPreviewMedia(raw),
       isNsfw: checkIsNsfw(raw),
       files: raw._aFiles || [],
+      version: raw._sVersion || undefined,
+      updatesCount: raw._nUpdateCount || (Array.isArray(raw._aUpdates) ? raw._aUpdates.length : 0),
+      updates: raw._aUpdates || [],
+      externalLinks: raw._aExternalLinks || raw._aAlternateFileSources || [],
+      studio: raw._aStudio?._sName || undefined,
+      categoryName: raw._aCategory?._sName || undefined,
     };
     modProfileCache.set(modId, result);
     return result;

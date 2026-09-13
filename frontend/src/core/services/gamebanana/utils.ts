@@ -124,6 +124,113 @@ export function extractAuthors(metaCredits: any): string[] {
   return Array.from(new Set(authors));
 }
 
+export interface ModCreditAuthor {
+  name: string;
+  role?: string;
+  avatarUrl?: string;
+  id?: number;
+}
+
+export interface ModCreditGroup {
+  groupName: string;
+  authors: ModCreditAuthor[];
+}
+
+/**
+ * @description Parses GameBanana raw credits into structured group objects with authors and roles.
+ * Supports array-based groups and dictionary-based groups.
+ */
+export function extractCreditGroups(rawCredits: any): ModCreditGroup[] {
+  if (!rawCredits) return [];
+  const groups: ModCreditGroup[] = [];
+
+  const parseAuthor = (item: any): ModCreditAuthor | null => {
+    if (!item) return null;
+    if (typeof item === "string") {
+      const trimmed = item.trim();
+      return trimmed ? { name: trimmed } : null;
+    }
+    if (Array.isArray(item)) {
+      const name = item[0] ? String(item[0]).trim() : "";
+      if (!name) return null;
+      return {
+        name,
+        role: item[1] ? String(item[1]).trim() : undefined,
+        id: typeof item[2] === "number" ? item[2] : undefined,
+      };
+    }
+    if (typeof item === "object") {
+      const name = item._sName || item.name || item._sMemberName;
+      if (!name) return null;
+      return {
+        name: String(name).trim(),
+        role:
+          item._sRole || item.role
+            ? String(item._sRole || item.role).trim()
+            : undefined,
+        avatarUrl: item._sAvatarUrl || item.avatarUrl || item._sMemberAvatarUrl,
+        id: item._idRow || item.id || item._nMemberId,
+      };
+    }
+    return null;
+  };
+
+  if (Array.isArray(rawCredits)) {
+    for (const group of rawCredits) {
+      if (!group) continue;
+      if (
+        group._sGroupName ||
+        group.groupName ||
+        group._aAuthors ||
+        group.authors
+      ) {
+        const groupName =
+          group._sGroupName || group.groupName || "Contributors";
+        const rawAuthors = group._aAuthors || group.authors || [];
+        const authors: ModCreditAuthor[] = [];
+        if (Array.isArray(rawAuthors)) {
+          for (const a of rawAuthors) {
+            const parsed = parseAuthor(a);
+            if (parsed) authors.push(parsed);
+          }
+        }
+        if (authors.length > 0) {
+          groups.push({ groupName, authors });
+        }
+      } else {
+        const parsed = parseAuthor(group);
+        if (parsed) {
+          let defaultGroup = groups.find((g) => g.groupName === "Contributors");
+          if (!defaultGroup) {
+            defaultGroup = { groupName: "Contributors", authors: [] };
+            groups.push(defaultGroup);
+          }
+          defaultGroup.authors.push(parsed);
+        }
+      }
+    }
+  } else if (typeof rawCredits === "object") {
+    for (const [key, val] of Object.entries(rawCredits)) {
+      if (!val) continue;
+      const authors: ModCreditAuthor[] = [];
+      if (Array.isArray(val)) {
+        for (const a of val) {
+          const parsed = parseAuthor(a);
+          if (parsed) authors.push(parsed);
+        }
+      } else {
+        const parsed = parseAuthor(val);
+        if (parsed) authors.push(parsed);
+      }
+      if (authors.length > 0) {
+        groups.push({ groupName: key, authors });
+      }
+    }
+  }
+
+  return groups;
+}
+
 /**
  * Extracts all preview images into a string array.
  * @param {any} record - The raw GameBanana mod record.
@@ -132,7 +239,9 @@ export function extractAuthors(metaCredits: any): string[] {
 export function extractPreviewMedia(record: any): string[] {
   const images = record._aPreviewMedia?._aImages;
   if (images && Array.isArray(images)) {
-    return images.map((img: any) => `${img._sBaseUrl}/${img._sFile}`);
+    return images
+      .filter((img: any) => img && typeof img === "object" && img._sBaseUrl && img._sFile)
+      .map((img: any) => `${img._sBaseUrl}/${img._sFile}`);
   }
   return [];
 }
@@ -144,8 +253,11 @@ export function extractPreviewMedia(record: any): string[] {
  */
 export function extractThumbnail(record: any): string {
   const images = record._aPreviewMedia?._aImages;
-  if (images && images.length > 0) {
-    return images[0]._sBaseUrl + "/" + images[0]._sFile;
+  if (images && Array.isArray(images) && images.length > 0) {
+    const first = images[0];
+    if (first && first._sBaseUrl && first._sFile) {
+      return `${first._sBaseUrl}/${first._sFile}`;
+    }
   }
   return "/assets/images/placeholder-mini.webp";
 }

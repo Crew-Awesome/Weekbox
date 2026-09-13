@@ -1,10 +1,12 @@
+import { useEffect } from "react";
 import Features from "@features";
 import Core from "@core";
 import Shared from "@shared";
 import Utils from "@utils";
 import type { LoadingTask } from "@features";
-import { Outlet } from "react-router-dom";
+import { Outlet, useLocation } from "react-router-dom";
 import { useHomeStore } from "./store/home-store";
+import { useDownloadStore } from "./store";
 
 const initTasks: LoadingTask[] = [
   {
@@ -81,8 +83,13 @@ const initTasks: LoadingTask[] = [
 
 function App() {
   const handleNavigate = Utils.hooks.useAppNavigation();
+  const location = useLocation();
 
   Utils.hooks.useDeeplinkManager();
+
+  useEffect(() => {
+    useDownloadStore.getState().setCurrentRoute(location.pathname);
+  }, [location.pathname]);
 
   return (
     <div className="flex h-screen w-full bg-[var(--wb-bg)] text-[var(--wb-text-main)] overflow-hidden font-sans relative">

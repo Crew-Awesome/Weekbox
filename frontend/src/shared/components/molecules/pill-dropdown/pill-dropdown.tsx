@@ -109,7 +109,7 @@ export const PillDropdown: React.FC<PillDropdownProps> = ({
 
   return (
     <div
-      className="relative inline-block text-left w-full sm:w-auto"
+      className={`relative inline-block text-left w-full sm:w-auto ${isOpen ? "z-50" : "z-10"}`}
       ref={containerRef}
       onMouseLeave={() => setIsOpen(false)}
     >
@@ -120,7 +120,7 @@ export const PillDropdown: React.FC<PillDropdownProps> = ({
       >
         {iconPosition === "left" && displayIcon && renderIcon(displayIcon)}
         {iconPosition === "left" && icon && !displayIcon && (
-          <span className="text-gray-400 flex items-center">{icon}</span>
+          <span className="text-[var(--wb-on-surface-variant)] opacity-80 flex items-center">{icon}</span>
         )}
 
         <span className="font-semibold">{displayLabel}</span>
@@ -129,12 +129,12 @@ export const PillDropdown: React.FC<PillDropdownProps> = ({
           displayIcon &&
           renderIcon(displayIcon, "ml-1")}
         {iconPosition === "right" && icon && !displayIcon && (
-          <span className="text-gray-400 flex items-center ml-1">{icon}</span>
+          <span className="text-[var(--wb-on-surface-variant)] opacity-80 flex items-center ml-1">{icon}</span>
         )}
 
         <ChevronDown
           size={14}
-          className={`transition-transform duration-200 ml-auto sm:ml-0.5 ${isOpen ? "rotate-180" : ""}`}
+          className={`transition-transform duration-200 ml-auto sm:ml-0.5 opacity-70 ${isOpen ? "rotate-180" : ""}`}
         />
       </Pill>
 
@@ -149,21 +149,21 @@ export const PillDropdown: React.FC<PillDropdownProps> = ({
               e.preventDefault();
               handleOptionClick(opt.value);
             }}
-            className={`w-full flex items-center text-left px-5 py-2.5 transition-colors block ${
+            className={`w-full flex items-center text-left px-5 py-2.5 transition-colors cursor-pointer text-xs font-semibold ${
               iconPosition === "left"
                 ? "justify-start gap-3"
                 : "justify-between"
             } ${
               isSelected(opt.value)
-                ? "bg-[var(--wb-primary)]/20 text-[var(--wb-primary)] font-semibold"
-                : "text-[var(--wb-on-surface-variant)] hover:bg-[var(--wb-surface-variant)] hover:text-[var(--wb-on-surface)]"
+                ? "bg-[var(--wb-primary)]/15 text-[var(--wb-primary)] font-bold"
+                : "text-[var(--wb-on-surface-variant)] hover:bg-[var(--wb-surface-container-highest)] hover:text-[var(--wb-on-surface)]"
             }`}
           >
             {iconPosition === "left" && opt.icon && renderIcon(opt.icon)}
             <span>{opt.label}</span>
             {iconPosition === "right" && opt.icon && renderIcon(opt.icon)}
             {isMulti && isSelected(opt.value) && (
-              <Check size={16} className="ml-auto text-[var(--wb-primary)]" />
+              <Check size={16} className="ml-auto text-[var(--wb-primary)] shrink-0" />
             )}
           </button>
         ))}

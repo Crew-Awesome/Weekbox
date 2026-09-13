@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import ReactDOM from "react-dom";
 import { X } from "lucide-react";
+import { SoundEffects } from "../../../../utils/sound";
 
 /**
  * Defines spacing as a single string (all sides) or [horizontal, vertical] array.
@@ -53,6 +54,15 @@ export interface ModalProps {
    * If provided, the modal will automatically stretch to fill the remaining space.
    */
   edgeSpacing?: EdgeSpacingConfig;
+  /**
+   * If true, renders a transparent circle pattern over the dark overlay without losing the backdrop blur.
+   * @default false
+   */
+  showCirclePattern?: boolean;
+  /**
+   * Optional background image shown blurred behind the overlay and circle pattern.
+   */
+  backdropImage?: string;
 }
 
 export const Modal: React.FC<ModalProps> = ({
@@ -67,6 +77,8 @@ export const Modal: React.FC<ModalProps> = ({
   hideDefaultBackground = false,
   contentClassName = "p-8 flex-1 overflow-y-auto mobile-no-scrollbar",
   edgeSpacing,
+  showCirclePattern = false,
+  backdropImage,
 }) => {
   const [isRendered, setIsRendered] = useState(isOpen);
   const [isVisible, setIsVisible] = useState(false);
@@ -100,6 +112,8 @@ export const Modal: React.FC<ModalProps> = ({
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [isOpen, handleClose]);
 
+  const prevIsOpenRef = React.useRef(false);
+
   useEffect(() => {
     let timeoutId: ReturnType<typeof setTimeout>;
     let rafId: number;
@@ -109,16 +123,32 @@ export const Modal: React.FC<ModalProps> = ({
       rafId = requestAnimationFrame(() => {
         setIsVisible(true);
       });
+      if (!prevIsOpenRef.current) {
+        SoundEffects.playModalOpen();
+      }
     } else {
       setIsVisible(false);
+      if (prevIsOpenRef.current) {
+        SoundEffects.playModalClose();
+      }
       timeoutId = setTimeout(() => setIsRendered(false), 150);
     }
+
+    prevIsOpenRef.current = isOpen;
 
     return () => {
       clearTimeout(timeoutId);
       cancelAnimationFrame(rafId);
     };
   }, [isOpen]);
+
+  useEffect(() => {
+    return () => {
+      if (prevIsOpenRef.current) {
+        SoundEffects.playModalClose();
+      }
+    };
+  }, []);
 
   if (!isRendered) return null;
 
@@ -168,14 +198,45 @@ export const Modal: React.FC<ModalProps> = ({
     }
   }
 
+  const isDefaultOverlay = overlayClassName === "bg-black/40 backdrop-blur-md";
+  const baseOverlayClass = isDefaultOverlay ? "backdrop-blur-md" : overlayClassName;
+
   return ReactDOM.createPortal(
     <div
-      className={`fixed inset-0 z-[100] flex items-center justify-center transition-opacity duration-150 ease-out ${isVisible ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"} ${overlayClassName}`}
+      className={`fixed inset-0 z-[100] flex items-center justify-center transition-opacity duration-150 ease-out ${isVisible ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"}`}
       onClick={handleClose}
       style={overlayPadding ? { padding: overlayPadding } : undefined}
     >
+      {backdropImage && (
+        <div className="absolute inset-0 pointer-events-none z-0 overflow-hidden">
+          <img
+            src={backdropImage}
+            alt=""
+            className="w-full h-full object-cover filter blur-xl scale-105 opacity-100 select-none pointer-events-none"
+            aria-hidden="true"
+          />
+        </div>
+      )}
+
       <div
-        className={`relative flex flex-col ${activeWidthClass} ${activeHeightClass} ${modalClassName} transition-[opacity,transform] duration-150 ease-out transform ${isVisible ? "scale-100 translate-y-0 opacity-100" : "scale-[0.97] translate-y-2 opacity-0"}`}
+        className={`absolute inset-0 z-0 pointer-events-none transition-colors ${
+          backdropImage ? "bg-black/30 backdrop-blur-md" : baseOverlayClass
+        }`}
+        aria-hidden="true"
+      />
+
+      {showCirclePattern && (
+        <div
+          className="absolute inset-0 pointer-events-none z-0"
+          style={{
+            backgroundImage: `radial-gradient(circle, transparent 1.5px, rgba(0, 0, 0, 0.3) 1.5px)`,
+            backgroundSize: "6px 6px",
+          }}
+          aria-hidden="true"
+        />
+      )}
+      <div
+        className={`relative flex flex-col z-10 ${activeWidthClass} ${activeHeightClass} ${modalClassName} transition-[opacity,transform] duration-150 ease-out transform ${isVisible ? "scale-100 translate-y-0 opacity-100" : "scale-[0.97] translate-y-2 opacity-0"}`}
         onClick={(e) => e.stopPropagation()}
         style={staticModalStyle}
       >

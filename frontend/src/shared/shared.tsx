@@ -14,6 +14,7 @@ import { Toast } from "./components/atoms/toast";
 import { PillDropdown } from "./components/molecules/pill-dropdown/pill-dropdown";
 import { ToastContainer } from "./components/molecules/toast-container";
 import { EngineFilterPill } from "./components/organisms/engine-filter-pill/engine-filter-pill";
+import { FlagIcon, SpainFlag, EnglishFlag } from "./components/atoms/flags/flags";
 import Utils from "@utils";
 
 /**
@@ -33,6 +34,9 @@ const Shared = {
     Pill,
     Dropdown,
     Toast,
+    FlagIcon,
+    SpainFlag,
+    EnglishFlag,
   },
 
   /**

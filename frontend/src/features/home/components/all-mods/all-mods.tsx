@@ -5,6 +5,7 @@ import type { ModItem } from "../../types";
 import { useAllMods } from "./use-all-mods";
 import { ENGINE_CATEGORIES } from "../../../../core/services/gamebanana/constants";
 import { SearchEasterEgg } from "../search-easter-egg/search-easter-egg";
+import { useFavoritesStore } from "../../../../store";
 
 interface AllModsProps {
   onCardClick: (card: ModItem) => void;
@@ -27,6 +28,7 @@ export const AllMods: React.FC<AllModsProps> = React.memo(({
 }) => {
   const { mods, loading, loadingMore, hasMore, page, lastElementRef, retry } =
     useAllMods(sortFilter, categoryFilter, searchQuery);
+  const favorites = useFavoritesStore((s) => s.favorites);
 
   const sortLabels: Record<string, string> = {
     popular: "Popular",
@@ -123,22 +125,22 @@ export const AllMods: React.FC<AllModsProps> = React.memo(({
       <>
         <Shared.atoms.Titles title={dynamicTitle} />
         <div className="flex flex-col items-center justify-center py-24 px-4 w-full text-center">
-          <div className="w-16 h-16 rounded-2xl bg-[var(--wb-surface-container)] flex items-center justify-center mb-4 border border-white/5 shadow-none">
+          <div className="w-16 h-16 rounded-2xl bg-[var(--wb-surface-container)] flex items-center justify-center mb-4 border border-[var(--wb-outline-variant)]/40 shadow-none">
             <AlertCircle className="w-8 h-8 text-amber-400 opacity-90" />
           </div>
           <span className="text-[var(--wb-on-surface)] text-xl font-bold tracking-wide">
-            No se pudieron cargar los mods
+            Failed to load mods
           </span>
           <span className="text-[var(--wb-on-surface-variant)] text-sm mt-2 max-w-md opacity-70">
-            Hubo un problema al conectar con GameBanana o la solicitud tardó demasiado.
+            There was an issue connecting to GameBanana or the request timed out.
           </span>
           <button
             type="button"
             onClick={retry}
-            className="mt-6 flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[var(--wb-surface-container-high)] hover:bg-[var(--wb-surface-container-highest)] border border-white/10 text-sm font-semibold text-[var(--wb-on-surface)] transition-all hover:scale-105 active:scale-95 cursor-pointer shadow-none"
+            className="mt-6 flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[var(--wb-surface-container-high)] hover:bg-[var(--wb-surface-container-highest)] border border-[var(--wb-outline-variant)]/40 text-sm font-semibold text-[var(--wb-on-surface)] transition-all hover:scale-105 active:scale-95 cursor-pointer shadow-none"
           >
             <RotateCcw className="w-4 h-4" />
-            Reintentar
+            Retry
           </button>
         </div>
       </>
@@ -162,6 +164,8 @@ export const AllMods: React.FC<AllModsProps> = React.memo(({
             icon: item.engineIcon,
             previewMedia: item.previewMedia,
             author: item.author,
+            authors: item.authors,
+            credits: (item as any).credits,
             submittedAt: item.submittedAt,
             updatedAt: item.updatedAt,
             engineId: item.engineId,
@@ -218,6 +222,7 @@ export const AllMods: React.FC<AllModsProps> = React.memo(({
                       : undefined
                   }
                   isNsfw={item.isNsfw}
+                  isFavorite={Boolean(favorites[String(item.id)])}
                   clickableArea="whole-card"
                   onClick={() => onCardClick(modItem)}
                   extractColor={true}

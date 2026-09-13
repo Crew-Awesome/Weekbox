@@ -1,12 +1,19 @@
 import fs from "node:fs/promises";
 import { constants } from "node:fs";
 import os from "node:os";
-import { exec } from "node:child_process";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+import { exec, spawn } from "node:child_process";
 import { promisify } from "node:util";
 import { flattenFolder } from "./flattener.mjs";
 
 const execAsync = promisify(exec);
 const isWin = process.platform === "win32";
+const isDarwin = process.platform === "darwin";
+const isLinux = process.platform === "linux";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 /**
  * Escapa los argumentos para la línea de comandos dependiendo del sistema operativo.
@@ -15,7 +22,144 @@ const isWin = process.platform === "win32";
  */
 function quoteShellArgument(arg) {
   if (isWin) return '"' + arg.replace(/"/g, '\\"') + '"';
-  return "'" + arg.replace(/'/g, "'\\\\''") + "'";
+  return "'" + arg.replace(/'/g, "'\\''") + "'";
+}
+
+let cached7zPath = null;
+
+/**
+ * Localiza el binario de 7za empaquetado con la aplicación según la plataforma.
+ * @returns {Promise<string|null>} Ruta absoluta al ejecutable o null si no existe.
+ */
+async function getBundled7zPath() {
+  if (cached7zPath) return cached7zPath;
+
+  const binName = isWin
+    ? "7za.exe"
+    : isDarwin
+      ? "7za-mac"
+      : "7za-linux";
+
+  const candidates = [
+    path.resolve(__dirname, "../../bin", binName),
+    path.resolve(__dirname, "../../../../app/assets/bin", binName),
+    path.resolve(__dirname, "../../../app/assets/bin", binName),
+    path.resolve(process.cwd(), "extensions/backend/bin", binName),
+    path.resolve(process.cwd(), "app/assets/bin", binName),
+    path.resolve(process.cwd(), "bin", binName),
+  ];
+
+  if (process.env.NL_PATH) {
+    candidates.unshift(
+      path.resolve(process.env.NL_PATH, "extensions/backend/bin", binName),
+      path.resolve(process.env.NL_PATH, "app/assets/bin", binName),
+      path.resolve(process.env.NL_PATH, "bin", binName)
+    );
+  }
+
+  for (const candidate of candidates) {
+    try {
+      await fs.access(candidate, constants.F_OK);
+      if (!isWin) {
+        await fs.chmod(candidate, 0o755).catch(() => {});
+      }
+      cached7zPath = candidate;
+      return candidate;
+    } catch {}
+  }
+
+  return null;
+}
+
+/**
+ * Analiza una linea de salida de herramientas de extraccion (7z, tar, unzip)
+ * y extrae el nombre del archivo en proceso.
+ * @param {string} rawLine - Linea cruda de stdout o stderr.
+ * @returns {string|null} Nombre relativo del archivo o null si no corresponde.
+ */
+function parseExtractedFileName(rawLine) {
+  if (!rawLine) return null;
+  const line = rawLine.trim();
+  if (!line) return null;
+
+  const match7z = line.match(/^Extracting\s+(.+)$/i);
+  if (match7z) {
+    const candidate = match7z[1].trim();
+    return candidate.endsWith("/") || candidate.endsWith("\\") ? null : candidate;
+  }
+
+  const matchUnzip = line.match(/^(?:inflating|extracting):\s+(.+)$/i);
+  if (matchUnzip) {
+    const candidate = matchUnzip[1].trim();
+    return candidate.endsWith("/") || candidate.endsWith("\\") ? null : candidate;
+  }
+
+  if (line.startsWith("x ")) {
+    const candidate = line.substring(2).trim();
+    return candidate.endsWith("/") || candidate.endsWith("\\") ? null : candidate;
+  }
+
+  if (
+    !line.includes(":") &&
+    !line.startsWith("7-Zip") &&
+    !line.startsWith("Copyright") &&
+    !line.startsWith("Scanning") &&
+    !line.startsWith("Everything") &&
+    (line.includes("/") || line.includes("\\") || line.includes("."))
+  ) {
+    if (!line.endsWith("/") && !line.endsWith("\\")) {
+      return line;
+    }
+  }
+
+  return null;
+}
+
+/**
+ * Ejecuta un comando de extraccion capturando y transmitiendo los nombres de archivos extraidos en tiempo real.
+ * @param {string} command - Comando a ejecutar.
+ * @param {Function} [onFile] - Callback invocado con cada archivo extraido.
+ * @returns {Promise<void>}
+ */
+function runExtractionCommand(command, onFile) {
+  return new Promise((resolve, reject) => {
+    const child = spawn(command, { shell: true });
+    let stdoutBuffer = "";
+    let stderrBuffer = "";
+    let lastReportedTime = 0;
+
+    const handleData = (chunk) => {
+      stdoutBuffer += chunk.toString();
+      const lines = stdoutBuffer.split(/\r?\n/);
+      stdoutBuffer = lines.pop() || "";
+
+      for (const line of lines) {
+        const file = parseExtractedFileName(line);
+        if (file && onFile) {
+          const now = Date.now();
+          if (now - lastReportedTime > 40) {
+            lastReportedTime = now;
+            onFile(file);
+          }
+        }
+      }
+    };
+
+    child.stdout?.on("data", handleData);
+    child.stderr?.on("data", (chunk) => {
+      stderrBuffer += chunk.toString();
+      handleData(chunk);
+    });
+
+    child.on("error", reject);
+    child.on("close", (code) => {
+      if (code === 0) {
+        resolve();
+      } else {
+        reject(new Error(`Extraction process failed with code ${code}: ${stderrBuffer || "Unknown error"}`));
+      }
+    });
+  });
 }
 
 /**
@@ -193,13 +337,16 @@ export const fsApi = {
   },
 
   /**
-   * Extrae un archivo comprimido (ZIP, TAR, GZ, RAR) en una carpeta destino.
-   * Utiliza el comando nativo "tar" que está disponible en Win10+, Mac y Linux.
-   * Admite zips y varios formatos de archivos.
+   * Extrae un archivo comprimido (ZIP, TAR, GZ, RAR, 7Z) en una carpeta destino.
+   * Soporta de forma robusta Linux, macOS (Darwin) y Windows con múltiples estrategias de fallback:
+   * - Linux: unzip, 7za empaquetado, 7z/7za del sistema, python3 zipfile, tar.
+   * - Darwin (macOS): ditto nativo, unzip, 7za empaquetado, 7z, tar.
+   * - Windows: tar, 7za empaquetado, PowerShell Expand-Archive.
    * @param {string} archivePath - Ruta del archivo comprimido.
    * @param {string} destFolder - Carpeta destino.
+   * @param {Function} [onFile] - Callback invocado con cada archivo extraído.
    */
-  async extractArchive(archivePath, destFolder) {
+  async extractArchive(archivePath, destFolder, onFile) {
     if (!(await this.exists(destFolder))) {
       await this.createDirectory(destFolder);
     }
@@ -207,19 +354,91 @@ export const fsApi = {
       ? archivePath.replace(/\//g, "\\")
       : archivePath;
     const normalizedDest = isWin ? destFolder.replace(/\//g, "\\") : destFolder;
-    const command = `tar -xf ${quoteShellArgument(normalizedArchive)} -C ${quoteShellArgument(normalizedDest)}`;
-    try {
-      await execAsync(command);
-    } catch (tarErr) {
-      if (isWin) {
-        const psCommand = `powershell -NoProfile -NonInteractive -Command "Expand-Archive -LiteralPath '${normalizedArchive.replace(/'/g, "''")}' -DestinationPath '${normalizedDest.replace(/'/g, "''")}' -Force"`;
-        await execAsync(psCommand);
+
+    const qArchive = quoteShellArgument(normalizedArchive);
+    const qDest = quoteShellArgument(normalizedDest);
+
+    const lowerArchive = archivePath.toLowerCase();
+    const isZip = lowerArchive.endsWith(".zip");
+    const isTar =
+      lowerArchive.endsWith(".tar") ||
+      lowerArchive.endsWith(".tar.gz") ||
+      lowerArchive.endsWith(".tgz") ||
+      lowerArchive.endsWith(".tar.bz2") ||
+      lowerArchive.endsWith(".tbz2") ||
+      lowerArchive.endsWith(".tar.xz") ||
+      lowerArchive.endsWith(".txz");
+
+    const bundled7z = await getBundled7zPath();
+    const q7z = bundled7z ? quoteShellArgument(bundled7z) : null;
+
+    const commandsToTry = [];
+
+    if (isDarwin) {
+      if (isZip) {
+        commandsToTry.push(`ditto -V -xk ${qArchive} ${qDest}`);
+        commandsToTry.push(`unzip -o ${qArchive} -d ${qDest}`);
+        if (q7z) commandsToTry.push(`${q7z} x -y -aoa -o${qDest} ${qArchive}`);
+        commandsToTry.push(`tar -xvf ${qArchive} -C ${qDest}`);
+      } else if (isTar) {
+        commandsToTry.push(`tar -xvf ${qArchive} -C ${qDest}`);
+        if (q7z) commandsToTry.push(`${q7z} x -y -aoa -o${qDest} ${qArchive}`);
       } else {
-        throw tarErr;
+        if (q7z) commandsToTry.push(`${q7z} x -y -aoa -o${qDest} ${qArchive}`);
+        commandsToTry.push(`7z x -y -aoa -o${qDest} ${qArchive}`);
+        commandsToTry.push(`ditto -V -xk ${qArchive} ${qDest}`);
+        commandsToTry.push(`tar -xvf ${qArchive} -C ${qDest}`);
+      }
+    } else if (isLinux) {
+      if (isZip) {
+        commandsToTry.push(`unzip -o ${qArchive} -d ${qDest}`);
+        if (q7z) commandsToTry.push(`${q7z} x -y -aoa -o${qDest} ${qArchive}`);
+        commandsToTry.push(`7z x -y -aoa -o${qDest} ${qArchive}`);
+        commandsToTry.push(`7za x -y -aoa -o${qDest} ${qArchive}`);
+        commandsToTry.push(`python3 -m zipfile -e ${qArchive} ${qDest}`);
+        commandsToTry.push(`python -m zipfile -e ${qArchive} ${qDest}`);
+        commandsToTry.push(`tar -xvf ${qArchive} -C ${qDest}`);
+      } else if (isTar) {
+        commandsToTry.push(`tar -xvf ${qArchive} -C ${qDest}`);
+        if (q7z) commandsToTry.push(`${q7z} x -y -aoa -o${qDest} ${qArchive}`);
+        commandsToTry.push(`7z x -y -aoa -o${qDest} ${qArchive}`);
+      } else {
+        if (q7z) commandsToTry.push(`${q7z} x -y -aoa -o${qDest} ${qArchive}`);
+        commandsToTry.push(`7z x -y -aoa -o${qDest} ${qArchive}`);
+        commandsToTry.push(`7za x -y -aoa -o${qDest} ${qArchive}`);
+        commandsToTry.push(`unzip -o ${qArchive} -d ${qDest}`);
+        commandsToTry.push(`tar -xvf ${qArchive} -C ${qDest}`);
+      }
+    } else {
+      commandsToTry.push(`tar -xvf ${qArchive} -C ${qDest}`);
+      if (q7z) commandsToTry.push(`${q7z} x -y -aoa -o${qDest} ${qArchive}`);
+      const psCommand = `powershell -NoProfile -NonInteractive -Command "Expand-Archive -LiteralPath '${normalizedArchive.replace(/'/g, "''")}' -DestinationPath '${normalizedDest.replace(/'/g, "''")}' -Force"`;
+      commandsToTry.push(psCommand);
+    }
+
+    let extracted = false;
+    const errors = [];
+
+    for (const cmd of commandsToTry) {
+      try {
+        await runExtractionCommand(cmd, onFile);
+        extracted = true;
+        break;
+      } catch (err) {
+        errors.push(`[${cmd}]: ${err.message || String(err)}`);
       }
     }
 
+    if (!extracted) {
+      throw new Error(
+        `Failed to extract archive "${archivePath}". Attempted commands:\n${errors.join("\n")}`
+      );
+    }
+
     try {
+      if (typeof onFile === "function") {
+        onFile("__FLATTENING_START__");
+      }
       await flattenFolder(destFolder);
     } catch (flattenErr) {
       console.warn(`[fs.extractArchive] Warning: Failed to flatten folder "${destFolder}":`, flattenErr);

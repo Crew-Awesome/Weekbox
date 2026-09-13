@@ -36,7 +36,7 @@ export const DesktopSidebar: React.FC<DesktopSidebarProps> = ({
   });
 
   return (
-    <aside className="hidden md:block relative w-32 h-full drop-shadow-2xl">
+    <aside className="hidden md:block relative z-40 w-32 h-full drop-shadow-2xl">
       <div className="absolute inset-y-0 left-0 right-6 bg-[var(--wb-back-bg)] rounded-tr-[16px] rounded-br-[16px] z-10 flex flex-col justify-end items-end pb-6 pr-3">
         <div className="flex flex-col space-y-4">
           <button

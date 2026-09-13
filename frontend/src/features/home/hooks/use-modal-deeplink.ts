@@ -41,10 +41,21 @@ const mapGameBananaMod = (mod: any, baseCard?: ModItem | null): ModItem => ({
             ? [baseCard.img]
             : [],
   author: mod.author || baseCard?.author || "Unknown",
+  authors: mod.authors || (baseCard as any)?.authors,
+  credits: mod.credits || (baseCard as any)?.credits,
   submittedAt: mod.submittedAt || baseCard?.submittedAt,
   updatedAt: mod.updatedAt || baseCard?.updatedAt,
   engineId: mod.engineId || baseCard?.engineId,
   files: mod.files !== undefined ? mod.files : baseCard?.files || [],
+  version: mod.version || (baseCard as any)?.version,
+  updatesCount: mod.updatesCount ?? (baseCard as any)?.updatesCount,
+  updates: mod.updates || (baseCard as any)?.updates,
+  externalLinks: mod.externalLinks || (baseCard as any)?.externalLinks,
+  studio: mod.studio || (baseCard as any)?.studio,
+  categoryName: mod.categoryName || (baseCard as any)?.categoryName,
+  views: mod.views ?? (baseCard as any)?.views,
+  likes: mod.likes ?? (baseCard as any)?.likes,
+  downloads: mod.downloads ?? (baseCard as any)?.downloads,
 });
 
 /**

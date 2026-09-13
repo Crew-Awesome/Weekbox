@@ -1,18 +1,30 @@
 <!doctype html>
 <html lang="en" translate="no">
   <head>
-    <script>
-      window.NL_PORT = 57967;
-      window.NL_TOKEN = 'Go_4tvCR1LxERNwjcJBPCJZ5l6QATFW937YmMSdfGEXoZ6d.OAuqClLmatbZjYvgsUOPMnGzJqJIx2EJtb-qmMzaI24cF5bYy';
-      window.NL_ARGS = ['--load-dir-res'];
-    </script>
     <meta charset="UTF-8" />
     <meta name="google" content="notranslate" />
     <link rel="icon" type="image/png" href="/assets/icons/app/launcher-icon.png" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>WeekBox</title>
-    <script type="module" crossorigin src="/assets/index-Knmer8yt.js"></script>
-    <link rel="stylesheet" crossorigin href="/assets/index-4HYXQwoM.css">
+    <script>
+      /**
+       * Catch and suppress external DevTools or Web Vitals profiler layout errors.
+       */
+      window.addEventListener('error', function(event) {
+        if (event.message && (event.message.includes('startTime') || event.message.includes('reportAllChanges'))) {
+          event.stopImmediatePropagation();
+          event.preventDefault();
+        }
+      }, true);
+      window.addEventListener('unhandledrejection', function(event) {
+        if (event.reason && (String(event.reason).includes('startTime') || String(event.reason).includes('reportAllChanges'))) {
+          event.stopImmediatePropagation();
+          event.preventDefault();
+        }
+      }, true);
+    </script>
+    <script type="module" crossorigin src="/assets/index-B-VI7WAS.js"></script>
+    <link rel="stylesheet" crossorigin href="/assets/index-CgNq6Q7x.css">
   </head>
   <body>
     <div id="root"></div>

@@ -40,7 +40,7 @@ export const Home: React.FC = () => {
   }, []);
 
   return (
-    <div className="items-center -m-8 justify-center text-white font-sans">
+    <div className="items-center -m-8 justify-center text-[var(--wb-text-main)] font-sans">
       <div className="relative">
         <HomeSearchbar
           onSearchSubmit={setSearchQuery}
@@ -50,12 +50,14 @@ export const Home: React.FC = () => {
           setCategoryFilter={setCategoryFilter}
         />
 
-        <div className="pt-2 sm:pt-8 px-8">
-          <FeaturedMods
-            onCardClick={handleCardClick as any}
-            searchQuery={searchQuery}
-            engineIds={categoryFilter}
-          />
+        <div className="pt-2 sm:pt-8 px-8 relative z-0">
+          {!searchQuery.trim() && (
+            <FeaturedMods
+              onCardClick={handleCardClick as any}
+              searchQuery={searchQuery}
+              engineIds={categoryFilter}
+            />
+          )}
           <AllMods
             onCardClick={handleCardClick}
             searchQuery={searchQuery}

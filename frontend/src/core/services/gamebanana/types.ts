@@ -18,6 +18,7 @@ export interface GameBananaItem {
   isNsfw: boolean;
   previewMedia?: string[];
   files?: any[];
+  credits?: any[];
 }
 
 export interface GameBananaMod extends GameBananaItem {
@@ -25,6 +26,12 @@ export interface GameBananaMod extends GameBananaItem {
   engineIcon?: string;
   __featuredLabel?: string;
   __featuredCategoryId?: number;
+  version?: string;
+  updatesCount?: number;
+  updates?: any[];
+  externalLinks?: any[];
+  studio?: string;
+  categoryName?: string;
 }
 
 export interface GameBananaTool extends GameBananaItem {

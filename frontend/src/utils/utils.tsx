@@ -5,14 +5,46 @@ import { useAppNavigation } from "./hooks/use-app-navigation";
 import { useShowWindow } from "./hooks/use-show-window";
 import { useToast } from "./hooks/use-toast";
 import { useNotifications } from "./hooks/use-notifications";
-import { extractColor } from "./extract-color";
+import { useBlurOnTop } from "./hooks/blur-on-top";
+import { useModalPattern } from "./hooks/use-modal-pattern";
+import { useModalBackdrop } from "./hooks/use-modal-backdrop";
+import { useTranslationSettings } from "./hooks/use-translation-settings";
+import {
+  extractColor,
+  isExtractColorActive,
+  setExtractColorActive,
+  subscribeExtractColor,
+  useExtractColor,
+} from "./extract-color";
 import { toast } from "./toast";
 
 import { sanitizeHtml, htmlToPlainText } from "./sanitize";
+import { extractModIdOrUrl, handleDirectModLookup } from "./mod-search-helper";
+import { SoundEffects } from "./sound";
+
+export { SoundEffects, playSound, isSoundEffectsEnabled } from "./sound";
 
 export { toast } from "./toast";
 export { useToast } from "./hooks/use-toast";
 export { useNotifications } from "./hooks/use-notifications";
+export { useBlurOnTop } from "./hooks/blur-on-top";
+export { useModalPattern, isModalPatternActive, setModalPatternActive } from "./hooks/use-modal-pattern";
+export { useModalBackdrop, isModalBackdropActive, setModalBackdropActive } from "./hooks/use-modal-backdrop";
+export {
+  useTranslationSettings,
+  isTranslateDescriptionsActive,
+  setTranslateDescriptionsActive,
+  getTranslationLanguage,
+  setTranslationLanguage,
+} from "./hooks/use-translation-settings";
+export {
+  extractColor,
+  isExtractColorActive,
+  setExtractColorActive,
+  subscribeExtractColor,
+  useExtractColor,
+} from "./extract-color";
+export { extractModIdOrUrl, handleDirectModLookup } from "./mod-search-helper";
 
 /**
  * Global API for accessing Weekbox utilities.
@@ -29,6 +61,11 @@ const Utils = {
     useShowWindow,
     useToast,
     useNotifications,
+    useExtractColor,
+    useBlurOnTop,
+    useModalPattern,
+    useModalBackdrop,
+    useTranslationSettings,
   },
   sanitize: {
     sanitizeHtml,
@@ -36,8 +73,17 @@ const Utils = {
   },
   colors: {
     extractColor,
+    isExtractColorActive,
+    setExtractColorActive,
+    subscribeExtractColor,
   },
+  modSearch: {
+    extractModIdOrUrl,
+    handleDirectModLookup,
+  },
+  sound: SoundEffects,
 };
 
 export default Utils;
+
 

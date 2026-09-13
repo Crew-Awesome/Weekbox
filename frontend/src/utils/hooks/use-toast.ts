@@ -10,6 +10,11 @@ export type { ToastPosition };
 export function useToast() {
   const [toasts, setToasts] = useState<ToastItem[]>(toast.getToasts());
   const [position, setPosition] = useState<ToastPosition>(toast.getPosition());
+  const [settings, setSettings] = useState({
+    enabled: toast.isEnabled(),
+    detailed: toast.isDetailed(),
+    minimized: toast.isMinimized(),
+  });
 
   useEffect(() => {
     const unsubToasts = toast.subscribe((updatedToasts) => {
@@ -18,9 +23,13 @@ export function useToast() {
     const unsubPosition = toast.subscribePosition((newPos) => {
       setPosition(newPos);
     });
+    const unsubSettings = toast.subscribeSettings((newSettings) => {
+      setSettings(newSettings);
+    });
     return () => {
       unsubToasts();
       unsubPosition();
+      unsubSettings();
     };
   }, []);
 
@@ -28,6 +37,13 @@ export function useToast() {
     toasts,
     position,
     setPosition: (pos: ToastPosition) => toast.setPosition(pos),
+    enabled: settings.enabled,
+    detailed: settings.detailed,
+    minimized: settings.minimized,
+    setEnabled: (val: boolean) => toast.setEnabled(val),
+    setDetailed: (val: boolean) => toast.setDetailed(val),
+    setMinimized: (val: boolean) => toast.setMinimized(val),
+    toggleMinimized: () => toast.toggleMinimized(),
     toast,
     dismiss: (id?: string) => toast.dismiss(id),
     update: (id: string, updates: Partial<Omit<ToastItem, "id">>) => toast.update(id, updates),

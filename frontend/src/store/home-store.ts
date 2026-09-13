@@ -28,6 +28,9 @@ interface HomeState {
   scrollPosition: number;
   setScrollPosition: (pos: number) => void;
 
+  loadedParamsKey: string | null;
+  setLoadedParamsKey: (key: string | null) => void;
+
   resetState: () => void;
 }
 
@@ -62,6 +65,9 @@ export const useHomeStore = create<HomeState>((set) => ({
   scrollPosition: 0,
   setScrollPosition: (pos) => set({ scrollPosition: pos }),
 
+  loadedParamsKey: null,
+  setLoadedParamsKey: (key) => set({ loadedParamsKey: key }),
+
   resetState: () =>
     set({
       searchQuery: "",
@@ -69,5 +75,6 @@ export const useHomeStore = create<HomeState>((set) => ({
       page: 1,
       hasMore: true,
       scrollPosition: 0,
+      loadedParamsKey: null,
     }),
 }));

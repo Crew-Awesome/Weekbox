@@ -1,5 +1,5 @@
 import React from "react";
-import { Bell, Volume2, Sparkles, Monitor, Send } from "lucide-react";
+import { Bell, Volume2, Sparkles, Monitor, Send, MessageSquare, FileText } from "lucide-react";
 import { Switch } from "./switch";
 import Utils from "@utils";
 
@@ -13,6 +13,13 @@ export const NotificationsTab: React.FC = () => {
     setSoundEffects,
     sendOSNotification,
   } = Utils.hooks.useNotifications();
+
+  const {
+    enabled: toastsEnabled,
+    detailed: toastsDetailed,
+    setEnabled: setToastsEnabled,
+    setDetailed: setToastsDetailed,
+  } = Utils.hooks.useToast();
 
   const handleTestNotification = async () => {
     try {
@@ -113,6 +120,53 @@ export const NotificationsTab: React.FC = () => {
                 checked={soundEffects}
                 onChange={setSoundEffects}
                 ariaLabel="Toggle Interface Audio Effects"
+              />
+            </div>
+          </div>
+
+          <div className="flex items-center justify-between p-5 sm:p-6 rounded-3xl bg-[var(--wb-surface-container-low)]/80 border border-white/5 transition-colors">
+            <div className="flex items-center gap-4 sm:gap-5">
+              <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-[var(--wb-surface-container-highest)] text-[var(--wb-on-surface)] flex items-center justify-center shrink-0 shadow-sm">
+                <MessageSquare className="w-6 h-6 sm:w-7 sm:h-7 text-[var(--wb-primary)]" />
+              </div>
+              <div className="flex flex-col gap-1">
+                <span className="text-base sm:text-lg font-bold text-[var(--wb-on-surface)]">
+                  In-App Toast Alerts
+                </span>
+                <span className="text-xs sm:text-sm text-[var(--wb-on-surface-variant)] leading-relaxed">
+                  Show interactive in-app toast banners for status updates, downloads, and alerts
+                </span>
+              </div>
+            </div>
+            <div className="shrink-0 pl-4">
+              <Switch
+                checked={toastsEnabled}
+                onChange={setToastsEnabled}
+                ariaLabel="Toggle In-App Toast Alerts"
+              />
+            </div>
+          </div>
+
+          <div className="flex items-center justify-between p-5 sm:p-6 rounded-3xl bg-[var(--wb-surface-container-low)]/80 border border-white/5 transition-colors">
+            <div className="flex items-center gap-4 sm:gap-5">
+              <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-[var(--wb-surface-container-highest)] text-[var(--wb-on-surface)] flex items-center justify-center shrink-0 shadow-sm">
+                <FileText className="w-6 h-6 sm:w-7 sm:h-7 text-[var(--wb-primary)]" />
+              </div>
+              <div className="flex flex-col gap-1">
+                <span className="text-base sm:text-lg font-bold text-[var(--wb-on-surface)]">
+                  Detailed Toasts
+                </span>
+                <span className="text-xs sm:text-sm text-[var(--wb-on-surface-variant)] leading-relaxed">
+                  Show full multi-line details and progress information in toast alerts, or keep them summarized and compact
+                </span>
+              </div>
+            </div>
+            <div className="shrink-0 pl-4">
+              <Switch
+                checked={toastsDetailed}
+                onChange={setToastsDetailed}
+                disabled={!toastsEnabled}
+                ariaLabel="Toggle Detailed Toasts"
               />
             </div>
           </div>

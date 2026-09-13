@@ -3,12 +3,14 @@ import Shared from "@shared";
 import {
   Settings as SettingsIcon,
   Palette,
+  Languages,
   Wrench,
   HardDrive,
   Share2,
   Bell,
 } from "lucide-react";
 import { AppearanceTab } from "./components/appearance-tab";
+import { LanguageTab } from "./components/language-tab";
 import { AdvancedTab } from "./components/advanced-tab";
 import { StorageTab } from "./components/storage-tab";
 import { IntegrationsTab } from "./components/integrations-tab";
@@ -21,6 +23,7 @@ interface SettingsModalProps {
 
 type SettingsTab =
   | "appearance"
+  | "language"
   | "advanced"
   | "storage"
   | "integrations"
@@ -39,6 +42,12 @@ const TABS: TabItem[] = [
     label: "Appearance",
     description: "Theme, colors, and visual appearance",
     icon: Palette,
+  },
+  {
+    id: "language",
+    label: "Language",
+    description: "Language selection and automatic mod translation",
+    icon: Languages,
   },
   {
     id: "advanced",
@@ -149,6 +158,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
 
         <div className="flex-1 overflow-y-auto px-7 sm:px-10 py-7 sm:py-9 mobile-no-scrollbar">
           {activeTab === "appearance" && <AppearanceTab />}
+          {activeTab === "language" && <LanguageTab />}
           {activeTab === "advanced" && <AdvancedTab />}
           {activeTab === "storage" && <StorageTab />}
           {activeTab === "integrations" && <IntegrationsTab />}

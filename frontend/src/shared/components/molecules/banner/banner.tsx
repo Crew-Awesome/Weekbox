@@ -1,6 +1,7 @@
 import React, { useRef, useState, useEffect } from "react";
 import gsap from "gsap";
 import Shared from "@shared";
+import Utils from "@utils";
 import placeholderImg from "/assets/images/placeholder-mini.webp";
 
 export interface BannerProps {
@@ -66,32 +67,46 @@ export const Banner: React.FC<BannerProps> = ({
   isLoading = false,
   isNsfw = false,
 }) => {
+  const bannerRootRef = useRef<HTMLDivElement>(null);
   const thumbnailRef = useRef<HTMLDivElement>(null);
   const hoverBgRef = useRef<HTMLDivElement>(null);
   const notchOverlayRef = useRef<HTMLDivElement>(null);
   const notchSvg1Ref = useRef<SVGSVGElement>(null);
   const notchSvg2Ref = useRef<SVGSVGElement>(null);
   const [hoverColor, setHoverColor] = useState<string | null>(null);
+  const [isHovered, setIsHovered] = useState(false);
   const [thumbnailLoaded, setThumbnailLoaded] = useState(false);
   const [iconLoaded, setIconLoaded] = useState(false);
   const [showTooltip, setShowTooltip] = useState(false);
+  const { isExtractActive } = Utils.hooks.useExtractColor();
+
+  const getDefaultHoverColor = React.useCallback(() => {
+    if (typeof window === "undefined") return "rgba(255, 255, 255, 0.1)";
+    const style = getComputedStyle(bannerRootRef.current || document.documentElement);
+    const val =
+      style.getPropertyValue("--wb-card-hover-default").trim() ||
+      style.getPropertyValue("--wb-card-hover-bg").trim();
+    return val || "rgba(255, 255, 255, 0.1)";
+  }, []);
 
   useEffect(() => {
     let isMounted = true;
-    if (extractColor && thumbnail) {
+    if (extractColor && isExtractActive && thumbnail) {
       Shared.utils
         .extractColor(thumbnail, 0.3)
         .then((color) => {
           if (isMounted) {
-            setHoverColor((prev) => (prev !== color ? color : prev));
+            setHoverColor((prev) => (prev !== color ? (color || null) : prev));
           }
         })
         .catch(console.error);
+    } else {
+      setHoverColor(null);
     }
     return () => {
       isMounted = false;
     };
-  }, [extractColor, thumbnail]);
+  }, [extractColor, thumbnail, isExtractActive]);
 
   useEffect(() => {
     if (hoverBgRef.current) {
@@ -106,8 +121,33 @@ export const Banner: React.FC<BannerProps> = ({
     }
   }, []);
 
+  useEffect(() => {
+    if (isHovered) {
+      const activeColor = hoverColor || getDefaultHoverColor();
+      if (hoverBgRef.current)
+        gsap.to(hoverBgRef.current, {
+          backgroundColor: activeColor,
+          duration: 0.3,
+          ease: "power2.inOut",
+        });
+      if (notchOverlayRef.current)
+        gsap.to(notchOverlayRef.current, {
+          backgroundColor: activeColor,
+          duration: 0.3,
+          ease: "power2.inOut",
+        });
+      if (notchSvg1Ref.current && notchSvg2Ref.current)
+        gsap.to([notchSvg1Ref.current, notchSvg2Ref.current], {
+          color: activeColor,
+          duration: 0.3,
+          ease: "power2.inOut",
+        });
+    }
+  }, [hoverColor, isHovered, getDefaultHoverColor]);
+
   const handleMouseEnter = () => {
     if (window.matchMedia("(hover: none)").matches) return;
+    setIsHovered(true);
 
     if (thumbnailRef.current && thumbnail) {
       gsap.to(thumbnailRef.current, {
@@ -116,7 +156,7 @@ export const Banner: React.FC<BannerProps> = ({
         ease: "power2.out",
       });
     }
-    const finalColor = hoverColor || "rgba(255, 255, 255, 0.1)";
+    const finalColor = hoverColor || getDefaultHoverColor();
     if (hoverBgRef.current) {
       gsap.to(hoverBgRef.current, {
         top: 0,
@@ -149,6 +189,7 @@ export const Banner: React.FC<BannerProps> = ({
 
   const handleMouseLeave = () => {
     if (window.matchMedia("(hover: none)").matches) return;
+    setIsHovered(false);
 
     if (thumbnailRef.current && thumbnail) {
       gsap.to(thumbnailRef.current, {
@@ -192,6 +233,7 @@ export const Banner: React.FC<BannerProps> = ({
 
   return (
     <div
+      ref={bannerRootRef}
       className={`relative isolate flex shadow-2xs bg-transparent p-0 sm:p-3 select-none cursor-pointer w-full aspect-[2/1] sm:aspect-[21/9] lg:aspect-[21/8] xl:aspect-[3/1] sm:rounded-[1rem] sm:rounded-tl-none hover:z-50 ${className}`}
       style={{ fontFamily: "Manrope, sans-serif", fontWeight: 500 }}
       onClick={onClick}
@@ -337,7 +379,7 @@ export const Banner: React.FC<BannerProps> = ({
             <>
               <div className="flex items-center gap-2">
                 {pillTitle && (
-                  <div className="px-3 py-1 text-[10px] sm:text-xs font-bold tracking-wider text-white border border-white/20 rounded-full w-max uppercase bg-black/20">
+                  <div className="px-3 py-1 text-[10px] sm:text-xs font-bold tracking-wider text-[var(--wb-on-surface)] border border-[var(--wb-outline-variant)]/40 rounded-full w-max uppercase bg-[var(--wb-surface-container-high)]/60">
                     {pillTitle}
                   </div>
                 )}
@@ -348,7 +390,7 @@ export const Banner: React.FC<BannerProps> = ({
                 )}
               </div>
 
-              <h2 className="text-3xl sm:text-4xl font-black text-white leading-tight uppercase line-clamp-2 max-w-[400px]">
+              <h2 className="text-3xl sm:text-4xl font-black text-[var(--wb-on-surface)] leading-tight uppercase line-clamp-2 max-w-[400px]">
                 {title}
               </h2>
 
@@ -361,7 +403,7 @@ export const Banner: React.FC<BannerProps> = ({
               {(timeText ||
                 likesCount !== undefined ||
                 viewsCount !== undefined) && (
-                <div className="flex items-center gap-4 text-sm text-[var(--wb-on-surface-variant)] bg-black/40 px-4 py-1.5 rounded-full">
+                <div className="flex items-center gap-4 text-sm text-[var(--wb-on-surface-variant)] bg-[var(--wb-surface-container-high)]/60 border border-[var(--wb-outline-variant)]/30 px-4 py-1.5 rounded-full">
                   {timeText && (
                     <div className="flex items-center gap-1">
                       <svg
