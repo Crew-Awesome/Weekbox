@@ -36,9 +36,8 @@ Browse, download, and manage FNF mods on Linux.
 This package is built for Fedora Copr so WeekBox updates with dnf.
 
 %prep
-# Fedora 44+ %setup unpacks the zip, then creates %{name}-%{version} and cds
-# into the empty dir. Unzip ourselves after entering that directory.
-%setup -q -T -c -n weekbox-%{version}
+# Flat zip (WeekBox-linux_x64 + resources.neu). Do not use %setup: Fedora 44
+# rpm unpacks Source0, then cds into %{name}-%{version} which does not exist.
 unzip -qo %{SOURCE0}
 cp -a %{SOURCE1} %{SOURCE2} %{SOURCE3} %{SOURCE4} %{SOURCE5} .
 
@@ -88,4 +87,4 @@ fi
 %changelog
 * Sun Sep 13 2026 Crew Awesome <info@weekbox.app> - 2.3.4-1
 - Package the 2.3.4 linux-x64 zip
-- Unpack the zip inside the build directory (Fedora 44 %setup layout)
+- Unpack the zip without %setup (Fedora 44 layout)
