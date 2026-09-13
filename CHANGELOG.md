@@ -17,6 +17,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Optimized Browse Speeds
 - Add the thumbnail goo to featured cards.
 
+### Fixed
+
+- Linux Wayland windows now show the WeekBox icon instead of the generic compositor icon.
+- Linux windows open on Wayland (including NVIDIA) by disabling WebKitGTK DMA-BUF rendering, which avoided compositor crashes.
+
 ## [2.3.4] - 2026-09-12
 
 ### Changed

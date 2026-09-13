@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+Name=WeekBox
+Comment=Browse and manage Friday Night Funkin' mods
+Exec=/usr/bin/weekbox %u
+Icon=weekbox
+Terminal=false
+Categories=Game;Utility;
+MimeType=x-scheme-handler/weekbox;
+StartupWMClass=weekbox
