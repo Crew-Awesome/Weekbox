@@ -3,7 +3,7 @@
 # Source0 is the CI zip. Build Copr AFTER that zip exists on the release.
 
 Name:           weekbox
-Version:        2.1.16
+Version:        2.3.4
 Release:        1%{?dist}
 Summary:        A re-imagined Friday Night Funkin' mod launcher
 License:        MIT
@@ -36,7 +36,10 @@ Browse, download, and manage FNF mods on Linux.
 This package is built for Fedora Copr so WeekBox updates with dnf.
 
 %prep
-%setup -q -c -n weekbox-%{version} -T -b 0
+# Fedora 44+ %setup unpacks the zip, then creates %{name}-%{version} and cds
+# into the empty dir. Unzip ourselves after entering that directory.
+%setup -q -T -c -n weekbox-%{version}
+unzip -qo %{SOURCE0}
 cp -a %{SOURCE1} %{SOURCE2} %{SOURCE3} %{SOURCE4} %{SOURCE5} .
 
 %build
@@ -83,5 +86,6 @@ fi
 %{_datadir}/pixmaps/weekbox.png
 
 %changelog
-* Sat Sep 13 2026 Crew Awesome <info@weekbox.app> - 2.1.16-1
-- Initial Copr package from the GitHub linux-x64 release zip
+* Sun Sep 13 2026 Crew Awesome <info@weekbox.app> - 2.3.4-1
+- Package the 2.3.4 linux-x64 zip
+- Unpack the zip inside the build directory (Fedora 44 %setup layout)
