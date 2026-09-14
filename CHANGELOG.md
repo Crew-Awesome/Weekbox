@@ -20,6 +20,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Reused shared translations for matching labels.
 - Replaced spinners with Hourglasses.
 - Dependencies now show by default.
+- Updated Latin American Spanish translations and removed Spanish (Spain).
 
 ### Fixed
 
