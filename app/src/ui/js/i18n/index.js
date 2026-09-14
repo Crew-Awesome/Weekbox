@@ -56,8 +56,9 @@ export const i18n = {
     this.apply(document);
   },
 
-  setLocale(locale) {
+  setLocale(locale, { reload = false } = {}) {
     const nextLocale = catalogs[locale] ? locale : fallbackLocale;
+    const changed = nextLocale !== this.locale;
     this.locale = nextLocale;
     appSettings.set("language", nextLocale);
     document.documentElement.lang = nextLocale;
@@ -65,6 +66,7 @@ export const i18n = {
     document.dispatchEvent(
       new CustomEvent("locale-changed", { detail: nextLocale }),
     );
+    if (reload && changed) window.location.reload();
   },
 
   t(key, variables) {

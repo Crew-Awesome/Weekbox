@@ -45,8 +45,8 @@ export const firstRunLanguageModal = {
     continueButton.disabled = !currentOption;
     continueButton.classList.toggle("is-ready", Boolean(currentOption));
     const finish = (locale) => {
-      i18n.setLocale(locale);
       if (markComplete) appSettings.set("firstRunLanguageSetupComplete", true);
+      i18n.setLocale(locale, { reload: true });
       deactivateCheckoutDialog(modal);
       modal.classList.remove("show");
       setTimeout(() => {

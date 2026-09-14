@@ -147,7 +147,7 @@ export const configModal = {
     document
       .getElementById("setting-language")
       ?.addEventListener("change", (event) => {
-        i18n.setLocale(event.target.value);
+        i18n.setLocale(event.target.value, { reload: true });
         this.syncLanguageDropdown(i18n.locale);
         i18n.apply(document.getElementById("config-modal"));
       });

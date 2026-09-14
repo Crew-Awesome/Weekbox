@@ -24,6 +24,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Localized remaining hardcoded texts.
 - Added Polish.
 - Synced all language files with the current English strings.
+- Refresh the app after confirming a language change.
 
 ### Fixed
 
