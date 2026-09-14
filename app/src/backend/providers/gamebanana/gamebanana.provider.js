@@ -925,9 +925,16 @@ export const gameBananaApi = {
           }
         });
 
+        let successfulPages = 0;
+        let firstPageError = null;
         for (const pageRequest of pageRequests) {
           const pageResult = await pageRequest;
-          if (pageResult.error) throw pageResult.error;
+          if (pageResult.error) {
+            if (pageResult.error.name === "AbortError") throw pageResult.error;
+            firstPageError ||= pageResult.error;
+            continue;
+          }
+          successfulPages += 1;
           const records = pageResult.records;
           if (!feed.complete)
             appendRipeMods(this, feed, records, targetCategoryId);
@@ -947,6 +954,7 @@ export const gameBananaApi = {
           // Subfeed normally returns fifteen records. A short response is its last page.
           if (records.length < 15) feed.complete = true;
         }
+        if (!successfulPages) throw firstPageError || new Error("Ripe Subfeed request failed");
         feed.sourcePage += sourcePages.length;
       }
 

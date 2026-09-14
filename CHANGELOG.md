@@ -22,6 +22,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Wayland windows now use the WeekBox icon.
 - Fixed Wayland and NVIDIA window crashes.
 - Fixed macOS Itch.io DMG downloads.
+- Fixed news and Ripe feed errors and error checking.
 
 ## [2.3.4] - 2026-09-12
 
