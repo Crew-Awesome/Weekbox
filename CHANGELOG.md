@@ -19,8 +19,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
-- Linux Wayland windows now show the WeekBox icon instead of the generic compositor icon.
-- Linux windows open on Wayland (including NVIDIA) by disabling WebKitGTK DMA-BUF rendering, which avoided compositor crashes.
+- Wayland windows now use the WeekBox icon.
+- Fixed Wayland and NVIDIA window crashes.
+- Fixed macOS Itch.io DMG downloads.
 
 ## [2.3.4] - 2026-09-12
 

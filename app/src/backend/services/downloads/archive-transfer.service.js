@@ -375,6 +375,17 @@ async function detectArchiveFormat(path) {
     if (startsWith(31, 139)) return "gzip";
     if (String.fromCharCode(...data.slice(257, 262)) === "ustar") return "tar";
   } catch {}
+  try {
+    const stats = await Neutralino.filesystem.getStats(path);
+    const trailer = new Uint8Array(
+      await Neutralino.filesystem.readBinaryFile(path, {
+        pos: Math.max(0, Number(stats.size) - 512),
+        size: 512,
+      }),
+    );
+    if ([107, 111, 108, 121].every((byte, index) => trailer[index] === byte))
+      return "dmg";
+  } catch {}
   return "unknown";
 }
 
@@ -2047,13 +2058,12 @@ async function extractArchive({
     );
   }
   const reportEntry = createThrottledEntryReporter(onEntry);
-  const isDiskImage =
-    window.NL_OS === "Darwin" && /\.dmg$/i.test(String(archivePath));
+  const archiveFormat = await detectArchiveFormat(archivePath);
+  const isDiskImage = window.NL_OS === "Darwin" && archiveFormat === "dmg";
   if (isDiskImage) {
     await extractDiskImage(archivePath, destinationPath, getTask, onEntry);
     return;
   }
-  const archiveFormat = await detectArchiveFormat(archivePath);
   await extractArchiveContents({
     archivePath,
     destinationPath,
