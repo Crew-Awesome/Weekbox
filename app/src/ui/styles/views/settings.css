@@ -279,6 +279,10 @@
   background-image: url("../../../../../node_modules/flag-icons/flags/4x3/br.svg");
 }
 
+.language-flag.fi-pl {
+  background-image: url("../../../../../node_modules/flag-icons/flags/4x3/pl.svg");
+}
+
 .language-flag.fi-fr {
   background-image: url("../../../../../node_modules/flag-icons/flags/4x3/fr.svg");
 }
