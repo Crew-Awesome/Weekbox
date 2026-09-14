@@ -4,7 +4,7 @@
 
 Name:           weekbox
 Version:        2.3.4
-Release:        1%{?dist}
+Release:        2%{?dist}
 Summary:        A re-imagined Friday Night Funkin' mod launcher
 License:        MIT
 URL:            https://github.com/Crew-Awesome/Weekbox
@@ -36,9 +36,15 @@ Browse, download, and manage FNF mods on Linux.
 This package is built for Fedora Copr so WeekBox updates with dnf.
 
 %prep
-# Flat zip (WeekBox-linux_x64 + resources.neu). Do not use %setup: Fedora 44
-# rpm unpacks Source0, then cds into %{name}-%{version} which does not exist.
-unzip -qo %{SOURCE0}
+# RPM 4.20 unpacks the flat zip into %{builddir} (parent), then cds into
+# %{name}-%{version}. -c creates that directory so the cd succeeds.
+%setup -q -c -n %{name}-%{version}
+if [ ! -f WeekBox-linux_x64 ] && [ -f ../WeekBox-linux_x64 ]; then
+  mv ../WeekBox-linux_x64 ../resources.neu .
+fi
+if [ ! -f WeekBox-linux_x64 ]; then
+  unzip -qo %{SOURCE0}
+fi
 cp -a %{SOURCE1} %{SOURCE2} %{SOURCE3} %{SOURCE4} %{SOURCE5} .
 
 %build
@@ -85,6 +91,5 @@ fi
 %{_datadir}/pixmaps/weekbox.png
 
 %changelog
-* Sun Sep 13 2026 Crew Awesome <info@weekbox.app> - 2.3.4-1
-- Package the 2.3.4 linux-x64 zip
-- Unpack the zip without %setup (Fedora 44 layout)
+* Sun Sep 13 2026 Crew Awesome <info@weekbox.app> - 2.3.4-2
+- Move the flat linux zip into the RPM 4.20 build directory after %setup -c
