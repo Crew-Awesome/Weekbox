@@ -148,6 +148,13 @@ function buildToolDetails(api, data, file, images) {
     likes: data._nLikeCount || 0,
     views: data._nViewCount || 0,
     timeAgo: api.getTimeAgo(data._tsDateAdded),
+    submittedTimeAgo: api.getTimeAgo(data._tsDateAdded),
+    modifiedTimeAgo: data._tsDateModified
+      ? api.getTimeAgo(data._tsDateModified)
+      : "",
+    updatedTimeAgo: data._tsDateUpdated
+      ? api.getTimeAgo(data._tsDateUpdated)
+      : "",
     images,
     downloadUrl: file?._sDownloadUrl || "",
     fileSize: Number(file?._nFilesize || 0),
@@ -259,6 +266,13 @@ function buildModDetails(
     likes: data._nLikeCount || 0,
     views: data._nViewCount || 0,
     timeAgo: api.getTimeAgo(data._tsDateAdded),
+    submittedTimeAgo: api.getTimeAgo(data._tsDateAdded),
+    modifiedTimeAgo: data._tsDateModified
+      ? api.getTimeAgo(data._tsDateModified)
+      : "",
+    updatedTimeAgo: data._tsDateUpdated
+      ? api.getTimeAgo(data._tsDateUpdated)
+      : "",
     images,
     ...getModDownloadDetails(api, downloadOptions, loadingDownloads),
     downloadOptions,
@@ -871,6 +885,7 @@ export const gameBananaApi = {
   },
 
   async getRipeMods(page = 1, categoryId = null, options = {}) {
+    let streamedMods = 0;
     try {
       const targetCategoryId = Number.isFinite(Number(categoryId))
         ? Number(categoryId)
@@ -886,32 +901,77 @@ export const gameBananaApi = {
 
       const pageSize = Math.max(1, Number(options.pageSize) || 12);
       const requiredMods = Math.max(1, Number(page) || 1) * pageSize;
+      const streamFirstPage =
+        Number(page) === 1 && typeof options.onProgress === "function";
       while (!feed.complete && feed.mods.length < requiredMods) {
-        const params = new URLSearchParams({
-          _sSort: "default",
-          _nPage: String(feed.sourcePage),
-        });
-        const response = await nativeFetch(
-          `${this.subfeedBaseUrl}/Game/${this.gameId}/Subfeed?${params}`,
-          { signal: options.signal },
+        // ponytail: three requests per batch; increase only if API latency outweighs rate-limit risk.
+        const sourcePages = Array.from({ length: 3 }, (_, index) =>
+          feed.sourcePage + index,
         );
-        if (!response.ok) throw new Error("Ripe Subfeed request failed");
+        const pageRequests = sourcePages.map(async (sourcePage) => {
+          try {
+            const params = new URLSearchParams({
+              _sSort: "default",
+              _nPage: String(sourcePage),
+            });
+            const response = await nativeFetch(
+              `${this.subfeedBaseUrl}/Game/${this.gameId}/Subfeed?${params}`,
+              { signal: options.signal },
+            );
+            if (!response.ok) throw new Error("Ripe Subfeed request failed");
+            return { records: this.getValidRecords(await response.json()) };
+          } catch (error) {
+            return { error };
+          }
+        });
 
-        const records = this.getValidRecords(await response.json());
-        feed.sourcePage += 1;
-        appendRipeMods(this, feed, records, targetCategoryId);
+        let successfulPages = 0;
+        let firstPageError = null;
+        for (const pageRequest of pageRequests) {
+          const pageResult = await pageRequest;
+          if (pageResult.error) {
+            if (pageResult.error.name === "AbortError") throw pageResult.error;
+            firstPageError ||= pageResult.error;
+            continue;
+          }
+          successfulPages += 1;
+          const records = pageResult.records;
+          if (!feed.complete)
+            appendRipeMods(this, feed, records, targetCategoryId);
 
-        // Subfeed normally returns fifteen records. A short response is its last page.
-        if (records.length < 15) feed.complete = true;
+          if (streamFirstPage && feed.mods.length > streamedMods) {
+            const chunk = feed.mods.slice(
+              streamedMods,
+              Math.min(requiredMods, feed.mods.length),
+            );
+            streamedMods += chunk.length;
+            if (chunk.length)
+              await options.onProgress(
+                chunk.map((mod) => this.toGridMod(mod)),
+              );
+          }
+
+          // Subfeed normally returns fifteen records. A short response is its last page.
+          if (records.length < 15) feed.complete = true;
+        }
+        if (!successfulPages) throw firstPageError || new Error("Ripe Subfeed request failed");
+        feed.sourcePage += sourcePages.length;
       }
 
       const start = (Math.max(1, Number(page) || 1) - 1) * pageSize;
-      return feed.mods
-        .slice(start, start + pageSize)
-        .map((mod) => this.toGridMod(mod));
+      const result = feed.mods.slice(start, start + pageSize);
+      if (streamedMods) {
+        return {
+          mods: result.slice(Math.max(0, streamedMods - start)),
+          exhausted: feed.complete && start + pageSize >= feed.mods.length,
+          streamed: true,
+        };
+      }
+      return result.map((mod) => this.toGridMod(mod));
     } catch (error) {
       if (error?.name === "AbortError") return [];
       console.warn("Could not load GameBanana Ripe feed", error);
+      if (streamedMods) return { mods: [], exhausted: false, streamed: true };
       return [];
     }
   },

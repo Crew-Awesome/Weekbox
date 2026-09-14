@@ -52,7 +52,7 @@ function resetGridForInitialRender(grid) {
   grid.classList.remove("grid-empty", "grid-error");
 }
 
-async function fetchGridPage(requestedPage, pageSize) {
+async function fetchGridPage(requestedPage, pageSize, onProgress) {
   if (gridState.isSearchMode) {
     return gameBananaApi.searchMods(gridState.searchQuery, requestedPage, 12);
   }
@@ -64,6 +64,7 @@ async function fetchGridPage(requestedPage, pageSize) {
       snapshotId: gridState.discoverySnapshotId,
       signal: gridState.discoveryController?.signal,
       pageSize,
+      onProgress,
     },
   );
 }
@@ -118,7 +119,8 @@ function getFeaturedGridData(grid, mods, requestedPage, isInitial) {
 function updateGridState(result, requestedPage, mods, pageSize) {
   if (result.snapshotId) gridState.discoverySnapshotId = result.snapshotId;
   gridState.currentPage = requestedPage;
-  gridState.hasMore = !result.exhausted && mods.length === pageSize;
+  gridState.hasMore =
+    !result.exhausted && (mods.length === pageSize || result.streamed);
   gridState.status = result.stale
     ? "stale"
     : result.partial
@@ -173,21 +175,38 @@ async function loadGridPages(
     if (!gridState.hasMore && !isInitial) break;
 
     const requestedPage = isInitial ? 1 : gridState.currentPage + 1;
-    const response = await fetchGridPage(requestedPage, pageSize);
+    const onProgress =
+      isInitial && gridState.currentFilter === "ripe"
+        ? (mods) => {
+            if (renderVersion !== gridState.renderVersion || !mods.length)
+              return;
+            grid.classList.remove("grid-empty", "grid-error");
+            appendGridPage(
+              grid,
+              { mods, exhausted: false, streamed: true },
+              mods,
+              requestedPage,
+              true,
+              mods.length,
+            );
+          }
+        : undefined;
+    const response = await fetchGridPage(requestedPage, pageSize, onProgress);
     const result = Array.isArray(response)
       ? { mods: response, exhausted: response.length < pageSize }
       : response;
     const mods = result.mods;
 
     if (renderVersion !== gridState.renderVersion) return false;
-    if (mods.length === 0 && isInitial) {
+    if (mods.length === 0 && isInitial && !result.streamed) {
       renderEmptyGrid(grid, result);
       return false;
     }
 
     grid.classList.remove("grid-empty", "grid-error");
     if (mods.length === 0) {
-      gridState.hasMore = false;
+      gridState.hasMore = result.streamed && !result.exhausted;
+      gridState.status = gridState.hasMore ? "ready" : "exhausted";
       break;
     }
 

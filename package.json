@@ -12,9 +12,10 @@
     "assets": "node scripts/bundle.js",
     "package:macos": "node scripts/package-macos.js",
     "package:linux": "node scripts/package-linux.js",
+    "package:rpm": "node scripts/package-rpm.js",
     "postinstall": "npx @neutralinojs/neu update",
     "dev": "npm run assets && npm-run-all --parallel \"assets -- --watch\" neu",
-    "neu": "npx @neutralinojs/neu run",
+    "neu": "node scripts/run-neu.js",
     "build": "npm run assets && npx @neutralinojs/neu build"
   },
   "repository": {

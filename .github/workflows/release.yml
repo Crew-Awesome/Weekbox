@@ -172,6 +172,9 @@ jobs:
       - name: Restore Neutralino runtime
         run: npx @neutralinojs/neu update
 
+      - name: Install RPM tooling
+        run: sudo apt-get update && sudo apt-get install -y rpm gcc
+
       - name: Build Linux packages
         run: npm run build && npm run package:linux
 

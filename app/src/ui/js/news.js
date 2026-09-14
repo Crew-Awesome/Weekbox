@@ -100,6 +100,7 @@ function applyCachedNews(view, cached, badgeOnly) {
 }
 
 function handleNewsLoadError(view, error, cached, badgeOnly) {
+  if (error?.name === "AbortError") return;
   if (badgeOnly) {
     console.warn("WeekBox news badge unavailable", error);
   } else if (cached) {

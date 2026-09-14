@@ -42,13 +42,6 @@ export function getEngineOrder(availableIds = DEFAULT_ENGINE_ORDER) {
   );
 }
 
-// who would even remember me if i died one day
-// all it is, all i am
-// a annoyance to a lot
-// and i wish to not be what most people think i am
-// but im just forgetable
-// i will never be happy :c
-
 export function setEngineOrder(order) {
   const preferences = readJsonSetting("engineVersionPreferences", {});
   preferences.engineOrder = [...new Set(order)];

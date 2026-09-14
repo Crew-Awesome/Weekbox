@@ -590,13 +590,7 @@ export const modManagerModal = {
 
     const dependencies = mods.filter((mod) => mod.kind === "dependency");
     const selectedFilters = this.typeFilters || { include: [], exclude: [] };
-    const dependencyFilterSelected = [
-      ...(selectedFilters.include || []),
-      ...(selectedFilters.exclude || []),
-    ].includes("kind:dependency");
-    const playableMods = dependencyFilterSelected
-      ? mods
-      : mods.filter((mod) => mod.kind !== "dependency");
+    const playableMods = mods;
 
     this.syncActiveView();
     const standaloneModIds = new Set(standaloneMods.map((m) => String(m.id)));

@@ -65,12 +65,21 @@ function resetModal() {
     const el = document.getElementById(id);
     if (el) el.textContent = "";
   });
-  ["modal-time", "modal-likes", "modal-views", "modal-filesize"].forEach(
-    (id) => {
-      const el = document.getElementById(id);
-      if (el) el.textContent = "--";
-    },
-  );
+  [
+    "modal-time",
+    "modal-modified-time",
+    "modal-updated-time",
+    "modal-likes",
+    "modal-views",
+    "modal-filesize",
+  ].forEach((id) => {
+    const el = document.getElementById(id);
+    if (el) el.textContent = "--";
+  });
+  ["modal-modified-date", "modal-updated-date"].forEach((id) => {
+    const el = document.getElementById(id);
+    if (el) el.hidden = false;
+  });
   const mainImage = document.getElementById("modal-main-image");
   if (mainImage) {
     mainImage.src = "";
@@ -205,7 +214,16 @@ function showModData(data, isInstalled, onDownload) {
     author.hidden = Boolean(data.hideAuthor);
   }
   const timeEl = document.getElementById("modal-time");
-  if (timeEl) timeEl.textContent = data.timeAgo;
+  if (timeEl) timeEl.textContent = data.submittedTimeAgo || data.timeAgo;
+  [
+    ["modal-modified-date", "modal-modified-time", data.modifiedTimeAgo],
+    ["modal-updated-date", "modal-updated-time", data.updatedTimeAgo],
+  ].forEach(([dateId, timeId, value]) => {
+    const dateEl = document.getElementById(dateId);
+    const timeEl = document.getElementById(timeId);
+    if (timeEl) timeEl.textContent = value || "--";
+    if (dateEl) dateEl.hidden = !value;
+  });
   const likesEl = document.getElementById("modal-likes");
   if (likesEl) likesEl.textContent = data.likes.toLocaleString();
   const viewsEl = document.getElementById("modal-views");
