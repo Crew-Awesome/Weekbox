@@ -344,13 +344,16 @@ export async function getEngineReleaseVersions(engineId) {
         withLatestReleaseOption(cached.versions, engineId),
       );
     }
-    const versions = withLatestReleaseOption(
+    let versions = withLatestReleaseOption(
       result.releases
         .map((release) => normalizeRelease(release, source))
         .filter(Boolean),
       engineId,
     );
-    if (versions.length === 0 && !source.nightly && !source.itch) return [];
+    if (!versions.length) {
+      const latest = await getLatestRelease(source);
+      versions = latest ? [latest] : [];
+    }
     writeCache(engineId, {
       versions,
       etag: result.etag,
@@ -358,13 +361,14 @@ export async function getEngineReleaseVersions(engineId) {
     });
     return resolveVersions(versions);
   } catch (error) {
-    return (
-      cached?.versions?.length
-        ? resolveVersions(withLatestReleaseOption(cached.versions, engineId))
-        : getLatestRelease(source).then((latest) =>
-            resolveVersions(latest ? [latest] : []),
-          )
-    ).catch(() => resolveVersions([]));
+    if (cached?.versions?.length)
+      return resolveVersions(withLatestReleaseOption(cached.versions, engineId));
+    try {
+      const latest = await getLatestRelease(source);
+      return resolveVersions(latest ? [latest] : []);
+    } catch {
+      throw error;
+    }
   }
 }
 

@@ -868,9 +868,10 @@ export const engineManagerModal = {
     } catch (error) {
       if (requestId !== this.pickerRequestId) return;
       const panel = this.renderDownloadPicker(engineId, [], returnTo);
-      panel.querySelector(".engine-download-picker__versions").textContent = t(
-        "network.noCompatibleReleases",
-      );
+      panel.querySelector(".engine-download-picker__versions").textContent =
+        t("network.loadVersionFailed", {
+          name: getEngineLabel(engineId, details.name),
+        });
       console.warn("Could not load engine versions", error);
     }
   },
