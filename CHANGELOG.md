@@ -9,20 +9,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- Show submitted, modified, and updated times in mod details.
+- Added GameBanana profiles for mod authors.
+- Added Users search.
+- Added mod timestamps.
 
 ### Changed
 
-- Show dependencies by default in Mods manager.
-- Optimized Browse Speeds
-- Add the thumbnail goo to featured cards.
+- Mod details now use tabs for descriptions, contributors, details, and requirements.
+- Improved searchs.
+- Reused shared translations for matching labels.
+- Replaced spinners with Hourglasses.
+- Dependencies now show by default.
+- Updated Latin American Spanish translations and removed Spanish (Spain).
+- Localized remaining hardcoded texts.
+- Added Polish.
+- Synced all language files with the current English strings.
 
 ### Fixed
 
-- Wayland windows now use the WeekBox icon.
-- Fixed Wayland and NVIDIA window crashes.
-- Fixed macOS Itch.io DMG downloads.
-- Fixed news and Ripe feed errors and engine release errors.
+- Profile lists now show all visible FNF mods.
 
 ## [2.3.4] - 2026-09-12
 
@@ -81,6 +86,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Empty custom engine families and missing versions are cleaned up on startup.
 - Leftover multipart engine and mod downloads are cleaned up on startup.
 - Windows no longer treats extensionless mod files as executables.
+
 ## [2.3.0] - 2026-09-11
 
 ### Added

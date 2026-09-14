@@ -3,6 +3,7 @@ export const gridState = {
   isLoading: false,
   isSearchMode: false,
   searchQuery: "",
+  searchType: "mods",
   currentFilter: "popular",
   currentCategoryId: null,
   hasMore: true,

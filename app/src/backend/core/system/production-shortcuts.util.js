@@ -152,10 +152,27 @@ function showContextMenu(event) {
 function disableProductionRefreshShortcuts() {
   document.addEventListener("contextmenu", showContextMenu);
   document.addEventListener("click", hideContextMenu);
-  document.addEventListener("keydown", (event) => {
-    if (event.key === "Escape") hideContextMenu();
-  });
+  document.addEventListener(
+    "keydown",
+    (event) => {
+      if (event.key === "Escape") hideContextMenu();
+      if (
+        (event.ctrlKey || event.metaKey) &&
+        ["+", "=", "-", "_", "0"].includes(event.key)
+      ) {
+        event.preventDefault();
+      }
+    },
+    { capture: true },
+  );
   window.addEventListener("blur", hideContextMenu);
+  document.addEventListener(
+    "wheel",
+    (event) => {
+      if (event.ctrlKey || event.metaKey) event.preventDefault();
+    },
+    { capture: true, passive: false },
+  );
   if (isDevelopmentRun()) return;
   window.addEventListener("keydown", (event) => {
     const isRefresh =

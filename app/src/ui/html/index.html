@@ -252,7 +252,14 @@
   <div class="empty-mods-state">{{message}}</div>
 </template>
 <template id="tpl-deleteSpinner">
-  <i class="fa-solid fa-spinner fa-spin"></i>
+  <l-hourglass
+    class="weekbox-hourglass"
+    size="16"
+    color="currentColor"
+    speed="1.75"
+    bg-opacity="0.12"
+    aria-hidden="true"
+  ></l-hourglass>
 </template>
 <template id="tpl-deleteIcon">
   <i class="fa-solid fa-trash"></i>
@@ -821,13 +828,26 @@
             type="button"
             data-i18n-attr="title:common.close,aria-label:common.close"
             title="Close"
-            aria-label="Close Engines"
+            data-i18n-attr="title:common.close,aria-label:common.close"
+            aria-label="Close"
           >
             <i class="fa-solid fa-xmark" aria-hidden="true"></i>
           </button>
         </div>
       </header>
-      <div class="engine-manager-body" id="engine-manager-modal-body"></div>
+      <div class="engine-manager-body" id="engine-manager-modal-body">
+        <div class="weekbox-loading weekbox-loading--section">
+          <l-hourglass
+            class="weekbox-hourglass"
+            size="32"
+            color="currentColor"
+            speed="1.75"
+            bg-opacity="0.12"
+            aria-hidden="true"
+          ></l-hourglass>
+          <span data-i18n="common.loading">Loading…</span>
+        </div>
+      </div>
     </section>
   </div>
 </template>
@@ -849,12 +869,19 @@
 
       <section class="engines-info-section">
         <div id="engine-release-notes" class="markdown-body">
-          <p
-            style="color: var(--text-muted)"
-            data-i18n="engines.releaseNotesLoading"
-          >
-            Fetching release notes...
-          </p>
+          <div class="weekbox-loading weekbox-loading--panel">
+            <l-hourglass
+              class="weekbox-hourglass"
+              size="28"
+              color="currentColor"
+              speed="1.75"
+              bg-opacity="0.12"
+              aria-hidden="true"
+            ></l-hourglass>
+            <span data-i18n="engines.releaseNotesLoading"
+              >Fetching release notes…</span
+            >
+          </div>
         </div>
         <div id="engine-options"></div>
       </section>
@@ -985,37 +1012,86 @@
       <div class="nav-title-area">
         <h2 data-i18n="home.discover">Discover</h2>
       </div>
-      <div class="search-container">
-        <i class="fa-solid fa-magnifying-glass search-icon"></i>
-        <input
-          type="text"
-          id="mod-search-input"
-          class="search-input"
-          data-i18n-attr="aria-label:home.searchGameBanana"
-          placeholder="Search mods (e.g. Sonic, Tricky, Indie...)"
-          aria-label="Search GameBanana mods"
-          autocomplete="off"
-        />
-        <span class="search-hint" id="mod-search-hint" aria-hidden="true"
-          ><span data-i18n="home.searchHint"
-            >Search mods, paste a GameBanana link, or enter a mod ID</span
-          ></span
-        >
-        <div
-          class="search-dropdown"
-          id="search-dropdown"
-          style="display: none"
-        ></div>
+      <div class="home-search-controls">
+        <div class="search-container">
+          <i class="fa-solid fa-magnifying-glass search-icon"></i>
+          <input
+            type="text"
+            id="mod-search-input"
+            class="search-input"
+            data-i18n-attr="aria-label:home.searchGameBanana"
+            placeholder=""
+            aria-label="Search GameBanana mods"
+            autocomplete="off"
+          />
+          <span class="search-hint" id="mod-search-hint" aria-hidden="true"
+            ><span data-i18n="home.searchHint"
+              >Search mods, paste a GameBanana link, or enter a mod ID</span
+            ></span
+          >
+          <div
+            class="search-dropdown"
+            id="search-dropdown"
+            style="display: none"
+          ></div>
+        </div>
+        <div class="search-type-picker" id="search-type-picker">
+          <button
+            class="search-type-trigger"
+            id="search-type-trigger"
+            type="button"
+            aria-haspopup="listbox"
+            aria-expanded="false"
+            aria-controls="search-type-options"
+          >
+            <i class="fa-solid fa-puzzle-piece" aria-hidden="true"></i>
+            <span id="search-type-selected" data-i18n="common.mods">Mods</span>
+            <i class="fa-solid fa-chevron-down" aria-hidden="true"></i>
+          </button>
+          <div
+            class="search-type-options"
+            id="search-type-options"
+            role="listbox"
+            data-i18n-attr="aria-label:home.searchType"
+            aria-label="Search type"
+          >
+            <button
+              class="search-type-option selected"
+              type="button"
+              role="option"
+              aria-selected="true"
+              data-search-type="mods"
+            >
+              <i class="fa-solid fa-puzzle-piece" aria-hidden="true"></i>
+              <span data-i18n="common.mods">Mods</span>
+            </button>
+            <button
+              class="search-type-option"
+              type="button"
+              role="option"
+              aria-selected="false"
+              data-search-type="users"
+            >
+              <i class="fa-solid fa-user" aria-hidden="true"></i>
+              <span data-i18n="common.users">Users</span>
+            </button>
+          </div>
+        </div>
       </div>
     </nav>
     <div class="home-content">
       <section class="carousel-container" id="featured-carousel">
         <div class="carousel-track" id="carousel-track">
-          <div
-            style="padding: 40px; color: white"
-            data-i18n="home.loadingFeatured"
-          >
-            Loading featured...
+          <div class="weekbox-loading weekbox-loading--section">
+            <l-hourglass
+              class="weekbox-hourglass"
+              size="32"
+              color="currentColor"
+              speed="1.75"
+              bg-opacity="0.12"
+              aria-hidden="true"
+            ></l-hourglass>
+            <span data-i18n="home.loadingFeatured">Loading featured…</span>
           </div>
         </div>
         <div class="carousel-controls">
@@ -1246,11 +1322,19 @@
         </header>
 
         <div class="grid-layout" id="popular-grid">
-          <p style="color: var(--text-muted)">
+          <div class="weekbox-loading weekbox-loading--section">
+            <l-hourglass
+              class="weekbox-hourglass"
+              size="32"
+              color="currentColor"
+              speed="1.75"
+              bg-opacity="0.12"
+              aria-hidden="true"
+            ></l-hourglass>
             <span data-i18n="home.loadingMods"
-              >Loading mods from GameBanana...</span
+              >Loading mods from GameBanana…</span
             >
-          </p>
+          </div>
         </div>
       </section>
     </div>
@@ -1264,6 +1348,21 @@
       aria-modal="true"
       aria-labelledby="modal-title"
     >
+      <div
+        class="modal-info-loader"
+        id="modal-info-loader"
+        role="status"
+        aria-live="polite"
+      >
+        <l-hourglass
+          class="weekbox-hourglass"
+          size="32"
+          color="currentColor"
+          speed="1.75"
+          bg-opacity="0.12"
+          aria-hidden="true"
+        ></l-hourglass>
+      </div>
       <main class="modal-main">
         <div class="modal-main-image-wrapper">
           <img
@@ -1286,7 +1385,14 @@
             />
           </a>
           <div class="modal-loader" id="modal-image-loader">
-            <i class="fa-solid fa-spinner fa-spin"></i>
+            <l-hourglass
+              class="weekbox-hourglass"
+              size="32"
+              color="currentColor"
+              speed="1.75"
+              bg-opacity="0.12"
+              aria-hidden="true"
+            ></l-hourglass>
           </div>
           <div class="main-progress-bar" id="modal-progress-bar"></div>
         </div>
@@ -1306,53 +1412,166 @@
 
         <div class="modal-header-info">
           <h2 id="modal-title" data-i18n="common.loading">Loading...</h2>
-          <p class="modal-author" id="modal-author" data-i18n="home.byUnknown">
+          <button
+            class="modal-author"
+            id="modal-author"
+            type="button"
+            data-i18n="home.byUnknown"
+          >
             by ---
-          </p>
-          <div class="modal-engine-badge" id="modal-engine-badge" hidden>
-            <img id="modal-engine-icon" src="" alt="" />
-            <span id="modal-engine-name"></span>
-          </div>
-
-          <div class="modal-dates">
-            <span
-              class="modal-date"
-              data-i18n-attr="title:modModal.submitted"
-            >
-              <i class="fa-regular fa-clock" aria-hidden="true"></i>
-              <span id="modal-time">--</span>
-            </span>
-            <span
-              class="modal-date"
-              id="modal-modified-date"
-              data-i18n-attr="title:modModal.modified"
-            >
-              <i class="fa-solid fa-pen" aria-hidden="true"></i>
-              <span id="modal-modified-time">--</span>
-            </span>
-            <span
-              class="modal-date"
-              id="modal-updated-date"
-              data-i18n-attr="title:modModal.updated"
-            >
-              <i class="fa-solid fa-rotate" aria-hidden="true"></i>
-              <span id="modal-updated-time">--</span>
-            </span>
-          </div>
-
-          <div class="modal-stats">
-            <span
-              ><i class="fa-solid fa-heart"></i>
-              <span id="modal-likes">--</span></span
-            >
-            <span
-              ><i class="fa-solid fa-eye" id="modal-views-icon"></i>
-              <span id="modal-views">--</span></span
-            >
-          </div>
+          </button>
         </div>
 
-        <div class="modal-description" id="modal-description"></div>
+        <nav
+          class="modal-tabs"
+          role="tablist"
+          data-i18n-attr="aria-label:modModal.information"
+          aria-label="Mod information"
+        >
+          <button
+            class="modal-tab"
+            id="modal-tab-description"
+            type="button"
+            role="tab"
+            aria-selected="true"
+            aria-controls="modal-panel-description"
+            data-modal-tab="description"
+            data-i18n="modModal.tabDescription"
+          >
+            Description
+          </button>
+          <button
+            class="modal-tab"
+            id="modal-tab-contributors"
+            type="button"
+            role="tab"
+            aria-selected="false"
+            aria-controls="modal-panel-contributors"
+            data-modal-tab="contributors"
+            data-i18n="modModal.tabContributors"
+          >
+            Contributors
+          </button>
+          <button
+            class="modal-tab"
+            id="modal-tab-details"
+            type="button"
+            role="tab"
+            aria-selected="false"
+            aria-controls="modal-panel-details"
+            data-modal-tab="details"
+            data-i18n="modModal.tabDetails"
+          >
+            Details
+          </button>
+        </nav>
+
+        <div class="modal-tab-panels">
+          <section
+            class="modal-tab-panel modal-tab-panel--description"
+            id="modal-panel-description"
+            role="tabpanel"
+            aria-labelledby="modal-tab-description"
+            data-modal-panel="description"
+          >
+            <div class="modal-description" id="modal-description"></div>
+          </section>
+          <section
+            class="modal-tab-panel modal-tab-panel--contributors"
+            id="modal-panel-contributors"
+            role="tabpanel"
+            aria-labelledby="modal-tab-contributors"
+            data-modal-panel="contributors"
+            hidden
+          >
+            <div class="modal-contributors" id="modal-contributors">
+              <div class="modal-credit-groups" id="modal-credit-groups"></div>
+              <p
+                class="modal-empty-state"
+                id="modal-no-credits"
+                data-i18n="modModal.noContributors"
+                hidden
+              >
+                No contributor information available.
+              </p>
+            </div>
+          </section>
+          <section
+            class="modal-tab-panel modal-tab-panel--details"
+            id="modal-panel-details"
+            role="tabpanel"
+            aria-labelledby="modal-tab-details"
+            data-modal-panel="details"
+            hidden
+          >
+            <div class="modal-details">
+              <div class="modal-detail-list">
+                <div
+                  class="modal-detail-row modal-engine-badge"
+                  id="modal-engine-badge"
+                  hidden
+                >
+                  <span class="modal-detail-icon">
+                    <img id="modal-engine-icon" src="" alt="" />
+                  </span>
+                  <span data-i18n="common.engine">Engine</span>
+                  <strong id="modal-engine-name"></strong>
+                </div>
+                <div
+                  class="modal-detail-row"
+                  id="modal-submitted-date"
+                  data-i18n-attr="title:modModal.submitted"
+                >
+                  <i class="fa-regular fa-clock" aria-hidden="true"></i>
+                  <span data-i18n="modModal.submitted">Submitted</span>
+                  <strong id="modal-time">--</strong>
+                </div>
+                <div
+                  class="modal-detail-row"
+                  id="modal-modified-date"
+                  data-i18n-attr="title:modModal.modified"
+                >
+                  <i class="fa-solid fa-pen" aria-hidden="true"></i>
+                  <span data-i18n="modModal.modified">Modified</span>
+                  <strong id="modal-modified-time">--</strong>
+                </div>
+                <div
+                  class="modal-detail-row"
+                  id="modal-updated-date"
+                  data-i18n-attr="title:modModal.updated"
+                >
+                  <i class="fa-solid fa-rotate" aria-hidden="true"></i>
+                  <span data-i18n="modModal.updated">Updated</span>
+                  <strong id="modal-updated-time">--</strong>
+                </div>
+              </div>
+              <div class="modal-detail-metrics">
+                <div class="modal-detail-metric">
+                  <i class="fa-solid fa-heart" aria-hidden="true"></i>
+                  <span data-i18n="modModal.likes">Likes</span>
+                  <strong id="modal-likes">--</strong>
+                </div>
+                <div class="modal-detail-metric">
+                  <i
+                    class="fa-solid fa-eye"
+                    id="modal-views-icon"
+                    aria-hidden="true"
+                  ></i>
+                  <span data-i18n="modModal.views">Views</span>
+                  <strong id="modal-views">--</strong>
+                </div>
+              </div>
+              <section
+                class="modal-requirements"
+                id="modal-requirements-section"
+                hidden
+              >
+                <h4 data-i18n="modModal.requirements">Requirements</h4>
+                <ul id="modal-requirements"></ul>
+              </section>
+            </div>
+          </section>
+        </div>
 
         <div class="modal-footer-actions">
           <div class="modal-file-info">
@@ -1367,6 +1586,84 @@
           </button>
         </div>
       </aside>
+    </section>
+  </div>
+</template>
+<template id="tpl-profile-modal">
+  <div class="modal-overlay" id="mod-profile-modal" style="display: none">
+    <div class="profile-hover-backdrop" aria-hidden="true">
+      <div class="profile-hover-backdrop-layer"></div>
+      <div class="profile-hover-backdrop-layer"></div>
+    </div>
+    <section
+      class="modal-content mod-profile-content"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="modal-profile-name"
+    >
+      <div
+        class="modal-info-loader"
+        id="profile-info-loader"
+        role="status"
+        aria-live="polite"
+      >
+        <l-hourglass
+          class="weekbox-hourglass"
+          size="32"
+          color="currentColor"
+          speed="1.75"
+          bg-opacity="0.12"
+          aria-hidden="true"
+        ></l-hourglass>
+      </div>
+      <header class="mod-profile-header">
+        <button
+          class="mod-profile-back-btn"
+          id="modal-profile-back"
+          type="button"
+          data-i18n-attr="aria-label:modModal.backToMod"
+          aria-label="Back to mod details"
+          hidden
+        >
+          <i class="fa-solid fa-arrow-left" aria-hidden="true"></i>
+        </button>
+        <button
+          class="modal-close-btn"
+          type="button"
+          data-i18n-attr="aria-label:home.closeDetails"
+          aria-label="Close profile"
+        >
+          <i class="fa-solid fa-xmark" aria-hidden="true"></i>
+        </button>
+        <img
+          class="mod-profile-avatar is-weekbox-avatar"
+          id="modal-profile-avatar"
+          src="assets/icons/launcher-icon.png"
+          alt=""
+        />
+        <h2 id="modal-profile-name" data-i18n="common.loading">Loading...</h2>
+        <a
+          class="mod-profile-link"
+          id="modal-profile-link"
+          target="_blank"
+          rel="noreferrer"
+          data-i18n-attr="aria-label:modModal.viewProfile,title:modModal.viewProfile"
+          aria-label="View profile"
+          title="View profile"
+          hidden
+        >
+          <img
+            src="https://images.gamebanana.com/static/img/banana.png"
+            alt=""
+          />
+        </a>
+      </header>
+      <div class="mod-profile-body">
+        <div class="mod-profile-title-row">
+          <h3 data-i18n="modModal.profileMods">Friday Night Funkin' mods</h3>
+        </div>
+        <div class="grid-layout mod-profile-grid" id="modal-profile-grid"></div>
+      </div>
     </section>
   </div>
 </template>
@@ -1388,7 +1685,19 @@
     >
       Loading news…
     </div>
-    <div class="grid-layout news-view__grid" data-news-grid></div>
+    <div class="grid-layout news-view__grid" data-news-grid>
+      <div class="weekbox-loading weekbox-loading--section">
+        <l-hourglass
+          class="weekbox-hourglass"
+          size="32"
+          color="currentColor"
+          speed="1.75"
+          bg-opacity="0.12"
+          aria-hidden="true"
+        ></l-hourglass>
+        <span data-i18n="news.loading">Loading news…</span>
+      </div>
+    </div>
   </section>
 </template>
 <template id="tpl-news-modal">
@@ -1462,6 +1771,7 @@
             id="sidebar-collapse-btn"
             type="button"
             aria-expanded="true"
+            data-i18n-attr="aria-label:sidebar.collapse,title:sidebar.collapse"
             aria-label="Collapse sidebar"
             title="Collapse sidebar"
           >
@@ -1553,10 +1863,20 @@
 <template id="tpl-engine-manager-carousel">
   <div class="em-carousel-viewport">
     <div class="em-carousel-track"></div>
-    <button class="em-nav-btn left" type="button" aria-label="Previous">
+    <button
+      class="em-nav-btn left"
+      type="button"
+      data-i18n-attr="aria-label:common.previous"
+      aria-label="Previous"
+    >
       <i class="fa-solid fa-chevron-left" aria-hidden="true"></i>
     </button>
-    <button class="em-nav-btn right" type="button" aria-label="Next">
+    <button
+      class="em-nav-btn right"
+      type="button"
+      data-i18n-attr="aria-label:common.next"
+      aria-label="Next"
+    >
       <i class="fa-solid fa-chevron-right" aria-hidden="true"></i>
     </button>
   </div>
@@ -1703,9 +2023,17 @@
   <span class="engine-close-label" data-i18n="common.close">Close</span>
 </template>
 <template id="tpl-release-notes-loading">
-  <p style="color: var(--text-muted)" data-i18n="engines.releaseNotesLoading">
-    Loading release notes...
-  </p>
+  <div class="weekbox-loading weekbox-loading--panel">
+    <l-hourglass
+      class="weekbox-hourglass"
+      size="28"
+      color="currentColor"
+      speed="1.75"
+      bg-opacity="0.12"
+      aria-hidden="true"
+    ></l-hourglass>
+    <span data-i18n="engines.releaseNotesLoading">Loading release notes…</span>
+  </div>
 </template>
 <template id="tpl-release-notes-empty">
   <p><em data-i18n="engines.noReleaseNotes">No release notes available</em></p>
@@ -1735,7 +2063,14 @@
 </template>
 <template id="tpl-grid-chunk-loader">
   <div class="chunk-loader" role="status" aria-live="polite">
-    <i class="fa-solid fa-spinner fa-spin" aria-hidden="true"></i>
+    <l-hourglass
+      class="weekbox-hourglass"
+      size="20"
+      color="currentColor"
+      speed="1.75"
+      bg-opacity="0.12"
+      aria-hidden="true"
+    ></l-hourglass>
     <span data-i18n="home.loadingMoreMods">Loading more mods...</span>
   </div>
 </template>
@@ -1755,7 +2090,14 @@
 </template>
 <template id="tpl-search-loading-item">
   <div class="dropdown-item" style="cursor: default">
-    <i class="fa-solid fa-spinner fa-spin" aria-hidden="true"></i>
+    <l-hourglass
+      class="weekbox-hourglass"
+      size="18"
+      color="currentColor"
+      speed="1.75"
+      bg-opacity="0.12"
+      aria-hidden="true"
+    ></l-hourglass>
     <span data-i18n="common.loading">Loading...</span>
   </div>
 </template>

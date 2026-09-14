@@ -332,7 +332,7 @@ export const sidebar = {
           const process = FS.activeEngineProcesses.get(`standalone:${mod.id}`);
           if (process) {
             btn.querySelector(".sidebar__marquee-container").innerHTML =
-              `<i class="fa-solid fa-spinner fa-spin" style="margin-right:4px;"></i> ${t("engines.closing")}`;
+              `<l-hourglass class="weekbox-hourglass" size="16" color="currentColor" speed="1.75" bg-opacity="0.12" aria-hidden="true"></l-hourglass> ${t("engines.closing")}`;
             Neutralino.os
               .updateSpawnedProcess(process.id, "exit")
               .catch(() => {});

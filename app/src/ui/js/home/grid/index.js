@@ -26,6 +26,13 @@ export const homeGrid = {
     gridState.searchQuery = val;
   },
 
+  get searchType() {
+    return gridState.searchType;
+  },
+  set searchType(val) {
+    gridState.searchType = val;
+  },
+
   async init({ prefetchNextPage = false } = {}) {
     gridState.currentPage = 1;
     gridState.isSearchMode = false;

@@ -1,7 +1,7 @@
 import { emitViewChange } from "./events.service.js";
 
 import { sidebar } from "../../../ui/js/sidebar.js";
-import { i18n } from "../../../ui/js/i18n/index.js";
+import { i18n, t } from "../../../ui/js/i18n/index.js";
 var router;
 
 router = {
@@ -127,7 +127,7 @@ router = {
       errorMsg.className = "router-error-message";
       errorMsg.style.padding = "24px";
       errorMsg.style.color = "#ff4a4a";
-      errorMsg.textContent = `Failed to load view: ${viewId}`;
+      errorMsg.textContent = t("startup.viewLoadFailed", { view: viewId });
       this.mainContent.replaceChildren(errorMsg);
       this.mainContent.classList.remove(
         "app-layout__content--leaving",

@@ -475,13 +475,13 @@ export const configModal = {
         { target: targetLabel },
       );
       status.textContent = "";
-      cancel.textContent = t("settings.clearLibraryCancel");
+      cancel.textContent = t("common.cancel");
       confirm.textContent = t(
         step === 3
           ? "settings.clearLibraryFinalButton"
           : step === 2
             ? "settings.clearLibraryUnderstand"
-            : "settings.clearLibraryContinue",
+            : "common.continue",
         { target: targetLabel },
       );
     };

@@ -71,6 +71,10 @@
   justify-content: start;
 }
 
+.news-view__loading {
+  min-height: 220px;
+}
+
 .news-view__card {
   --card-color: rgba(255, 255, 255, 0.08);
   --news-accent: var(--primary);

@@ -18,7 +18,14 @@ export function getGameBananaSource(mod) {
 export function loadingContent() {
   return `
     <div class="mod-settings-modal mod-settings-loading" role="status">
-      <i class="fa-solid fa-spinner fa-spin" aria-hidden="true"></i>
+      <l-hourglass
+        class="weekbox-hourglass"
+        size="24"
+        color="currentColor"
+        speed="1.75"
+        bg-opacity="0.12"
+        aria-hidden="true"
+      ></l-hourglass>
       <span>${t("modSettings.loading")}</span>
     </div>`;
 }

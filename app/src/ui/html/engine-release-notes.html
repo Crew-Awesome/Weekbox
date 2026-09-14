@@ -1,5 +1,15 @@
 <template id="tpl-release-notes-loading">
-  <p style="color: var(--text-muted);" data-i18n="engines.releaseNotesLoading">Loading release notes...</p>
+  <div class="weekbox-loading weekbox-loading--panel">
+    <l-hourglass
+      class="weekbox-hourglass"
+      size="28"
+      color="currentColor"
+      speed="1.75"
+      bg-opacity="0.12"
+      aria-hidden="true"
+    ></l-hourglass>
+    <span data-i18n="engines.releaseNotesLoading">Loading release notes…</span>
+  </div>
 </template>
 
 <template id="tpl-release-notes-empty">
@@ -7,5 +17,7 @@
 </template>
 
 <template id="tpl-release-notes-failed">
-  <p><em data-i18n="engines.releaseNotesFailed">Failed to load release notes</em></p>
+  <p>
+    <em data-i18n="engines.releaseNotesFailed">Failed to load release notes</em>
+  </p>
 </template>

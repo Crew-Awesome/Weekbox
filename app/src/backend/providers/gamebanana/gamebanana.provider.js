@@ -262,6 +262,10 @@ function buildModDetails(
     id: data._idRow,
     title: data._sName,
     author: data._aSubmitter?._sName || "Unknown Creator",
+    authorId: data._aSubmitter?._idRow || null,
+    authorAvatar: data._aSubmitter?._sAvatarUrl || "",
+    credits: getModCredits(data),
+    requirementLinks: getRequirementLinks(data),
     description: data._sText || "<p>No description available.</p>",
     likes: data._nLikeCount || 0,
     views: data._nViewCount || 0,
@@ -282,6 +286,50 @@ function buildModDetails(
     gameBananaUrl: `https://gamebanana.com/mods/${data._idRow}`,
     ...getModClassification(api, data),
   };
+}
+
+function getModCredits(data) {
+  return (Array.isArray(data?._aCredits) ? data._aCredits : [])
+    .map((group) => ({
+      name: group._sGroupName || "Contributors",
+      authors: (Array.isArray(group._aAuthors) ? group._aAuthors : [])
+        .map((author) => ({
+          id:
+            author._idRow ||
+            (author._sProfileUrl || author._sUrl)?.match(
+              /\/members\/(\d+)(?:\/|$)/i,
+            )?.[1] ||
+            null,
+          name: author._sName || "Unknown Contributor",
+          role: author._sRole || "",
+          avatar: author._sAvatarUrl || author._sUpicUrl || "",
+          url: author._sUrl || "",
+        }))
+        .filter((author) => author.name),
+    }))
+    .filter((group) => group.authors.length);
+}
+
+function getRawRequirements(data) {
+  if (Array.isArray(data?._aRequirements)) return data._aRequirements;
+  if (Array.isArray(data?._aRequirements?.value))
+    return data._aRequirements.value;
+  return [];
+}
+
+function getRequirementLinks(data) {
+  const rawRequirements = getRawRequirements(data);
+  const requirements = Array.isArray(rawRequirements[0])
+    ? rawRequirements
+    : rawRequirements.length >= 2
+      ? [rawRequirements]
+      : [];
+  return requirements
+    .filter(
+      ([name, url]) =>
+        name && isDependencySubmission(url, NON_DEPENDENCY_REQUIREMENTS),
+    )
+    .map(([name, url]) => ({ title: name, url }));
 }
 
 function appendRipeMods(api, feed, records, targetCategoryId) {
@@ -458,6 +506,8 @@ export const gameBananaApi = {
     return Boolean(
       mod?._bIsTrashed ||
       mod?._bIsDeleted ||
+      mod?._bIsWithheld ||
+      mod?._bIsHidden ||
       mod?._sInitialVisibility === "hide",
     );
   },
@@ -751,9 +801,12 @@ export const gameBananaApi = {
   },
 
   async getRequirements(data) {
-    const requirements = Array.isArray(data?._aRequirements)
-      ? data._aRequirements
-      : [];
+    const rawRequirements = getRawRequirements(data);
+    const requirements = Array.isArray(rawRequirements[0])
+      ? rawRequirements
+      : rawRequirements.length >= 2
+        ? [rawRequirements]
+        : [];
     const resolved = await Promise.all(
       requirements
         .filter(([, url]) =>
@@ -861,6 +914,74 @@ export const gameBananaApi = {
     }
   },
 
+  async getMemberProfile(memberId) {
+    const id = Number(memberId);
+    if (!id) return null;
+    try {
+      const response = await nativeFetch(
+        `${this.baseUrl}/Member/${id}/ProfilePage`,
+      );
+      if (!response.ok) return null;
+      const data = await response.json();
+      return {
+        id: data._idRow,
+        username: data._sName || "Unknown Creator",
+        avatar: data._sAvatarUrl || "",
+        profileUrl: data._sProfileUrl || `https://gamebanana.com/members/${id}`,
+      };
+    } catch {
+      return null;
+    }
+  },
+
+  async getMemberMods(memberId, page = 1, perPage = 12) {
+    const id = Number(memberId);
+    if (!id) return [];
+    try {
+      const requestedPage = Math.max(1, Number(page) || 1);
+      const requestedPerPage = Math.max(1, Number(perPage) || 12);
+      const records = [];
+      let currentPage = requestedPage;
+      let totalPages = requestedPage;
+
+      while (currentPage <= totalPages) {
+        const params = new URLSearchParams({
+          _nPage: String(currentPage),
+          _nPerpage: String(requestedPerPage),
+          _sSort: "date",
+          _sDirection: "DESC",
+          _sNameOperator: "contains",
+        });
+        const response = await nativeFetch(
+          `${this.baseUrl}/Member/${id}/Submissions/Sublog?${params}`,
+        );
+        if (!response.ok) return [];
+        const data = await response.json();
+        records.push(...this.getValidRecords(data));
+
+        const metadata = data?._aMetadata || {};
+        const recordCount = Number(metadata._nRecordCount || 0);
+        const pageSize = Number(metadata._nPerpage || requestedPerPage);
+        totalPages = recordCount
+          ? Math.ceil(recordCount / pageSize)
+          : currentPage;
+        if (metadata._bIsComplete || currentPage >= totalPages) break;
+        currentPage += 1;
+      }
+
+      return records
+        .filter(
+          (mod) =>
+            mod?._sModelName === "Mod" &&
+            Number(mod._aGame?._idRow || mod._idGame) === this.gameId &&
+            !this.isDeletedMod(mod),
+        )
+        .map((mod) => this.toGridMod(mod));
+    } catch {
+      return [];
+    }
+  },
+
   async getFeaturedCarousel() {
     if (!this.featuredService) {
       this.featuredService = new FeaturedService({
@@ -872,15 +993,23 @@ export const gameBananaApi = {
   },
 
   toGridMod(mod) {
-    return toGridMod(mod, (record) =>
-      this.getEngineIdForCategories(
-        record.__injectedCategoryId,
-        record._aCategory,
-        record._aSuperCategory,
-        record._aRootCategory,
-        record._aSubCategory,
-        record._idCategory,
-      ),
+    return toGridMod(
+      mod,
+      (record) =>
+        this.getEngineIdForCategories(
+          record.__injectedCategoryId,
+          record._aCategory,
+          record._aSuperCategory,
+          record._aRootCategory,
+          record._aSubCategory,
+          record._idCategory,
+        ) ||
+        this.getEngineIdForCategoryName(
+          record._aCategory,
+          record._aSuperCategory,
+          record._aRootCategory,
+          record._aSubCategory,
+        ),
     );
   },
 
@@ -905,8 +1034,9 @@ export const gameBananaApi = {
         Number(page) === 1 && typeof options.onProgress === "function";
       while (!feed.complete && feed.mods.length < requiredMods) {
         // ponytail: three requests per batch; increase only if API latency outweighs rate-limit risk.
-        const sourcePages = Array.from({ length: 3 }, (_, index) =>
-          feed.sourcePage + index,
+        const sourcePages = Array.from(
+          { length: 3 },
+          (_, index) => feed.sourcePage + index,
         );
         const pageRequests = sourcePages.map(async (sourcePage) => {
           try {
@@ -946,15 +1076,14 @@ export const gameBananaApi = {
             );
             streamedMods += chunk.length;
             if (chunk.length)
-              await options.onProgress(
-                chunk.map((mod) => this.toGridMod(mod)),
-              );
+              await options.onProgress(chunk.map((mod) => this.toGridMod(mod)));
           }
 
           // Subfeed normally returns fifteen records. A short response is its last page.
           if (records.length < 15) feed.complete = true;
         }
-        if (!successfulPages) throw firstPageError || new Error("Ripe Subfeed request failed");
+        if (!successfulPages)
+          throw firstPageError || new Error("Ripe Subfeed request failed");
         feed.sourcePage += sourcePages.length;
       }
 
@@ -1105,8 +1234,8 @@ export const gameBananaApi = {
     return this.categoryFeedService;
   },
 
-  async getSearchSuggestions(query, limit = 8) {
-    return this.getSearchService().getSuggestions(query, limit);
+  async getSearchSuggestions(query, model = "Mod", limit = 8) {
+    return this.getSearchService().getSuggestionsForModel(query, model, limit);
   },
 
   getSearchTitleRelevance(mod, query) {
@@ -1133,5 +1262,9 @@ export const gameBananaApi = {
 
   async searchMods(query, page = 1, perPage = 12) {
     return this.getSearchService().search(query, page, perPage);
+  },
+
+  async searchMembers(query, page = 1, perPage = 12) {
+    return this.getSearchService().searchMembers(query, page, perPage);
   },
 };

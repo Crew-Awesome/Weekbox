@@ -1225,6 +1225,14 @@
   padding: 8px;
 }
 
+.engine-manager-body > .weekbox-loading {
+  min-height: 240px;
+}
+
+.engine-download-picker__versions > .weekbox-loading {
+  min-height: 140px;
+}
+
 .engine-download-picker__version {
   min-height: 42px;
   padding: 0 12px;
