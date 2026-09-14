@@ -4,6 +4,7 @@ import { getEngineLaunchBehavior } from "../../../backend/config/engines.config.
 import { applyDominantColor } from "../../utils/media/extract-color.util.js";
 import { engineUpdateToast } from "../engines/engineUpdateToast.js";
 import { modManagerTemplates } from "./templates.js";
+import { createHourglass } from "../hourglass.js";
 import { loadModCardImage } from "./modImageLoader.js";
 import { modSettingsModal } from "./modSettingsModal.js";
 import {
@@ -196,7 +197,7 @@ function bindModManagerCardActions({
   settingsBtn.addEventListener("click", async () => {
     if (settingsBtn.disabled) return;
     settingsBtn.disabled = true;
-    settingsBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
+    settingsBtn.replaceChildren(createHourglass(18));
     try {
       await modSettingsModal.open({
         mod,

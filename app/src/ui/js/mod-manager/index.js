@@ -11,6 +11,7 @@ import {
   activateCheckoutDialog,
   deactivateCheckoutDialog,
 } from "../home/modal/dialogFocus.js";
+import { createLoadingState } from "../hourglass.js";
 
 export const modManagerModal = {
   typeFilters: { include: [], exclude: [] },
@@ -202,7 +203,9 @@ export const modManagerModal = {
             engineIds: [
               ...new Set(
                 (this.cachedMods || [])
-                  .filter((mod) => mod.engineId && mod.engineId !== "executable")
+                  .filter(
+                    (mod) => mod.engineId && mod.engineId !== "executable",
+                  )
                   .map((mod) => mod.engineId),
               ),
             ],
@@ -213,8 +216,12 @@ export const modManagerModal = {
                   (standalone) => String(standalone.id) === String(mod.id),
                 ),
             ),
-            hasDependencies: (this.cachedMods || []).some((mod) => mod.kind === "dependency"),
-            hasAddons: (this.cachedMods || []).some((mod) => mod.kind === "addon"),
+            hasDependencies: (this.cachedMods || []).some(
+              (mod) => mod.kind === "dependency",
+            ),
+            hasAddons: (this.cachedMods || []).some(
+              (mod) => mod.kind === "addon",
+            ),
             hasExecutables: (this.cachedStandaloneMods || []).length > 0,
             hasUnassigned: (this.cachedMods || []).some((mod) => !mod.engineId),
             onApply: ({ filters, sort }) => {
@@ -304,8 +311,12 @@ export const modManagerModal = {
     if (!this.preloaded) {
       const container = document.getElementById("mod-manager-modal-body");
       if (container && !container.children.length) {
-        container.innerHTML = modManagerTemplates.emptyState(
-          `<i class="fa-solid fa-spinner fa-spin" style="margin-right: 8px;"></i> ${t("modManager.loadingMods")}`,
+        container.replaceChildren(
+          createLoadingState(
+            t("modManager.loadingMods"),
+            28,
+            "mod-manager-loading",
+          ),
         );
       }
       await this.preload();
@@ -433,7 +444,7 @@ export const modManagerModal = {
       card.classList.toggle(
         "is-search-hidden",
         Boolean(this.searchQuery) &&
-        !card.dataset.modSearch.includes(this.searchQuery),
+          !card.dataset.modSearch.includes(this.searchQuery),
       );
     });
     this.updateSearchSuggestions();
@@ -482,7 +493,8 @@ export const modManagerModal = {
         button.type = "button";
         button.dataset.tag = `#${tag}`;
         button.setAttribute("role", "option");
-        button.innerHTML = '<i class="fa-solid fa-hashtag" aria-hidden="true"></i>';
+        button.innerHTML =
+          '<i class="fa-solid fa-hashtag" aria-hidden="true"></i>';
         const label = document.createElement("span");
         label.textContent = `#${tag}`;
         button.append(label);
@@ -510,8 +522,14 @@ export const modManagerModal = {
         chip.textContent = `${mode === "exclude" ? "− " : ""}${value.replace(/^kind:/, "")}`;
         chip.title = "Remove filter";
         chip.addEventListener("click", () => {
-          this.typeFilters[mode] = this.typeFilters[mode].filter((item) => item !== value);
-          this.render(this.cachedMods || [], this.cachedStandaloneMods || [], this.cachedInstalledEngines || []);
+          this.typeFilters[mode] = this.typeFilters[mode].filter(
+            (item) => item !== value,
+          );
+          this.render(
+            this.cachedMods || [],
+            this.cachedStandaloneMods || [],
+            this.cachedInstalledEngines || [],
+          );
         });
         container.append(chip);
       }),
@@ -599,8 +617,10 @@ export const modManagerModal = {
     );
     const filterMatches = (mod, filter) => {
       const isExecutable = standaloneModIds.has(String(mod.id));
-      if (filter.startsWith("engine:")) return mod.engineId === filter.slice("engine:".length);
-      if (filter === "kind:mod") return !["dependency", "addon"].includes(mod.kind) && !isExecutable;
+      if (filter.startsWith("engine:"))
+        return mod.engineId === filter.slice("engine:".length);
+      if (filter === "kind:mod")
+        return !["dependency", "addon"].includes(mod.kind) && !isExecutable;
       if (filter === "kind:dependency") return mod.kind === "dependency";
       if (filter === "kind:addon") return mod.kind === "addon";
       if (filter === "executable") return isExecutable;
@@ -611,8 +631,11 @@ export const modManagerModal = {
       .filter((mod) => {
         const included = selectedFilters.include || [];
         const excluded = selectedFilters.exclude || [];
-        return !excluded.some((filter) => filterMatches(mod, filter)) &&
-          (!included.length || included.some((filter) => filterMatches(mod, filter)));
+        return (
+          !excluded.some((filter) => filterMatches(mod, filter)) &&
+          (!included.length ||
+            included.some((filter) => filterMatches(mod, filter)))
+        );
       })
       .sort((left, right) => {
         if (this.sortMode === "name-asc")

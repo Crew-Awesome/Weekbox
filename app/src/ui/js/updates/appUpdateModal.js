@@ -4,6 +4,7 @@ import {
   activateCheckoutDialog,
   deactivateCheckoutDialog,
 } from "../home/modal/dialogFocus.js";
+import { setButtonLoading } from "../hourglass.js";
 
 const appUpdateModal = {
   ensureModal() {
@@ -66,7 +67,7 @@ const appUpdateModal = {
 
       updateBtn.onclick = async () => {
         updateBtn.disabled = true;
-        updateBtn.innerHTML = `<i class="fa-solid fa-spinner fa-spin" aria-hidden="true"></i><span>${t("updates.updating")}</span>`;
+        setButtonLoading(updateBtn, t("updates.updating"));
         try {
           await appUpdater.install(updateInfo);
           finish(true);

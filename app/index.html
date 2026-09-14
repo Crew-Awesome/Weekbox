@@ -22,7 +22,7 @@
       rel="stylesheet"
       href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
     />
-    <link rel="stylesheet" href="dist/bundle.css?v=34" />
+    <link rel="stylesheet" href="dist/bundle.css?v=60" />
   </head>
   <body>
     <!-- herobrine -->
@@ -70,11 +70,21 @@
       <div id="sidebar-container" style="display: contents"></div>
 
       <main class="app-layout__content" id="main-content">
-        <p data-i18n="app.loadingInterface">Loading interface...</p>
+        <div class="weekbox-loading weekbox-loading--section">
+          <l-hourglass
+            class="weekbox-hourglass"
+            size="32"
+            color="currentColor"
+            speed="1.75"
+            bg-opacity="0.12"
+            aria-hidden="true"
+          ></l-hourglass>
+          <span data-i18n="app.loadingInterface">Loading interface…</span>
+        </div>
       </main>
     </div>
 
     <script src="src/backend/core/native/pc/neutralino.js"></script>
-    <script type="module" src="dist/bundle.js?v=38"></script>
+    <script type="module" src="dist/bundle.js?v=60"></script>
   </body>
 </html>

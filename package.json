@@ -39,6 +39,7 @@
   },
   "dependencies": {
     "flag-icons": "^7.5.0",
+    "ldrs": "^1.1.9",
     "marked": "^18.0.7"
   }
 }

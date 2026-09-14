@@ -43,13 +43,19 @@ export class GameBananaSearchService {
   }
 
   async getSuggestions(query, limit = 8) {
+    return this.getSuggestionsForModel(query, "Mod", limit);
+  }
+
+  async getSuggestionsForModel(query, modelName, limit = 8) {
     const normalizedQuery = normalizeQuery(query);
     if (!normalizedQuery) return [];
     try {
       const params = new URLSearchParams({
-        _idGameRow: String(this.api.gameId),
+        _sModelName: modelName,
         _sSearchString: normalizedQuery,
       });
+      if (modelName === "Mod")
+        params.set("_idGameRow", String(this.api.gameId));
       const response = await nativeFetch(
         `${SEARCH_API_URL}/Suggestions?${params}`,
       );
@@ -73,7 +79,7 @@ export class GameBananaSearchService {
     const normalizedQuery = normalizeQuery(query);
     if (!normalizedQuery) return [];
 
-    const cacheKey = `${normalizedQuery.toLocaleLowerCase()}:${page}:${perPage}`;
+    const cacheKey = `mod:${normalizedQuery.toLocaleLowerCase()}:${page}:${perPage}`;
     if (this.api.searchCache.has(cacheKey))
       return this.api.searchCache.get(cacheKey);
 
@@ -102,6 +108,71 @@ export class GameBananaSearchService {
           perPage,
         );
       return this.cache(cacheKey, mods);
+    } catch {
+      return [];
+    }
+  }
+
+  async searchMembers(query, page = 1, perPage = 12) {
+    const normalizedQuery = normalizeQuery(query);
+    if (!normalizedQuery) return [];
+
+    const cacheKey = `member:${normalizedQuery.toLocaleLowerCase()}:${page}:${perPage}`;
+    if (this.api.searchCache.has(cacheKey))
+      return this.api.searchCache.get(cacheKey);
+
+    try {
+      const directMember = await this.getDirectMember(normalizedQuery, page);
+      if (directMember) return this.cache(cacheKey, [directMember]);
+
+      const params = new URLSearchParams({
+        _sModelName: "Member",
+        _sOrder: "best_match",
+        _sSearchString: normalizedQuery,
+        _nPage: String(page),
+        _nPerpage: String(perPage),
+      });
+      const response = await nativeFetch(`${SEARCH_API_URL}/Results?${params}`);
+      if (!response.ok) throw new Error("Member search failed");
+      const queryKey = normalizedQuery.toLocaleLowerCase();
+      const seenIds = new Set();
+      const members = this.api
+        .getValidRecords(await response.json())
+        .filter((member) => member?._sModelName === "Member")
+        .map((member) => ({
+          id: member._idRow,
+          username: member._sName || "Unknown User",
+          avatar:
+            member._sAvatarUrl ||
+            member._aPreviewContent?.identity?._sIconUrl ||
+            member._aSubmitter?._sAvatarUrl ||
+            "",
+          profileUrl:
+            member._sProfileUrl ||
+            member._aSubmitter?._sProfileUrl ||
+            `https://gamebanana.com/members/${member._idRow}`,
+        }))
+        .filter((member) => {
+          const id = String(member.id || "");
+          if (!id || seenIds.has(id)) return false;
+          seenIds.add(id);
+          return true;
+        })
+        .sort((left, right) => {
+          const leftName = left.username.toLocaleLowerCase();
+          const rightName = right.username.toLocaleLowerCase();
+          const getMatchRank = (name) =>
+            name === queryKey
+              ? 0
+              : name.startsWith(queryKey)
+                ? 1
+                : name.includes(queryKey)
+                  ? 2
+                  : 3;
+          return getMatchRank(leftName) - getMatchRank(rightName);
+        })
+        .slice(0, perPage);
+      return this.cache(cacheKey, members);
     } catch {
       return [];
     }
@@ -138,6 +209,14 @@ export class GameBananaSearchService {
       timeAgo: mod.timeAgo,
       engineId: mod.engineId,
     };
+  }
+
+  async getDirectMember(query, page) {
+    const idMatch = query.match(
+      /^(?:https?:\/\/)?(?:www\.)?gamebanana\.com\/members\/(\d+)(?:[/?#].*)?$|^(\d+)$/i,
+    );
+    if (page !== 1 || !idMatch) return null;
+    return this.api.getMemberProfile(idMatch[1] || idMatch[2]);
   }
 
   async findRecords(query, page, perPage) {

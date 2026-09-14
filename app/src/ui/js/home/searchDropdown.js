@@ -1,6 +1,7 @@
 import { gameBananaApi } from "../../../backend/providers/gamebanana/gamebanana.provider.js";
 import { homeSearch } from "./search.js";
 import { t } from "../i18n/index.js";
+import { createHourglass } from "../hourglass.js";
 
 export const homeSearchDropdown = {
   recentSearches: [],
@@ -65,6 +66,7 @@ export const homeSearchDropdown = {
 
   showDropdown() {
     if (!this.input || !this.dropdown) return;
+    homeSearch.searchTypeDropdown?.close();
     this.updateDropdown();
     this.dropdown.style.display = "flex";
   },
@@ -112,8 +114,7 @@ export const homeSearchDropdown = {
         loadingItem = document.createElement("div");
         loadingItem.className = "dropdown-item";
         loadingItem.style.cursor = "default";
-        const spinIcon = document.createElement("i");
-        spinIcon.className = "fa-solid fa-spinner fa-spin";
+        const spinIcon = createHourglass(18);
         const loadingText = document.createTextNode(" " + t("common.loading"));
         loadingItem.append(spinIcon, loadingText);
       }
@@ -137,7 +138,9 @@ export const homeSearchDropdown = {
               item = itemTpl.content.firstElementChild.cloneNode(true);
               const iconEl = item.querySelector("i");
               if (iconEl) iconEl.className = "fa-solid fa-magnifying-glass";
-              const textSpan = item.querySelector(".search-item-text") || item.querySelector("span");
+              const textSpan =
+                item.querySelector(".search-item-text") ||
+                item.querySelector("span");
               if (textSpan) textSpan.textContent = title;
             } else {
               item = document.createElement("div");
@@ -203,7 +206,8 @@ export const homeSearchDropdown = {
         item = itemTpl.content.firstElementChild.cloneNode(true);
         const iconEl = item.querySelector("i");
         if (iconEl) iconEl.className = `fa-solid ${icon}`;
-        const textSpan = item.querySelector(".search-item-text") || item.querySelector("span");
+        const textSpan =
+          item.querySelector(".search-item-text") || item.querySelector("span");
         if (textSpan) textSpan.textContent = text;
       } else {
         item = document.createElement("div");
@@ -250,6 +254,9 @@ export const homeSearchDropdown = {
   },
 
   async fetchRelated(query) {
-    return gameBananaApi.getSearchSuggestions(query);
+    return gameBananaApi.getSearchSuggestions(
+      query,
+      homeSearch.searchType === "users" ? "Member" : "Mod",
+    );
   },
 };

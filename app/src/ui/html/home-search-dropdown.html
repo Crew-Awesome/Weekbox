@@ -1,10 +1,19 @@
 <template id="tpl-search-empty-state">
-  <div class="dropdown-item empty-state" data-i18n="search.noRecent">No recent searches</div>
+  <div class="dropdown-item empty-state" data-i18n="search.noRecent">
+    No recent searches
+  </div>
 </template>
 
 <template id="tpl-search-loading-item">
-  <div class="dropdown-item" style="cursor:default;">
-    <i class="fa-solid fa-spinner fa-spin" aria-hidden="true"></i>
+  <div class="dropdown-item" style="cursor: default">
+    <l-hourglass
+      class="weekbox-hourglass"
+      size="18"
+      color="currentColor"
+      speed="1.75"
+      bg-opacity="0.12"
+      aria-hidden="true"
+    ></l-hourglass>
     <span data-i18n="common.loading">Loading...</span>
   </div>
 </template>

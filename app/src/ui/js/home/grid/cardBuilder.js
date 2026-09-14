@@ -130,6 +130,37 @@ export function createCard(mod, index) {
   return card;
 }
 
+export function createMemberCard(member, index) {
+  const card = document.createElement("button");
+  card.type = "button";
+  card.className = "member-card";
+  card.style.setProperty(
+    "--card-index",
+    String(Math.min(Number(index) || 0, 7)),
+  );
+
+  const avatar = document.createElement("img");
+  avatar.className = "member-card-avatar";
+  avatar.src = member.avatar || "assets/img/placeholder-mini.jpg";
+  avatar.alt = "";
+  avatar.loading = "lazy";
+  avatar.onerror = () => {
+    avatar.onerror = null;
+    avatar.src = "assets/img/placeholder-mini.jpg";
+  };
+
+  const details = document.createElement("span");
+  details.className = "member-card-details";
+  const name = document.createElement("strong");
+  name.textContent = member.username;
+  const label = document.createElement("span");
+  label.textContent = t("common.user");
+  details.append(name, label);
+  card.append(avatar, details);
+  card.addEventListener("click", () => modModal.openAuthor(member.id));
+  return card;
+}
+
 export function createFeaturedCard(mod, featuredLabelKey) {
   const card = createCard(mod);
   card.classList.add("mod-card--featured");

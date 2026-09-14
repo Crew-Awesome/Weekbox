@@ -1,7 +1,12 @@
 import { gameBananaApi } from "../../../../backend/providers/gamebanana/gamebanana.provider.js";
 import { gridState } from "./gridState.js";
-import { createCard, createFeaturedCard } from "./cardBuilder.js";
+import {
+  createCard,
+  createFeaturedCard,
+  createMemberCard,
+} from "./cardBuilder.js";
 import { t } from "../../i18n/index.js";
+import { createHourglass, createLoadingState } from "../../hourglass.js";
 
 function selectFeaturedMod(mods, featuredIds, featuredEngineIds) {
   const unseen = mods.filter((mod) => !featuredIds.has(mod.id));
@@ -50,10 +55,24 @@ function resetGridForInitialRender(grid) {
   gridState.featuredIds.clear();
   gridState.featuredEngineIds.clear();
   grid.classList.remove("grid-empty", "grid-error");
+  grid.appendChild(
+    createLoadingState(t("home.loadingMods"), 32, "weekbox-loading--section"),
+  );
+}
+
+function removeGridLoadingState(grid) {
+  grid.querySelector(".weekbox-loading")?.remove();
 }
 
 async function fetchGridPage(requestedPage, pageSize, onProgress) {
   if (gridState.isSearchMode) {
+    if (gridState.searchType === "users") {
+      return gameBananaApi.searchMembers(
+        gridState.searchQuery,
+        requestedPage,
+        12,
+      );
+    }
     return gameBananaApi.searchMods(gridState.searchQuery, requestedPage, 12);
   }
   return gameBananaApi.getGridMods(
@@ -75,7 +94,11 @@ function renderEmptyGrid(grid, result) {
     grid.classList.add("grid-error");
     gridState.status = "error";
   } else {
-    grid.textContent = t("home.noModsFound");
+    grid.textContent = t(
+      gridState.isSearchMode && gridState.searchType === "users"
+        ? "home.noUsersFound"
+        : "home.noModsFound",
+    );
     grid.classList.add("grid-empty");
   }
 }
@@ -149,7 +172,11 @@ function appendGridPage(
     gridState.featuredIds.add(featured.id);
     if (featured.engineId) gridState.featuredEngineIds.add(featured.engineId);
   }
-  const cardElements = mods.map((mod, index) => createCard(mod, index));
+  const cardElements = mods.map((mod, index) =>
+    gridState.isSearchMode && gridState.searchType === "users"
+      ? createMemberCard(mod, index)
+      : createCard(mod, index),
+  );
   if (featured && featuredPosition !== null) {
     cardElements.splice(
       featuredPosition,
@@ -180,6 +207,7 @@ async function loadGridPages(
         ? (mods) => {
             if (renderVersion !== gridState.renderVersion || !mods.length)
               return;
+            removeGridLoadingState(grid);
             grid.classList.remove("grid-empty", "grid-error");
             appendGridPage(
               grid,
@@ -204,6 +232,7 @@ async function loadGridPages(
     }
 
     grid.classList.remove("grid-empty", "grid-error");
+    removeGridLoadingState(grid);
     if (mods.length === 0) {
       gridState.hasMore = result.streamed && !result.exhausted;
       gridState.status = gridState.hasMore ? "ready" : "exhausted";
@@ -342,7 +371,11 @@ export const gridRender = {
     } catch (error) {
       if (error?.kind === "aborted") return false;
       if (isInitial && renderVersion === gridState.renderVersion) {
-        grid.textContent = t("home.failedToLoadMods");
+        grid.textContent = t(
+          gridState.isSearchMode && gridState.searchType === "users"
+            ? "home.failedToLoadUsers"
+            : "home.failedToLoadMods",
+        );
         grid.classList.add("grid-error");
       }
       return false;
@@ -367,9 +400,7 @@ export const gridRender = {
     loader.className = "chunk-loader";
     loader.setAttribute("role", "status");
     loader.setAttribute("aria-live", "polite");
-    const icon = document.createElement("i");
-    icon.className = "fa-solid fa-spinner fa-spin";
-    icon.setAttribute("aria-hidden", "true");
+    const icon = createHourglass(20);
     const span = document.createElement("span");
     span.textContent = t("home.loadingMoreMods");
     loader.append(icon, span);

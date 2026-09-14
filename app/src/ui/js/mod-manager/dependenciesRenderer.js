@@ -6,6 +6,7 @@ import { getGameBananaSource } from "./modSettingsTemplates.js";
 import { modManagerTemplates } from "./templates.js";
 import { replaceProcessExitListener } from "./processUiSync.js";
 import { t } from "../i18n/index.js";
+import { createHourglass } from "../hourglass.js";
 
 function getDependencyUsers(dependency, allMods) {
   return allMods.filter(
@@ -140,8 +141,7 @@ export const dependenciesRenderer = {
         '<i class="fa-solid fa-gear" aria-hidden="true"></i>';
       settings.addEventListener("click", async () => {
         settings.disabled = true;
-        settings.innerHTML =
-          '<i class="fa-solid fa-spinner fa-spin" aria-hidden="true"></i>';
+        settings.replaceChildren(createHourglass(18));
         try {
           await modSettingsModal.open({
             mod: dependency,

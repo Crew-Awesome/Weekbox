@@ -7,6 +7,7 @@ import {
   deactivateCheckoutDialog,
 } from "./home/modal/dialogFocus.js";
 import { setModalBackdrop } from "./home/modal/modalBackdrop.js";
+import { createLoadingState } from "./hourglass.js";
 import { modModal } from "./home/modal/index.js";
 import { sanitizeReleaseHtml } from "./engines/releaseNotes.js";
 import { t } from "./i18n/index.js";
@@ -96,7 +97,7 @@ function applyCachedNews(view, cached, badgeOnly) {
     }
     return;
   }
-  if (!badgeOnly) view.setStatus(t("news.loading"));
+  if (!badgeOnly) view.setLoading();
 }
 
 function handleNewsLoadError(view, error, cached, badgeOnly) {
@@ -237,6 +238,14 @@ export const newsView = {
     if (!this.status) return;
     this.status.textContent = message;
     this.status.dataset.state = state;
+  },
+
+  setLoading() {
+    if (!this.grid) return;
+    this.grid.replaceChildren(
+      createLoadingState(t("news.loading"), 32, "news-view__loading"),
+    );
+    this.setStatus(t("news.loading"));
   },
 
   readCache() {

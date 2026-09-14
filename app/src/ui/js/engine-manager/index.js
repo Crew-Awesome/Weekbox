@@ -34,6 +34,7 @@ import {
   getEngineVersionName,
   setEngineVersionName,
 } from "../../../backend/config/engine-preferences.js";
+import { createLoadingState, setButtonLoading } from "../hourglass.js";
 
 function sortableItems(container, selector) {
   return [...container.children].filter((item) => item.matches(selector));
@@ -107,7 +108,7 @@ function bindVersionActions({
   launchBtn?.addEventListener("click", async (event) => {
     event.stopPropagation();
     launchBtn.disabled = true;
-    setButtonIcon(launchBtn, "fa-solid fa-spinner fa-spin");
+    setButtonLoading(launchBtn);
     try {
       if (FS.isEngineRunning(engineId, version)) {
         await FS.closeEngine(engineId, version, updateLaunchButton);
@@ -847,7 +848,10 @@ export const engineManagerModal = {
       const loadingList = panel?.querySelector(
         ".engine-download-picker__versions",
       );
-      if (loadingList) loadingList.textContent = t("common.loading");
+      if (loadingList)
+        loadingList.replaceChildren(
+          createLoadingState(t("common.loading"), 24, "engine-list-loading"),
+        );
     }
     container.classList.remove("engine-manager-body--switching");
     container.classList.add("engine-manager-body--switched");
@@ -868,10 +872,12 @@ export const engineManagerModal = {
     } catch (error) {
       if (requestId !== this.pickerRequestId) return;
       const panel = this.renderDownloadPicker(engineId, [], returnTo);
-      panel.querySelector(".engine-download-picker__versions").textContent =
-        t("network.loadVersionFailed", {
+      panel.querySelector(".engine-download-picker__versions").textContent = t(
+        "network.loadVersionFailed",
+        {
           name: getEngineLabel(engineId, details.name),
-        });
+        },
+      );
       console.warn("Could not load engine versions", error);
     }
   },
@@ -1287,7 +1293,7 @@ export const engineManagerModal = {
         updateBtn?.addEventListener("click", async (e) => {
           e.stopPropagation();
           updateBtn.disabled = true;
-          setButtonIcon(updateBtn, "fa-solid fa-spinner fa-spin");
+          setButtonLoading(updateBtn);
           const result = await engineUpdateService.checkEngineUpdate(
             engineId,
             version,
@@ -1357,7 +1363,7 @@ export const engineManagerModal = {
           e.stopPropagation();
           if (FS.isEngineRunning(engineId, version)) return;
           deleteBtn.disabled = true;
-          setButtonIcon(deleteBtn, "fa-solid fa-spinner fa-spin");
+          setButtonLoading(deleteBtn);
           const targetPath = FS.getEnginePath(engineId, version);
           try {
             if (await FS.api.exists(targetPath)) {
