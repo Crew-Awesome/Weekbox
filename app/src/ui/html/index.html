@@ -828,7 +828,8 @@
             type="button"
             data-i18n-attr="title:common.close,aria-label:common.close"
             title="Close"
-            aria-label="Close Engines"
+            data-i18n-attr="title:common.close,aria-label:common.close"
+            aria-label="Close"
           >
             <i class="fa-solid fa-xmark" aria-hidden="true"></i>
           </button>
@@ -1051,6 +1052,7 @@
             class="search-type-options"
             id="search-type-options"
             role="listbox"
+            data-i18n-attr="aria-label:home.searchType"
             aria-label="Search type"
           >
             <button
@@ -1420,7 +1422,12 @@
           </button>
         </div>
 
-        <nav class="modal-tabs" role="tablist" aria-label="Mod information">
+        <nav
+          class="modal-tabs"
+          role="tablist"
+          data-i18n-attr="aria-label:modModal.information"
+          aria-label="Mod information"
+        >
           <button
             class="modal-tab"
             id="modal-tab-description"
@@ -1634,7 +1641,7 @@
           src="assets/icons/launcher-icon.png"
           alt=""
         />
-        <h2 id="modal-profile-name">Loading...</h2>
+        <h2 id="modal-profile-name" data-i18n="common.loading">Loading...</h2>
         <a
           class="mod-profile-link"
           id="modal-profile-link"
@@ -1764,6 +1771,7 @@
             id="sidebar-collapse-btn"
             type="button"
             aria-expanded="true"
+            data-i18n-attr="aria-label:sidebar.collapse,title:sidebar.collapse"
             aria-label="Collapse sidebar"
             title="Collapse sidebar"
           >
@@ -1855,10 +1863,20 @@
 <template id="tpl-engine-manager-carousel">
   <div class="em-carousel-viewport">
     <div class="em-carousel-track"></div>
-    <button class="em-nav-btn left" type="button" aria-label="Previous">
+    <button
+      class="em-nav-btn left"
+      type="button"
+      data-i18n-attr="aria-label:common.previous"
+      aria-label="Previous"
+    >
       <i class="fa-solid fa-chevron-left" aria-hidden="true"></i>
     </button>
-    <button class="em-nav-btn right" type="button" aria-label="Next">
+    <button
+      class="em-nav-btn right"
+      type="button"
+      data-i18n-attr="aria-label:common.next"
+      aria-label="Next"
+    >
       <i class="fa-solid fa-chevron-right" aria-hidden="true"></i>
     </button>
   </div>

@@ -30,19 +30,19 @@ export function setupModSettingsDropdowns(overlay, mod, installedEngines) {
   const typeSelected = overlay.querySelector(".mod-settings-type-selected");
 
   const getTypeOptions = () => [
-    ["mod", "Mod", "fa-layer-group"],
+    ["mod", "common.mods", "fa-layer-group"],
     ...(engineSelect.value === "codename" ||
     mod.engineId === "codename" ||
     FS.isCustomEngine(engineSelect.value) ||
     FS.isCustomEngine(mod.engineId) ||
     mod.kind === "addon"
-      ? [["addon", "Addon", "fa-cubes"]]
+      ? [["addon", "engineManager.customAddons", "fa-cubes"]]
       : []),
     ...(mod.kind === "dependency" ||
     (engineSelect.value !== "codename" &&
       mod.engineId !== "codename" &&
       mod.kind !== "addon")
-      ? [["dependency", "Dependency", "fa-puzzle-piece"]]
+      ? [["dependency", "modManager.dependencies", "fa-puzzle-piece"]]
       : []),
   ];
 
@@ -52,7 +52,7 @@ export function setupModSettingsDropdowns(overlay, mod, installedEngines) {
     const current =
       typeOptions.find(([value]) => value === typeSelect.value) ||
       typeOptions[0];
-    typeSelected.textContent = current[1];
+    typeSelected.textContent = t(current[1]);
     typeMenu.querySelectorAll("button[data-type]").forEach((button) => {
       const selected = button.dataset.type === typeSelect.value;
       button.classList.toggle("selected", selected);
@@ -72,13 +72,13 @@ export function setupModSettingsDropdowns(overlay, mod, installedEngines) {
     typeSelect.innerHTML = typeOptions
       .map(
         ([value, label]) =>
-          `<option value="${value}" ${value === (mod.kind || "mod") ? "selected" : ""}>${label}</option>`,
+          `<option value="${value}" ${value === (mod.kind || "mod") ? "selected" : ""}>${t(label)}</option>`,
       )
       .join("");
     typeMenu.innerHTML = typeOptions
       .map(
         ([value, label, icon]) =>
-          `<button type="button" data-type="${value}" role="option" aria-selected="${value === (mod.kind || "mod")}"><i class="fa-solid ${icon}" aria-hidden="true"></i>${label}</button>`,
+          `<button type="button" data-type="${value}" role="option" aria-selected="${value === (mod.kind || "mod")}"><i class="fa-solid ${icon}" aria-hidden="true"></i>${t(label)}</button>`,
       )
       .join("");
   };

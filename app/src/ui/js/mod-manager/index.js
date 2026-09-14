@@ -520,7 +520,7 @@ export const modManagerModal = {
         chip.type = "button";
         chip.className = `mod-manager-filter-chip ${mode === "exclude" ? "is-exclude" : ""}`;
         chip.textContent = `${mode === "exclude" ? "− " : ""}${value.replace(/^kind:/, "")}`;
-        chip.title = "Remove filter";
+        chip.title = t("modManager.removeFilter");
         chip.addEventListener("click", () => {
           this.typeFilters[mode] = this.typeFilters[mode].filter(
             (item) => item !== value,

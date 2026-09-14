@@ -22,9 +22,6 @@ for (const file of files) {
       ? current[key]
       : value;
   }
-  for (const [key, value] of Object.entries(current)) {
-    if (!Object.prototype.hasOwnProperty.call(synced, key)) synced[key] = value;
-  }
   if (JSON.stringify(current) === JSON.stringify(synced)) {
     console.log(`${file}: already synchronized`);
     continue;

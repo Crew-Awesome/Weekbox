@@ -953,12 +953,14 @@ export const engineManagerModal = {
       btnPrev = document.createElement("button");
       btnPrev.className = "em-nav-btn left";
       btnPrev.type = "button";
+      btnPrev.setAttribute("aria-label", t("common.previous"));
       const iconPrev = document.createElement("i");
       iconPrev.className = "fa-solid fa-chevron-left";
       btnPrev.appendChild(iconPrev);
       btnNext = document.createElement("button");
       btnNext.className = "em-nav-btn right";
       btnNext.type = "button";
+      btnNext.setAttribute("aria-label", t("common.next"));
       const iconNext = document.createElement("i");
       iconNext.className = "fa-solid fa-chevron-right";
       btnNext.appendChild(iconNext);

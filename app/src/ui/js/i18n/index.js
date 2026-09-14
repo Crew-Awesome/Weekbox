@@ -4,6 +4,7 @@ import de from "../../locales/de.json";
 import id from "../../locales/id.json";
 import it from "../../locales/it.json";
 import pt from "../../locales/pt.json";
+import pl from "../../locales/pl.json";
 import fr from "../../locales/fr.json";
 import ru from "../../locales/ru.json";
 import tr from "../../locales/tr.json";
@@ -11,7 +12,7 @@ import zh from "../../locales/zh.json";
 import shared from "../../locales/shared.json";
 import { appSettings } from "../../../backend/core/system/settings.service.js";
 
-const catalogs = { en, es, de, id, it, pt, fr, ru, tr, zh };
+const catalogs = { en, es, de, id, it, pt, pl, fr, ru, tr, zh };
 const fallbackLocale = "en";
 export const LANGUAGES = [
   { id: "en", flag: "us", name: "English (United States)" },
@@ -20,6 +21,7 @@ export const LANGUAGES = [
   { id: "id", flag: "id", name: "Bahasa Indonesia" },
   { id: "it", flag: "it", name: "Italiano (Italia)" },
   { id: "pt", flag: "br", name: "Portugu\u00eas (Brasil)" },
+  { id: "pl", flag: "pl", name: "Polski" },
   { id: "fr", flag: "fr", name: "Fran\u00e7ais (France)" },
   { id: "ru", flag: "ru", name: "Russian (Russia)" },
   { id: "tr", flag: "tr", name: "Türkçe (Türkiye)" },

@@ -1,4 +1,5 @@
 import { setModalBackdrop } from "./modalBackdrop.js";
+import { t } from "../../i18n/index.js";
 
 export const modModalCarousel = {
   slideInterval: null,
@@ -21,7 +22,10 @@ export const modModalCarousel = {
       const thumb = document.createElement("button");
       thumb.type = "button";
       thumb.className = `thumbnail-wrapper ${index === 0 ? "active" : ""}`;
-      thumb.setAttribute("aria-label", `Show preview ${index + 1}`);
+      thumb.setAttribute(
+        "aria-label",
+        t("modModal.showPreview", { index: index + 1 }),
+      );
       thumb.onclick = () => this.goToSlide(index);
 
       const src = imgSrc || "assets/img/placeholder-mini.jpg";

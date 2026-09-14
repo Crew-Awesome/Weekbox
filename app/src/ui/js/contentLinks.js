@@ -64,7 +64,7 @@ function createSubmissionPill(link, recognized, onGameBanana) {
       t("modModal.loadingGameBananaDetails"),
     );
   } else {
-    const title = originalLabel || "Psych Online";
+    const title = originalLabel || t("home.psychOnline");
     setPillLabel(pill, title, t("modModal.openOnPsychOnline", { title }));
   }
 
@@ -130,8 +130,8 @@ export function enhanceContentLinks(container, { onGameBanana } = {}) {
     getDetails
       .then((details) => {
         if (!isCurrent()) return;
-        const kind = submission.type === "tool" ? "tool" : "mod";
-        const title = details?.title || originalLabel || `GameBanana ${kind}`;
+        const title =
+          details?.title || originalLabel || t("modModal.gameBananaSubmission");
         setPillLabel(
           pill,
           title,

@@ -54,7 +54,8 @@ function createMultiDropdown(label, options, selectedFilters, emptyLabel) {
     const option = document.createElement("div");
     option.className = "custom-option mod-manager-filter-option";
     option.dataset.value = value;
-    option.innerHTML = `${iconPath ? `<img src="${iconPath}" alt="">` : `<i class="fa-solid ${iconClass || "fa-filter"}" aria-hidden="true"></i>`}<span>${text(labelText)}</span><span class="mod-manager-filter-option-actions"><button type="button" data-action="include" title="Include ${text(labelText)}" aria-label="Include ${text(labelText)}"><i class="fa-solid fa-check" aria-hidden="true"></i></button><button type="button" data-action="exclude" title="Exclude ${text(labelText)}" aria-label="Exclude ${text(labelText)}"><i class="fa-solid fa-xmark" aria-hidden="true"></i></button></span>`;
+    const optionLabel = text(labelText);
+    option.innerHTML = `${iconPath ? `<img src="${iconPath}" alt="">` : `<i class="fa-solid ${iconClass || "fa-filter"}" aria-hidden="true"></i>`}<span>${optionLabel}</span><span class="mod-manager-filter-option-actions"><button type="button" data-action="include" title="${t("modManager.includeFilter", { label: optionLabel })}" aria-label="${t("modManager.includeFilter", { label: optionLabel })}"><i class="fa-solid fa-check" aria-hidden="true"></i></button><button type="button" data-action="exclude" title="${t("modManager.excludeFilter", { label: optionLabel })}" aria-label="${t("modManager.excludeFilter", { label: optionLabel })}"><i class="fa-solid fa-xmark" aria-hidden="true"></i></button></span>`;
     option.addEventListener("click", (event) => {
       const button = event.target.closest("button[data-action]");
       if (!button) return;
@@ -150,7 +151,9 @@ export function openFilterSortModal({
     ...(hasDependencies
       ? [["kind:dependency", "modManager.dependencies", "fa-puzzle-piece"]]
       : []),
-    ...(hasAddons ? [["kind:addon", "Addons", "fa-cubes"]] : []),
+    ...(hasAddons
+      ? [["kind:addon", "engineManager.customAddons", "fa-cubes"]]
+      : []),
   ];
   const engineOptions = [
     ...(hasExecutables
@@ -181,13 +184,13 @@ export function openFilterSortModal({
     t("modManager.type"),
     typeOptions,
     selectedFilters,
-    "No types available",
+    t("modManager.noTypes"),
   );
   const engineDropdown = createMultiDropdown(
     t("nav.engineManager"),
     engineOptions,
     selectedFilters,
-    "No engines available",
+    t("modManager.noEngines"),
   );
   const sortDropdown = createSortDropdown(
     selectedSort,
