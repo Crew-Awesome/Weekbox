@@ -162,4 +162,41 @@ export interface IPlatformBridge {
 
   /** Updates customized properties (name, description, engine, etc.) of an installed mod. */
   updateInstalledMod?(modId: string, updates: Record<string, any>): Promise<any | null>;
+
+  /** Downloads an engine release archive, extracts it into <basePath>/engines/<engineName>/<version>, and flattens it. */
+  downloadEngine?(
+    url: string,
+    engineId: string,
+    version: string,
+    onProgress?: DownloadProgressCallback,
+    signal?: AbortSignal
+  ): Promise<void>;
+
+  /** Checks if an engine version is installed in <basePath>/engines/<engineName>/<version>. */
+  isEngineInstalled?(
+    engineId: string,
+    version: string
+  ): Promise<boolean>;
+
+  /** Opens the installation directory for a specific engine version in the file manager. */
+  openEngineFolder?(
+    engineId: string,
+    version: string
+  ): Promise<void>;
+
+  /** Retrieves the registry of all installed engines and their versions from data/installed_engines.json. */
+  getInstalledEngines?(): Promise<Record<string, Record<string, any>>>;
+
+  /** Saves an engine version entry in data/installed_engines.json with installation date and metadata. */
+  registerInstalledEngine?(
+    engineId: string,
+    version: string,
+    metadata?: Record<string, any>
+  ): Promise<void>;
+
+  /** Uninstalls an engine version: deletes its files and removes its entry from installed_engines.json. */
+  uninstallEngine?(
+    engineId: string,
+    version: string
+  ): Promise<void>;
 }

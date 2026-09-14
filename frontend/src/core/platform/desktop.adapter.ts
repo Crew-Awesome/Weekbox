@@ -608,5 +608,360 @@ export class DesktopAdapter implements IPlatformBridge {
 
     return updatedEntry;
   }
+
+  /**
+   * Downloads an engine release archive, extracts it into <basePath>/engines/<engineName>/<version>, and flattens it.
+   */
+  async downloadEngine(
+    url: string,
+    engineId: string,
+    version: string,
+    onProgress?: DownloadProgressCallback,
+    signal?: AbortSignal
+  ): Promise<void> {
+    let basePath = window.NL_CWD || window.NL_PATH || "";
+    try {
+      if (window.Neutralino?.os?.getPath) {
+        const dataPath = await window.Neutralino.os.getPath("data");
+        basePath = `${dataPath}/WeekBox`;
+      }
+    } catch (e) {
+      console.warn("Could not get OS data path, falling back to CWD");
+    }
+
+    basePath = basePath.replace(/\\/g, "/");
+
+    const safeEngineId = (engineId || "vslice")
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .replace(/[^a-zA-Z0-9_-]/g, "")
+      .toLowerCase();
+
+    const safeVersion = (version || "latest")
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .replace(/[^a-zA-Z0-9._-]/g, "");
+
+    const enginesDir = `${basePath}/engines`;
+    const engineDir = `${enginesDir}/${safeEngineId}`;
+    const targetFolder = `${engineDir}/${safeVersion}`;
+    const tempArchivePath = `${enginesDir}/_temp_engine_${safeEngineId}_${safeVersion}.zip`;
+
+    console.log(`Downloading engine to ${tempArchivePath} for extraction into ${targetFolder}`);
+
+    let unsubscribe: (() => void) | undefined;
+    const progressId = `dl_engine_${Date.now()}_${Math.random()}`;
+
+    if (onProgress) {
+      unsubscribe = this.onEvent("download:progress", (data: any) => {
+        if (data && data.progressId === progressId) {
+          if (
+            data.flattening ||
+            data.status === DownloadStatus.FLATTENING ||
+            data.status === "Flattening folder structure..."
+          ) {
+            onProgress(99, DownloadStatus.FLATTENING);
+            return;
+          }
+
+          if (data.currentFile) {
+            onProgress(99, DownloadStatus.EXTRACTING, {
+              currentFile: data.currentFile,
+            });
+            return;
+          }
+
+          let percent = 0;
+          if (data.total > 0) {
+            percent = Math.min(98, Math.round((data.downloaded / data.total) * 98));
+          } else {
+            percent = Math.min(98, Math.round(data.downloaded / (1024 * 1024)));
+          }
+          onProgress(percent, "Downloading...", {
+            downloaded: data.downloaded,
+            total: data.total,
+          });
+        }
+      });
+    }
+
+    try {
+      await this.call("fs.createDirectory" as any, { path: enginesDir }).catch(() => {});
+      await this.call("fs.createDirectory" as any, { path: engineDir }).catch(() => {});
+      await this.call("fs.createDirectory" as any, { path: targetFolder }).catch(() => {});
+
+      await this.call("http.downloadToFile" as any, {
+        url,
+        destPath: tempArchivePath,
+        progressId,
+        options: {},
+      }, signal, 0);
+
+      if (signal?.aborted) {
+        await this.call("fs.remove" as any, { path: tempArchivePath }).catch(() => {});
+        return;
+      }
+
+      onProgress?.(99, DownloadStatus.EXTRACTING);
+
+      await this.call("fs.extractArchive" as any, {
+        archivePath: tempArchivePath,
+        destFolder: targetFolder,
+        progressId,
+      }, signal, 0);
+
+      await this.call("fs.remove" as any, { path: tempArchivePath }).catch(() => {});
+
+      onProgress?.(99, DownloadStatus.FLATTENING);
+      await this.call("fs.flattenFolder" as any, { path: targetFolder, progressId }, signal, 0).catch(() => {});
+
+      await this.registerInstalledEngine(safeEngineId, safeVersion, {
+        downloadUrl: url,
+        installedAt: new Date().toISOString(),
+      });
+
+      onProgress?.(100, DownloadStatus.COMPLETED);
+
+      if (typeof window !== "undefined") {
+        const sysEnabled = localStorage.getItem("wb_system_notifications") !== "false";
+        const isUnfocused = typeof document !== "undefined" && (!document.hasFocus() || document.hidden);
+        if (sysEnabled && isUnfocused) {
+          try {
+            await this.call("notification.show" as any, {
+              title: "Engine Installed",
+              content: `${engineId} v${version} has been downloaded and installed.`,
+              icon: "INFO",
+            });
+          } catch (notifErr) {
+            console.warn("Could not dispatch system notification on engine download finish:", notifErr);
+          }
+        }
+      }
+    } catch (error: any) {
+      await this.call("fs.remove" as any, { path: tempArchivePath }).catch(() => {});
+      if (error?.message !== "Cancelled") {
+        console.error(`[Download/Extract Failed] Engine "${engineId}" v${version}:`, error);
+      }
+      throw error;
+    } finally {
+      if (unsubscribe) unsubscribe();
+    }
+  }
+
+  /**
+   * Checks if an engine version is installed in <basePath>/engines/<engineName>/<version>.
+   */
+  async isEngineInstalled(engineId: string, version: string): Promise<boolean> {
+    let basePath = window.NL_CWD || window.NL_PATH || "";
+    try {
+      if (window.Neutralino?.os?.getPath) {
+        const dataPath = await window.Neutralino.os.getPath("data");
+        basePath = `${dataPath}/WeekBox`;
+      }
+    } catch (e) {}
+    basePath = basePath.replace(/\\/g, "/");
+
+    const safeEngineId = (engineId || "vslice")
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .replace(/[^a-zA-Z0-9_-]/g, "")
+      .toLowerCase();
+
+    const safeVersion = (version || "latest")
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .replace(/[^a-zA-Z0-9._-]/g, "");
+
+    const targetFolder = `${basePath}/engines/${safeEngineId}/${safeVersion}`;
+
+    try {
+      const stats = await this.call("fs.getStats" as any, { path: targetFolder });
+      return Boolean(stats && stats.isDirectory);
+    } catch {
+      return false;
+    }
+  }
+
+  /**
+   * Opens the directory for a specific engine version in the system file manager.
+   */
+  async openEngineFolder(engineId: string, version: string): Promise<void> {
+    let basePath = window.NL_CWD || window.NL_PATH || "";
+    try {
+      if (window.Neutralino?.os?.getPath) {
+        const dataPath = await window.Neutralino.os.getPath("data");
+        basePath = `${dataPath}/WeekBox`;
+      }
+    } catch (e) {}
+    basePath = basePath.replace(/\\/g, "/");
+
+    const safeEngineId = (engineId || "vslice")
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .replace(/[^a-zA-Z0-9_-]/g, "")
+      .toLowerCase();
+
+    const safeVersion = (version || "latest")
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .replace(/[^a-zA-Z0-9._-]/g, "");
+
+    const targetFolder = `${basePath}/engines/${safeEngineId}/${safeVersion}`;
+
+    if (window.Neutralino?.os?.open) {
+      await window.Neutralino.os.open(targetFolder);
+    }
+  }
+
+  /**
+   * Retrieves the registry of all installed engines from data/installed_engines.json.
+   */
+  async getInstalledEngines(): Promise<Record<string, Record<string, any>>> {
+    let basePath = window.NL_CWD || window.NL_PATH || "";
+    try {
+      if (window.Neutralino?.os?.getPath) {
+        const dataPath = await window.Neutralino.os.getPath("data");
+        basePath = `${dataPath}/WeekBox`;
+      }
+    } catch (e) {}
+    basePath = basePath.replace(/\\/g, "/");
+
+    const registryPath = `${basePath}/data/installed_engines.json`;
+
+    try {
+      const raw = await this.call("fs.readFile" as any, { path: registryPath });
+      const parsed = JSON.parse(raw as unknown as string);
+      return parsed && typeof parsed === "object" ? parsed : {};
+    } catch {
+      return {};
+    }
+  }
+
+  /**
+   * Records an engine version installation in data/installed_engines.json.
+   */
+  async registerInstalledEngine(
+    engineId: string,
+    version: string,
+    metadata?: Record<string, any>
+  ): Promise<void> {
+    let basePath = window.NL_CWD || window.NL_PATH || "";
+    try {
+      if (window.Neutralino?.os?.getPath) {
+        const dataPath = await window.Neutralino.os.getPath("data");
+        basePath = `${dataPath}/WeekBox`;
+      }
+    } catch (e) {}
+    basePath = basePath.replace(/\\/g, "/");
+
+    const dataDir = `${basePath}/data`;
+    const registryPath = `${dataDir}/installed_engines.json`;
+
+    const safeEngineId = (engineId || "vslice")
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .replace(/[^a-zA-Z0-9_-]/g, "")
+      .toLowerCase();
+
+    const safeVersion = (version || "latest")
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .replace(/[^a-zA-Z0-9._-]/g, "");
+
+    let registry: Record<string, Record<string, any>> = {};
+    try {
+      const raw = await this.call("fs.readFile" as any, { path: registryPath });
+      registry = JSON.parse(raw as unknown as string) || {};
+    } catch {}
+
+    if (!registry[safeEngineId]) {
+      registry[safeEngineId] = {};
+    }
+
+    const entry = {
+      engineId: safeEngineId,
+      version: safeVersion,
+      installedAt: metadata?.installedAt || new Date().toISOString(),
+      path: `engines/${safeEngineId}/${safeVersion}`,
+      ...metadata,
+    };
+
+    registry[safeEngineId][safeVersion] = entry;
+
+    try {
+      await this.call("fs.createDirectory" as any, { path: dataDir }).catch(() => {});
+      await this.call("fs.writeFile" as any, {
+        path: registryPath,
+        content: JSON.stringify(registry, null, 2),
+      });
+
+      this.emitLocalEvent("engines:changed", { action: "installed", engine: entry });
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(
+          new CustomEvent("wb:engines-changed", { detail: { action: "installed", engine: entry } })
+        );
+      }
+    } catch (err) {
+      console.warn("Could not save installed engines registry:", err);
+    }
+  }
+
+  /**
+   * Uninstalls an engine version, removing its files and updating data/installed_engines.json.
+   */
+  async uninstallEngine(engineId: string, version: string): Promise<void> {
+    let basePath = window.NL_CWD || window.NL_PATH || "";
+    try {
+      if (window.Neutralino?.os?.getPath) {
+        const dataPath = await window.Neutralino.os.getPath("data");
+        basePath = `${dataPath}/WeekBox`;
+      }
+    } catch (e) {}
+    basePath = basePath.replace(/\\/g, "/");
+
+    const safeEngineId = (engineId || "vslice")
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .replace(/[^a-zA-Z0-9_-]/g, "")
+      .toLowerCase();
+
+    const safeVersion = (version || "latest")
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .replace(/[^a-zA-Z0-9._-]/g, "");
+
+    const targetFolder = `${basePath}/engines/${safeEngineId}/${safeVersion}`;
+    const registryPath = `${basePath}/data/installed_engines.json`;
+
+    try {
+      await this.call("fs.remove" as any, { path: targetFolder }).catch(() => {});
+    } catch (delErr) {
+      console.warn(`Could not delete engine files at ${targetFolder}:`, delErr);
+    }
+
+    try {
+      const raw = await this.call("fs.readFile" as any, { path: registryPath });
+      const registry = JSON.parse(raw as unknown as string) || {};
+      if (registry[safeEngineId] && registry[safeEngineId][safeVersion]) {
+        delete registry[safeEngineId][safeVersion];
+        if (Object.keys(registry[safeEngineId]).length === 0) {
+          delete registry[safeEngineId];
+        }
+        await this.call("fs.writeFile" as any, {
+          path: registryPath,
+          content: JSON.stringify(registry, null, 2),
+        });
+      }
+    } catch {}
+
+    this.emitLocalEvent("engines:changed", { action: "uninstalled", engineId: safeEngineId, version: safeVersion });
+    if (typeof window !== "undefined") {
+      window.dispatchEvent(
+        new CustomEvent("wb:engines-changed", {
+          detail: { action: "uninstalled", engineId: safeEngineId, version: safeVersion },
+        })
+      );
+    }
+  }
 }
 

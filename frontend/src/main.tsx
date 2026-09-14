@@ -79,6 +79,7 @@ if (rootElement) {
             <Route path="library" element={<Features.Library />} />
             <Route path="library/*" element={<Features.Library />} />
             <Route path="instances" element={<Features.Instances />} />
+            <Route path="instances/*" element={<Features.Instances />} />
             <Route path="engines" element={<Navigate to="/instances" replace />} />
             <Route path="*" element={<Navigate to="/home" replace />} />
           </Route>

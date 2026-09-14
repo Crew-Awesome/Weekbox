@@ -183,4 +183,76 @@ export class WebAdapter implements IPlatformBridge {
     }
     return null;
   }
+
+  /**
+   * Stub for downloading engine in web environment.
+   */
+  async downloadEngine(
+    url: string,
+    _engineId: string,
+    _version: string,
+    _onProgress?: DownloadProgressCallback,
+    _signal?: AbortSignal
+  ): Promise<void> {
+    window.open(url, "_blank");
+  }
+
+  /**
+   * Stub for checking if an engine is installed in web environment.
+   */
+  async isEngineInstalled(_engineId: string, _version: string): Promise<boolean> {
+    return false;
+  }
+
+  /**
+   * Stub for opening engine directory in web environment.
+   */
+  async openEngineFolder(_engineId: string, _version: string): Promise<void> {}
+
+  /**
+   * Retrieves installed engines registry from localStorage.
+   */
+  async getInstalledEngines(): Promise<Record<string, Record<string, any>>> {
+    try {
+      const raw = localStorage.getItem("wb_installed_engines");
+      return raw ? JSON.parse(raw) : {};
+    } catch {
+      return {};
+    }
+  }
+
+  /**
+   * Saves installed engine registry entry to localStorage.
+   */
+  async registerInstalledEngine(
+    engineId: string,
+    version: string,
+    metadata?: Record<string, any>
+  ): Promise<void> {
+    const registry = await this.getInstalledEngines();
+    if (!registry[engineId]) registry[engineId] = {};
+    registry[engineId][version] = {
+      engineId,
+      version,
+      installedAt: metadata?.installedAt || new Date().toISOString(),
+      ...metadata,
+    };
+    localStorage.setItem("wb_installed_engines", JSON.stringify(registry));
+    this.emitLocalEvent("engines:changed", { action: "installed", engine: registry[engineId][version] });
+  }
+
+  /**
+   * Removes installed engine registry entry from localStorage.
+   */
+  async uninstallEngine(engineId: string, version: string): Promise<void> {
+    const registry = await this.getInstalledEngines();
+    if (registry[engineId] && registry[engineId][version]) {
+      delete registry[engineId][version];
+      if (Object.keys(registry[engineId]).length === 0) {
+        delete registry[engineId];
+      }
+      localStorage.setItem("wb_installed_engines", JSON.stringify(registry));
+      this.emitLocalEvent("engines:changed", { action: "uninstalled", engineId, version });
+    }
+  }
 }
