@@ -263,6 +263,9 @@ function buildModDetails(
     title: data._sName,
     author: data._aSubmitter?._sName || "Unknown Creator",
     authorId: data._aSubmitter?._idRow || null,
+    authorAvatar: data._aSubmitter?._sAvatarUrl || "",
+    credits: getModCredits(data),
+    requirementLinks: getRequirementLinks(data),
     description: data._sText || "<p>No description available.</p>",
     likes: data._nLikeCount || 0,
     views: data._nViewCount || 0,
@@ -283,6 +286,50 @@ function buildModDetails(
     gameBananaUrl: `https://gamebanana.com/mods/${data._idRow}`,
     ...getModClassification(api, data),
   };
+}
+
+function getModCredits(data) {
+  return (Array.isArray(data?._aCredits) ? data._aCredits : [])
+    .map((group) => ({
+      name: group._sGroupName || "Contributors",
+      authors: (Array.isArray(group._aAuthors) ? group._aAuthors : [])
+        .map((author) => ({
+          id:
+            author._idRow ||
+            (author._sProfileUrl || author._sUrl)?.match(
+              /\/members\/(\d+)(?:\/|$)/i,
+            )?.[1] ||
+            null,
+          name: author._sName || "Unknown Contributor",
+          role: author._sRole || "",
+          avatar: author._sAvatarUrl || author._sUpicUrl || "",
+          url: author._sUrl || "",
+        }))
+        .filter((author) => author.name),
+    }))
+    .filter((group) => group.authors.length);
+}
+
+function getRawRequirements(data) {
+  if (Array.isArray(data?._aRequirements)) return data._aRequirements;
+  if (Array.isArray(data?._aRequirements?.value))
+    return data._aRequirements.value;
+  return [];
+}
+
+function getRequirementLinks(data) {
+  const rawRequirements = getRawRequirements(data);
+  const requirements = Array.isArray(rawRequirements[0])
+    ? rawRequirements
+    : rawRequirements.length >= 2
+      ? [rawRequirements]
+      : [];
+  return requirements
+    .filter(
+      ([name, url]) =>
+        name && isDependencySubmission(url, NON_DEPENDENCY_REQUIREMENTS),
+    )
+    .map(([name, url]) => ({ title: name, url }));
 }
 
 function appendRipeMods(api, feed, records, targetCategoryId) {
@@ -754,9 +801,12 @@ export const gameBananaApi = {
   },
 
   async getRequirements(data) {
-    const requirements = Array.isArray(data?._aRequirements)
-      ? data._aRequirements
-      : [];
+    const rawRequirements = getRawRequirements(data);
+    const requirements = Array.isArray(rawRequirements[0])
+      ? rawRequirements
+      : rawRequirements.length >= 2
+        ? [rawRequirements]
+        : [];
     const resolved = await Promise.all(
       requirements
         .filter(([, url]) =>

@@ -123,8 +123,6 @@
   "settings.clearLibrarySecondDescription": "WeekBox will close running engines and standalone mods before deleting the {{target}}.",
   "settings.clearLibraryFinalTitle": "ARE YOU REALLY SURE?",
   "settings.clearLibraryFinalDescription": "THIS WILL PERMANENTLY DELETE ALL INSTALLED {{target}}.",
-  "settings.clearLibraryCancel": "Cancel",
-  "settings.clearLibraryContinue": "Continue",
   "settings.clearLibraryUnderstand": "I understand",
   "settings.clearLibraryFinalButton": "DELETE ALL {{target}}",
   "settings.clearLibraryDeleting": "Deleting…",

@@ -1346,6 +1346,21 @@
       aria-modal="true"
       aria-labelledby="modal-title"
     >
+      <div
+        class="modal-info-loader"
+        id="modal-info-loader"
+        role="status"
+        aria-live="polite"
+      >
+        <l-hourglass
+          class="weekbox-hourglass"
+          size="32"
+          color="currentColor"
+          speed="1.75"
+          bg-opacity="0.12"
+          aria-hidden="true"
+        ></l-hourglass>
+      </div>
       <main class="modal-main">
         <div class="modal-main-image-wrapper">
           <img
@@ -1393,22 +1408,6 @@
           <i class="fa-solid fa-xmark" aria-hidden="true"></i>
         </button>
 
-        <div
-          class="modal-info-loader"
-          id="modal-info-loader"
-          role="status"
-          aria-live="polite"
-        >
-          <l-hourglass
-            class="weekbox-hourglass"
-            size="32"
-            color="currentColor"
-            speed="1.75"
-            bg-opacity="0.12"
-            aria-hidden="true"
-          ></l-hourglass>
-        </div>
-
         <div class="modal-header-info">
           <h2 id="modal-title" data-i18n="common.loading">Loading...</h2>
           <button
@@ -1419,47 +1418,153 @@
           >
             by ---
           </button>
-          <div class="modal-engine-badge" id="modal-engine-badge" hidden>
-            <img id="modal-engine-icon" src="" alt="" />
-            <span id="modal-engine-name"></span>
-          </div>
-
-          <div class="modal-dates">
-            <span class="modal-date" data-i18n-attr="title:modModal.submitted">
-              <i class="fa-regular fa-clock" aria-hidden="true"></i>
-              <span id="modal-time">--</span>
-            </span>
-            <span
-              class="modal-date"
-              id="modal-modified-date"
-              data-i18n-attr="title:modModal.modified"
-            >
-              <i class="fa-solid fa-pen" aria-hidden="true"></i>
-              <span id="modal-modified-time">--</span>
-            </span>
-            <span
-              class="modal-date"
-              id="modal-updated-date"
-              data-i18n-attr="title:modModal.updated"
-            >
-              <i class="fa-solid fa-rotate" aria-hidden="true"></i>
-              <span id="modal-updated-time">--</span>
-            </span>
-          </div>
-
-          <div class="modal-stats">
-            <span
-              ><i class="fa-solid fa-heart"></i>
-              <span id="modal-likes">--</span></span
-            >
-            <span
-              ><i class="fa-solid fa-eye" id="modal-views-icon"></i>
-              <span id="modal-views">--</span></span
-            >
-          </div>
         </div>
 
-        <div class="modal-description" id="modal-description"></div>
+        <nav class="modal-tabs" role="tablist" aria-label="Mod information">
+          <button
+            class="modal-tab"
+            id="modal-tab-description"
+            type="button"
+            role="tab"
+            aria-selected="true"
+            aria-controls="modal-panel-description"
+            data-modal-tab="description"
+            data-i18n="modModal.tabDescription"
+          >
+            Description
+          </button>
+          <button
+            class="modal-tab"
+            id="modal-tab-contributors"
+            type="button"
+            role="tab"
+            aria-selected="false"
+            aria-controls="modal-panel-contributors"
+            data-modal-tab="contributors"
+            data-i18n="modModal.tabContributors"
+          >
+            Contributors
+          </button>
+          <button
+            class="modal-tab"
+            id="modal-tab-details"
+            type="button"
+            role="tab"
+            aria-selected="false"
+            aria-controls="modal-panel-details"
+            data-modal-tab="details"
+            data-i18n="modModal.tabDetails"
+          >
+            Details
+          </button>
+        </nav>
+
+        <div class="modal-tab-panels">
+          <section
+            class="modal-tab-panel modal-tab-panel--description"
+            id="modal-panel-description"
+            role="tabpanel"
+            aria-labelledby="modal-tab-description"
+            data-modal-panel="description"
+          >
+            <div class="modal-description" id="modal-description"></div>
+          </section>
+          <section
+            class="modal-tab-panel modal-tab-panel--contributors"
+            id="modal-panel-contributors"
+            role="tabpanel"
+            aria-labelledby="modal-tab-contributors"
+            data-modal-panel="contributors"
+            hidden
+          >
+            <div class="modal-contributors" id="modal-contributors">
+              <div class="modal-credit-groups" id="modal-credit-groups"></div>
+              <p
+                class="modal-empty-state"
+                id="modal-no-credits"
+                data-i18n="modModal.noContributors"
+                hidden
+              >
+                No contributor information available.
+              </p>
+            </div>
+          </section>
+          <section
+            class="modal-tab-panel modal-tab-panel--details"
+            id="modal-panel-details"
+            role="tabpanel"
+            aria-labelledby="modal-tab-details"
+            data-modal-panel="details"
+            hidden
+          >
+            <div class="modal-details">
+              <div class="modal-detail-list">
+                <div
+                  class="modal-detail-row modal-engine-badge"
+                  id="modal-engine-badge"
+                  hidden
+                >
+                  <span class="modal-detail-icon">
+                    <img id="modal-engine-icon" src="" alt="" />
+                  </span>
+                  <span data-i18n="common.engine">Engine</span>
+                  <strong id="modal-engine-name"></strong>
+                </div>
+                <div
+                  class="modal-detail-row"
+                  id="modal-submitted-date"
+                  data-i18n-attr="title:modModal.submitted"
+                >
+                  <i class="fa-regular fa-clock" aria-hidden="true"></i>
+                  <span data-i18n="modModal.submitted">Submitted</span>
+                  <strong id="modal-time">--</strong>
+                </div>
+                <div
+                  class="modal-detail-row"
+                  id="modal-modified-date"
+                  data-i18n-attr="title:modModal.modified"
+                >
+                  <i class="fa-solid fa-pen" aria-hidden="true"></i>
+                  <span data-i18n="modModal.modified">Modified</span>
+                  <strong id="modal-modified-time">--</strong>
+                </div>
+                <div
+                  class="modal-detail-row"
+                  id="modal-updated-date"
+                  data-i18n-attr="title:modModal.updated"
+                >
+                  <i class="fa-solid fa-rotate" aria-hidden="true"></i>
+                  <span data-i18n="modModal.updated">Updated</span>
+                  <strong id="modal-updated-time">--</strong>
+                </div>
+              </div>
+              <div class="modal-detail-metrics">
+                <div class="modal-detail-metric">
+                  <i class="fa-solid fa-heart" aria-hidden="true"></i>
+                  <span data-i18n="modModal.likes">Likes</span>
+                  <strong id="modal-likes">--</strong>
+                </div>
+                <div class="modal-detail-metric">
+                  <i
+                    class="fa-solid fa-eye"
+                    id="modal-views-icon"
+                    aria-hidden="true"
+                  ></i>
+                  <span data-i18n="modModal.views">Views</span>
+                  <strong id="modal-views">--</strong>
+                </div>
+              </div>
+              <section
+                class="modal-requirements"
+                id="modal-requirements-section"
+                hidden
+              >
+                <h4 data-i18n="modModal.requirements">Requirements</h4>
+                <ul id="modal-requirements"></ul>
+              </section>
+            </div>
+          </section>
+        </div>
 
         <div class="modal-footer-actions">
           <div class="modal-file-info">
@@ -1489,6 +1594,21 @@
       aria-modal="true"
       aria-labelledby="modal-profile-name"
     >
+      <div
+        class="modal-info-loader"
+        id="profile-info-loader"
+        role="status"
+        aria-live="polite"
+      >
+        <l-hourglass
+          class="weekbox-hourglass"
+          size="32"
+          color="currentColor"
+          speed="1.75"
+          bg-opacity="0.12"
+          aria-hidden="true"
+        ></l-hourglass>
+      </div>
       <header class="mod-profile-header">
         <button
           class="mod-profile-back-btn"
@@ -1509,9 +1629,9 @@
           <i class="fa-solid fa-xmark" aria-hidden="true"></i>
         </button>
         <img
-          class="mod-profile-avatar"
+          class="mod-profile-avatar is-weekbox-avatar"
           id="modal-profile-avatar"
-          src="assets/img/placeholder-mini.jpg"
+          src="assets/icons/launcher-icon.png"
           alt=""
         />
         <h2 id="modal-profile-name">Loading...</h2>

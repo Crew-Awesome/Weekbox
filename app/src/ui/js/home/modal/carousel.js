@@ -55,7 +55,8 @@ export const modModalCarousel = {
       0,
       Math.min(this.currentIndex, this.images.length - 1),
     );
-    const imageSrc = this.images[this.currentIndex] || "assets/img/placeholder-mini.jpg";
+    const imageSrc =
+      this.images[this.currentIndex] || "assets/img/placeholder-mini.jpg";
     setModalBackdrop(document.getElementById("mod-modal"), imageSrc);
 
     mainImg.classList.remove("fade-anim");

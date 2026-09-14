@@ -123,8 +123,6 @@
   "settings.clearLibrarySecondDescription": "WeekBox fermera les engines en cours et les mods individuels avant de supprimer les {{target}}.",
   "settings.clearLibraryFinalTitle": "ÊTES-VOUS VRAIMENT SÛR ?",
   "settings.clearLibraryFinalDescription": "CECI SUPPRIMERA DÉFINITIVEMENT TOUS LES {{target}} INSTALLÉS.",
-  "settings.clearLibraryCancel": "Annuler",
-  "settings.clearLibraryContinue": "Continuer",
   "settings.clearLibraryUnderstand": "Je comprends",
   "settings.clearLibraryFinalButton": "SUPPRIMER TOUS LES {{target}}",
   "settings.clearLibraryDeleting": "Suppression en cours…",

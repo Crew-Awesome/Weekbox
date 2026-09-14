@@ -10,7 +10,29 @@ import { setModalBackdrop } from "./modalBackdrop.js";
 import { modModal } from "./index.js";
 import { homeCarousel } from "../carousel.js";
 import { getEngineLabel, i18n, t } from "../../i18n/index.js";
-import { createLoadingState, setButtonLoading } from "../../hourglass.js";
+import { setButtonLoading } from "../../hourglass.js";
+
+const WEEKBOX_AVATAR = "assets/icons/launcher-icon.png";
+
+function isFallbackAvatar(url) {
+  return (
+    !url ||
+    /(?:static\/img\/defaults\/avatar\.gif|(?:assets\/)?img\/placeholder-mini\.jpg)/i.test(
+      url,
+    )
+  );
+}
+
+function setAvatarImage(image, url) {
+  const fallback = isFallbackAvatar(url);
+  image.classList.toggle("is-weekbox-avatar", fallback);
+  image.src = fallback ? WEEKBOX_AVATAR : url;
+  image.onerror = () => {
+    image.onerror = null;
+    image.classList.add("is-weekbox-avatar");
+    image.src = WEEKBOX_AVATAR;
+  };
+}
 
 function setModalDownloadButton(button, iconClass, text, disabled = false) {
   if (!button) return;
@@ -18,6 +40,27 @@ function setModalDownloadButton(button, iconClass, text, disabled = false) {
   const icon = document.createElement("i");
   icon.className = iconClass;
   button.replaceChildren(icon, document.createTextNode(" " + text));
+}
+
+function setModalTab(tabName = "description") {
+  const modal = document.getElementById("mod-modal");
+  if (!modal) return;
+  modal.querySelectorAll(".modal-tab").forEach((tab) => {
+    const selected = tab.dataset.modalTab === tabName;
+    tab.classList.toggle("is-active", selected);
+    tab.setAttribute("aria-selected", String(selected));
+  });
+  modal.querySelectorAll(".modal-tab-panel").forEach((panel) => {
+    const selected = panel.dataset.modalPanel === tabName;
+    panel.hidden = !selected;
+    panel.classList.toggle("is-active", selected);
+  });
+}
+
+function bindModalTabs(modal) {
+  modal.querySelectorAll(".modal-tab").forEach((tab) => {
+    tab.onclick = () => setModalTab(tab.dataset.modalTab);
+  });
 }
 
 async function ensureModal(onClose, onProfileBack) {
@@ -33,6 +76,7 @@ async function ensureModal(onClose, onProfileBack) {
   }
   const modal = document.getElementById("mod-modal");
   const profileModal = document.getElementById("mod-profile-modal");
+  bindModalTabs(modal);
   [modal, profileModal].forEach((element) => {
     i18n.apply(element);
     element.querySelectorAll(".modal-close-btn").forEach((closeBtn) => {
@@ -84,6 +128,7 @@ function hideModal(modalId = "mod-modal") {
 function resetModal() {
   setModalBackdrop(document.getElementById("mod-modal"), "");
   setModalInfoLoading(true);
+  setModalTab("description");
   ["modal-title", "modal-author", "modal-description"].forEach((id) => {
     const el = document.getElementById(id);
     if (el) el.textContent = "";
@@ -126,6 +171,16 @@ function resetModal() {
     authorEl.disabled = true;
     authorEl.onclick = null;
   }
+  const creditGroups = document.getElementById("modal-credit-groups");
+  const creditEmpty = document.getElementById("modal-no-credits");
+  if (creditGroups) creditGroups.replaceChildren();
+  if (creditEmpty) creditEmpty.hidden = false;
+  const requirements = document.getElementById("modal-requirements");
+  const requirementsSection = document.getElementById(
+    "modal-requirements-section",
+  );
+  if (requirements) requirements.replaceChildren();
+  if (requirementsSection) requirementsSection.hidden = true;
   const viewsIcon = document.getElementById("modal-views-icon");
   if (viewsIcon) viewsIcon.className = "fa-solid fa-eye";
   const thumbs = document.getElementById("modal-thumbnails");
@@ -151,8 +206,8 @@ function resetModal() {
   if (engineName) engineName.textContent = "";
 }
 
-function setModalInfoLoading(loading) {
-  const loader = document.getElementById("modal-info-loader");
+function setModalInfoLoading(loading, loaderId = "modal-info-loader") {
+  const loader = document.getElementById(loaderId);
   if (loader) loader.hidden = !loading;
 }
 
@@ -216,41 +271,33 @@ function renderModalDescription(description, data) {
 }
 
 function resetProfileModal() {
+  setModalInfoLoading(true, "profile-info-loader");
   const profileName = document.getElementById("modal-profile-name");
   const profileAvatar = document.getElementById("modal-profile-avatar");
   const profileLink = document.getElementById("modal-profile-link");
   const profileBack = document.getElementById("modal-profile-back");
   const profileGrid = document.getElementById("modal-profile-grid");
   if (profileName) profileName.textContent = t("common.loading");
-  if (profileAvatar) profileAvatar.src = "assets/img/placeholder-mini.jpg";
+  if (profileAvatar) {
+    profileAvatar.classList.add("is-weekbox-avatar");
+    profileAvatar.src = WEEKBOX_AVATAR;
+  }
   if (profileLink) profileLink.hidden = true;
   if (profileBack) profileBack.hidden = true;
   if (profileGrid) {
     profileGrid.className = "grid-layout mod-profile-grid";
     profileGrid.replaceChildren();
-    profileGrid.appendChild(
-      createLoadingState(
-        t("modModal.loadingProfile"),
-        28,
-        "mod-profile-status",
-      ),
-    );
   }
 }
 
 function showProfileData(profile, mods) {
+  setModalInfoLoading(false, "profile-info-loader");
   const profileName = document.getElementById("modal-profile-name");
   const profileAvatar = document.getElementById("modal-profile-avatar");
   const profileLink = document.getElementById("modal-profile-link");
   const profileGrid = document.getElementById("modal-profile-grid");
   if (profileName) profileName.textContent = profile.username;
-  if (profileAvatar && profile.avatar) {
-    profileAvatar.src = profile.avatar;
-    profileAvatar.onerror = () => {
-      profileAvatar.onerror = null;
-      profileAvatar.src = "assets/img/placeholder-mini.jpg";
-    };
-  }
+  if (profileAvatar) setAvatarImage(profileAvatar, profile.avatar);
   if (profileLink) {
     profileLink.href = profile.profileUrl;
     profileLink.hidden = false;
@@ -302,11 +349,107 @@ function updateModalAuthor(data) {
     : null;
 }
 
+function updateModalContributors(data) {
+  const groups = document.getElementById("modal-credit-groups");
+  const empty = document.getElementById("modal-no-credits");
+  if (!groups) return;
+  groups.replaceChildren();
+  const credits = Array.isArray(data.credits) ? data.credits : [];
+  if (empty) empty.hidden = credits.length > 0;
+  const fragment = document.createDocumentFragment();
+  credits.forEach((group) => {
+    const section = document.createElement("section");
+    section.className = "modal-credit-group";
+    const heading = document.createElement("h4");
+    heading.className = "modal-credit-group-title";
+    heading.textContent = group.name;
+    const list = document.createElement("div");
+    list.className = "modal-credit-list";
+    group.authors.forEach((author) => {
+      const row = document.createElement("div");
+      row.className = "modal-credit-row";
+      const avatar = document.createElement("img");
+      avatar.className = "modal-credit-avatar";
+      avatar.alt = "";
+      avatar.loading = "lazy";
+      if (!author.id && !author.url) avatar.classList.add("is-unlinked");
+      setAvatarImage(avatar, author.avatar);
+      const info = document.createElement("div");
+      info.className = "modal-credit-info";
+      const nameRow = document.createElement("div");
+      nameRow.className = "modal-credit-name-row";
+      const name = author.id
+        ? document.createElement("button")
+        : document.createElement("span");
+      name.className = "modal-credit-name";
+      name.textContent = author.name;
+      nameRow.appendChild(name);
+      if (author.id) {
+        name.type = "button";
+        name.onclick = () => modModal.openAuthor(author.id);
+      } else if (author.url) {
+        const link = document.createElement("a");
+        link.className = "modal-credit-link";
+        link.href = author.url;
+        link.target = "_blank";
+        link.rel = "noreferrer";
+        link.setAttribute("aria-label", t("common.openOnWebsite"));
+        link.title = t("common.openOnWebsite");
+        link.innerHTML = '<i class="fa-solid fa-link" aria-hidden="true"></i>';
+        link.onclick = (event) => {
+          event.preventDefault();
+          Neutralino.os.open(author.url).catch(() => {});
+        };
+        nameRow.appendChild(link);
+      }
+      info.appendChild(nameRow);
+      if (author.role) {
+        const role = document.createElement("span");
+        role.className = "modal-credit-role";
+        role.textContent = author.role;
+        info.appendChild(role);
+      }
+      row.append(avatar, info);
+      list.appendChild(row);
+    });
+    section.append(heading, list);
+    fragment.appendChild(section);
+  });
+  groups.appendChild(fragment);
+}
+
+function updateModalRequirements(data) {
+  const section = document.getElementById("modal-requirements-section");
+  const list = document.getElementById("modal-requirements");
+  if (!section || !list) return;
+  list.replaceChildren();
+  const requirements = Array.isArray(data.requirementLinks)
+    ? data.requirementLinks
+    : [];
+  section.hidden = requirements.length === 0;
+  requirements.forEach((requirement) => {
+    const item = document.createElement("li");
+    const link = document.createElement("a");
+    link.href = requirement.url;
+    link.textContent = requirement.title;
+    link.target = "_blank";
+    link.rel = "noreferrer";
+    link.onclick = (event) => {
+      event.preventDefault();
+      Neutralino.os.open(requirement.url).catch(() => {});
+    };
+    item.appendChild(link);
+    list.appendChild(item);
+  });
+}
+
 function showModData(data, isInstalled, onDownload) {
   setModalInfoLoading(false);
   const titleEl = document.getElementById("modal-title");
   if (titleEl) titleEl.textContent = data.title;
   updateModalAuthor(data);
+  updateModalContributors(data);
+  updateModalRequirements(data);
   const timeEl = document.getElementById("modal-time");
   if (timeEl) timeEl.textContent = data.submittedTimeAgo || data.timeAgo;
   [
@@ -427,6 +570,7 @@ export {
   hideModal,
   resetModal,
   resetProfileModal,
+  setModalTab,
   setModalInfoLoading,
   showProfileData,
   showModData,

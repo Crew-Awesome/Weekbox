@@ -27,6 +27,7 @@ function setProfileBackdrop(modal, imageUrl) {
 
   const value = String(imageUrl || "").trim();
   if (!value) {
+    delete modal.dataset.profileBackdropModId;
     layers.forEach((layer) => layer.classList.remove("is-visible"));
     return;
   }
@@ -168,6 +169,7 @@ const modModal = {
     ]);
     if (requestId !== this.requestId) return;
     if (!profile) {
+      setModalInfoLoading(false, "profile-info-loader");
       const profileName = document.getElementById("modal-profile-name");
       if (profileName)
         profileName.textContent = t("modModal.errorLoadingProfile");
@@ -190,7 +192,14 @@ const modModal = {
       const showCardBackdrop = (event) => {
         const card = getCard(event.target);
         const mod = card && profileMods.get(card.dataset.modId);
-        if (mod?.image) setProfileBackdrop(profileModal, mod.image);
+        if (
+          !mod ||
+          getCard(event.relatedTarget) === card ||
+          profileModal.dataset.profileBackdropModId === card.dataset.modId
+        )
+          return;
+        profileModal.dataset.profileBackdropModId = card.dataset.modId;
+        if (mod.image) setProfileBackdrop(profileModal, mod.image);
       };
       const clearCardBackdrop = (event) => {
         const card = getCard(event.target);

@@ -141,12 +141,21 @@ export function createMemberCard(member, index) {
 
   const avatar = document.createElement("img");
   avatar.className = "member-card-avatar";
-  avatar.src = member.avatar || "assets/img/placeholder-mini.jpg";
+  const fallbackAvatar =
+    !member.avatar ||
+    /(?:static\/img\/defaults\/avatar\.gif|(?:assets\/)?img\/placeholder-mini\.jpg)/i.test(
+      member.avatar,
+    );
+  if (fallbackAvatar) avatar.classList.add("is-weekbox-avatar");
+  avatar.src = fallbackAvatar
+    ? "assets/icons/launcher-icon.png"
+    : member.avatar;
   avatar.alt = "";
   avatar.loading = "lazy";
   avatar.onerror = () => {
     avatar.onerror = null;
-    avatar.src = "assets/img/placeholder-mini.jpg";
+    avatar.classList.add("is-weekbox-avatar");
+    avatar.src = "assets/icons/launcher-icon.png";
   };
 
   const details = document.createElement("span");

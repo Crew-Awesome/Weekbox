@@ -15,15 +15,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- Improved search and profile views.
-- Replaced spinners with Hourglass loaders.
+- Mod details now use tabs for descriptions, contributors, details, and requirements.
+- Improved searchs.
+- Reused shared translations for matching labels.
+- Replaced spinners with Hourglasses.
 - Dependencies now show by default.
 
 ### Fixed
 
 - Profile lists now show all visible FNF mods.
-- Fixed engine detection and Users search.
-- Fixed search menus and loading states.
 
 ## [2.3.4] - 2026-09-12
 
