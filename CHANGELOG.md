@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added GameBanana profiles for mod authors.
 - Added Users search.
 - Added mod timestamps.
+- Added paginated language selection and translation issue reporting.
 
 ### Changed
 
