@@ -7,18 +7,26 @@ import { WebAdapter } from "./web";
  * @returns {IPlatformBridge} Concrete adapter for the active platform.
  */
 function createPlatformBridge(): IPlatformBridge {
+  const isTest = typeof process !== "undefined" && process.env?.NODE_ENV === "test";
+
   if (typeof window !== "undefined") {
-    console.log("APP_INIT: Checking for Neutralino...", "NL_TOKEN:", !!(window as any).NL_TOKEN, "Neutralino:", !!(window as any).Neutralino);
+    if (!isTest) {
+      console.log("APP_INIT: Checking for Neutralino...", "NL_TOKEN:", !!(window as any).NL_TOKEN, "Neutralino:", !!(window as any).Neutralino);
+    }
     if (
       typeof (window as any).NL_TOKEN !== "undefined" &&
       typeof (window as any).Neutralino !== "undefined"
     ) {
-      console.log("APP_INIT: Neutralino detected. Using DesktopAdapter.");
+      if (!isTest) {
+        console.log("APP_INIT: Neutralino detected. Using DesktopAdapter.");
+      }
       return new DesktopAdapter();
     }
   }
 
-  console.log("APP_INIT: Neutralino not detected. Using WebAdapter.");
+  if (!isTest) {
+    console.log("APP_INIT: Neutralino not detected. Using WebAdapter.");
+  }
   return new WebAdapter();
 }
 
