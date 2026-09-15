@@ -1,7 +1,8 @@
 function getExecutablePath() {
-  return String(window.NL_ARGS?.[0] || "")
+  const executablePath = String(window.NL_ARGS?.[0] || "")
     .trim()
     .replace(/^"|"$/g, "");
+  return executablePath || `${window.NL_PATH || ""}\\WeekBox.exe`;
 }
 function quotePowerShell(value) {
   return `'${String(value).replace(/'/g, "''")}'`;
@@ -27,7 +28,8 @@ async function syncWindowsProtocolRegistration(enabled) {
     ? [
         `$key = ${key}`,
         `$exe = ${executable}`,
-        `$command = '"' + $exe + '" "%1"'`,
+        `$exeDir = Split-Path $exe -Parent`,
+        `$command = '"' + $exe + '" --path="' + $exeDir + '" "%1"'`,
         "New-Item -Path $key -Force | Out-Null",
         "Set-Item -Path $key -Value 'URL:WeekBox Protocol'",
         "New-ItemProperty -Path $key -Name 'URL Protocol' -Value '' -PropertyType String -Force | Out-Null",
@@ -39,9 +41,9 @@ async function syncWindowsProtocolRegistration(enabled) {
     : [
         `$key = ${key}`,
         `$exe = ${executable}`,
-        `$expected = '"' + $exe + '" "%1"'`,
+        `$prefix = '"' + $exe + '"'`,
         '$commandKey = Get-Item -LiteralPath "$key\\shell\\open\\command" -ErrorAction SilentlyContinue',
-        "if ($commandKey -and $commandKey.GetValue('') -eq $expected) { Remove-Item -LiteralPath $key -Recurse -Force }",
+        "if ($commandKey -and ([string]$commandKey.GetValue('')).StartsWith($prefix, [StringComparison]::OrdinalIgnoreCase)) { Remove-Item -LiteralPath $key -Recurse -Force }",
       ].join("; ");
   try {
     const encoded = encodePowerShell(script);

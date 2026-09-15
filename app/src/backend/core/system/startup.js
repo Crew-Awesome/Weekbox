@@ -10,7 +10,12 @@ import {
   isDevelopmentRun,
 } from "./production-shortcuts.util.js";
 import { router } from "../routing/router.service.js";
-import { openLaunchDeepLink } from "../routing/deep-links.service.js";
+import {
+  getWeekboxLinkFromArgs,
+  openLaunchDeepLink,
+  openWeekboxLink,
+  parseWeekboxLink,
+} from "../routing/deep-links.service.js";
 import { appUpdater } from "../updates/app-updater.service.js";
 
 import { homeView, registerHomeView } from "../../../ui/js/home/index.js";
@@ -391,9 +396,28 @@ async function startApp() {
     startupLoader.setPhase(t("startup.startingServices"), 8);
     Neutralino.init();
     patchNeutralinoMessageBox();
+    let deepLinkReady = false;
+    let queuedDeepLink = null;
+    Neutralino.events.on("weekbox:deep-link", (event) => {
+      const detail = event?.detail;
+      const link =
+        typeof detail === "string" ? detail : detail?.link || detail?.url;
+      if (!parseWeekboxLink(link)) return;
+      if (!deepLinkReady) {
+        queuedDeepLink = link;
+        return;
+      }
+      void focusWeekBoxWindow();
+      void openWeekboxLink(link).catch((error) =>
+        console.warn("Could not open the WeekBox link", error),
+      );
+    });
     Neutralino.events.on("weekbox:focus", () => void focusWeekBoxWindow());
     if (!(await ensureSingleInstance())) {
-      await Neutralino.app.broadcast("weekbox:focus").catch(() => {});
+      const link = getWeekboxLinkFromArgs();
+      await Neutralino.app
+        .broadcast(link ? "weekbox:deep-link" : "weekbox:focus", link)
+        .catch(() => {});
       await Neutralino.app.exit().catch(() => {});
       return;
     }
@@ -558,6 +582,15 @@ async function startApp() {
     await openLaunchDeepLink().catch((error) =>
       console.warn("Could not open the WeekBox launch link", error),
     );
+    deepLinkReady = true;
+    if (queuedDeepLink) {
+      const link = queuedDeepLink;
+      queuedDeepLink = null;
+      await focusWeekBoxWindow();
+      await openWeekboxLink(link).catch((error) =>
+        console.warn("Could not open the WeekBox link", error),
+      );
+    }
     await recommendSaferStorageLocation().catch((error) =>
       console.warn("Could not check the WeekBox storage recommendation", error),
     );
