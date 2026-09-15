@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import {
   Download,
   Play,
@@ -70,6 +70,18 @@ export const InstancesFooter: React.FC<InstancesFooterProps> = ({
 }) => {
   const [showMoreMenu, setShowMoreMenu] = useState<boolean>(false);
   const [isHoveringDownload, setIsHoveringDownload] = useState<boolean>(false);
+  const moreMenuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!showMoreMenu) return;
+    const handleClickOutside = (e: MouseEvent) => {
+      if (moreMenuRef.current && !moreMenuRef.current.contains(e.target as Node)) {
+        setShowMoreMenu(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [showMoreMenu]);
 
   return (
     <div className="sticky bottom-0 z-50 w-full bg-[var(--wb-surface-container)]/70 backdrop-blur-2xl border-t border-white/10 px-6 md:px-10 py-5 sm:py-6 flex items-center justify-between shadow-[0_-8px_32px_rgba(0,0,0,0.5)]">
@@ -303,8 +315,8 @@ export const InstancesFooter: React.FC<InstancesFooterProps> = ({
               </button>
             )}
 
-            {/** 3-dots dropdown menu for secondary actions */}
-            <div className="relative" onMouseLeave={() => setShowMoreMenu(false)}>
+            {/* 3-dots dropdown menu for secondary actions */}
+            <div className="relative" ref={moreMenuRef}>
               <button
                 type="button"
                 onClick={() => setShowMoreMenu(!showMoreMenu)}

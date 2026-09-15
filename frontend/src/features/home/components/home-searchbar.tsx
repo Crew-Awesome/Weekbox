@@ -25,6 +25,18 @@ export const HomeSearchbar: React.FC<HomeSearchbarProps> = ({
   const [isSearchVisible, setIsSearchVisible] = useState(true);
   const lastScrollY = useRef(0);
   const [showFilters, setShowFilters] = useState(false);
+  const filterRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!showFilters) return;
+    const handleClickOutside = (e: MouseEvent) => {
+      if (filterRef.current && !filterRef.current.contains(e.target as Node)) {
+        setShowFilters(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [showFilters]);
   const searchQuery = useHomeStore((state) => state.searchQuery);
 
   useEffect(() => {
@@ -67,7 +79,7 @@ export const HomeSearchbar: React.FC<HomeSearchbarProps> = ({
   };
 
   const filterButton = (
-    <div className="relative z-50" onMouseLeave={() => setShowFilters(false)}>
+    <div className="relative z-50" ref={filterRef}>
       <button
         onClick={() => setShowFilters(!showFilters)}
         title="Filter & Sort"

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import Shared from "@shared";
 import { Filter, Clock, Layers, CheckCircle2 } from "lucide-react";
 import { ENGINE_CATEGORIES } from "../../../core/services/gamebanana/constants";
@@ -29,6 +29,18 @@ export const InstancesTopbar: React.FC<InstancesTopbarProps> = ({
   isExecutable = false,
 }) => {
   const [showFilters, setShowFilters] = useState(false);
+  const filtersRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!showFilters) return;
+    const handleClickOutside = (e: MouseEvent) => {
+      if (filtersRef.current && !filtersRef.current.contains(e.target as Node)) {
+        setShowFilters(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [showFilters]);
 
   const engineOptions = React.useMemo(() => {
     return Object.values(ENGINE_CATEGORIES).map((cat) => ({
@@ -43,8 +55,8 @@ export const InstancesTopbar: React.FC<InstancesTopbarProps> = ({
   return (
     <div className="sticky top-0 z-40 flex items-center w-full md:w-auto h-25 rounded-none md:rounded-b-[16px] bg-[var(--wb-surface-container)]/90 backdrop-blur-md mx-0 md:mx-2 px-4 md:px-6 shadow-md border-b md:border-b-0 border-[var(--wb-outline-variant)]/20">
       <div className="flex items-center gap-3">
-        {/** Filter & Sort Popover Button */}
-        <div className="relative z-50" onMouseLeave={() => setShowFilters(false)}>
+        {/* Filter & Sort Popover Button */}
+        <div className="relative z-50" ref={filtersRef}>
           <button
             type="button"
             onClick={() => setShowFilters(!showFilters)}

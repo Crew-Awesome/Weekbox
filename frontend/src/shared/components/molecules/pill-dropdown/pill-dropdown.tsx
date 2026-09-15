@@ -111,7 +111,6 @@ export const PillDropdown: React.FC<PillDropdownProps> = ({
     <div
       className={`relative inline-block text-left w-full sm:w-auto ${isOpen ? "z-50" : "z-10"}`}
       ref={containerRef}
-      onMouseLeave={() => setIsOpen(false)}
     >
       <Pill
         onClick={() => setIsOpen(!isOpen)}

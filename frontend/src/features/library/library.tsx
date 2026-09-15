@@ -59,6 +59,18 @@ export const Library: React.FC = () => {
   const [sortOption, setSortOption] = useState<LibrarySortOption>("recent");
   const [engineFilter, setEngineFilter] = useState<string[]>(["all"]);
   const [showFilters, setShowFilters] = useState(false);
+  const filtersRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!showFilters) return;
+    const handleClickOutside = (e: MouseEvent) => {
+      if (filtersRef.current && !filtersRef.current.contains(e.target as Node)) {
+        setShowFilters(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [showFilters]);
   const [showFavoritesOnly, setShowFavoritesOnly] = useState(false);
 
   const dynamicTitle = useMemo(() => {
@@ -453,7 +465,7 @@ export const Library: React.FC = () => {
         <RefreshCw className={`w-6 h-6 ${isLoading ? "animate-spin" : ""}`} />
       </button>
 
-      <div className="relative" onMouseLeave={() => setShowFilters(false)}>
+      <div className="relative" ref={filtersRef}>
         <button
           type="button"
           onClick={() => setShowFilters(!showFilters)}

@@ -93,59 +93,50 @@ export const InstancesMarkdownViewer: React.FC<InstancesMarkdownViewerProps> = (
 
   return (
     <div className="w-full p-8 sm:p-12 lg:p-16">
-      {/** Release Header */}
+      {/* Release Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-8 border-b border-[var(--wb-outline-variant)]/20 mb-8">
         <div>
-          <div className="flex items-center gap-3 mb-2">
-            <span className="text-xs sm:text-sm font-black uppercase tracking-widest text-[var(--wb-primary)]">
-              Release Notes
-            </span>
-          </div>
           <h1 className="text-3xl sm:text-4xl lg:text-5xl font-black text-[var(--wb-on-surface)] tracking-tight">
             {release.name || `Version ${release.version}`}
           </h1>
         </div>
 
-        {release.releasedAt && (
-          <div className="flex items-center gap-2 text-sm sm:text-base text-[var(--wb-on-surface-variant)] opacity-85 shrink-0 bg-[var(--wb-surface-bright)] px-4 py-2.5 rounded-2xl border border-[var(--wb-outline-variant)]/20">
-            <Calendar className="w-4 h-4 sm:w-5 sm:h-5 text-[var(--wb-primary)]" />
-            <span>{new Date(release.releasedAt).toLocaleDateString(undefined, { dateStyle: "medium" })}</span>
-          </div>
-        )}
-      </div>
+        <div className="flex items-center flex-wrap gap-3 shrink-0">
+          {canTranslate && (
+            isTranslating ? (
+              <div className="flex items-center gap-2 text-sm sm:text-base text-[var(--wb-primary)] shrink-0 bg-[var(--wb-surface-bright)] px-4 py-2.5 rounded-2xl border border-[var(--wb-outline-variant)]/20 animate-pulse">
+                <Loader2 className="w-4 h-4 sm:w-5 sm:h-5 animate-spin shrink-0" />
+                <span>Translating...</span>
+              </div>
+            ) : (
+              <button
+                type="button"
+                onClick={toggleTranslation}
+                className={`flex items-center gap-2 text-sm sm:text-base shrink-0 bg-[var(--wb-surface-bright)] hover:bg-[var(--wb-surface-container-highest)] px-4 py-2.5 rounded-2xl border transition-all cursor-pointer select-none ${
+                  showTranslated
+                    ? "text-[var(--wb-primary)] border-[var(--wb-primary)]/40 font-bold"
+                    : "text-[var(--wb-on-surface-variant)] hover:text-[var(--wb-on-surface)] border-[var(--wb-outline-variant)]/20"
+                }`}
+                title={showTranslated ? "Click to show original notes" : `Click to translate to ${targetLanguage === "es" ? "Spanish" : "English"}`}
+              >
+                <Languages className="w-4 h-4 sm:w-5 sm:h-5 text-[var(--wb-primary)] shrink-0" />
+                <span>
+                  {showTranslated
+                    ? `Translated (${targetLanguage === "es" ? "ES" : "EN"})`
+                    : `Translate to ${targetLanguage === "es" ? "Spanish" : "English"}`}
+                </span>
+              </button>
+            )
+          )}
 
-      {/** Translation Control Bar */}
-      {canTranslate && (
-        <div className="flex items-center justify-between gap-4 mb-6 py-2.5 px-4 sm:px-5 rounded-2xl bg-[var(--wb-surface-container)]/80 border border-[var(--wb-outline-variant)]/20 text-xs sm:text-sm shadow-sm">
-          <div className="flex items-center gap-2 text-[var(--wb-on-surface-variant)]">
-            <Languages className="w-4 h-4 text-[var(--wb-primary)] shrink-0" />
-            <span>
-              {isTranslating
-                ? `Translating release notes to ${targetLanguage === "es" ? "Spanish" : "English"}...`
-                : showTranslated
-                ? `Translated to ${targetLanguage === "es" ? "Spanish" : "English"}`
-                : "Original Release Notes"}
-            </span>
-            {isTranslating && <Loader2 className="w-3.5 h-3.5 animate-spin text-[var(--wb-primary)] shrink-0" />}
-          </div>
-
-          <button
-            type="button"
-            onClick={toggleTranslation}
-            disabled={isTranslating}
-            className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl font-bold transition-all bg-[var(--wb-surface-bright)] hover:bg-[var(--wb-surface-container-highest)] text-[var(--wb-primary)] border border-[var(--wb-outline-variant)]/30 hover:scale-105 active:scale-95 cursor-pointer disabled:opacity-50"
-          >
-            <Languages className="w-3.5 h-3.5" />
-            <span>
-              {isTranslating
-                ? "Translating..."
-                : showTranslated
-                ? "Show original"
-                : `Translate to ${targetLanguage === "es" ? "Spanish" : "English"}`}
-            </span>
-          </button>
+          {release.releasedAt && (
+            <div className="flex items-center gap-2 text-sm sm:text-base text-[var(--wb-on-surface-variant)] opacity-85 shrink-0 bg-[var(--wb-surface-bright)] px-4 py-2.5 rounded-2xl border border-[var(--wb-outline-variant)]/20">
+              <Calendar className="w-4 h-4 sm:w-5 sm:h-5 text-[var(--wb-primary)]" />
+              <span>{new Date(release.releasedAt).toLocaleDateString(undefined, { dateStyle: "medium" })}</span>
+            </div>
+          )}
         </div>
-      )}
+      </div>
 
       {/** Markdown Body */}
       <div
