@@ -14,7 +14,7 @@ import {
   extractUserPfp,
   checkIsNsfw,
 } from "../utils";
-import Utils from "@utils";
+import { sanitizeHtml, htmlToPlainText } from "../../../../utils/sanitize";
 import {
   fetchRipeRecords,
   fetchPopularRecords,
@@ -201,10 +201,10 @@ export async function getMods(
       id: mod._idRow,
       gameId: FNF_GAME_ID,
       title: mod._sName || "Unknown Mod",
-      description: Utils.sanitize.htmlToPlainText(
+      description: htmlToPlainText(
         meta._sDescription || meta._sText || "",
       ),
-      htmlBody: Utils.sanitize.sanitizeHtml(
+      htmlBody: sanitizeHtml(
         meta._sText || meta._sDescription || "",
       ),
       author: mod._aSubmitter?._sName || "Unknown Creator",

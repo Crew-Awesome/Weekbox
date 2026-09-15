@@ -13,7 +13,7 @@ import {
   extractUserPfp,
   checkIsNsfw,
 } from "../utils";
-import Utils from "@utils";
+import { sanitizeHtml, htmlToPlainText } from "../../../../utils/sanitize";
 
 const modProfileCache = new Map<number, { data: GameBananaMod; timestamp: number }>();
 const CACHE_TTL_MS = 60 * 1000; /* 1 minute cache TTL */
@@ -46,10 +46,10 @@ export async function getModById(modId: number, forceFresh: boolean = false): Pr
       id: raw._idRow,
       gameId: raw._aGame?._idRow || FNF_GAME_ID,
       title: raw._sName || "Unknown Mod",
-      description: Utils.sanitize.htmlToPlainText(
+      description: htmlToPlainText(
         raw._sDescription || raw._sText || "",
       ),
-      htmlBody: Utils.sanitize.sanitizeHtml(
+      htmlBody: sanitizeHtml(
         raw._sText || raw._sDescription || "",
       ),
       author: raw._aSubmitter?._sName || "Unknown Creator",

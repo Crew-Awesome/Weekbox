@@ -1,6 +1,6 @@
 import { create } from "zustand";
 import Core from "@core";
-import type { ModItem } from "../features/home/types";
+import type { ModItem } from "@contracts";
 import { SoundEffects } from "../utils/sound";
 
 export interface FavoriteModItem {

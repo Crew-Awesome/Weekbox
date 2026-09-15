@@ -4,7 +4,7 @@ import { toast } from "../utils/toast";
 import { isWindowUnfocused } from "../utils/hooks/use-notifications";
 import { useAppStore } from "./index";
 import { DownloadStatus } from "./download-constants";
-import { formatFileSize } from "../features/home/components/mod-details-modal/types";
+import { formatFileSize } from "../utils/formatters";
 
 export interface ActiveDownloadTask {
   modId: string;

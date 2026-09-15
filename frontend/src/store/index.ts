@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import type { ModItem } from "../features/home/types";
+import type { ModItem } from "@contracts";
 
 interface AppState {
   activeDeepLinkModId: number | null;

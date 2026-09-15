@@ -3,17 +3,9 @@
  * Consumed by download-store, desktop adapter, mod details modal, and toasts.
  */
 
-export const DownloadStatus = {
-  STARTING: "Starting download...",
-  DOWNLOADING: "Downloading...",
-  EXTRACTING: "Extracting archive...",
-  FLATTENING: "Flattening folder structure...",
-  FINALIZING: "Registering mod...",
-  COMPLETED: "Completed",
-  CANCELING: "Canceling...",
-} as const;
+import { DownloadStatus, type DownloadStatusType } from "@contracts";
 
-export type DownloadStatusType = typeof DownloadStatus[keyof typeof DownloadStatus] | string;
+export { DownloadStatus, type DownloadStatusType };
 
 /**
  * Helper to produce human-readable status text for UI buttons, toasts, and details modal.

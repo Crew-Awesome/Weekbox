@@ -1,9 +1,8 @@
 import { useEffect } from "react";
-import Features from "@features";
 import Core from "@core";
-import Shared from "@shared";
 import Utils from "@utils";
-import type { LoadingTask } from "@features";
+import { MainLayoutTemplate } from "@templates";
+import type { LoadingTask } from "@components";
 import { Outlet, useLocation } from "react-router-dom";
 import { useHomeStore } from "./store/home-store";
 import { useDownloadStore } from "./store";
@@ -65,7 +64,7 @@ const initTasks: LoadingTask[] = [
         useHomeStore.getState().setMods(mods);
       }
     },
-    onAttemptComplete: async (attempt, success) => {
+    onAttemptComplete: async (attempt: number, success: boolean) => {
       const currentMods = useHomeStore.getState().mods;
       if (currentMods.length === 0) {
         try {
@@ -92,21 +91,10 @@ function App() {
   }, [location.pathname]);
 
   return (
-    <div className="flex h-screen w-full bg-[var(--wb-bg)] text-[var(--wb-text-main)] overflow-hidden font-sans relative">
-      <Features.LoadingScreen tasks={initTasks} />
-      <Shared.molecules.ToastContainer />
-      <Shared.organisms.Sidebar onNavigate={handleNavigate} />
-      <main
-        id="main-scroll-container"
-        className="flex-1 overflow-y-auto relative mobile-no-scrollbar"
-      >
-        <div className="relative z-10 px-8 pt-8 pb-28 md:p-8 h-full">
-          <Outlet />
-        </div>
-      </main>
-    </div>
+    <MainLayoutTemplate tasks={initTasks} onNavigate={handleNavigate}>
+      <Outlet />
+    </MainLayoutTemplate>
   );
 }
 
 export default App;
-

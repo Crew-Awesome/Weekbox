@@ -1,4 +1,4 @@
-import { platform } from "../../platform";
+import { platform } from "@platform";
 
 const PROTOCOL_KEY = "HKCU:\\Software\\Classes\\weekbox";
 

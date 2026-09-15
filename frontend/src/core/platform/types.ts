@@ -1,7 +1,18 @@
 /**
  * Global type declarations for Neutralino, Node.js, and React Native WebView native APIs.
  */
-import type { BackendOperation, BackendResult } from "../backend/types";
+import type {
+  IPlatformLifecycle,
+  IPlatformTransport,
+  IPlatformEvents,
+  IModService,
+  IEngineService,
+  IProcessLauncher,
+  IStorageService,
+  ISettingsService,
+} from "@contracts";
+
+export type * from "@contracts";
 
 declare global {
   interface Window {
@@ -73,200 +84,20 @@ declare global {
   }
 }
 
-/** Active platform type at runtime */
-export type PlatformType = "desktop" | "web";
-
 /**
- * Detailed progress information for an active download or extraction task.
+ * Composite Platform Bridge Interface (ISP / Backward Compatibility).
+ * Composes specialized contracts into a unified bridge for existing components,
+ * while allowing new components to depend only on specific segregated interfaces.
  */
-export interface DownloadProgressDetails {
-  downloaded?: number;
-  total?: number;
-  currentFile?: string;
-}
-
-export type DownloadProgressCallback = (
-  progress: number,
-  statusText?: string,
-  details?: DownloadProgressDetails
-) => void;
-
-/**
- * Definición del contrato común de la plataforma.
- * Permite a cualquier componente de la UI interactuar con servicios nativos
- * de forma agnóstica sin acoplarse a Neutralino, React Native o Web.
- */
-export interface IPlatformBridge {
-  /** Detected platform name */
-  readonly platformName: PlatformType;
-
-  /** Indicates if the platform has completed its initialization */
-  readonly isReady: boolean;
-
-  /** Initializes listeners and required platform resources */
-  initialize(): void;
-
-  /**
-   * Obtiene la versión actual de la aplicación de forma asíncrona.
-   * Dependiendo de la plataforma, esto puede leerse de Neutralino o solicitarse a React Native.
-   */
-  getVersion(): Promise<string>;
-
-  /**
-   * Suscribe un listener a eventos emitidos por el backend o el host nativo.
-   * @param {string} eventName - Nombre del evento a escuchar.
-   * @param {Function} listener - Callback a ejecutar cuando se recibe el evento.
-   * @returns {Function} Función de desuscripción.
-   */
-  onEvent(eventName: string, listener: (data: any) => void): () => void;
-
-  /** Calls a backend operation through the active platform adapter. */
-  call<Operation extends BackendOperation>(
-    operation: Operation,
-    params?: unknown,
-    signal?: AbortSignal
-  ): Promise<BackendResult<Operation>>;
-
-  /** Downloads a mod archive. Implementations vary by platform. */
-  downloadMod(
-    url: string,
-    modId?: string,
-    modName?: string,
-    onProgress?: DownloadProgressCallback,
-    signal?: AbortSignal
-  ): Promise<void>;
-
-  /** Opens a URL in the default web browser. */
+export interface IPlatformBridge
+  extends IPlatformLifecycle,
+    IPlatformTransport,
+    IPlatformEvents,
+    IModService,
+    IEngineService,
+    IProcessLauncher,
+    IStorageService,
+    ISettingsService {
+  /** Opens a URL in the browser */
   openUrl(url: string): Promise<void>;
-
-  /** Registers a mod as installed in the data directory. */
-  registerInstalledMod(modData: any): Promise<void>;
-
-  /** Checks if a mod is installed by reading the registry. */
-  isModInstalled(modId: string): Promise<boolean>;
-
-  /** Retrieves a specific installed mod by its ID, or null if not installed. */
-  getInstalledMod(modId: string): Promise<any | null>;
-
-  /** Retrieves all installed mods from the registry. */
-  getInstalledMods(): Promise<any[]>;
-
-  /** Uninstalls a mod (removes from registry and deletes files). */
-  uninstallMod(modId: string): Promise<void>;
-
-  /** Opens the installation folder for a specific mod in the file manager. */
-  openModFolder?(modId: string, modName?: string): Promise<void>;
-
-  /** Updates the favorite flag in the installed mod's JSON files. */
-  setModFavorite?(modId: string, isFavorite: boolean): Promise<void>;
-
-  /** Updates customized properties (name, description, engine, etc.) of an installed mod. */
-  updateInstalledMod?(modId: string, updates: Record<string, any>): Promise<any | null>;
-
-  /** Downloads an engine release archive, extracts it into <basePath>/engines/<engineName>/<version>, and flattens it. */
-  downloadEngine?(
-    url: string,
-    engineId: string,
-    version: string,
-    onProgress?: DownloadProgressCallback,
-    signal?: AbortSignal
-  ): Promise<void>;
-
-  /** Checks if an engine version is installed in <basePath>/engines/<engineName>/<version>. */
-  isEngineInstalled?(
-    engineId: string,
-    version: string
-  ): Promise<boolean>;
-
-  /** Opens the installation directory for a specific engine version in the file manager. */
-  openEngineFolder?(
-    engineId: string,
-    version: string
-  ): Promise<void>;
-
-  /** Retrieves the registry of all installed engines and their versions from data/installed_engines.json. */
-  getInstalledEngines?(): Promise<Record<string, Record<string, any>>>;
-
-  /** Saves an engine version entry in data/installed_engines.json with installation date and metadata. */
-  registerInstalledEngine?(
-    engineId: string,
-    version: string,
-    metadata?: Record<string, any>
-  ): Promise<void>;
-
-  /** Uninstalls an engine version: deletes its files and removes its entry from installed_engines.json. */
-  uninstallEngine?(
-    engineId: string,
-    version: string
-  ): Promise<void>;
-
-  /** Auto-detects and launches the game executable inside a folder using the Node backend. */
-  launchExecutable?(
-    folderPath: string,
-    options?: {
-      executableName?: string;
-      instanceId?: string;
-      args?: string[];
-      env?: Record<string, string>;
-      modFolderPath?: string;
-      modFolderPaths?: string[];
-    }
-  ): Promise<{ ok: boolean; pid?: number; executablePath?: string; instanceId?: string; error?: string }>;
-
-  /** Terminates an active game process by instance identifier. */
-  killProcess?(instanceId: string): Promise<{ ok: boolean; error?: string }>;
-
-  /** Displays native folder picker dialog and returns selected path or null. */
-  showFolderDialog?(title: string, defaultPath?: string): Promise<string | null>;
-
-  /** Retrieves user settings from disk. */
-  getSettings?(): Promise<Record<string, any>>;
-
-  /** Persists user settings to disk. */
-  saveSettings?(settings: Record<string, any>): Promise<void>;
-
-  /** Gets configured path for mods directory. */
-  getModsPath?(): Promise<string>;
-
-  /** Gets configured path for engines directory. */
-  getEnginesPath?(): Promise<string>;
-
-  /** Gets default base paths. */
-  getDefaultPaths?(): Promise<{ basePath: string; defaultModsPath: string; defaultEnginesPath: string }>;
-
-  /** Validates whether destination storage folder is safe and unoccupied by foreign directories. */
-  validateStorageFolder?(
-    targetPath: string,
-    type: "mods" | "engines"
-  ): Promise<{ valid: boolean; reason?: string }>;
-
-  /** Inspects a folder calculating item count, byte size, and estimated transfer time. */
-  inspectStorage?(folderPath: string): Promise<{
-    count: number;
-    totalBytes: number;
-    formattedSize: string;
-    estimatedTime: string;
-    items?: Array<{ name: string; bytes: number; formattedSize: string }>;
-  }>;
-
-  /** Migrates items from source directory to target directory with progress reporting and optional selection. */
-  migrateStorage?(
-    sourcePath: string,
-    targetPath: string,
-    type: "mods" | "engines",
-    onProgress?: (progress: {
-      currentItem: string;
-      currentIndex: number;
-      totalItems: number;
-      percent: number;
-      remainingItems: number;
-    }) => void,
-    selectedItemNames?: string[]
-  ): Promise<{ ok: boolean; count: number }>;
-
-  /** Checks if any game processes are running. */
-  isAnyProcessRunning?(): Promise<boolean>;
-
-  /** Checks if a specific instance is running. */
-  isInstanceRunning?(instanceId: string): Promise<boolean>;
 }

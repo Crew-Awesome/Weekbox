@@ -1,4 +1,4 @@
-import { platform } from "../../platform";
+import { platform } from "@platform";
 import type { BackendOperation } from "../types";
 
 export interface SystemNotificationOptions {

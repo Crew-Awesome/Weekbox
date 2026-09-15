@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { toast, type ToastPosition } from "../toast";
-import type { ToastItem } from "../../shared/components/atoms/toast";
+import type { ToastItem } from "../../components/atoms/toast";
 
 export type { ToastPosition };
 

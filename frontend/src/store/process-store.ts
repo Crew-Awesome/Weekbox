@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import Core from "@core";
+import { platform } from "@platform";
 import Utils from "@utils";
 import { useStorageMigrationStore } from "./storage-migration-store";
 
@@ -75,8 +75,8 @@ export const useProcessStore = create<ProcessStoreState>((set, get) => ({
     }));
 
     try {
-      if (Core.platform.killProcess) {
-        await Core.platform.killProcess(instanceId);
+      if (platform.killProcess) {
+        await platform.killProcess(instanceId);
       }
       return true;
     } catch (err: any) {
@@ -125,11 +125,11 @@ export const useProcessStore = create<ProcessStoreState>((set, get) => ({
     }));
 
     try {
-      if (!Core.platform.launchExecutable) {
+      if (!platform.launchExecutable) {
         throw new Error("Game launching is not available on this platform.");
       }
 
-      const res = await Core.platform.launchExecutable(folderPath, {
+      const res = await platform.launchExecutable(folderPath, {
         executableName: preferredExe,
         instanceId,
         args,
@@ -199,7 +199,7 @@ export const useProcessStore = create<ProcessStoreState>((set, get) => ({
 
 /* Subscribe to platform process exit events */
 if (typeof window !== "undefined") {
-  Core.platform.onEvent("process:exit", (detail: any) => {
+  platform.onEvent("process:exit", (detail: any) => {
     const instanceId = detail?.instanceId;
     if (instanceId) {
       useProcessStore.setState((state) => {

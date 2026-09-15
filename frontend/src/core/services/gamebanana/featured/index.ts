@@ -1,7 +1,7 @@
 export * from "./types";
-export * from "./service";
+export * from "./featured";
 
-import { FeaturedService } from "./service";
+import { FeaturedService } from "./featured";
 
 const featuredServiceInstance = new FeaturedService();
 

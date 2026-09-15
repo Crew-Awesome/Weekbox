@@ -1,7 +1,7 @@
 import Core from "@core";
 import { useAppStore } from "../store";
 import { toast } from "./toast";
-import type { ModItem } from "../features/home/types";
+import type { ModItem } from "@contracts";
 
 /**
  * @description Extracts a numeric mod ID if the input string is a pure numeric ID

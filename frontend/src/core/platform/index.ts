@@ -1,6 +1,6 @@
 import type { IPlatformBridge } from "./types";
-import { DesktopAdapter } from "./desktop.adapter";
-import { WebAdapter } from "./web.adapter";
+import { DesktopAdapter } from "./desktop";
+import { WebAdapter } from "./web";
 
 /**
  * Detects the current runtime environment and creates the corresponding adapter instance.
@@ -30,5 +30,5 @@ export const platform: IPlatformBridge = createPlatformBridge();
 platform.initialize();
 
 export type * from "./types";
-export * from "./desktop.adapter";
-export * from "./web.adapter";
+export * from "./desktop";
+export * from "./web";

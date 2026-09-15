@@ -1,5 +1,5 @@
 import { http } from "../../backend/http";
-import { platform } from "../../platform";
+import { platform } from "@platform";
 
 /**
  * Cache entry for translated content.

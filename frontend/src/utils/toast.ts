@@ -1,4 +1,4 @@
-import type { ToastItem, ToastType } from "../shared/components/atoms/toast";
+import type { ToastItem, ToastType } from "../components/atoms/toast";
 
 export type ToastPosition =
   | "top-right"

@@ -22,6 +22,7 @@ import { sanitizeHtml, htmlToPlainText } from "./sanitize";
 import { extractModIdOrUrl, handleDirectModLookup } from "./mod-search-helper";
 import { SoundEffects } from "./sound";
 
+export type { MorphModalData } from "./hooks/use-modals";
 export { SoundEffects, playSound, isSoundEffectsEnabled } from "./sound";
 
 export { toast } from "./toast";

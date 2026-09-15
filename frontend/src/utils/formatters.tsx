@@ -30,3 +30,21 @@ export function formatTimeAgo(seconds: number | null | undefined, fallback = "N/
   return match ? `${Math.floor(elapsed / match[0])}${match[1]}` : `${elapsed}s`;
 }
 
+/**
+ * Formats byte size for download indicators and mod files.
+ */
+export const formatFileSize = (bytes?: number): string => {
+  if (bytes === undefined || bytes === null || isNaN(bytes) || bytes < 0) return "";
+  if (bytes === 0) return "0 B";
+  if (bytes < 1024) return `${bytes} B`;
+  const kb = bytes / 1024;
+  if (kb < 1024) return `${kb.toFixed(1)} KB`;
+  const mb = kb / 1024;
+  if (mb < 1024) {
+    return mb < 10 ? `${mb.toFixed(1)} MB` : `${Math.round(mb)} MB`;
+  }
+  const gb = mb / 1024;
+  return `${gb.toFixed(2)} GB`;
+};
+
+

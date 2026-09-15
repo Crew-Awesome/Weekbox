@@ -75,8 +75,11 @@ export default defineConfig({
 
   resolve: {
     alias: {
-      "@shared": path.resolve(import.meta.dirname, "./src/shared/shared.tsx"),
-      "@features": path.resolve(import.meta.dirname, "./src/features/index.ts"),
+      "@contracts": path.resolve(import.meta.dirname, "./src/core/contracts/index.ts"),
+      "@platform": path.resolve(import.meta.dirname, "./src/core/platform/index.ts"),
+      "@components": path.resolve(import.meta.dirname, "./src/components"),
+      "@templates": path.resolve(import.meta.dirname, "./src/templates"),
+      "@pages": path.resolve(import.meta.dirname, "./src/pages"),
       "@utils": path.resolve(import.meta.dirname, "./src/utils/utils.tsx"),
       "@core": path.resolve(import.meta.dirname, "./src/core/index.ts"),
       "@fs": path.resolve(

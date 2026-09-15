@@ -2,7 +2,7 @@ import { create } from "zustand";
 import Core from "@core";
 import { toast } from "../utils/toast";
 import { DownloadStatus } from "./download-constants";
-import { formatFileSize } from "../features/home/components/mod-details-modal/types";
+import { formatFileSize } from "../utils/formatters";
 
 export interface ActiveEngineDownloadTask {
   engineId: string;

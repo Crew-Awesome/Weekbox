@@ -2,7 +2,7 @@ import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { HashRouter, Routes, Route, Navigate } from "react-router-dom";
 import App from "./App";
-import Features from "@features";
+import { Home, Library, Instances } from "@pages";
 import "./index.css";
 
 if (typeof window !== "undefined") {
@@ -75,11 +75,11 @@ if (rootElement) {
         <Routes>
           <Route path="/" element={<App />}>
             <Route index element={<Navigate to="/home" replace />} />
-            <Route path="home" element={<Features.Home />} />
-            <Route path="library" element={<Features.Library />} />
-            <Route path="library/*" element={<Features.Library />} />
-            <Route path="instances" element={<Features.Instances />} />
-            <Route path="instances/*" element={<Features.Instances />} />
+            <Route path="home" element={<Home />} />
+            <Route path="library" element={<Library />} />
+            <Route path="library/*" element={<Library />} />
+            <Route path="instances" element={<Instances />} />
+            <Route path="instances/*" element={<Instances />} />
             <Route path="engines" element={<Navigate to="/instances" replace />} />
             <Route path="*" element={<Navigate to="/home" replace />} />
           </Route>

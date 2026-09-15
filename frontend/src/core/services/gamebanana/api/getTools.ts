@@ -9,7 +9,7 @@ import {
   extractUserPfp,
   checkIsNsfw,
 } from "../utils";
-import Utils from "@utils";
+import { sanitizeHtml, htmlToPlainText } from "../../../../utils/sanitize";
 
 /**
  * @description Fetches tools/executables for Friday Night Funkin' from GameBanana.
@@ -62,10 +62,10 @@ export async function getTools(
       id: tool._idRow,
       gameId: FNF_GAME_ID,
       title: tool._sName || "Unknown Tool",
-      description: Utils.sanitize.htmlToPlainText(
+      description: htmlToPlainText(
         meta._sDescription || meta._sText || "",
       ),
-      htmlBody: Utils.sanitize.sanitizeHtml(
+      htmlBody: sanitizeHtml(
         meta._sText || meta._sDescription || "",
       ),
       author: tool._aSubmitter?._sName || "Unknown Creator",
