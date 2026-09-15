@@ -8,4 +8,4 @@ if [ -f /usr/lib/weekbox/libweekbox-appid.so ]; then
     export LD_PRELOAD=/usr/lib/weekbox/libweekbox-appid.so
   fi
 fi
-exec /usr/lib/weekbox/WeekBox "$@"
+exec /usr/lib/weekbox/WeekBox --window-exit-process-on-close=true "$@"

@@ -4,7 +4,7 @@
 
 Name:           weekbox
 Version:        2.3.4
-Release:        3%{?dist}
+Release:        4%{?dist}
 Summary:        A re-imagined Friday Night Funkin' mod launcher
 License:        MIT
 URL:            https://github.com/Crew-Awesome/Weekbox
@@ -107,6 +107,9 @@ fi
 %{_datadir}/pixmaps/weekbox.png
 
 %changelog
+* Mon Sep 14 2026 Crew Awesome <info@weekbox.app> - 2.3.4-4
+- Quit the GTK window on Linux close (Wayland/KDE X button)
+
 * Tue Sep 15 2026 Crew Awesome <info@weekbox.app> - 2.3.4-3
 - Add aarch64 (ARM 64-bit) build support alongside x86_64
 * Sun Sep 13 2026 Crew Awesome <info@weekbox.app> - 2.3.4-2

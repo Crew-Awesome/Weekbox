@@ -33,6 +33,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Existing dependencies are automatically converted to regular mods.
 - Profile lists now show all visible FNF mods.
 - Dependencies now install into `mods` folder
+- Linux Wayland windows now show the WeekBox icon instead of the generic compositor icon.
+- Linux windows open on Wayland (including NVIDIA) by disabling WebKitGTK DMA-BUF rendering, which avoided compositor crashes.
+- Linux window close (title-bar X and taskbar Close) actually quits the process. The Windows close-to-tray setting left `exitProcessOnClose` off, so KDE/Wayland never destroyed the GTK window.
 
 ## [2.3.4] - 2026-09-12
 

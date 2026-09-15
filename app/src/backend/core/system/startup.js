@@ -372,6 +372,11 @@ async function startApp() {
     Neutralino.init();
     patchNeutralinoMessageBox();
     Neutralino.events.on("weekbox:focus", () => void focusWeekBoxWindow());
+    if (window.NL_OS !== "Windows") {
+      Neutralino.events.on("windowClose", () => {
+        Neutralino.app.exit().catch(() => {});
+      });
+    }
     if (!(await ensureSingleInstance())) {
       await Neutralino.app.broadcast("weekbox:focus").catch(() => {});
       await Neutralino.app.exit().catch(() => {});
