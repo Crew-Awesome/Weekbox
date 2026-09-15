@@ -681,7 +681,7 @@ export const MobileView: React.FC<MobileViewProps> = ({
               )}
             </div>
           )}
-          {!isExecutable && (
+          {!isExecutable && isInstalled && (
             installedEngineVersions.length > 0 ? (
               <div className="relative z-40 shrink-0" ref={versionDropdownRef}>
                 <div
