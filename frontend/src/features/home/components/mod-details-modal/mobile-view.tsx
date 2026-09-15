@@ -1,5 +1,22 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
-import { Download, List, ChevronUp, Loader2, Play, Trash2, HardDrive, Languages, Heart, Pencil, ChevronDown, Tag } from "lucide-react";
+import {
+  Download,
+  List,
+  ChevronUp,
+  Loader2,
+  Play,
+  Square,
+  Trash2,
+  HardDrive,
+  Languages,
+  Heart,
+  Pencil,
+  ChevronDown,
+  Tag,
+  Activity,
+  AlertTriangle,
+  Layers,
+} from "lucide-react";
 import { type ModalViewProps, formatFileSize } from "./types";
 import { ModMediaCarousel, ModThumbnailStrip } from "./components/mod-media-carousel";
 import { ModNavPills, type ModModalTab } from "./components/mod-nav-pills";
@@ -8,7 +25,16 @@ import { ModDetailsTab } from "./components/mod-details-tab";
 import Core from "@core";
 import Utils from "@utils";
 import { ENGINE_CATEGORIES } from "../../../../core/services/gamebanana/constants";
-import { useDownloadStore, DownloadStatus, useFavoritesStore } from "../../../../store";
+import {
+  useDownloadStore,
+  DownloadStatus,
+  useFavoritesStore,
+  useEngineDownloadStore,
+  useProcessStore,
+  useSettingsStore,
+  useStorageMigrationStore,
+} from "../../../../store";
+import { ConfirmationModal } from "../../../../shared/components/molecules/confirmation-modal/confirmation-modal";
 
 interface MobileViewProps extends ModalViewProps {
   carouselRef: React.RefObject<HTMLDivElement | null>;
@@ -42,6 +68,10 @@ export const MobileView: React.FC<MobileViewProps> = ({
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [isInstalled, setIsInstalled] = useState(Boolean(isInstalledProp));
   const [isUninstalling, setIsUninstalling] = useState(false);
+  const [isUninstallConfirmOpen, setIsUninstallConfirmOpen] = useState(false);
+  const modInstanceKey = `mod:${displayCard?.id}`;
+  const playStatus = useProcessStore((s) => s.getPlayState(modInstanceKey));
+  const isStorageMigrating = useStorageMigrationStore((s) => s.isMigrating);
   const [activeTab, setActiveTab] = useState<ModModalTab>("description");
 
   const [isEditingTitle, setIsEditingTitle] = useState(false);
@@ -53,8 +83,84 @@ export const MobileView: React.FC<MobileViewProps> = ({
   const [isVersionDropdownOpen, setIsVersionDropdownOpen] = useState(false);
   const versionDropdownRef = useRef<HTMLDivElement>(null);
   const [selectedVersion, setSelectedVersion] = useState<string>(
-    (displayCard as any).engineVersion || "Any version"
+    (displayCard as any).engineVersion || ""
   );
+
+  const [installedEnginesRegistry, setInstalledEnginesRegistry] = useState<
+    Record<string, Record<string, any>>
+  >({});
+  const [isInstallingEngine, setIsInstallingEngine] = useState<boolean>(false);
+
+  const loadEngines = useCallback(async () => {
+    if (!Core.platform.getInstalledEngines) return;
+    try {
+      const reg = await Core.platform.getInstalledEngines();
+      setInstalledEnginesRegistry(reg || {});
+    } catch {
+      setInstalledEnginesRegistry({});
+    }
+  }, []);
+
+  useEffect(() => {
+    loadEngines();
+    window.addEventListener("wb:engines-changed", loadEngines);
+    const unsub = Core.platform.onEvent("engines:changed", loadEngines);
+    return () => {
+      window.removeEventListener("wb:engines-changed", loadEngines);
+      unsub();
+    };
+  }, [loadEngines]);
+
+  const currentEngineKey = String(displayCard?.engineId || "vslice").toLowerCase();
+  const installedEngineVersions = React.useMemo(() => {
+    const catData = installedEnginesRegistry[currentEngineKey];
+    if (!catData) return [];
+    return Object.keys(catData);
+  }, [installedEnginesRegistry, currentEngineKey]);
+
+  useEffect(() => {
+    if (installedEngineVersions.length > 0) {
+      if (!selectedVersion) {
+        setSelectedVersion("Any version");
+      } else if (
+        selectedVersion !== "Any version" &&
+        selectedVersion !== "any" &&
+        !installedEngineVersions.includes(selectedVersion)
+      ) {
+        setSelectedVersion(installedEngineVersions[0]);
+      }
+    }
+  }, [installedEngineVersions, selectedVersion]);
+
+  const handleInstallLatestEngine = async () => {
+    if (isInstallingEngine) return;
+    setIsInstallingEngine(true);
+    try {
+      const releases = await Core.services.engines.fetchEngineReleases(currentEngineKey);
+      const latestWithDownload = releases.find((r) => r.downloadUrl);
+      if (!latestWithDownload || !latestWithDownload.downloadUrl) {
+        Utils.toast.error("No download available for this engine on your system.", {
+          title: "Engine Install",
+        });
+        return;
+      }
+
+      await useEngineDownloadStore.getState().startEngineDownload({
+        engineId: currentEngineKey,
+        version: latestWithDownload.version,
+        engineName,
+        downloadUrl: latestWithDownload.downloadUrl,
+      });
+
+      await loadEngines();
+    } catch (err: any) {
+      Utils.toast.error(err?.message || "Failed to install engine.", {
+        title: "Install Error",
+      });
+    } finally {
+      setIsInstallingEngine(false);
+    }
+  };
 
   const isExecutable = React.useMemo(() => {
     const eid = String(displayCard.engineId || "").toLowerCase();
@@ -192,13 +298,21 @@ export const MobileView: React.FC<MobileViewProps> = ({
     }
   }, [displayCard?.id, downloadTasks]);
 
-  const handleUninstall = async () => {
+  const executeUninstall = async () => {
+    if (!displayCard?.id) return;
+    if (useStorageMigrationStore.getState().isMigrating) {
+      Utils.toast.warning(
+        "Cannot uninstall while storage migration is in progress. Please wait for the migration to complete.",
+        { title: "Storage Relocation in Progress" }
+      );
+      return;
+    }
     setIsUninstalling(true);
     try {
       await Core.platform.uninstallMod(displayCard.id.toString());
       setIsInstalled(false);
       setLocalInstalledAt(undefined);
-      Utils.toast.info(`"${displayCard.name}" uninstalled.`, {
+      Utils.toast.success(`"${displayCard.name}" uninstalled successfully!`, {
         title: "Mod Uninstalled",
       });
     } catch (e: any) {
@@ -207,6 +321,22 @@ export const MobileView: React.FC<MobileViewProps> = ({
       });
     } finally {
       setIsUninstalling(false);
+    }
+  };
+
+  const handleUninstall = async () => {
+    if (!displayCard?.id) return;
+    if (useStorageMigrationStore.getState().isMigrating) {
+      Utils.toast.warning(
+        "Cannot uninstall while storage migration is in progress. Please wait for the migration to complete.",
+        { title: "Storage Relocation in Progress" }
+      );
+      return;
+    }
+    if (useSettingsStore.getState().isWarningDismissed("delete-mod")) {
+      await executeUninstall();
+    } else {
+      setIsUninstallConfirmOpen(true);
     }
   };
 
@@ -237,6 +367,13 @@ export const MobileView: React.FC<MobileViewProps> = ({
       return;
     }
     
+    if (isStorageMigrating) {
+      Utils.toast.warning("Storage migration in progress. Downloads are temporarily disabled.", {
+        title: "Storage Relocation",
+      });
+      return;
+    }
+
     if (!displayCard.id) return;
     const card = displayCard as any;
     const payload = {
@@ -297,22 +434,63 @@ export const MobileView: React.FC<MobileViewProps> = ({
 
   const handleManage = async () => {
     if (!displayCard?.id) return;
+    if (useStorageMigrationStore.getState().isMigrating) {
+      Utils.toast.warning(
+        "Cannot launch game while storage migration is in progress. Please wait for the migration to complete.",
+        { title: "Storage Relocation in Progress" }
+      );
+      return;
+    }
     try {
-      if (Core.platform.openModFolder) {
-        await Core.platform.openModFolder(displayCard.id.toString(), displayCard.name);
-        Utils.toast.info(`Opened folder for "${displayCard.name}"`, {
-          title: "Mod Manager",
-        });
-      } else {
-        Utils.toast.info(`Mod "${displayCard.name}" is installed and ready.`, {
-          title: "Mod Installed",
-        });
+      const modsDir = (await Core.platform.getModsPath?.()) || "";
+      const safeName = (displayCard.name || "unknown")
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .replace(/[^a-zA-Z0-9]/g, "")
+        .toLowerCase();
+
+      const modPath = `${modsDir}/mod_${displayCard.id}_${safeName}`;
+      const engId = displayCard.engineId || "vslice";
+
+      let targetFolder = modPath;
+      let modFolderPath: string | undefined = undefined;
+      let args: string[] | undefined = undefined;
+
+      if (engId && engId !== "executable" && engId !== "3827") {
+        const enginesDir = (await Core.platform.getEnginesPath?.()) || "";
+        const engVer =
+          selectedVersion && selectedVersion !== "Any version" && selectedVersion !== "any"
+            ? selectedVersion
+            : installedEngineVersions[0] || "latest";
+        targetFolder = `${enginesDir}/${engId}/${engVer}`;
+        modFolderPath = modPath;
+
+        /* Pass -mod parameter when launching mod in Codename Engine */
+        const isCodename =
+          String(engId).toLowerCase() === "codename" ||
+          String(engId).toLowerCase() === "34764" ||
+          String(engineName || "").toLowerCase().includes("codename");
+
+        if (isCodename) {
+          const modFolderName = `mod_${displayCard.id}_${safeName}`;
+          args = ["-mod", modFolderName];
+        }
       }
+
+      await useProcessStore.getState().launchInstance(modInstanceKey, targetFolder, {
+        modFolderPath,
+        args,
+      });
     } catch {
-      Utils.toast.error("Could not open mod directory.", {
-        title: "Manage Mod",
+      Utils.toast.error("Could not launch mod.", {
+        title: "Launch Error",
       });
     }
+  };
+
+  const handleStop = async () => {
+    if (!displayCard?.id) return;
+    await useProcessStore.getState().stopInstance(modInstanceKey);
   };
 
   return (
@@ -386,45 +564,92 @@ export const MobileView: React.FC<MobileViewProps> = ({
             </div>
           )}
           {!isExecutable && (
-            <div className="relative z-40 shrink-0" ref={versionDropdownRef}>
-              <div
-                onClick={() => setIsVersionDropdownOpen((prev) => !prev)}
-                className="flex items-center gap-1.5 px-2.5 py-1 rounded-[4px] bg-[var(--wb-surface-bright)]/70 hover:bg-[var(--wb-surface-bright)] text-[var(--wb-on-surface)] border border-[var(--wb-outline-variant)]/40 hover:border-[var(--wb-primary)]/40 shrink-0 cursor-pointer transition-all select-none group"
-                title="Select engine version"
-              >
-                <Tag className="w-3.5 h-3.5 text-[var(--wb-primary)] shrink-0" />
-                <span className="text-xs font-semibold leading-none truncate max-w-[100px]">{selectedVersion}</span>
-                <ChevronDown
-                  className={`w-3 h-3 opacity-70 group-hover:opacity-100 transition-transform duration-200 ${
-                    isVersionDropdownOpen ? "rotate-180" : ""
-                  }`}
-                />
-              </div>
-
-              {isVersionDropdownOpen && (
-                <div className="absolute left-0 top-full mt-1.5 z-50 min-w-[210px] bg-[var(--wb-surface-container-highest)] border border-[var(--wb-outline-variant)]/60 rounded-xl shadow-2xl p-1.5 flex flex-col gap-1 animate-in fade-in slide-in-from-top-1 duration-150">
-                  <div className="px-2 py-1 text-[10px] font-bold text-[var(--wb-on-surface-variant)] uppercase tracking-wider">
-                    Engine Version
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => handleSelectVersion("Any version")}
-                    className="flex items-center justify-between gap-2 px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-[var(--wb-primary)]/20 text-[var(--wb-primary)] cursor-pointer text-left w-full transition-colors"
-                  >
-                    <div className="flex items-center gap-2 truncate">
-                      <Tag className="w-3.5 h-3.5 text-[var(--wb-primary)] shrink-0" />
-                      <span className="truncate">Any version</span>
-                    </div>
-                    <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-[var(--wb-primary)]/30 text-[var(--wb-primary)] uppercase tracking-wider shrink-0">
-                      Default
-                    </span>
-                  </button>
-                  <div className="px-2.5 py-2 mt-0.5 rounded-lg bg-[var(--wb-surface-container-high)] text-[11px] text-[var(--wb-on-surface-variant)] opacity-75 leading-relaxed">
-                    No other downloaded versions available for this engine.
-                  </div>
+            installedEngineVersions.length > 0 ? (
+              <div className="relative z-40 shrink-0" ref={versionDropdownRef}>
+                <div
+                  onClick={() => setIsVersionDropdownOpen((prev) => !prev)}
+                  className="flex items-center gap-1.5 px-2.5 py-1 rounded-[4px] bg-[var(--wb-surface-bright)]/70 hover:bg-[var(--wb-surface-bright)] text-[var(--wb-on-surface)] border border-[var(--wb-outline-variant)]/40 hover:border-[var(--wb-primary)]/40 shrink-0 cursor-pointer transition-all select-none group"
+                  title="Select engine version"
+                >
+                  <Tag className="w-3.5 h-3.5 text-[var(--wb-primary)] shrink-0" />
+                  <span className="text-xs font-semibold leading-none truncate max-w-[100px]">
+                    {selectedVersion || "Any version"}
+                  </span>
+                  <ChevronDown
+                    className={`w-3 h-3 opacity-70 group-hover:opacity-100 transition-transform duration-200 ${
+                      isVersionDropdownOpen ? "rotate-180" : ""
+                    }`}
+                  />
                 </div>
-              )}
-            </div>
+
+                {isVersionDropdownOpen && (
+                  <div className="absolute left-0 top-full mt-1.5 z-50 min-w-[210px] bg-[var(--wb-surface-container-highest)] border border-[var(--wb-outline-variant)]/60 rounded-xl shadow-2xl p-1.5 flex flex-col gap-1 animate-in fade-in slide-in-from-top-1 duration-150">
+                    <div className="px-2 py-1 text-[10px] font-bold text-[var(--wb-on-surface-variant)] uppercase tracking-wider">
+                      Installed Versions
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => handleSelectVersion("Any version")}
+                      className={`flex items-center justify-between gap-2 px-2.5 py-1.5 rounded-lg text-xs font-semibold cursor-pointer text-left w-full transition-colors ${
+                        selectedVersion === "Any version" || selectedVersion === "any"
+                          ? "bg-[var(--wb-primary)]/20 text-[var(--wb-primary)]"
+                          : "text-[var(--wb-on-surface-variant)] hover:text-[var(--wb-on-surface)] hover:bg-[var(--wb-surface-container-high)]"
+                      }`}
+                    >
+                      <div className="flex items-center gap-2 truncate">
+                        <Layers className="w-3.5 h-3.5 text-[var(--wb-primary)] shrink-0" />
+                        <span className="truncate">Any version</span>
+                      </div>
+                      {(selectedVersion === "Any version" || selectedVersion === "any") && (
+                        <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-[var(--wb-primary)]/30 text-[var(--wb-primary)] uppercase tracking-wider shrink-0">
+                          Selected
+                        </span>
+                      )}
+                    </button>
+                    {installedEngineVersions.map((ver, idx) => {
+                      const isSelected = selectedVersion === ver;
+                      return (
+                        <button
+                          key={ver}
+                          type="button"
+                          onClick={() => handleSelectVersion(ver)}
+                          className={`flex items-center justify-between gap-2 px-2.5 py-1.5 rounded-lg text-xs font-semibold cursor-pointer text-left w-full transition-colors ${
+                            isSelected
+                              ? "bg-[var(--wb-primary)]/20 text-[var(--wb-primary)]"
+                              : "text-[var(--wb-on-surface-variant)] hover:text-[var(--wb-on-surface)] hover:bg-[var(--wb-surface-container-high)]"
+                          }`}
+                        >
+                          <div className="flex items-center gap-2 truncate">
+                            <Tag className="w-3.5 h-3.5 text-[var(--wb-primary)] shrink-0" />
+                            <span className="truncate">{ver}</span>
+                          </div>
+                          {idx === 0 && (
+                            <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-[var(--wb-primary)]/30 text-[var(--wb-primary)] uppercase tracking-wider shrink-0">
+                              Default
+                            </span>
+                          )}
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            ) : (
+              <button
+                type="button"
+                onClick={handleInstallLatestEngine}
+                disabled={isInstallingEngine}
+                className="flex items-center gap-1.5 px-2.5 py-1 rounded-[4px] bg-[var(--wb-primary)] hover:opacity-90 text-[var(--wb-on-primary)] shrink-0 cursor-pointer transition-all select-none shadow-sm text-xs font-bold active:scale-95 disabled:opacity-50"
+                title={`Install latest version of ${engineName}`}
+              >
+                {isInstallingEngine ? (
+                  <Loader2 className="w-3.5 h-3.5 animate-spin shrink-0" />
+                ) : (
+                  <Download className="w-3.5 h-3.5 shrink-0" />
+                )}
+                <span>Install Engine</span>
+              </button>
+            )
           )}
         </div>
         {isInstalled && localInstalledAt && (
@@ -530,51 +755,41 @@ export const MobileView: React.FC<MobileViewProps> = ({
       
       {activeTab === "description" && (
         <div className="flex flex-col">
-          {isTranslating && (
-            <div className="flex items-center gap-2 mb-3 px-3 py-1.5 rounded-xl bg-[var(--wb-primary)]/10 text-[var(--wb-primary)] text-xs font-semibold animate-pulse">
-              <Loader2 className="w-3.5 h-3.5 animate-spin shrink-0" />
-              <span>Translating description to {targetLanguage === "es" ? "Spanish" : "English"}...</span>
-            </div>
-          )}
-
-          {!isTranslating && translatedHtml && (
-            <div className="flex items-center justify-between gap-2 mb-3 py-1.5 px-3 rounded-xl bg-[var(--wb-surface-container-low)] border border-white/5 text-xs">
-              <div className="flex items-center gap-2 text-[var(--wb-on-surface-variant)]">
-                <Languages className="w-3.5 h-3.5 text-[var(--wb-primary)] shrink-0" />
-                <span>
-                  {showTranslated
-                    ? `Translated to ${targetLanguage === "es" ? "Spanish" : "English"}`
-                    : "Original Description"}
-                </span>
-              </div>
-              <button
-                type="button"
-                onClick={() => setShowTranslated(!showTranslated)}
-                className="text-xs font-semibold text-[var(--wb-primary)] hover:underline cursor-pointer outline-none shrink-0"
-              >
-                {showTranslated ? "Show original" : "Show translation"}
-              </button>
-            </div>
-          )}
-
-          <div className="flex items-center justify-between gap-2 mb-3">
-            {isInstalled && !isEditingDesc ? (
+          {/** Top toolbar: Edit description + Translation pill */}
+          <div className="flex items-center gap-2 mb-3 flex-wrap">
+            {isInstalled && !isEditingDesc && (
               <button
                 type="button"
                 onClick={() => setIsEditingDesc(true)}
-                className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-[var(--wb-surface-container-low)] hover:bg-[var(--wb-surface-container-high)] text-xs font-semibold text-[var(--wb-on-surface-variant)] hover:text-[var(--wb-primary)] transition-colors cursor-pointer border border-white/5"
+                className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[var(--wb-surface-container-low)] hover:bg-[var(--wb-surface-container-high)] text-xs font-semibold text-[var(--wb-on-surface-variant)] hover:text-[var(--wb-primary)] transition-colors cursor-pointer border border-white/5 shrink-0"
                 title="Edit description"
               >
                 <Pencil className="w-3.5 h-3.5 text-[var(--wb-primary)] shrink-0" />
                 <span>Edit description</span>
               </button>
-            ) : <div />}
+            )}
 
-            {!isTranslating && !translatedHtml && (
+            {isTranslating ? (
+              <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[var(--wb-primary)]/10 text-[var(--wb-primary)] text-xs font-semibold border border-[var(--wb-primary)]/20 shrink-0 animate-pulse">
+                <Loader2 className="w-3.5 h-3.5 animate-spin shrink-0" />
+                <span>Translating...</span>
+              </div>
+            ) : translatedHtml ? (
+              <button
+                type="button"
+                onClick={() => setShowTranslated(!showTranslated)}
+                className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[var(--wb-primary)]/15 hover:bg-[var(--wb-primary)]/25 text-[var(--wb-primary)] text-xs font-semibold border border-[var(--wb-primary)]/30 transition-all cursor-pointer shrink-0"
+                title={showTranslated ? "Click to show original description" : "Click to show translated description"}
+              >
+                <Languages className="w-3.5 h-3.5 shrink-0" />
+                <span>{showTranslated ? `Translated (${targetLanguage === "es" ? "ES" : "EN"})` : "Show Translation"}</span>
+              </button>
+            ) : (
               <button
                 type="button"
                 onClick={onManualTranslate}
-                className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-[var(--wb-surface-container-low)] hover:bg-[var(--wb-surface-container-high)] text-xs font-semibold text-[var(--wb-on-surface-variant)] hover:text-[var(--wb-on-surface)] transition-colors cursor-pointer border border-white/5"
+                className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[var(--wb-surface-container-low)] hover:bg-[var(--wb-surface-container-high)] text-xs font-semibold text-[var(--wb-on-surface-variant)] hover:text-[var(--wb-on-surface)] transition-colors cursor-pointer border border-white/5 shrink-0"
+                title={`Translate description to ${targetLanguage === "es" ? "Spanish" : "English"}`}
               >
                 <Languages className="w-3.5 h-3.5 text-[var(--wb-primary)] shrink-0" />
                 <span>Translate to {targetLanguage === "es" ? "Spanish" : "English"}</span>
@@ -664,16 +879,71 @@ export const MobileView: React.FC<MobileViewProps> = ({
           {isInstalled ? (
             <div className="flex gap-2 w-full">
               <button 
-                onClick={handleManage}
-                className="flex-1 bg-[var(--wb-primary)] hover:opacity-90 text-[var(--wb-on-primary)] py-3 rounded-xl flex items-center justify-center gap-2 font-bold transition-all duration-300 cursor-pointer"
+                onClick={playStatus === "playing" ? handleStop : handleManage}
+                disabled={playStatus === "launching" || playStatus === "stopping"}
+                className={`flex-1 ${
+                  playStatus === "launching"
+                    ? "bg-amber-500/20 text-amber-300 border border-amber-500/30 cursor-wait"
+                    : playStatus === "playing"
+                    ? "bg-emerald-500/20 hover:bg-rose-500/20 text-emerald-300 hover:text-rose-300 border border-emerald-500/30 hover:border-rose-500/30 cursor-pointer group"
+                    : playStatus === "stopping"
+                    ? "bg-amber-500/20 text-amber-300 border border-amber-500/30 cursor-not-allowed"
+                    : playStatus === "error"
+                    ? "bg-red-500/20 text-red-300 border border-red-500/30 cursor-not-allowed"
+                    : isStorageMigrating
+                    ? "bg-[var(--wb-primary)] text-[var(--wb-on-primary)] opacity-50 cursor-not-allowed"
+                    : "bg-[var(--wb-primary)] hover:opacity-90 text-[var(--wb-on-primary)] cursor-pointer"
+                } py-3 rounded-xl flex items-center justify-center gap-2 font-bold transition-all duration-300`}
+                title={
+                  isStorageMigrating
+                    ? "Cannot launch game while storage migration is in progress"
+                    : playStatus === "playing"
+                    ? "Click to stop process"
+                    : undefined
+                }
               >
-                <Play className="w-5 h-5 fill-current" />
-                <span className="text-base">Play</span>
+                {playStatus === "launching" ? (
+                  <>
+                    <Loader2 className="w-5 h-5 animate-spin" />
+                    <span className="text-base">Launching...</span>
+                  </>
+                ) : playStatus === "playing" ? (
+                  <>
+                    <Activity className="w-5 h-5 animate-pulse group-hover:hidden text-emerald-400" />
+                    <Square className="w-5 h-5 fill-current hidden group-hover:inline text-rose-400" />
+                    <span className="text-base group-hover:hidden">Playing</span>
+                    <span className="text-base hidden group-hover:inline">Stop</span>
+                  </>
+                ) : playStatus === "stopping" ? (
+                  <>
+                    <Loader2 className="w-5 h-5 animate-spin text-amber-400" />
+                    <span className="text-base text-amber-300">Stopping...</span>
+                  </>
+                ) : playStatus === "error" ? (
+                  <>
+                    <AlertTriangle className="w-5 h-5 text-red-400" />
+                    <span className="text-base">Error</span>
+                  </>
+                ) : (
+                  <>
+                    <Play className="w-5 h-5 fill-current" />
+                    <span className="text-base">Play</span>
+                  </>
+                )}
               </button>
               <button 
                 onClick={handleUninstall}
                 disabled={isUninstalling}
-                className="flex-1 bg-red-500/10 hover:bg-red-500/20 text-red-400 py-3 rounded-xl flex items-center justify-center gap-2 font-bold transition-all duration-300 border border-red-500/20"
+                className={`flex-1 bg-red-500/10 text-red-400 py-3 rounded-xl flex items-center justify-center gap-2 font-bold transition-all duration-300 border border-red-500/20 ${
+                  isStorageMigrating
+                    ? "opacity-50 cursor-not-allowed"
+                    : "hover:bg-red-500/20 cursor-pointer"
+                }`}
+                title={
+                  isStorageMigrating
+                    ? "Cannot uninstall while storage migration is in progress"
+                    : undefined
+                }
               >
                 {isUninstalling ? (
                   <Loader2 className="w-5 h-5 animate-spin" />
@@ -704,14 +974,15 @@ export const MobileView: React.FC<MobileViewProps> = ({
               ) : (
                 <button 
                   onClick={() => {
+                    if (isStorageMigrating) return;
                     if (hasMultipleFiles) {
                       setActiveTab("details");
                     } else if (validFiles.length === 1) {
                       handleDownload(validFiles[0]._sDownloadUrl, validFiles[0]._idRow.toString());
                     }
                   }}
-                  disabled={!hasMultipleFiles && singleFileProgress === -1}
-                  className={`${!hasMultipleFiles && singleFileProgress === -1 ? "opacity-80 cursor-wait" : "group"} relative w-full bg-[var(--wb-primary)] text-[var(--wb-on-primary)] py-3 rounded-xl flex items-center justify-center px-4 font-bold transition-all duration-300 hover:opacity-90 overflow-hidden`}
+                  disabled={(!hasMultipleFiles && singleFileProgress === -1) || isStorageMigrating}
+                  className={`${!hasMultipleFiles && singleFileProgress === -1 ? "opacity-80 cursor-wait" : isStorageMigrating ? "opacity-50 cursor-not-allowed" : "group"} relative w-full bg-[var(--wb-primary)] text-[var(--wb-on-primary)] py-3 rounded-xl flex items-center justify-center px-4 font-bold transition-all duration-300 hover:opacity-90 overflow-hidden`}
                 >
                   {!hasMultipleFiles && singleFileProgress !== undefined && singleFileProgress >= 0 && (
                     <div 
@@ -798,6 +1069,22 @@ export const MobileView: React.FC<MobileViewProps> = ({
           )}
         </div>
       </div>
+      <ConfirmationModal
+        isOpen={isUninstallConfirmOpen}
+        onClose={() => setIsUninstallConfirmOpen(false)}
+        onConfirm={async (dontAskAgain) => {
+          if (dontAskAgain) {
+            await useSettingsStore.getState().dismissWarning("delete-mod");
+          }
+          setIsUninstallConfirmOpen(false);
+          await executeUninstall();
+        }}
+        title="Uninstall Mod"
+        description={`Are you sure you want to uninstall "${displayCard.name}"? All files for this mod will be permanently removed.`}
+        confirmLabel="LET'S GO!"
+        cancelLabel="Nevermind!"
+        isDestructive={true}
+      />
     </div>
   );
 };

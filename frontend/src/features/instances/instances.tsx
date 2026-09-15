@@ -9,6 +9,13 @@ import { InstancesVersionAside } from "./components/instances-version-aside";
 import { InstancesMarkdownViewer } from "./components/instances-markdown-viewer";
 import { InstancesExecutableView } from "./components/instances-executable-view";
 import { InstancesFooter } from "./components/instances-footer";
+import {
+  useEngineDownloadStore,
+  useProcessStore,
+  useSettingsStore,
+  useStorageMigrationStore,
+} from "../../store";
+import { ConfirmationModal } from "../../shared/components/molecules/confirmation-modal/confirmation-modal";
 
 /**
  * Organism / Feature: Instances View.
@@ -40,13 +47,17 @@ export const Instances: React.FC = () => {
   const [selectedModId, setSelectedModId] = useState<string | null>(null);
   const [isLoadingMods, setIsLoadingMods] = useState<boolean>(false);
 
-  const [downloadingKey, setDownloadingKey] = useState<string | null>(null);
-  const [downloadProgress, setDownloadProgress] = useState<number>(0);
-  const [downloadStatusText, setDownloadStatusText] = useState<string>("");
+  const currentEngineTask = useEngineDownloadStore((s) => s.currentTask);
+  const startEngineDownload = useEngineDownloadStore((s) => s.startEngineDownload);
+  const cancelEngineDownload = useEngineDownloadStore((s) => s.cancelEngineDownload);
+  const setCurrentView = useEngineDownloadStore((s) => s.setCurrentView);
+  const setNavigateCallback = useEngineDownloadStore((s) => s.setNavigateCallback);
+
   const [installedEngineMap, setInstalledEngineMap] = useState<Record<string, boolean>>({});
   const [installedEnginesRegistry, setInstalledEnginesRegistry] = useState<
     Record<string, Record<string, any>>
   >({});
+  const [isUninstallConfirmOpen, setIsUninstallConfirmOpen] = useState<boolean>(false);
 
   /** Parse initial category and version/mod from route path */
   useEffect(() => {
@@ -89,6 +100,10 @@ export const Instances: React.FC = () => {
   };
 
   useEffect(() => {
+    setNavigateCallback(navigate);
+  }, [navigate, setNavigateCallback]);
+
+  useEffect(() => {
     loadInstalledEngines();
 
     const handleEnginesChanged = () => {
@@ -97,10 +112,12 @@ export const Instances: React.FC = () => {
 
     window.addEventListener("wb:engines-changed", handleEnginesChanged);
     const unsubPlatform = Core.platform.onEvent("engines:changed", handleEnginesChanged);
+    const unsubReady = Core.platform.onEvent("ready", handleEnginesChanged);
 
     return () => {
       window.removeEventListener("wb:engines-changed", handleEnginesChanged);
       unsubPlatform();
+      unsubReady();
     };
   }, []);
 
@@ -186,8 +203,9 @@ export const Instances: React.FC = () => {
 
   const isCurrentEngineInstalled = useMemo(() => {
     if (isExecutable || !currentRelease) return false;
+    const cleanCurrentVer = currentRelease.version.toLowerCase().replace(/^v/, "");
     const versionMatch = installedVersionsForCategory.some(
-      (v) => v.toLowerCase() === currentRelease.version.toLowerCase()
+      (v) => v.toLowerCase().replace(/^v/, "") === cleanCurrentVer
     );
     return versionMatch || Boolean(installedEngineMap[`${selectedCategory}:${currentRelease.version}`]);
   }, [isExecutable, selectedCategory, currentRelease?.version, installedVersionsForCategory, installedEngineMap]);
@@ -213,9 +231,22 @@ export const Instances: React.FC = () => {
   }, [isNightly, isCurrentEngineInstalled, currentRelease?.releasedAt, installedEnginesRegistry, selectedCategory, currentRelease?.version]);
 
   const isDownloadingCurrent = useMemo(() => {
-    if (!currentRelease) return false;
-    return downloadingKey === `${selectedCategory}:${currentRelease.version}`;
-  }, [downloadingKey, selectedCategory, currentRelease?.version]);
+    if (!currentRelease || !currentEngineTask) return false;
+    const catMatch = currentEngineTask.engineId.toLowerCase() === selectedCategory.toLowerCase();
+    const verMatch =
+      currentEngineTask.version.toLowerCase().replace(/^v/, "") ===
+      currentRelease.version.toLowerCase().replace(/^v/, "");
+    return catMatch && verMatch;
+  }, [currentEngineTask, selectedCategory, currentRelease?.version]);
+
+  useEffect(() => {
+    setCurrentView({
+      route: location.pathname,
+      viewingCategory: selectedCategory,
+      viewingVersion: selectedVersion,
+      activeModalModId: null,
+    });
+  }, [location.pathname, selectedCategory, selectedVersion, setCurrentView]);
 
   /** Synchronize route URL and document title */
   useEffect(() => {
@@ -262,81 +293,14 @@ export const Instances: React.FC = () => {
       return;
     }
 
-    if (downloadingKey) {
-      Utils.toast.info("A download is already in progress.", {
-        title: "Engine Download",
-      });
-      return;
-    }
-
-    const key = `${selectedCategory}:${currentRelease.version}`;
-    setDownloadingKey(key);
-    setDownloadProgress(0);
-    setDownloadStatusText("Starting download...");
-
-    const toastId = Utils.toast.info(`Downloading ${currentEngineMeta.name} v${currentRelease.version}...`, {
-      title: "Engine Download",
-      duration: 60000,
+    await startEngineDownload({
+      engineId: selectedCategory,
+      version: currentRelease.version,
+      engineName: currentEngineMeta.name,
+      downloadUrl: currentRelease.downloadUrl,
     });
 
-    try {
-      if (Core.platform.downloadEngine) {
-        await Core.platform.downloadEngine(
-          currentRelease.downloadUrl,
-          selectedCategory,
-          currentRelease.version,
-          (percent, status) => {
-            setDownloadProgress(percent);
-            setDownloadStatusText(status || "Downloading...");
-            if (status === "Flattening folder structure..." || status === "Flattening") {
-              Utils.toast.update(toastId, {
-                title: "Engine Download",
-                message: `Flattening folder structure for ${currentEngineMeta.name} v${currentRelease.version}...`,
-                type: "info",
-              });
-            } else if (status === "Extracting archive..." || status === "Extracting") {
-              Utils.toast.update(toastId, {
-                title: "Engine Download",
-                message: `Extracting ${currentEngineMeta.name} v${currentRelease.version}...`,
-                type: "info",
-              });
-            }
-          }
-        );
-
-        setInstalledEngineMap((prev) => ({
-          ...prev,
-          [key]: true,
-        }));
-        await loadInstalledEngines();
-
-        Utils.toast.update(toastId, {
-          title: "Engine Download",
-          message: `${currentEngineMeta.name} v${currentRelease.version} downloaded and extracted!`,
-          type: "success",
-          duration: 4000,
-        });
-      } else {
-        await Core.platform.openUrl(currentRelease.downloadUrl);
-        Utils.toast.update(toastId, {
-          title: "Engine Download",
-          message: `Download opened in browser for ${currentEngineMeta.name} v${currentRelease.version}.`,
-          type: "success",
-          duration: 4000,
-        });
-      }
-    } catch (error: any) {
-      Utils.toast.update(toastId, {
-        title: "Engine Download",
-        message: error?.message || `Could not download ${currentEngineMeta.name} v${currentRelease.version}.`,
-        type: "error",
-        duration: 5000,
-      });
-    } finally {
-      setDownloadingKey(null);
-      setDownloadProgress(0);
-      setDownloadStatusText("");
-    }
+    await loadInstalledEngines();
   };
 
   const handleOpenEngineFolder = async () => {
@@ -350,24 +314,126 @@ export const Instances: React.FC = () => {
     }
   };
 
+  const currentInstanceKey = isExecutable
+    ? (selectedMod ? `mod:${selectedMod.id}` : "")
+    : (currentRelease ? `engine:${selectedCategory}:${currentRelease.version}` : "");
+
+  const playStatus = useProcessStore((s) =>
+    currentInstanceKey ? s.getPlayState(currentInstanceKey) : "idle"
+  );
+
+  const isStorageMigrating = useStorageMigrationStore((s) => s.isMigrating);
+
   const handlePlayEngine = async () => {
     if (!currentRelease) return;
     try {
-      if (Core.platform.openEngineFolder) {
-        await Core.platform.openEngineFolder(selectedCategory, currentRelease.version);
-        Utils.toast.info(`Opened folder for ${currentEngineMeta.name} v${currentRelease.version}.`, {
-          title: "Launch Engine",
-        });
+      const enginesDir = (await Core.platform.getEnginesPath?.()) || "";
+      const safeEngineId = (selectedCategory || "vslice")
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .replace(/[^a-zA-Z0-9_-]/g, "")
+        .toLowerCase();
+
+      const safeVersion = (currentRelease.version || "latest")
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .replace(/[^a-zA-Z0-9._-]/g, "");
+
+      /* Guard against actions during storage migration */
+      if (isStorageMigrating) {
+        Utils.toast.warning(
+          "Cannot launch game while storage migration is in progress. Please wait for the migration to complete.",
+          { title: "Storage Relocation in Progress" }
+        );
+        return;
       }
-    } catch {
-      Utils.toast.error("Could not launch engine.", {
+
+      const folderPath = `${enginesDir}/${safeEngineId}/${safeVersion}`;
+      const instanceKey = `engine:${selectedCategory}:${currentRelease.version}`;
+
+      /* Find all installed mods matching this engine and version (including Any version) */
+      const installedMods = (await Core.platform.getInstalledMods?.()) || [];
+      const modsDir = (await Core.platform.getModsPath?.()) || "";
+      const currentCategory = (selectedCategory || "").toLowerCase().trim();
+      const currentReleaseVer = (currentRelease.version || "").toLowerCase().trim();
+      const cleanCurrentReleaseVer = currentReleaseVer.replace(/^v/, "");
+
+      const matchingModPaths: string[] = [];
+
+      for (const mod of installedMods) {
+        if (!mod) continue;
+
+        const modEngId = String(mod.engineId || "").toLowerCase().trim();
+        const modEngName = String(mod.engineName || "").toLowerCase().trim();
+
+        /* Exclude standalone executable mods */
+        if (
+          modEngId === "executable" ||
+          modEngId === "3827" ||
+          modEngName.includes("executable")
+        ) {
+          continue;
+        }
+
+        /* Check if mod engine matches current engine category */
+        const isEngineMatch =
+          modEngId === currentCategory ||
+          modEngName.includes(currentCategory) ||
+          (currentCategory === "vslice" && (modEngId === "29202" || modEngName.includes("v-slice") || modEngName.includes("base game"))) ||
+          (currentCategory === "psych" && (modEngId === "28367" || modEngName.includes("psych"))) ||
+          (currentCategory === "codename" && (modEngId === "34764" || modEngName.includes("codename"))) ||
+          (currentCategory === "pslice" && (modEngId === "43798" || modEngName.includes("p-slice"))) ||
+          (currentCategory === "fpsplus" && (modEngId === "43850" || modEngName.includes("fps plus"))) ||
+          (currentCategory === "psychonline" && (modEngId === "43788" || modEngName.includes("psych online")));
+
+        if (!isEngineMatch) continue;
+
+        /* Check if engine version matches or is Any version */
+        const modVer = String(mod.engineVersion || "").toLowerCase().trim();
+        const cleanModVer = modVer.replace(/^v/, "");
+
+        const isVersionMatch =
+          !modVer ||
+          modVer === "any version" ||
+          modVer === "any" ||
+          cleanModVer === cleanCurrentReleaseVer ||
+          cleanModVer === "latest";
+
+        if (!isVersionMatch) continue;
+
+        /* Determine mod folder path */
+        const safeName = (mod.name || mod.title || "unknown")
+          .normalize("NFD")
+          .replace(/[\u0300-\u036f]/g, "")
+          .replace(/[^a-zA-Z0-9]/g, "")
+          .toLowerCase();
+
+        const modPath = mod.installPath || `${modsDir}/mod_${mod.id}_${safeName}`;
+        if (!matchingModPaths.includes(modPath)) {
+          matchingModPaths.push(modPath);
+        }
+      }
+
+      await useProcessStore.getState().launchInstance(instanceKey, folderPath, {
+        modFolderPaths: matchingModPaths,
+      });
+    } catch (err: any) {
+      Utils.toast.error(err?.message || "Could not launch engine.", {
         title: "Launch Error",
       });
     }
   };
 
-  const handleUninstallEngine = async () => {
+  const executeUninstallEngine = async () => {
     if (!currentRelease) return;
+    if (isStorageMigrating) {
+      Utils.toast.warning(
+        "Cannot uninstall while storage migration is in progress. Please wait for the migration to complete.",
+        { title: "Storage Relocation in Progress" }
+      );
+      return;
+    }
+
     const ver = currentRelease.version;
     try {
       if (Core.platform.uninstallEngine) {
@@ -390,25 +456,55 @@ export const Instances: React.FC = () => {
     }
   };
 
+  const handleUninstallEngine = async () => {
+    if (!currentRelease) return;
+    if (isStorageMigrating) {
+      Utils.toast.warning(
+        "Cannot uninstall while storage migration is in progress. Please wait for the migration to complete.",
+        { title: "Storage Relocation in Progress" }
+      );
+      return;
+    }
+
+    if (useSettingsStore.getState().isWarningDismissed("delete-engine")) {
+      await executeUninstallEngine();
+    } else {
+      setIsUninstallConfirmOpen(true);
+    }
+  };
+
   const handlePlayExecutable = async () => {
     if (!selectedMod) return;
+    if (isStorageMigrating) {
+      Utils.toast.warning(
+        "Cannot launch game while storage migration is in progress. Please wait for the migration to complete.",
+        { title: "Storage Relocation in Progress" }
+      );
+      return;
+    }
 
     try {
-      if (Core.platform.openModFolder) {
-        await Core.platform.openModFolder(String(selectedMod.id), selectedMod.name || selectedMod.title);
-        Utils.toast.info(`Opened folder for "${selectedMod.name || selectedMod.title}".`, {
-          title: "Launch Executable",
-        });
-      } else {
-        Utils.toast.info(`"${selectedMod.name || selectedMod.title}" is ready.`, {
-          title: "Launch Executable",
-        });
-      }
-    } catch {
-      Utils.toast.error("Could not launch executable mod.", {
+      const modsDir = (await Core.platform.getModsPath?.()) || "";
+      const safeName = (selectedMod.name || selectedMod.title || "unknown")
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .replace(/[^a-zA-Z0-9]/g, "")
+        .toLowerCase();
+
+      const folderPath = `${modsDir}/mod_${selectedMod.id}_${safeName}`;
+      const instanceKey = `mod:${selectedMod.id}`;
+
+      await useProcessStore.getState().launchInstance(instanceKey, folderPath);
+    } catch (err: any) {
+      Utils.toast.error(err?.message || "Could not launch executable mod.", {
         title: "Launch Error",
       });
     }
+  };
+
+  const handleStopInstance = async () => {
+    if (!currentInstanceKey) return;
+    await useProcessStore.getState().stopInstance(currentInstanceKey);
   };
 
   const footerTitle = isExecutable
@@ -480,16 +576,49 @@ export const Instances: React.FC = () => {
             isNightly={isNightly}
             isNightlyOutdated={isNightlyOutdated}
             onDownload={handleDownloadRelease}
+            onCancelDownload={cancelEngineDownload}
             onUpdate={handleDownloadRelease}
             onUninstall={handleUninstallEngine}
             onOpenFolder={handleOpenEngineFolder}
             onPlay={isExecutable ? handlePlayExecutable : handlePlayEngine}
+            onStop={handleStopInstance}
+            playStatus={playStatus}
+            isStorageMigrating={isStorageMigrating}
             isDownloading={isDownloadingCurrent}
-            downloadProgress={downloadProgress}
-            downloadStatusText={downloadStatusText}
+            downloadProgress={isDownloadingCurrent ? currentEngineTask?.progress ?? 0 : 0}
+            downloadStatusText={isDownloadingCurrent ? currentEngineTask?.status ?? "" : ""}
+            currentExtractingFile={isDownloadingCurrent ? currentEngineTask?.currentFile : undefined}
           />
         </main>
       </div>
+
+      {currentRelease && (
+        <ConfirmationModal
+          isOpen={isUninstallConfirmOpen}
+          onClose={() => setIsUninstallConfirmOpen(false)}
+          onConfirm={async (dontAskAgain) => {
+            if (dontAskAgain) {
+              await useSettingsStore.getState().dismissWarning("delete-engine");
+            }
+            setIsUninstallConfirmOpen(false);
+            await executeUninstallEngine();
+          }}
+          title="Uninstall Engine Version"
+          description={
+            <span>
+              Are you sure you want to uninstall{" "}
+              <strong>
+                {currentEngineMeta.name} v{currentRelease.version}
+              </strong>
+              ? This engine version and all its local files will be permanently deleted from disk.
+            </span>
+          }
+          cancelLabel="Nevermind!"
+          confirmLabel="Uninstall"
+          isDestructive={true}
+          showDontAskAgain={true}
+        />
+      )}
     </div>
   );
 };

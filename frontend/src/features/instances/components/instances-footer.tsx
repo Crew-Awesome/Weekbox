@@ -2,12 +2,16 @@ import React, { useState } from "react";
 import {
   Download,
   Play,
+  Square,
   Loader2,
   HardDrive,
   FolderOpen,
   Trash2,
   RefreshCw,
   MoreVertical,
+  X,
+  Activity,
+  AlertTriangle,
 } from "lucide-react";
 
 interface InstancesFooterProps {
@@ -20,20 +24,25 @@ interface InstancesFooterProps {
   isNightly?: boolean;
   isNightlyOutdated?: boolean;
   onDownload?: () => void;
+  onCancelDownload?: () => void;
   onUpdate?: () => void;
   onUninstall?: () => void;
   onOpenFolder?: () => void;
   onPlay?: () => void;
+  onStop?: () => void;
+  playStatus?: "idle" | "launching" | "playing" | "stopping" | "error";
+  isStorageMigrating?: boolean;
   isDownloading?: boolean;
   downloadProgress?: number;
   downloadStatusText?: string;
+  currentExtractingFile?: string;
 }
 
 /**
  * Sticky footer with a higher z-index and glassmorphism styling for the Instances view.
  * Displays:
  * - Left: Large engine/mod icon and metadata
- * - Middle/Right: In-button progress bar during download
+ * - Middle/Right: In-button progress bar during download with hover cancel and extracting filename
  * - Right actions: Play, Update (if Nightly is outdated), Uninstall, and 3-dots menu (Open Folder, Reinstall)
  */
 export const InstancesFooter: React.FC<InstancesFooterProps> = ({
@@ -46,15 +55,21 @@ export const InstancesFooter: React.FC<InstancesFooterProps> = ({
   isNightly = false,
   isNightlyOutdated = false,
   onDownload,
+  onCancelDownload,
   onUpdate,
   onUninstall,
   onOpenFolder,
   onPlay,
+  onStop,
+  playStatus = "idle",
+  isStorageMigrating = false,
   isDownloading = false,
   downloadProgress = 0,
   downloadStatusText,
+  currentExtractingFile,
 }) => {
   const [showMoreMenu, setShowMoreMenu] = useState<boolean>(false);
+  const [isHoveringDownload, setIsHoveringDownload] = useState<boolean>(false);
 
   return (
     <div className="sticky bottom-0 z-50 w-full bg-[var(--wb-surface-container)]/70 backdrop-blur-2xl border-t border-white/10 px-6 md:px-10 py-5 sm:py-6 flex items-center justify-between shadow-[0_-8px_32px_rgba(0,0,0,0.5)]">
@@ -88,40 +103,172 @@ export const InstancesFooter: React.FC<InstancesFooterProps> = ({
       <div className="shrink-0 flex items-center gap-3">
         {isExecutable ? (
           onPlay ? (
-            <button
-              type="button"
-              onClick={onPlay}
-              className="flex items-center gap-3 px-8 sm:px-10 py-3.5 sm:py-4 rounded-2xl bg-[var(--wb-primary)] hover:opacity-90 text-[var(--wb-on-primary)] text-base sm:text-lg font-black transition-all cursor-pointer shadow-lg hover:scale-105 active:scale-95"
-            >
-              <Play className="w-5 h-5 sm:w-6 sm:h-6 fill-current" />
-              <span>Play</span>
-            </button>
-          ) : null
-        ) : isDownloading ? (
-          <div className="relative overflow-hidden flex items-center justify-between gap-4 px-7 sm:px-9 py-3.5 sm:py-4 rounded-2xl bg-[var(--wb-surface-container-highest)] border border-[var(--wb-primary)]/50 text-[var(--wb-on-surface)] text-sm sm:text-base font-black shadow-lg min-w-[280px] sm:min-w-[320px]">
-            <div
-              className="absolute inset-0 bg-[var(--wb-primary)]/35 transition-all duration-300 pointer-events-none"
-              style={{ width: `${Math.min(Math.max(downloadProgress, 0), 100)}%` }}
-            />
-            <div className="relative z-10 flex items-center gap-2.5 min-w-0">
-              <Loader2 className="w-5 h-5 animate-spin text-[var(--wb-primary)] shrink-0" />
-              <span className="truncate">{downloadStatusText || "Downloading..."}</span>
-            </div>
-            <span className="relative z-10 font-mono font-black text-[var(--wb-primary)] shrink-0 ml-3">
-              {downloadProgress}%
-            </span>
-          </div>
-        ) : isInstalled ? (
-          <div className="flex items-center gap-3">
-            {onPlay && (
+            playStatus === "launching" ? (
+              <button
+                type="button"
+                disabled
+                className="flex items-center gap-3 px-8 sm:px-10 py-3.5 sm:py-4 rounded-2xl bg-[var(--wb-surface-container-highest)] text-[var(--wb-on-surface)] text-base sm:text-lg font-black transition-all shadow-lg cursor-not-allowed border border-white/10"
+              >
+                <Loader2 className="w-5 h-5 sm:w-6 sm:h-6 animate-spin text-[var(--wb-primary)]" />
+                <span>Launching...</span>
+              </button>
+            ) : playStatus === "playing" ? (
+              <button
+                type="button"
+                onClick={onStop || onPlay}
+                className="flex items-center gap-3 px-8 sm:px-10 py-3.5 sm:py-4 rounded-2xl bg-emerald-600/30 hover:bg-rose-600/30 text-emerald-300 hover:text-rose-300 border border-emerald-500/40 hover:border-rose-500/40 text-base sm:text-lg font-black transition-all cursor-pointer shadow-lg shadow-emerald-950/40 hover:scale-105 active:scale-95 group"
+                title="Click to stop process"
+              >
+                <Activity className="w-5 h-5 sm:w-6 sm:h-6 text-emerald-400 group-hover:hidden animate-pulse" />
+                <Square className="w-5 h-5 sm:w-6 sm:h-6 fill-current text-rose-400 hidden group-hover:inline" />
+                <span className="group-hover:hidden">Playing</span>
+                <span className="hidden group-hover:inline">Stop</span>
+              </button>
+            ) : playStatus === "stopping" ? (
+              <button
+                type="button"
+                disabled
+                className="flex items-center gap-3 px-8 sm:px-10 py-3.5 sm:py-4 rounded-2xl bg-amber-600/30 text-amber-300 border border-amber-500/40 text-base sm:text-lg font-black transition-all shadow-lg cursor-not-allowed"
+              >
+                <Loader2 className="w-5 h-5 sm:w-6 sm:h-6 animate-spin text-amber-400" />
+                <span>Stopping...</span>
+              </button>
+            ) : playStatus === "error" ? (
+              <button
+                type="button"
+                disabled
+                className="flex items-center gap-3 px-8 sm:px-10 py-3.5 sm:py-4 rounded-2xl bg-rose-600/30 text-rose-300 border border-rose-500/40 text-base sm:text-lg font-black transition-all shadow-lg cursor-not-allowed animate-in fade-in"
+              >
+                <AlertTriangle className="w-5 h-5 sm:w-6 sm:h-6 text-rose-400" />
+                <span>Error</span>
+              </button>
+            ) : (
               <button
                 type="button"
                 onClick={onPlay}
-                className="flex items-center gap-2.5 px-7 sm:px-9 py-3.5 sm:py-4 rounded-2xl bg-[var(--wb-primary)] hover:opacity-90 text-[var(--wb-on-primary)] text-base sm:text-lg font-black transition-all cursor-pointer shadow-lg hover:scale-105 active:scale-95"
+                className={`flex items-center gap-3 px-8 sm:px-10 py-3.5 sm:py-4 rounded-2xl bg-[var(--wb-primary)] text-[var(--wb-on-primary)] text-base sm:text-lg font-black transition-all shadow-lg ${
+                  isStorageMigrating
+                    ? "opacity-50 cursor-not-allowed"
+                    : "hover:opacity-90 cursor-pointer hover:scale-105 active:scale-95"
+                }`}
+                title={
+                  isStorageMigrating
+                    ? "Cannot launch game while storage migration is in progress"
+                    : "Play mod"
+                }
               >
                 <Play className="w-5 h-5 sm:w-6 sm:h-6 fill-current" />
                 <span>Play</span>
               </button>
+            )
+          ) : null
+        ) : isDownloading ? (
+          <button
+            type="button"
+            onClick={onCancelDownload}
+            onMouseEnter={() => setIsHoveringDownload(true)}
+            onMouseLeave={() => setIsHoveringDownload(false)}
+            className={`relative overflow-hidden flex items-center justify-between gap-4 px-7 sm:px-9 py-3.5 sm:py-4 rounded-2xl transition-all shadow-lg min-w-[280px] sm:min-w-[340px] cursor-pointer select-none ${
+              isHoveringDownload
+                ? "bg-red-500/20 border-2 border-red-500/80 text-red-300"
+                : "bg-[var(--wb-surface-container-highest)] border border-[var(--wb-primary)]/50 text-[var(--wb-on-surface)]"
+            }`}
+            title={isHoveringDownload ? "Click to cancel download" : undefined}
+          >
+            {!isHoveringDownload && (
+              <div
+                className="absolute inset-0 bg-[var(--wb-primary)]/35 transition-all duration-300 pointer-events-none"
+                style={{ width: `${Math.min(Math.max(downloadProgress, 0), 100)}%` }}
+              />
+            )}
+
+            {isHoveringDownload ? (
+              <div className="relative z-10 flex items-center gap-2.5 min-w-0 w-full justify-center text-red-400 font-extrabold animate-in fade-in duration-150">
+                <X className="w-5 h-5 shrink-0" />
+                <span className="text-sm sm:text-base tracking-wide">Cancel Download</span>
+              </div>
+            ) : (
+              <>
+                <div className="relative z-10 flex flex-col items-start min-w-0 text-left">
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <Loader2 className="w-5 h-5 animate-spin text-[var(--wb-primary)] shrink-0" />
+                    <span className="truncate text-sm sm:text-base font-black">
+                      {downloadStatusText || "Downloading..."}
+                    </span>
+                  </div>
+                  {currentExtractingFile && (
+                    <span className="text-[11px] text-[var(--wb-on-surface-variant)] truncate max-w-[200px] sm:max-w-[240px] ml-7 mt-0.5 font-normal">
+                      {currentExtractingFile}
+                    </span>
+                  )}
+                </div>
+                <span className="relative z-10 font-mono font-black text-[var(--wb-primary)] shrink-0 ml-3">
+                  {downloadProgress}%
+                </span>
+              </>
+            )}
+          </button>
+        ) : isInstalled ? (
+          <div className="flex items-center gap-3">
+            {onPlay && (
+              playStatus === "launching" ? (
+                <button
+                  type="button"
+                  disabled
+                  className="flex items-center gap-2.5 px-7 sm:px-9 py-3.5 sm:py-4 rounded-2xl bg-[var(--wb-surface-container-highest)] text-[var(--wb-on-surface)] text-base sm:text-lg font-black transition-all shadow-lg cursor-not-allowed border border-white/10"
+                >
+                  <Loader2 className="w-5 h-5 sm:w-6 sm:h-6 animate-spin text-[var(--wb-primary)]" />
+                  <span>Launching...</span>
+                </button>
+              ) : playStatus === "playing" ? (
+                <button
+                  type="button"
+                  onClick={onStop || onPlay}
+                  className="flex items-center gap-2.5 px-7 sm:px-9 py-3.5 sm:py-4 rounded-2xl bg-emerald-600/30 hover:bg-rose-600/30 text-emerald-300 hover:text-rose-300 border border-emerald-500/40 hover:border-rose-500/40 text-base sm:text-lg font-black transition-all cursor-pointer shadow-lg shadow-emerald-950/40 hover:scale-105 active:scale-95 group"
+                  title="Click to stop process"
+                >
+                  <Activity className="w-5 h-5 sm:w-6 sm:h-6 text-emerald-400 group-hover:hidden animate-pulse" />
+                  <Square className="w-5 h-5 sm:w-6 sm:h-6 fill-current text-rose-400 hidden group-hover:inline" />
+                  <span className="group-hover:hidden">Playing</span>
+                  <span className="hidden group-hover:inline">Stop</span>
+                </button>
+              ) : playStatus === "stopping" ? (
+                <button
+                  type="button"
+                  disabled
+                  className="flex items-center gap-2.5 px-7 sm:px-9 py-3.5 sm:py-4 rounded-2xl bg-amber-600/30 text-amber-300 border border-amber-500/40 text-base sm:text-lg font-black transition-all shadow-lg cursor-not-allowed"
+                >
+                  <Loader2 className="w-5 h-5 sm:w-6 sm:h-6 animate-spin text-amber-400" />
+                  <span>Stopping...</span>
+                </button>
+              ) : playStatus === "error" ? (
+                <button
+                  type="button"
+                  disabled
+                  className="flex items-center gap-2.5 px-7 sm:px-9 py-3.5 sm:py-4 rounded-2xl bg-rose-600/30 text-rose-300 border border-rose-500/40 text-base sm:text-lg font-black transition-all shadow-lg cursor-not-allowed animate-in fade-in"
+                >
+                  <AlertTriangle className="w-5 h-5 sm:w-6 sm:h-6 text-rose-400" />
+                  <span>Error</span>
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={onPlay}
+                  className={`flex items-center gap-2.5 px-7 sm:px-9 py-3.5 sm:py-4 rounded-2xl bg-[var(--wb-primary)] text-[var(--wb-on-primary)] text-base sm:text-lg font-black transition-all shadow-lg ${
+                    isStorageMigrating
+                      ? "opacity-50 cursor-not-allowed"
+                      : "hover:opacity-90 cursor-pointer hover:scale-105 active:scale-95"
+                  }`}
+                  title={
+                    isStorageMigrating
+                      ? "Cannot launch game while storage migration is in progress"
+                      : "Launch game"
+                  }
+                >
+                  <Play className="w-5 h-5 sm:w-6 sm:h-6 fill-current" />
+                  <span>Play</span>
+                </button>
+              )
             )}
 
             {isNightly && isNightlyOutdated && onUpdate && (
@@ -140,8 +287,16 @@ export const InstancesFooter: React.FC<InstancesFooterProps> = ({
               <button
                 type="button"
                 onClick={onUninstall}
-                className="flex items-center gap-2 px-5 sm:px-6 py-3.5 sm:py-4 rounded-2xl bg-red-500/15 hover:bg-red-500/25 border border-red-500/30 text-red-400 text-sm sm:text-base font-bold transition-all cursor-pointer shadow-sm hover:scale-105 active:scale-95"
-                title="Uninstall this engine version"
+                className={`flex items-center gap-2 px-5 sm:px-6 py-3.5 sm:py-4 rounded-2xl bg-red-500/15 border border-red-500/30 text-red-400 text-sm sm:text-base font-bold transition-all shadow-sm ${
+                  isStorageMigrating
+                    ? "opacity-50 cursor-not-allowed"
+                    : "hover:bg-red-500/25 cursor-pointer hover:scale-105 active:scale-95"
+                }`}
+                title={
+                  isStorageMigrating
+                    ? "Cannot uninstall while storage migration is in progress"
+                    : "Uninstall this engine version"
+                }
               >
                 <Trash2 className="w-4 h-4 sm:w-5 sm:h-5" />
                 <span>Uninstall</span>
@@ -195,11 +350,17 @@ export const InstancesFooter: React.FC<InstancesFooterProps> = ({
         ) : downloadUrl ? (
           <button
             type="button"
+            disabled={isStorageMigrating}
             onClick={onDownload}
-            className="flex items-center gap-3 px-8 sm:px-10 py-3.5 sm:py-4 rounded-2xl bg-[var(--wb-primary)] hover:opacity-90 text-[var(--wb-on-primary)] text-base sm:text-lg font-black transition-all cursor-pointer shadow-lg hover:scale-105 active:scale-95"
+            className={`flex items-center gap-3 px-8 sm:px-10 py-3.5 sm:py-4 rounded-2xl bg-[var(--wb-primary)] text-[var(--wb-on-primary)] text-base sm:text-lg font-black transition-all shadow-lg ${
+              isStorageMigrating
+                ? "opacity-50 cursor-not-allowed pointer-events-none"
+                : "hover:opacity-90 cursor-pointer hover:scale-105 active:scale-95"
+            }`}
+            title={isStorageMigrating ? "Cannot download while storage is being relocated" : undefined}
           >
             <Download className="w-5 h-5 sm:w-6 sm:h-6" />
-            <span>Download</span>
+            <span>{isStorageMigrating ? "Moving..." : "Download"}</span>
           </button>
         ) : null}
       </div>

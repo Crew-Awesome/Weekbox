@@ -15,10 +15,14 @@ import {
   Heart,
   Download,
   Play,
+  Square,
+  Activity,
+  Loader2,
+  AlertTriangle,
 } from "lucide-react";
 import { useModalDeeplink } from "../home/hooks/use-modal-deeplink";
 import { ModDetailsModal } from "../home/components/mod-details-modal";
-import { useDownloadStore, useLibraryStore, useFavoritesStore } from "../../store";
+import { useDownloadStore, useLibraryStore, useFavoritesStore, useProcessStore } from "../../store";
 import { DownloadingModCard } from "./components/downloading-mod-card";
 import { ENGINE_CATEGORIES } from "../../core/services/gamebanana/constants";
 import {
@@ -48,6 +52,8 @@ export const Library: React.FC = () => {
 
   const favorites = useFavoritesStore((s) => s.favorites);
   const totalFavoritesCount = Object.keys(favorites).length;
+
+  const processInstances = useProcessStore((s) => s.instances);
 
   const [searchQuery, setSearchQuery] = useState("");
   const [sortOption, setSortOption] = useState<LibrarySortOption>("recent");
@@ -711,6 +717,7 @@ export const Library: React.FC = () => {
                   )
                 : null;
               const engineTooltip = engineCategory?.name || (item.engineId ? String(item.engineId) : undefined);
+              const playStatus = processInstances[`mod:${item.id}`]?.status || "idle";
 
               return (
                 <div key={`lib-mod-${item.id}`} className="h-full">
@@ -747,10 +754,42 @@ export const Library: React.FC = () => {
 
                       <div className="flex items-center gap-1 shrink-0">
                         {isItemInstalled ? (
-                          <div className="flex items-center gap-1 text-[var(--wb-primary)] text-xs font-bold">
-                            <Play size={13} className="fill-current" />
-                            <span>Play</span>
-                          </div>
+                          playStatus === "launching" ? (
+                            <div className="flex items-center gap-1 text-[var(--wb-primary)] text-xs font-bold animate-pulse">
+                              <Loader2 size={13} className="animate-spin" />
+                              <span>Launching...</span>
+                            </div>
+                          ) : playStatus === "playing" ? (
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                useProcessStore.getState().stopInstance(`mod:${item.id}`);
+                              }}
+                              className="flex items-center gap-1 text-emerald-400 hover:text-rose-400 text-xs font-bold transition-colors cursor-pointer group/btn"
+                              title="Click to stop process"
+                            >
+                              <Activity size={13} className="group-hover/btn:hidden text-emerald-400 animate-pulse" />
+                              <Square size={13} className="hidden group-hover/btn:inline fill-current text-rose-400" />
+                              <span className="group-hover/btn:hidden">Playing</span>
+                              <span className="hidden group-hover/btn:inline">Stop</span>
+                            </button>
+                          ) : playStatus === "stopping" ? (
+                            <div className="flex items-center gap-1 text-amber-400 text-xs font-bold animate-pulse">
+                              <Loader2 size={13} className="animate-spin" />
+                              <span>Stopping...</span>
+                            </div>
+                          ) : playStatus === "error" ? (
+                            <div className="flex items-center gap-1 text-rose-400 text-xs font-bold">
+                              <AlertTriangle size={13} />
+                              <span>Error</span>
+                            </div>
+                          ) : (
+                            <div className="flex items-center gap-1 text-[var(--wb-primary)] text-xs font-bold">
+                              <Play size={13} className="fill-current" />
+                              <span>Play</span>
+                            </div>
+                          )
                         ) : (
                           <div className="flex items-center gap-1 text-emerald-400 text-xs font-bold">
                             <Download size={13} />

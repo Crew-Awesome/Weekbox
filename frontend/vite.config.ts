@@ -98,9 +98,9 @@ export default defineConfig({
     },
     proxy: {
       "/api/translate": {
-        target: "https://translate.googleapis.com",
+        target: "https://clients5.google.com",
         changeOrigin: true,
-        rewrite: (path) => path.replace(/^\/api\/translate/, "/translate_a/single"),
+        rewrite: (path) => path.replace(/^\/api\/translate/, "/translate_a/t"),
       },
     },
   },

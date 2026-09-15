@@ -6,7 +6,7 @@ import type { ModItem } from "../../types";
 import { ENGINE_CATEGORIES } from "../../../../core/services/gamebanana/constants";
 import { MobileView } from "./mobile-view";
 import { DesktopView } from "./desktop-view";
-import { useDownloadStore } from "../../../../store";
+import { useDownloadStore, useEngineDownloadStore } from "../../../../store";
 
 interface ModDetailsModalProps {
   selectedCard: ModItem | null;
@@ -36,11 +36,12 @@ export const ModDetailsModal: React.FC<ModDetailsModalProps> = ({
   const [showTranslated, setShowTranslated] = useState<boolean>(true);
 
   React.useEffect(() => {
-    if (selectedCard && selectedCard.id) {
-      setModalOpen(selectedCard.id.toString());
-    } else {
-      setModalOpen(null);
-    }
+    const modId = selectedCard && selectedCard.id ? selectedCard.id.toString() : null;
+    setModalOpen(modId);
+    useEngineDownloadStore.getState().setCurrentView({
+      route: typeof window !== "undefined" ? window.location.pathname : "/",
+      activeModalModId: modId,
+    });
   }, [selectedCard, setModalOpen]);
 
   const lastNonNullCardRef = useRef<ModItem | null>(selectedCard);
@@ -167,9 +168,19 @@ export const ModDetailsModal: React.FC<ModDetailsModalProps> = ({
   }
 
   const engineInfo = Object.values(ENGINE_CATEGORIES).find(
-    (c) => c.id === displayCard.engineId || String(c.name).toLowerCase() === String(displayCard.engineName).toLowerCase()
+    (c) =>
+      c.id.toLowerCase() === String(displayCard.engineId || "").toLowerCase() ||
+      c.name.toLowerCase() === String(displayCard.engineName || "").toLowerCase() ||
+      c.name.toLowerCase() === String(displayCard.categoryName || "").toLowerCase()
   );
-  const engineName = displayCard.engineName || engineInfo?.name || "Unknown Engine";
+  const engineName =
+    (displayCard.engineName && displayCard.engineName !== "Unknown Engine"
+      ? displayCard.engineName
+      : null) ||
+    engineInfo?.name ||
+    (displayCard.categoryName && !displayCard.categoryName.toLowerCase().includes("mod")
+      ? displayCard.categoryName
+      : "Base Game");
 
   const normalizeTimestamp = (timestamp?: number) => {
     if (!timestamp) return null;

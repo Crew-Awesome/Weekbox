@@ -3,6 +3,7 @@ import { httpApi as APINodeHttp } from "./node/http/http.mjs";
 import { deeplinkApi as APINodeDeeplink } from "./node/deeplink/deeplink.mjs";
 import { winApi as APINodeWindow } from "./node/win/win.mjs";
 import { notificationApi as APINodeNotification } from "./node/notification/notification.mjs";
+import { processApi as APINodeProcess } from "./node/process/process-runner.mjs";
 
 import { zombieManager } from "./node/zombie-manager.mjs";
 
@@ -13,6 +14,11 @@ zombieManager.start();
 const setExtensionContext = (ext) => {
   extContext = ext;
   APINodeDeeplink.startServer(extContext);
+  APINodeProcess.setExitCallback((data) => {
+    if (extContext) {
+      extContext.sendMessage("process:exit", data);
+    }
+  });
 };
 
 const callApi = async (namespace, method, params = {}) => {
@@ -78,7 +84,20 @@ const operations = {
   "window.center": async () => APINodeWindow.center(callApi),
 
   "notification.show": async ({ title, content, icon }) =>
-    APINodeNotification.show(callApi, { title, content, icon })
+    APINodeNotification.show(callApi, { title, content, icon }),
+
+  "process.launch": async ({ folderPath, executableName, instanceId, args, env, modFolderPath, modFolderPaths }) =>
+    APINodeProcess.launch({ folderPath, executableName, instanceId, args, env, modFolderPath, modFolderPaths }),
+  "process.kill": async ({ instanceId }) => APINodeProcess.kill(instanceId),
+  "process.isAnyRunning": () => APINodeProcess.isAnyRunning(),
+  "process.getRunning": () => APINodeProcess.getRunningList(),
+  "process.isInstanceRunning": ({ instanceId }) => APINodeProcess.isInstanceRunning(instanceId),
+
+  "storage.validateFolder": async ({ targetPath, type }) =>
+    APINodeFileSystem.validateStorageFolder(targetPath, type),
+  "storage.inspect": async ({ folderPath }) => APINodeFileSystem.inspectStorage(folderPath),
+  "storage.migrate": async ({ sourcePath, targetPath, selectedItemNames }, onProgress) =>
+    APINodeFileSystem.migrateStorage({ sourcePath, targetPath, selectedItemNames }, onProgress),
 };
 
 async function handleRequest(operation, params = {}, onProgress = null) {

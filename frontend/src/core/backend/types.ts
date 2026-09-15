@@ -31,7 +31,13 @@ export type BackendOperation =
   | "window.getDisplays"
   | "window.close"
   | "window.center"
-  | "notification.show";
+  | "notification.show"
+  | "process.launch"
+  | "process.isAnyRunning"
+  | "process.getRunning"
+  | "process.isInstanceRunning"
+  | "storage.inspect"
+  | "storage.migrate";
 
 export interface BackendRequest {
   requestId: string;

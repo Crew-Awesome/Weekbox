@@ -1,5 +1,6 @@
 import type { BackendOperation, BackendResult } from "../backend/types";
 import type { IPlatformBridge, PlatformType, DownloadProgressCallback } from "./types";
+import { useStorageMigrationStore } from "../../store/storage-migration-store";
 
 /**
  * Platform adapter for the Web / Standard Browser environment.
@@ -119,6 +120,9 @@ export class WebAdapter implements IPlatformBridge {
   }
 
   async uninstallMod(modId: string): Promise<void> {
+    if (useStorageMigrationStore.getState().isMigrating) {
+      throw new Error("Cannot uninstall while storage migration is in progress. Please wait for the migration to complete.");
+    }
     try {
       const list = await this.getInstalledMods();
       const filtered = list.filter((m) => String(m.id) !== String(modId));
@@ -245,6 +249,9 @@ export class WebAdapter implements IPlatformBridge {
    * Removes installed engine registry entry from localStorage.
    */
   async uninstallEngine(engineId: string, version: string): Promise<void> {
+    if (useStorageMigrationStore.getState().isMigrating) {
+      throw new Error("Cannot uninstall while storage migration is in progress. Please wait for the migration to complete.");
+    }
     const registry = await this.getInstalledEngines();
     if (registry[engineId] && registry[engineId][version]) {
       delete registry[engineId][version];
@@ -254,5 +261,89 @@ export class WebAdapter implements IPlatformBridge {
       localStorage.setItem("wb_installed_engines", JSON.stringify(registry));
       this.emitLocalEvent("engines:changed", { action: "uninstalled", engineId, version });
     }
+  }
+
+  /**
+   * Stub for launching game executable in web environment.
+   */
+  async launchExecutable(
+    _folderPath: string,
+    _options?: { executableName?: string; instanceId?: string; args?: string[]; env?: Record<string, string>; modFolderPath?: string; modFolderPaths?: string[] }
+  ): Promise<{ ok: boolean; pid?: number; executablePath?: string; instanceId?: string; error?: string }> {
+    return { ok: false, error: "Game launching is only supported in desktop mode." };
+  }
+
+  async killProcess(_instanceId: string): Promise<{ ok: boolean; error?: string }> {
+    return { ok: true };
+  }
+
+  async showFolderDialog(_title: string, _defaultPath?: string): Promise<string | null> {
+    return null;
+  }
+
+  async getSettings(): Promise<Record<string, any>> {
+    try {
+      const raw = localStorage.getItem("wb_app_settings");
+      return raw ? JSON.parse(raw) : {};
+    } catch {
+      return {};
+    }
+  }
+
+  async saveSettings(settings: Record<string, any>): Promise<void> {
+    try {
+      localStorage.setItem("wb_app_settings", JSON.stringify(settings));
+    } catch {}
+  }
+
+  async getModsPath(): Promise<string> {
+    return "/virtual/mods";
+  }
+
+  async getEnginesPath(): Promise<string> {
+    return "/virtual/engines";
+  }
+
+  async getDefaultPaths(): Promise<{ basePath: string; defaultModsPath: string; defaultEnginesPath: string }> {
+    return {
+      basePath: "/virtual",
+      defaultModsPath: "/virtual/mods",
+      defaultEnginesPath: "/virtual/engines",
+    };
+  }
+
+  async inspectStorage(_folderPath: string): Promise<{
+    count: number;
+    totalBytes: number;
+    formattedSize: string;
+    estimatedTime: string;
+    items?: Array<{ name: string; bytes: number; formattedSize: string }>;
+  }> {
+    return { count: 0, totalBytes: 0, formattedSize: "0 B", estimatedTime: "< 1s", items: [] };
+  }
+
+  async validateStorageFolder(
+    _targetPath: string,
+    _type: "mods" | "engines"
+  ): Promise<{ valid: boolean; reason?: string }> {
+    return { valid: true };
+  }
+
+  async migrateStorage(
+    _sourcePath: string,
+    _targetPath: string,
+    _type: "mods" | "engines",
+    _onProgress?: any,
+    _selectedItemNames?: string[]
+  ): Promise<{ ok: boolean; count: number }> {
+    return { ok: true, count: 0 };
+  }
+
+  async isAnyProcessRunning(): Promise<boolean> {
+    return false;
+  }
+
+  async isInstanceRunning(_instanceId: string): Promise<boolean> {
+    return false;
   }
 }

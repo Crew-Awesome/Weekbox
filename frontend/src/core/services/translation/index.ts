@@ -108,8 +108,8 @@ async function translateSingleSegment(
    * Route through Vite proxy in browser/web environments to avoid CORS blocking.
    */
   const url = isWebEnvironment
-    ? `/api/translate?client=gtx&sl=auto&tl=${targetLang}&dt=t`
-    : `https://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&tl=${targetLang}&dt=t`;
+    ? `/api/translate?client=dict-chrome-ex&sl=auto&tl=${targetLang}`
+    : `https://clients5.google.com/translate_a/t?client=dict-chrome-ex&sl=auto&tl=${targetLang}`;
 
   const body = `q=${encodeURIComponent(segment)}`;
   const fetchOptions: RequestInit = {
@@ -149,22 +149,35 @@ async function translateSingleSegment(
     };
   }
 
-  if (!Array.isArray(rawData)) {
-    return {
-      translated: segment,
-      sourceLang: targetLang,
-    };
+  let translatedText = "";
+  let detectedSource = "";
+
+  if (Array.isArray(rawData)) {
+    if (typeof rawData[0] === "string") {
+      translatedText = rawData[0];
+      detectedSource = typeof rawData[1] === "string" ? rawData[1] : "";
+    } else if (Array.isArray(rawData[0])) {
+      translatedText = rawData
+        .map((item: any) =>
+          Array.isArray(item)
+            ? item[0] || ""
+            : typeof item === "string"
+            ? item
+            : ""
+        )
+        .join("");
+      detectedSource =
+        Array.isArray(rawData[0]) && typeof rawData[0][1] === "string"
+          ? rawData[0][1]
+          : "";
+    }
+  } else if (typeof rawData === "string") {
+    translatedText = rawData;
   }
 
-  const translatedText = (rawData[0] || [])
-    .map((item: any) => (Array.isArray(item) ? item[0] || "" : ""))
-    .join("");
-
-  const detectedSource = typeof rawData[2] === "string" ? rawData[2] : "";
-
   return {
-    translated: translatedText,
-    sourceLang: detectedSource,
+    translated: translatedText || segment,
+    sourceLang: detectedSource || targetLang,
   };
 }
 

@@ -42,8 +42,27 @@ export const InstancesVersionAside: React.FC<InstancesVersionAsideProps> = ({
     let list = [...releases];
 
     if (onlyInstalled) {
-      const set = new Set(installedVersions.map((v) => v.toLowerCase()));
-      list = list.filter((r) => set.has(r.version.toLowerCase()));
+      const set = new Set(installedVersions.map((v) => v.toLowerCase().replace(/^v/, "")));
+      list = list.filter((r) => set.has(r.version.toLowerCase().replace(/^v/, "")));
+
+      /**
+       * If an engine version is installed on disk but not present in GitHub releases,
+       * synthesize an entry so it still appears in the installed list.
+       */
+      for (const instVer of installedVersions) {
+        const cleanInst = instVer.toLowerCase().replace(/^v/, "");
+        const alreadyInList = list.some((r) => r.version.toLowerCase().replace(/^v/, "") === cleanInst);
+        if (!alreadyInList) {
+          list.push({
+            id: `installed-${instVer}`,
+            version: instVer,
+            name: `Version ${instVer}`,
+            body: `### Version ${instVer}\n\nThis engine version is installed locally on your system.`,
+            releasedAt: null,
+            downloadUrl: null,
+          });
+        }
+      }
     }
 
     if (sortOption === "version") {

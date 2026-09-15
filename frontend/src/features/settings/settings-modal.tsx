@@ -1,7 +1,8 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Shared from "@shared";
+import Core from "@core";
+import launcherIcon from "/assets/icons/app/launcher-icon.png";
 import {
-  Settings as SettingsIcon,
   Palette,
   Languages,
   Wrench,
@@ -80,6 +81,13 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   onClose,
 }) => {
   const [activeTab, setActiveTab] = useState<SettingsTab>("appearance");
+  const [appVersion, setAppVersion] = useState<string>("...");
+
+  useEffect(() => {
+    Core.platform.getVersion().then((v) => {
+      setAppVersion(v);
+    });
+  }, []);
 
   const currentTab = TABS.find((t) => t.id === activeTab) || TABS[0];
 
@@ -98,16 +106,15 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
       <aside className="w-full md:w-68 lg:w-76 shrink-0 bg-[var(--wb-surface-container-low)] border-b md:border-b-0 md:border-r border-white/5 flex flex-col justify-between">
         <div className="flex flex-col p-5 sm:p-7">
           <div className="flex items-center gap-3.5 pb-6 mb-4 border-b border-white/5">
-            <div className="w-12 h-12 rounded-2xl bg-[var(--wb-primary-container)] flex items-center justify-center text-[var(--wb-on-primary-container)] shrink-0 shadow-md">
-              <SettingsIcon className="w-6 h-6" />
-            </div>
+            <img
+              src={launcherIcon}
+              alt="WeekBox"
+              className="w-12 h-12 object-contain shrink-0 drop-shadow-md"
+            />
             <div className="flex flex-col">
               <h2 className="text-xl font-extrabold text-[var(--wb-on-surface)] leading-tight tracking-tight">
-                Settings
+                WB Settings
               </h2>
-              <span className="text-xs sm:text-sm text-[var(--wb-on-surface-variant)]">
-                Preferences
-              </span>
             </div>
           </div>
 
@@ -139,8 +146,8 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
           </nav>
         </div>
 
-        <div className="hidden md:flex p-6 border-t border-white/5 text-xs text-[var(--wb-on-surface-variant)] opacity-60">
-          Weekbox Settings
+        <div className="hidden md:flex p-6 border-t border-white/5 text-xs text-[var(--wb-on-surface-variant)] opacity-60 font-mono">
+          v{appVersion}
         </div>
       </aside>
 

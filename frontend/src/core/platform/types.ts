@@ -199,4 +199,74 @@ export interface IPlatformBridge {
     engineId: string,
     version: string
   ): Promise<void>;
+
+  /** Auto-detects and launches the game executable inside a folder using the Node backend. */
+  launchExecutable?(
+    folderPath: string,
+    options?: {
+      executableName?: string;
+      instanceId?: string;
+      args?: string[];
+      env?: Record<string, string>;
+      modFolderPath?: string;
+      modFolderPaths?: string[];
+    }
+  ): Promise<{ ok: boolean; pid?: number; executablePath?: string; instanceId?: string; error?: string }>;
+
+  /** Terminates an active game process by instance identifier. */
+  killProcess?(instanceId: string): Promise<{ ok: boolean; error?: string }>;
+
+  /** Displays native folder picker dialog and returns selected path or null. */
+  showFolderDialog?(title: string, defaultPath?: string): Promise<string | null>;
+
+  /** Retrieves user settings from disk. */
+  getSettings?(): Promise<Record<string, any>>;
+
+  /** Persists user settings to disk. */
+  saveSettings?(settings: Record<string, any>): Promise<void>;
+
+  /** Gets configured path for mods directory. */
+  getModsPath?(): Promise<string>;
+
+  /** Gets configured path for engines directory. */
+  getEnginesPath?(): Promise<string>;
+
+  /** Gets default base paths. */
+  getDefaultPaths?(): Promise<{ basePath: string; defaultModsPath: string; defaultEnginesPath: string }>;
+
+  /** Validates whether destination storage folder is safe and unoccupied by foreign directories. */
+  validateStorageFolder?(
+    targetPath: string,
+    type: "mods" | "engines"
+  ): Promise<{ valid: boolean; reason?: string }>;
+
+  /** Inspects a folder calculating item count, byte size, and estimated transfer time. */
+  inspectStorage?(folderPath: string): Promise<{
+    count: number;
+    totalBytes: number;
+    formattedSize: string;
+    estimatedTime: string;
+    items?: Array<{ name: string; bytes: number; formattedSize: string }>;
+  }>;
+
+  /** Migrates items from source directory to target directory with progress reporting and optional selection. */
+  migrateStorage?(
+    sourcePath: string,
+    targetPath: string,
+    type: "mods" | "engines",
+    onProgress?: (progress: {
+      currentItem: string;
+      currentIndex: number;
+      totalItems: number;
+      percent: number;
+      remainingItems: number;
+    }) => void,
+    selectedItemNames?: string[]
+  ): Promise<{ ok: boolean; count: number }>;
+
+  /** Checks if any game processes are running. */
+  isAnyProcessRunning?(): Promise<boolean>;
+
+  /** Checks if a specific instance is running. */
+  isInstanceRunning?(instanceId: string): Promise<boolean>;
 }

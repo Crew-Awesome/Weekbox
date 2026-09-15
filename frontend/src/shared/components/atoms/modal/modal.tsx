@@ -63,6 +63,11 @@ export interface ModalProps {
    * Optional background image shown blurred behind the overlay and circle pattern.
    */
   backdropImage?: string;
+  /**
+   * Optional custom z-index for stacked modals.
+   * @default 100
+   */
+  zIndex?: number;
 }
 
 export const Modal: React.FC<ModalProps> = ({
@@ -79,6 +84,7 @@ export const Modal: React.FC<ModalProps> = ({
   edgeSpacing,
   showCirclePattern = false,
   backdropImage,
+  zIndex = 100,
 }) => {
   const [isRendered, setIsRendered] = useState(isOpen);
   const [isVisible, setIsVisible] = useState(false);
@@ -203,9 +209,12 @@ export const Modal: React.FC<ModalProps> = ({
 
   return ReactDOM.createPortal(
     <div
-      className={`fixed inset-0 z-[100] flex items-center justify-center transition-opacity duration-150 ease-out ${isVisible ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"}`}
+      className={`fixed inset-0 flex items-center justify-center transition-opacity duration-150 ease-out ${isVisible ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"}`}
       onClick={handleClose}
-      style={overlayPadding ? { padding: overlayPadding } : undefined}
+      style={{
+        zIndex,
+        ...(overlayPadding ? { padding: overlayPadding } : {}),
+      }}
     >
       {backdropImage && (
         <div className="absolute inset-0 pointer-events-none z-0 overflow-hidden">

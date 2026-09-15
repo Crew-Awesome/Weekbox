@@ -2,6 +2,7 @@ import type { BackendOperation, BackendResult } from "../backend/types";
 import type { IPlatformBridge, PlatformType, DownloadProgressCallback } from "./types";
 import neuConfig from "../../../../neutralino.config.json";
 import { DownloadStatus } from "../../store/download-constants";
+import { useStorageMigrationStore } from "../../store/storage-migration-store";
 
 /**
  * Platform adapter for Desktop environments (Neutralinojs + Node.js Extension).
@@ -39,6 +40,46 @@ export class DesktopAdapter implements IPlatformBridge {
 
       neutralino.events.on("download:progress", (event: any) => {
         this.emitLocalEvent("download:progress", event.detail);
+      });
+
+      neutralino.events.on("process:exit", (event: any) => {
+        this.emitLocalEvent("process:exit", event.detail);
+      });
+
+      neutralino.events.on("windowClose", async () => {
+        const settings: any = await this.getSettings().catch(() => ({}));
+        const preventClose = settings?.preventCloseOnActive !== false;
+
+        let isProcessActive = false;
+        try {
+          isProcessActive = await this.isAnyProcessRunning();
+        } catch {}
+
+        const hasActiveTasks =
+          isProcessActive ||
+          (typeof (window as any).__WB_HAS_ACTIVE_TASKS === "function"
+            ? (window as any).__WB_HAS_ACTIVE_TASKS()
+            : false);
+
+        if (preventClose && hasActiveTasks) {
+          const msg = isProcessActive
+            ? "Cannot close WeekBox while a game instance is running. Please close the game first."
+            : "Cannot close WeekBox while an installation, download, or storage migration is in progress.";
+
+          (window.Neutralino?.os as any)?.showNotification?.("Action Blocked", msg);
+          if (typeof window !== "undefined" && (window as any).wbToast) {
+            (window as any).wbToast.warning(msg, {
+              title: "Action Blocked",
+            });
+          }
+          return;
+        }
+
+        try {
+          await neutralino.app?.exit();
+        } catch {
+          window.close();
+        }
       });
 
       neutralino.events.on("ready", () => {
@@ -126,16 +167,6 @@ export class DesktopAdapter implements IPlatformBridge {
     onProgress?: DownloadProgressCallback,
     signal?: AbortSignal
   ): Promise<void> {
-    let basePath = window.NL_CWD || window.NL_PATH || "";
-    try {
-      if (window.Neutralino?.os?.getPath) {
-        const dataPath = await window.Neutralino.os.getPath("data");
-        basePath = `${dataPath}/WeekBox`;
-      }
-    } catch (e) {
-      console.warn("Could not get OS data path, falling back to CWD");
-    }
-    
     const safeName = (modName || "unknown")
       .normalize("NFD")
       .replace(/[\u0300-\u036f]/g, "")
@@ -143,7 +174,7 @@ export class DesktopAdapter implements IPlatformBridge {
       .toLowerCase();
 
     const id = modId || Date.now();
-    const modsDir = `${basePath}/mods`;
+    const modsDir = await this.getModsPath();
     const targetFolder = `${modsDir}/mod_${id}_${safeName}`;
     const tempArchivePath = `${modsDir}/_temp_${id}_${safeName}.zip`;
 
@@ -249,6 +280,14 @@ export class DesktopAdapter implements IPlatformBridge {
 
     await this.call("fs.createDirectory" as any, { path: dataDir }).catch(() => {});
 
+    const modsDir = await this.getModsPath();
+    const safeName = (modData.name || modData.title || "unknown")
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .replace(/[^a-zA-Z0-9]/g, "")
+      .toLowerCase();
+    const installPath = modData.installPath || `${modsDir}/mod_${modData.id}_${safeName}`;
+
     let compressedThumb = "";
     if (modData.thumbnail || modData.img) {
       try {
@@ -287,6 +326,7 @@ export class DesktopAdapter implements IPlatformBridge {
       title: modData.name || modData.title,
       description: modData.description,
       htmlBody: modData.htmlBody,
+      installPath,
       author: modData.author,
       userId: modData.userId,
       userPfp: modData.userPfp,
@@ -393,6 +433,9 @@ export class DesktopAdapter implements IPlatformBridge {
   }
 
   async uninstallMod(modId: string): Promise<void> {
+    if (useStorageMigrationStore.getState().isMigrating) {
+      throw new Error("Cannot uninstall while storage migration is in progress. Please wait for the migration to complete.");
+    }
     let basePath = window.NL_CWD || window.NL_PATH || "";
     try {
       if (window.Neutralino?.os?.getPath) {
@@ -402,7 +445,7 @@ export class DesktopAdapter implements IPlatformBridge {
     } catch (e) {}
 
     const registryPath = `${basePath}/data/mod-installed.json`;
-    const modsDir = `${basePath}/mods`;
+    const modsDir = await this.getModsPath();
 
     try {
       const existing = await this.call("fs.readFile" as any, { path: registryPath });
@@ -642,7 +685,7 @@ export class DesktopAdapter implements IPlatformBridge {
       .replace(/[\u0300-\u036f]/g, "")
       .replace(/[^a-zA-Z0-9._-]/g, "");
 
-    const enginesDir = `${basePath}/engines`;
+    const enginesDir = await this.getEnginesPath();
     const engineDir = `${enginesDir}/${safeEngineId}`;
     const targetFolder = `${engineDir}/${safeVersion}`;
     const tempArchivePath = `${enginesDir}/_temp_engine_${safeEngineId}_${safeVersion}.zip`;
@@ -772,10 +815,18 @@ export class DesktopAdapter implements IPlatformBridge {
       .replace(/[\u0300-\u036f]/g, "")
       .replace(/[^a-zA-Z0-9._-]/g, "");
 
-    const targetFolder = `${basePath}/engines/${safeEngineId}/${safeVersion}`;
+    const enginesDir = await this.getEnginesPath();
+    const targetFolder = `${enginesDir}/${safeEngineId}/${safeVersion}`;
 
     try {
       const stats = await this.call("fs.getStats" as any, { path: targetFolder });
+      if (stats && stats.isDirectory) return true;
+    } catch {}
+
+    const altVersion = safeVersion.startsWith("v") ? safeVersion.slice(1) : `v${safeVersion}`;
+    const altFolder = `${enginesDir}/${safeEngineId}/${altVersion}`;
+    try {
+      const stats = await this.call("fs.getStats" as any, { path: altFolder });
       return Boolean(stats && stats.isDirectory);
     } catch {
       return false;
@@ -806,7 +857,8 @@ export class DesktopAdapter implements IPlatformBridge {
       .replace(/[\u0300-\u036f]/g, "")
       .replace(/[^a-zA-Z0-9._-]/g, "");
 
-    const targetFolder = `${basePath}/engines/${safeEngineId}/${safeVersion}`;
+    const enginesDir = await this.getEnginesPath();
+    const targetFolder = `${enginesDir}/${safeEngineId}/${safeVersion}`;
 
     if (window.Neutralino?.os?.open) {
       await window.Neutralino.os.open(targetFolder);
@@ -814,7 +866,8 @@ export class DesktopAdapter implements IPlatformBridge {
   }
 
   /**
-   * Retrieves the registry of all installed engines from data/installed_engines.json.
+   * Retrieves the registry of all installed engines from data/installed_engines.json
+   * and merges any installed engine folders found directly on disk.
    */
   async getInstalledEngines(): Promise<Record<string, Record<string, any>>> {
     let basePath = window.NL_CWD || window.NL_PATH || "";
@@ -827,14 +880,109 @@ export class DesktopAdapter implements IPlatformBridge {
     basePath = basePath.replace(/\\/g, "/");
 
     const registryPath = `${basePath}/data/installed_engines.json`;
+    let registry: Record<string, Record<string, any>> = {};
 
     try {
       const raw = await this.call("fs.readFile" as any, { path: registryPath });
       const parsed = JSON.parse(raw as unknown as string);
-      return parsed && typeof parsed === "object" ? parsed : {};
+      if (parsed && typeof parsed === "object") {
+        registry = parsed;
+      }
     } catch {
-      return {};
+      try {
+        if (window.Neutralino?.filesystem?.readFile) {
+          const raw = await window.Neutralino.filesystem.readFile(registryPath);
+          const parsed = JSON.parse(raw);
+          if (parsed && typeof parsed === "object") {
+            registry = parsed;
+          }
+        }
+      } catch {}
     }
+
+    try {
+      const enginesFolder = await this.getEnginesPath();
+      let engineDirs: any[] = [];
+      try {
+        const res = await this.call("fs.readDirectory" as any, { path: enginesFolder });
+        engineDirs = Array.isArray(res) ? res : (res as any)?.entries || [];
+      } catch {
+        if (window.Neutralino?.filesystem?.readDirectory) {
+          engineDirs = await window.Neutralino.filesystem.readDirectory(enginesFolder);
+        }
+      }
+
+      for (const entry of engineDirs) {
+        const name = typeof entry === "string" ? entry : entry?.name;
+        const isDir = typeof entry === "object" ? (entry.isDirectory ?? entry.type === "DIRECTORY") : true;
+        if (!name || name === "." || name === ".." || !isDir) continue;
+
+        const engineKey = name.toLowerCase();
+        if (!registry[engineKey]) {
+          registry[engineKey] = {};
+        }
+
+        const versionsFolder = `${enginesFolder}/${name}`;
+        let versionDirs: any[] = [];
+        try {
+          const vRes = await this.call("fs.readDirectory" as any, { path: versionsFolder });
+          versionDirs = Array.isArray(vRes) ? vRes : (vRes as any)?.entries || [];
+        } catch {
+          if (window.Neutralino?.filesystem?.readDirectory) {
+            versionDirs = await window.Neutralino.filesystem.readDirectory(versionsFolder);
+          }
+        }
+
+        for (const vEntry of versionDirs) {
+          const vName = typeof vEntry === "string" ? vEntry : vEntry?.name;
+          const vIsDir = typeof vEntry === "object" ? (vEntry.isDirectory ?? vEntry.type === "DIRECTORY") : true;
+          if (!vName || vName === "." || vName === ".." || !vIsDir) continue;
+
+          if (!registry[engineKey][vName]) {
+            registry[engineKey][vName] = {
+              engineId: engineKey,
+              version: vName,
+              installedAt: new Date().toISOString(),
+              path: `engines/${engineKey}/${vName}`,
+            };
+          }
+        }
+      }
+    } catch {}
+
+    return registry;
+  }
+
+  /**
+   * Auto-detects and launches the game executable inside a folder using the Node backend.
+   */
+  async launchExecutable(
+    folderPath: string,
+    options?: {
+      executableName?: string;
+      instanceId?: string;
+      args?: string[];
+      env?: Record<string, string>;
+      modFolderPath?: string;
+      modFolderPaths?: string[];
+    }
+  ): Promise<{ ok: boolean; pid?: number; executablePath?: string; instanceId?: string; error?: string }> {
+    return (await this.call("process.launch" as any, {
+      folderPath,
+      executableName: options?.executableName,
+      instanceId: options?.instanceId,
+      args: options?.args,
+      env: options?.env,
+      modFolderPath: options?.modFolderPath,
+      modFolderPaths: options?.modFolderPaths,
+    })) as any;
+  }
+
+  /**
+   * Terminates an active game process by instance identifier.
+   */
+  async killProcess(instanceId: string): Promise<{ ok: boolean; error?: string }> {
+    return (await this.call("process.kill" as any, { instanceId })) as any;
   }
 
   /**
@@ -910,6 +1058,9 @@ export class DesktopAdapter implements IPlatformBridge {
    * Uninstalls an engine version, removing its files and updating data/installed_engines.json.
    */
   async uninstallEngine(engineId: string, version: string): Promise<void> {
+    if (useStorageMigrationStore.getState().isMigrating) {
+      throw new Error("Cannot uninstall while storage migration is in progress. Please wait for the migration to complete.");
+    }
     let basePath = window.NL_CWD || window.NL_PATH || "";
     try {
       if (window.Neutralino?.os?.getPath) {
@@ -930,7 +1081,8 @@ export class DesktopAdapter implements IPlatformBridge {
       .replace(/[\u0300-\u036f]/g, "")
       .replace(/[^a-zA-Z0-9._-]/g, "");
 
-    const targetFolder = `${basePath}/engines/${safeEngineId}/${safeVersion}`;
+    const enginesDir = await this.getEnginesPath();
+    const targetFolder = `${enginesDir}/${safeEngineId}/${safeVersion}`;
     const registryPath = `${basePath}/data/installed_engines.json`;
 
     try {
@@ -961,6 +1113,236 @@ export class DesktopAdapter implements IPlatformBridge {
           detail: { action: "uninstalled", engineId: safeEngineId, version: safeVersion },
         })
       );
+    }
+  }
+
+  private async getBasePath(): Promise<string> {
+    let basePath = window.NL_CWD || window.NL_PATH || "";
+    try {
+      if (window.Neutralino?.os?.getPath) {
+        const dataPath = await window.Neutralino.os.getPath("data");
+        basePath = `${dataPath}/WeekBox`;
+      }
+    } catch {}
+    return basePath.replace(/\\/g, "/");
+  }
+
+  async getDefaultPaths(): Promise<{ basePath: string; defaultModsPath: string; defaultEnginesPath: string }> {
+    const base = await this.getBasePath();
+    return {
+      basePath: base,
+      defaultModsPath: `${base}/mods`,
+      defaultEnginesPath: `${base}/engines`,
+    };
+  }
+
+  async getSettings(): Promise<Record<string, any>> {
+    try {
+      const base = await this.getBasePath();
+      const settingsPath = `${base}/data/settings.json`;
+      const exists = await this.call("fs.exists", { path: settingsPath }).catch(() => false);
+      if (exists) {
+        const raw = await this.call("fs.readFile", { path: settingsPath });
+        return typeof raw === "string" ? JSON.parse(raw) : ((raw as any) || {});
+      }
+    } catch {}
+    return {};
+  }
+
+  async saveSettings(settings: Record<string, any>): Promise<void> {
+    try {
+      const base = await this.getBasePath();
+      const dataDir = `${base}/data`;
+      await this.call("fs.createDirectory", { path: dataDir }).catch(() => {});
+      const settingsPath = `${dataDir}/settings.json`;
+      await this.call("fs.writeFile", {
+        path: settingsPath,
+        content: JSON.stringify(settings, null, 2),
+      });
+      this.emitLocalEvent("settings:changed", settings);
+    } catch (err) {
+      console.warn("Could not write settings.json:", err);
+    }
+  }
+
+  async getModsPath(): Promise<string> {
+    const settings = await this.getSettings();
+    if (settings.modsPath && typeof settings.modsPath === "string") {
+      return settings.modsPath.replace(/\\/g, "/");
+    }
+    const base = await this.getBasePath();
+    return `${base}/mods`;
+  }
+
+  async getEnginesPath(): Promise<string> {
+    const settings = await this.getSettings();
+    if (settings.enginesPath && typeof settings.enginesPath === "string") {
+      return settings.enginesPath.replace(/\\/g, "/");
+    }
+    const base = await this.getBasePath();
+    return `${base}/engines`;
+  }
+
+  async showFolderDialog(title: string, defaultPath?: string): Promise<string | null> {
+    const os = window.Neutralino?.os as any;
+    if (os?.showFolderDialog) {
+      try {
+        const folder = await os.showFolderDialog(title, {
+          defaultPath: defaultPath || "",
+        });
+        return folder || null;
+      } catch {
+        return null;
+      }
+    }
+    return null;
+  }
+
+  async validateStorageFolder(
+    targetPath: string,
+    type: "mods" | "engines"
+  ): Promise<{ valid: boolean; reason?: string }> {
+    try {
+      const res = await this.call("storage.validateFolder" as any, { targetPath, type });
+      return res as any;
+    } catch (e: any) {
+      return { valid: false, reason: e?.message || "Failed to validate destination folder." };
+    }
+  }
+
+  async inspectStorage(folderPath: string): Promise<{
+    count: number;
+    totalBytes: number;
+    formattedSize: string;
+    estimatedTime: string;
+    items?: Array<{ name: string; bytes: number; formattedSize: string }>;
+  }> {
+    try {
+      const res = await this.call("storage.inspect" as any, { folderPath });
+      return res as any;
+    } catch {
+      return { count: 0, totalBytes: 0, formattedSize: "0 B", estimatedTime: "< 1s", items: [] };
+    }
+  }
+
+  async migrateStorage(
+    sourcePath: string,
+    targetPath: string,
+    type: "mods" | "engines",
+    onProgress?: (progress: {
+      currentItem: string;
+      currentIndex: number;
+      totalItems: number;
+      percent: number;
+      remainingItems: number;
+    }) => void,
+    selectedItemNames?: string[]
+  ): Promise<{ ok: boolean; count: number }> {
+    let unsubscribe: (() => void) | undefined;
+    if (onProgress) {
+      unsubscribe = this.onEvent("download:progress", (data: any) => {
+        if (data && data.currentItem !== undefined) {
+          onProgress(data);
+        }
+      });
+    }
+
+    try {
+      const res = await this.call("storage.migrate" as any, {
+        sourcePath,
+        targetPath,
+        selectedItemNames,
+      });
+
+      const settings = await this.getSettings();
+      if (type === "mods") {
+        settings.modsPath = targetPath;
+      } else {
+        settings.enginesPath = targetPath;
+      }
+      await this.saveSettings(settings);
+
+      /* Update installed mods registry and installPath values */
+      if (type === "mods") {
+        let basePath = window.NL_CWD || window.NL_PATH || "";
+        try {
+          if (window.Neutralino?.os?.getPath) {
+            const dataPath = await window.Neutralino.os.getPath("data");
+            basePath = `${dataPath}/WeekBox`;
+          }
+        } catch {}
+
+        const registryPath = `${basePath}/data/mod-installed.json`;
+        try {
+          const existing = await this.call("fs.readFile" as any, { path: registryPath });
+          let registry = JSON.parse(existing as unknown as string);
+          if (Array.isArray(registry)) {
+            const hasSelection = Array.isArray(selectedItemNames) && selectedItemNames.length > 0;
+            const selectedSet = hasSelection ? new Set(selectedItemNames) : null;
+
+            registry = registry
+              .filter((m) => {
+                if (!selectedSet) return true;
+                const safeName = (m.name || m.title || "unknown")
+                  .normalize("NFD")
+                  .replace(/[\u0300-\u036f]/g, "")
+                  .replace(/[^a-zA-Z0-9]/g, "")
+                  .toLowerCase();
+                const expectedFolder = `mod_${m.id}_${safeName}`;
+                return (
+                  selectedSet.has(expectedFolder) ||
+                  Array.from(selectedSet).some((name) => name.startsWith(`mod_${m.id}_`))
+                );
+              })
+              .map((m) => {
+                const safeName = (m.name || m.title || "unknown")
+                  .normalize("NFD")
+                  .replace(/[\u0300-\u036f]/g, "")
+                  .replace(/[^a-zA-Z0-9]/g, "")
+                  .toLowerCase();
+                return {
+                  ...m,
+                  installPath: `${targetPath}/mod_${m.id}_${safeName}`,
+                };
+              });
+
+            await this.call("fs.writeFile" as any, {
+              path: registryPath,
+              content: JSON.stringify(registry, null, 2),
+            });
+
+            this.emitLocalEvent("mods:changed", { action: "migrated" });
+            if (typeof window !== "undefined") {
+              window.dispatchEvent(
+                new CustomEvent("wb:mods-changed", { detail: { action: "migrated" } })
+              );
+            }
+          }
+        } catch {}
+      }
+
+      this.emitLocalEvent("storage:migrated", { type, targetPath });
+      return res as any;
+    } finally {
+      if (unsubscribe) unsubscribe();
+    }
+  }
+
+  async isAnyProcessRunning(): Promise<boolean> {
+    try {
+      const res = await this.call("process.isAnyRunning" as any);
+      return Boolean(res);
+    } catch {
+      return false;
+    }
+  }
+
+  async isInstanceRunning(instanceId: string): Promise<boolean> {
+    try {
+      const res = await this.call("process.isInstanceRunning" as any, { instanceId });
+      return Boolean(res);
+    } catch {
+      return false;
     }
   }
 }
