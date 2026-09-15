@@ -37,9 +37,16 @@ function setAvatarImage(image, url) {
 function setModalDownloadButton(button, iconClass, text, disabled = false) {
   if (!button) return;
   button.disabled = disabled;
+  const state = document.createElement("span");
+  state.className = "modal-download-state";
   const icon = document.createElement("i");
   icon.className = iconClass;
-  button.replaceChildren(icon, document.createTextNode(" " + text));
+  icon.setAttribute("aria-hidden", "true");
+  const label = document.createElement("span");
+  label.className = "modal-download-label";
+  label.textContent = text;
+  state.append(icon, label);
+  button.replaceChildren(state);
 }
 
 function setModalTab(tabName = "description") {
@@ -443,7 +450,7 @@ function updateModalRequirements(data) {
   });
 }
 
-function showModData(data, isInstalled, onDownload) {
+function showModData(data, installedCount, onDownload) {
   setModalInfoLoading(false);
   const titleEl = document.getElementById("modal-title");
   if (titleEl) titleEl.textContent = data.title;
@@ -495,10 +502,12 @@ function showModData(data, isInstalled, onDownload) {
   } else if (engineBadge) {
     engineBadge.hidden = true;
   }
-  updateDownloadStatus(data, isInstalled, onDownload);
+  updateDownloadStatus(data, installedCount, onDownload);
 }
 
-function updateDownloadStatus(data, isInstalled, onDownload) {
+function updateDownloadStatus(data, installedCount, onDownload) {
+  const isInstalled = installedCount > 0;
+  const installedLabel = `${t("modModal.alreadyInstalled")} (${installedCount})`;
   const fileSizeEl = document.getElementById("modal-filesize");
   if (fileSizeEl) {
     if (data.loadingDownloads) {
@@ -516,7 +525,14 @@ function updateDownloadStatus(data, isInstalled, onDownload) {
     setButtonLoading(button, t("modModal.checkingDownloads"));
     button.disabled = true;
   } else if (data.downloadOptions?.length) {
-    if (data.downloadOptions.length > 1) {
+    if (isInstalled) {
+      setModalDownloadButton(
+        button,
+        "fa-solid fa-check",
+        installedLabel,
+        false,
+      );
+    } else if (data.downloadOptions.length > 1) {
       setModalDownloadButton(
         button,
         "fa-solid fa-list",
@@ -527,21 +543,14 @@ function updateDownloadStatus(data, isInstalled, onDownload) {
       setModalDownloadButton(
         button,
         "fa-solid fa-download",
-        isInstalled
-          ? t("modModal.downloadAnotherCopy")
-          : data.downloadButtonLabel || t("common.download"),
+        data.downloadButtonLabel || t("common.download"),
         false,
       );
     }
     button.onclick = onDownload;
   } else if (isInstalled) {
     button.onclick = null;
-    setModalDownloadButton(
-      button,
-      "fa-solid fa-check",
-      t("modModal.alreadyInstalled"),
-      true,
-    );
+    setModalDownloadButton(button, "fa-solid fa-check", installedLabel, true);
   } else {
     const sourceUrl =
       data.source === "peo" ? data.sourceUrl : data.gameBananaUrl;

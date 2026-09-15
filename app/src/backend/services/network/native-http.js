@@ -56,7 +56,6 @@ export function nativeFetch(input, options = {}) {
   if (headers) requestOptions.headers = headers;
   if (options.body !== undefined) requestOptions.body = options.body;
   if (options.timeout !== undefined) requestOptions.timeout = options.timeout;
-
   const method = (options.method || "GET").toUpperCase();
   const nativeRequest = requestWithNeutralino(String(input), method, requestOptions);
   if (!nativeRequest) return fetch(input, options);

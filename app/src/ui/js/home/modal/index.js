@@ -80,17 +80,17 @@ const modModal = {
     if (titleEl) titleEl.textContent = t("modModal.loadingInfo");
     const loaderEl = document.getElementById("modal-image-loader");
     if (loaderEl) loaderEl.style.display = "block";
-    let isInstalled = false;
+    let installedCount = 0;
     let hasRenderedProfile = false;
     const showProgress = async (data2) => {
       if (requestId !== this.requestId) return;
       if (!hasRenderedProfile) {
-        isInstalled = await FS.isModInstalled(data2.id);
-        await this.populateData(data2, isInstalled);
+        installedCount = await FS.getInstalledModCount(data2.id);
+        await this.populateData(data2, installedCount);
         hasRenderedProfile = true;
         return;
       }
-      updateDownloadStatus(data2, isInstalled, () =>
+      updateDownloadStatus(data2, installedCount, () =>
         this.installWithDependencies(data2),
       );
     };
@@ -113,9 +113,9 @@ const modModal = {
       }
       return;
     }
-    if (!hasRenderedProfile) await this.populateData(data, isInstalled);
+    if (!hasRenderedProfile) await this.populateData(data, installedCount);
     else
-      updateDownloadStatus(data, isInstalled, () =>
+      updateDownloadStatus(data, installedCount, () =>
         this.installWithDependencies(data),
       );
   },
@@ -154,8 +154,8 @@ const modModal = {
         ?.style.setProperty("display", "none");
       return;
     }
-    const isInstalled = await FS.isModInstalled(data.id);
-    await this.populateData(data, isInstalled);
+    const installedCount = await FS.getInstalledModCount(data.id);
+    await this.populateData(data, installedCount);
   },
   async openAuthor(authorId) {
     const requestId = ++this.requestId;
@@ -229,8 +229,8 @@ const modModal = {
     hideModal();
     hideModal("mod-profile-modal");
   },
-  async populateData(data, isInstalled) {
-    showModData(data, isInstalled, () => this.installWithDependencies(data));
+  async populateData(data, installedCount) {
+    showModData(data, installedCount, () => this.installWithDependencies(data));
     modModalCarousel.setup(data.images, data.backgroundImage);
   },
   async installWithDependencies(data) {
@@ -277,6 +277,10 @@ const modModal = {
       },
     );
     if (!installedMod) return;
+    const installedCount = await FS.getInstalledModCount(data.id);
+    updateDownloadStatus(data, installedCount, () =>
+      this.installWithDependencies(data),
+    );
   },
 };
 

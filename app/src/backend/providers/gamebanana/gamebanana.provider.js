@@ -199,29 +199,171 @@ function getModDownloadDetails(api, downloadOptions, loadingDownloads) {
   };
 }
 
-function extractUberstyleBackground(css, stylesheetUrl) {
-  const cleanCss = String(css).replace(/\/\*[\s\S]*?\*\//g, "");
-  let backgroundImage = null;
+const GAMEBANANA_SITE_URL = "https://gamebanana.com";
+const MAX_UBERSTYLE_IMPORT_DEPTH = 2;
+const MAX_UBERSTYLE_REDIRECTS = 3;
 
-  for (const [, selector, declarations] of cleanCss.matchAll(
-    /([^{}]+)\{([^{}]*)\}/g,
-  )) {
-    if (!/\b(?:html|body)\b/i.test(selector)) continue;
-    if (!/\bbackground(?:-image)?\s*:/i.test(declarations)) continue;
+function resolveHttpUrl(value, baseUrl) {
+  if (typeof value !== "string" || !value.trim()) return null;
+  try {
+    const url = new URL(value, baseUrl);
+    return url.protocol === "http:" || url.protocol === "https:"
+      ? url.href
+      : null;
+  } catch {
+    return null;
+  }
+}
 
-    for (const match of declarations.matchAll(
+async function fetchUberstyleStylesheet(
+  stylesheetUrl,
+  redirectCount = 0,
+  visited = new Set(),
+) {
+  if (visited.has(stylesheetUrl)) return null;
+  visited.add(stylesheetUrl);
+
+  const response = await nativeFetch(stylesheetUrl);
+  if (response.status >= 300 && response.status < 400) {
+    if (redirectCount >= MAX_UBERSTYLE_REDIRECTS) return response;
+    const redirectUrl = resolveHttpUrl(
+      response.headers?.get("location"),
+      stylesheetUrl,
+    );
+    return redirectUrl
+      ? fetchUberstyleStylesheet(redirectUrl, redirectCount + 1, visited)
+      : response;
+  }
+  if (!response.ok || typeof globalThis.fetch !== "function") return response;
+  try {
+    const browserResponse = await globalThis.fetch(stylesheetUrl);
+    return browserResponse.ok ? browserResponse : response;
+  } catch {
+    return response;
+  }
+}
+
+function extractCssUrlValues(value) {
+  return [
+    ...String(value).matchAll(
       /url\(\s*(?:"([^"]+)"|'([^']+)'|([^\s)]+))\s*\)/gi,
+    ),
+  ].map((match) => match[1] || match[2] || match[3]);
+}
+
+function resolveCssVariables(value, variables) {
+  let resolved = String(value);
+  for (let pass = 0; pass < 4; pass += 1) {
+    let changed = false;
+    resolved = resolved.replace(
+      /var\(\s*(--[\w-]+)(?:\s*,\s*([^)]*))?\s*\)/gi,
+      (match, name, fallback) => {
+        const replacement = variables.get(name.toLowerCase()) ?? fallback;
+        if (replacement === undefined) return match;
+        changed = true;
+        return replacement;
+      },
+    );
+    if (!changed) break;
+  }
+  return resolved;
+}
+
+function getBackgroundImage(value, stylesheetUrl, variables = new Map()) {
+  for (const cssUrl of extractCssUrlValues(
+    resolveCssVariables(value, variables),
+  )) {
+    try {
+      const url = new URL(cssUrl, stylesheetUrl);
+      if (
+        url.protocol === "http:" ||
+        url.protocol === "https:" ||
+        url.protocol === "data:"
+      ) {
+        return url.href;
+      }
+    } catch {}
+  }
+  return null;
+}
+
+function extractImportedStylesheets(css, stylesheetUrl) {
+  return [
+    ...String(css).matchAll(
+      /@import\s+(?:url\(\s*(?:"([^"]+)"|'([^']+)'|([^\s)]+))\s*\)|"([^"]+)"|'([^']+)')/gi,
+    ),
+  ]
+    .map((match) => match[1] || match[2] || match[3] || match[4] || match[5])
+    .map((url) => resolveHttpUrl(url, stylesheetUrl))
+    .filter(Boolean);
+}
+
+async function extractUberstyleBackground(
+  css,
+  stylesheetUrl,
+  depth = 0,
+  visited = new Set(),
+) {
+  if (visited.has(stylesheetUrl)) return null;
+  visited.add(stylesheetUrl);
+
+  const cleanCss = String(css).replace(/\/\*[\s\S]*?\*\//g, "");
+  const variables = new Map();
+  const blocks = [...cleanCss.matchAll(/([^{}]+)\{([^{}]*)\}/g)];
+
+  for (const [, , declarations] of blocks) {
+    for (const [, name, value] of declarations.matchAll(
+      /(--[\w-]+)\s*:\s*([\s\S]*?)(?=;\s*(?:--[\w-]+|[\w-]+)\s*:|$)/g,
     )) {
-      const value = match[1] || match[2] || match[3];
-      try {
-        const url = new URL(value, stylesheetUrl);
-        if (url.protocol === "http:" || url.protocol === "https:")
-          backgroundImage = url.href;
-      } catch {}
+      variables.set(name.toLowerCase(), value.trim());
     }
   }
 
-  return backgroundImage;
+  const variableBackground = variables.get("--bodybackground");
+  const backgroundImage = variableBackground
+    ? getBackgroundImage(variableBackground, stylesheetUrl, variables)
+    : null;
+  if (backgroundImage) return backgroundImage;
+
+  for (const [, selector, declarations] of blocks) {
+    if (!/\b(?:html|body)\b/i.test(selector)) continue;
+    if (!/\bbackground(?:-image)?\s*:/i.test(declarations)) continue;
+    const background = getBackgroundImage(
+      declarations,
+      stylesheetUrl,
+      variables,
+    );
+    if (background) return background;
+  }
+
+  if (depth >= MAX_UBERSTYLE_IMPORT_DEPTH) return null;
+  const importedStylesheets = extractImportedStylesheets(
+    cleanCss,
+    stylesheetUrl,
+  );
+  for (const importedUrl of importedStylesheets) {
+    try {
+      const response = await fetchUberstyleStylesheet(importedUrl);
+      if (!response?.ok) continue;
+      const background = await extractUberstyleBackground(
+        await response.text(),
+        importedUrl,
+        depth + 1,
+        visited,
+      );
+      if (background) return background;
+    } catch {}
+  }
+  return null;
+}
+
+function extractMainUberstyleUrls(html) {
+  return [...String(html).matchAll(/<link\b[^>]*>/gi)]
+    .map((match) => match[0])
+    .filter((tag) => /\brel\s*=\s*["'][^"']*\bstylesheet\b/i.test(tag))
+    .map((tag) => tag.match(/\bhref\s*=\s*["']([^"']+)["']/i)?.[1])
+    .map((url) => resolveHttpUrl(url, GAMEBANANA_SITE_URL))
+    .filter((url) => url && /\/studio\/uberstyles\//i.test(url));
 }
 
 function getModClassification(api, data) {
@@ -564,25 +706,51 @@ export const gameBananaApi = {
     const id = Number(modId);
     if (!id) return null;
 
+    const stylesheetUrls = [];
+    let ubersEnabled;
     try {
       const params = new URLSearchParams({ _sUrl: `/mods/${id}` });
       const configResponse = await nativeFetch(
         `${this.baseUrl}/Member/UiConfig?${params}`,
       );
-      if (!configResponse.ok) return null;
-      const config = await configResponse.json();
-      if (!config._aNavOptions?._bEnableUbers || !config._sUberstyleUrl)
-        return null;
+      if (configResponse.ok) {
+        const config = await configResponse.json();
+        ubersEnabled = config._aNavOptions?._bEnableUbers;
+        const configuredUrl = resolveHttpUrl(
+          config._sUberstyleUrl,
+          GAMEBANANA_SITE_URL,
+        );
+        if (configuredUrl) stylesheetUrls.push(configuredUrl);
+      }
+    } catch {}
 
-      const styleResponse = await nativeFetch(config._sUberstyleUrl);
-      if (!styleResponse.ok) return null;
-      return extractUberstyleBackground(
-        await styleResponse.text(),
-        config._sUberstyleUrl,
-      );
-    } catch {
-      return null;
+    if (ubersEnabled === false) return null;
+
+    if (stylesheetUrls.length === 0) {
+      try {
+        const pageResponse = await nativeFetch(
+          `${GAMEBANANA_SITE_URL}/mods/${id}`,
+        );
+        if (pageResponse.ok) {
+          stylesheetUrls.push(
+            ...extractMainUberstyleUrls(await pageResponse.text()).slice(0, 1),
+          );
+        }
+      } catch {}
     }
+
+    for (const stylesheetUrl of new Set(stylesheetUrls)) {
+      try {
+        const styleResponse = await fetchUberstyleStylesheet(stylesheetUrl);
+        if (!styleResponse?.ok) continue;
+        const background = await extractUberstyleBackground(
+          await styleResponse.text(),
+          stylesheetUrl,
+        );
+        if (background) return background;
+      } catch {}
+    }
+    return null;
   },
 
   getGameBananaSubmission(url) {

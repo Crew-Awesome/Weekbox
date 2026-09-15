@@ -63,10 +63,28 @@ export const modModalCarousel = {
     );
     const imageSrc =
       this.images[this.currentIndex] || "assets/img/placeholder-mini.jpg";
-    setModalBackdrop(
-      document.getElementById("mod-modal"),
-      this.backdropImage || imageSrc,
-    );
+    const modal = document.getElementById("mod-modal");
+    const backdropImage = this.backdropImage;
+    setModalBackdrop(modal, backdropImage || imageSrc);
+
+    if (backdropImage) {
+      const probe = new Image();
+      const clearProbe = () => {
+        probe.onload = null;
+        probe.onerror = null;
+      };
+      probe.onload = clearProbe;
+      probe.onerror = () => {
+        if (this.backdropImage === backdropImage) {
+          this.backdropImage = null;
+          const fallback =
+            this.images[this.currentIndex] || "assets/img/placeholder-mini.jpg";
+          setModalBackdrop(modal, fallback);
+        }
+        clearProbe();
+      };
+      probe.src = backdropImage;
+    }
 
     mainImg.classList.remove("fade-anim");
     void mainImg.offsetWidth;

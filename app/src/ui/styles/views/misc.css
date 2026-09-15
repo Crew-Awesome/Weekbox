@@ -1800,6 +1800,13 @@ body.window-unfocused::after {
     background-color 0.2s;
 }
 
+.modal-download-state {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
 .modal-download-btn:active {
   transform: scale(0.96);
 }

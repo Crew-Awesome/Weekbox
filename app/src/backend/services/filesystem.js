@@ -2369,11 +2369,19 @@ var _FileSystemService = class _FileSystemService {
     return true;
   }
   async isModInstalled(modId) {
-    if (!this.isInitialized) return false;
-    const mod = (await this.mods.getAll()).find((item) =>
-      sameId(item.id, modId),
+    return (await this.getInstalledModCount(modId)) > 0;
+  }
+  async getInstalledModCount(modId) {
+    if (!this.isInitialized) return 0;
+    const sourceId = String(modId);
+    const mods = (await this.mods.getAll()).filter((item) => {
+      const id = String(item.id);
+      return id === sourceId || id.startsWith(`${sourceId}--`);
+    });
+    const installed = await Promise.all(
+      mods.map(async (mod) => ((await this.hasModFiles(mod)) ? 1 : 0)),
     );
-    return Boolean(mod && (await this.hasModFiles(mod)));
+    return installed.reduce((count, value) => count + value, 0);
   }
   /**
    * @fix 2026-08-05T03:31:10.964Z - Fix NE_FS_MOVEERR during mod folder flattening
