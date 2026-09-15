@@ -1357,15 +1357,18 @@ body.window-unfocused::after {
 .modal-tabs {
   display: flex;
   gap: 4px;
+  overflow-x: auto;
   padding: 8px var(--spacing-xl) 0;
   border-bottom: 1px solid var(--border-color);
   background: var(--bg-color);
+  scrollbar-width: thin;
 }
 
 .modal-tab {
   min-width: 0;
   min-height: 40px;
-  flex: 1;
+  max-width: 100%;
+  flex: 0 1 auto;
   padding: 8px 10px;
   border: 0;
   border-bottom: 2px solid transparent;
@@ -1375,6 +1378,8 @@ body.window-unfocused::after {
   font: inherit;
   font-size: 0.78rem;
   font-weight: 700;
+  line-height: 1.25;
+  overflow-wrap: anywhere;
   cursor: pointer;
   transition:
     color 150ms ease,
@@ -2475,6 +2480,12 @@ body.window-unfocused::after {
     background 0.16s ease;
 }
 
+.mod-settings-dropdown-trigger > span:not(.mod-settings-select-icon) {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  line-height: 1.25;
+}
+
 .mod-settings-dropdown-trigger:disabled {
   cursor: not-allowed;
   opacity: 0.6;
@@ -2603,7 +2614,7 @@ body.window-unfocused::after {
 
 .mod-settings-convert-engine {
   flex: 0 0 auto;
-  white-space: nowrap;
+  overflow-wrap: anywhere;
 }
 
 @media (max-width: 500px) {
@@ -2714,8 +2725,15 @@ body.window-unfocused::after {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  gap: var(--spacing-md);
+  flex-wrap: wrap;
   padding-bottom: 18px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.setting-info {
+  min-width: 0;
+  flex: 1 1 240px;
 }
 
 .setting-item:last-child {

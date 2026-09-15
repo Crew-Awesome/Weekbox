@@ -42,8 +42,9 @@
 }
 
 .dropdown-item span {
-  white-space: nowrap;
+  min-width: 0;
   overflow: hidden;
+  overflow-wrap: anywhere;
   text-overflow: ellipsis;
 }
 
@@ -153,6 +154,7 @@
   display: flex;
   align-items: center;
   gap: 8px;
+  overflow-wrap: anywhere;
   transition:
     background-color 0.2s,
     color 0.2s;

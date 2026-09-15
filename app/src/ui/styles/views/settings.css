@@ -59,8 +59,8 @@
 }
 
 .config-content {
-  width: 74vw;
-  min-width: 600px;
+  width: min(74vw, calc(100% - 32px));
+  min-width: 0;
   max-width: 1080px;
   height: 78vh;
   min-height: 450px;
@@ -83,6 +83,7 @@
 /* ASIDE (Sidebar del Config) */
 .config-aside {
   width: 220px;
+  min-width: 0;
   background-color: var(--bg-color);
   border-right: 1px solid var(--border-color);
   display: flex;
@@ -129,6 +130,7 @@
   font-weight: 600;
   cursor: pointer;
   text-align: left;
+  overflow-wrap: anywhere;
   transition:
     background-color 0.2s,
     color 0.2s;
@@ -221,7 +223,8 @@
 }
 
 #config-modal .setting-language-dropdown {
-  width: 180px;
+  width: min(100%, 280px);
+  min-width: 0;
 }
 
 #config-modal .setting-language-trigger {
@@ -234,9 +237,8 @@
   display: block;
   flex: 1;
   min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  overflow-wrap: anywhere;
+  line-height: 1.25;
 }
 
 #config-modal .setting-language-flag {
@@ -301,14 +303,39 @@
 
 #config-modal .setting-language-option > span:last-child {
   min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  overflow-wrap: anywhere;
 }
 
 @media (max-width: 720px) {
+  .config-content {
+    width: calc(100% - 32px);
+    height: calc(100% - 32px);
+    min-height: 0;
+    flex-direction: column;
+  }
+
+  .config-aside {
+    width: auto;
+    border-right: 0;
+    border-bottom: 1px solid var(--border-color);
+  }
+
+  .config-aside-header {
+    margin-bottom: var(--spacing-sm);
+  }
+
+  .config-nav {
+    flex-direction: row;
+    overflow-x: auto;
+  }
+
+  .config-tab-btn {
+    flex: 0 0 auto;
+    min-width: max-content;
+  }
+
   #config-modal .setting-language-dropdown {
-    width: 160px;
+    width: min(100%, 240px);
   }
 }
 

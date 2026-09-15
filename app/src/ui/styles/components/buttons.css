@@ -37,6 +37,11 @@
   text-align: left;
 }
 
+.mod-settings-dropdown-menu button > span {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
 .mod-settings-dropdown-menu button:hover,
 .mod-settings-dropdown-menu button.selected {
   background: var(--bg-hover);
@@ -66,7 +71,7 @@
   font: inherit;
   font-size: 0.95rem;
   line-height: 1.2;
-  white-space: nowrap;
+  overflow-wrap: anywhere;
   cursor: pointer;
   transition:
     background-color 160ms ease,
