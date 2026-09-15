@@ -38,6 +38,8 @@ declare global {
       filesystem?: any;
       window?: {
         minimize: () => Promise<void>;
+        unminimize?: () => Promise<void>;
+        setAlwaysOnTop?: (onTop: boolean) => Promise<void>;
         maximize: () => Promise<void>;
         unmaximize: () => Promise<void>;
         setFullScreen: () => Promise<void>;

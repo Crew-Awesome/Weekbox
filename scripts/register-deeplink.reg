@@ -1,0 +1,19 @@
+Windows Registry Editor Version 5.00
+
+[HKEY_CURRENT_USER\Software\Classes\weekbox]
+@="URL:WeekBox Protocol"
+"URL Protocol"=""
+"FriendlyTypeName"="WeekBox"
+
+[HKEY_CURRENT_USER\Software\Classes\weekbox\Application]
+"ApplicationName"="WeekBox"
+
+[HKEY_CURRENT_USER\Software\Classes\weekbox\DefaultIcon]
+@="\"C:\\Users\\leive\\Proyectos\\WeekBox-Proyectos\\Weekbox-otra-re-escritura\\dist\\WeekBox\\WeekBox-win_x64.exe\",0"
+
+[HKEY_CURRENT_USER\Software\Classes\weekbox\shell]
+
+[HKEY_CURRENT_USER\Software\Classes\weekbox\shell\open]
+
+[HKEY_CURRENT_USER\Software\Classes\weekbox\shell\open\command]
+@="\"C:\\Users\\leive\\Proyectos\\WeekBox-Proyectos\\Weekbox-otra-re-escritura\\dist\\WeekBox\\WeekBox-win_x64.exe\" --path=\"C:\\Users\\leive\\Proyectos\\WeekBox-Proyectos\\Weekbox-otra-re-escritura\\dist\\WeekBox\" \"%1\""

@@ -1,30 +1,54 @@
-# Weekbox README EN WIP
+# WeekBox: FNF Launcher
 
-Weekbox es un Gestor de Mods diseñado para ser rápido, ligero y multiplataforma. Construido utilizando Neutralinojs, React, Zustand y Tailwind CSS.
+> **One launcher for all your FNF mods.**  
+> Un gestor y lanzador de escritorio moderno diseñado para simplificar la experiencia de jugar y administrar mods de Friday Night Funkin'.
 
-## Documentación
+---
 
-El proyecto cuenta con una arquitectura avanzada diseñada para escalar y mantener una buena experiencia de desarrollo. Te invitamos a leer la documentación para entender cómo está construido antes de comenzar a contribuir:
+## Caracteristicas Principales
 
-- [Scripts y Flujo de Desarrollo](./docs/scripts_y_desarrollo.md): Aprende a ejecutar la aplicación, cómo funcionan los entornos web y de escritorio, y qué comando usar según lo que necesites.
-- [Arquitectura Dual: Web y Desktop](./docs/arquitectura_dual.md): Explicación del patrón de Adaptador utilizado en el "Core" para hacer que la aplicación sea agnóstica al entorno, junto con la Extensión de Node.js.
-- [Arquitectura del Frontend](./docs/arquitectura_frontend.md): Detalles sobre cómo el Frontend usa Path Aliasing y el Patrón Fachada (Archivos Barril) para mantener el código limpio y libre de importaciones interminables.
-- [Guía de Contribución](./docs/guia_de_contribucion.md): Reglas de cómo nombrar variables, componentes y buenas prácticas del proyecto.
-- [Compilar Weekbox](./docs/compilar-weekbox.md): Instrucciones para empaquetar la aplicación para producción.
-- [Manejo de Deeplinks](./docs/deeplink.md): Especificación técnica de cómo funcionan los URIs personalizados (`weekbox://`).
+* **Explorador Integrado:** Navega por feeds de mods directamente desde GameBanana y Psych Online sin salir de la app.
+* **Instalacion en 1-Clic:** Descarga, extrae y configura mods automaticamente mediante integracion directa con enlaces de GameBanana.
+* **Gestor de Motores:** Instala, actualiza y alterna entre distintos motores comunitarios:
+  * Psych Engine
+  * Friday Night Funkin' V-Slice
+  * Codename Engine
+  * P-Slice / FPS Plus / Psych Online
+* **Descargas Optimizadas:** Soporte para descargas paralelas por partes, validacion de integridad y descompresion nativa de archivos .zip, .7z y .rar.
+* **Multiplataforma:** Compilaciones nativas para Windows (x64), macOS (Universal: Intel y Apple Silicon) y Linux (x64, ARM64).
+* **Soporte Multilingue:** Interfaz traducida a espanol, ingles, frances, aleman, portugues, ruso, entre otros.
 
-## Primeros pasos rápidos
+---
 
-Si es la primera vez que descargas el proyecto, asegúrate de instalar todas las dependencias ejecutando:
+## Instalacion
 
-```bash
-npm run install:all
-```
+### Descarga de binarios
+1. Dirigete a la seccion de [Releases de GitHub](https://github.com/Crew-Awesome/WeekBox/releases) o a la pagina en [GameBanana](https://gamebanana.com/tools/23228).
+2. Descarga el paquete correspondiente a tu sistema operativo:
+   * **Windows:** `weekbox-*-windows-x64-setup.zip` o instalador ejecutable.
+   * **macOS:** `weekbox-*-macos-universal.zip`.
+   * **Linux:** `weekbox-*-linux-x64.zip` / AppImage.
+3. Ejecuta el instalador o descomprime el archivo y abre `WeekBox`.
 
-Luego, si deseas desarrollar usando **Hot Reloading** conectado a las APIs de escritorio:
+---
 
-```bash
-npm run dev:pc
-```
+## Tecnologias Utilizadas
 
-Consulta [Scripts y Entornos de Desarrollo](./docs/scripts_y_desarrollo.md) para más detalles.
+* **Runtime:** [Neutralinojs](https://neutralino.js.org/) (ligero y de bajo consumo de memoria RAM)
+* **Frontend:** JavaScript (ES6+), HTML5, CSS3
+* **APIs:** GameBanana API y Psych Online Feed
+
+---
+
+## Creditos y Comunidad
+
+* **Creadores y Programadores Principales:** [ImMalloy](https://github.com/ImMalloy) y [Britex](https://github.com/Britex)
+* **Organizacion:** [Crew-Awesome](https://github.com/Crew-Awesome)
+* **Servidor de Discord:** [Unete a la comunidad](https://discord.gg/xQTtYF2Cfn)
+* **Sitio Web Oficial:** [fnfweekbox.vercel.app](https://fnfweekbox.vercel.app/)
+
+---
+
+## Licencia
+
+Este proyecto esta bajo la licencia comunitaria de codigo abierto especificada en el repositorio oficial de [Crew-Awesome/Weekbox](https://github.com/Crew-Awesome/Weekbox). Friday Night Funkin' es una marca registrada de The Funkin' Crew Inc. Weekbox NO está afiliado a The Funkin' Crew Inc. ni similares.

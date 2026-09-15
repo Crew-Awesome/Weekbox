@@ -1,18 +1,43 @@
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
 import Core from "@core";
 import { useAppStore } from "../../store";
 
 /**
  * Hook lógico invisible que atrapa los enlaces profundos (Deeplinks).
- * Escucha la inicialización de la app y los eventos "newInstance".
- * Si atrapa un mod, lo valida y lo inyecta directamente al Modal de Inicio (`activeModItem`).
+ * Escucha la inicialización de la app y los eventos "newInstance" / "deeplinkArgs".
+ * Si atrapa un mod, lo valida, trae la ventana principal al frente y abre el modal del mod.
  */
 export function useDeeplinkManager() {
+  const navigate = useNavigate();
+  const location = useLocation();
+
   const activeModId = useAppStore((state) => state.activeDeepLinkModId);
   const setActiveModId = useAppStore((state) => state.setActiveDeepLinkModId);
   const setActiveModItem = useAppStore((state) => state.setActiveModItem);
 
+  const locationRef = useRef(location);
+  locationRef.current = location;
+
+  const lastProcessedDeeplinkRef = useRef<{ id: number; timestamp: number }>({
+    id: 0,
+    timestamp: 0,
+  });
+
   useEffect(() => {
+    const extractArgs = (eventData: any): string[] => {
+      if (!eventData) return [];
+      if (Array.isArray(eventData)) return eventData;
+      if (Array.isArray(eventData?.args)) return eventData.args;
+      if (Array.isArray(eventData?.detail?.args)) return eventData.detail.args;
+      if (Array.isArray(eventData?.detail)) return eventData.detail;
+      if (Array.isArray(eventData?.data?.args)) return eventData.data.args;
+      if (Array.isArray(eventData?.data)) return eventData.data;
+      if (typeof eventData?.detail === "string") return [eventData.detail];
+      if (typeof eventData === "string") return [eventData];
+      return [];
+    };
+
     const checkDeeplink = async (
       args?: string[],
       isStartup: boolean = false,
@@ -20,45 +45,48 @@ export function useDeeplinkManager() {
       const deeplink = args
         ? Core.os.parseDeeplinkArgs(args)
         : Core.os.parseStartupDeeplink();
+
       if (deeplink) {
-        setActiveModId(deeplink.id);
-      }
+        console.log("[useDeeplinkManager] Deeplink detected:", deeplink);
+        const now = Date.now();
+        const isDuplicate =
+          lastProcessedDeeplinkRef.current.id === deeplink.id &&
+          now - lastProcessedDeeplinkRef.current.timestamp < 1500;
 
-      if (isStartup) {
-        await Core.window.setSize(1280, 720);
-        await Core.window.center();
-      }
+        lastProcessedDeeplinkRef.current = {
+          id: deeplink.id,
+          timestamp: now,
+        };
 
-      await Core.window.show();
-      await Core.window.unmaximize();
-      await Core.window.focus();
-    };
-
-    const bootSingleInstanceLock = async () => {
-      try {
-        const isPrimary = await Core.platform.call("deeplink.isPrimary" as any);
-        if (isPrimary === false) {
-          await fetch("http://127.0.0.1:45555/deeplink", {
-            method: "POST",
-            body: JSON.stringify(window.NL_ARGS || []),
-          }).catch(() => {});
-
-          Core.platform.call("system.suicide" as any).catch(() => {});
-          window.Neutralino?.app?.exit();
-          return;
+        if (!isDuplicate) {
+          setActiveModId(deeplink.id);
+          if (locationRef.current.pathname !== "/home" && locationRef.current.pathname !== "/library") {
+            navigate("/home");
+          }
         }
-      } catch (e) {
       }
 
-      checkDeeplink(undefined, true);
+      try {
+        if (isStartup) {
+          await Core.window.setSize(1280, 720).catch(() => {});
+          await Core.window.center().catch(() => {});
+        }
+      } catch {}
+
+      try {
+        await Core.window.bringToFront();
+      } catch (e) {
+        console.warn("[useDeeplinkManager] Window show error:", e);
+      }
     };
 
-    bootSingleInstanceLock();
+    // Check startup deeplink on initial mount
+    checkDeeplink(undefined, true);
 
     const cleanupListenerNative = Core.platform.onEvent(
       "newInstance",
       (eventData: any) => {
-        const args = eventData?.detail || [];
+        const args = extractArgs(eventData);
         checkDeeplink(args, false);
       },
     );
@@ -66,7 +94,7 @@ export function useDeeplinkManager() {
     const cleanupListenerCustom = Core.platform.onEvent(
       "deeplinkArgs",
       (eventData: any) => {
-        const args = eventData?.detail || [];
+        const args = extractArgs(eventData);
         checkDeeplink(args, false);
       },
     );
@@ -75,7 +103,7 @@ export function useDeeplinkManager() {
       cleanupListenerNative();
       cleanupListenerCustom();
     };
-  }, [setActiveModId]);
+  }, [navigate, setActiveModId]);
 
   useEffect(() => {
     if (!activeModId) return;
@@ -99,9 +127,20 @@ export function useDeeplinkManager() {
             previewMedia: mod.previewMedia,
             files: mod.files,
             author: mod.author,
+            authors: mod.authors,
+            credits: mod.credits,
             submittedAt: mod.submittedAt,
             updatedAt: mod.updatedAt,
             engineId: mod.engineId,
+            version: mod.version,
+            updatesCount: mod.updatesCount,
+            updates: mod.updates,
+            externalLinks: mod.externalLinks,
+            studio: mod.studio,
+            categoryName: mod.categoryName,
+            views: mod.views,
+            likes: mod.likes,
+            downloads: mod.downloads,
           });
         }
       })

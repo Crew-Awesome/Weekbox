@@ -27,6 +27,54 @@ export const windowApi = {
     return await platform.call("window.unmaximize" as BackendOperation);
   },
 
+  async unminimize() {
+    if (platform.platformName === "web") return;
+    if (window.Neutralino?.window?.unminimize)
+      return await window.Neutralino.window.unminimize();
+    return await platform.call("window.unminimize" as BackendOperation);
+  },
+
+  async setAlwaysOnTop(onTop: boolean) {
+    if (platform.platformName === "web") return;
+    if (window.Neutralino?.window?.setAlwaysOnTop)
+      return await window.Neutralino.window.setAlwaysOnTop(onTop);
+    return await platform.call("window.setAlwaysOnTop" as BackendOperation, { onTop });
+  },
+
+  async bringToFront() {
+    if (platform.platformName === "web") {
+      window.focus();
+      return;
+    }
+    try {
+      if (window.Neutralino?.window) {
+        await window.Neutralino.window.show().catch(() => {});
+        if (window.Neutralino.window.unminimize) {
+          await window.Neutralino.window.unminimize().catch(() => {});
+        }
+        if (window.Neutralino.window.setAlwaysOnTop) {
+          await window.Neutralino.window.setAlwaysOnTop(true).catch(() => {});
+          await window.Neutralino.window.focus().catch(() => {});
+          setTimeout(async () => {
+            try {
+              const win = window.Neutralino?.window;
+              if (win?.setAlwaysOnTop) {
+                await win.setAlwaysOnTop(false).catch(() => {});
+              }
+              await win?.focus?.().catch(() => {});
+            } catch {}
+          }, 200);
+        } else {
+          await window.Neutralino.window.focus().catch(() => {});
+        }
+        return;
+      }
+      await platform.call("window.focus" as BackendOperation).catch(() => {});
+    } catch (e) {
+      console.warn("Could not bring window to front:", e);
+    }
+  },
+
   async setFullScreen() {
     if (platform.platformName === "web") {
       document.documentElement.requestFullscreen?.();

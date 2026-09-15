@@ -109,4 +109,15 @@ console.log("---");
 console.log("NodeJS Version:", process.version);
 console.log("NodeJS Path:", process.execPath);
 console.log("---");
+
+backendModule
+  .then(({ setExtensionContext }) => {
+    if (setExtensionContext) {
+      setExtensionContext(ext);
+    }
+  })
+  .catch((err) => {
+    console.error("Failed to initialize backend module context:", err);
+  });
+
 ext.run(processAppEvent);

@@ -153,35 +153,46 @@ update-desktop-database ~/.local/share/applications || true
  * @returns {{ type: string; id: number } | null} The parsed mod data or null if invalid.
  */
 export function parseDeeplinkArgs(
-  args: string[],
+  args: string[] | string,
 ): { type: string; id: number } | null {
-  if (!args || !Array.isArray(args)) return null;
+  if (!args) return null;
+  const list = Array.isArray(args) ? args : [String(args)];
 
-  /** Locate the first argument that begins with the local scheme expression */
-  const linkArg = args.find(
-    (arg) =>
-      typeof arg === "string" && arg.toLowerCase().startsWith("weekbox://"),
-  );
-  if (!linkArg) return null;
+  for (const raw of list) {
+    if (typeof raw !== "string") continue;
+    let clean = raw.trim().replace(/^["']|["']$/g, "").trim();
+    if (clean.toLowerCase().startsWith("--path=")) {
+      clean = clean.slice(7).trim().replace(/^["']|["']$/g, "").trim();
+    }
 
-  const directMatch = String(linkArg || "")
-    .trim()
-    .match(/^weekbox:\/\/mod(?:\/|,)(\d+)\/?$/i);
+    if (!clean.toLowerCase().startsWith("weekbox://")) continue;
 
-  if (directMatch) return { type: "mod", id: Number(directMatch[1]) };
+    // Pattern 1: Direct regex match for weekbox://mod/123 or weekbox://mod,123 (ignoring trailing slashes, query params or hashes)
+    const directMatch = clean.match(/^weekbox:\/\/([a-zA-Z0-9_-]+)(?:\/|,)(\d+)(?:[\/?#].*)?$/i);
+    if (directMatch) {
+      const type = directMatch[1].toLowerCase();
+      const id = Number(directMatch[2]);
+      if (type === "mod" && Number.isInteger(id) && id > 0) {
+        return { type, id };
+      }
+    }
 
-  try {
-    const url = new URL(linkArg);
-    if (url.protocol !== "weekbox:") return null;
-
-    const type = url.hostname.toLowerCase();
-    const id = Number(url.pathname.replace(/^\//, ""));
-
-    if (type !== "mod" || !Number.isInteger(id) || id <= 0) return null;
-    return { type, id };
-  } catch {
-    return null;
+    // Pattern 2: Standard URL parser fallback
+    try {
+      const url = new URL(clean);
+      if (url.protocol.toLowerCase() === "weekbox:") {
+        const type = url.hostname.toLowerCase();
+        const id = Number(url.pathname.replace(/^\/+/, "").split(/[\/?#]/)[0]);
+        if (type === "mod" && Number.isInteger(id) && id > 0) {
+          return { type, id };
+        }
+      }
+    } catch {
+      // Ignore URL parsing errors
+    }
   }
+
+  return null;
 }
 
 /**

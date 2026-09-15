@@ -180,9 +180,6 @@ export const useModalDeeplink = () => {
             fetchModDetails(modId);
           }
         }
-      } else if (activeModIdRef.current !== null) {
-        activeModIdRef.current = null;
-        setSelectedCard(null);
       }
     };
 

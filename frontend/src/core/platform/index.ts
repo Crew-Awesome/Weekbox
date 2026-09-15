@@ -7,7 +7,9 @@ import { WebAdapter } from "./web";
  * @returns {IPlatformBridge} Concrete adapter for the active platform.
  */
 function createPlatformBridge(): IPlatformBridge {
-  const isTest = typeof process !== "undefined" && process.env?.NODE_ENV === "test";
+  const isTest =
+    typeof (globalThis as any).process !== "undefined" &&
+    (globalThis as any).process?.env?.NODE_ENV === "test";
 
   if (typeof window !== "undefined") {
     if (!isTest) {

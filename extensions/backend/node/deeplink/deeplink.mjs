@@ -8,6 +8,16 @@ export const deeplinkApi = {
     if (deeplinkServer) return;
 
     deeplinkServer = http.createServer((req, res) => {
+      res.setHeader('Access-Control-Allow-Origin', '*');
+      res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+      res.setHeader('Access-Control-Allow-Headers', '*');
+
+      if (req.method === 'OPTIONS') {
+        res.writeHead(204);
+        res.end();
+        return;
+      }
+
       if (req.method === 'POST' && req.url === '/deeplink') {
         let body = '';
         req.on('data', chunk => body += chunk.toString());
@@ -17,7 +27,7 @@ export const deeplinkApi = {
             if (extContext) {
               extContext.sendMessage("deeplinkArgs", parsedArgs);
             }
-            res.writeHead(200, { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' });
+            res.writeHead(200, { 'Content-Type': 'application/json' });
             res.end(JSON.stringify({ ok: true }));
           } catch (e) {
             res.writeHead(400);

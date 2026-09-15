@@ -66,25 +66,51 @@ if (typeof window !== "undefined") {
   );
 }
 
-const rootElement = document.getElementById("root");
+async function startApplication() {
+  if (typeof window !== "undefined") {
+    const rawArgs = window.NL_ARGS || [];
+    try {
+      const res = await fetch("http://127.0.0.1:45555/deeplink", {
+        method: "POST",
+        headers: { "Content-Type": "text/plain" },
+        body: JSON.stringify(rawArgs),
+      });
 
-if (rootElement) {
-  createRoot(rootElement).render(
-    <StrictMode>
-      <HashRouter>
-        <Routes>
-          <Route path="/" element={<App />}>
-            <Route index element={<Navigate to="/home" replace />} />
-            <Route path="home" element={<Home />} />
-            <Route path="library" element={<Library />} />
-            <Route path="library/*" element={<Library />} />
-            <Route path="instances" element={<Instances />} />
-            <Route path="instances/*" element={<Instances />} />
-            <Route path="engines" element={<Navigate to="/instances" replace />} />
-            <Route path="*" element={<Navigate to="/home" replace />} />
-          </Route>
-        </Routes>
-      </HashRouter>
-    </StrictMode>,
-  );
+      if (res && res.ok) {
+        console.log("[SingleInstance] Forwarded to existing instance. Exiting secondary process.");
+        if (window.Neutralino?.app?.exit) {
+          await window.Neutralino.app.exit();
+        } else {
+          window.close();
+        }
+        return;
+      }
+    } catch {
+      // No primary instance listening; continue as primary instance
+    }
+  }
+
+  const rootElement = document.getElementById("root");
+  if (rootElement) {
+    createRoot(rootElement).render(
+      <StrictMode>
+        <HashRouter>
+          <Routes>
+            <Route path="/" element={<App />}>
+              <Route index element={<Navigate to="/home" replace />} />
+              <Route path="home" element={<Home />} />
+              <Route path="library" element={<Library />} />
+              <Route path="library/*" element={<Library />} />
+              <Route path="instances" element={<Instances />} />
+              <Route path="instances/*" element={<Instances />} />
+              <Route path="engines" element={<Navigate to="/instances" replace />} />
+              <Route path="*" element={<Navigate to="/home" replace />} />
+            </Route>
+          </Routes>
+        </HashRouter>
+      </StrictMode>,
+    );
+  }
 }
+
+startApplication();
