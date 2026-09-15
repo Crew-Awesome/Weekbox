@@ -18,7 +18,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Mod detail download buttons now show the number of installed copies.
 - Mod details now use tabs for descriptions, contributors, details, and requirements.
-- Mod backdrops now use UberStyle backgrounds.
 - Improved searchs.
 - Reused shared translations for matching labels.
 - Replaced spinners with Hourglasses.
@@ -31,7 +30,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
-- Finished the whole backdrop custom image system
 - Existing dependencies are automatically converted to regular mods.
 - Profile lists now show all visible FNF mods.
 - Dependencies now install into `mods` folder

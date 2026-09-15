@@ -4,16 +4,14 @@ import { t } from "../../i18n/index.js";
 export const modModalCarousel = {
   slideInterval: null,
   images: [],
-  backdropImage: null,
   currentIndex: 0,
   slideDuration: 5000,
 
-  setup(imagesArray, backdropImage = null) {
+  setup(imagesArray) {
     const images = Array.isArray(imagesArray)
       ? imagesArray.filter((image) => typeof image === "string" && image)
       : [];
     this.images = images.length ? images : ["assets/img/placeholder-mini.jpg"];
-    this.backdropImage = backdropImage || null;
     this.currentIndex = 0;
 
     const thumbsContainer = document.getElementById("modal-thumbnails");
@@ -63,28 +61,7 @@ export const modModalCarousel = {
     );
     const imageSrc =
       this.images[this.currentIndex] || "assets/img/placeholder-mini.jpg";
-    const modal = document.getElementById("mod-modal");
-    const backdropImage = this.backdropImage;
-    setModalBackdrop(modal, backdropImage || imageSrc);
-
-    if (backdropImage) {
-      const probe = new Image();
-      const clearProbe = () => {
-        probe.onload = null;
-        probe.onerror = null;
-      };
-      probe.onload = clearProbe;
-      probe.onerror = () => {
-        if (this.backdropImage === backdropImage) {
-          this.backdropImage = null;
-          const fallback =
-            this.images[this.currentIndex] || "assets/img/placeholder-mini.jpg";
-          setModalBackdrop(modal, fallback);
-        }
-        clearProbe();
-      };
-      probe.src = backdropImage;
-    }
+    setModalBackdrop(document.getElementById("mod-modal"), imageSrc);
 
     mainImg.classList.remove("fade-anim");
     void mainImg.offsetWidth;
