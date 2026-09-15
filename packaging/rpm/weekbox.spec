@@ -4,7 +4,7 @@
 
 Name:           weekbox
 Version:        2.3.4
-Release:        4%{?dist}
+Release:        5%{?dist}
 Summary:        A re-imagined Friday Night Funkin' mod launcher
 License:        MIT
 URL:            https://github.com/Crew-Awesome/Weekbox
@@ -24,6 +24,7 @@ BuildRequires:  make
 
 Requires:       (webkit2gtk4.1 or webkit2gtk4.0 or webkit2gtk3)
 Requires:       gtk3
+Requires:       (libayatana-appindicator-gtk3 or libappindicator-gtk3)
 Recommends:     python3
 
 %define debug_package %{nil}
@@ -75,6 +76,7 @@ ln -s weekbox %{buildroot}%{_bindir}/WeekBox
 install -D -m 0644 weekbox.desktop %{buildroot}%{_datadir}/applications/weekbox.desktop
 install -D -m 0644 launcher-icon.png %{buildroot}%{_datadir}/icons/hicolor/256x256/apps/weekbox.png
 install -D -m 0644 launcher-icon.png %{buildroot}%{_datadir}/pixmaps/weekbox.png
+install -D -m 0644 launcher-icon.png %{buildroot}/usr/lib/weekbox/launcher-icon.png
 
 %post
 /bin/touch --no-create %{_datadir}/icons/hicolor &>/dev/null || :
@@ -107,6 +109,9 @@ fi
 %{_datadir}/pixmaps/weekbox.png
 
 %changelog
+* Mon Sep 14 2026 Crew Awesome <info@weekbox.app> - 2.3.4-5
+- Linux close-to-tray and AppIndicator tray menu (same as Windows)
+
 * Mon Sep 14 2026 Crew Awesome <info@weekbox.app> - 2.3.4-4
 - Quit the GTK window on Linux close (Wayland/KDE X button)
 

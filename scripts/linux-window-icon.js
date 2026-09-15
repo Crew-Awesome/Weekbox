@@ -61,15 +61,9 @@ fi
 `;
 }
 
-// Windows keeps exitProcessOnClose=false for close-to-tray. On Linux the X
-// button only emits windowClose; KDE/Wayland often never delivers it, so the
-// window stays up. Neutralino honors this CLI override.
-const LINUX_EXIT_ON_CLOSE = "--window-exit-process-on-close=true";
-
 module.exports = {
   APP_ID,
   SHIM_NAME,
-  LINUX_EXIT_ON_CLOSE,
   sourceFile,
   compileLinuxAppIdShim,
   ensureLinuxAppIdShim,

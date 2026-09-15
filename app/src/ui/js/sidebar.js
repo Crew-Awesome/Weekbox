@@ -8,6 +8,7 @@ import { networkStatus } from "../../backend/core/system/network-status.service.
 import { appEvents } from "../../backend/core/routing/events.service.js";
 import { t } from "./i18n/index.js";
 import { escapeHtml } from "./mod-manager/modSettingsTemplates.js";
+import { appSettings } from "../../backend/core/system/settings.service.js";
 
 const SIDEBAR_WIDTH_KEY = "weekbox_sidebar_width";
 const SIDEBAR_COLLAPSED_KEY = "weekbox_sidebar_collapsed";
@@ -350,7 +351,12 @@ export const sidebar = {
           </div>
         `;
         btn.classList.add("running");
+        if (appSettings.get("hideOnLaunch")) Neutralino.window.hide();
         await FS.runStandaloneMod(mod.id, () => {
+          if (appSettings.get("hideOnLaunch")) {
+            Neutralino.window.show();
+            Neutralino.window.focus();
+          }
           btn.querySelector(".sidebar__marquee-container").innerHTML =
             `<span class="sidebar__marquee-text">${escapeHtml(originalText)}</span>`;
           this.updateEngineMarquee(btn);

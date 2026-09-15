@@ -2,7 +2,6 @@ const { spawn } = require("node:child_process");
 const path = require("node:path");
 const {
   SHIM_NAME,
-  LINUX_EXIT_ON_CLOSE,
   ensureLinuxAppIdShim,
 } = require("./linux-window-icon.js");
 
@@ -24,12 +23,7 @@ if (process.platform === "linux") {
   }
 }
 
-const neuArgs = [...process.argv.slice(2)];
-if (process.platform === "linux" && !neuArgs.includes(LINUX_EXIT_ON_CLOSE)) {
-  neuArgs.push("--", LINUX_EXIT_ON_CLOSE);
-}
-
-const child = spawn("npx", ["@neutralinojs/neu", "run", ...neuArgs], {
+const child = spawn("npx", ["@neutralinojs/neu", "run", ...process.argv.slice(2)], {
   stdio: "inherit",
   env,
   shell: true,

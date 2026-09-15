@@ -35,7 +35,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Dependencies now install into `mods` folder
 - Linux Wayland windows now show the WeekBox icon instead of the generic compositor icon.
 - Linux windows open on Wayland (including NVIDIA) by disabling WebKitGTK DMA-BUF rendering, which avoided compositor crashes.
-- Linux window close (title-bar X and taskbar Close) actually quits the process. The Windows close-to-tray setting left `exitProcessOnClose` off, so KDE/Wayland never destroyed the GTK window.
+- Linux uses the system tray like Windows: Close to tray hides the window, Quit from the tray menu exits, and Hide window when launching still restores WeekBox when the engine stops.
 
 ## [2.3.4] - 2026-09-12
 

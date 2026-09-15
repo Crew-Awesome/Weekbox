@@ -35,6 +35,7 @@ import {
   setEngineVersionName,
 } from "../../../backend/config/engine-preferences.js";
 import { createLoadingState, setButtonLoading } from "../hourglass.js";
+import { appSettings } from "../../../backend/core/system/settings.service.js";
 
 function sortableItems(container, selector) {
   return [...container.children].filter((item) => item.matches(selector));
@@ -114,9 +115,16 @@ function bindVersionActions({
         await FS.closeEngine(engineId, version, updateLaunchButton);
       } else {
         await FS.injectModsIntoEngine(engineId, version);
+        if (appSettings.get("hideOnLaunch")) Neutralino.window.hide();
         await FS.runEngine(engineId, version, (state) => {
           updateLaunchButton();
-          if (state === "completed" || state === "error") onProcessFinished();
+          if (state === "completed" || state === "error") {
+            if (appSettings.get("hideOnLaunch")) {
+              Neutralino.window.show();
+              Neutralino.window.focus();
+            }
+            onProcessFinished();
+          }
         });
       }
     } catch (error) {

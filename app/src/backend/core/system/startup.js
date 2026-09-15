@@ -52,6 +52,47 @@ async function focusWeekBoxWindow() {
   } catch {}
 }
 
+function supportsSystemTray() {
+  return window.NL_OS === "Windows" || window.NL_OS === "Linux";
+}
+
+async function resolveTrayIcon() {
+  if (window.NL_OS !== "Linux") {
+    return "/app/assets/icons/launcher-icon.png";
+  }
+  const candidates = [
+    `${window.NL_PATH}/launcher-icon.png`,
+    "/usr/share/pixmaps/weekbox.png",
+    "/usr/share/icons/hicolor/256x256/apps/weekbox.png",
+    `${window.NL_PATH}/app/assets/icons/launcher-icon.png`,
+    "/app/assets/icons/launcher-icon.png",
+  ];
+  for (const candidate of candidates) {
+    try {
+      await Neutralino.filesystem.getStats(candidate);
+      return candidate;
+    } catch {}
+  }
+  return candidates[0];
+}
+
+async function applySystemTray() {
+  if (!supportsSystemTray() || typeof Neutralino.os?.setTray !== "function") {
+    return;
+  }
+  try {
+    await Neutralino.os.setTray({
+      icon: await resolveTrayIcon(),
+      menuItems: [
+        { id: "weekbox-show", text: t("tray.showWeekBox") },
+        { id: "weekbox-quit", text: t("tray.quitWeekBox") },
+      ],
+    });
+  } catch (error) {
+    console.warn("Could not set WeekBox tray icon", error);
+  }
+}
+
 async function ensureSingleInstance() {
   // The dev reloader keeps the native process alive between webview reloads.
   if (isDevelopmentRun() || window.NL_OS !== "Windows") return true;
@@ -372,11 +413,6 @@ async function startApp() {
     Neutralino.init();
     patchNeutralinoMessageBox();
     Neutralino.events.on("weekbox:focus", () => void focusWeekBoxWindow());
-    if (window.NL_OS !== "Windows") {
-      Neutralino.events.on("windowClose", () => {
-        Neutralino.app.exit().catch(() => {});
-      });
-    }
     if (!(await ensureSingleInstance())) {
       await Neutralino.app.broadcast("weekbox:focus").catch(() => {});
       await Neutralino.app.exit().catch(() => {});
@@ -438,7 +474,7 @@ async function startApp() {
 
     let allowAppExit = false;
     let appExitStarted = false;
-    if (window.NL_OS === "Windows") {
+    if (supportsSystemTray()) {
       Neutralino.events.on("trayMenuItemClicked", async (event) => {
         const id = event.detail?.id;
         if (id === "weekbox-show") {
@@ -459,11 +495,7 @@ async function startApp() {
     });
 
     Neutralino.events.on("windowClose", async () => {
-      if (
-        !allowAppExit &&
-        window.NL_OS === "Windows" &&
-        appSettings.get("closeToTray")
-      ) {
+      if (!allowAppExit && supportsSystemTray() && appSettings.get("closeToTray")) {
         await Neutralino.window.hide();
         notifyDesktop(
           t("tray.runningInTrayTitle"),
@@ -490,19 +522,7 @@ async function startApp() {
     syncWindowsStartupRegistration(appSettings.get("launchOnStartup")).catch(
       () => {},
     );
-    if (window.NL_OS === "Windows") {
-      await Neutralino.os
-        .setTray({
-          icon: "/app/assets/icons/launcher-icon.png",
-          menuItems: [
-            { id: "weekbox-show", text: t("tray.showWeekBox") },
-            { id: "weekbox-quit", text: t("tray.quitWeekBox") },
-          ],
-        })
-        .catch((error) =>
-          console.warn("Could not set WeekBox tray icon", error),
-        );
-    }
+    await applySystemTray();
     if (!appSettings.get("firstRunLanguageSetupComplete")) {
       await firstRunLanguageModal.show();
     }

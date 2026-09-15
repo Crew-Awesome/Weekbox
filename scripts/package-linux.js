@@ -48,6 +48,7 @@ function copyBundle(targetDir) {
     });
   }
   copyLinuxAppIdShim(targetDir, shimFile);
+  fs.copyFileSync(iconSource, path.join(targetDir, "launcher-icon.png"));
   fs.chmodSync(path.join(targetDir, "WeekBox"), 0o755);
 }
 
@@ -78,7 +79,7 @@ fs.writeFileSync(
 set -eu
 HERE=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
 export WEBKIT_DISABLE_DMABUF_RENDERER="\${WEBKIT_DISABLE_DMABUF_RENDERER:-1}"
-${linuxPreloadSnippet('"$HERE/usr/bin/' + SHIM_NAME + '"')}exec "$HERE/usr/bin/WeekBox" --window-exit-process-on-close=true "$@"
+${linuxPreloadSnippet('"$HERE/usr/bin/' + SHIM_NAME + '"')}exec "$HERE/usr/bin/WeekBox" "$@"
 `,
 );
 fs.chmodSync(path.join(appDir, "AppRun"), 0o755);
@@ -149,7 +150,7 @@ fs.writeFileSync(
   path.join(debWrapperDir, "weekbox"),
   `#!/bin/sh
 export WEBKIT_DISABLE_DMABUF_RENDERER="\${WEBKIT_DISABLE_DMABUF_RENDERER:-1}"
-${linuxPreloadSnippet('"/usr/lib/weekbox/' + SHIM_NAME + '"')}exec /usr/lib/weekbox/WeekBox --window-exit-process-on-close=true "$@"
+${linuxPreloadSnippet('"/usr/lib/weekbox/' + SHIM_NAME + '"')}exec /usr/lib/weekbox/WeekBox "$@"
 `,
 );
 fs.chmodSync(path.join(debWrapperDir, "weekbox"), 0o755);

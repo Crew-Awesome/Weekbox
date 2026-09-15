@@ -33,7 +33,7 @@ function verifyBuildOutputs(files) {
   }
 }
 
-function copyBundle(sourceBinary, sourceResources, sourceExtensions, targetDir, shimFile) {
+function copyBundle(sourceBinary, sourceResources, sourceExtensions, targetDir, shimFile, iconSource) {
   fs.mkdirSync(targetDir, { recursive: true });
   fs.copyFileSync(sourceBinary, path.join(targetDir, "WeekBox"));
   fs.copyFileSync(sourceResources, path.join(targetDir, "resources.neu"));
@@ -43,6 +43,9 @@ function copyBundle(sourceBinary, sourceResources, sourceExtensions, targetDir, 
     });
   }
   if (shimFile) copyLinuxAppIdShim(targetDir, shimFile);
+  if (iconSource && fs.existsSync(iconSource)) {
+    fs.copyFileSync(iconSource, path.join(targetDir, "launcher-icon.png"));
+  }
   fs.chmodSync(path.join(targetDir, "WeekBox"), 0o755);
 }
 
@@ -50,14 +53,14 @@ function stageRpmFiles(stageDir, sourceBinary, sourceResources, sourceExtensions
   fs.rmSync(stageDir, { recursive: true, force: true });
 
   const stageLib = path.join(stageDir, "usr", "lib", "weekbox");
-  copyBundle(sourceBinary, sourceResources, sourceExtensions, stageLib, shimFile);
+  copyBundle(sourceBinary, sourceResources, sourceExtensions, stageLib, shimFile, iconSource);
 
   const stageBin = path.join(stageDir, "usr", "bin");
   fs.mkdirSync(stageBin, { recursive: true });
   const wrapperScript = `#!/bin/sh
 # Prevent WebKitGTK Wayland explicit-sync crash (Error 71) on modern compositors
 export WEBKIT_DISABLE_DMABUF_RENDERER="\${WEBKIT_DISABLE_DMABUF_RENDERER:-1}"
-${linuxPreloadSnippet('"/usr/lib/weekbox/' + SHIM_NAME + '"')}exec /usr/lib/weekbox/WeekBox --window-exit-process-on-close=true "$@"
+${linuxPreloadSnippet('"/usr/lib/weekbox/' + SHIM_NAME + '"')}exec /usr/lib/weekbox/WeekBox "$@"
 `;
   fs.writeFileSync(path.join(stageBin, "weekbox"), wrapperScript);
   fs.chmodSync(path.join(stageBin, "weekbox"), 0o755);
