@@ -1,21 +1,22 @@
 # Copr uses rpkg: this directory is a plain "spec + sources" folder.
 # Version must match the GitHub release tag v%{version}.
-# Source0 is the CI zip. Build Copr AFTER that zip exists on the release.
+# Sources are the CI zips. Build Copr AFTER those zips exist on the release.
 
 Name:           weekbox
 Version:        2.3.4
-Release:        2%{?dist}
+Release:        3%{?dist}
 Summary:        A re-imagined Friday Night Funkin' mod launcher
 License:        MIT
 URL:            https://github.com/Crew-Awesome/Weekbox
-ExclusiveArch:  x86_64
+ExclusiveArch:  x86_64 aarch64
 
 Source0:        https://github.com/Crew-Awesome/Weekbox/releases/download/v%{version}/WeekBox-%{version}-linux-x64.zip
-Source1:        weekbox-appid.c
-Source2:        launcher-icon.png
-Source3:        LICENSE
-Source4:        weekbox-wrapper.sh
-Source5:        weekbox.desktop
+Source1:        https://github.com/Crew-Awesome/Weekbox/releases/download/v%{version}/WeekBox-%{version}-linux-arm64.zip
+Source2:        weekbox-appid.c
+Source3:        launcher-icon.png
+Source4:        LICENSE
+Source5:        weekbox-wrapper.sh
+Source6:        weekbox.desktop
 
 BuildRequires:  gcc
 BuildRequires:  unzip
@@ -39,19 +40,34 @@ This package is built for Fedora Copr so WeekBox updates with dnf.
 # RPM 4.20 unpacks the flat zip into %{builddir} (parent), then cds into
 # %{name}-%{version}. -c creates that directory so the cd succeeds.
 %setup -q -c -n %{name}-%{version}
+%ifarch x86_64
 if [ ! -f WeekBox-linux_x64 ] && [ -f ../WeekBox-linux_x64 ]; then
   mv ../WeekBox-linux_x64 ../resources.neu .
 fi
 if [ ! -f WeekBox-linux_x64 ]; then
   unzip -qo %{SOURCE0}
 fi
-cp -a %{SOURCE1} %{SOURCE2} %{SOURCE3} %{SOURCE4} %{SOURCE5} .
+%endif
+%ifarch aarch64
+if [ ! -f WeekBox-linux_arm64 ] && [ -f ../WeekBox-linux_arm64 ]; then
+  mv ../WeekBox-linux_arm64 ../resources.neu .
+fi
+if [ ! -f WeekBox-linux_arm64 ]; then
+  unzip -qo %{SOURCE1}
+fi
+%endif
+cp -a %{SOURCE2} %{SOURCE3} %{SOURCE4} %{SOURCE5} %{SOURCE6} .
 
 %build
 gcc -shared -fPIC -O2 -o libweekbox-appid.so weekbox-appid.c -ldl
 
 %install
+%ifarch x86_64
 install -D -m 0755 WeekBox-linux_x64 %{buildroot}/usr/lib/weekbox/WeekBox
+%endif
+%ifarch aarch64
+install -D -m 0755 WeekBox-linux_arm64 %{buildroot}/usr/lib/weekbox/WeekBox
+%endif
 install -D -m 0644 resources.neu %{buildroot}/usr/lib/weekbox/resources.neu
 install -D -m 0755 libweekbox-appid.so %{buildroot}/usr/lib/weekbox/libweekbox-appid.so
 install -D -m 0755 weekbox-wrapper.sh %{buildroot}%{_bindir}/weekbox
@@ -91,5 +107,7 @@ fi
 %{_datadir}/pixmaps/weekbox.png
 
 %changelog
+* Tue Sep 15 2026 Crew Awesome <info@weekbox.app> - 2.3.4-3
+- Add aarch64 (ARM 64-bit) build support alongside x86_64
 * Sun Sep 13 2026 Crew Awesome <info@weekbox.app> - 2.3.4-2
 - Move the flat linux zip into the RPM 4.20 build directory after %setup -c
