@@ -37,6 +37,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Linux windows open on Wayland (including NVIDIA) by disabling WebKitGTK DMA-BUF rendering, which avoided compositor crashes.
 - Linux uses the system tray like Windows: Close to tray hides the window, Quit from the tray menu exits, and Hide window when launching still restores WeekBox when the engine stops.
 - Removed the notification when closing WeekBox to the system tray.
+- Fixed an invisible system tray icon on Linux installations.
+- Fixed a crash on Linux when hiding or restoring the window.
 
 ## [2.3.4] - 2026-09-12
 

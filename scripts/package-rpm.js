@@ -60,7 +60,7 @@ function stageRpmFiles(stageDir, sourceBinary, sourceResources, sourceExtensions
   const wrapperScript = `#!/bin/sh
 # Prevent WebKitGTK Wayland explicit-sync crash (Error 71) on modern compositors
 export WEBKIT_DISABLE_DMABUF_RENDERER="\${WEBKIT_DISABLE_DMABUF_RENDERER:-1}"
-${linuxPreloadSnippet('"/usr/lib/weekbox/' + SHIM_NAME + '"')}exec /usr/lib/weekbox/WeekBox "$@"
+${linuxPreloadSnippet('"/usr/lib/weekbox/' + SHIM_NAME + '"')}exec /usr/lib/weekbox/WeekBox --data-location=system "$@"
 `;
   fs.writeFileSync(path.join(stageBin, "weekbox"), wrapperScript);
   fs.chmodSync(path.join(stageBin, "weekbox"), 0o755);

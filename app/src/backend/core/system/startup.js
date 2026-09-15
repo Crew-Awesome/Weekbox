@@ -55,33 +55,13 @@ function supportsSystemTray() {
   return window.NL_OS === "Windows" || window.NL_OS === "Linux";
 }
 
-async function resolveTrayIcon() {
-  if (window.NL_OS !== "Linux") {
-    return "/app/assets/icons/launcher-icon.png";
-  }
-  const candidates = [
-    `${window.NL_PATH}/launcher-icon.png`,
-    "/usr/share/pixmaps/weekbox.png",
-    "/usr/share/icons/hicolor/256x256/apps/weekbox.png",
-    `${window.NL_PATH}/app/assets/icons/launcher-icon.png`,
-    "/app/assets/icons/launcher-icon.png",
-  ];
-  for (const candidate of candidates) {
-    try {
-      await Neutralino.filesystem.getStats(candidate);
-      return candidate;
-    } catch {}
-  }
-  return candidates[0];
-}
-
 async function applySystemTray() {
   if (!supportsSystemTray() || typeof Neutralino.os?.setTray !== "function") {
     return;
   }
   try {
     await Neutralino.os.setTray({
-      icon: await resolveTrayIcon(),
+      icon: "/app/assets/icons/launcher-icon.png",
       menuItems: [
         { id: "weekbox-show", text: t("tray.showWeekBox") },
         { id: "weekbox-quit", text: t("tray.quitWeekBox") },
