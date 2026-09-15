@@ -1915,12 +1915,13 @@ var _FileSystemService = class _FileSystemService {
     const mods = await this.mods.getAll();
     let migrated = false;
     for (const mod of mods) {
-      if (
-        mod.kind === "dependency" &&
-        mod.engineId === "codename" &&
-        !mod.consumers?.length
-      ) {
-        mod.kind = "addon";
+      if (mod.kind === "dependency") {
+        delete mod.kind;
+        delete mod.consumers;
+        migrated = true;
+      }
+      if (Array.isArray(mod.dependencies)) {
+        delete mod.dependencies;
         migrated = true;
       }
     }

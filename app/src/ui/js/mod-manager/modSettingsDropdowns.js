@@ -38,12 +38,6 @@ export function setupModSettingsDropdowns(overlay, mod, installedEngines) {
     mod.kind === "addon"
       ? [["addon", "engineManager.customAddons", "fa-cubes"]]
       : []),
-    ...(mod.kind === "dependency" ||
-    (engineSelect.value !== "codename" &&
-      mod.engineId !== "codename" &&
-      mod.kind !== "addon")
-      ? [["dependency", "modManager.dependencies", "fa-puzzle-piece"]]
-      : []),
   ];
 
   const renderType = () => {

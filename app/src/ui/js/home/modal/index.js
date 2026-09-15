@@ -252,7 +252,6 @@ const modModal = {
         dependency.downloadUrl,
         data.engineId,
         {
-          kind: "dependency",
           sourceType: dependency.downloadType || dependency.type,
           fileSize: dependency.fileSize,
           toastThumbnail: dependency.thumbnail,
@@ -266,7 +265,6 @@ const modModal = {
       selectedDownload.downloadUrl,
       data.engineId,
       {
-        dependencies: selected.map((dependency) => dependency.dependencyId),
         kind: data.kind || "mod",
         categoryId: data.categoryId || null,
         toastThumbnail: data.images?.[0],
@@ -279,11 +277,6 @@ const modModal = {
       },
     );
     if (!installedMod) return;
-    await Promise.all(
-      selected.map((dependency) =>
-        FS.addDependencyConsumer(dependency.dependencyId, installedMod),
-      ),
-    );
   },
 };
 

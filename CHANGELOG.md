@@ -30,6 +30,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Existing dependencies are automatically converted to regular mods.
 - Profile lists now show all visible FNF mods.
 - Dependencies now install into `mods` folder
 
