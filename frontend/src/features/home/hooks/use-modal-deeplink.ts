@@ -148,12 +148,12 @@ export const useModalDeeplink = () => {
       const cached = modDetailsCache.get(card.id);
       if (cached && cached.files !== undefined) {
         setSelectedCard(cached);
-        return;
+      } else {
+        setSelectedCard(card);
       }
 
-      setSelectedCard(card);
-
-      fetchModDetails(card.id, card);
+      /* Always revalidate fresh mod details in the background so updates/files are never stale */
+      fetchModDetails(card.id, cached || card);
     },
     [fetchModDetails],
   );

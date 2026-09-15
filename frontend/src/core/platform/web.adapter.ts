@@ -80,19 +80,24 @@ export class WebAdapter implements IPlatformBridge {
   async registerInstalledMod(modData: any): Promise<void> {
     try {
       const list = await this.getInstalledMods();
+      const updatedInstalledAt = modData.installedAt || Date.now();
       const entry = {
         installed: true,
-        installedAt: modData.installedAt || Date.now(),
         ...modData,
+        installedAt: updatedInstalledAt,
       };
       const idx = list.findIndex((m) => String(m.id) === String(modData.id));
-      if (idx >= 0) list[idx] = entry;
-      else list.push(entry);
+      if (idx >= 0) {
+        list[idx] = { ...list[idx], ...entry, installedAt: updatedInstalledAt };
+      } else {
+        list.push(entry);
+      }
       localStorage.setItem("wb_installed_mods", JSON.stringify(list));
-      this.emitLocalEvent("mods:changed", { action: "installed", mod: entry });
+      const savedEntry = idx >= 0 ? list[idx] : entry;
+      this.emitLocalEvent("mods:changed", { action: "installed", mod: savedEntry });
       if (typeof window !== "undefined") {
         window.dispatchEvent(
-          new CustomEvent("wb:mods-changed", { detail: { action: "installed", mod: entry } })
+          new CustomEvent("wb:mods-changed", { detail: { action: "installed", mod: savedEntry } })
         );
       }
     } catch (e) {

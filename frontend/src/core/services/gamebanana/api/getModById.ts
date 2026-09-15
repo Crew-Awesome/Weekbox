@@ -15,14 +15,16 @@ import {
 } from "../utils";
 import Utils from "@utils";
 
-const modProfileCache = new Map<number, GameBananaMod>();
+const modProfileCache = new Map<number, { data: GameBananaMod; timestamp: number }>();
+const CACHE_TTL_MS = 60 * 1000; /* 1 minute cache TTL */
 
-/**
+/*
  * Fetches full mod details by ID and maps the response to the standard `GameBananaMod` format.
  */
-export async function getModById(modId: number): Promise<GameBananaMod | null> {
-  if (modProfileCache.has(modId)) {
-    return modProfileCache.get(modId)!;
+export async function getModById(modId: number, forceFresh: boolean = false): Promise<GameBananaMod | null> {
+  const cached = modProfileCache.get(modId);
+  if (!forceFresh && cached && Date.now() - cached.timestamp < CACHE_TTL_MS) {
+    return cached.data;
   }
 
   const url = `${GB_BASE_URL}/Mod/${modId}/ProfilePage`;
@@ -74,7 +76,7 @@ export async function getModById(modId: number): Promise<GameBananaMod | null> {
       studio: raw._aStudio?._sName || undefined,
       categoryName: raw._aCategory?._sName || undefined,
     };
-    modProfileCache.set(modId, result);
+    modProfileCache.set(modId, { data: result, timestamp: Date.now() });
     return result;
   } catch (error) {
     console.error(`Error fetching mod ${modId} from GameBanana:`, error);

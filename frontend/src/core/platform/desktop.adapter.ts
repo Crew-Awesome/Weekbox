@@ -363,22 +363,41 @@ export class DesktopAdapter implements IPlatformBridge {
     } catch (e) {
     }
 
-    const existingIndex = registry.findIndex(m => m.id === modData.id);
+    const updatedInstalledAt = modData.installedAt || Date.now();
+    const existingIndex = registry.findIndex((m) => String(m.id) === String(modData.id));
     if (existingIndex >= 0) {
-      registry[existingIndex] = entry;
+      registry[existingIndex] = {
+        ...registry[existingIndex],
+        ...entry,
+        installedAt: updatedInstalledAt,
+      };
     } else {
-      registry.push(entry);
+      registry.push({
+        ...entry,
+        installedAt: updatedInstalledAt,
+      });
     }
+
+    const savedEntry = existingIndex >= 0 ? registry[existingIndex] : entry;
 
     await this.call("fs.writeFile" as any, { 
       path: registryPath, 
       content: JSON.stringify(registry, null, 2) 
     });
 
-    this.emitLocalEvent("mods:changed", { action: "installed", mod: entry });
+    /* Also write or update mod.json directly inside the mod directory */
+    try {
+      const modJsonPath = `${installPath}/mod.json`;
+      await this.call("fs.writeFile" as any, {
+        path: modJsonPath,
+        content: JSON.stringify(savedEntry, null, 2),
+      }).catch(() => {});
+    } catch {}
+
+    this.emitLocalEvent("mods:changed", { action: "installed", mod: savedEntry });
     if (typeof window !== "undefined") {
       window.dispatchEvent(
-        new CustomEvent("wb:mods-changed", { detail: { action: "installed", mod: entry } })
+        new CustomEvent("wb:mods-changed", { detail: { action: "installed", mod: savedEntry } })
       );
     }
   }

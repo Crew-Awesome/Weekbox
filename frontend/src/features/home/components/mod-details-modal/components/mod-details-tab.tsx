@@ -79,6 +79,16 @@ export const ModDetailsTab: React.FC<ModDetailsTabProps> = ({
               const isDownloading = prog !== undefined && prog >= 0 && prog < 100;
               const isCompleted = prog === 100;
               const cardData = displayCard as any;
+              const getFileTimestamp = (val: any) => {
+                if (!val) return 0;
+                if (typeof val === "number") return val < 10000000000 ? val * 1000 : val;
+                const t = new Date(val).getTime();
+                return isNaN(t) ? 0 : t;
+              };
+              const installedTime = getFileTimestamp(cardData.installedAt);
+              const fileTime = getFileTimestamp(file._tsDateAdded || file.date || file._tsDateModified);
+              const fileHasUpdate = isInstalled && installedTime > 0 && fileTime > installedTime + 60000;
+
               const isFileInstalled =
                 (isInstalled &&
                   (String(cardData.downloadedFileId) === String(file._idRow) ||
@@ -108,14 +118,41 @@ export const ModDetailsTab: React.FC<ModDetailsTabProps> = ({
 
                     {file._sDownloadUrl && (
                       isFileInstalled ? (
-                        <button
-                          type="button"
-                          onClick={() => onManageFile?.(file)}
-                          className="shrink-0 flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all bg-[var(--wb-primary)] hover:opacity-90 text-[var(--wb-on-primary)] cursor-pointer shadow-sm"
-                        >
-                          <Play className="w-3.5 h-3.5 shrink-0 fill-current" />
-                          <span>Play</span>
-                        </button>
+                        <div className="shrink-0 flex items-center gap-2">
+                          {fileHasUpdate && onDownloadFile && (
+                            <button
+                              type="button"
+                              onClick={() => onDownloadFile(file._sDownloadUrl, String(file._idRow))}
+                              disabled={isDownloading}
+                              className={`flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                                isDownloading
+                                  ? "bg-amber-500/20 text-amber-300 cursor-wait"
+                                  : "bg-amber-500 hover:bg-amber-400 text-black cursor-pointer shadow-sm"
+                              }`}
+                              title="Update to this version"
+                            >
+                              {isDownloading ? (
+                                <>
+                                  <Loader2 className="w-3.5 h-3.5 animate-spin shrink-0" />
+                                  <span>{prog}%</span>
+                                </>
+                              ) : (
+                                <>
+                                  <RefreshCw className="w-3.5 h-3.5 shrink-0" />
+                                  <span>Update</span>
+                                </>
+                              )}
+                            </button>
+                          )}
+                          <button
+                            type="button"
+                            onClick={() => onManageFile?.(file)}
+                            className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all bg-[var(--wb-primary)] hover:opacity-90 text-[var(--wb-on-primary)] cursor-pointer shadow-sm"
+                          >
+                            <Play className="w-3.5 h-3.5 shrink-0 fill-current" />
+                            <span>Play</span>
+                          </button>
+                        </div>
                       ) : onDownloadFile ? (
                         <button
                           type="button"

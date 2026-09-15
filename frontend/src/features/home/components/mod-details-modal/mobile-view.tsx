@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef } from "react";
+import React, { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import {
   Download,
   List,
@@ -7,6 +7,7 @@ import {
   Play,
   Square,
   Trash2,
+  RefreshCw,
   HardDrive,
   Languages,
   Heart,
@@ -285,18 +286,135 @@ export const MobileView: React.FC<MobileViewProps> = ({
 
 
   const [localInstalledAt, setLocalInstalledAt] = useState<number | undefined>(displayCard.installedAt);
+  const [installedModData, setInstalledModData] = useState<any | null>(null);
 
   useEffect(() => {
-    if (displayCard?.id) {
-      Core.platform.getInstalledMod(displayCard.id.toString()).then((mod) => {
-        setIsInstalled(Boolean(mod));
-        setLocalInstalledAt(mod?.installedAt);
-      }).catch(() => {
-        setIsInstalled(false);
-        setLocalInstalledAt(undefined);
+    const checkInstall = async () => {
+      if (displayCard?.id) {
+        try {
+          const mod = await Core.platform.getInstalledMod(displayCard.id.toString());
+          if (mod) {
+            setIsInstalled(true);
+            setInstalledModData(mod);
+            setLocalInstalledAt(mod.installedAt);
+          } else {
+            setIsInstalled(false);
+            setInstalledModData(null);
+            setLocalInstalledAt(undefined);
+          }
+        } catch {
+          setIsInstalled(false);
+          setInstalledModData(null);
+          setLocalInstalledAt(undefined);
+        }
+      }
+    };
+    checkInstall();
+
+    const handleModsChanged = () => {
+      checkInstall();
+    };
+    window.addEventListener("wb:mods-changed", handleModsChanged);
+    const unsubPlatform = Core.platform.onEvent?.("mods:changed", handleModsChanged);
+
+    return () => {
+      window.removeEventListener("wb:mods-changed", handleModsChanged);
+      unsubPlatform?.();
+    };
+  }, [displayCard?.id, downloadTasks]);
+
+  /* Helper to normalize numeric or string dates to epoch milliseconds */
+  const getTimestampMs = useCallback((val: any): number => {
+    if (!val) return 0;
+    if (typeof val === "number") {
+      return val < 10000000000 ? val * 1000 : val;
+    }
+    const parsed = new Date(val).getTime();
+    return isNaN(parsed) ? 0 : parsed;
+  }, []);
+
+  const latestModTimestamp = useMemo(() => {
+    if (!displayCard) return 0;
+    let maxTime = getTimestampMs(displayCard.updatedAt) || getTimestampMs(displayCard.submittedAt);
+    if (Array.isArray(displayCard.files)) {
+      for (const f of displayCard.files) {
+        const fileTime = getTimestampMs(f._tsDateAdded || f.date || f._tsDateModified);
+        if (fileTime > maxTime) maxTime = fileTime;
+      }
+    }
+    if (Array.isArray(displayCard.updates)) {
+      for (const u of displayCard.updates) {
+        const updateTime = getTimestampMs(u._tsDateAdded);
+        if (updateTime > maxTime) maxTime = updateTime;
+      }
+    }
+    return maxTime;
+  }, [displayCard, getTimestampMs]);
+
+  const installedTimestamp = useMemo(() => {
+    return getTimestampMs(localInstalledAt || installedModData?.installedAt);
+  }, [localInstalledAt, installedModData?.installedAt, getTimestampMs]);
+
+  const hasUpdate = useMemo(() => {
+    if (!isInstalled) return false;
+    /* Compare latest update date with installed date (with 60s buffer) */
+    const hasDateUpdate = installedTimestamp > 0 && latestModTimestamp > installedTimestamp + 60000;
+    /* Also check version difference if available */
+    const currentVersion = displayCard?.version ? String(displayCard.version).trim() : null;
+    const installedVersion = installedModData?.version ? String(installedModData.version).trim() : null;
+    const hasVersionUpdate = Boolean(currentVersion && installedVersion && currentVersion !== installedVersion);
+
+    return hasDateUpdate || hasVersionUpdate;
+  }, [isInstalled, installedTimestamp, latestModTimestamp, displayCard?.version, installedModData?.version]);
+
+  const activeModTask = useMemo(() => {
+    if (!displayCard?.id) return null;
+    return (
+      Object.values(downloadTasks).find(
+        (t) => String(t.modId) === String(displayCard.id)
+      ) || null
+    );
+  }, [displayCard?.id, downloadTasks]);
+
+  const isUpdating = Boolean(activeModTask);
+  const updateProgress = activeModTask?.progress ?? 0;
+
+  const handleUpdateClick = async () => {
+    if (isStorageMigrating) {
+      Utils.toast.warning(
+        "Cannot update while storage migration is in progress. Please wait for the migration to complete.",
+        { title: "Storage Relocation in Progress" }
+      );
+      return;
+    }
+
+    const validFiles = (displayCard.files || []).filter(
+      (f: any) => f._sDownloadUrl && f._sDownloadUrl.trim() !== ""
+    );
+
+    if (validFiles.length === 0) {
+      Utils.toast.error("No downloadable files found for this update.", {
+        title: "Update Unavailable",
+      });
+      return;
+    }
+
+    /* Sort files by date descending to find newest file */
+    const sortedFiles = [...validFiles].sort((a: any, b: any) => {
+      const timeA = getTimestampMs(a._tsDateAdded || a.date || a._tsDateModified);
+      const timeB = getTimestampMs(b._tsDateAdded || b.date || b._tsDateModified);
+      return timeB - timeA;
+    });
+
+    const fileToDownload = sortedFiles[0];
+    if (sortedFiles.length > 1) {
+      Utils.toast.info(`Updating with latest release: "${fileToDownload._sFile || "Latest file"}"`, {
+        title: "Mod Update",
       });
     }
-  }, [displayCard?.id, downloadTasks]);
+
+    await handleDownload(fileToDownload._sDownloadUrl, String(fileToDownload._idRow));
+  };
 
   const executeUninstall = async () => {
     if (!displayCard?.id) return;
@@ -652,6 +770,15 @@ export const MobileView: React.FC<MobileViewProps> = ({
             )
           )}
         </div>
+        {displayCard.updatedAt && displayCard.updatedAt !== displayCard.submittedAt && (
+          <div 
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[var(--wb-surface-bright)] border border-[var(--wb-outline-variant)]/30 text-[var(--wb-on-surface-variant)] text-xs font-semibold"
+            title={`Updated: ${formatFullDate(displayCard.updatedAt)}`}
+          >
+            <RefreshCw className="w-3.5 h-3.5" />
+            <span>{formatDate(displayCard.updatedAt)}</span>
+          </div>
+        )}
         {isInstalled && localInstalledAt && (
           <div 
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[var(--wb-surface-bright)] border border-[var(--wb-outline-variant)]/30 text-[var(--wb-on-surface-variant)] text-xs font-semibold"
@@ -873,11 +1000,35 @@ export const MobileView: React.FC<MobileViewProps> = ({
 
       <div 
         className="mt-auto shrink-0 sticky bottom-0 z-20 pt-2"
-        onMouseLeave={() => setIsDropdownOpen(false)}
       >
         <div className="relative w-full">
           {isInstalled ? (
             <div className="flex gap-2 w-full">
+              {(hasUpdate || isUpdating) && (
+                isUpdating ? (
+                  <button
+                    type="button"
+                    disabled
+                    className="flex-1 bg-amber-500/20 border border-amber-500/30 text-amber-300 py-3 rounded-xl flex items-center justify-center gap-2 font-bold cursor-wait animate-pulse"
+                  >
+                    <Loader2 className="w-5 h-5 animate-spin text-amber-400" />
+                    <span className="text-base">
+                      {updateProgress > 0 ? `${updateProgress}%` : "Updating..."}
+                    </span>
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={handleUpdateClick}
+                    disabled={isStorageMigrating}
+                    className="flex-1 bg-amber-500 hover:bg-amber-400 text-black py-3 rounded-xl flex items-center justify-center gap-2 font-black transition-all cursor-pointer shadow-md"
+                    title="A new version or update is available for this mod"
+                  >
+                    <RefreshCw className="w-5 h-5" />
+                    <span className="text-base">Update</span>
+                  </button>
+                )
+              )}
               <button 
                 onClick={playStatus === "playing" ? handleStop : handleManage}
                 disabled={playStatus === "launching" || playStatus === "stopping"}

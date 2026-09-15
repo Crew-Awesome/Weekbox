@@ -32,7 +32,7 @@ export const ModContributorsBtn: React.FC<ModContributorsBtnProps> = ({
 
   useEffect(() => {
     if (hoverBgRef.current) {
-      // Inicia "chiquito" (con padding interno de 6px) y transparente
+      /* Inicia "chiquito" (con padding interno de 6px) y transparente */
       gsap.set(hoverBgRef.current, {
         top: 6,
         left: 6,
@@ -48,7 +48,7 @@ export const ModContributorsBtn: React.FC<ModContributorsBtnProps> = ({
     const finalColor = getDefaultHoverColor();
 
     if (hoverBgRef.current) {
-      // Se expande a su tamaño completo (inset 0) y gana opacidad
+      /* Se expande a su tamaño completo (inset 0) y gana opacidad */
       gsap.to(hoverBgRef.current, {
         top: 0,
         left: 0,
@@ -66,7 +66,7 @@ export const ModContributorsBtn: React.FC<ModContributorsBtnProps> = ({
     if (window.matchMedia("(hover: none)").matches) return;
 
     if (hoverBgRef.current) {
-      // Se hace chiquito nuevamente y desaparece
+      /* Se hace chiquito nuevamente y desaparece */
       gsap.to(hoverBgRef.current, {
         top: 6,
         left: 6,
