@@ -29,6 +29,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - Profile lists now show all visible FNF mods.
+- Dependencies now install into `mods` folder
 
 ## [2.3.4] - 2026-09-12
 

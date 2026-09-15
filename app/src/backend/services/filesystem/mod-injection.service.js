@@ -220,9 +220,7 @@ var _ModInjectionService = class _ModInjectionService {
     await this.migrateLegacyEngineMods(engineId, version);
     const modsPath = usesAddonsDirectory(mod, engineId)
       ? await this.getEngineAddonsPath(engineId, version)
-      : mod.kind === "dependency"
-        ? await this.getEngineContentPath(engineId, version, "dependencies")
-        : await this.getEngineModsPath(engineId, version);
+      : await this.getEngineModsPath(engineId, version);
     const engineFolderName = getEngineModFolderName(mod);
     if (!String(modsPath || "").trim())
       throw new Error(
@@ -238,6 +236,22 @@ var _ModInjectionService = class _ModInjectionService {
     }
     if (await this.executables.find(sourcePath))
       return { linked: false, standalone: true };
+    if (mod.kind === "dependency" && !usesAddonsDirectory(mod, engineId)) {
+      const oldLinkPath = `${await this.getEngineContentPath(
+        engineId,
+        version,
+        "dependencies",
+      )}/${engineFolderName}`;
+      if (oldLinkPath !== linkPath)
+        await removeEngineModLink({
+          api: this.api,
+          isEngineRunning: (...args) => this.isEngineRunning?.(...args),
+          mod,
+          engineId,
+          version,
+          linkPath: oldLinkPath,
+        });
+    }
     await this.api.ensureDir(modsPath);
     if (await this.api.exists(linkPath)) {
       const storedMods = await this.modRepository.getAll();
@@ -339,7 +353,10 @@ var _ModInjectionService = class _ModInjectionService {
         this.getLegacyAddonsPath(engineId, version),
       );
     }
-    if (this.getCustomEngine?.(engineId)) {
+    if (
+      (mod.kind === "dependency" && !usesAddonsDirectory(mod, engineId)) ||
+      this.getCustomEngine?.(engineId)
+    ) {
       enginePaths.push(
         await this.getEngineContentPath(engineId, version, "dependencies"),
       );
