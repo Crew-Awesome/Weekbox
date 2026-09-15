@@ -3,11 +3,13 @@ import Shared from "@shared";
 import { Filter, Clock, Layers, CheckCircle2 } from "lucide-react";
 import { ENGINE_CATEGORIES } from "../../../core/services/gamebanana/constants";
 
+export type InstanceSortOption = "newest" | "oldest" | "version" | "date";
+
 interface InstancesTopbarProps {
   selectedCategory: string;
   onSelectCategory: (category: string) => void;
-  sortOption: "date" | "version";
-  onSortChange: (sort: "date" | "version") => void;
+  sortOption: InstanceSortOption;
+  onSortChange: (sort: InstanceSortOption) => void;
   onlyInstalled: boolean;
   onOnlyInstalledChange: (only: boolean) => void;
   isExecutable?: boolean;
@@ -50,7 +52,7 @@ export const InstancesTopbar: React.FC<InstancesTopbarProps> = ({
     }));
   }, []);
 
-  const isFilterActive = onlyInstalled || sortOption !== "date";
+  const isFilterActive = onlyInstalled || (sortOption !== "newest" && sortOption !== "date");
 
   return (
     <div className="sticky top-0 z-40 flex items-center w-full md:w-auto h-25 rounded-none md:rounded-b-[16px] bg-[var(--wb-surface-container)]/90 backdrop-blur-md mx-0 md:mx-2 px-4 md:px-6 shadow-md border-b md:border-b-0 border-[var(--wb-outline-variant)]/20">
@@ -76,12 +78,17 @@ export const InstancesTopbar: React.FC<InstancesTopbarProps> = ({
                 {!isExecutable && (
                   <Shared.molecules.PillDropdown
                     label="Sort by"
-                    value={sortOption}
-                    onChange={(val: string) => onSortChange(val as "date" | "version")}
+                    value={sortOption === "date" ? "newest" : sortOption}
+                    onChange={(val: string) => onSortChange(val as InstanceSortOption)}
                     options={[
                       {
-                        label: "Release Date",
-                        value: "date",
+                        label: "Newest to Oldest",
+                        value: "newest",
+                        icon: <Clock size={16} />,
+                      },
+                      {
+                        label: "Oldest to Newest",
+                        value: "oldest",
                         icon: <Clock size={16} />,
                       },
                       {

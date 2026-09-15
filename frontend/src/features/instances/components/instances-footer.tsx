@@ -320,14 +320,14 @@ export const InstancesFooter: React.FC<InstancesFooterProps> = ({
               <button
                 type="button"
                 onClick={() => setShowMoreMenu(!showMoreMenu)}
-                className="p-3.5 sm:p-4 rounded-2xl bg-[var(--wb-surface-bright)] hover:bg-[var(--wb-surface-container-highest)] border border-[var(--wb-outline-variant)]/30 text-[var(--wb-on-surface)] flex items-center justify-center transition-all cursor-pointer shadow-md"
+                className="p-2 sm:p-2.5 rounded-2xl text-[var(--wb-on-surface-variant)] hover:text-[var(--wb-on-surface)] hover:bg-white/5 active:scale-95 flex items-center justify-center transition-all cursor-pointer"
                 title="More options"
               >
-                <MoreVertical className="w-5 h-5" />
+                <MoreVertical className="w-6 h-6 sm:w-7 sm:h-7" />
               </button>
 
               {showMoreMenu && (
-                <div className="absolute bottom-full right-0 mb-3 w-48 bg-[var(--wb-surface-container)] border border-[var(--wb-outline-variant)]/40 rounded-2xl p-2 shadow-2xl backdrop-blur-2xl z-50 flex flex-col gap-1">
+                <div className="absolute bottom-full right-0 mb-3 w-56 sm:w-64 bg-[var(--wb-surface-container)] border border-[var(--wb-outline-variant)]/60 rounded-3xl p-2.5 shadow-2xl backdrop-blur-2xl z-50 flex flex-col gap-1.5 animate-in fade-in slide-in-from-bottom-2 duration-150">
                   {onOpenFolder && (
                     <button
                       type="button"
@@ -335,9 +335,9 @@ export const InstancesFooter: React.FC<InstancesFooterProps> = ({
                         setShowMoreMenu(false);
                         onOpenFolder();
                       }}
-                      className="flex items-center gap-2.5 w-full px-3.5 py-2.5 rounded-xl hover:bg-[var(--wb-surface-container-highest)] text-sm font-bold text-[var(--wb-on-surface)] transition-colors cursor-pointer text-left"
+                      className="flex items-center gap-3 w-full px-4 py-3 sm:py-3.5 rounded-2xl hover:bg-[var(--wb-surface-container-highest)] text-base sm:text-lg font-bold text-[var(--wb-on-surface)] transition-all cursor-pointer text-left group"
                     >
-                      <FolderOpen className="w-4 h-4 text-[var(--wb-primary)]" />
+                      <FolderOpen className="w-5 h-5 sm:w-6 sm:h-6 text-[var(--wb-primary)] shrink-0 group-hover:scale-110 transition-transform" />
                       <span>Open Folder</span>
                     </button>
                   )}
@@ -349,9 +349,9 @@ export const InstancesFooter: React.FC<InstancesFooterProps> = ({
                         setShowMoreMenu(false);
                         onDownload();
                       }}
-                      className="flex items-center gap-2.5 w-full px-3.5 py-2.5 rounded-xl hover:bg-[var(--wb-surface-container-highest)] text-sm font-bold text-[var(--wb-primary)] transition-colors cursor-pointer text-left"
+                      className="flex items-center gap-3 w-full px-4 py-3 sm:py-3.5 rounded-2xl hover:bg-[var(--wb-surface-container-highest)] text-base sm:text-lg font-bold text-[var(--wb-primary)] transition-all cursor-pointer text-left group"
                     >
-                      <Download className="w-4 h-4" />
+                      <Download className="w-5 h-5 sm:w-6 sm:h-6 shrink-0 group-hover:scale-110 transition-transform" />
                       <span>Reinstall</span>
                     </button>
                   )}

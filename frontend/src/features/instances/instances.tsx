@@ -4,7 +4,7 @@ import Core from "@core";
 import Utils from "@utils";
 import { ENGINE_CATEGORIES } from "../../core/services/gamebanana/constants";
 import { useEngineReleases } from "./hooks/use-engine-releases";
-import { InstancesTopbar } from "./components/instances-topbar";
+import { InstancesTopbar, type InstanceSortOption } from "./components/instances-topbar";
 import { InstancesVersionAside } from "./components/instances-version-aside";
 import { InstancesMarkdownViewer } from "./components/instances-markdown-viewer";
 import { InstancesExecutableView } from "./components/instances-executable-view";
@@ -28,7 +28,7 @@ export const Instances: React.FC = () => {
   const isInitializedRef = useRef(false);
 
   const [selectedCategory, setSelectedCategory] = useState<string>("vslice");
-  const [sortOption, setSortOption] = useState<"date" | "version">("date");
+  const [sortOption, setSortOption] = useState<InstanceSortOption>("newest");
   const [onlyInstalled, setOnlyInstalled] = useState<boolean>(false);
 
   const isExecutable = useMemo(() => {

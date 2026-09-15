@@ -1,6 +1,7 @@
 import React, { useMemo } from "react";
 import { Loader2, HardDrive, Check } from "lucide-react";
 import type { EngineReleaseItem } from "../../../core/services/engines/engine-releases.service";
+import type { InstanceSortOption } from "./instances-topbar";
 
 interface InstancesVersionAsideProps {
   isExecutable: boolean;
@@ -13,7 +14,7 @@ interface InstancesVersionAsideProps {
   onSelectMod: (mod: any) => void;
   isLoadingMods?: boolean;
   engineIcon?: string;
-  sortOption?: "date" | "version";
+  sortOption?: InstanceSortOption;
   onlyInstalled?: boolean;
   installedVersions?: string[];
 }
@@ -34,7 +35,7 @@ export const InstancesVersionAside: React.FC<InstancesVersionAsideProps> = ({
   selectedModId,
   onSelectMod,
   isLoadingMods = false,
-  sortOption = "date",
+  sortOption = "newest",
   onlyInstalled = false,
   installedVersions = [],
 }) => {
@@ -71,8 +72,19 @@ export const InstancesVersionAside: React.FC<InstancesVersionAsideProps> = ({
         if (b.isNightly) return 1;
         return b.version.localeCompare(a.version, undefined, { numeric: true, sensitivity: "base" });
       });
-    } else if (sortOption === "date") {
+    } else if (sortOption === "oldest") {
       list.sort((a, b) => {
+        if (a.isNightly) return 1;
+        if (b.isNightly) return -1;
+        const dateA = a.releasedAt ? new Date(a.releasedAt).getTime() : 0;
+        const dateB = b.releasedAt ? new Date(b.releasedAt).getTime() : 0;
+        return dateA - dateB;
+      });
+    } else {
+      /* "newest" or "date" (default) */
+      list.sort((a, b) => {
+        if (a.isNightly) return -1;
+        if (b.isNightly) return 1;
         const dateA = a.releasedAt ? new Date(a.releasedAt).getTime() : 0;
         const dateB = b.releasedAt ? new Date(b.releasedAt).getTime() : 0;
         return dateB - dateA;
