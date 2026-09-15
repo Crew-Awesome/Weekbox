@@ -199,6 +199,31 @@ function getModDownloadDetails(api, downloadOptions, loadingDownloads) {
   };
 }
 
+function extractUberstyleBackground(css, stylesheetUrl) {
+  const cleanCss = String(css).replace(/\/\*[\s\S]*?\*\//g, "");
+  let backgroundImage = null;
+
+  for (const [, selector, declarations] of cleanCss.matchAll(
+    /([^{}]+)\{([^{}]*)\}/g,
+  )) {
+    if (!/\b(?:html|body)\b/i.test(selector)) continue;
+    if (!/\bbackground(?:-image)?\s*:/i.test(declarations)) continue;
+
+    for (const match of declarations.matchAll(
+      /url\(\s*(?:"([^"]+)"|'([^']+)'|([^\s)]+))\s*\)/gi,
+    )) {
+      const value = match[1] || match[2] || match[3];
+      try {
+        const url = new URL(value, stylesheetUrl);
+        if (url.protocol === "http:" || url.protocol === "https:")
+          backgroundImage = url.href;
+      } catch {}
+    }
+  }
+
+  return backgroundImage;
+}
+
 function getModClassification(api, data) {
   return {
     gameId: Number(data._aGame?._idRow || data._idGame || 0),
@@ -256,7 +281,11 @@ function buildModDetails(
   images,
   downloadOptions = [],
   requirements = [],
-  { loadingDownloads = false, loadingRequirements = false } = {},
+  {
+    loadingDownloads = false,
+    loadingRequirements = false,
+    backgroundImage = null,
+  } = {},
 ) {
   return {
     id: data._idRow,
@@ -278,6 +307,7 @@ function buildModDetails(
       ? api.getTimeAgo(data._tsDateUpdated)
       : "",
     images,
+    backgroundImage,
     ...getModDownloadDetails(api, downloadOptions, loadingDownloads),
     downloadOptions,
     requirements,
@@ -528,6 +558,31 @@ export const gameBananaApi = {
       .finally(() => this.modProfileRequests.delete(id));
     this.modProfileRequests.set(id, request);
     return request;
+  },
+
+  async getModUberstyleBackground(modId) {
+    const id = Number(modId);
+    if (!id) return null;
+
+    try {
+      const params = new URLSearchParams({ _sUrl: `/mods/${id}` });
+      const configResponse = await nativeFetch(
+        `${this.baseUrl}/Member/UiConfig?${params}`,
+      );
+      if (!configResponse.ok) return null;
+      const config = await configResponse.json();
+      if (!config._aNavOptions?._bEnableUbers || !config._sUberstyleUrl)
+        return null;
+
+      const styleResponse = await nativeFetch(config._sUberstyleUrl);
+      if (!styleResponse.ok) return null;
+      return extractUberstyleBackground(
+        await styleResponse.text(),
+        config._sUberstyleUrl,
+      );
+    } catch {
+      return null;
+    }
   },
 
   getGameBananaSubmission(url) {
@@ -862,7 +917,10 @@ export const gameBananaApi = {
     return formatBytes(bytes, decimals);
   },
 
-  async getModDetails(modId, { includeRequirements = true, onProgress } = {}) {
+  async getModDetails(
+    modId,
+    { includeRequirements = true, includeUberstyle = false, onProgress } = {},
+  ) {
     const notifyProgress = async (details) => {
       if (typeof onProgress === "function") await onProgress(details);
     };
@@ -883,10 +941,14 @@ export const gameBananaApi = {
         );
       }
       if (images.length === 0) images.push("assets/img/placeholder-mini.jpg");
+      const backgroundImage = includeUberstyle
+        ? await this.getModUberstyleBackground(data._idRow)
+        : null;
       await notifyProgress(
         buildModDetails(this, data, images, [], [], {
           loadingDownloads: true,
           loadingRequirements: includeRequirements,
+          backgroundImage,
         }),
       );
       let downloadOptions = [];
@@ -898,6 +960,7 @@ export const gameBananaApi = {
       await notifyProgress(
         buildModDetails(this, data, images, downloadOptions, [], {
           loadingRequirements: includeRequirements,
+          backgroundImage,
         }),
       );
       let requirements = [];
@@ -908,7 +971,14 @@ export const gameBananaApi = {
           console.warn("Could not inspect GameBanana requirements", error);
         }
       }
-      return buildModDetails(this, data, images, downloadOptions, requirements);
+      return buildModDetails(
+        this,
+        data,
+        images,
+        downloadOptions,
+        requirements,
+        { backgroundImage },
+      );
     } catch (error) {
       return null;
     }

@@ -16,6 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - Mod details now use tabs for descriptions, contributors, details, and requirements.
+- Mod backdrops now use UberStyle backgrounds.
 - Improved searchs.
 - Reused shared translations for matching labels.
 - Replaced spinners with Hourglasses.

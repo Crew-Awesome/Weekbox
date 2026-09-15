@@ -73,6 +73,7 @@ const modModal = {
     showModal();
     modModalCarousel.stopAutoPlay();
     modModalCarousel.images = [];
+    modModalCarousel.backdropImage = null;
     modModalCarousel.currentIndex = 0;
     resetModal();
     const titleEl = document.getElementById("modal-title");
@@ -94,6 +95,7 @@ const modModal = {
       );
     };
     const data = await gameBananaApi.getModDetails(modId, {
+      includeUberstyle: true,
       onProgress: showProgress,
     });
     if (requestId !== this.requestId) return;
@@ -132,6 +134,7 @@ const modModal = {
     showModal();
     modModalCarousel.stopAutoPlay();
     modModalCarousel.images = [];
+    modModalCarousel.backdropImage = null;
     modModalCarousel.currentIndex = 0;
     resetModal();
     const titleEl = document.getElementById("modal-title");
@@ -228,7 +231,7 @@ const modModal = {
   },
   async populateData(data, isInstalled) {
     showModData(data, isInstalled, () => this.installWithDependencies(data));
-    modModalCarousel.setup(data.images);
+    modModalCarousel.setup(data.images, data.backgroundImage);
   },
   async installWithDependencies(data) {
     const selectedDownload = await downloadChoiceModal.choose(
