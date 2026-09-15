@@ -138,6 +138,7 @@
 
 .config-tab-btn i {
   width: 20px;
+  flex: 0 0 20px;
   text-align: center;
   font-size: 1.1rem;
 }

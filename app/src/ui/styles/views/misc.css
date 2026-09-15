@@ -2040,6 +2040,7 @@ body.window-unfocused::after {
     width: min(100%, 680px);
     height: auto;
     max-height: calc(100dvh - (var(--spacing-md) * 2));
+    min-height: 0;
     flex-direction: column;
   }
 
