@@ -9,37 +9,45 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- Backported Britex deeplink system
-- Added GameBanana profiles for mod authors.
-- Added Users search.
+- Added GameBanana author profiles.
+- Added user search.
 - Added mod timestamps.
-- Added paginated language selection and translation issue reporting.
+- Added paginated language selection and issue reports.
+- Added Polish.
+- Added Fedora packages for x86_64 and ARM64 Linux.
 
 ### Changed
 
-- Mod detail download buttons now show the number of installed copies.
+- Download buttons now show installed copies.
 - Mod details now use tabs for descriptions, contributors, details, and requirements.
-- Improved searchs.
-- Reused shared translations for matching labels.
-- Replaced spinners with Hourglasses.
+- Improved search.
+- Browse feeds now load faster.
+- Featured cards now use their thumbnails as backgrounds.
+- Replaced spinners with hourglasses.
 - Dependencies now show by default.
-- Updated Latin American Spanish translations and removed Spanish (Spain).
-- Localized remaining hardcoded texts.
-- Added Polish.
-- Synced all language files with the current English strings.
-- Refresh the app after confirming a language change.
+- Updated Latin American Spanish.
+- Localized the remaining text.
+- Synced all language files with English.
+- The app now refreshes after a language change.
+
+### Removed
+
+- Removed Spanish (Spain).
+- Removed the close-to-tray notification.
 
 ### Fixed
 
-- Existing dependencies are automatically converted to regular mods.
+- WeekBox links no longer open a second window.
+- Existing dependencies become regular mods automatically.
 - Profile lists now show all visible FNF mods.
-- Dependencies now install into `mods` folder
-- Linux Wayland windows now show the WeekBox icon instead of the generic compositor icon.
-- Linux windows open on Wayland (including NVIDIA) by disabling WebKitGTK DMA-BUF rendering, which avoided compositor crashes.
-- Linux uses the system tray like Windows: Close to tray hides the window, Quit from the tray menu exits, and Hide window when launching still restores WeekBox when the engine stops.
-- Removed the notification when closing WeekBox to the system tray.
-- Fixed an invisible system tray icon on Linux installations.
-- Fixed a crash on Linux when hiding or restoring the window.
+- Dependencies now install in the `mods` folder.
+- Wayland windows now show the WeekBox icon.
+- Linux windows now open on Wayland, including NVIDIA.
+- Linux now supports closing to the tray and hiding on launch.
+- Fixed the invisible Linux tray icon.
+- Fixed a Linux crash when hiding or restoring the window.
+- Fixed macOS Itch.io DMG downloads.
+- Fixed News, Ripe, and engine release errors.
 
 ## [2.3.4] - 2026-09-12
 
