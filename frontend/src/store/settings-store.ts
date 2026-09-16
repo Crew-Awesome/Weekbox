@@ -8,6 +8,7 @@ export interface SettingsState {
   defaultEnginesPath: string;
   preventCloseOnActive: boolean;
   confirmWarnings: boolean;
+  autoCheckUpdates: boolean;
   dismissedWarnings: Record<string, boolean>;
   isLoaded: boolean;
 
@@ -18,6 +19,25 @@ export interface SettingsState {
   isWarningDismissed: (warningId: string) => boolean;
 }
 
+const SETTINGS_STORAGE_KEY = "wb_app_settings";
+
+function readLocalSettings(): Record<string, any> {
+  if (typeof window === "undefined") return {};
+  try {
+    const raw = localStorage.getItem(SETTINGS_STORAGE_KEY);
+    return raw ? JSON.parse(raw) : {};
+  } catch {
+    return {};
+  }
+}
+
+function writeLocalSettings(settings: Record<string, any>): void {
+  if (typeof window === "undefined") return;
+  try {
+    localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify(settings));
+  } catch {}
+}
+
 export const useSettingsStore = create<SettingsState>((set, get) => ({
   modsPath: "",
   enginesPath: "",
@@ -25,27 +45,42 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
   defaultEnginesPath: "",
   preventCloseOnActive: true,
   confirmWarnings: true,
+  autoCheckUpdates: true,
   dismissedWarnings: {},
   isLoaded: false,
 
   loadSettings: async () => {
     try {
-      const defaults = (await Core.platform.getDefaultPaths?.()) || {
+      const defaults = (await Core.services.storage.getDefaultPaths?.()) || {
         basePath: "",
         defaultModsPath: "",
         defaultEnginesPath: "",
       };
 
-      const settings = (await Core.platform.getSettings?.()) || {};
+      const localSettings = readLocalSettings();
+      const platformSettings = (await Core.services.settings.getSettings?.()) || {};
+
+      // Merge: defaults -> local storage -> platform settings (settings.json overrides on desktop)
+      const merged = {
+        ...localSettings,
+        ...platformSettings,
+      };
+
+      // Keep both local storage and platform in sync with merged state
+      writeLocalSettings(merged);
+      if (Core.services.settings.saveSettings) {
+        await Core.services.settings.saveSettings(merged).catch(() => {});
+      }
 
       set({
-        modsPath: settings.modsPath || defaults.defaultModsPath,
-        enginesPath: settings.enginesPath || defaults.defaultEnginesPath,
+        modsPath: merged.modsPath || defaults.defaultModsPath,
+        enginesPath: merged.enginesPath || defaults.defaultEnginesPath,
         defaultModsPath: defaults.defaultModsPath,
         defaultEnginesPath: defaults.defaultEnginesPath,
-        preventCloseOnActive: settings.preventCloseOnActive !== false,
-        confirmWarnings: settings.confirmWarnings !== false,
-        dismissedWarnings: settings.dismissedWarnings || {},
+        preventCloseOnActive: merged.preventCloseOnActive !== false,
+        confirmWarnings: merged.confirmWarnings !== false,
+        autoCheckUpdates: merged.autoCheckUpdates !== false,
+        dismissedWarnings: merged.dismissedWarnings || {},
         isLoaded: true,
       });
     } catch {
@@ -56,38 +91,52 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
   updateSetting: async (key, value) => {
     set((state) => ({ ...state, [key]: value }));
     try {
-      const current = await Core.platform.getSettings?.();
+      const local = readLocalSettings();
+      const platformSettings = (await Core.services.settings.getSettings?.()) || {};
       const updated = {
-        ...current,
+        ...local,
+        ...platformSettings,
         [key]: value,
       };
-      await Core.platform.saveSettings?.(updated);
+
+      writeLocalSettings(updated);
+      await Core.services.settings.saveSettings?.(updated);
     } catch {}
   },
 
   dismissWarning: async (warningId: string) => {
-    const updated = {
+    const updatedWarnings = {
       ...get().dismissedWarnings,
       [warningId]: true,
     };
-    set({ dismissedWarnings: updated });
+    set({ dismissedWarnings: updatedWarnings });
     try {
-      const current = await Core.platform.getSettings?.();
-      await Core.platform.saveSettings?.({
-        ...current,
-        dismissedWarnings: updated,
-      });
+      const local = readLocalSettings();
+      const platformSettings = (await Core.services.settings.getSettings?.()) || {};
+      const updated = {
+        ...local,
+        ...platformSettings,
+        dismissedWarnings: updatedWarnings,
+      };
+
+      writeLocalSettings(updated);
+      await Core.services.settings.saveSettings?.(updated);
     } catch {}
   },
 
   resetDismissedWarnings: async () => {
     set({ dismissedWarnings: {} });
     try {
-      const current = await Core.platform.getSettings?.();
-      await Core.platform.saveSettings?.({
-        ...current,
+      const local = readLocalSettings();
+      const platformSettings = (await Core.services.settings.getSettings?.()) || {};
+      const updated = {
+        ...local,
+        ...platformSettings,
         dismissedWarnings: {},
-      });
+      };
+
+      writeLocalSettings(updated);
+      await Core.services.settings.saveSettings?.(updated);
     } catch {}
   },
 

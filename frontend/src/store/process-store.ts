@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import { platform } from "@platform";
+import { taskMonitor } from "../core/platform/task-monitor";
 import Utils from "@utils";
 import { useStorageMigrationStore } from "./storage-migration-store";
 
@@ -215,8 +216,8 @@ if (typeof window !== "undefined") {
     }
   });
 
-  /* Register global active tasks checker for window close prevention */
-  (window as any).__WB_HAS_ACTIVE_TASKS = () => {
+  /* Register active tasks checker via typed TaskMonitor (DIP) */
+  taskMonitor.registerActiveTaskChecker(() => {
     return useProcessStore.getState().hasRunningProcesses();
-  };
+  });
 }

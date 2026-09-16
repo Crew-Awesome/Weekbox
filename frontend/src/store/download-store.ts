@@ -186,7 +186,7 @@ export const useDownloadStore = create<DownloadStoreState>((set, get) => ({
     }));
 
     try {
-      await Core.platform.downloadMod(
+      await Core.services.mods.downloadMod(
         url,
         modId,
         modName,
@@ -228,7 +228,7 @@ export const useDownloadStore = create<DownloadStoreState>((set, get) => ({
         controller.signal
       );
 
-      await Core.platform.registerInstalledMod(payload).catch((e) =>
+      await Core.services.mods.registerInstalledMod(payload).catch((e) =>
         console.warn("Failed to register installed mod:", e)
       );
 

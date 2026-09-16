@@ -95,9 +95,9 @@ export const useFavoritesStore = create<FavoritesState>((set, get) => ({
     SoundEffects.playFavoriteAdd();
     saveFavorites(nextFavorites);
 
-    Core.platform.isModInstalled(id).then((installed) => {
-      if (installed && Core.platform.setModFavorite) {
-        Core.platform.setModFavorite(id, true);
+    Core.services.mods.isModInstalled(id).then((installed) => {
+      if (installed && Core.services.mods.setModFavorite) {
+        Core.services.mods.setModFavorite(id, true);
       }
     }).catch(() => {});
   },
@@ -110,9 +110,9 @@ export const useFavoritesStore = create<FavoritesState>((set, get) => ({
     SoundEffects.playFavoriteRemove();
     saveFavorites(nextFavorites);
 
-    Core.platform.isModInstalled(id).then((installed) => {
-      if (installed && Core.platform.setModFavorite) {
-        Core.platform.setModFavorite(id, false);
+    Core.services.mods.isModInstalled(id).then((installed) => {
+      if (installed && Core.services.mods.setModFavorite) {
+        Core.services.mods.setModFavorite(id, false);
       }
     }).catch(() => {});
   },

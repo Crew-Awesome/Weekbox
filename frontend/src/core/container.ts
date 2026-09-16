@@ -5,12 +5,16 @@ import type {
   IProcessLauncher,
   IStorageService,
   ISettingsService,
+  IWindowService,
+  INotificationService,
+  ITaskMonitor,
 } from "@contracts";
 import { ModService } from "./services/mods/mod";
 import { EngineService } from "./services/engines/engine";
 import { ProcessService } from "./services/process/process";
 import { StorageService } from "./services/storage/storage";
 import { SettingsService } from "./services/settings/settings";
+import { taskMonitor } from "./platform/task-monitor";
 
 /**
  * Service registry and dependency injection container (DIP).
@@ -24,6 +28,9 @@ export interface ServiceContainer {
   readonly process: IProcessLauncher;
   readonly storage: IStorageService;
   readonly settings: ISettingsService;
+  readonly window: IWindowService;
+  readonly notification: INotificationService;
+  readonly taskMonitor: ITaskMonitor;
 }
 
 /**
@@ -39,6 +46,9 @@ export function createServiceContainer(customBridge?: IPlatformBridge): ServiceC
     process: new ProcessService(activePlatform),
     storage: new StorageService(activePlatform),
     settings: new SettingsService(activePlatform),
+    window: activePlatform.window,
+    notification: activePlatform.notification,
+    taskMonitor,
   };
 }
 

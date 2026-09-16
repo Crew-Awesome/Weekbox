@@ -61,6 +61,9 @@ export interface IModService {
 
   /** Updates mod metadata entries in the registry. */
   updateInstalledMod(modId: string, updates: Record<string, any>): Promise<any | null>;
+
+  /** Remaps installation paths for mods following a storage relocation. */
+  remapInstalledModPaths(targetPath: string, selectedItemNames?: string[]): Promise<void>;
 }
 
 /**
@@ -94,6 +97,9 @@ export interface IEngineService {
 
   /** Uninstalls an engine version and purges its directory. */
   uninstallEngine(engineId: string, version: string): Promise<void>;
+
+  /** Cleans up temporary or partial files after a cancelled or failed engine download. */
+  cleanupTempDownload(engineId: string, version: string): Promise<void>;
 }
 
 /** Options for launching a game executable process */
@@ -203,4 +209,61 @@ export interface ISettingsService {
 
   /** Persists user settings. */
   saveSettings(settings: Record<string, any>): Promise<void>;
+}
+
+/**
+ * Contract for application window management (ISP).
+ */
+export interface IWindowService {
+  minimize(): Promise<void>;
+  maximize(): Promise<void>;
+  unmaximize(): Promise<void>;
+  unminimize(): Promise<void>;
+  setAlwaysOnTop(onTop: boolean): Promise<void>;
+  bringToFront(): Promise<void>;
+  setFullScreen(): Promise<void>;
+  exitFullScreen(): Promise<void>;
+  show(): Promise<void>;
+  hide(): Promise<void>;
+  focus(): Promise<void>;
+  move(x: number, y: number): Promise<void>;
+  setSize(width: number, height: number): Promise<void>;
+  getSize(): Promise<{ width: number; height: number }>;
+  getPosition(): Promise<{ x: number; y: number }>;
+  getDisplays(): Promise<any[]>;
+  close(): Promise<void>;
+  center(): Promise<void>;
+}
+
+/**
+ * Options for OS-level notifications.
+ */
+export interface SystemNotificationOptions {
+  title: string;
+  content: string;
+  icon?: "INFO" | "WARNING" | "ERROR";
+}
+
+/**
+ * Result of dispatching a system notification.
+ */
+export interface NotificationResult {
+  ok: boolean;
+  method?: string;
+  error?: string;
+}
+
+/**
+ * Contract for system notification dispatching (ISP).
+ */
+export interface INotificationService {
+  showNotification(options: SystemNotificationOptions): Promise<NotificationResult>;
+}
+
+/**
+ * Contract for tracking active tasks (downloads, games, migrations) across layers (DIP).
+ */
+export interface ITaskMonitor {
+  registerActiveTaskChecker(checker: () => boolean): () => void;
+  hasActiveTasks(): boolean;
 }

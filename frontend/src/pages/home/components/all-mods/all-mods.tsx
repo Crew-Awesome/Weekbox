@@ -1,12 +1,13 @@
 import React from "react";
 import Components from "@components";
 const Shared = Components;
-import { Eye, Download, User, Clock, AlertCircle, RotateCcw } from "lucide-react";
+import { Eye, Download, User, Clock, AlertCircle, RotateCcw, Laptop } from "lucide-react";
 import type { ModItem } from "../../types";
 import { useAllMods } from "./use-all-mods";
 import { ENGINE_CATEGORIES } from "../../../../core/services/gamebanana/constants";
 import { SearchEasterEgg } from "../search-easter-egg/search-easter-egg";
 import { useFavoritesStore } from "../../../../store";
+import { isMobilePlatform } from "@core";
 
 interface AllModsProps {
   onCardClick: (card: ModItem) => void;
@@ -106,6 +107,25 @@ export const AllMods: React.FC<AllModsProps> = React.memo(({
   }
 
   if (!loading && mods.length === 0) {
+    if (isMobilePlatform() && categoryFilter.some((c) => c === "executable" || c === "3827")) {
+      return (
+        <>
+          <Shared.atoms.Titles title={dynamicTitle} />
+          <div className="flex flex-col items-center justify-center py-24 px-6 w-full text-center">
+            <div className="w-16 h-16 rounded-2xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center mb-4">
+              <Laptop className="w-8 h-8 text-amber-400" />
+            </div>
+            <span className="text-[var(--wb-on-surface)] text-xl font-bold tracking-wide">
+              Executable Mods (.exe) are not supported on Mobile
+            </span>
+            <span className="text-[var(--wb-on-surface-variant)] text-sm mt-2 max-w-md opacity-75">
+              Windows executables cannot run on Android/iOS. Please choose an engine category (such as V-Slice or Psych Engine) to discover compatible mods.
+            </span>
+          </div>
+        </>
+      );
+    }
+
     if (searchQuery.trim().length > 0) {
       return (
         <>

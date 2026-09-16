@@ -246,13 +246,6 @@ export function useCarousel(props: CarouselProps) {
   );
 
   const onPointerDown = (e: PointerEvent<HTMLDivElement>) => {
-    const isMobile = window.innerWidth < 640;
-
-    if (isMobile) {
-      pauseAuto();
-      return;
-    }
-
     const scroller = scrollerRef.current;
     if (!scroller) return;
 

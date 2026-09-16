@@ -1,7 +1,7 @@
 import type { PlatformCapabilities } from "./capabilities";
 
 /** Active platform identifier at runtime */
-export type PlatformType = "desktop" | "web";
+export type PlatformType = "desktop" | "web" | "capacitor";
 
 /**
  * Contract for platform lifecycle management (SRP / ISP).

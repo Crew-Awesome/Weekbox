@@ -13,6 +13,8 @@ export class WebLifecycle {
     canShowNativeDialogs: false,
     canDownloadDirectStreams: false,
     canExtractArchives: false,
+    canManageWindow: false,
+    canSendOSNotifications: true,
   };
 
   private _isReady: boolean = true;

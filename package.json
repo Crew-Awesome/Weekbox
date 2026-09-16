@@ -16,8 +16,10 @@
     "dev:pc": "concurrently \"npm run dev:frontend\" \"neu run\"",
     "dev": "npm run build:frontend && concurrently \"npm run watch:frontend\" \"npm run start:neu\"",
     "prebuild:pc": "node -e \"const fs=require('fs'); const c=JSON.parse(fs.readFileSync('neutralino.config.json')); c.url='/'; c.modes.window.openInspectorOnStartup=false; c.modes.window.enableInspector=false; fs.writeFileSync('neutralino.config.json', JSON.stringify(c, null, 2));\"",
-    "build:pc": "npm run build:frontend && neu build --release",
-    "format": "node scripts/formatter.js"
+    "format": "node scripts/formatter.js",
+    "cap:sync": "npm run build:frontend && npx cap sync android",
+    "cap:open": "npx cap open android",
+    "cap:run": "npx cap run android"
   },
   "keywords": [],
   "author": "",
@@ -28,6 +30,7 @@
     "prettier": "^3.9.6"
   },
   "dependencies": {
+    "@capacitor/android": "^8.5.2",
     "@capacitor/cli": "^8.5.0",
     "@capacitor/core": "^8.5.0",
     "ws": "^8.21.2"

@@ -10,6 +10,8 @@ import type {
   IProcessLauncher,
   IStorageService,
   ISettingsService,
+  IWindowService,
+  INotificationService,
 } from "@contracts";
 
 export type * from "@contracts";
@@ -100,6 +102,8 @@ export interface IPlatformBridge
     IProcessLauncher,
     IStorageService,
     ISettingsService {
+  readonly window: IWindowService;
+  readonly notification: INotificationService;
   /** Opens a URL in the browser */
   openUrl(url: string): Promise<void>;
 }

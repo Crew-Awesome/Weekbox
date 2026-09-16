@@ -92,11 +92,11 @@ export const InstancesMarkdownViewer: React.FC<InstancesMarkdownViewerProps> = (
   }
 
   return (
-    <div className="w-full p-8 sm:p-12 lg:p-16">
+    <div className="w-full p-4 sm:p-8 md:p-12 lg:p-16">
       {/* Release Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-8 border-b border-[var(--wb-outline-variant)]/20 mb-8">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 sm:pb-8 border-b border-[var(--wb-outline-variant)]/20 mb-4 sm:mb-8">
         <div>
-          <h1 className="text-3xl sm:text-4xl lg:text-5xl font-black text-[var(--wb-on-surface)] tracking-tight">
+          <h1 className="text-2xl sm:text-4xl lg:text-5xl font-black text-[var(--wb-on-surface)] tracking-tight">
             {release.name || `Version ${release.version}`}
           </h1>
         </div>

@@ -386,4 +386,28 @@ export class DesktopEngines implements IEngineService {
       );
     }
   }
+
+  async cleanupTempDownload(engineId: string, version: string): Promise<void> {
+    try {
+      const enginesDir = await this.storage.getEnginesPath();
+      const safeEngineId = engineId
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .replace(/[^a-zA-Z0-9_-]/g, "")
+        .toLowerCase();
+
+      const safeVersion = version
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .replace(/[^a-zA-Z0-9._-]/g, "");
+
+      const targetFolder = `${enginesDir}/${safeEngineId}/${safeVersion}`;
+      const tempArchive = `${enginesDir}/${safeEngineId}/temp_${safeVersion}.archive`;
+
+      await this.transport.call("fs.remove" as any, { path: tempArchive }).catch(() => {});
+      await this.transport.call("fs.remove" as any, { path: targetFolder }).catch(() => {});
+    } catch (err) {
+      console.warn("[DesktopEngines] Failed to cleanup temp download:", err);
+    }
+  }
 }

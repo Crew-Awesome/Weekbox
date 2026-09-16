@@ -76,4 +76,8 @@ export class WebEngines implements IEngineService {
       this.transport.emitLocalEvent("engines:changed", { action: "uninstalled", engineId, version });
     }
   }
+
+  async cleanupTempDownload(_engineId: string, _version: string): Promise<void> {
+    // No-op for web browser
+  }
 }

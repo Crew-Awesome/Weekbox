@@ -156,15 +156,15 @@ export const InstancesVersionAside: React.FC<InstancesVersionAsideProps> = ({
   }
 
   return (
-    <aside className="w-full md:w-80 lg:w-96 xl:w-[420px] flex flex-col shrink-0 border-b md:border-b-0 md:border-r border-[var(--wb-outline-variant)]/20 bg-[var(--wb-surface-container-low)]/40 overflow-y-auto max-h-[35vh] md:max-h-none md:h-full">
-      <div className="flex flex-col p-3 sm:p-4 gap-2.5 overflow-y-auto">
+    <aside className="w-full md:w-80 lg:w-96 xl:w-[420px] flex flex-col shrink-0 border-b md:border-b-0 md:border-r border-[var(--wb-outline-variant)]/20 bg-[var(--wb-surface-container-low)]/40 overflow-y-auto max-h-[30vh] sm:max-h-[35vh] md:max-h-none md:h-full">
+      <div className="flex flex-col p-2.5 sm:p-4 gap-2 sm:gap-2.5 overflow-y-auto">
         {isLoadingReleases ? (
-          <div className="flex flex-col items-center justify-center p-12 gap-3 opacity-60">
-            <Loader2 className="w-7 h-7 animate-spin text-[var(--wb-primary)]" />
-            <span className="text-sm font-semibold">Fetching engine versions...</span>
+          <div className="flex flex-col items-center justify-center p-8 sm:p-12 gap-3 opacity-60">
+            <Loader2 className="w-6 h-6 sm:w-7 sm:h-7 animate-spin text-[var(--wb-primary)]" />
+            <span className="text-xs sm:text-sm font-semibold">Fetching engine versions...</span>
           </div>
         ) : processedReleases.length === 0 ? (
-          <div className="p-12 text-center text-sm text-[var(--wb-on-surface-variant)] opacity-70">
+          <div className="p-8 sm:p-12 text-center text-xs sm:text-sm text-[var(--wb-on-surface-variant)] opacity-70">
             {onlyInstalled
               ? "No installed versions found for this engine."
               : "No release versions available."}
@@ -181,21 +181,21 @@ export const InstancesVersionAside: React.FC<InstancesVersionAsideProps> = ({
                 key={rel.id || rel.version}
                 type="button"
                 onClick={() => onSelectVersion(rel.version)}
-                className={`flex items-center justify-between gap-4 px-5 py-4 sm:px-6 sm:py-4.5 rounded-2xl transition-all cursor-pointer text-left w-full border ${
+                className={`flex items-center justify-between gap-3 sm:gap-4 px-3.5 py-3 sm:px-6 sm:py-4.5 rounded-xl sm:rounded-2xl transition-all cursor-pointer text-left w-full border ${
                   isSelected
                     ? "bg-[var(--wb-primary)]/15 border-[var(--wb-primary)]/50 text-[var(--wb-primary)] shadow-md scale-[1.01]"
                     : "bg-[var(--wb-surface-container)]/60 hover:bg-[var(--wb-surface-container-high)] border-transparent text-[var(--wb-on-surface)]"
                 }`}
               >
                 <div className="flex items-center min-w-0">
-                  <span className="text-base sm:text-lg md:text-xl font-black truncate tracking-wide">
+                  <span className="text-sm sm:text-lg md:text-xl font-black truncate tracking-wide">
                     {rel.version === "Nightly" ? "Nightly" : `v${rel.version}`}
                   </span>
                 </div>
 
-                <div className="flex items-center gap-2.5 shrink-0">
+                <div className="flex items-center gap-2 sm:gap-2.5 shrink-0">
                   {isInstalled && (
-                    <span className="flex items-center gap-1 text-xs font-bold text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded-lg">
+                    <span className="flex items-center gap-1 text-[11px] sm:text-xs font-bold text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded-lg">
                       <Check className="w-3 h-3" />
                       <span className="hidden sm:inline">Installed</span>
                     </span>

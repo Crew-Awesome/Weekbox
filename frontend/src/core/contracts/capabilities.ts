@@ -10,4 +10,6 @@ export interface PlatformCapabilities {
   readonly canShowNativeDialogs: boolean;
   readonly canDownloadDirectStreams: boolean;
   readonly canExtractArchives: boolean;
+  readonly canManageWindow: boolean;
+  readonly canSendOSNotifications: boolean;
 }

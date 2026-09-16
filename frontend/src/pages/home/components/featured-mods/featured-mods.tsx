@@ -61,7 +61,7 @@ export const FeaturedMods: React.FC<FeaturedModsProps> = React.memo(({
         align="center"
       />
 
-      <div className="-mx-8 mt-4">
+      <div className="mx-0 sm:-mx-8 mt-4 overflow-hidden max-w-full">
         <Shared.molecules.Carousel
           isInfinite
           isAuto

@@ -56,8 +56,8 @@ export const InstancesTopbar: React.FC<InstancesTopbarProps> = ({
   const isFilterActive = onlyInstalled || (sortOption !== "newest" && sortOption !== "date");
 
   return (
-    <div className="sticky top-0 z-40 flex items-center w-full md:w-auto h-25 rounded-none md:rounded-b-[16px] bg-[var(--wb-surface-container)]/90 backdrop-blur-md mx-0 md:mx-2 px-4 md:px-6 shadow-md border-b md:border-b-0 border-[var(--wb-outline-variant)]/20">
-      <div className="flex items-center gap-3">
+    <div className="sticky top-0 z-40 flex items-center w-full md:w-auto min-h-[4rem] sm:min-h-[5rem] py-2.5 rounded-none md:rounded-b-[16px] bg-[var(--wb-surface-container)]/90 backdrop-blur-md mx-0 md:mx-2 px-3 sm:px-6 shadow-md border-b md:border-b-0 border-[var(--wb-outline-variant)]/20">
+      <div className="flex items-center gap-2.5 sm:gap-3 flex-wrap">
         {/* Filter & Sort Popover Button */}
         <div className="relative z-50" ref={filtersRef}>
           <button

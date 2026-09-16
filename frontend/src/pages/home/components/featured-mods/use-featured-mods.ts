@@ -19,7 +19,15 @@ export function useFeaturedMods(
 
   useEffect(() => {
     if (!searchQuery.trim() && featuredPool.length > 0) {
-      setFeaturedMods(featuredPool);
+      const filtered = Core.isMobilePlatform()
+        ? featuredPool.filter(
+            (m) =>
+              String(m.engineId) !== "executable" &&
+              String(m.engineId) !== "3827" &&
+              !String(m.title || "").toLowerCase().endsWith(".exe")
+          )
+        : featuredPool;
+      setFeaturedMods(filtered);
     }
   }, [featuredPool, searchQuery]);
 

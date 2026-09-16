@@ -12,10 +12,13 @@ import {
   X,
   Activity,
   AlertTriangle,
+  ExternalLink,
+  Check,
 } from "lucide-react";
 
 interface InstancesFooterProps {
   isExecutable: boolean;
+  isBaseGameMobile?: boolean;
   icon?: string;
   title: string;
   version: string;
@@ -39,14 +42,15 @@ interface InstancesFooterProps {
 }
 
 /**
- * Sticky footer with a higher z-index and glassmorphism styling for the Instances view.
+ * Responsive sticky footer with glassmorphism styling for the Instances view.
  * Displays:
- * - Left: Large engine/mod icon and metadata
- * - Middle/Right: In-button progress bar during download with hover cancel and extracting filename
- * - Right actions: Play, Update (if Nightly is outdated), Uninstall, and 3-dots menu (Open Folder, Reinstall)
+ * - Left: Engine/mod icon and metadata
+ * - Middle/Right: In-button progress bar during download with hover cancel
+ * - Right actions: Play, Update, Uninstall, Play Store / App Store redirects, and secondary menus
  */
 export const InstancesFooter: React.FC<InstancesFooterProps> = ({
   isExecutable,
+  isBaseGameMobile = false,
   icon,
   title,
   version,
@@ -83,11 +87,15 @@ export const InstancesFooter: React.FC<InstancesFooterProps> = ({
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [showMoreMenu]);
 
+  const isApple =
+    typeof navigator !== "undefined" &&
+    (navigator.userAgent.includes("iPhone") || navigator.userAgent.includes("iPad"));
+
   return (
-    <div className="sticky bottom-0 z-50 w-full bg-[var(--wb-surface-container)]/70 backdrop-blur-2xl border-t border-white/10 px-6 md:px-10 py-5 sm:py-6 flex items-center justify-between shadow-[0_-8px_32px_rgba(0,0,0,0.5)]">
+    <div className="sticky bottom-0 z-50 w-full bg-[var(--wb-surface-container)]/85 backdrop-blur-2xl border-t border-white/10 px-4 sm:px-6 md:px-10 py-3.5 sm:py-5 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 sm:gap-4 shadow-[0_-8px_32px_rgba(0,0,0,0.5)]">
       {/** Left Metadata Section */}
-      <div className="flex items-center gap-5 min-w-0 pr-6">
-        <div className="w-14 h-14 md:w-16 md:h-16 rounded-2xl bg-[var(--wb-surface-bright)] p-2.5 flex items-center justify-center shrink-0 border border-[var(--wb-outline-variant)]/20 shadow-inner">
+      <div className="flex items-center gap-3 sm:gap-5 min-w-0 pr-0 sm:pr-6">
+        <div className="w-12 h-12 sm:w-14 sm:h-14 md:w-16 md:h-16 rounded-2xl bg-[var(--wb-surface-bright)] p-2 sm:p-2.5 flex items-center justify-center shrink-0 border border-[var(--wb-outline-variant)]/20 shadow-inner">
           {icon ? (
             <img
               src={icon}
@@ -95,16 +103,24 @@ export const InstancesFooter: React.FC<InstancesFooterProps> = ({
               className="w-full h-full object-contain brightness-125"
             />
           ) : (
-            <HardDrive className="w-7 h-7 text-[var(--wb-primary)]" />
+            <HardDrive className="w-6 h-6 sm:w-7 sm:h-7 text-[var(--wb-primary)]" />
           )}
         </div>
 
         <div className="flex flex-col min-w-0">
-          <span className="text-lg sm:text-xl md:text-2xl font-black text-[var(--wb-on-surface)] truncate leading-tight tracking-tight">
-            {title || "Select an instance"}
-          </span>
+          <div className="flex items-center gap-2">
+            <span className="text-base sm:text-lg md:text-2xl font-black text-[var(--wb-on-surface)] truncate leading-tight tracking-tight">
+              {title || "Select an instance"}
+            </span>
+            {isBaseGameMobile && isInstalled && (
+              <span className="flex items-center gap-1 text-[11px] font-bold text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded-lg shrink-0">
+                <Check className="w-3 h-3" />
+                <span>Installed</span>
+              </span>
+            )}
+          </div>
           {version && (
-            <span className="text-sm sm:text-base font-bold text-[var(--wb-primary)] leading-tight mt-1 truncate">
+            <span className="text-xs sm:text-sm md:text-base font-bold text-[var(--wb-primary)] leading-tight mt-0.5 sm:mt-1 truncate">
               {version === "Nightly" ? "Nightly Build" : `Version ${version}`}
             </span>
           )}
@@ -112,14 +128,14 @@ export const InstancesFooter: React.FC<InstancesFooterProps> = ({
       </div>
 
       {/** Right Action Button Area */}
-      <div className="shrink-0 flex items-center gap-3">
+      <div className="shrink-0 flex items-center justify-end sm:justify-start gap-2.5 sm:gap-3 flex-wrap">
         {isExecutable ? (
           onPlay ? (
             playStatus === "launching" ? (
               <button
                 type="button"
                 disabled
-                className="flex items-center gap-3 px-8 sm:px-10 py-3.5 sm:py-4 rounded-2xl bg-[var(--wb-surface-container-highest)] text-[var(--wb-on-surface)] text-base sm:text-lg font-black transition-all shadow-lg cursor-not-allowed border border-white/10"
+                className="w-full sm:w-auto flex items-center justify-center gap-3 px-6 sm:px-10 py-3 sm:py-4 rounded-2xl bg-[var(--wb-surface-container-highest)] text-[var(--wb-on-surface)] text-sm sm:text-lg font-black transition-all shadow-lg cursor-not-allowed border border-white/10"
               >
                 <Loader2 className="w-5 h-5 sm:w-6 sm:h-6 animate-spin text-[var(--wb-primary)]" />
                 <span>Launching...</span>
@@ -128,7 +144,7 @@ export const InstancesFooter: React.FC<InstancesFooterProps> = ({
               <button
                 type="button"
                 onClick={onStop || onPlay}
-                className="flex items-center gap-3 px-8 sm:px-10 py-3.5 sm:py-4 rounded-2xl bg-emerald-600/30 hover:bg-rose-600/30 text-emerald-300 hover:text-rose-300 border border-emerald-500/40 hover:border-rose-500/40 text-base sm:text-lg font-black transition-all cursor-pointer shadow-lg shadow-emerald-950/40 hover:scale-105 active:scale-95 group"
+                className="w-full sm:w-auto flex items-center justify-center gap-3 px-6 sm:px-10 py-3 sm:py-4 rounded-2xl bg-emerald-600/30 hover:bg-rose-600/30 text-emerald-300 hover:text-rose-300 border border-emerald-500/40 hover:border-rose-500/40 text-sm sm:text-lg font-black transition-all cursor-pointer shadow-lg shadow-emerald-950/40 hover:scale-105 active:scale-95 group"
                 title="Click to stop process"
               >
                 <Activity className="w-5 h-5 sm:w-6 sm:h-6 text-emerald-400 group-hover:hidden animate-pulse" />
@@ -140,7 +156,7 @@ export const InstancesFooter: React.FC<InstancesFooterProps> = ({
               <button
                 type="button"
                 disabled
-                className="flex items-center gap-3 px-8 sm:px-10 py-3.5 sm:py-4 rounded-2xl bg-amber-600/30 text-amber-300 border border-amber-500/40 text-base sm:text-lg font-black transition-all shadow-lg cursor-not-allowed"
+                className="w-full sm:w-auto flex items-center justify-center gap-3 px-6 sm:px-10 py-3 sm:py-4 rounded-2xl bg-amber-600/30 text-amber-300 border border-amber-500/40 text-sm sm:text-lg font-black transition-all shadow-lg cursor-not-allowed"
               >
                 <Loader2 className="w-5 h-5 sm:w-6 sm:h-6 animate-spin text-amber-400" />
                 <span>Stopping...</span>
@@ -149,7 +165,7 @@ export const InstancesFooter: React.FC<InstancesFooterProps> = ({
               <button
                 type="button"
                 disabled
-                className="flex items-center gap-3 px-8 sm:px-10 py-3.5 sm:py-4 rounded-2xl bg-rose-600/30 text-rose-300 border border-rose-500/40 text-base sm:text-lg font-black transition-all shadow-lg cursor-not-allowed animate-in fade-in"
+                className="w-full sm:w-auto flex items-center justify-center gap-3 px-6 sm:px-10 py-3 sm:py-4 rounded-2xl bg-rose-600/30 text-rose-300 border border-rose-500/40 text-sm sm:text-lg font-black transition-all shadow-lg cursor-not-allowed animate-in fade-in"
               >
                 <AlertTriangle className="w-5 h-5 sm:w-6 sm:h-6 text-rose-400" />
                 <span>Error</span>
@@ -158,7 +174,7 @@ export const InstancesFooter: React.FC<InstancesFooterProps> = ({
               <button
                 type="button"
                 onClick={onPlay}
-                className={`flex items-center gap-3 px-8 sm:px-10 py-3.5 sm:py-4 rounded-2xl bg-[var(--wb-primary)] text-[var(--wb-on-primary)] text-base sm:text-lg font-black transition-all shadow-lg ${
+                className={`w-full sm:w-auto flex items-center justify-center gap-3 px-6 sm:px-10 py-3 sm:py-4 rounded-2xl bg-[var(--wb-primary)] text-[var(--wb-on-primary)] text-sm sm:text-lg font-black transition-all shadow-lg ${
                   isStorageMigrating
                     ? "opacity-50 cursor-not-allowed"
                     : "hover:opacity-90 cursor-pointer hover:scale-105 active:scale-95"
@@ -174,13 +190,46 @@ export const InstancesFooter: React.FC<InstancesFooterProps> = ({
               </button>
             )
           ) : null
+        ) : isBaseGameMobile ? (
+          isInstalled ? (
+            <div className="flex items-center gap-2.5 w-full sm:w-auto">
+              <button
+                type="button"
+                onClick={onPlay}
+                className="flex-1 sm:flex-initial flex items-center justify-center gap-2.5 px-6 sm:px-9 py-3 sm:py-4 rounded-2xl bg-[var(--wb-primary)] text-[var(--wb-on-primary)] text-sm sm:text-lg font-black transition-all shadow-lg hover:opacity-90 cursor-pointer hover:scale-105 active:scale-95"
+                title="Launch Friday Night Funkin' mobile app"
+              >
+                <Play className="w-5 h-5 sm:w-6 sm:h-6 fill-current" />
+                <span>Play / Launch</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={onDownload}
+                className="p-3 sm:p-4 rounded-2xl bg-[var(--wb-surface-container-highest)] hover:bg-white/10 text-[var(--wb-on-surface-variant)] hover:text-[var(--wb-on-surface)] transition-all cursor-pointer border border-white/10"
+                title="Open Store page"
+              >
+                <ExternalLink className="w-5 h-5" />
+              </button>
+            </div>
+          ) : (
+            <button
+              type="button"
+              onClick={onDownload}
+              className="w-full sm:w-auto flex items-center justify-center gap-3 px-6 sm:px-9 py-3 sm:py-4 rounded-2xl bg-[var(--wb-primary)] text-[var(--wb-on-primary)] text-sm sm:text-lg font-black transition-all shadow-lg hover:opacity-90 cursor-pointer hover:scale-105 active:scale-95"
+              title="Download from official store"
+            >
+              <ExternalLink className="w-5 h-5 sm:w-6 sm:h-6" />
+              <span>{isApple ? "Get on App Store" : "Get on Google Play"}</span>
+            </button>
+          )
         ) : isDownloading ? (
           <button
             type="button"
             onClick={onCancelDownload}
             onMouseEnter={() => setIsHoveringDownload(true)}
             onMouseLeave={() => setIsHoveringDownload(false)}
-            className={`relative overflow-hidden flex items-center justify-between gap-4 px-7 sm:px-9 py-3.5 sm:py-4 rounded-2xl transition-all shadow-lg min-w-[280px] sm:min-w-[340px] cursor-pointer select-none ${
+            className={`relative overflow-hidden flex items-center justify-between gap-4 px-6 sm:px-9 py-3 sm:py-4 rounded-2xl transition-all shadow-lg w-full sm:w-auto min-w-[240px] sm:min-w-[340px] cursor-pointer select-none ${
               isHoveringDownload
                 ? "bg-red-500/20 border-2 border-red-500/80 text-red-300"
                 : "bg-[var(--wb-surface-container-highest)] border border-[var(--wb-primary)]/50 text-[var(--wb-on-surface)]"
@@ -209,7 +258,7 @@ export const InstancesFooter: React.FC<InstancesFooterProps> = ({
                     </span>
                   </div>
                   {currentExtractingFile && (
-                    <span className="text-[11px] text-[var(--wb-on-surface-variant)] truncate max-w-[200px] sm:max-w-[240px] ml-7 mt-0.5 font-normal">
+                    <span className="text-[11px] text-[var(--wb-on-surface-variant)] truncate max-w-[160px] sm:max-w-[240px] ml-7 mt-0.5 font-normal">
                       {currentExtractingFile}
                     </span>
                   )}
@@ -221,13 +270,13 @@ export const InstancesFooter: React.FC<InstancesFooterProps> = ({
             )}
           </button>
         ) : isInstalled ? (
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2.5 sm:gap-3 w-full sm:w-auto">
             {onPlay && (
               playStatus === "launching" ? (
                 <button
                   type="button"
                   disabled
-                  className="flex items-center gap-2.5 px-7 sm:px-9 py-3.5 sm:py-4 rounded-2xl bg-[var(--wb-surface-container-highest)] text-[var(--wb-on-surface)] text-base sm:text-lg font-black transition-all shadow-lg cursor-not-allowed border border-white/10"
+                  className="flex-1 sm:flex-initial flex items-center justify-center gap-2.5 px-6 sm:px-9 py-3 sm:py-4 rounded-2xl bg-[var(--wb-surface-container-highest)] text-[var(--wb-on-surface)] text-sm sm:text-lg font-black transition-all shadow-lg cursor-not-allowed border border-white/10"
                 >
                   <Loader2 className="w-5 h-5 sm:w-6 sm:h-6 animate-spin text-[var(--wb-primary)]" />
                   <span>Launching...</span>
@@ -236,7 +285,7 @@ export const InstancesFooter: React.FC<InstancesFooterProps> = ({
                 <button
                   type="button"
                   onClick={onStop || onPlay}
-                  className="flex items-center gap-2.5 px-7 sm:px-9 py-3.5 sm:py-4 rounded-2xl bg-emerald-600/30 hover:bg-rose-600/30 text-emerald-300 hover:text-rose-300 border border-emerald-500/40 hover:border-rose-500/40 text-base sm:text-lg font-black transition-all cursor-pointer shadow-lg shadow-emerald-950/40 hover:scale-105 active:scale-95 group"
+                  className="flex-1 sm:flex-initial flex items-center justify-center gap-2.5 px-6 sm:px-9 py-3 sm:py-4 rounded-2xl bg-emerald-600/30 hover:bg-rose-600/30 text-emerald-300 hover:text-rose-300 border border-emerald-500/40 hover:border-rose-500/40 text-sm sm:text-lg font-black transition-all cursor-pointer shadow-lg shadow-emerald-950/40 hover:scale-105 active:scale-95 group"
                   title="Click to stop process"
                 >
                   <Activity className="w-5 h-5 sm:w-6 sm:h-6 text-emerald-400 group-hover:hidden animate-pulse" />
@@ -248,7 +297,7 @@ export const InstancesFooter: React.FC<InstancesFooterProps> = ({
                 <button
                   type="button"
                   disabled
-                  className="flex items-center gap-2.5 px-7 sm:px-9 py-3.5 sm:py-4 rounded-2xl bg-amber-600/30 text-amber-300 border border-amber-500/40 text-base sm:text-lg font-black transition-all shadow-lg cursor-not-allowed"
+                  className="flex-1 sm:flex-initial flex items-center justify-center gap-2.5 px-6 sm:px-9 py-3 sm:py-4 rounded-2xl bg-amber-600/30 text-amber-300 border border-amber-500/40 text-sm sm:text-lg font-black transition-all shadow-lg cursor-not-allowed"
                 >
                   <Loader2 className="w-5 h-5 sm:w-6 sm:h-6 animate-spin text-amber-400" />
                   <span>Stopping...</span>
@@ -257,7 +306,7 @@ export const InstancesFooter: React.FC<InstancesFooterProps> = ({
                 <button
                   type="button"
                   disabled
-                  className="flex items-center gap-2.5 px-7 sm:px-9 py-3.5 sm:py-4 rounded-2xl bg-rose-600/30 text-rose-300 border border-rose-500/40 text-base sm:text-lg font-black transition-all shadow-lg cursor-not-allowed animate-in fade-in"
+                  className="flex-1 sm:flex-initial flex items-center justify-center gap-2.5 px-6 sm:px-9 py-3 sm:py-4 rounded-2xl bg-rose-600/30 text-rose-300 border border-rose-500/40 text-sm sm:text-lg font-black transition-all shadow-lg cursor-not-allowed animate-in fade-in"
                 >
                   <AlertTriangle className="w-5 h-5 sm:w-6 sm:h-6 text-rose-400" />
                   <span>Error</span>
@@ -266,7 +315,7 @@ export const InstancesFooter: React.FC<InstancesFooterProps> = ({
                 <button
                   type="button"
                   onClick={onPlay}
-                  className={`flex items-center gap-2.5 px-7 sm:px-9 py-3.5 sm:py-4 rounded-2xl bg-[var(--wb-primary)] text-[var(--wb-on-primary)] text-base sm:text-lg font-black transition-all shadow-lg ${
+                  className={`flex-1 sm:flex-initial flex items-center justify-center gap-2.5 px-6 sm:px-9 py-3 sm:py-4 rounded-2xl bg-[var(--wb-primary)] text-[var(--wb-on-primary)] text-sm sm:text-lg font-black transition-all shadow-lg ${
                     isStorageMigrating
                       ? "opacity-50 cursor-not-allowed"
                       : "hover:opacity-90 cursor-pointer hover:scale-105 active:scale-95"
@@ -287,7 +336,7 @@ export const InstancesFooter: React.FC<InstancesFooterProps> = ({
               <button
                 type="button"
                 onClick={onUpdate}
-                className="flex items-center gap-2 px-5 sm:px-6 py-3.5 sm:py-4 rounded-2xl bg-amber-500 hover:bg-amber-400 text-black text-sm sm:text-base font-black transition-all cursor-pointer shadow-lg hover:scale-105 active:scale-95"
+                className="flex items-center gap-2 px-4 sm:px-6 py-3 sm:py-4 rounded-2xl bg-amber-500 hover:bg-amber-400 text-black text-xs sm:text-base font-black transition-all cursor-pointer shadow-lg hover:scale-105 active:scale-95"
                 title="Update Nightly build"
               >
                 <RefreshCw className="w-4 h-4 sm:w-5 sm:h-5" />
@@ -299,7 +348,7 @@ export const InstancesFooter: React.FC<InstancesFooterProps> = ({
               <button
                 type="button"
                 onClick={onUninstall}
-                className={`flex items-center gap-2 px-5 sm:px-6 py-3.5 sm:py-4 rounded-2xl bg-red-500/15 border border-red-500/30 text-red-400 text-sm sm:text-base font-bold transition-all shadow-sm ${
+                className={`flex items-center gap-2 px-4 sm:px-6 py-3 sm:py-4 rounded-2xl bg-red-500/15 border border-red-500/30 text-red-400 text-xs sm:text-base font-bold transition-all shadow-sm ${
                   isStorageMigrating
                     ? "opacity-50 cursor-not-allowed"
                     : "hover:bg-red-500/25 cursor-pointer hover:scale-105 active:scale-95"
@@ -335,7 +384,7 @@ export const InstancesFooter: React.FC<InstancesFooterProps> = ({
                         setShowMoreMenu(false);
                         onOpenFolder();
                       }}
-                      className="flex items-center gap-3 w-full px-4 py-3 sm:py-3.5 rounded-2xl hover:bg-[var(--wb-surface-container-highest)] text-base sm:text-lg font-bold text-[var(--wb-on-surface)] transition-all cursor-pointer text-left group"
+                      className="flex items-center gap-3 w-full px-4 py-3 sm:py-3.5 rounded-2xl hover:bg-[var(--wb-surface-container-highest)] text-sm sm:text-lg font-bold text-[var(--wb-on-surface)] transition-all cursor-pointer text-left group"
                     >
                       <FolderOpen className="w-5 h-5 sm:w-6 sm:h-6 text-[var(--wb-primary)] shrink-0 group-hover:scale-110 transition-transform" />
                       <span>Open Folder</span>
@@ -349,7 +398,7 @@ export const InstancesFooter: React.FC<InstancesFooterProps> = ({
                         setShowMoreMenu(false);
                         onDownload();
                       }}
-                      className="flex items-center gap-3 w-full px-4 py-3 sm:py-3.5 rounded-2xl hover:bg-[var(--wb-surface-container-highest)] text-base sm:text-lg font-bold text-[var(--wb-primary)] transition-all cursor-pointer text-left group"
+                      className="flex items-center gap-3 w-full px-4 py-3 sm:py-3.5 rounded-2xl hover:bg-[var(--wb-surface-container-highest)] text-sm sm:text-lg font-bold text-[var(--wb-primary)] transition-all cursor-pointer text-left group"
                     >
                       <Download className="w-5 h-5 sm:w-6 sm:h-6 shrink-0 group-hover:scale-110 transition-transform" />
                       <span>Reinstall</span>
@@ -364,7 +413,7 @@ export const InstancesFooter: React.FC<InstancesFooterProps> = ({
             type="button"
             disabled={isStorageMigrating}
             onClick={onDownload}
-            className={`flex items-center gap-3 px-8 sm:px-10 py-3.5 sm:py-4 rounded-2xl bg-[var(--wb-primary)] text-[var(--wb-on-primary)] text-base sm:text-lg font-black transition-all shadow-lg ${
+            className={`w-full sm:w-auto flex items-center justify-center gap-3 px-6 sm:px-10 py-3 sm:py-4 rounded-2xl bg-[var(--wb-primary)] text-[var(--wb-on-primary)] text-sm sm:text-lg font-black transition-all shadow-lg ${
               isStorageMigrating
                 ? "opacity-50 cursor-not-allowed pointer-events-none"
                 : "hover:opacity-90 cursor-pointer hover:scale-105 active:scale-95"
@@ -379,4 +428,3 @@ export const InstancesFooter: React.FC<InstancesFooterProps> = ({
     </div>
   );
 };
-

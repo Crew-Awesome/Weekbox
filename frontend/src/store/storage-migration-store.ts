@@ -50,11 +50,11 @@ export const useStorageMigrationStore = create<StorageMigrationStoreState>(
       });
 
       try {
-        if (!Core.platform.migrateStorage) {
+        if (!Core.services.storage.migrateStorage) {
           throw new Error("Storage migration is not supported on this platform.");
         }
 
-        await Core.platform.migrateStorage(
+        await Core.services.storage.migrateStorage(
           sourcePath,
           targetPath,
           type,

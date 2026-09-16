@@ -29,13 +29,33 @@ export class DesktopSettings implements ISettingsService {
       const exists = await this.transport.call("fs.exists", { path: settingsPath }).catch(() => false);
       if (exists) {
         const raw = await this.transport.call("fs.readFile", { path: settingsPath });
-        return typeof raw === "string" ? JSON.parse(raw) : ((raw as any) || {});
+        const parsed = typeof raw === "string" ? JSON.parse(raw) : ((raw as any) || {});
+        if (typeof window !== "undefined") {
+          try {
+            localStorage.setItem("wb_app_settings", JSON.stringify(parsed));
+          } catch {}
+        }
+        return parsed;
       }
     } catch {}
+
+    if (typeof window !== "undefined") {
+      try {
+        const rawLocal = localStorage.getItem("wb_app_settings");
+        if (rawLocal) return JSON.parse(rawLocal);
+      } catch {}
+    }
+
     return {};
   }
 
   async saveSettings(settings: Record<string, any>): Promise<void> {
+    if (typeof window !== "undefined") {
+      try {
+        localStorage.setItem("wb_app_settings", JSON.stringify(settings));
+      } catch {}
+    }
+
     try {
       const base = await getDesktopBasePath();
       const dataDir = `${base}/data`;

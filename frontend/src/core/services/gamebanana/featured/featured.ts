@@ -3,6 +3,7 @@ import { sanitizeHtml, htmlToPlainText } from "../../../../utils/sanitize";
 import type { GameBananaMod } from "../types";
 import type { FeaturedSchema, FeaturedModRaw } from "./types";
 import { FNF_GAME_ID } from "../constants";
+import { isMobilePlatform } from "../../../platform";
 
 export const FEATURED_URL =
   "https://raw.githubusercontent.com/Crew-Awesome/weekbox.featured/main/public/featured.json";
@@ -34,7 +35,14 @@ export class FeaturedService {
         throw new Error("Unsupported featured schema");
       }
 
-      const mods = this.flatten(response);
+      let mods = this.flatten(response);
+      if (isMobilePlatform()) {
+        mods = mods.filter((m) => {
+          const eid = String(m.engineId || "").toLowerCase();
+          const title = String(m.title || "").toLowerCase();
+          return eid !== "executable" && eid !== "3827" && !title.endsWith(".exe");
+        });
+      }
       if (mods.length === 0) throw new Error("No featured mods");
 
       return mods;

@@ -25,7 +25,7 @@ export const useLibraryStore = create<LibraryState>((set, get) => ({
   loadInstalledMods: async (force: boolean = false) => {
     if (get().isInitialized && !force) {
       try {
-        const mods = await Core.platform.getInstalledMods();
+        const mods = await Core.services.mods.getInstalledMods();
         const sorted = Array.isArray(mods)
           ? [...mods].sort(
               (a, b) => (Number(b.installedAt) || 0) - (Number(a.installedAt) || 0)
@@ -42,7 +42,7 @@ export const useLibraryStore = create<LibraryState>((set, get) => ({
       if (!get().isInitialized) {
         set({ isLoading: true });
       }
-      const mods = await Core.platform.getInstalledMods();
+      const mods = await Core.services.mods.getInstalledMods();
       const sorted = Array.isArray(mods)
         ? [...mods].sort(
             (a, b) => (Number(b.installedAt) || 0) - (Number(a.installedAt) || 0)

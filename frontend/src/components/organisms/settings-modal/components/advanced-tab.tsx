@@ -1,15 +1,14 @@
-import React, { useState } from "react";
+import React from "react";
 import { Wrench, RefreshCw, ShieldAlert, AlertCircle, RotateCcw } from "lucide-react";
 import { Switch } from "./switch";
 import { useSettingsStore } from "../../../../store";
 import Utils from "@utils";
 
 export const AdvancedTab: React.FC = () => {
-  const [autoCheckUpdates, setAutoCheckUpdates] = useState(true);
-
   const {
     preventCloseOnActive,
     confirmWarnings,
+    autoCheckUpdates,
     dismissedWarnings,
     updateSetting,
     resetDismissedWarnings,
@@ -110,7 +109,7 @@ export const AdvancedTab: React.FC = () => {
             <div className="shrink-0 pl-4">
               <Switch
                 checked={autoCheckUpdates}
-                onChange={setAutoCheckUpdates}
+                onChange={(val) => updateSetting("autoCheckUpdates", val)}
                 ariaLabel="Toggle Check for Updates"
               />
             </div>

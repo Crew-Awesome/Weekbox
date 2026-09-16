@@ -14,6 +14,7 @@ export class DesktopStorage implements IStorageService {
 
   private transport: DesktopTransport;
   private settings: DesktopSettings;
+  private mods?: { remapInstalledModPaths: (targetPath: string, selectedItemNames?: string[]) => Promise<void> };
 
   constructor(
     transport: DesktopTransport,
@@ -21,6 +22,10 @@ export class DesktopStorage implements IStorageService {
   ) {
     this.transport = transport;
     this.settings = settings;
+  }
+
+  setMods(mods: { remapInstalledModPaths: (targetPath: string, selectedItemNames?: string[]) => Promise<void> }) {
+    this.mods = mods;
   }
 
   isMigrationInProgress(): boolean {
@@ -127,55 +132,8 @@ export class DesktopStorage implements IStorageService {
       }
       await this.settings.saveSettings(s);
 
-      if (type === "mods") {
-        const basePath = await getDesktopBasePath();
-        const registryPath = `${basePath}/data/mod-installed.json`;
-        try {
-          const existing = await this.transport.call("fs.readFile" as any, { path: registryPath });
-          let registry = JSON.parse(existing as unknown as string);
-          if (Array.isArray(registry)) {
-            const hasSelection = Array.isArray(selectedItemNames) && selectedItemNames.length > 0;
-            const selectedSet = hasSelection ? new Set(selectedItemNames) : null;
-
-            registry = registry
-              .filter((m) => {
-                if (!selectedSet) return true;
-                const safeName = (m.name || m.title || "unknown")
-                  .normalize("NFD")
-                  .replace(/[\u0300-\u036f]/g, "")
-                  .replace(/[^a-zA-Z0-9]/g, "")
-                  .toLowerCase();
-                const expectedFolder = `mod_${m.id}_${safeName}`;
-                return (
-                  selectedSet.has(expectedFolder) ||
-                  Array.from(selectedSet).some((name) => name.startsWith(`mod_${m.id}_`))
-                );
-              })
-              .map((m) => {
-                const safeName = (m.name || m.title || "unknown")
-                  .normalize("NFD")
-                  .replace(/[\u0300-\u036f]/g, "")
-                  .replace(/[^a-zA-Z0-9]/g, "")
-                  .toLowerCase();
-                return {
-                  ...m,
-                  installPath: `${targetPath}/mod_${m.id}_${safeName}`,
-                };
-              });
-
-            await this.transport.call("fs.writeFile" as any, {
-              path: registryPath,
-              content: JSON.stringify(registry, null, 2),
-            });
-
-            this.transport.emitLocalEvent("mods:changed", { action: "migrated" });
-            if (typeof window !== "undefined") {
-              window.dispatchEvent(
-                new CustomEvent("wb:mods-changed", { detail: { action: "migrated" } })
-              );
-            }
-          }
-        } catch {}
+      if (type === "mods" && this.mods) {
+        await this.mods.remapInstalledModPaths(targetPath, selectedItemNames).catch(() => {});
       }
 
       this.transport.emitLocalEvent("storage:migrated", { type, targetPath });

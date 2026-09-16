@@ -137,4 +137,8 @@ export class WebMods implements IModService {
     }
     return null;
   }
+
+  async remapInstalledModPaths(_targetPath: string, _selectedItemNames?: string[]): Promise<void> {
+    // No-op for web localStorage
+  }
 }

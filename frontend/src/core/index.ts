@@ -1,4 +1,4 @@
-import { platform } from "@platform";
+import { platform, isMobilePlatform } from "@platform";
 import { fs } from "./backend/fs";
 import { http } from "./backend/http";
 import { windowApi } from "./backend/window";
@@ -37,6 +37,7 @@ const Core = {
    */
   platform,
   Platform: platform,
+  isMobilePlatform,
 
   /**
    * @description Contenedor de Inversión de Dependencias (DIP).
@@ -74,6 +75,7 @@ const Core = {
       getInstalledEngines: engineService.getInstalledEngines.bind(engineService),
       registerInstalledEngine: engineService.registerInstalledEngine.bind(engineService),
       uninstallEngine: engineService.uninstallEngine.bind(engineService),
+      cleanupTempDownload: engineService.cleanupTempDownload.bind(engineService),
     },
     backend: {
       call: platform.call.bind(platform),

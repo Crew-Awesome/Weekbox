@@ -1,255 +1,29 @@
 import { platform } from "@platform";
-import type { BackendOperation } from "../types";
+import type { IWindowService } from "@contracts";
 
 /**
  * @description Unified interface for Window management.
- * Controls the application window through the adapter layer, falling back to Web APIs where applicable.
+ * Polymorphically delegates to the active platform window driver (OCP / SRP).
  */
-export const windowApi = {
-  async minimize() {
-    if (platform.platformName === "web") return;
-    if (window.Neutralino?.window?.minimize)
-      return await window.Neutralino.window.minimize();
-    return await platform.call("window.minimize" as BackendOperation);
-  },
-
-  async maximize() {
-    if (platform.platformName === "web") return;
-    if (window.Neutralino?.window?.maximize)
-      return await window.Neutralino.window.maximize();
-    return await platform.call("window.maximize" as BackendOperation);
-  },
-
-  async unmaximize() {
-    if (platform.platformName === "web") return;
-    if (window.Neutralino?.window?.unmaximize)
-      return await window.Neutralino.window.unmaximize();
-    return await platform.call("window.unmaximize" as BackendOperation);
-  },
-
-  async unminimize() {
-    if (platform.platformName === "web") return;
-    if (window.Neutralino?.window?.unminimize)
-      return await window.Neutralino.window.unminimize();
-    return await platform.call("window.unminimize" as BackendOperation);
-  },
-
-  async setAlwaysOnTop(onTop: boolean) {
-    if (platform.platformName === "web") return;
-    if (window.Neutralino?.window?.setAlwaysOnTop)
-      return await window.Neutralino.window.setAlwaysOnTop(onTop);
-    return await platform.call("window.setAlwaysOnTop" as BackendOperation, { onTop });
-  },
-
-  async bringToFront() {
-    if (platform.platformName === "web") {
-      window.focus();
-      return;
-    }
-    try {
-      if (window.Neutralino?.window) {
-        await window.Neutralino.window.show().catch(() => {});
-        if (window.Neutralino.window.unminimize) {
-          await window.Neutralino.window.unminimize().catch(() => {});
-        }
-        if (window.Neutralino.window.setAlwaysOnTop) {
-          await window.Neutralino.window.setAlwaysOnTop(true).catch(() => {});
-          await window.Neutralino.window.focus().catch(() => {});
-          setTimeout(async () => {
-            try {
-              const win = window.Neutralino?.window;
-              if (win?.setAlwaysOnTop) {
-                await win.setAlwaysOnTop(false).catch(() => {});
-              }
-              await win?.focus?.().catch(() => {});
-            } catch {}
-          }, 200);
-        } else {
-          await window.Neutralino.window.focus().catch(() => {});
-        }
-        return;
-      }
-      await platform.call("window.focus" as BackendOperation).catch(() => {});
-    } catch (e) {
-      console.warn("Could not bring window to front:", e);
-    }
-  },
-
-  async setFullScreen() {
-    if (platform.platformName === "web") {
-      document.documentElement.requestFullscreen?.();
-      return;
-    }
-    if (window.Neutralino?.window?.setFullScreen)
-      return await window.Neutralino.window.setFullScreen();
-    return await platform.call("window.setFullScreen" as BackendOperation);
-  },
-
-  async exitFullScreen() {
-    if (platform.platformName === "web") {
-      document.exitFullscreen?.();
-      return;
-    }
-    if (window.Neutralino?.window?.exitFullScreen)
-      return await window.Neutralino.window.exitFullScreen();
-    return await platform.call("window.exitFullScreen" as BackendOperation);
-  },
-
-  async show() {
-    if (platform.platformName === "web") return;
-    if (window.Neutralino?.window?.show)
-      return await window.Neutralino.window.show();
-    return await platform.call("window.show" as BackendOperation);
-  },
-
-  async hide() {
-    if (platform.platformName === "web") return;
-    if (window.Neutralino?.window?.hide)
-      return await window.Neutralino.window.hide();
-    return await platform.call("window.hide" as BackendOperation);
-  },
-
-  async focus() {
-    if (platform.platformName === "web") {
-      window.focus();
-      return;
-    }
-    if (window.Neutralino?.window?.focus)
-      return await window.Neutralino.window.focus();
-    return await platform.call("window.focus" as BackendOperation);
-  },
-
-  async move(x: number, y: number) {
-    if (platform.platformName === "web") {
-      window.moveTo(x, y);
-      return;
-    }
-    if (window.Neutralino?.window?.move)
-      return await window.Neutralino.window.move(x, y);
-    return await platform.call("window.move" as BackendOperation, { x, y });
-  },
-
-  async setSize(width: number, height: number) {
-    if (platform.platformName === "web") {
-      window.resizeTo(width, height);
-      return;
-    }
-    if (window.Neutralino?.window?.setSize)
-      return await window.Neutralino.window.setSize(width, height);
-    return await platform.call("window.setSize" as BackendOperation, {
-      width,
-      height,
-    });
-  },
-
-  async getSize(): Promise<{ width: number; height: number }> {
-    if (platform.platformName === "web") {
-      return { width: window.outerWidth, height: window.outerHeight };
-    }
-    if (window.Neutralino?.window?.getSize)
-      return await window.Neutralino.window.getSize();
-    return (await platform.call("window.getSize" as BackendOperation)) as {
-      width: number;
-      height: number;
-    };
-  },
-
-  async getPosition(): Promise<{ x: number; y: number }> {
-    if (platform.platformName === "web") {
-      return { x: window.screenX, y: window.screenY };
-    }
-    if (window.Neutralino?.window?.getPosition)
-      return await window.Neutralino.window.getPosition();
-    return (await platform.call("window.getPosition" as BackendOperation)) as {
-      x: number;
-      y: number;
-    };
-  },
-
-  async getDisplays(): Promise<any[]> {
-    if (platform.platformName === "web") {
-      return [
-        {
-          id: 0,
-          resolution: {
-            width: window.screen.width,
-            height: window.screen.height,
-          },
-          bounds: {
-            x: 0,
-            y: 0,
-            width: window.screen.width,
-            height: window.screen.height,
-          },
-        },
-      ];
-    }
-    if (window.Neutralino?.computer?.getDisplays)
-      return await window.Neutralino.computer.getDisplays();
-    return (await platform.call(
-      "window.getDisplays" as BackendOperation,
-    )) as any[];
-  },
-
-  async close() {
-    if (platform.platformName === "web") {
-      window.close();
-      return;
-    }
-    if (window.Neutralino?.app?.exit) return await window.Neutralino.app.exit();
-    return await platform.call("window.close" as BackendOperation);
-  },
-
-  async center() {
-    if (platform.platformName === "web") {
-      const x = (window.screen.width - window.outerWidth) / 2;
-      const y = (window.screen.height - window.outerHeight) / 2;
-      window.moveTo(x, y);
-      return;
-    }
-
-    if (window.Neutralino) {
-      try {
-        const size = await windowApi.getSize();
-        const displays = await windowApi.getDisplays();
-        const pos = await windowApi.getPosition();
-
-        let currentDisplay = displays[0];
-        if (Array.isArray(displays)) {
-          for (const display of displays) {
-            const bx = display.bounds?.x || 0;
-            const by = display.bounds?.y || 0;
-            const bw = display.resolution?.width || 1920;
-            const bh = display.resolution?.height || 1080;
-            if (
-              pos.x >= bx &&
-              pos.x < bx + bw &&
-              pos.y >= by &&
-              pos.y < by + bh
-            ) {
-              currentDisplay = display;
-              break;
-            }
-          }
-        }
-
-        const bx = currentDisplay?.bounds?.x || 0;
-        const by = currentDisplay?.bounds?.y || 0;
-        const resW = currentDisplay?.resolution?.width || 1920;
-        const resH = currentDisplay?.resolution?.height || 1080;
-
-        const centerX = bx + Math.floor((resW - (size?.width || 800)) / 2);
-        const centerY = by + Math.floor((resH - (size?.height || 600)) / 2);
-
-        await windowApi.move(centerX, centerY);
-        return;
-      } catch (error) {
-        console.warn("Could not center window natively", error);
-      }
-    }
-
-    return await platform.call("window.center" as BackendOperation);
-  },
+export const windowApi: IWindowService = {
+  minimize: () => platform.window.minimize(),
+  maximize: () => platform.window.maximize(),
+  unmaximize: () => platform.window.unmaximize(),
+  unminimize: () => platform.window.unminimize(),
+  setAlwaysOnTop: (onTop: boolean) => platform.window.setAlwaysOnTop(onTop),
+  bringToFront: () => platform.window.bringToFront(),
+  setFullScreen: () => platform.window.setFullScreen(),
+  exitFullScreen: () => platform.window.exitFullScreen(),
+  show: () => platform.window.show(),
+  hide: () => platform.window.hide(),
+  focus: () => platform.window.focus(),
+  move: (x: number, y: number) => platform.window.move(x, y),
+  setSize: (width: number, height: number) => platform.window.setSize(width, height),
+  getSize: () => platform.window.getSize(),
+  getPosition: () => platform.window.getPosition(),
+  getDisplays: () => platform.window.getDisplays(),
+  close: () => platform.window.close(),
+  center: () => platform.window.center(),
 };
 
 export default windowApi;

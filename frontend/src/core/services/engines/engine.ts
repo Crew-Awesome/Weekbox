@@ -45,6 +45,10 @@ export class EngineService implements IEngineService {
   async uninstallEngine(engineId: string, version: string): Promise<void> {
     return this.provider.uninstallEngine(engineId, version);
   }
+
+  async cleanupTempDownload(engineId: string, version: string): Promise<void> {
+    return this.provider.cleanupTempDownload(engineId, version);
+  }
 }
 
 export const engineService = new EngineService();

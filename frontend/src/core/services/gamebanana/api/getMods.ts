@@ -21,6 +21,7 @@ import {
   fetchSearchRecords,
 } from "../algorithms";
 import { getModById } from "./getModById";
+import { isMobilePlatform } from "@platform";
 
 export type ModFilter = "popular" | "new" | "ripe" | "updated";
 
@@ -230,6 +231,15 @@ export async function getMods(
     finalMods = finalMods.filter(
       (m) => m.engineId && enginesArray.includes(m.engineId),
     );
+  }
+
+  // Filter out executable mods on mobile/Capacitor environment
+  if (isMobilePlatform()) {
+    finalMods = finalMods.filter((m) => {
+      const eid = String(m.engineId || "").toLowerCase();
+      const title = String(m.title || "").toLowerCase();
+      return eid !== "executable" && eid !== "3827" && !title.endsWith(".exe");
+    });
   }
 
   return finalMods;

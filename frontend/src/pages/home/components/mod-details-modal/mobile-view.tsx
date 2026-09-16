@@ -570,6 +570,13 @@ export const MobileView: React.FC<MobileViewProps> = ({
       const modPath = `${modsDir}/mod_${displayCard.id}_${safeName}`;
       const engId = displayCard.engineId || "vslice";
 
+      if (engId === "executable" || engId === "3827") {
+        Utils.toast.warning("Executable mods (.exe) cannot be launched on mobile devices.", {
+          title: "Incompatible Platform",
+        });
+        return;
+      }
+
       let targetFolder = modPath;
       let modFolderPath: string | undefined = undefined;
       let args: string[] | undefined = undefined;

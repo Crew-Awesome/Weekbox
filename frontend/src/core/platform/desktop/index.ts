@@ -8,6 +8,8 @@ import { DesktopStorage } from "./storage";
 import { DesktopProcess } from "./process";
 import { DesktopMods } from "./mods";
 import { DesktopEngines } from "./engines";
+import { DesktopWindow } from "./window";
+import { DesktopNotification } from "./notification";
 
 export * from "./transport";
 export * from "./lifecycle";
@@ -15,7 +17,10 @@ export * from "./settings";
 export * from "./storage";
 export * from "./process";
 export * from "./mods";
+export * from "./mod-registry";
 export * from "./engines";
+export * from "./window";
+export * from "./notification";
 
 /**
  * Desktop Platform Adapter API (Neutralinojs + Node.js extension).
@@ -31,6 +36,8 @@ export class DesktopAdapter implements IPlatformBridge {
   readonly process: DesktopProcess;
   readonly mods: DesktopMods;
   readonly engines: DesktopEngines;
+  readonly window: DesktopWindow;
+  readonly notification: DesktopNotification;
 
   constructor() {
     this.transport = new DesktopTransport();
@@ -38,7 +45,10 @@ export class DesktopAdapter implements IPlatformBridge {
     this.storage = new DesktopStorage(this.transport, this.settings);
     this.process = new DesktopProcess(this.transport);
     this.mods = new DesktopMods(this.transport, this.storage);
+    this.storage.setMods(this.mods);
     this.engines = new DesktopEngines(this.transport, this.storage);
+    this.window = new DesktopWindow(this.transport);
+    this.notification = new DesktopNotification(this.transport);
 
     this.lifecycle = new DesktopLifecycle(
       this.transport,
@@ -93,6 +103,7 @@ export class DesktopAdapter implements IPlatformBridge {
   openModFolder = (...args: Parameters<DesktopMods["openModFolder"]>) => this.mods.openModFolder(...args);
   setModFavorite = (...args: Parameters<DesktopMods["setModFavorite"]>) => this.mods.setModFavorite(...args);
   updateInstalledMod = (...args: Parameters<DesktopMods["updateInstalledMod"]>) => this.mods.updateInstalledMod(...args);
+  remapInstalledModPaths = (...args: Parameters<DesktopMods["remapInstalledModPaths"]>) => this.mods.remapInstalledModPaths(...args);
 
   downloadEngine = (...args: Parameters<DesktopEngines["downloadEngine"]>) => this.engines.downloadEngine(...args);
   isEngineInstalled = (...args: Parameters<DesktopEngines["isEngineInstalled"]>) => this.engines.isEngineInstalled(...args);
@@ -100,6 +111,7 @@ export class DesktopAdapter implements IPlatformBridge {
   getInstalledEngines = (...args: Parameters<DesktopEngines["getInstalledEngines"]>) => this.engines.getInstalledEngines(...args);
   registerInstalledEngine = (...args: Parameters<DesktopEngines["registerInstalledEngine"]>) => this.engines.registerInstalledEngine(...args);
   uninstallEngine = (...args: Parameters<DesktopEngines["uninstallEngine"]>) => this.engines.uninstallEngine(...args);
+  cleanupTempDownload = (...args: Parameters<DesktopEngines["cleanupTempDownload"]>) => this.engines.cleanupTempDownload(...args);
 
   launchExecutable = (...args: Parameters<DesktopProcess["launchExecutable"]>) => this.process.launchExecutable(...args);
   killProcess = (...args: Parameters<DesktopProcess["killProcess"]>) => this.process.killProcess(...args);

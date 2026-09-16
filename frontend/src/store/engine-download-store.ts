@@ -221,8 +221,8 @@ export const useEngineDownloadStore = create<EngineDownloadStoreState>((set, get
     }));
 
     try {
-      if (Core.platform.downloadEngine) {
-        await Core.platform.downloadEngine(
+      if (Core.services.engines.downloadEngine) {
+        await Core.services.engines.downloadEngine(
           downloadUrl,
           engineId,
           version,
@@ -308,33 +308,9 @@ export const useEngineDownloadStore = create<EngineDownloadStoreState>((set, get
       toast.dismiss(task.toastId);
     }
 
-    /* Clean up any partial files on disk */
+    /* Clean up any partial files on disk via engine service (DIP) */
     try {
-      let basePath = window.NL_CWD || window.NL_PATH || "";
-      if (window.Neutralino?.os?.getPath) {
-        const dataPath = await window.Neutralino.os.getPath("data");
-        basePath = `${dataPath}/WeekBox`;
-      }
-      basePath = basePath.replace(/\\/g, "/");
-
-      const safeEngineId = task.engineId
-        .normalize("NFD")
-        .replace(/[\u0300-\u036f]/g, "")
-        .replace(/[^a-zA-Z0-9_-]/g, "")
-        .toLowerCase();
-
-      const safeVersion = task.version
-        .normalize("NFD")
-        .replace(/[\u0300-\u036f]/g, "")
-        .replace(/[^a-zA-Z0-9._-]/g, "");
-
-      const targetFolder = `${basePath}/engines/${safeEngineId}/${safeVersion}`;
-      const tempArchive = `${basePath}/engines/${safeEngineId}/temp_${safeVersion}.archive`;
-
-      if (window.NODE?.call) {
-        await window.NODE.call("fs.remove", { path: tempArchive }).catch(() => {});
-        await window.NODE.call("fs.remove", { path: targetFolder }).catch(() => {});
-      }
+      await Core.services.engines.cleanupTempDownload?.(task.engineId, task.version);
     } catch {}
 
     set({ currentTask: null });

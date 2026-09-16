@@ -8,6 +8,8 @@ import { WebStorage } from "./storage";
 import { WebProcess } from "./process";
 import { WebMods } from "./mods";
 import { WebEngines } from "./engines";
+import { WebWindow } from "./window";
+import { WebNotification } from "./notification";
 
 export * from "./transport";
 export * from "./lifecycle";
@@ -16,6 +18,8 @@ export * from "./storage";
 export * from "./process";
 export * from "./mods";
 export * from "./engines";
+export * from "./window";
+export * from "./notification";
 
 /**
  * Web Platform Adapter API (Browser environment).
@@ -31,6 +35,8 @@ export class WebAdapter implements IPlatformBridge {
   readonly process: WebProcess;
   readonly mods: WebMods;
   readonly engines: WebEngines;
+  readonly window: WebWindow;
+  readonly notification: WebNotification;
 
   constructor() {
     this.transport = new WebTransport();
@@ -40,6 +46,8 @@ export class WebAdapter implements IPlatformBridge {
     this.process = new WebProcess();
     this.mods = new WebMods(this.transport, this.storage);
     this.engines = new WebEngines(this.transport, this.storage);
+    this.window = new WebWindow();
+    this.notification = new WebNotification();
   }
 
   get isReady(): boolean {
@@ -87,6 +95,7 @@ export class WebAdapter implements IPlatformBridge {
   openModFolder = (...args: Parameters<WebMods["openModFolder"]>) => this.mods.openModFolder(...args);
   setModFavorite = (...args: Parameters<WebMods["setModFavorite"]>) => this.mods.setModFavorite(...args);
   updateInstalledMod = (...args: Parameters<WebMods["updateInstalledMod"]>) => this.mods.updateInstalledMod(...args);
+  remapInstalledModPaths = (...args: Parameters<WebMods["remapInstalledModPaths"]>) => this.mods.remapInstalledModPaths(...args);
 
   downloadEngine = (...args: Parameters<WebEngines["downloadEngine"]>) => this.engines.downloadEngine(...args);
   isEngineInstalled = (...args: Parameters<WebEngines["isEngineInstalled"]>) => this.engines.isEngineInstalled(...args);
@@ -94,6 +103,7 @@ export class WebAdapter implements IPlatformBridge {
   getInstalledEngines = (...args: Parameters<WebEngines["getInstalledEngines"]>) => this.engines.getInstalledEngines(...args);
   registerInstalledEngine = (...args: Parameters<WebEngines["registerInstalledEngine"]>) => this.engines.registerInstalledEngine(...args);
   uninstallEngine = (...args: Parameters<WebEngines["uninstallEngine"]>) => this.engines.uninstallEngine(...args);
+  cleanupTempDownload = (...args: Parameters<WebEngines["cleanupTempDownload"]>) => this.engines.cleanupTempDownload(...args);
 
   launchExecutable = (...args: Parameters<WebProcess["launchExecutable"]>) => this.process.launchExecutable(...args);
   killProcess = (...args: Parameters<WebProcess["killProcess"]>) => this.process.killProcess(...args);

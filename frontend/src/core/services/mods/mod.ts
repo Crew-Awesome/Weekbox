@@ -53,6 +53,10 @@ export class ModService implements IModService {
   async updateInstalledMod(modId: string, updates: Record<string, any>): Promise<any | null> {
     return this.provider.updateInstalledMod(modId, updates);
   }
+
+  async remapInstalledModPaths(targetPath: string, selectedItemNames?: string[]): Promise<void> {
+    return this.provider.remapInstalledModPaths(targetPath, selectedItemNames);
+  }
 }
 
 export const modService = new ModService();

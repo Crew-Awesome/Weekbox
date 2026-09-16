@@ -1,5 +1,6 @@
 import type { PlatformCapabilities, PlatformType } from "@contracts";
 import type { DesktopTransport } from "./transport";
+import { taskMonitor } from "../task-monitor";
 import neuConfig from "../../../../../neutralino.config.json";
 
 /**
@@ -14,6 +15,8 @@ export class DesktopLifecycle {
     canShowNativeDialogs: true,
     canDownloadDirectStreams: true,
     canExtractArchives: true,
+    canManageWindow: true,
+    canSendOSNotifications: true,
   };
 
   private _isReady: boolean = false;
@@ -74,6 +77,7 @@ export class DesktopLifecycle {
 
         const hasActiveTasks =
           isProcessActive ||
+          taskMonitor.hasActiveTasks() ||
           (typeof (window as any).__WB_HAS_ACTIVE_TASKS === "function"
             ? (window as any).__WB_HAS_ACTIVE_TASKS()
             : false);
