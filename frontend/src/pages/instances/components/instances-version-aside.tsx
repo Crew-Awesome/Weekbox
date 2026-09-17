@@ -96,7 +96,7 @@ export const InstancesVersionAside: React.FC<InstancesVersionAsideProps> = ({
 
   if (isExecutable) {
     return (
-      <aside className="w-full md:w-80 lg:w-96 xl:w-[420px] flex flex-col shrink-0 border-b md:border-b-0 md:border-r border-[var(--wb-outline-variant)]/20 bg-[var(--wb-surface-container-low)]/40 overflow-y-auto max-h-[40vh] md:max-h-none md:h-full">
+      <aside className="w-full md:w-80 lg:w-96 xl:w-[420px] flex flex-col shrink-0 border-b md:border-b-0 md:border-r border-[var(--wb-outline-variant)]/20 bg-[var(--wb-surface-container-low)]/40 overflow-y-auto h-full flex-1 md:flex-none">
         <div className="p-5 border-b border-[var(--wb-outline-variant)]/15 flex items-center justify-between sticky top-0 bg-[var(--wb-surface-container)]/95 backdrop-blur-md z-10">
           <div className="flex items-center gap-3">
             <HardDrive className="w-5 h-5 text-[var(--wb-primary)]" />
@@ -109,7 +109,7 @@ export const InstancesVersionAside: React.FC<InstancesVersionAsideProps> = ({
           </span>
         </div>
 
-        <div className="flex flex-col p-3 sm:p-4 gap-2.5 overflow-y-auto">
+        <div className="flex flex-col p-3 sm:p-4 gap-2.5 overflow-y-auto pb-28 sm:pb-4">
           {isLoadingMods ? (
             <div className="flex flex-col items-center justify-center p-12 gap-3 opacity-60">
               <Loader2 className="w-7 h-7 animate-spin text-[var(--wb-primary)]" />
@@ -156,8 +156,8 @@ export const InstancesVersionAside: React.FC<InstancesVersionAsideProps> = ({
   }
 
   return (
-    <aside className="w-full md:w-80 lg:w-96 xl:w-[420px] flex flex-col shrink-0 border-b md:border-b-0 md:border-r border-[var(--wb-outline-variant)]/20 bg-[var(--wb-surface-container-low)]/40 overflow-y-auto max-h-[30vh] sm:max-h-[35vh] md:max-h-none md:h-full">
-      <div className="flex flex-col p-2.5 sm:p-4 gap-2 sm:gap-2.5 overflow-y-auto">
+    <aside className="w-full md:w-80 lg:w-96 xl:w-[420px] flex flex-col shrink-0 border-b md:border-b-0 md:border-r border-[var(--wb-outline-variant)]/20 bg-[var(--wb-surface-container-low)]/40 overflow-y-auto h-full flex-1 md:flex-none">
+      <div className="flex flex-col p-2.5 sm:p-4 gap-2 sm:gap-2.5 overflow-y-auto pb-28 sm:pb-4">
         {isLoadingReleases ? (
           <div className="flex flex-col items-center justify-center p-8 sm:p-12 gap-3 opacity-60">
             <Loader2 className="w-6 h-6 sm:w-7 sm:h-7 animate-spin text-[var(--wb-primary)]" />

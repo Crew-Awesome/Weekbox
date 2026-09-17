@@ -12,7 +12,7 @@ export class ProcessService implements IProcessLauncher {
   private readonly provider: IProcessLauncher;
 
   constructor(provider?: IProcessLauncher) {
-    this.provider = provider || platform;
+    this.provider = provider || platform.process;
   }
 
   async launchExecutable(

@@ -65,7 +65,7 @@ export const ModDetailsModal: React.FC<ModDetailsModalProps> = ({
   useEffect(() => {
     if (!displayCard?.id) return;
     let isMounted = true;
-    Core.platform.getInstalledMod(displayCard.id.toString()).then((mod) => {
+    Core.platform.getInstalledMod(displayCard.id.toString()).then((mod: any) => {
       if (isMounted) {
         setIsInstalled(Boolean(mod));
       }
@@ -245,6 +245,7 @@ export const ModDetailsModal: React.FC<ModDetailsModalProps> = ({
           : undefined
       }
       contentClassName="flex flex-col flex-1 overflow-y-auto md:overflow-hidden p-0"
+      hideCloseButtonMobile={true}
       edgeSpacing={{
         isStaticSize: true,
         mobile: ["95vw", "auto"],
@@ -253,6 +254,7 @@ export const ModDetailsModal: React.FC<ModDetailsModalProps> = ({
       modalClassName="flex flex-col md:aspect-[16/9] max-h-[90vh] md:max-h-full rounded-2xl md:rounded-none bg-[var(--wb-surface-container)] md:bg-transparent"
     >
       <MobileView
+        onClose={onClose}
         displayCard={displayCard}
         engineName={engineName}
         formatDate={formatDate}

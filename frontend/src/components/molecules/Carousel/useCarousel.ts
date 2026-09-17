@@ -2,6 +2,7 @@ import { useRef, useEffect, useCallback, useState, Children } from "react";
 import type { PointerEvent } from "react";
 import gsap from "gsap";
 import { calculateVisuals } from "./carouselMath";
+import { platform } from "@platform";
 import type { CarouselProps, CarouselAPI } from "./types";
 
 /**
@@ -72,7 +73,9 @@ export function useCarousel(props: CarouselProps) {
     const scrollPos = scroller.scrollLeft;
     const progress = scrollPos / scroller.clientWidth;
 
-    const isMobile = window.innerWidth < 640;
+    const isMobile =
+      platform.platformName === "capacitor" ||
+      (typeof window !== "undefined" && window.innerWidth < 768);
     const layouts = calculateVisuals(
       totalItems,
       progress,
@@ -208,9 +211,29 @@ export function useCarousel(props: CarouselProps) {
     }, autoInterval);
   }, [isAuto, isInfinite, autoInterval, smoothScrollToIndex, pauseAuto]);
 
+  const prev = useCallback(() => {
+    const scroller = scrollerRef.current;
+    if (!scroller || scroller.clientWidth === 0) return;
+    pauseAuto();
+    dragState.current.hasDragged = false;
+    const currentIndexFloat = scroller.scrollLeft / scroller.clientWidth;
+    const targetIndex = Math.round(currentIndexFloat) - 1;
+    smoothScrollToIndex(targetIndex, 0.45);
+  }, [smoothScrollToIndex, pauseAuto]);
+
+  const next = useCallback(() => {
+    const scroller = scrollerRef.current;
+    if (!scroller || scroller.clientWidth === 0) return;
+    pauseAuto();
+    dragState.current.hasDragged = false;
+    const currentIndexFloat = scroller.scrollLeft / scroller.clientWidth;
+    const targetIndex = Math.round(currentIndexFloat) + 1;
+    smoothScrollToIndex(targetIndex, 0.45);
+  }, [smoothScrollToIndex, pauseAuto]);
+
   const goToLogicalIndex = useCallback(
     (targetUniqueIndex: number) => {
-      if (dragState.current.hasDragged) return;
+      if (dragState.current.isDown) return;
 
       const scroller = scrollerRef.current;
       if (!scroller || scroller.clientWidth === 0 || totalItems === 0) return;
@@ -305,7 +328,9 @@ export function useCarousel(props: CarouselProps) {
       const currentIndexFloat = scroller.scrollLeft / scroller.clientWidth;
 
       let snapIndex = Math.round(currentIndexFloat);
-      const isMobile = window.innerWidth < 640;
+      const isMobile =
+        platform.platformName === "capacitor" ||
+        (typeof window !== "undefined" && window.innerWidth < 768);
 
       if (isMobile) {
         const startIndex = Math.round(
@@ -328,6 +353,10 @@ export function useCarousel(props: CarouselProps) {
           }
         }
       }
+
+      setTimeout(() => {
+        dragState.current.hasDragged = false;
+      }, 50);
 
       if (Math.abs(snapIndex - currentIndexFloat) > 0.001) {
         smoothScrollToIndex(snapIndex, 0.4);
@@ -367,6 +396,8 @@ export function useCarousel(props: CarouselProps) {
     activeIndex,
     totalItems: childrenArray.length,
     goToLogicalIndex,
+    prev,
+    next,
     bindProgressRef: (index: number) => (el: HTMLDivElement | null) => {
       progressRefs.current[index] = el;
     },

@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo, useRef } from "react";
 import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { ENGINE_CATEGORIES } from "../../../core/services/gamebanana/constants";
+import { isMobilePlatform } from "../../../core/platform";
 
 export type LibrarySortOption = "recent" | "az" | "za" | "popular" | "author";
 
@@ -229,6 +230,14 @@ export function useLibraryFilters({
       result = result.filter(
         (m) => m.engineId && selectedEngines.includes(String(m.engineId))
       );
+    }
+
+    if (isMobilePlatform()) {
+      result = result.filter((m) => {
+        const eid = String(m.engineId || "").toLowerCase();
+        const title = String(m.title || m.name || "").toLowerCase();
+        return eid !== "executable" && eid !== "3827" && !title.endsWith(".exe");
+      });
     }
 
     switch (sortOption) {

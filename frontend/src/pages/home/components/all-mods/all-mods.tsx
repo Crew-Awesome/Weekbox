@@ -31,6 +31,7 @@ export const AllMods: React.FC<AllModsProps> = React.memo(({
   const { mods, loading, loadingMore, hasMore, page, lastElementRef, retry } =
     useAllMods(sortFilter, categoryFilter, searchQuery);
   const favorites = useFavoritesStore((s) => s.favorites);
+  const isMobile = isMobilePlatform();
 
   const sortLabels: Record<string, string> = {
     popular: "Popular",
@@ -70,7 +71,7 @@ export const AllMods: React.FC<AllModsProps> = React.memo(({
           style={{ gridAutoFlow: "row dense" }}
         >
           {Array.from({ length: 16 }).map((_, i) => {
-            const isBanner = i === 3 || i === 11;
+            const isBanner = !isMobile && (i === 3 || i === 11);
             if (isBanner) {
               return (
                 <div
@@ -193,6 +194,19 @@ export const AllMods: React.FC<AllModsProps> = React.memo(({
           };
 
           const isLastElement = index === mods.length - 1;
+
+          if (isMobile && (item as any).__isCommunityPick) {
+            if (isLastElement) {
+              return (
+                <div
+                  key={`${item.id}-${index}`}
+                  ref={lastElementRef}
+                  className="hidden"
+                />
+              );
+            }
+            return null;
+          }
 
           return (
             <div

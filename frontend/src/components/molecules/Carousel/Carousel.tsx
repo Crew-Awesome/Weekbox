@@ -58,7 +58,10 @@ export const Carousel: React.FC<CarouselProps> = (props) => {
         )
           return;
 
-        if (lastClientWidth && lastClientWidth !== scroller.clientWidth) {
+        if (isInfinite && scroller.scrollLeft === 0 && totalItems > 0) {
+          const middlePadding = Math.floor(25 / totalItems) * totalItems;
+          scroller.scrollLeft = middlePadding * scroller.clientWidth;
+        } else if (lastClientWidth && lastClientWidth !== scroller.clientWidth) {
           scroller.scrollLeft = exactIndexRef.current * scroller.clientWidth;
         }
 
@@ -88,7 +91,7 @@ export const Carousel: React.FC<CarouselProps> = (props) => {
     <div className={`flex flex-col w-full max-w-full overflow-hidden ${className}`}>
       <div
         ref={containerRef}
-        className="relative overflow-x-hidden overflow-y-visible w-full max-w-full h-full flex-1"
+        className="relative overflow-hidden w-full max-w-full h-full flex-1"
         style={{
           containerType: "inline-size",
           ...(aspectRatio
@@ -98,9 +101,10 @@ export const Carousel: React.FC<CarouselProps> = (props) => {
       >
         <div
           ref={scrollerRef}
-          className="flex overflow-x-auto w-full h-full touch-pan-y"
+          className="flex overflow-x-auto no-scrollbar w-full h-full touch-pan-y"
           style={{
             scrollbarWidth: "none",
+            msOverflowStyle: "none",
             cursor: isAuto ? "default" : "grab",
           }}
           onPointerDown={onPointerDown}

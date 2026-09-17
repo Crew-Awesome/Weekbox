@@ -1,11 +1,11 @@
 import React from "react";
-import { Moon, Sun, Palette, Pipette, Sparkles, CircleDot, Image } from "lucide-react";
+import { Moon, Sun, Laptop, Palette, Pipette, Sparkles, CircleDot, Image } from "lucide-react";
 import { useTheme } from "../hooks/use-theme";
 import { Switch } from "./switch";
 import Utils from "@utils";
 
 export const AppearanceTab: React.FC = () => {
-  const { isDark, setTheme } = useTheme();
+  const { isDark, themeSetting, setThemeSetting } = useTheme();
   const { isExtractActive, setExtractActive } = Utils.hooks.useExtractColor();
   const { isCirclePatternActive, setCirclePatternActive } = Utils.hooks.useModalPattern();
   const { isModalBackdropActive, setModalBackdropActive } = Utils.hooks.useModalBackdrop();
@@ -19,10 +19,12 @@ export const AppearanceTab: React.FC = () => {
         </div>
 
         <div className="flex flex-col gap-3.5">
-          <div className="flex items-center justify-between p-5 sm:p-6 rounded-3xl bg-[var(--wb-surface-container-low)]/80 border border-white/5 transition-colors">
+          <div className="flex flex-col gap-4 p-5 sm:p-6 rounded-3xl bg-[var(--wb-surface-container-low)]/80 border border-white/5 transition-colors">
             <div className="flex items-center gap-4 sm:gap-5">
               <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-[var(--wb-surface-container-highest)] text-[var(--wb-on-surface)] flex items-center justify-center shrink-0 shadow-sm">
-                {isDark ? (
+                {themeSetting === "system" ? (
+                  <Laptop className="w-6 h-6 sm:w-7 sm:h-7 text-[var(--wb-primary)]" />
+                ) : isDark ? (
                   <Moon className="w-6 h-6 sm:w-7 sm:h-7 text-[var(--wb-primary)]" />
                 ) : (
                   <Sun className="w-6 h-6 sm:w-7 sm:h-7 text-amber-400" />
@@ -30,22 +32,56 @@ export const AppearanceTab: React.FC = () => {
               </div>
               <div className="flex flex-col gap-1">
                 <span className="text-base sm:text-lg font-bold text-[var(--wb-on-surface)]">
-                  Dark Mode
+                  App Theme
                 </span>
                 <span className="text-xs sm:text-sm text-[var(--wb-on-surface-variant)] leading-relaxed">
-                  {isDark
-                    ? "Dark theme is currently active for low-light environments"
-                    : "Light theme is currently active with high contrast"}
+                  {themeSetting === "system"
+                    ? `System default (currently ${isDark ? "Dark" : "Light"}) - adapts automatically to OS`
+                    : isDark
+                    ? "Dark theme active for low-light environments"
+                    : "Light theme active with high contrast"}
                 </span>
               </div>
             </div>
 
-            <div className="shrink-0 pl-4">
-              <Switch
-                checked={isDark}
-                onChange={(checked) => setTheme(checked ? "dark" : "light")}
-                ariaLabel="Toggle Dark Mode"
-              />
+            {/* 3-way Theme Selector */}
+            <div className="grid grid-cols-3 gap-2 p-1.5 rounded-2xl bg-[var(--wb-surface-container-highest)]/70 border border-[var(--wb-outline-variant)]/30">
+              <button
+                type="button"
+                onClick={() => setThemeSetting("system")}
+                className={`flex items-center justify-center gap-2 py-2.5 px-2 rounded-xl text-xs sm:text-sm font-semibold transition-all cursor-pointer ${
+                  themeSetting === "system"
+                    ? "bg-[var(--wb-primary)] text-[var(--wb-on-primary)] shadow-sm scale-[1.02]"
+                    : "text-[var(--wb-on-surface-variant)] hover:text-[var(--wb-on-surface)] hover:bg-white/5"
+                }`}
+              >
+                <Laptop className="w-4 h-4 shrink-0" />
+                <span className="truncate">System</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setThemeSetting("dark")}
+                className={`flex items-center justify-center gap-2 py-2.5 px-2 rounded-xl text-xs sm:text-sm font-semibold transition-all cursor-pointer ${
+                  themeSetting === "dark"
+                    ? "bg-[var(--wb-primary)] text-[var(--wb-on-primary)] shadow-sm scale-[1.02]"
+                    : "text-[var(--wb-on-surface-variant)] hover:text-[var(--wb-on-surface)] hover:bg-white/5"
+                }`}
+              >
+                <Moon className="w-4 h-4 shrink-0" />
+                <span className="truncate">Dark</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setThemeSetting("light")}
+                className={`flex items-center justify-center gap-2 py-2.5 px-2 rounded-xl text-xs sm:text-sm font-semibold transition-all cursor-pointer ${
+                  themeSetting === "light"
+                    ? "bg-[var(--wb-primary)] text-[var(--wb-on-primary)] shadow-sm scale-[1.02]"
+                    : "text-[var(--wb-on-surface-variant)] hover:text-[var(--wb-on-surface)] hover:bg-white/5"
+                }`}
+              >
+                <Sun className="w-4 h-4 shrink-0" />
+                <span className="truncate">Light</span>
+              </button>
             </div>
           </div>
 

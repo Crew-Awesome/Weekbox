@@ -35,7 +35,9 @@ frontend/*.njsproj
 frontend/*.sln
 frontend/*.sw?
 /app/dist/
-/app/assets/index-*.js
-/app/assets/index-*.css
+/app/assets/*.js
+/app/assets/*.js.map
+/app/assets/*.css
+/app/assets/*.css.map
 
 README_FREC.md

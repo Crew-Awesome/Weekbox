@@ -41,11 +41,11 @@ export function createServiceContainer(customBridge?: IPlatformBridge): ServiceC
 
   return {
     platform: activePlatform,
-    mods: new ModService(activePlatform),
-    engines: new EngineService(activePlatform),
-    process: new ProcessService(activePlatform),
-    storage: new StorageService(activePlatform),
-    settings: new SettingsService(activePlatform),
+    mods: new ModService(activePlatform.mods || (activePlatform as any)),
+    engines: new EngineService(activePlatform.engines || (activePlatform as any)),
+    process: new ProcessService(activePlatform.process || (activePlatform as any)),
+    storage: new StorageService(activePlatform.storage || (activePlatform as any)),
+    settings: new SettingsService(activePlatform.settings || (activePlatform as any)),
     window: activePlatform.window,
     notification: activePlatform.notification,
     taskMonitor,

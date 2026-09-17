@@ -139,7 +139,7 @@ export const PillDropdown: React.FC<PillDropdownProps> = ({
 
       <Dropdown
         isOpen={isOpen}
-        className={`w-64 ${align === "right" ? "right-0 origin-top-right" : "left-0 origin-top-left"}`}
+        className={`w-64 max-w-[calc(100vw-2.5rem)] ${align === "right" ? "right-0 origin-top-right" : "left-0 origin-top-left"}`}
       >
         {options.map((opt) => (
           <button

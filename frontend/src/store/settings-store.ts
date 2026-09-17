@@ -1,5 +1,6 @@
 import { create } from "zustand";
-import Core from "@core";
+import type { IStorageService, ISettingsService } from "@contracts";
+import { container } from "../core/container";
 
 export interface SettingsState {
   modsPath: string;
@@ -17,6 +18,11 @@ export interface SettingsState {
   dismissWarning: (warningId: string) => Promise<void>;
   resetDismissedWarnings: () => Promise<void>;
   isWarningDismissed: (warningId: string) => boolean;
+}
+
+export interface SettingsStoreDependencies {
+  storage: IStorageService;
+  settings: ISettingsService;
 }
 
 const SETTINGS_STORAGE_KEY = "wb_app_settings";
@@ -38,116 +44,124 @@ function writeLocalSettings(settings: Record<string, any>): void {
   } catch {}
 }
 
-export const useSettingsStore = create<SettingsState>((set, get) => ({
-  modsPath: "",
-  enginesPath: "",
-  defaultModsPath: "",
-  defaultEnginesPath: "",
-  preventCloseOnActive: true,
-  confirmWarnings: true,
-  autoCheckUpdates: true,
-  dismissedWarnings: {},
-  isLoaded: false,
+/**
+ * Creates an instance of the Settings Store with injected dependencies (DIP / ISP).
+ */
+export function createSettingsStore(customDeps?: Partial<SettingsStoreDependencies>) {
+  const deps: SettingsStoreDependencies = {
+    storage: customDeps?.storage || container.storage,
+    settings: customDeps?.settings || container.settings,
+  };
 
-  loadSettings: async () => {
-    try {
-      const defaults = (await Core.services.storage.getDefaultPaths?.()) || {
-        basePath: "",
-        defaultModsPath: "",
-        defaultEnginesPath: "",
-      };
+  return create<SettingsState>((set, get) => ({
+    modsPath: "",
+    enginesPath: "",
+    defaultModsPath: "",
+    defaultEnginesPath: "",
+    preventCloseOnActive: true,
+    confirmWarnings: true,
+    autoCheckUpdates: true,
+    dismissedWarnings: {},
+    isLoaded: false,
 
-      const localSettings = readLocalSettings();
-      const platformSettings = (await Core.services.settings.getSettings?.()) || {};
+    loadSettings: async () => {
+      try {
+        const defaults = (await deps.storage.getDefaultPaths?.()) || {
+          basePath: "",
+          defaultModsPath: "",
+          defaultEnginesPath: "",
+        };
 
-      // Merge: defaults -> local storage -> platform settings (settings.json overrides on desktop)
-      const merged = {
-        ...localSettings,
-        ...platformSettings,
-      };
+        const localSettings = readLocalSettings();
+        const platformSettings = (await deps.settings.getSettings?.()) || {};
 
-      // Keep both local storage and platform in sync with merged state
-      writeLocalSettings(merged);
-      if (Core.services.settings.saveSettings) {
-        await Core.services.settings.saveSettings(merged).catch(() => {});
+        // Merge: defaults -> local storage -> platform settings (settings.json overrides on desktop)
+        const merged = {
+          ...localSettings,
+          ...platformSettings,
+        };
+
+        // Keep both local storage and platform in sync with merged state
+        writeLocalSettings(merged);
+        if (deps.settings.saveSettings) {
+          await deps.settings.saveSettings(merged).catch(() => {});
+        }
+
+        set({
+          modsPath: merged.modsPath || defaults.defaultModsPath,
+          enginesPath: merged.enginesPath || defaults.defaultEnginesPath,
+          defaultModsPath: defaults.defaultModsPath,
+          defaultEnginesPath: defaults.defaultEnginesPath,
+          preventCloseOnActive: merged.preventCloseOnActive !== false,
+          confirmWarnings: merged.confirmWarnings !== false,
+          autoCheckUpdates: merged.autoCheckUpdates !== false,
+          dismissedWarnings: merged.dismissedWarnings || {},
+          isLoaded: true,
+        });
+      } catch {
+        set({ isLoaded: true });
       }
+    },
 
-      set({
-        modsPath: merged.modsPath || defaults.defaultModsPath,
-        enginesPath: merged.enginesPath || defaults.defaultEnginesPath,
-        defaultModsPath: defaults.defaultModsPath,
-        defaultEnginesPath: defaults.defaultEnginesPath,
-        preventCloseOnActive: merged.preventCloseOnActive !== false,
-        confirmWarnings: merged.confirmWarnings !== false,
-        autoCheckUpdates: merged.autoCheckUpdates !== false,
-        dismissedWarnings: merged.dismissedWarnings || {},
-        isLoaded: true,
-      });
-    } catch {
-      set({ isLoaded: true });
-    }
-  },
+    updateSetting: async (key, value) => {
+      set((state) => ({ ...state, [key]: value }));
+      try {
+        const local = readLocalSettings();
+        const platformSettings = (await deps.settings.getSettings?.()) || {};
+        const updated = {
+          ...local,
+          ...platformSettings,
+          [key]: value,
+        };
 
-  updateSetting: async (key, value) => {
-    set((state) => ({ ...state, [key]: value }));
-    try {
-      const local = readLocalSettings();
-      const platformSettings = (await Core.services.settings.getSettings?.()) || {};
-      const updated = {
-        ...local,
-        ...platformSettings,
-        [key]: value,
+        writeLocalSettings(updated);
+        await deps.settings.saveSettings?.(updated);
+      } catch {}
+    },
+
+    dismissWarning: async (warningId: string) => {
+      const updatedWarnings = {
+        ...get().dismissedWarnings,
+        [warningId]: true,
       };
+      set({ dismissedWarnings: updatedWarnings });
+      try {
+        const local = readLocalSettings();
+        const platformSettings = (await deps.settings.getSettings?.()) || {};
+        const updated = {
+          ...local,
+          ...platformSettings,
+          dismissedWarnings: updatedWarnings,
+        };
 
-      writeLocalSettings(updated);
-      await Core.services.settings.saveSettings?.(updated);
-    } catch {}
-  },
+        writeLocalSettings(updated);
+        await deps.settings.saveSettings?.(updated);
+      } catch {}
+    },
 
-  dismissWarning: async (warningId: string) => {
-    const updatedWarnings = {
-      ...get().dismissedWarnings,
-      [warningId]: true,
-    };
-    set({ dismissedWarnings: updatedWarnings });
-    try {
-      const local = readLocalSettings();
-      const platformSettings = (await Core.services.settings.getSettings?.()) || {};
-      const updated = {
-        ...local,
-        ...platformSettings,
-        dismissedWarnings: updatedWarnings,
-      };
+    resetDismissedWarnings: async () => {
+      set({ dismissedWarnings: {} });
+      try {
+        const local = readLocalSettings();
+        const platformSettings = (await deps.settings.getSettings?.()) || {};
+        const updated = {
+          ...local,
+          ...platformSettings,
+          dismissedWarnings: {},
+        };
 
-      writeLocalSettings(updated);
-      await Core.services.settings.saveSettings?.(updated);
-    } catch {}
-  },
+        writeLocalSettings(updated);
+        await deps.settings.saveSettings?.(updated);
+      } catch {}
+    },
 
-  resetDismissedWarnings: async () => {
-    set({ dismissedWarnings: {} });
-    try {
-      const local = readLocalSettings();
-      const platformSettings = (await Core.services.settings.getSettings?.()) || {};
-      const updated = {
-        ...local,
-        ...platformSettings,
-        dismissedWarnings: {},
-      };
-
-      writeLocalSettings(updated);
-      await Core.services.settings.saveSettings?.(updated);
-    } catch {}
-  },
-
-  isWarningDismissed: (warningId: string) => {
-    const state = get();
-    if (!state.confirmWarnings) return true;
-    return Boolean(state.dismissedWarnings[warningId]);
-  },
-}));
-
-/* Initialize settings eagerly on load */
-if (typeof window !== "undefined") {
-  useSettingsStore.getState().loadSettings().catch(() => {});
+    isWarningDismissed: (warningId: string) => {
+      return Boolean(get().dismissedWarnings[warningId]);
+    },
+  }));
 }
+
+/**
+ * Global default settings store.
+ */
+export const useSettingsStore = createSettingsStore();

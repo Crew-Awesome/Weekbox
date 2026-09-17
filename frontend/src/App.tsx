@@ -1,11 +1,12 @@
 import { useEffect } from "react";
-import Core from "@core";
+import Core, { ServicesProvider } from "@core";
 import Utils from "@utils";
 import { MainLayoutTemplate } from "@templates";
 import type { LoadingTask } from "@components";
 import { Outlet, useLocation } from "react-router-dom";
 import { useHomeStore } from "./store/home-store";
 import { useDownloadStore } from "./store";
+import { useTheme } from "./components/organisms/settings-modal/hooks/use-theme";
 
 const initTasks: LoadingTask[] = [
   {
@@ -81,6 +82,7 @@ const initTasks: LoadingTask[] = [
 ];
 
 function App() {
+  useTheme();
   const handleNavigate = Utils.hooks.useAppNavigation();
   const location = useLocation();
 
@@ -91,9 +93,11 @@ function App() {
   }, [location.pathname]);
 
   return (
-    <MainLayoutTemplate tasks={initTasks} onNavigate={handleNavigate}>
-      <Outlet />
-    </MainLayoutTemplate>
+    <ServicesProvider>
+      <MainLayoutTemplate tasks={initTasks} onNavigate={handleNavigate}>
+        <Outlet />
+      </MainLayoutTemplate>
+    </ServicesProvider>
   );
 }
 

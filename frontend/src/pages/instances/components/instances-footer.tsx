@@ -92,7 +92,7 @@ export const InstancesFooter: React.FC<InstancesFooterProps> = ({
     (navigator.userAgent.includes("iPhone") || navigator.userAgent.includes("iPad"));
 
   return (
-    <div className="sticky bottom-0 z-50 w-full bg-[var(--wb-surface-container)]/85 backdrop-blur-2xl border-t border-white/10 px-4 sm:px-6 md:px-10 py-3.5 sm:py-5 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 sm:gap-4 shadow-[0_-8px_32px_rgba(0,0,0,0.5)]">
+    <div className="sticky bottom-0 z-30 w-full bg-[var(--wb-surface-container)]/85 backdrop-blur-2xl border-t border-white/10 px-4 sm:px-6 md:px-10 pt-3.5 pb-28 sm:py-5 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 sm:gap-4 shadow-[0_-8px_32px_rgba(0,0,0,0.5)]">
       {/** Left Metadata Section */}
       <div className="flex items-center gap-3 sm:gap-5 min-w-0 pr-0 sm:pr-6">
         <div className="w-12 h-12 sm:w-14 sm:h-14 md:w-16 md:h-16 rounded-2xl bg-[var(--wb-surface-bright)] p-2 sm:p-2.5 flex items-center justify-center shrink-0 border border-[var(--wb-outline-variant)]/20 shadow-inner">
@@ -192,24 +192,37 @@ export const InstancesFooter: React.FC<InstancesFooterProps> = ({
           ) : null
         ) : isBaseGameMobile ? (
           isInstalled ? (
-            <div className="flex items-center gap-2.5 w-full sm:w-auto">
+            <div className="grid grid-cols-3 gap-2 w-full sm:w-auto sm:flex sm:items-center sm:gap-2.5">
               <button
                 type="button"
                 onClick={onPlay}
-                className="flex-1 sm:flex-initial flex items-center justify-center gap-2.5 px-6 sm:px-9 py-3 sm:py-4 rounded-2xl bg-[var(--wb-primary)] text-[var(--wb-on-primary)] text-sm sm:text-lg font-black transition-all shadow-lg hover:opacity-90 cursor-pointer hover:scale-105 active:scale-95"
+                className="w-full sm:w-auto flex items-center justify-center gap-1.5 sm:gap-2.5 px-3 sm:px-9 py-3 sm:py-4 rounded-2xl bg-[var(--wb-primary)] text-[var(--wb-on-primary)] text-xs sm:text-lg font-black transition-all shadow-lg hover:opacity-90 cursor-pointer hover:scale-105 active:scale-95"
                 title="Launch Friday Night Funkin' mobile app"
               >
-                <Play className="w-5 h-5 sm:w-6 sm:h-6 fill-current" />
-                <span>Play / Launch</span>
+                <Play className="w-4 h-4 sm:w-6 sm:h-6 fill-current shrink-0" />
+                <span className="truncate">Launch</span>
               </button>
+
+              {onUninstall && (
+                <button
+                  type="button"
+                  onClick={onUninstall}
+                  className="w-full sm:w-auto flex items-center justify-center gap-1.5 sm:gap-2 px-3 sm:px-6 py-3 sm:py-4 rounded-2xl bg-red-500/15 border border-red-500/30 text-red-400 text-xs sm:text-base font-bold transition-all shadow-sm hover:bg-red-500/25 cursor-pointer hover:scale-105 active:scale-95"
+                  title="Uninstall Friday Night Funkin'"
+                >
+                  <Trash2 className="w-4 h-4 sm:w-5 sm:h-5 shrink-0" />
+                  <span className="truncate">Uninstall</span>
+                </button>
+              )}
 
               <button
                 type="button"
                 onClick={onDownload}
-                className="p-3 sm:p-4 rounded-2xl bg-[var(--wb-surface-container-highest)] hover:bg-white/10 text-[var(--wb-on-surface-variant)] hover:text-[var(--wb-on-surface)] transition-all cursor-pointer border border-white/10"
+                className="w-full sm:w-auto flex items-center justify-center gap-1.5 sm:gap-2 px-3 sm:px-6 py-3 sm:py-4 rounded-2xl bg-[var(--wb-surface-container-high)] hover:bg-[var(--wb-surface-container-highest)] text-[var(--wb-on-surface-variant)] hover:text-[var(--wb-on-surface)] transition-all cursor-pointer border border-[var(--wb-outline-variant)]/60 text-xs sm:text-base font-bold shadow-sm hover:scale-105 active:scale-95"
                 title="Open Store page"
               >
-                <ExternalLink className="w-5 h-5" />
+                <ExternalLink className="w-4 h-4 sm:w-5 sm:h-5 shrink-0" />
+                <span className="truncate">Store</span>
               </button>
             </div>
           ) : (
@@ -327,7 +340,7 @@ export const InstancesFooter: React.FC<InstancesFooterProps> = ({
                   }
                 >
                   <Play className="w-5 h-5 sm:w-6 sm:h-6 fill-current" />
-                  <span>Play</span>
+                  <span>Launch</span>
                 </button>
               )
             )}

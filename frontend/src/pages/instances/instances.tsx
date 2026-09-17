@@ -7,6 +7,7 @@ import { InstancesFooter } from "./components/instances-footer";
 import { ConfirmationModal } from "@components";
 import { useInstances } from "./hooks/use-instances";
 import { useSettingsStore } from "../../store";
+import { ArrowLeft } from "lucide-react";
 
 /**
  * Organism / Feature: Instances View.
@@ -58,40 +59,76 @@ export const Instances: React.FC = () => {
     isBaseGameInstalled,
   } = useInstances();
 
+  const [isMobileDetailOpen, setIsMobileDetailOpen] = React.useState(false);
+
+  const handleSelectCategory = (cat: string) => {
+    setSelectedCategory(cat);
+    setIsMobileDetailOpen(false);
+  };
+
+  const handleSelectVersion = (ver: any) => {
+    setSelectedVersion(ver);
+    setIsMobileDetailOpen(true);
+  };
+
+  const handleSelectMod = (mod: any) => {
+    setSelectedModId(String(mod.id));
+    setIsMobileDetailOpen(true);
+  };
+
   return (
-    <div className="flex flex-col flex-1 w-full md:w-[calc(100%+4rem)] h-full md:h-[calc(100%+4rem)] overflow-hidden bg-[var(--wb-bg)] text-[var(--wb-text-main)] m-0 md:-m-8 pb-20 md:pb-0">
-      {/** Topbar */}
-      <InstancesTopbar
-        selectedCategory={selectedCategory}
-        onSelectCategory={setSelectedCategory}
-        sortOption={sortOption}
-        onSortChange={setSortOption}
-        onlyInstalled={onlyInstalled}
-        onOnlyInstalledChange={setOnlyInstalled}
-        isExecutable={isExecutable}
-      />
+    <div className="flex flex-col flex-1 w-[calc(100%+4rem)] h-[calc(100%+9rem)] md:h-[calc(100%+4rem)] overflow-hidden bg-[var(--wb-bg)] text-[var(--wb-text-main)] -mx-8 -mt-8 -mb-28 md:-m-8">
+      {/** Topbar: sticky fixed at the top */}
+      <div className="sticky top-0 z-40 shrink-0 w-full">
+        <InstancesTopbar
+          selectedCategory={selectedCategory}
+          onSelectCategory={handleSelectCategory}
+          sortOption={sortOption}
+          onSortChange={setSortOption}
+          onlyInstalled={onlyInstalled}
+          onOnlyInstalledChange={setOnlyInstalled}
+          isExecutable={isExecutable}
+        />
+      </div>
 
       {/** Main split area */}
-      <div className="flex flex-col md:flex-row flex-1 w-full min-h-0 overflow-hidden relative">
-        {/** Left Aside */}
-        <InstancesVersionAside
-          isExecutable={isExecutable}
-          releases={releases}
-          selectedVersion={selectedVersion}
-          onSelectVersion={setSelectedVersion}
-          isLoadingReleases={isLoadingReleases}
-          installedMods={installedMods}
-          selectedModId={selectedModId}
-          onSelectMod={(mod) => setSelectedModId(String(mod.id))}
-          isLoadingMods={isLoadingMods}
-          engineIcon={currentEngineMeta.icon}
-          sortOption={sortOption}
-          onlyInstalled={onlyInstalled}
-          installedVersions={installedVersionsForCategory}
-        />
+      <div className="flex flex-col md:flex-row flex-1 w-full min-h-0 overflow-hidden relative z-10">
+        {/** Left Aside: on mobile, full width and hidden when detail is open */}
+        <div className={`w-full md:w-auto h-full flex flex-col ${isMobileDetailOpen ? "hidden md:flex" : "flex flex-1"}`}>
+          <InstancesVersionAside
+            isExecutable={isExecutable}
+            releases={releases}
+            selectedVersion={selectedVersion}
+            onSelectVersion={handleSelectVersion}
+            isLoadingReleases={isLoadingReleases}
+            installedMods={installedMods}
+            selectedModId={selectedModId}
+            onSelectMod={handleSelectMod}
+            isLoadingMods={isLoadingMods}
+            engineIcon={currentEngineMeta.icon}
+            sortOption={sortOption}
+            onlyInstalled={onlyInstalled}
+            installedVersions={installedVersionsForCategory}
+          />
+        </div>
 
-        {/** Right Content View with docked footer */}
-        <main className="flex-1 flex flex-col min-w-0 h-full overflow-hidden bg-[var(--wb-surface)]/20 relative">
+        {/** Right Content View: on mobile, full width and hidden when detail is NOT open */}
+        <main className={`flex-1 flex flex-col min-w-0 h-full overflow-hidden bg-[var(--wb-surface)]/20 relative ${!isMobileDetailOpen ? "hidden md:flex" : "flex"}`}>
+          {/** Mobile back button to return to versions */}
+          <div className="md:hidden flex items-center justify-between px-4 py-2.5 bg-[var(--wb-surface-container-low)] border-b border-[var(--wb-outline-variant)]/20 shrink-0">
+            <button
+              type="button"
+              onClick={() => setIsMobileDetailOpen(false)}
+              className="flex items-center gap-2 text-sm font-semibold text-[var(--wb-primary)] hover:opacity-80 active:scale-95 transition-all cursor-pointer"
+            >
+              <ArrowLeft className="w-4 h-4" />
+              <span>Back to versions</span>
+            </button>
+            <span className="text-xs text-[var(--wb-on-surface-variant)] truncate max-w-[160px] font-medium">
+              {footerTitle} {footerVersion}
+            </span>
+          </div>
+
           <div className="flex-1 min-h-0 overflow-y-auto">
             {isExecutable ? (
               <InstancesExecutableView mod={selectedMod} />

@@ -131,7 +131,7 @@ export const AnimatedInput = ({
         {isEmpty && (
           <div
             ref={placeholderRef}
-            className="absolute left-0 right-0 text-lg text-[var(--wb-text-muted)] pointer-events-none truncate"
+            className="absolute left-0 right-0 text-sm md:text-lg text-[var(--wb-text-muted)] pointer-events-none truncate"
           >
             {currentPlaceholder}
           </div>
@@ -144,7 +144,7 @@ export const AnimatedInput = ({
           onInput={handleInput}
           onPaste={handlePaste}
           onKeyDown={onKeyDown}
-          className="w-full bg-transparent outline-none text-lg text-[var(--wb-text-main)] truncate z-10"
+          className="w-full bg-transparent outline-none text-sm md:text-lg text-[var(--wb-text-main)] truncate z-10"
         />
 
         {onClear && !isEmpty && (

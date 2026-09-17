@@ -21,6 +21,7 @@ export interface ModalViewProps {
   targetLanguage?: "es" | "en";
   isInstalled?: boolean;
   onUpdateMod?: (updates: Record<string, any>) => Promise<void>;
+  onClose?: () => void;
 }
 export { formatFileSize } from "../../../../utils/formatters";
 

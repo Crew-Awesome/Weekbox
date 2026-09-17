@@ -1,6 +1,6 @@
 import { create } from "zustand";
-import Core from "@core";
-import type { ModItem } from "@contracts";
+import type { ModItem, IModService } from "@contracts";
+import { container } from "../core/container";
 import { SoundEffects } from "../utils/sound";
 
 export interface FavoriteModItem {
@@ -19,13 +19,17 @@ export interface FavoriteModItem {
   addedAt: number;
 }
 
-interface FavoritesState {
+export interface FavoritesState {
   favorites: Record<string, FavoriteModItem>;
   isFavorite: (modId: number | string) => boolean;
   toggleFavorite: (mod: ModItem | any) => boolean;
   addFavorite: (mod: ModItem | any) => void;
   removeFavorite: (modId: number | string) => void;
   getFavoriteList: () => FavoriteModItem[];
+}
+
+export interface FavoritesStoreDependencies {
+  mods: IModService;
 }
 
 function loadSavedFavorites(): Record<string, FavoriteModItem> {
@@ -53,71 +57,88 @@ function saveFavorites(favorites: Record<string, FavoriteModItem>): void {
   }
 }
 
-export const useFavoritesStore = create<FavoritesState>((set, get) => ({
-  favorites: loadSavedFavorites(),
+/**
+ * Creates an instance of the Favorites Store with injected dependencies (DIP / ISP).
+ */
+export function createFavoritesStore(customDeps?: Partial<FavoritesStoreDependencies>) {
+  const deps: FavoritesStoreDependencies = {
+    mods: customDeps?.mods || container.mods,
+  };
 
-  isFavorite: (modId: number | string) => {
-    return Boolean(get().favorites[String(modId)]);
-  },
+  return create<FavoritesState>((set, get) => ({
+    favorites: loadSavedFavorites(),
 
-  toggleFavorite: (mod: ModItem | any) => {
-    const id = String(mod.id);
-    const exists = Boolean(get().favorites[id]);
-    if (exists) {
-      get().removeFavorite(id);
-      return false;
-    } else {
-      get().addFavorite(mod);
-      return true;
-    }
-  },
+    isFavorite: (modId: number | string) => {
+      return Boolean(get().favorites[String(modId)]);
+    },
 
-  addFavorite: (mod: ModItem | any) => {
-    const id = String(mod.id);
-    const item: FavoriteModItem = {
-      id: mod.id,
-      name: mod.name || mod.title || "Mod",
-      description: mod.description || "",
-      htmlBody: mod.htmlBody,
-      img: mod.img || mod.thumbnail || "",
-      icon: mod.icon || mod.engineIcon,
-      author: mod.author || "Unknown",
-      authors: mod.authors,
-      credits: mod.credits,
-      engineId: mod.engineId,
-      files: mod.files || [],
-      previewMedia: mod.previewMedia || [],
-      addedAt: Date.now(),
-    };
-
-    const nextFavorites = { ...get().favorites, [id]: item };
-    set({ favorites: nextFavorites });
-    SoundEffects.playFavoriteAdd();
-    saveFavorites(nextFavorites);
-
-    Core.services.mods.isModInstalled(id).then((installed) => {
-      if (installed && Core.services.mods.setModFavorite) {
-        Core.services.mods.setModFavorite(id, true);
+    toggleFavorite: (mod: ModItem | any) => {
+      const id = String(mod?.id);
+      if (!id) return false;
+      const isFav = Boolean(get().favorites[id]);
+      if (isFav) {
+        get().removeFavorite(id);
+        return false;
+      } else {
+        get().addFavorite(mod);
+        return true;
       }
-    }).catch(() => {});
-  },
+    },
 
-  removeFavorite: (modId: number | string) => {
-    const id = String(modId);
-    const nextFavorites = { ...get().favorites };
-    delete nextFavorites[id];
-    set({ favorites: nextFavorites });
-    SoundEffects.playFavoriteRemove();
-    saveFavorites(nextFavorites);
+    addFavorite: (mod: ModItem | any) => {
+      const id = String(mod?.id);
+      if (!id) return;
 
-    Core.services.mods.isModInstalled(id).then((installed) => {
-      if (installed && Core.services.mods.setModFavorite) {
-        Core.services.mods.setModFavorite(id, false);
-      }
-    }).catch(() => {});
-  },
+      const item: FavoriteModItem = {
+        id,
+        name: mod.name || mod.title || "Mod",
+        description: mod.description,
+        htmlBody: mod.htmlBody,
+        img: mod.img || mod.thumbnailBase64,
+        icon: mod.icon,
+        author: mod.author,
+        authors: mod.authors,
+        credits: mod.credits,
+        engineId: mod.engineId,
+        files: mod.files || [],
+        previewMedia: mod.previewMedia || [],
+        addedAt: Date.now(),
+      };
 
-  getFavoriteList: () => {
-    return Object.values(get().favorites).sort((a, b) => b.addedAt - a.addedAt);
-  },
-}));
+      const nextFavorites = { ...get().favorites, [id]: item };
+      set({ favorites: nextFavorites });
+      SoundEffects.playFavoriteAdd();
+      saveFavorites(nextFavorites);
+
+      deps.mods.isModInstalled(id).then((installed) => {
+        if (installed && deps.mods.setModFavorite) {
+          deps.mods.setModFavorite(id, true);
+        }
+      }).catch(() => {});
+    },
+
+    removeFavorite: (modId: number | string) => {
+      const id = String(modId);
+      const nextFavorites = { ...get().favorites };
+      delete nextFavorites[id];
+      set({ favorites: nextFavorites });
+      SoundEffects.playFavoriteRemove();
+      saveFavorites(nextFavorites);
+
+      deps.mods.isModInstalled(id).then((installed) => {
+        if (installed && deps.mods.setModFavorite) {
+          deps.mods.setModFavorite(id, false);
+        }
+      }).catch(() => {});
+    },
+
+    getFavoriteList: () => {
+      return Object.values(get().favorites).sort((a, b) => b.addedAt - a.addedAt);
+    },
+  }));
+}
+
+/**
+ * Global default favorites store.
+ */
+export const useFavoritesStore = createFavoritesStore();

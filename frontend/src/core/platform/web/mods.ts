@@ -1,4 +1,9 @@
-import type { IModService, DownloadProgressCallback } from "@contracts";
+import type {
+  IModService,
+  DownloadProgressCallback,
+  InstalledMod,
+  RegisterInstalledModPayload,
+} from "@contracts";
 import type { WebTransport } from "./transport";
 import type { WebStorage } from "./storage";
 
@@ -32,15 +37,20 @@ export class WebMods implements IModService {
     document.body.removeChild(a);
   }
 
-  async registerInstalledMod(modData: any): Promise<void> {
+  async registerInstalledMod(modData: RegisterInstalledModPayload): Promise<void> {
     try {
       const list = await this.getInstalledMods();
       const updatedInstalledAt = modData.installedAt || Date.now();
-      const entry = {
-        installed: true,
+      const entry: InstalledMod = {
         ...modData,
+        installed: true,
         installedAt: updatedInstalledAt,
-      };
+        installPath: modData.installPath || `/web/mods/${modData.id}`,
+        id: Number(modData.id) || Date.now(),
+        name: modData.name || modData.title || "Mod",
+        description: modData.description || "",
+        img: modData.img || "",
+      } as InstalledMod;
       const idx = list.findIndex((m) => String(m.id) === String(modData.id));
       if (idx >= 0) {
         list[idx] = { ...list[idx], ...entry, installedAt: updatedInstalledAt };
@@ -65,15 +75,15 @@ export class WebMods implements IModService {
     return list.some((m) => String(m.id) === String(modId));
   }
 
-  async getInstalledMod(modId: string): Promise<any | null> {
+  async getInstalledMod(modId: string): Promise<InstalledMod | null> {
     const list = await this.getInstalledMods();
     return list.find((m) => String(m.id) === String(modId)) || null;
   }
 
-  async getInstalledMods(): Promise<any[]> {
+  async getInstalledMods(): Promise<InstalledMod[]> {
     try {
       const raw = localStorage.getItem("wb_installed_mods");
-      return raw ? JSON.parse(raw) : [];
+      return raw ? (JSON.parse(raw) as InstalledMod[]) : [];
     } catch {
       return [];
     }
@@ -115,7 +125,7 @@ export class WebMods implements IModService {
     }
   }
 
-  async updateInstalledMod(modId: string, updates: Record<string, any>): Promise<any | null> {
+  async updateInstalledMod(modId: string, updates: Partial<InstalledMod>): Promise<InstalledMod | null> {
     try {
       const list = await this.getInstalledMods();
       const idx = list.findIndex((m) => String(m.id) === String(modId));

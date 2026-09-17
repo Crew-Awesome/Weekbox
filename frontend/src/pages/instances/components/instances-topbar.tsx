@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from "react";
 import Components from "@components";
 const Shared = Components;
 import { Filter, Clock, Layers, CheckCircle2 } from "lucide-react";
-import { ENGINE_CATEGORIES } from "../../../core/services/gamebanana/constants";
+import { getSupportedEngineCategories } from "../../../core/services/gamebanana/constants";
 
 export type InstanceSortOption = "newest" | "oldest" | "version" | "date";
 
@@ -46,7 +46,7 @@ export const InstancesTopbar: React.FC<InstancesTopbarProps> = ({
   }, [showFilters]);
 
   const engineOptions = React.useMemo(() => {
-    return Object.values(ENGINE_CATEGORIES).map((cat) => ({
+    return getSupportedEngineCategories().map((cat) => ({
       label: cat.id === "vslice" ? "Base Game" : cat.name,
       value: cat.id,
       icon: cat.icon,
@@ -56,7 +56,7 @@ export const InstancesTopbar: React.FC<InstancesTopbarProps> = ({
   const isFilterActive = onlyInstalled || (sortOption !== "newest" && sortOption !== "date");
 
   return (
-    <div className="sticky top-0 z-40 flex items-center w-full md:w-auto min-h-[4rem] sm:min-h-[5rem] py-2.5 rounded-none md:rounded-b-[16px] bg-[var(--wb-surface-container)]/90 backdrop-blur-md mx-0 md:mx-2 px-3 sm:px-6 shadow-md border-b md:border-b-0 border-[var(--wb-outline-variant)]/20">
+    <div className="sticky top-0 z-40 flex items-center w-full md:w-auto min-h-[4rem] sm:min-h-[5rem] py-2.5 rounded-none md:rounded-b-[16px] bg-[var(--wb-surface-container)]/70 backdrop-blur-xl mx-0 md:mx-2 px-3 sm:px-6 shadow-md border-b md:border-b-0 border-[var(--wb-outline-variant)]/20">
       <div className="flex items-center gap-2.5 sm:gap-3 flex-wrap">
         {/* Filter & Sort Popover Button */}
         <div className="relative z-50" ref={filtersRef}>
@@ -75,7 +75,7 @@ export const InstancesTopbar: React.FC<InstancesTopbarProps> = ({
 
           {showFilters && (
             <div className="absolute top-full left-0 pt-2 z-50">
-              <div className="bg-[var(--wb-surface-container)] border border-[var(--wb-outline-variant)]/60 rounded-2xl p-4 shadow-2xl flex flex-row flex-wrap items-center gap-3 min-w-[320px] backdrop-blur-xl">
+              <div className="bg-[var(--wb-surface-container)] border border-[var(--wb-outline-variant)]/60 rounded-2xl p-4 shadow-2xl flex flex-row flex-wrap items-center gap-3 min-w-[280px] sm:min-w-[320px] max-w-[calc(100vw-2rem)] backdrop-blur-xl">
                 {!isExecutable && (
                   <Shared.molecules.PillDropdown
                     label="Sort by"

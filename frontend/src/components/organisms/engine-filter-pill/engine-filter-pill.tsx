@@ -1,6 +1,6 @@
 import React, { useMemo } from "react";
 import { PillDropdown } from "../../molecules/pill-dropdown/pill-dropdown";
-import { ENGINE_CATEGORIES } from "../../../core/services/gamebanana/constants";
+import { getSupportedEngineCategories } from "../../../core/services/gamebanana/constants";
 
 import { Globe } from "lucide-react";
 
@@ -16,14 +16,11 @@ export const EngineFilterPill: React.FC<EngineFilterPillProps> = ({
   isMulti = false,
 }) => {
   const options = useMemo(() => {
-    const engines = Object.keys(ENGINE_CATEGORIES).map((key) => {
-      const engine = ENGINE_CATEGORIES[Number(key)];
-      return {
-        label: engine.name,
-        value: engine.id,
-        icon: engine.icon,
-      };
-    });
+    const engines = getSupportedEngineCategories().map((cat) => ({
+      label: cat.name,
+      value: cat.id,
+      icon: cat.icon,
+    }));
 
     return [
       { label: "All Engines", value: "all", icon: <Globe size={16} /> },

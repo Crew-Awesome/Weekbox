@@ -3,6 +3,8 @@
 html,
 body {
   overscroll-behavior: none;
+  background-color: var(--wb-bg);
+  color: var(--wb-text-main);
 }
 
 :root {
@@ -256,11 +258,29 @@ button[disabled]:active {
   scrollbar-color: var(--wb-scrollbar-thumb, var(--wb-primary)) var(--wb-scrollbar-track, transparent);
 }
 
+.no-scrollbar::-webkit-scrollbar,
+.mobile-no-scrollbar::-webkit-scrollbar {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+  background: transparent !important;
+}
+
+.no-scrollbar,
+.mobile-no-scrollbar {
+  -ms-overflow-style: none !important;
+  scrollbar-width: none !important;
+}
+
 @media (max-width: 768px) {
-  .mobile-no-scrollbar::-webkit-scrollbar {
-    display: none;
+  *::-webkit-scrollbar {
+    display: none !important;
+    width: 0 !important;
+    height: 0 !important;
+    background: transparent !important;
   }
-  .mobile-no-scrollbar {
-    scrollbar-width: none;
+  * {
+    -ms-overflow-style: none !important;
+    scrollbar-width: none !important;
   }
 }

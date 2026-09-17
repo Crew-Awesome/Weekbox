@@ -37,7 +37,7 @@ export const LoadingScreen: React.FC<LoadingScreenProps> = ({
   return (
     <>
       <div
-        className={`fixed inset-0 z-50 flex flex-col justify-end items-center pb-24 transition-opacity duration-500 ease-in-out ${
+        className={`fixed inset-0 z-[99998] flex flex-col justify-end items-center pb-24 transition-opacity duration-500 ease-in-out ${
           isFadingOut ? "opacity-0 pointer-events-none" : "opacity-100"
         }`}
         style={{

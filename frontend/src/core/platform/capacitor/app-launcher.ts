@@ -34,12 +34,25 @@ export class CapacitorAppLauncher {
 
     try {
       const platform = typeof Capacitor?.getPlatform === "function" ? Capacitor.getPlatform() : "android";
+
+      // 1. Try raw package name first (required by Capacitor Android AppLauncher for getPackageInfo)
+      try {
+        const { value } = await AppLauncher.canOpenUrl({ url: packageOrScheme });
+        if (value) {
+          await this.setAppInstalledCache(packageOrScheme, true);
+          return true;
+        }
+      } catch {}
+
+      // 2. Try URL scheme / package prefix
       const targetUrl = platform === "ios" ? `${packageOrScheme}://` : `package:${packageOrScheme}`;
-      const { value } = await AppLauncher.canOpenUrl({ url: targetUrl });
-      if (value) {
-        await this.setAppInstalledCache(packageOrScheme, true);
-        return true;
-      }
+      try {
+        const { value } = await AppLauncher.canOpenUrl({ url: targetUrl });
+        if (value) {
+          await this.setAppInstalledCache(packageOrScheme, true);
+          return true;
+        }
+      } catch {}
     } catch {}
 
     // Fallback: check stored cache in case queries permission prevents broad inspection
@@ -69,8 +82,17 @@ export class CapacitorAppLauncher {
     const platform =
       typeof Capacitor?.getPlatform === "function" ? Capacitor.getPlatform() : "android";
 
-    const targetUrl = platform === "ios" ? `${packageOrScheme}://` : `package:${packageOrScheme}`;
+    // 1. On Android, try launching package directly via AppLauncher (manager.getLaunchIntentForPackage)
+    try {
+      const res = await AppLauncher.openUrl({ url: packageOrScheme });
+      if (res && res.completed) {
+        await this.setAppInstalledCache(packageOrScheme, true);
+        return true;
+      }
+    } catch {}
 
+    // 2. Try URI scheme / package prefix
+    const targetUrl = platform === "ios" ? `${packageOrScheme}://` : `package:${packageOrScheme}`;
     try {
       const res = await AppLauncher.openUrl({ url: targetUrl });
       if (res && res.completed) {
@@ -79,7 +101,6 @@ export class CapacitorAppLauncher {
       }
     } catch {}
 
-    // Fallback on Android: try opening market or web
     return false;
   }
 
@@ -89,24 +110,41 @@ export class CapacitorAppLauncher {
    * On iOS: opens Apple App Store.
    */
   static async openBaseGameStore(): Promise<void> {
-    const platform =
-      typeof Capacitor?.getPlatform === "function" ? Capacitor.getPlatform() : "android";
+    const isNative =
+      (typeof Capacitor !== "undefined" &&
+        typeof Capacitor.isNativePlatform === "function" &&
+        Capacitor.isNativePlatform()) ||
+      (typeof window !== "undefined" && Boolean((window as any).Capacitor?.isNativePlatform?.()));
 
-    if (platform === "ios") {
-      if (typeof window !== "undefined") {
-        window.open(FNF_APPSTORE_URL, "_system");
+    if (isNative) {
+      const platform =
+        typeof Capacitor?.getPlatform === "function" ? Capacitor.getPlatform() : "android";
+
+      if (platform === "ios") {
+        try {
+          const res = await AppLauncher.openUrl({ url: FNF_APPSTORE_URL });
+          if (res && res.completed) return;
+        } catch {}
+        if (typeof window !== "undefined") {
+          window.open(FNF_APPSTORE_URL, "_blank");
+        }
+        return;
       }
-      return;
+
+      // Android native: attempt market:// intent, then fallback to direct package URL
+      try {
+        const res = await AppLauncher.openUrl({ url: FNF_PLAYSTORE_MARKET });
+        if (res && res.completed) return;
+      } catch {}
+      try {
+        const res = await AppLauncher.openUrl({ url: FNF_PLAYSTORE_URL });
+        if (res && res.completed) return;
+      } catch {}
     }
 
-    // Android: attempt market:// intent, then fallback to web
-    try {
-      const res = await AppLauncher.openUrl({ url: FNF_PLAYSTORE_MARKET });
-      if (res && res.completed) return;
-    } catch {}
-
+    // Web / browser fallback: open the official search / store page in new tab
     if (typeof window !== "undefined") {
-      window.open(FNF_PLAYSTORE_URL, "_system");
+      window.open("https://play.google.com/store/search?q=fnf&c=apps&h", "_blank");
     }
   }
 
@@ -122,5 +160,25 @@ export class CapacitorAppLauncher {
    */
   static async launchBaseGame(): Promise<boolean> {
     return this.launchApp(FNF_MOBILE_PACKAGE);
+  }
+
+  /**
+   * Prompts user to uninstall Friday Night Funkin' Base Game using the native OS dialog on Android,
+   * or redirects to store as fallback.
+   */
+  static async uninstallBaseGame(): Promise<void> {
+    if (Capacitor.isNativePlatform()) {
+      try {
+        const { registerPlugin } = await import("@capacitor/core");
+        const AppManager = registerPlugin<any>("AppManager");
+        await AppManager.uninstallPackage({ packageName: FNF_MOBILE_PACKAGE });
+        await this.setAppInstalledCache(FNF_MOBILE_PACKAGE, false);
+        return;
+      } catch (e) {
+        console.warn("AppManager.uninstallPackage failed:", e);
+      }
+    }
+    await this.setAppInstalledCache(FNF_MOBILE_PACKAGE, false);
+    await this.openBaseGameStore();
   }
 }

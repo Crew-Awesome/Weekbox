@@ -7,6 +7,14 @@ import {
   extractModIdOrUrl,
   handleDirectModLookup,
 } from "@utils";
+import { getSupportedEngineCategories } from "../../../core/services/gamebanana/constants";
+
+const SORT_OPTIONS = [
+  { label: "Popular", value: "popular", icon: <Star className="w-3.5 h-3.5" /> },
+  { label: "Newest", value: "new", icon: <Sparkles className="w-3.5 h-3.5" /> },
+  { label: "Most Ripped", value: "ripe", icon: <Flame className="w-3.5 h-3.5" /> },
+  { label: "Recently Updated", value: "updated", icon: <RefreshCcw className="w-3.5 h-3.5" /> },
+];
 
 interface HomeSearchbarProps {
   onSearchSubmit: (query: string) => void;
@@ -44,23 +52,30 @@ export const HomeSearchbar: React.FC<HomeSearchbarProps> = ({
     const mainElement = document.querySelector("main");
     if (!mainElement) return;
 
+    const TOP_THRESHOLD = 90;
+    const SCROLL_DELTA = 15;
+
     const handleScroll = () => {
       const currentScrollY = mainElement.scrollTop;
 
-      if (currentScrollY <= 0) {
+      // Keep searchbar unconditionally visible near the top of the page
+      if (currentScrollY <= TOP_THRESHOLD) {
         setIsSearchVisible(true);
         lastScrollY.current = currentScrollY;
         return;
       }
 
-      if (currentScrollY > lastScrollY.current && currentScrollY > 50) {
+      const delta = currentScrollY - lastScrollY.current;
+
+      // Only toggle on substantial scroll movements (hysteresis) to prevent jitter/limbo
+      if (delta > SCROLL_DELTA) {
         setIsSearchVisible(false);
         setShowFilters(false);
-      } else if (currentScrollY < lastScrollY.current) {
+        lastScrollY.current = currentScrollY;
+      } else if (delta < -SCROLL_DELTA) {
         setIsSearchVisible(true);
+        lastScrollY.current = currentScrollY;
       }
-
-      lastScrollY.current = currentScrollY;
     };
 
     mainElement.addEventListener("scroll", handleScroll, { passive: true });
@@ -80,7 +95,7 @@ export const HomeSearchbar: React.FC<HomeSearchbarProps> = ({
   };
 
   const filterButton = (
-    <div className="relative z-50" ref={filterRef}>
+    <div className="hidden md:block relative z-50" ref={filterRef}>
       <button
         onClick={() => setShowFilters(!showFilters)}
         title="Filter & Sort"
@@ -132,20 +147,89 @@ export const HomeSearchbar: React.FC<HomeSearchbarProps> = ({
 
   return (
     <div
-      className={`sticky top-0 z-50 w-full transition-transform duration-300 ease-in-out ${
+      className={`sticky top-0 z-30 w-full pt-10 md:pt-0 bg-[var(--wb-surface-container)]/70 backdrop-blur-xl border-b md:border-b-0 border-[var(--wb-outline-variant)]/20 shadow-sm md:bg-transparent md:backdrop-blur-none transition-all duration-300 ease-in-out md:${
         isSearchVisible ? "translate-y-0" : "-translate-y-full"
       }`}
     >
-      <Shared.molecules.Searchbar
-        placeholders={[
-          "Paste your favorite mod's ID...",
-          "Search for mods...",
-          "Search on GameBanana...",
-        ]}
-        filterButton={filterButton}
-        initialValue={searchQuery}
-        onSearch={handleSearch}
-      />
+      <div
+        className={`transition-all duration-300 ease-in-out overflow-hidden md:overflow-visible md:max-h-none md:opacity-100 ${
+          isSearchVisible
+            ? "max-h-16 opacity-100"
+            : "max-md:max-h-0 max-md:opacity-0 max-md:pointer-events-none"
+        }`}
+      >
+        <Shared.molecules.Searchbar
+          placeholders={[
+            "Paste your favorite mod's ID...",
+            "Search for mods...",
+            "Search on GameBanana...",
+          ]}
+          filterButton={filterButton}
+          initialValue={searchQuery}
+          onSearch={handleSearch}
+        />
+      </div>
+
+      {/* Mobile Filter Carousel: transparent background inheriting parent blur */}
+      <div className="md:hidden w-full overflow-x-auto no-scrollbar py-2 px-4 bg-transparent flex items-center gap-2 touch-pan-x">
+        {/* Sort Options */}
+        {SORT_OPTIONS.map((opt) => {
+          const isActive = sortFilter === opt.value;
+          return (
+            <button
+              key={opt.value}
+              type="button"
+              onClick={() => setSortFilter(opt.value)}
+              className={`shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs transition-colors cursor-pointer select-none border ${
+                isActive
+                  ? "bg-[var(--wb-primary)] text-[var(--wb-on-primary)] border-[var(--wb-primary)] font-semibold shadow-sm"
+                  : "bg-[var(--wb-surface-container-high)] text-[var(--wb-on-surface-variant)] border-[var(--wb-outline-variant)]/60 hover:bg-[var(--wb-surface-container-highest)]"
+              }`}
+            >
+              {opt.icon}
+              <span>{opt.label}</span>
+            </button>
+          );
+        })}
+
+        <div className="h-4 w-[1px] bg-[var(--wb-outline-variant)]/60 shrink-0 mx-0.5" />
+
+        {/* Engine Categories (only pslice and vslice on mobile) */}
+        {getSupportedEngineCategories(true).map((cat) => {
+          const isSelected = categoryFilter.includes(cat.id);
+          return (
+            <button
+              key={cat.id}
+              type="button"
+              onClick={() => {
+                if (isSelected) {
+                  const remaining = categoryFilter.filter((id) => id !== cat.id);
+                  setCategoryFilter(remaining.length === 0 ? ["all"] : remaining);
+                } else {
+                  setCategoryFilter([
+                    ...categoryFilter.filter((id) => id !== "all"),
+                    cat.id,
+                  ]);
+                }
+              }}
+              className={`shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs transition-colors cursor-pointer select-none border ${
+                isSelected
+                  ? "bg-[var(--wb-primary)] text-[var(--wb-on-primary)] border-[var(--wb-primary)] font-semibold shadow-sm"
+                  : "bg-[var(--wb-surface-container-high)] text-[var(--wb-on-surface-variant)] border-[var(--wb-outline-variant)]/60 hover:bg-[var(--wb-surface-container-highest)]"
+              }`}
+            >
+              {cat.icon && (
+                <img
+                  src={cat.icon}
+                  alt=""
+                  className="w-3.5 h-3.5 object-contain"
+                />
+              )}
+              <span>{cat.name}</span>
+            </button>
+          );
+        })}
+      </div>
     </div>
   );
 };

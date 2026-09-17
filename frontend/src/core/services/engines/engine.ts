@@ -9,7 +9,7 @@ export class EngineService implements IEngineService {
   private readonly provider: IEngineService;
 
   constructor(provider?: IEngineService) {
-    this.provider = provider || platform;
+    this.provider = provider || platform.engines;
   }
 
   async downloadEngine(

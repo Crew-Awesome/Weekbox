@@ -17,6 +17,7 @@ import { settingsService } from "./services/settings/settings";
 export * from "@platform";
 export * from "@contracts";
 export * from "./container";
+export * from "./context";
 export * from "./services/gamebanana/types";
 export * from "./services/translation";
 export * from "./services/engines/engine-releases";

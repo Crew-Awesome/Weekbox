@@ -68,6 +68,14 @@ export interface ModalProps {
    * @default 100
    */
   zIndex?: number;
+  /**
+   * If true, hides the top-right close button completely.
+   */
+  hideCloseButton?: boolean;
+  /**
+   * If true, hides the top-right close button on mobile screens (< 768px).
+   */
+  hideCloseButtonMobile?: boolean;
 }
 
 export const Modal: React.FC<ModalProps> = ({
@@ -85,6 +93,8 @@ export const Modal: React.FC<ModalProps> = ({
   showCirclePattern = false,
   backdropImage,
   zIndex = 100,
+  hideCloseButton = false,
+  hideCloseButtonMobile = false,
 }) => {
   const [isRendered, setIsRendered] = useState(isOpen);
   const [isVisible, setIsVisible] = useState(false);
@@ -115,7 +125,35 @@ export const Modal: React.FC<ModalProps> = ({
       }
     };
     window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
+
+    let backListenerHandle: { remove: () => Promise<void> } | null = null;
+    let isSubscribed = true;
+
+    // Listen to Android hardware / gesture Back button via Capacitor
+    import("@capacitor/app")
+      .then(({ App }) => {
+        if (!isSubscribed) return;
+        App.addListener("backButton", () => {
+          handleClose();
+        })
+          .then((handle) => {
+            if (!isSubscribed) {
+              handle.remove();
+            } else {
+              backListenerHandle = handle;
+            }
+          })
+          .catch(() => {});
+      })
+      .catch(() => {});
+
+    return () => {
+      isSubscribed = false;
+      window.removeEventListener("keydown", handleKeyDown);
+      if (backListenerHandle) {
+        backListenerHandle.remove();
+      }
+    };
   }, [isOpen, handleClose]);
 
   const prevIsOpenRef = React.useRef(false);
@@ -258,13 +296,17 @@ export const Modal: React.FC<ModalProps> = ({
         </div>
 
         <div className="relative flex flex-col z-10 text-[var(--wb-on-surface)] h-full overflow-hidden">
-          <button
-            onClick={handleClose}
-            className="absolute top-4 right-4 p-2 rounded-full text-[var(--wb-icon-default)] hover:text-[var(--wb-icon-hover)] hover:bg-[var(--wb-surface-bright)] transition-colors z-[15]"
-            aria-label="Close modal"
-          >
-            <X className="w-5 h-5" />
-          </button>
+          {!hideCloseButton && (
+            <button
+              onClick={handleClose}
+              className={`absolute top-4 right-4 p-2 rounded-full text-[var(--wb-icon-default)] hover:text-[var(--wb-icon-hover)] hover:bg-[var(--wb-surface-bright)] transition-colors z-[15] ${
+                hideCloseButtonMobile ? "hidden md:flex" : ""
+              }`}
+              aria-label="Close modal"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          )}
 
           <div className={contentClassName}>
             {children}

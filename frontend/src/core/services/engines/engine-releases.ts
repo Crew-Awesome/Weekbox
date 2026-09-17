@@ -10,6 +10,7 @@ export interface EngineReleaseItem {
   assetSize?: number;
   isNightly?: boolean;
   prerelease?: boolean;
+  previewMedia?: string[];
 }
 
 const CACHE_PREFIX = "weekbox_engine_releases_v2_";

@@ -43,3 +43,28 @@ export interface ModItem {
   isInstalled?: boolean;
   favorite?: boolean;
 }
+
+/**
+ * Metadata representation of a locally installed mod.
+ */
+export interface InstalledMod extends ModItem {
+  installed: boolean;
+  installedAt: number;
+  installPath: string;
+  gameId?: number;
+  thumbnailBase64?: string;
+  timeAgo?: string;
+  userPfp?: string;
+  userId?: number;
+}
+
+/**
+ * Payload required to register an installed mod into local persistence.
+ */
+export type RegisterInstalledModPayload = Partial<InstalledMod> & {
+  id: number | string;
+  name?: string;
+  title?: string;
+  thumbnail?: string;
+  [key: string]: any;
+};

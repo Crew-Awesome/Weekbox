@@ -11,6 +11,29 @@ interface SearchEasterEggProps {
   searchQuery: string;
 }
 
+const SEEN_EGGS_KEY = "weekbox_seen_easter_eggs";
+
+const getSeenEasterEggs = (): string[] => {
+  try {
+    const data = localStorage.getItem(SEEN_EGGS_KEY);
+    return data ? JSON.parse(data) : [];
+  } catch {
+    return [];
+  }
+};
+
+const markEasterEggSeen = (id: string): void => {
+  try {
+    const seen = getSeenEasterEggs();
+    if (!seen.includes(id)) {
+      seen.push(id);
+      localStorage.setItem(SEEN_EGGS_KEY, JSON.stringify(seen));
+    }
+  } catch (err) {
+    console.error("Failed to save seen easter egg to localStorage", err);
+  }
+};
+
 /**
  * Listens to the displayed mods and triggers a GSAP-animated easter egg (confetti and main image) if a match is found.
  * 
@@ -45,13 +68,24 @@ export const SearchEasterEgg: React.FC<SearchEasterEggProps> = ({
       return;
     }
 
-    const topMods = mods.slice(0, 10);
+    const seenEggs = getSeenEasterEggs();
+    const availableEggs = SEARCH_EASTER_EGGS.filter(
+      (egg) => !seenEggs.includes(egg.id)
+    );
 
-    const matchingEggs = SEARCH_EASTER_EGGS.filter((egg) => egg.match(topMods));
+    if (availableEggs.length === 0) {
+      setActiveEgg(null);
+      return;
+    }
+
+    const topMods = mods.slice(0, 10);
+    const matchingEggs = availableEggs.filter((egg) => egg.match(topMods));
 
     if (matchingEggs.length > 0) {
       const randomIndex = Math.floor(Math.random() * matchingEggs.length);
-      setActiveEgg(matchingEggs[randomIndex]);
+      const chosenEgg = matchingEggs[randomIndex];
+      markEasterEggSeen(chosenEgg.id);
+      setActiveEgg(chosenEgg);
     } else {
       setActiveEgg(null);
     }
@@ -151,7 +185,7 @@ export const SearchEasterEgg: React.FC<SearchEasterEggProps> = ({
   return (
     <div
       ref={containerRef}
-      className="fixed inset-0 pointer-events-none z-[100] overflow-hidden"
+      className="fixed inset-0 pointer-events-none z-[38] overflow-hidden"
     >
       {confettiArray.map((imgSrc, i) => (
         <img

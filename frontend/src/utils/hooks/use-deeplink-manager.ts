@@ -2,6 +2,8 @@ import { useEffect, useRef } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import Core from "@core";
 import { useAppStore } from "../../store";
+import { Capacitor } from "@capacitor/core";
+import { App } from "@capacitor/app";
 
 /**
  * Hook lógico invisible que atrapa los enlaces profundos (Deeplinks).
@@ -83,6 +85,37 @@ export function useDeeplinkManager() {
     // Check startup deeplink on initial mount
     checkDeeplink(undefined, true);
 
+    // Capacitor native startup launch URL
+    if (Capacitor.isNativePlatform()) {
+      App.getLaunchUrl()
+        .then((launchUrl) => {
+          if (launchUrl?.url) {
+            console.log("[useDeeplinkManager] Capacitor launchUrl:", launchUrl.url);
+            checkDeeplink([launchUrl.url], true);
+          }
+        })
+        .catch((err) => {
+          console.warn("[useDeeplinkManager] getLaunchUrl error:", err);
+        });
+    }
+
+    // Capacitor appUrlOpen listener for when app is running / opened from background
+    let removeCapacitorListener: (() => void) | null = null;
+    if (Capacitor.isNativePlatform()) {
+      App.addListener("appUrlOpen", (eventData: { url: string }) => {
+        if (eventData?.url) {
+          console.log("[useDeeplinkManager] Capacitor appUrlOpen event:", eventData.url);
+          checkDeeplink([eventData.url], false);
+        }
+      })
+        .then((handle) => {
+          removeCapacitorListener = () => handle.remove();
+        })
+        .catch((err) => {
+          console.warn("[useDeeplinkManager] addListener appUrlOpen error:", err);
+        });
+    }
+
     const cleanupListenerNative = Core.platform.onEvent(
       "newInstance",
       (eventData: any) => {
@@ -102,6 +135,9 @@ export function useDeeplinkManager() {
     return () => {
       cleanupListenerNative();
       cleanupListenerCustom();
+      if (removeCapacitorListener) {
+        removeCapacitorListener();
+      }
     };
   }, [navigate, setActiveModId]);
 

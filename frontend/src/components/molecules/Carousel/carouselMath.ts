@@ -20,29 +20,31 @@ export function calculateVisuals(
 
   if (totalItems === 0) return layouts;
 
+  const mod = (n: number, m: number) => ((n % m) + m) % m;
+
   if (isMobile) {
     const p_lower = Math.floor(p_continuous);
     const fraction = p_continuous - p_lower;
 
-    let idxA, idxB, idxC;
+    let idxA: number, idxB: number, idxC: number;
     if (isFinite) {
       idxA = p_lower - 1;
       idxB = p_lower;
       idxC = p_lower + 1;
     } else {
-      idxA = (p_lower - 1 + totalItems) % totalItems;
-      idxB = p_lower % totalItems;
-      idxC = (p_lower + 1) % totalItems;
+      idxA = mod(p_lower - 1, totalItems);
+      idxB = mod(p_lower, totalItems);
+      idxC = mod(p_lower + 1, totalItems);
     }
 
     if ((idxA >= 0 && idxA < totalItems) || !isFinite) {
-      layouts[idxA] = { w: 100, x: -110 - fraction * 110, display: "block" };
+      layouts[idxA] = { w: 100, x: -100 - fraction * 100, display: "block" };
     }
     if ((idxB >= 0 && idxB < totalItems) || !isFinite) {
-      layouts[idxB] = { w: 100, x: -(fraction * 110), display: "block" };
+      layouts[idxB] = { w: 100, x: -(fraction * 100), display: "block" };
     }
     if ((idxC >= 0 && idxC < totalItems) || !isFinite) {
-      layouts[idxC] = { w: 100, x: 110 - fraction * 110, display: "block" };
+      layouts[idxC] = { w: 100, x: 100 - fraction * 100, display: "block" };
     }
 
     return layouts;
@@ -55,7 +57,7 @@ export function calculateVisuals(
   const p_lower = Math.floor(p_continuous);
   const fraction = p_continuous - p_lower;
 
-  let idxA, idxB, idxC, idxD;
+  let idxA: number, idxB: number, idxC: number, idxD: number;
 
   if (isFinite) {
     idxA = p_lower - 1;
@@ -63,10 +65,10 @@ export function calculateVisuals(
     idxC = p_lower + 1;
     idxD = p_lower + 2;
   } else {
-    idxA = (p_lower - 1 + totalItems) % totalItems;
-    idxB = p_lower % totalItems;
-    idxC = (p_lower + 1) % totalItems;
-    idxD = (p_lower + 2) % totalItems;
+    idxA = mod(p_lower - 1, totalItems);
+    idxB = mod(p_lower, totalItems);
+    idxC = mod(p_lower + 1, totalItems);
+    idxD = mod(p_lower + 2, totalItems);
   }
 
   if ((idxA >= 0 && idxA < totalItems) || !isFinite) {

@@ -1,4 +1,5 @@
 import type { WebTransport } from "../web/transport";
+import type { InstalledMod, RegisterInstalledModPayload } from "@contracts";
 import { compressImageToWebpBase64 } from "../../../utils/image-processor";
 import { CapacitorJsonStorage } from "./json-storage";
 
@@ -14,12 +15,12 @@ export class CapacitorModRegistry {
     this.transport = transport;
   }
 
-  async getInstalledMods(): Promise<any[]> {
-    const list = await CapacitorJsonStorage.readJson<any[]>(this.registryPath, []);
+  async getInstalledMods(): Promise<InstalledMod[]> {
+    const list = await CapacitorJsonStorage.readJson<InstalledMod[]>(this.registryPath, []);
     return Array.isArray(list) ? list : [];
   }
 
-  async getInstalledMod(modId: string): Promise<any | null> {
+  async getInstalledMod(modId: string): Promise<InstalledMod | null> {
     const list = await this.getInstalledMods();
     return list.find((m) => String(m.id) === String(modId)) || null;
   }
@@ -29,7 +30,7 @@ export class CapacitorModRegistry {
     return list.some((m) => String(m.id) === String(modId));
   }
 
-  async registerInstalledMod(modData: any): Promise<void> {
+  async registerInstalledMod(modData: RegisterInstalledModPayload): Promise<void> {
     const safeName = (modData.name || modData.title || "unknown")
       .normalize("NFD")
       .replace(/[\u0300-\u036f]/g, "")
@@ -41,18 +42,18 @@ export class CapacitorModRegistry {
     let compressedThumb = "";
     if (modData.thumbnail || modData.img) {
       try {
-        compressedThumb = await compressImageToWebpBase64(modData.thumbnail || modData.img);
+        compressedThumb = await compressImageToWebpBase64((modData.thumbnail || modData.img)!);
       } catch {}
     }
 
     const entry = {
       installed: true,
       installedAt: modData.installedAt || Date.now(),
-      id: modData.id,
+      id: Number(modData.id),
       gameId: modData.gameId,
-      name: modData.name || modData.title,
-      title: modData.name || modData.title,
-      description: modData.description,
+      name: modData.name || modData.title || "Mod",
+      title: modData.name || modData.title || "Mod",
+      description: modData.description || "",
       htmlBody: modData.htmlBody,
       installPath,
       author: modData.author,
@@ -77,7 +78,7 @@ export class CapacitorModRegistry {
       isNsfw: modData.isNsfw,
       previewMedia: modData.previewMedia,
       files: modData.files,
-      img: modData.img,
+      img: modData.img || "",
       icon: modData.icon,
       thumbnailBase64: compressedThumb || modData.thumbnailBase64,
       favorite: modData.favorite !== undefined ? modData.favorite : false,
@@ -167,8 +168,8 @@ export class CapacitorModRegistry {
     }
   }
 
-  async updateInstalledMod(modId: string, updates: Record<string, any>): Promise<any | null> {
-    let updatedEntry: any = null;
+  async updateInstalledMod(modId: string, updates: Partial<InstalledMod>): Promise<InstalledMod | null> {
+    let updatedEntry: InstalledMod | null = null;
     try {
       const registry = await this.getInstalledMods();
       const idx = registry.findIndex((m) => String(m.id) === String(modId));

@@ -1,8 +1,14 @@
-import type { IModService, DownloadProgressCallback } from "@contracts";
+import type {
+  IModService,
+  DownloadProgressCallback,
+  InstalledMod,
+  RegisterInstalledModPayload,
+  IStorageService,
+} from "@contracts";
 import { DownloadStatus } from "@contracts";
 import type { DesktopTransport } from "./transport";
-import type { DesktopStorage } from "./storage";
 import { DesktopModRegistry } from "./mod-registry";
+import { openPathInExplorer } from "./engines/folder";
 
 /**
  * Mod management operations for Desktop environment (SRP).
@@ -10,17 +16,24 @@ import { DesktopModRegistry } from "./mod-registry";
  */
 export class DesktopMods implements IModService {
   private transport: DesktopTransport;
-  private storage: DesktopStorage;
+  private storage: IStorageService;
   readonly registry: DesktopModRegistry;
 
   constructor(
     transport: DesktopTransport,
-    storage: DesktopStorage,
+    storage: IStorageService,
     registry?: DesktopModRegistry
   ) {
     this.transport = transport;
     this.storage = storage;
     this.registry = registry || new DesktopModRegistry(transport, storage);
+
+    // Event-driven decoupled synchronization: listen to storage migration without circular dependency
+    this.transport.onEvent("storage:migrated", async (event: any) => {
+      if (event?.type === "mods" && event?.targetPath) {
+        await this.registry.remapInstalledModPaths(event.targetPath, event.selectedItemNames).catch(() => {});
+      }
+    });
   }
 
   async downloadMod(
@@ -129,7 +142,7 @@ export class DesktopMods implements IModService {
     }
   }
 
-  async registerInstalledMod(modData: any): Promise<void> {
+  async registerInstalledMod(modData: RegisterInstalledModPayload): Promise<void> {
     return this.registry.registerInstalledMod(modData);
   }
 
@@ -137,11 +150,11 @@ export class DesktopMods implements IModService {
     return this.registry.isModInstalled(modId);
   }
 
-  async getInstalledMod(modId: string): Promise<any | null> {
+  async getInstalledMod(modId: string): Promise<InstalledMod | null> {
     return this.registry.getInstalledMod(modId);
   }
 
-  async getInstalledMods(): Promise<any[]> {
+  async getInstalledMods(): Promise<InstalledMod[]> {
     return this.registry.getInstalledMods();
   }
 
@@ -175,18 +188,14 @@ export class DesktopMods implements IModService {
       const dirContents = await this.transport.call("fs.readDirectory" as any, { path: modsDir });
       if (Array.isArray(dirContents)) {
         const match = dirContents.find((f: any) => f.entry.startsWith(`mod_${modId}_`));
-        if (match && window.Neutralino?.os?.open) {
-          await window.Neutralino.os.open(`${modsDir}/${match.entry}`);
+        if (match) {
+          await openPathInExplorer(this.transport, `${modsDir}/${match.entry}`);
           return;
         }
       }
-      if (window.Neutralino?.os?.open) {
-        await window.Neutralino.os.open(modsDir);
-      }
+      await openPathInExplorer(this.transport, modsDir);
     } catch {
-      if (window.Neutralino?.os?.open) {
-        await window.Neutralino.os.open(modsDir);
-      }
+      await openPathInExplorer(this.transport, modsDir);
     }
   }
 
@@ -194,7 +203,7 @@ export class DesktopMods implements IModService {
     return this.registry.setModFavorite(modId, isFavorite);
   }
 
-  async updateInstalledMod(modId: string, updates: Record<string, any>): Promise<any | null> {
+  async updateInstalledMod(modId: string, updates: Partial<InstalledMod>): Promise<InstalledMod | null> {
     return this.registry.updateInstalledMod(modId, updates);
   }
 

@@ -4,6 +4,7 @@ import type { GameBananaMod } from "../types";
 import type { FeaturedSchema, FeaturedModRaw } from "./types";
 import { FNF_GAME_ID } from "../constants";
 import { isMobilePlatform } from "../../../platform";
+import { getMods } from "../api/getMods";
 
 export const FEATURED_URL =
   "https://raw.githubusercontent.com/Crew-Awesome/weekbox.featured/main/public/featured.json";
@@ -36,13 +37,65 @@ export class FeaturedService {
       }
 
       let mods = this.flatten(response);
-      if (isMobilePlatform()) {
+      const isMobile = isMobilePlatform();
+      if (isMobile) {
         mods = mods.filter((m) => {
           const eid = String(m.engineId || "").toLowerCase();
           const title = String(m.title || "").toLowerCase();
           return eid !== "executable" && eid !== "3827" && !title.endsWith(".exe");
         });
       }
+
+      // Guarantee each ranking category has at least 4 cards
+      const categoryLabels = Array.from(new Set(response.rankings.map((r) => r.label)));
+      const countsByLabel: Record<string, number> = {};
+      for (const m of mods) {
+        const label = m.__featuredLabel || "Featured";
+        countsByLabel[label] = (countsByLabel[label] || 0) + 1;
+      }
+
+      const needsBackfill = categoryLabels.some((lbl) => (countsByLabel[lbl] || 0) < 4);
+
+      if (needsBackfill) {
+        try {
+          const candidateMods = await getMods("popular", 1, 30);
+          const validCandidates = candidateMods.filter((c) => {
+            const eid = String(c.engineId || "").toLowerCase();
+            const title = String(c.title || "").toLowerCase();
+            return eid !== "executable" && eid !== "3827" && !title.endsWith(".exe");
+          });
+
+          const existingIds = new Set(mods.map((m) => m.id));
+          const enrichedMods: GameBananaMod[] = [];
+
+          for (const label of categoryLabels) {
+            const currentForLabel = mods.filter((m) => m.__featuredLabel === label);
+            enrichedMods.push(...currentForLabel);
+            const deficit = 4 - currentForLabel.length;
+            if (deficit > 0) {
+              let added = 0;
+              for (const cand of validCandidates) {
+                if (!existingIds.has(cand.id)) {
+                  existingIds.add(cand.id);
+                  enrichedMods.push({
+                    ...cand,
+                    __isCommunityPick: true,
+                    __featuredLabel: label,
+                  } as any);
+                  added++;
+                  if (added >= deficit) break;
+                }
+              }
+            }
+          }
+          if (enrichedMods.length > 0) {
+            mods = enrichedMods;
+          }
+        } catch (e) {
+          console.warn("Could not backfill featured mods:", e);
+        }
+      }
+
       if (mods.length === 0) throw new Error("No featured mods");
 
       return mods;

@@ -1,8 +1,9 @@
-import React, { useMemo } from "react";
+import React, { useMemo, useState, useEffect } from "react";
 import DOMPurify from "dompurify";
 import { FileText, Calendar, Loader2, Languages } from "lucide-react";
 import type { EngineReleaseItem } from "@core";
 import { useTranslationToggle } from "../hooks/use-translation-toggle";
+import { ModMediaCarousel } from "../../home/components/mod-details-modal/components/mod-media-carousel";
 
 interface InstancesMarkdownViewerProps {
   release: EngineReleaseItem | null;
@@ -50,6 +51,35 @@ export const InstancesMarkdownViewer: React.FC<InstancesMarkdownViewerProps> = (
   release,
   isLoading = false,
 }) => {
+  const [activeMediaIndex, setActiveMediaIndex] = useState(0);
+  const [isHovered, setIsHovered] = useState(false);
+
+  const mediaList = useMemo(() => {
+    return Array.isArray(release?.previewMedia) ? release.previewMedia : [];
+  }, [release?.previewMedia]);
+
+  useEffect(() => {
+    setActiveMediaIndex(0);
+  }, [release?.id]);
+
+  useEffect(() => {
+    if (mediaList.length <= 1 || isHovered) return;
+    const interval = setInterval(() => {
+      setActiveMediaIndex((prev) => (prev + 1) % mediaList.length);
+    }, 4500);
+    return () => clearInterval(interval);
+  }, [mediaList.length, isHovered]);
+
+  const handleNextMedia = () => {
+    if (!mediaList.length) return;
+    setActiveMediaIndex((prev) => (prev + 1) % mediaList.length);
+  };
+
+  const handlePrevMedia = () => {
+    if (!mediaList.length) return;
+    setActiveMediaIndex((prev) => (prev - 1 + mediaList.length) % mediaList.length);
+  };
+
   const {
     isTranslating,
     showTranslated,
@@ -93,6 +123,49 @@ export const InstancesMarkdownViewer: React.FC<InstancesMarkdownViewerProps> = (
 
   return (
     <div className="w-full p-4 sm:p-8 md:p-12 lg:p-16">
+      {/** Media Carousel for releases with preview banners (e.g. mobile V-Slice / Play Store) */}
+      {mediaList.length > 0 && (
+        <div
+          className="w-full mb-8"
+          onMouseEnter={() => setIsHovered(true)}
+          onMouseLeave={() => setIsHovered(false)}
+        >
+          <ModMediaCarousel
+            media={mediaList}
+            fallbackImage={mediaList[0]}
+            title={release.name || `Version ${release.version}`}
+            activeIndex={activeMediaIndex}
+            onPrev={handlePrevMedia}
+            onNext={handleNextMedia}
+            aspectRatioClassName="aspect-[16/9]"
+            roundedClassName="rounded-3xl"
+          />
+
+          {mediaList.length > 1 && (
+            <div className="flex gap-3 mt-4 overflow-x-auto pb-2.5 scrollbar-thin scrollbar-thumb-[var(--wb-outline-variant)]/40">
+              {mediaList.map((src, i) => (
+                <button
+                  key={`thumb-${i}`}
+                  type="button"
+                  onClick={() => setActiveMediaIndex(i)}
+                  className={`relative shrink-0 h-16 sm:h-20 aspect-[16/9] rounded-2xl overflow-hidden border-2 transition-all cursor-pointer ${
+                    activeMediaIndex === i
+                      ? "border-[var(--wb-primary)] opacity-100 scale-[1.02]"
+                      : "border-transparent opacity-60 hover:opacity-100"
+                  }`}
+                >
+                  <img
+                    src={src}
+                    alt=""
+                    className="w-full h-full object-cover"
+                  />
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Release Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 sm:pb-8 border-b border-[var(--wb-outline-variant)]/20 mb-4 sm:mb-8">
         <div>

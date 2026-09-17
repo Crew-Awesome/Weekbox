@@ -1,5 +1,5 @@
 import type { DesktopTransport } from "./transport";
-import type { DesktopStorage } from "./storage";
+import type { IStorageService, InstalledMod, RegisterInstalledModPayload } from "@contracts";
 import { getDesktopBasePath } from "./settings";
 import { compressImageToWebpBase64 } from "../../../utils/image-processor";
 
@@ -9,9 +9,9 @@ import { compressImageToWebpBase64 } from "../../../utils/image-processor";
  */
 export class DesktopModRegistry {
   private transport: DesktopTransport;
-  private storage: DesktopStorage;
+  private storage: Pick<IStorageService, "getModsPath">;
 
-  constructor(transport: DesktopTransport, storage: DesktopStorage) {
+  constructor(transport: DesktopTransport, storage: Pick<IStorageService, "getModsPath">) {
     this.transport = transport;
     this.storage = storage;
   }
@@ -21,13 +21,13 @@ export class DesktopModRegistry {
     return `${basePath}/data/mod-installed.json`;
   }
 
-  async getInstalledMods(): Promise<any[]> {
+  async getInstalledMods(): Promise<InstalledMod[]> {
     const registryPath = await this.getRegistryPath();
     try {
       const existing = await this.transport.call("fs.readFile" as any, { path: registryPath });
       const registry = JSON.parse(existing as unknown as string);
       if (Array.isArray(registry)) {
-        return registry;
+        return registry as InstalledMod[];
       }
     } catch {
       return [];
@@ -35,7 +35,7 @@ export class DesktopModRegistry {
     return [];
   }
 
-  async getInstalledMod(modId: string): Promise<any | null> {
+  async getInstalledMod(modId: string): Promise<InstalledMod | null> {
     const list = await this.getInstalledMods();
     return list.find((m) => String(m.id) === String(modId)) || null;
   }
@@ -54,7 +54,7 @@ export class DesktopModRegistry {
     return false;
   }
 
-  async registerInstalledMod(modData: any): Promise<void> {
+  async registerInstalledMod(modData: RegisterInstalledModPayload): Promise<void> {
     const basePath = await getDesktopBasePath();
     const dataDir = `${basePath}/data`;
     const registryPath = `${dataDir}/mod-installed.json`;
@@ -71,17 +71,17 @@ export class DesktopModRegistry {
 
     let compressedThumb = "";
     if (modData.thumbnail || modData.img) {
-      compressedThumb = await compressImageToWebpBase64(modData.thumbnail || modData.img);
+      compressedThumb = await compressImageToWebpBase64((modData.thumbnail || modData.img)!);
     }
 
     const entry = {
       installed: true,
       installedAt: modData.installedAt || Date.now(),
-      id: modData.id,
+      id: Number(modData.id),
       gameId: modData.gameId,
-      name: modData.name || modData.title,
-      title: modData.name || modData.title,
-      description: modData.description,
+      name: modData.name || modData.title || "Mod",
+      title: modData.name || modData.title || "Mod",
+      description: modData.description || "",
       htmlBody: modData.htmlBody,
       installPath,
       author: modData.author,
@@ -106,7 +106,7 @@ export class DesktopModRegistry {
       isNsfw: modData.isNsfw,
       previewMedia: modData.previewMedia,
       files: modData.files,
-      img: modData.img,
+      img: modData.img || "",
       icon: modData.icon,
       thumbnailBase64: compressedThumb || modData.thumbnailBase64,
       favorite: modData.favorite !== undefined ? modData.favorite : false,
@@ -237,9 +237,9 @@ export class DesktopModRegistry {
     } catch {}
   }
 
-  async updateInstalledMod(modId: string, updates: Record<string, any>): Promise<any | null> {
+  async updateInstalledMod(modId: string, updates: Partial<InstalledMod>): Promise<InstalledMod | null> {
     const registryPath = await this.getRegistryPath();
-    let updatedEntry: any = null;
+    let updatedEntry: InstalledMod | null = null;
     try {
       const existing = await this.transport.call("fs.readFile" as any, { path: registryPath });
       let registry = JSON.parse(existing as unknown as string);

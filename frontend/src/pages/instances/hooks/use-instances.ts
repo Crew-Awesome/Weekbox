@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import Core, { isMobilePlatform, CapacitorAppLauncher } from "@core";
+import Core, { platform, CapacitorAppLauncher } from "@core";
 import Utils from "@utils";
 import { ENGINE_CATEGORIES } from "../../../core/services/gamebanana/constants";
 import { useEngineReleases } from "./use-engine-releases";
@@ -12,6 +12,17 @@ import {
   useStorageMigrationStore,
 } from "../../../store";
 
+export const VSLICE_PLAYSTORE_SCREENSHOTS = [
+  "/assets/images/carousel-base/base-game-preview (1).webp",
+  "/assets/images/carousel-base/base-game-preview (2).webp",
+  "/assets/images/carousel-base/base-game-preview (3).webp",
+  "/assets/images/carousel-base/base-game-preview (4).webp",
+  "/assets/images/carousel-base/base-game-preview (5).webp",
+  "/assets/images/carousel-base/base-game-preview (6).webp",
+  "/assets/images/carousel-base/base-game-preview (7).webp",
+  "/assets/images/carousel-base/base-game-preview (8).webp",
+];
+
 export function useInstances() {
   const location = useLocation();
   const navigate = useNavigate();
@@ -21,7 +32,13 @@ export function useInstances() {
   const [sortOption, setSortOption] = useState<InstanceSortOption>("newest");
   const [onlyInstalled, setOnlyInstalled] = useState<boolean>(false);
 
-  const isMobile = useMemo(() => isMobilePlatform(), []);
+  const isMobile = useMemo(() => {
+    if (typeof window === "undefined") return false;
+    return (
+      platform.platformName === "capacitor" ||
+      /android|iphone|ipad|ipod/i.test(navigator.userAgent)
+    );
+  }, []);
   const isBaseGameMobile = useMemo(() => {
     return isMobile && selectedCategory.toLowerCase() === "vslice";
   }, [isMobile, selectedCategory]);
@@ -40,6 +57,15 @@ export function useInstances() {
 
   useEffect(() => {
     checkBaseGameStatus();
+    const handleFocus = () => {
+      checkBaseGameStatus();
+    };
+    window.addEventListener("focus", handleFocus);
+    document.addEventListener("visibilitychange", handleFocus);
+    return () => {
+      window.removeEventListener("focus", handleFocus);
+      document.removeEventListener("visibilitychange", handleFocus);
+    };
   }, [checkBaseGameStatus]);
 
   const isExecutable = useMemo(() => {
@@ -56,16 +82,28 @@ export function useInstances() {
 
   const releases = useMemo(() => {
     if (isBaseGameMobile) {
-      const latest = rawReleases[0];
-      const ver = latest?.version || "0.5.3";
+      const ver = "0.8.8";
+      const body = `### About the Game
+Hey, hope you’re enjoying Funkin’ on the go! We’ve been hard at work to make the game better for you:
+
+- Story Mode & Freeplay featuring all official Weeks!
+- Custom touch controls tailored for mobile screens.
+- Secret cheat code input: push both thumbs onto the screen and apply as much pressure as possible!
+
+### What's New in v0.8.8
+- Android hotfixes and stability improvements.
+- Fixed chart file handling and audio backend crashes.
+- Shader rendering optimizations for mobile devices.`;
+
       return [
         {
-          id: "playstore-latest",
+          id: "playstore-0.8.8",
           version: ver,
-          name: `Friday Night Funkin' v${ver} (Play Store)`,
-          body: `### Friday Night Funkin' Mobile (Official)\n\nOfficial mobile release of Friday Night Funkin' by The Funkin' Crew, distributed on Google Play Store and Apple App Store.\n\n- Package: \`me.funkin.fnf\`\n- Latest detected store version: **v${ver}**\n\nClick the action button below to ${isBaseGameInstalled ? "launch the game" : "open the store page to download and install"}.`,
-          releasedAt: latest?.releasedAt || new Date().toISOString(),
-          downloadUrl: "https://play.google.com/store/apps/details?id=me.funkin.fnf",
+          name: `Friday Night Funkin' v${ver}`,
+          body,
+          releasedAt: "2026-08-28T00:00:00.000Z",
+          downloadUrl: "https://play.google.com/store/search?q=fnf&c=apps&h",
+          previewMedia: VSLICE_PLAYSTORE_SCREENSHOTS,
         },
       ];
     }
@@ -113,15 +151,21 @@ export function useInstances() {
         (c) => c.id.toLowerCase() === catParam || c.name.toLowerCase() === catParam
       );
       if (matchCat) {
-        setSelectedCategory(matchCat.id);
+        if (Core.isMobilePlatform() && (matchCat.id === "executable" || matchCat.id === "3827")) {
+          setSelectedCategory("vslice");
+        } else {
+          setSelectedCategory(matchCat.id);
+        }
       } else if (catParam === "executable" || catParam === "3827") {
-        setSelectedCategory("executable");
+        setSelectedCategory(Core.isMobilePlatform() ? "vslice" : "executable");
       }
 
       if (parts.length > 1) {
         const itemParam = parts[1];
         if (catParam === "executable" || catParam === "3827") {
-          setSelectedModId(itemParam);
+          if (!Core.isMobilePlatform()) {
+            setSelectedModId(itemParam);
+          }
         } else {
           setSelectedVersion(itemParam);
         }
@@ -173,7 +217,7 @@ export function useInstances() {
 
     Core.platform
       .getInstalledMods()
-      .then((mods) => {
+      .then((mods: any[]) => {
         if (!isMounted) return;
         const exes = (mods || []).filter((m: any) => {
           const eid = String(m.engineId || "").toLowerCase();
@@ -240,7 +284,7 @@ export function useInstances() {
 
     Core.platform
       .isEngineInstalled(selectedCategory, currentRelease.version)
-      .then((installed) => {
+      .then((installed: boolean) => {
         if (isMounted) {
           setInstalledEngineMap((prev) => ({
             ...prev,
@@ -537,6 +581,14 @@ export function useInstances() {
 
   const executeUninstallEngine = async () => {
     if (!currentRelease) return;
+    if (isBaseGameMobile) {
+      await CapacitorAppLauncher.uninstallBaseGame();
+      Utils.toast.info("Opening uninstallation dialog...", {
+        title: "Base Game",
+      });
+      return;
+    }
+
     if (isStorageMigrating) {
       Utils.toast.warning(
         "Cannot uninstall while storage migration is in progress. Please wait for the migration to complete.",

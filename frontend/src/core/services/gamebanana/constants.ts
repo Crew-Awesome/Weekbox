@@ -1,3 +1,5 @@
+import { platform, isMobilePlatform } from "../../platform";
+
 /**
  * @description The official GameBanana ID for Friday Night Funkin'
  */
@@ -63,3 +65,30 @@ export const ALLOW_NSFW = true;
  * @description The base URL for GameBanana API v11 requests.
  */
 export const GB_BASE_URL = "https://gamebanana.com/apiv11";
+
+/**
+ * @description Returns the engine categories allowed on the current platform.
+ * On mobile/Android, only pslice and vslice are available for category filtering and engine selection.
+ */
+export function getSupportedEngineCategories(isMobileOverride?: boolean): Array<{
+  key: number;
+  id: string;
+  name: string;
+  icon: string;
+}> {
+  const canLaunch = platform.capabilities.canLaunchProcesses;
+  const isMobile = isMobileOverride ?? (isMobilePlatform() || !canLaunch);
+  return Object.entries(ENGINE_CATEGORIES)
+    .filter(([_, cat]) => {
+      if (isMobile) {
+        return cat.id === "pslice" || cat.id === "vslice";
+      }
+      return true;
+    })
+    .map(([key, cat]) => ({
+      key: Number(key),
+      id: cat.id,
+      name: cat.name,
+      icon: cat.icon,
+    }));
+}

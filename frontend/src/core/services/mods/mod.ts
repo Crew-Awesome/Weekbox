@@ -1,4 +1,9 @@
-import type { IModService, DownloadProgressCallback } from "@contracts";
+import type {
+  IModService,
+  DownloadProgressCallback,
+  InstalledMod,
+  RegisterInstalledModPayload,
+} from "@contracts";
 import { platform } from "@platform";
 
 /**
@@ -9,7 +14,7 @@ export class ModService implements IModService {
   private readonly provider: IModService;
 
   constructor(provider?: IModService) {
-    this.provider = provider || platform;
+    this.provider = provider || platform.mods;
   }
 
   async downloadMod(
@@ -22,7 +27,7 @@ export class ModService implements IModService {
     return this.provider.downloadMod(url, modId, modName, onProgress, signal);
   }
 
-  async registerInstalledMod(modData: any): Promise<void> {
+  async registerInstalledMod(modData: RegisterInstalledModPayload): Promise<void> {
     return this.provider.registerInstalledMod(modData);
   }
 
@@ -30,11 +35,11 @@ export class ModService implements IModService {
     return this.provider.isModInstalled(modId);
   }
 
-  async getInstalledMod(modId: string): Promise<any | null> {
+  async getInstalledMod(modId: string): Promise<InstalledMod | null> {
     return this.provider.getInstalledMod(modId);
   }
 
-  async getInstalledMods(): Promise<any[]> {
+  async getInstalledMods(): Promise<InstalledMod[]> {
     return this.provider.getInstalledMods();
   }
 
@@ -50,7 +55,7 @@ export class ModService implements IModService {
     return this.provider.setModFavorite(modId, isFavorite);
   }
 
-  async updateInstalledMod(modId: string, updates: Record<string, any>): Promise<any | null> {
+  async updateInstalledMod(modId: string, updates: Partial<InstalledMod>): Promise<InstalledMod | null> {
     return this.provider.updateInstalledMod(modId, updates);
   }
 

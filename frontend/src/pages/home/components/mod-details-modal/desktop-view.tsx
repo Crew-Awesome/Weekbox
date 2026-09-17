@@ -483,7 +483,7 @@ export const DesktopView: React.FC<DesktopViewProps> = ({
     });
 
     if (displayCard.id) {
-      Core.platform.getInstalledMod(displayCard.id.toString()).then((mod) => {
+      Core.platform.getInstalledMod(displayCard.id.toString()).then((mod: any) => {
         setIsInstalled(Boolean(mod));
         if (mod?.installedAt) setLocalInstalledAt(mod.installedAt);
       }).catch(() => {});

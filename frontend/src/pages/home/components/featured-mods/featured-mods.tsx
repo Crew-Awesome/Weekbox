@@ -61,7 +61,7 @@ export const FeaturedMods: React.FC<FeaturedModsProps> = React.memo(({
         align="center"
       />
 
-      <div className="mx-0 sm:-mx-8 mt-4 overflow-hidden max-w-full">
+      <div className="-mx-8 sm:mx-0 mt-4 overflow-hidden w-[calc(100%+4rem)] sm:w-full">
         <Shared.molecules.Carousel
           isInfinite
           isAuto
@@ -93,14 +93,22 @@ export const FeaturedMods: React.FC<FeaturedModsProps> = React.memo(({
             const activeLabel = activeMod?.__featuredLabel || categories[0];
 
             const handlePrevCard = () => {
-              api.goToLogicalIndex(
-                (api.activeIndex - 1 + displayMods.length) %
-                  displayMods.length,
-              );
+              if (api.prev) {
+                api.prev();
+              } else {
+                api.goToLogicalIndex(
+                  (api.activeIndex - 1 + displayMods.length) %
+                    displayMods.length,
+                );
+              }
             };
 
             const handleNextCard = () => {
-              api.goToLogicalIndex((api.activeIndex + 1) % displayMods.length);
+              if (api.next) {
+                api.next();
+              } else {
+                api.goToLogicalIndex((api.activeIndex + 1) % displayMods.length);
+              }
             };
 
             return (

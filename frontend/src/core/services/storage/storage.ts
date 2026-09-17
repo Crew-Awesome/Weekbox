@@ -12,7 +12,7 @@ export class StorageService implements IStorageService {
   private readonly provider: IStorageService;
 
   constructor(provider?: IStorageService) {
-    this.provider = provider || platform;
+    this.provider = provider || platform.storage;
   }
 
   async showFolderDialog(title: string, defaultPath?: string): Promise<string | null> {

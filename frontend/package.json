@@ -10,9 +10,12 @@
     "preview": "vite preview",
     "test": "vitest run",
     "test:watch": "vitest",
-    "test:notifications": "vitest run test/notifications.test.ts"
+    "test:notifications": "vitest run test/notifications.test.ts",
+    "android:update": "npm run build && cd .. && npx cap sync android",
+    "android:run": "npm run build && cd .. && npx cap sync android && npx cap run android"
   },
   "dependencies": {
+    "@capacitor/app": "^8.0.0",
     "@capacitor/app-launcher": "^8.0.1",
     "@capacitor/core": "^8.5.2",
     "@capacitor/filesystem": "^8.1.3",

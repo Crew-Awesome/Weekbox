@@ -89,21 +89,23 @@ declare global {
 }
 
 /**
- * Composite Platform Bridge Interface (ISP / Backward Compatibility).
- * Composes specialized contracts into a unified bridge for existing components,
- * while allowing new components to depend only on specific segregated interfaces.
+ * Segregated Platform Bridge Interface (ISP / DIP).
+ * Composes specialized contracts into a structured bridge,
+ * allowing components and stores to consume only the specific interfaces they require.
  */
 export interface IPlatformBridge
   extends IPlatformLifecycle,
     IPlatformTransport,
-    IPlatformEvents,
-    IModService,
-    IEngineService,
-    IProcessLauncher,
-    IStorageService,
-    ISettingsService {
+    IPlatformEvents {
+  readonly mods: IModService;
+  readonly engines: IEngineService;
+  readonly process: IProcessLauncher;
+  readonly storage: IStorageService;
+  readonly settings: ISettingsService;
   readonly window: IWindowService;
   readonly notification: INotificationService;
-  /** Opens a URL in the browser */
+  /** Opens a URL or native path */
   openUrl(url: string): Promise<void>;
+  /** Dynamic property delegation for runtime extensibility */
+  [key: string]: any;
 }

@@ -1,5 +1,11 @@
 {
   "appId": "com.crewawesome.weekbox",
   "appName": "WeekBox",
-  "webDir": "app"
+  "webDir": "app",
+  "backgroundColor": "#0e1415",
+  "plugins": {
+    "Keyboard": {
+      "resize": "none"
+    }
+  }
 }

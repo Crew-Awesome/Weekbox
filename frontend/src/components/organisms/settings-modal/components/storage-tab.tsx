@@ -125,7 +125,7 @@ export const StorageTab: React.FC = () => {
             } catch {}
           }
 
-          const modsList: SelectableModalItem[] = (inspected.items || []).map((item) => {
+          const modsList: SelectableModalItem[] = (inspected.items || []).map((item: any) => {
             const matchedMod = installedMods.find((m: any) => {
               if (item.name.startsWith(`mod_${m.id}_`)) return true;
               if (m.installPath) {

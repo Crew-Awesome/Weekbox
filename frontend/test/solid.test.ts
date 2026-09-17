@@ -56,6 +56,15 @@ describe("SOLID Architecture Verification", () => {
       expect(typeof customModService.downloadMod).toBe("function");
       expect(typeof customModService.getInstalledMods).toBe("function");
     });
+
+    it("segregates window controls so UI components depend only on IWindowControls without geometry", () => {
+      const web = new WebAdapter();
+      // A component only needing window controls (minimize/close) can safely use IWindowControls
+      const windowControls = web.window;
+      expect(typeof windowControls.minimize).toBe("function");
+      expect(typeof windowControls.close).toBe("function");
+      expect(typeof windowControls.show).toBe("function");
+    });
   });
 
   describe("LSP (Liskov Substitution Principle)", () => {
@@ -206,6 +215,22 @@ describe("SOLID Architecture Verification", () => {
       expect(typeof Core.services.mods.getInstalledMods).toBe("function");
       expect(typeof Core.services.storage.getDefaultPaths).toBe("function");
       expect(typeof Core.services.settings.getSettings).toBe("function");
+    });
+
+    it("DesktopAdapter uses dynamic proxy delegation so sub-service methods are available without manual forwarders (OCP)", () => {
+      const desktop = new DesktopAdapter();
+      // Verifies dynamic resolution of methods from sub-services
+      expect(typeof desktop.isEngineInstalled).toBe("function");
+      expect(typeof desktop.getInstalledMods).toBe("function");
+      expect(typeof desktop.launchExecutable).toBe("function");
+      expect(typeof desktop.getDefaultPaths).toBe("function");
+    });
+
+    it("breaks circular dependency between DesktopStorage and DesktopMods", () => {
+      const desktop = new DesktopAdapter();
+      // DesktopStorage should have no setMods method or tight coupling to DesktopMods
+      expect((desktop.storage as any).setMods).toBeUndefined();
+      expect((desktop.storage as any).mods).toBeUndefined();
     });
   });
 });

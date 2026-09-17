@@ -1,5 +1,6 @@
 import { create } from "zustand";
-import Core from "@core";
+import type { IStorageService } from "@contracts";
+import { container } from "../core/container";
 import Utils from "@utils";
 import { useSettingsStore } from "./settings-store";
 
@@ -11,7 +12,11 @@ export interface MigrationProgress {
   remainingItems: number;
 }
 
-interface StorageMigrationStoreState {
+export interface StorageMigrationStoreDependencies {
+  storage: IStorageService;
+}
+
+export interface StorageMigrationStoreState {
   isMigrating: boolean;
   migrationType: "mods" | "engines" | null;
   progress: MigrationProgress | null;
@@ -23,8 +28,15 @@ interface StorageMigrationStoreState {
   ) => Promise<boolean>;
 }
 
-export const useStorageMigrationStore = create<StorageMigrationStoreState>(
-  (set) => ({
+/**
+ * Creates an instance of the Storage Migration Store with injected dependencies (DIP / ISP).
+ */
+export function createStorageMigrationStore(customDeps?: Partial<StorageMigrationStoreDependencies>) {
+  const deps: StorageMigrationStoreDependencies = {
+    storage: customDeps?.storage || container.storage,
+  };
+
+  return create<StorageMigrationStoreState>((set) => ({
     isMigrating: false,
     migrationType: null,
     progress: null,
@@ -50,11 +62,11 @@ export const useStorageMigrationStore = create<StorageMigrationStoreState>(
       });
 
       try {
-        if (!Core.services.storage.migrateStorage) {
+        if (!deps.storage.migrateStorage) {
           throw new Error("Storage migration is not supported on this platform.");
         }
 
-        await Core.services.storage.migrateStorage(
+        await deps.storage.migrateStorage(
           sourcePath,
           targetPath,
           type,
@@ -105,5 +117,10 @@ export const useStorageMigrationStore = create<StorageMigrationStoreState>(
         return false;
       }
     },
-  })
-);
+  }));
+}
+
+/**
+ * Global default storage migration store.
+ */
+export const useStorageMigrationStore = createStorageMigrationStore();

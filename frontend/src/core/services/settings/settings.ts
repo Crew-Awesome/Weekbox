@@ -8,7 +8,7 @@ export class SettingsService implements ISettingsService {
   private readonly provider: ISettingsService;
 
   constructor(provider?: ISettingsService) {
-    this.provider = provider || platform;
+    this.provider = provider || platform.settings;
   }
 
   async getSettings(): Promise<Record<string, any>> {

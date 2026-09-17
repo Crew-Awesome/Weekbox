@@ -23,10 +23,12 @@ export const useAppStore = create<AppState>((set) => ({
   setNotFoundModId: (id) => set({ notFoundModId: id }),
 }));
 
+export * from "./download";
 export * from "./download-store";
 export * from "./download-constants";
 export * from "./library-store";
 export * from "./favorites-store";
+export * from "./engine-download";
 export * from "./engine-download-store";
 export * from "./process-store";
 export * from "./settings-store";

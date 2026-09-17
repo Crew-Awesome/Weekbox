@@ -1,4 +1,9 @@
-import type { IModService, DownloadProgressCallback } from "@contracts";
+import type {
+  IModService,
+  DownloadProgressCallback,
+  InstalledMod,
+  RegisterInstalledModPayload,
+} from "@contracts";
 import type { WebTransport } from "../web/transport";
 import type { CapacitorStorage } from "./storage";
 import { CapacitorModRegistry } from "./mod-registry";
@@ -31,7 +36,7 @@ export class CapacitorMods implements IModService {
     }
   }
 
-  async registerInstalledMod(modData: any): Promise<void> {
+  async registerInstalledMod(modData: RegisterInstalledModPayload): Promise<void> {
     await this.registry.registerInstalledMod(modData);
   }
 
@@ -39,11 +44,11 @@ export class CapacitorMods implements IModService {
     return this.registry.isModInstalled(modId);
   }
 
-  async getInstalledMod(modId: string): Promise<any | null> {
+  async getInstalledMod(modId: string): Promise<InstalledMod | null> {
     return this.registry.getInstalledMod(modId);
   }
 
-  async getInstalledMods(): Promise<any[]> {
+  async getInstalledMods(): Promise<InstalledMod[]> {
     return this.registry.getInstalledMods();
   }
 
@@ -59,7 +64,7 @@ export class CapacitorMods implements IModService {
     await this.registry.setModFavorite(modId, isFavorite);
   }
 
-  async updateInstalledMod(modId: string, updates: Record<string, any>): Promise<any | null> {
+  async updateInstalledMod(modId: string, updates: Partial<InstalledMod>): Promise<InstalledMod | null> {
     return this.registry.updateInstalledMod(modId, updates);
   }
 

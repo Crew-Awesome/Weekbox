@@ -24,6 +24,7 @@ export * from "./notification";
 /**
  * Web Platform Adapter API (Browser environment).
  * Composes specialized modules fulfilling SRP, OCP, LSP, ISP, and DIP.
+ * Uses dynamic proxy delegation so new service methods are automatically supported.
  */
 export class WebAdapter implements IPlatformBridge {
   readonly platformName: PlatformType = "web";
@@ -38,6 +39,8 @@ export class WebAdapter implements IPlatformBridge {
   readonly window: WebWindow;
   readonly notification: WebNotification;
 
+  [key: string]: any;
+
   constructor() {
     this.transport = new WebTransport();
     this.lifecycle = new WebLifecycle(this.transport);
@@ -48,6 +51,38 @@ export class WebAdapter implements IPlatformBridge {
     this.engines = new WebEngines(this.transport, this.storage);
     this.window = new WebWindow();
     this.notification = new WebNotification();
+
+    const delegateTargets = [
+      this.mods,
+      this.engines,
+      this.storage,
+      this.process,
+      this.settings,
+      this.window,
+      this.notification,
+      this.lifecycle,
+      this.transport,
+    ];
+
+    return new Proxy(this, {
+      get(target, prop) {
+        if (prop in target) {
+          const val = (target as any)[prop];
+          return typeof val === "function" ? (...args: any[]) => val.apply(target, args) : val;
+        }
+        for (const delegate of delegateTargets) {
+          if (delegate && typeof (delegate as any)[prop] !== "undefined") {
+            const val = (delegate as any)[prop];
+            return typeof val === "function" ? (...args: any[]) => val.apply(delegate, args) : val;
+          }
+        }
+        return undefined;
+      },
+      has(target, prop) {
+        if (prop in target) return true;
+        return delegateTargets.some((d) => d && prop in d);
+      },
+    });
   }
 
   get isReady(): boolean {
@@ -85,41 +120,4 @@ export class WebAdapter implements IPlatformBridge {
   emitLocalEvent(eventName: string, data: any): void {
     this.transport.emitLocalEvent(eventName, data);
   }
-
-  downloadMod = (...args: Parameters<WebMods["downloadMod"]>) => this.mods.downloadMod(...args);
-  registerInstalledMod = (...args: Parameters<WebMods["registerInstalledMod"]>) => this.mods.registerInstalledMod(...args);
-  isModInstalled = (...args: Parameters<WebMods["isModInstalled"]>) => this.mods.isModInstalled(...args);
-  getInstalledMod = (...args: Parameters<WebMods["getInstalledMod"]>) => this.mods.getInstalledMod(...args);
-  getInstalledMods = (...args: Parameters<WebMods["getInstalledMods"]>) => this.mods.getInstalledMods(...args);
-  uninstallMod = (...args: Parameters<WebMods["uninstallMod"]>) => this.mods.uninstallMod(...args);
-  openModFolder = (...args: Parameters<WebMods["openModFolder"]>) => this.mods.openModFolder(...args);
-  setModFavorite = (...args: Parameters<WebMods["setModFavorite"]>) => this.mods.setModFavorite(...args);
-  updateInstalledMod = (...args: Parameters<WebMods["updateInstalledMod"]>) => this.mods.updateInstalledMod(...args);
-  remapInstalledModPaths = (...args: Parameters<WebMods["remapInstalledModPaths"]>) => this.mods.remapInstalledModPaths(...args);
-
-  downloadEngine = (...args: Parameters<WebEngines["downloadEngine"]>) => this.engines.downloadEngine(...args);
-  isEngineInstalled = (...args: Parameters<WebEngines["isEngineInstalled"]>) => this.engines.isEngineInstalled(...args);
-  openEngineFolder = (...args: Parameters<WebEngines["openEngineFolder"]>) => this.engines.openEngineFolder(...args);
-  getInstalledEngines = (...args: Parameters<WebEngines["getInstalledEngines"]>) => this.engines.getInstalledEngines(...args);
-  registerInstalledEngine = (...args: Parameters<WebEngines["registerInstalledEngine"]>) => this.engines.registerInstalledEngine(...args);
-  uninstallEngine = (...args: Parameters<WebEngines["uninstallEngine"]>) => this.engines.uninstallEngine(...args);
-  cleanupTempDownload = (...args: Parameters<WebEngines["cleanupTempDownload"]>) => this.engines.cleanupTempDownload(...args);
-
-  launchExecutable = (...args: Parameters<WebProcess["launchExecutable"]>) => this.process.launchExecutable(...args);
-  killProcess = (...args: Parameters<WebProcess["killProcess"]>) => this.process.killProcess(...args);
-  isAnyProcessRunning = () => this.process.isAnyProcessRunning();
-  isInstanceRunning = (...args: Parameters<WebProcess["isInstanceRunning"]>) => this.process.isInstanceRunning(...args);
-
-  showFolderDialog = (...args: Parameters<WebStorage["showFolderDialog"]>) => this.storage.showFolderDialog(...args);
-  getModsPath = () => this.storage.getModsPath();
-  getEnginesPath = () => this.storage.getEnginesPath();
-  getDefaultPaths = () => this.storage.getDefaultPaths();
-  validateStorageFolder = (...args: Parameters<WebStorage["validateStorageFolder"]>) => this.storage.validateStorageFolder(...args);
-  inspectStorage = (...args: Parameters<WebStorage["inspectStorage"]>) => this.storage.inspectStorage(...args);
-  migrateStorage = (...args: Parameters<WebStorage["migrateStorage"]>) => this.storage.migrateStorage(...args);
-  isMigrationInProgress = () => this.storage.isMigrationInProgress();
-  setMigrationInProgress = (inProgress: boolean) => this.storage.setMigrationInProgress(inProgress);
-
-  getSettings = () => this.settings.getSettings();
-  saveSettings = (...args: Parameters<WebSettings["saveSettings"]>) => this.settings.saveSettings(...args);
 }

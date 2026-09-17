@@ -1,3 +1,5 @@
+import type { InstalledMod, RegisterInstalledModPayload } from "./mod-item";
+
 /**
  * Progress details for file transfer operations.
  */
@@ -39,16 +41,16 @@ export interface IModService {
   ): Promise<void>;
 
   /** Registers a mod entry in the installed mods registry. */
-  registerInstalledMod(modData: any): Promise<void>;
+  registerInstalledMod(modData: RegisterInstalledModPayload): Promise<void>;
 
   /** Checks if a mod is registered as installed. */
   isModInstalled(modId: string): Promise<boolean>;
 
   /** Retrieves metadata for an installed mod by ID. */
-  getInstalledMod(modId: string): Promise<any | null>;
+  getInstalledMod(modId: string): Promise<InstalledMod | null>;
 
   /** Retrieves the full list of installed mods. */
-  getInstalledMods(): Promise<any[]>;
+  getInstalledMods(): Promise<InstalledMod[]>;
 
   /** Uninstalls a mod and purges its directory. */
   uninstallMod(modId: string): Promise<void>;
@@ -60,7 +62,7 @@ export interface IModService {
   setModFavorite(modId: string, isFavorite: boolean): Promise<void>;
 
   /** Updates mod metadata entries in the registry. */
-  updateInstalledMod(modId: string, updates: Record<string, any>): Promise<any | null>;
+  updateInstalledMod(modId: string, updates: Partial<InstalledMod>): Promise<InstalledMod | null>;
 
   /** Remaps installation paths for mods following a storage relocation. */
   remapInstalledModPaths(targetPath: string, selectedItemNames?: string[]): Promise<void>;
@@ -212,28 +214,47 @@ export interface ISettingsService {
 }
 
 /**
- * Contract for application window management (ISP).
+ * Basic window controls and state toggles (ISP).
+ * Ideal for window titlebars, close buttons, and system trays.
  */
-export interface IWindowService {
+export interface IWindowControls {
   minimize(): Promise<void>;
   maximize(): Promise<void>;
   unmaximize(): Promise<void>;
   unminimize(): Promise<void>;
-  setAlwaysOnTop(onTop: boolean): Promise<void>;
-  bringToFront(): Promise<void>;
-  setFullScreen(): Promise<void>;
-  exitFullScreen(): Promise<void>;
+  close(): Promise<void>;
   show(): Promise<void>;
   hide(): Promise<void>;
   focus(): Promise<void>;
+}
+
+/**
+ * Window positioning, sizing, and screen coordinate geometry (ISP).
+ */
+export interface IWindowGeometry {
   move(x: number, y: number): Promise<void>;
   setSize(width: number, height: number): Promise<void>;
   getSize(): Promise<{ width: number; height: number }>;
   getPosition(): Promise<{ x: number; y: number }>;
-  getDisplays(): Promise<any[]>;
-  close(): Promise<void>;
   center(): Promise<void>;
 }
+
+/**
+ * Window presentation styles and multi-display management (ISP).
+ */
+export interface IWindowDisplay {
+  setAlwaysOnTop(onTop: boolean): Promise<void>;
+  bringToFront(): Promise<void>;
+  setFullScreen(): Promise<void>;
+  exitFullScreen(): Promise<void>;
+  getDisplays(): Promise<any[]>;
+}
+
+/**
+ * Composite application window service contract (ISP).
+ * Composes specialized window control, geometry, and display interfaces.
+ */
+export interface IWindowService extends IWindowControls, IWindowGeometry, IWindowDisplay {}
 
 /**
  * Options for OS-level notifications.

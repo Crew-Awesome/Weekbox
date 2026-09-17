@@ -7,6 +7,8 @@ export interface CarouselAPI {
   activeIndex: number;
   totalItems: number;
   goToLogicalIndex: (index: number) => void;
+  prev: () => void;
+  next: () => void;
   bindProgressRef: (index: number) => (el: HTMLDivElement | null) => void;
 }
 

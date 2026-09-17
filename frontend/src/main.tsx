@@ -78,9 +78,10 @@ async function startApplication() {
 
       if (res && res.ok) {
         console.log("[SingleInstance] Forwarded to existing instance. Exiting secondary process.");
-        if (window.Neutralino?.app?.exit) {
-          await window.Neutralino.app.exit();
-        } else {
+        try {
+          const { platform } = await import("@platform");
+          await platform.window.close();
+        } catch {
           window.close();
         }
         return;

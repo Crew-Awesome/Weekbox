@@ -17,6 +17,7 @@ import {
   Activity,
   AlertTriangle,
   Layers,
+  X,
 } from "lucide-react";
 import { type ModalViewProps, formatFileSize } from "./types";
 import { ModMediaCarousel, ModThumbnailStrip } from "./components/mod-media-carousel";
@@ -25,7 +26,7 @@ import { ModCreditsView } from "./components/mod-credits-view";
 import { ModDetailsTab } from "./components/mod-details-tab";
 import Core from "@core";
 import Utils from "@utils";
-import { ENGINE_CATEGORIES } from "../../../../core/services/gamebanana/constants";
+import { getSupportedEngineCategories } from "../../../../core/services/gamebanana/constants";
 import {
   useDownloadStore,
   DownloadStatus,
@@ -65,6 +66,7 @@ export const MobileView: React.FC<MobileViewProps> = ({
   targetLanguage = "en",
   isInstalled: isInstalledProp = false,
   onUpdateMod,
+  onClose,
 }) => {
   const [isInstalled, setIsInstalled] = useState(Boolean(isInstalledProp));
   const [isUninstalling, setIsUninstalling] = useState(false);
@@ -73,6 +75,37 @@ export const MobileView: React.FC<MobileViewProps> = ({
   const playStatus = useProcessStore((s) => s.getPlayState(modInstanceKey));
   const isStorageMigrating = useStorageMigrationStore((s) => s.isMigrating);
   const [activeTab, setActiveTab] = useState<ModModalTab>("description");
+
+  const mobileContainerRef = useRef<HTMLDivElement>(null);
+  const [isHeaderVisible, setIsHeaderVisible] = useState(true);
+  const lastScrollY = useRef(0);
+
+  useEffect(() => {
+    const scrollContainer = mobileContainerRef.current?.parentElement;
+    if (!scrollContainer) return;
+
+    const handleScroll = () => {
+      const currentY = scrollContainer.scrollTop;
+      const delta = currentY - lastScrollY.current;
+
+      if (currentY <= 20) {
+        setIsHeaderVisible(true);
+        lastScrollY.current = currentY;
+        return;
+      }
+
+      if (delta > 10) {
+        setIsHeaderVisible(false);
+        lastScrollY.current = currentY;
+      } else if (delta < -10) {
+        setIsHeaderVisible(true);
+        lastScrollY.current = currentY;
+      }
+    };
+
+    scrollContainer.addEventListener("scroll", handleScroll, { passive: true });
+    return () => scrollContainer.removeEventListener("scroll", handleScroll);
+  }, []);
   const isDropdownOpen = activeTab === "details";
 
   const [isEditingTitle, setIsEditingTitle] = useState(false);
@@ -543,7 +576,7 @@ export const MobileView: React.FC<MobileViewProps> = ({
     });
 
     if (displayCard.id) {
-      Core.platform.getInstalledMod(displayCard.id.toString()).then((mod) => {
+      Core.platform.getInstalledMod(displayCard.id.toString()).then((mod: any) => {
         setIsInstalled(Boolean(mod));
         if (mod?.installedAt) setLocalInstalledAt(mod.installedAt);
       }).catch(() => {});
@@ -619,16 +652,20 @@ export const MobileView: React.FC<MobileViewProps> = ({
   };
 
   return (
-    <div className="flex md:hidden flex-col w-full h-full p-4 pointer-events-auto">
-      <div className="relative z-30 flex items-center justify-between mb-4 flex-wrap gap-2">
-        <div className="flex items-center gap-2 flex-wrap">
+    <div ref={mobileContainerRef} className="flex md:hidden flex-col w-full h-full p-4 pointer-events-auto">
+      <div
+        className={`sticky top-0 z-30 flex items-center justify-between gap-2 px-4 py-2.5 bg-[var(--wb-surface-container)]/70 backdrop-blur-xl border-b border-[var(--wb-outline-variant)]/20 shadow-md -mx-4 -mt-4 mb-4 transition-transform duration-300 ease-in-out ${
+          isHeaderVisible ? "translate-y-0" : "-translate-y-full pointer-events-none"
+        }`}
+      >
+        <div className="flex items-center gap-2 flex-wrap min-w-0">
           <a
             href={`https://gamebanana.com/mods/${displayCard.id}`}
             onClick={(e) => {
               e.preventDefault();
               Core.platform.openUrl(`https://gamebanana.com/mods/${displayCard.id}`);
             }}
-            className="flex items-center justify-center w-8 h-8 rounded-full bg-[var(--wb-surface-bright)]"
+            className="flex items-center justify-center w-8 h-8 rounded-full bg-[var(--wb-surface-bright)] shrink-0"
           >
             <img src="/assets/icons/app/gamebanana.webp" alt="GameBanana" className="w-4 h-4 object-contain opacity-80" />
           </a>
@@ -654,7 +691,7 @@ export const MobileView: React.FC<MobileViewProps> = ({
 
               {isInstalled && isEngineDropdownOpen && (
                 <div className="absolute left-0 top-full mt-1.5 z-50 min-w-[210px] bg-[var(--wb-surface-container-highest)] border border-[var(--wb-outline-variant)]/60 rounded-xl shadow-2xl p-1.5 flex flex-col gap-0.5 animate-in fade-in slide-in-from-top-1 duration-150">
-                  {Object.values(ENGINE_CATEGORIES).map((cat) => {
+                  {getSupportedEngineCategories(true).map((cat) => {
                     const isSelected =
                       String(cat.id).toLowerCase() === String(displayCard.engineId).toLowerCase() ||
                       cat.name.toLowerCase() === engineName.toLowerCase();
@@ -777,24 +814,38 @@ export const MobileView: React.FC<MobileViewProps> = ({
             )
           )}
         </div>
-        {displayCard.updatedAt && displayCard.updatedAt !== displayCard.submittedAt && (
-          <div 
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[var(--wb-surface-bright)] border border-[var(--wb-outline-variant)]/30 text-[var(--wb-on-surface-variant)] text-xs font-semibold"
-            title={`Updated: ${formatFullDate(displayCard.updatedAt)}`}
-          >
-            <RefreshCw className="w-3.5 h-3.5" />
-            <span>{formatDate(displayCard.updatedAt)}</span>
-          </div>
-        )}
-        {isInstalled && localInstalledAt && (
-          <div 
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[var(--wb-surface-bright)] border border-[var(--wb-outline-variant)]/30 text-[var(--wb-on-surface-variant)] text-xs font-semibold"
-            title={formatFullDate(localInstalledAt)}
-          >
-            <HardDrive className="w-3.5 h-3.5 text-[var(--wb-primary)]" />
-            <span>Installed: {formatDate(localInstalledAt)}</span>
-          </div>
-        )}
+
+        {/** Center / Right side pill & close button */}
+        <div className="flex items-center gap-2 shrink-0 ml-auto">
+          {isInstalled && localInstalledAt ? (
+            <div 
+              className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-[var(--wb-surface-bright)] border border-[var(--wb-outline-variant)]/30 text-[var(--wb-on-surface-variant)] text-xs font-semibold shrink-0"
+              title={formatFullDate(localInstalledAt)}
+            >
+              <HardDrive className="w-3.5 h-3.5 text-[var(--wb-primary)] shrink-0" />
+              <span>Installed: {formatDate(localInstalledAt)}</span>
+            </div>
+          ) : displayCard.updatedAt ? (
+            <div 
+              className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-[var(--wb-surface-bright)] border border-[var(--wb-outline-variant)]/30 text-[var(--wb-on-surface-variant)] text-xs font-semibold shrink-0"
+              title={`Updated: ${formatFullDate(displayCard.updatedAt)}`}
+            >
+              <RefreshCw className="w-3.5 h-3.5 shrink-0" />
+              <span>{formatDate(displayCard.updatedAt)}</span>
+            </div>
+          ) : null}
+
+          {onClose && (
+            <button
+              type="button"
+              onClick={onClose}
+              className="p-1.5 -mr-1 rounded-full text-[var(--wb-icon-default)] hover:text-[var(--wb-icon-hover)] hover:bg-[var(--wb-surface-bright)] transition-colors shrink-0 cursor-pointer"
+              aria-label="Close modal"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          )}
+        </div>
       </div>
 
       <ModMediaCarousel
@@ -1006,7 +1057,7 @@ export const MobileView: React.FC<MobileViewProps> = ({
       )}
 
       <div 
-        className="mt-auto shrink-0 sticky bottom-0 z-20 pt-2"
+        className="mt-auto shrink-0 sticky bottom-0 z-20 pt-2 pb-5 mb-2 bg-gradient-to-t from-[var(--wb-surface-container)] via-[var(--wb-surface-container)]/95 to-transparent -mx-4 px-4"
       >
         <div className="relative w-full">
           {isInstalled ? (
