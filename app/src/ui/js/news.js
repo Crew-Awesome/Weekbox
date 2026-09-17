@@ -15,12 +15,11 @@ import { applyDominantColor } from "../utils/media/extract-color.util.js";
 
 const NEWS_REPOSITORY = "Crew-Awesome/weekbox.news";
 const NEWS_BRANCH = "main";
-const NEWS_GITHUB_URL = `https://github.com/${NEWS_REPOSITORY}`;
 const NEWS_RAW_URL = `https://raw.githubusercontent.com/${NEWS_REPOSITORY}/${NEWS_BRANCH}`;
 const NEWS_PUBLIC_URL = `${NEWS_RAW_URL}/public`;
 const NEWS_INDEX_PATH = "content/news/index.json";
 const NEWS_SLUG = /^[a-z0-9]+(?:-[a-z0-9]+)*$/i;
-const NEWS_CACHE_KEY = "weekbox_news_feed_v6";
+const NEWS_CACHE_KEY = "weekbox_news_feed_v9";
 const NEWS_SEEN_KEY = "weekbox_news_seen_v1";
 const NEWS_REQUEST_TIMEOUT = 8000;
 
@@ -68,25 +67,18 @@ async function fetchNewsPost(catalogPost, signal) {
   if (!response.ok)
     throw new Error(`GitHub news post returned ${response.status}`);
   const post = await response.json();
-  const bodyPath = `content/news/posts/${slug}/body.md`;
-  const bodyResponse = await nativeFetch(githubRawUrl(bodyPath), {
+  return normalizeNewsPost(post, catalogPost, postPath);
+}
+
+async function fetchNewsBody(post, signal) {
+  const bodyPath = `${post.sourcePath.slice(0, post.sourcePath.lastIndexOf("/"))}/body.md`;
+  const response = await nativeFetch(githubRawUrl(bodyPath), {
     headers: { Accept: "text/markdown" },
     signal,
   });
-  if (!bodyResponse.ok)
-    throw new Error(`GitHub news body returned ${bodyResponse.status}`);
-  return normalizeNewsPost(
-    { ...post, body: await bodyResponse.text() },
-    catalogPost,
-    postPath,
-  );
-}
-
-function githubPostUrl(path) {
-  return `${NEWS_GITHUB_URL}/blob/${NEWS_BRANCH}/${path
-    .split("/")
-    .map(encodeURIComponent)
-    .join("/")}`;
+  if (!response.ok)
+    throw new Error(`GitHub news body returned ${response.status}`);
+  return response.text();
 }
 
 function normalizeNewsPost(post, catalogPost, sourcePath) {
@@ -125,14 +117,19 @@ async function fetchNewsPayload(signal) {
   if (!indexResponse.ok)
     throw new Error(`GitHub news index returned ${indexResponse.status}`);
   const index = await indexResponse.json();
+  const now = Date.now();
   const catalogPosts = Array.isArray(index?.posts)
-    ? index.posts.filter(
-        (post) =>
-          post &&
-          typeof post === "object" &&
-          typeof post.slug === "string" &&
-          NEWS_SLUG.test(post.slug),
-      )
+    ? index.posts
+        .filter(
+          (post) =>
+            post &&
+            typeof post === "object" &&
+            typeof post.slug === "string" &&
+            NEWS_SLUG.test(post.slug) &&
+            Number.isFinite(Date.parse(post.publishedAt)) &&
+            Date.parse(post.publishedAt) <= now,
+        )
+        .slice(0, 24)
     : [];
   const posts = await Promise.all(
     catalogPosts.map((post) => fetchNewsPost(post, signal)),
@@ -142,10 +139,6 @@ async function fetchNewsPayload(signal) {
     generatedAt: new Date().toISOString(),
     posts: posts.filter(Boolean).slice(0, 24),
   };
-}
-
-function newsLink(post) {
-  return post.sourcePath ? githubPostUrl(post.sourcePath) : NEWS_GITHUB_URL;
 }
 
 const newsMarkdown = new Marked({ gfm: true, breaks: false });
@@ -224,6 +217,7 @@ function handleNewsLoadError(view, error, cached, badgeOnly) {
 
 export const newsView = {
   request: null,
+  bodyRequest: null,
   modal: null,
 
   init() {
@@ -239,6 +233,8 @@ export const newsView = {
   destroy() {
     this.request?.abort();
     this.request = null;
+    this.bodyRequest?.abort();
+    this.bodyRequest = null;
     this.closeModal(false);
     this.grid = null;
     this.status = null;
@@ -274,26 +270,45 @@ export const newsView = {
     const meta = modal.querySelector("#news-detail-meta");
     const excerpt = modal.querySelector("#news-detail-excerpt");
     const body = modal.querySelector("#news-detail-body");
-    const link = modal.querySelector("#news-detail-link");
+    this.bodyRequest?.abort();
+    this.bodyRequest = null;
     const renderBody = (value) => {
       body.innerHTML = renderNewsMarkdown(value, post);
       enhanceContentLinks(body, {
         onGameBanana: (submission) => modModal.openSubmission(submission),
       });
     };
+    const loadBody = async () => {
+      if (post.body) {
+        renderBody(post.body);
+        return;
+      }
+      body.textContent = t("news.loading");
+      const controller = new AbortController();
+      this.bodyRequest = controller;
+      try {
+        const markdown = await fetchNewsBody(post, controller.signal);
+        if (this.bodyRequest !== controller) return;
+        post.body = markdown;
+        this.writeCachedBody(post);
+        renderBody(markdown || post.excerpt || t("news.articleUnavailable"));
+      } catch (error) {
+        if (error?.name !== "AbortError" && this.bodyRequest === controller) {
+          renderBody(post.excerpt || t("news.articleUnavailable"));
+        }
+      } finally {
+        if (this.bodyRequest === controller) this.bodyRequest = null;
+      }
+    };
     title.textContent = String(post.title || t("nav.news"));
     renderNewsMeta(meta, post);
     excerpt.textContent = String(post.excerpt || "");
     excerpt.hidden = !post.excerpt;
-    renderBody(post.body || post.excerpt || t("news.articleUnavailable"));
-    link.href = newsLink(post);
-    link.onclick = (event) => {
-      event.preventDefault();
-      Neutralino.os.open(link.href).catch(() => {});
-    };
+    body.textContent = t("news.loading");
     const coverUrl = safeNewsUrl(post.coverUrl, post.sourceBaseUrl);
     applyNewsCover(modal, image, post, coverUrl);
     modal.style.display = "flex";
+    void loadBody();
     requestAnimationFrame(() => {
       modal.classList.add("show");
       activateCheckoutDialog(
@@ -306,6 +321,8 @@ export const newsView = {
   },
 
   closeModal(restoreFocus = true) {
+    this.bodyRequest?.abort();
+    this.bodyRequest = null;
     const modal = this.modal;
     if (!modal) return;
     deactivateCheckoutDialog(modal, restoreFocus);
@@ -342,6 +359,14 @@ export const newsView = {
     try {
       localStorage.setItem(NEWS_CACHE_KEY, JSON.stringify(payload));
     } catch {}
+  },
+
+  writeCachedBody(post) {
+    const cached = this.readCache();
+    const cachedPost = cached?.posts?.find((item) => item?.slug === post.slug);
+    if (!cachedPost) return;
+    cachedPost.body = post.body;
+    this.writeCache(cached);
   },
 
   updateUnreadBadge(posts) {

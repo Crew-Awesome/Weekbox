@@ -332,19 +332,6 @@
   margin-bottom: 0;
 }
 
-.news-detail-modal__link {
-  align-self: flex-start;
-  color: var(--news-accent);
-  font-weight: 800;
-  text-decoration: none;
-  transition: color 360ms ease;
-}
-
-.news-detail-modal__link:hover,
-.news-detail-modal__link:focus-visible {
-  text-decoration: underline;
-}
-
 .whats-new-modal {
   z-index: 22000;
 }
