@@ -1137,7 +1137,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Downloads for Windows, Linux, and macOS.
 - Packages for x64, ARM64, ARMHF, and Universal Macs where available.
 
-[unreleased]: https://github.com/Crew-Awesome/Weekbox/compare/v2.4.0...HEAD
+[unreleased]: https://github.com/Crew-Awesome/Weekbox/compare/v2.4.1...HEAD
+[2.4.1]: https://github.com/Crew-Awesome/Weekbox/compare/v2.4.0...v2.4.1
 [2.4.0]: https://github.com/Crew-Awesome/Weekbox/compare/v2.3.4...v2.4.0
 [2.3.4]: https://github.com/Crew-Awesome/Weekbox/compare/v2.3.3...v2.3.4
 [2.3.3]: https://github.com/Crew-Awesome/Weekbox/compare/v2.3.2...v2.3.3
