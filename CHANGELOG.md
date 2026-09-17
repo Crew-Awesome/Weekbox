@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.4.1] - 2026-09-16
+
+### Changed
+
+- Updated WeekBox links to the new website.
+- Updated the release workflow to refresh downloads on the new website.
+
+### Removed
+
+- Removed automatic diagnostic reports.
+
 ## [2.4.0] - 2026-09-15
 
 ### Added
