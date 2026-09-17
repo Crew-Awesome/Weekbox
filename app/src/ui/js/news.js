@@ -13,7 +13,7 @@ import { sanitizeReleaseHtml } from "./engines/releaseNotes.js";
 import { t } from "./i18n/index.js";
 import { applyDominantColor } from "../utils/media/extract-color.util.js";
 
-const NEWS_SITE_URL = "https://fnfweekbox.vercel.app";
+const NEWS_SITE_URL = "https://weekbox.immalloy.com";
 const NEWS_FEED_URL = `${NEWS_SITE_URL}/api/news`;
 const NEWS_CACHE_KEY = "weekbox_news_feed_v1";
 const NEWS_SEEN_KEY = "weekbox_news_seen_v1";

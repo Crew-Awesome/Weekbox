@@ -223,7 +223,7 @@ jobs:
           fi
           curl --fail-with-body --silent --show-error --request POST \
             --max-time 30 \
-            'https://fnfweekbox.vercel.app/api/revalidate-release' \
+            'https://weekbox.immalloy.com/api/revalidate-release' \
             --header "Authorization: Bearer $REVALIDATE_SECRET"
 
   announce-discord:

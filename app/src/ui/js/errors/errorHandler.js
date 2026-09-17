@@ -5,15 +5,6 @@ import {
   deactivateCheckoutDialog,
 } from "../home/modal/dialogFocus.js";
 import { isGoogleDriveQuotaError } from "../../../backend/services/downloads/download-validation.util.js";
-import { nativeFetch } from "../../../backend/services/network/native-http.js";
-
-const DIAGNOSTIC_REPORT_ENDPOINT =
-  "https://fnfweekbox.vercel.app/api/diagnostic-report";
-
-function nonEmptyString(value, fallback = "Unknown") {
-  const text = String(value ?? "").trim();
-  return text || fallback;
-}
 
 function getNativeErrorDetails(error) {
   if (!error || typeof error !== "object") return "";
@@ -25,71 +16,6 @@ function getNativeErrorDetails(error) {
     return JSON.stringify(error, null, 2);
   } catch {
     return String(error);
-  }
-}
-
-async function getOperatingSystem() {
-  try {
-    const info = await Neutralino.computer.getOSInfo();
-    return nonEmptyString(info.description || info.name, window.NL_OS);
-  } catch {
-    return nonEmptyString(window.NL_OS);
-  }
-}
-
-async function getArchitecture() {
-  try {
-    return nonEmptyString(await Neutralino.computer.getArch(), window.NL_ARCH);
-  } catch {
-    return nonEmptyString(window.NL_ARCH);
-  }
-}
-
-async function getLocaleInfo() {
-  try {
-    return await Neutralino.os.getLocaleInfo();
-  } catch {
-    return null;
-  }
-}
-
-async function getDiskDiagnostics() {
-  try {
-    const disks = await Neutralino.computer.getDisks();
-    const list = Array.isArray(disks) ? disks : disks ? [disks] : [];
-    return {
-      count: list.length,
-      totalBytes: list.reduce(
-        (sum, disk) => sum + (Number(disk.total) || 0),
-        0,
-      ),
-      freeBytes: list.reduce((sum, disk) => sum + (Number(disk.free) || 0), 0),
-    };
-  } catch {
-    return null;
-  }
-}
-
-async function getNetworkDiagnostics() {
-  try {
-    const interfaces = await Neutralino.computer.getNetworkInterfaces();
-    const names = Object.keys(interfaces || {});
-    const list = Object.values(interfaces || {})
-      .flatMap((addresses) => (Array.isArray(addresses) ? addresses : []))
-      .filter((address) => !address?.isInternal);
-    return {
-      count: names.length,
-      ipv4: list.reduce(
-        (count, entry) => count + (entry?.family === "ipv4" ? 1 : 0),
-        0,
-      ),
-      ipv6: list.reduce(
-        (count, entry) => count + (entry?.family === "ipv6" ? 1 : 0),
-        0,
-      ),
-    };
-  } catch {
-    return null;
   }
 }
 
@@ -160,7 +86,6 @@ const DOWNLOAD_UNAVAILABLE = () =>
     "errors.downloadUnavailableTitle",
     "errors.downloadUnavailableSummary",
     "errors.downloadUnavailableTag",
-    { reportable: false },
   );
 
 const ISSUE_RULES = [
@@ -174,16 +99,11 @@ const ISSUE_RULES = [
         "devolviÃ³ una pÃ¡gina web",
         "file sharing and storage made simple",
       ]),
-    create: (lower) =>
+    create: () =>
       issueText(
         "errors.unpackTitle",
         "errors.unpackSummary",
         "errors.archiveProblemTag",
-        {
-          reportable: lower.includes("integrity verification")
-            ? undefined
-            : false,
-        },
       ),
   },
   {
@@ -200,7 +120,6 @@ const ISSUE_RULES = [
         "errors.certificateTitle",
         "errors.certificateSummary",
         "errors.certificateTag",
-        { reportable: false },
       ),
   },
   {
@@ -281,7 +200,6 @@ const ISSUE_RULES = [
         "errors.quotaExceededTitle",
         "errors.quotaExceededSummary",
         "errors.quotaExceededTag",
-        { reportable: false },
       ),
   },
   {
@@ -307,7 +225,6 @@ const ISSUE_RULES = [
         "modModal.alreadyInstalled",
         "downloads.alreadyInstalled",
         "modModal.alreadyInstalled",
-        { reportable: false },
       ),
   },
   {
@@ -324,7 +241,6 @@ const ISSUE_RULES = [
         "errors.invalidLinkTitle",
         "errors.invalidLinkSummary",
         "errors.invalidLinkTag",
-        { reportable: false },
       ),
   },
   {
@@ -365,7 +281,6 @@ const ISSUE_RULES = [
         "errors.emptyDownloadTitle",
         "errors.emptyDownloadSummary",
         "errors.emptyDownloadTag",
-        { reportable: false },
       ),
   },
   {
@@ -458,50 +373,6 @@ function createReport({
     .join("\n");
 }
 
-async function submitDiagnosticReport(context, issue) {
-  const errorMessage = getDiagnosticErrorMessage(context.error);
-  const stackTrace = getDiagnosticStackTrace(context.error);
-  const downloadDiagnostics = getDownloadDiagnostics(context.error);
-  const [operatingSystem, architecture, locale, disks, network] =
-    await Promise.all([
-      getOperatingSystem(),
-      getArchitecture(),
-      getLocaleInfo(),
-      getDiskDiagnostics(),
-      getNetworkDiagnostics(),
-    ]);
-  const response = await nativeFetch(DIAGNOSTIC_REPORT_ENDPOINT, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      appVersion: nonEmptyString(window.NL_APPVERSION),
-      neutralinoVersion: nonEmptyString(window.NL_CVERSION),
-      operatingSystem,
-      architecture,
-      locale,
-      disks,
-      network,
-      action: context.action || issue.tag,
-      item: context.item || "",
-      version: context.version || "",
-      storagePath: context.storagePath || "",
-      issue: issue.tag,
-      title: issue.title,
-      summary: issue.summary,
-      errorMessage,
-      stackTrace,
-      diagnostics: downloadDiagnostics
-        ? { download: downloadDiagnostics }
-        : null,
-      reportedAt: new Date().toISOString(),
-    }),
-  });
-
-  if (response.status !== 202) {
-    console.warn(`Diagnostic reporting failed with status ${response.status}`);
-  }
-}
-
 async function copyText(text) {
   try {
     await navigator.clipboard.writeText(text);
@@ -567,12 +438,6 @@ export const errorHandler = {
     modal.querySelector("h2").textContent = issue.title;
     modal.querySelector(".error-summary").textContent = issue.summary;
     modal.querySelector("pre").textContent = report;
-    if (issue.reportable !== false) {
-      submitDiagnosticReport(context, issue).catch((error) => {
-        console.warn("Could not send diagnostic report:", error);
-      });
-    }
-
     const settingsButton = modal.querySelector(".error-settings");
     settingsButton.hidden = issue.action !== "storage";
     settingsButton.querySelector("span").textContent = issue.actionLabel || "";
