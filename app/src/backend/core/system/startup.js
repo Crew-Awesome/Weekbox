@@ -26,14 +26,17 @@ import { downloadMod } from "../../../ui/js/home/modal/downloadMod.js";
 import { engineUpdateService } from "../../../ui/js/engines/engineUpdateService.js";
 import { FS } from "../../services/filesystem.js";
 import { errorHandler } from "../../../ui/js/errors/errorHandler.js";
-import { appUpdateModal } from "../../../ui/js/updates/appUpdateModal.js";
 import { toastSystem } from "../../../ui/js/toasts/toastSystem.js";
 import { storageRecommendationModal } from "../../../ui/js/storageRecommendationModal.js";
 import { modManagerModal } from "../../../ui/js/mod-manager/index.js";
 import { firstRunStorageModal } from "../../../ui/js/firstRunStorageModal.js";
 import { firstRunLanguageModal } from "../../../ui/js/firstRunLanguageModal.js";
 import { whatsNewModal } from "../../../ui/js/updates/whatsNewModal.js";
-import { i18n, t } from "../../../ui/js/i18n/index.js";
+import {
+  i18n,
+  localizeProgressStatus,
+  t,
+} from "../../../ui/js/i18n/index.js";
 
 const SINGLE_INSTANCE_MUTEX = "Global\\WeekBox-com.weekbox.app";
 
@@ -78,12 +81,10 @@ async function applySystemTray() {
 }
 
 async function ensureSingleInstance() {
-  // The dev reloader keeps the native process alive between webview reloads.
   if (isDevelopmentRun() || window.NL_OS !== "Windows") return true;
   const parentPid = Number(window.NL_PID);
   if (!Number.isInteger(parentPid) || parentPid <= 0) return true;
 
-  // The guard is Windows-specific; add a native Unix lock if duplicate launches become a real issue.
   const script = `$created = $false\n$mutex = [System.Threading.Mutex]::new($false, '${SINGLE_INSTANCE_MUTEX}', [ref]$created)\n$owned = $false\ntry { $owned = $mutex.WaitOne(0) } catch [System.Threading.AbandonedMutexException] { $owned = $true }\nif (-not $owned) { [Console]::Out.WriteLine('duplicate'); exit 2 }\n[Console]::Out.WriteLine('acquired')\ntry { while (Get-Process -Id ${parentPid} -ErrorAction SilentlyContinue) { Start-Sleep -Milliseconds 500 } } finally { $mutex.ReleaseMutex(); $mutex.Dispose() }`;
   let process;
   try {
@@ -297,22 +298,14 @@ async function handleStartupAppUpdate() {
     if (timeoutHandle) clearTimeout(timeoutHandle);
   }
   if (update?.status !== "available") return false;
-  try {
-    sessionStorage.setItem(
-      "weekbox_available_app_update",
-      JSON.stringify(update),
-    );
-  } catch {}
-  document.dispatchEvent(
-    new CustomEvent("app-update-available", { detail: update }),
-  );
-  void appUpdateModal.show(update).catch((error) => {
-    console.warn(
-      "Could not show the WeekBox update prompt during startup",
-      error,
+  startupLoader.setPhase(t("updates.updating"), 24);
+  await appUpdater.install(update, (message, progress) => {
+    startupLoader.setPhase(
+      localizeProgressStatus(message) || t("updates.updating"),
+      progress,
     );
   });
-  return false;
+  return true;
 }
 
 function normalizeMessageBoxOptions(choice, icon) {
@@ -516,6 +509,10 @@ async function startApp() {
     );
     await appSettings.init(settingsDataPath);
     i18n.init();
+    if (appSettings.get("checkAppUpdatesOnStartup")) {
+      startupLoader.setPhase(t("startup.checkingAppUpdates"), 24);
+      if (await handleStartupAppUpdate()) return;
+    }
     syncWindowsStartupRegistration(appSettings.get("launchOnStartup")).catch(
       () => {},
     );
@@ -570,10 +567,6 @@ async function startApp() {
     }).catch((error) =>
       console.warn("Background library maintenance failed", error),
     );
-    if (appSettings.get("checkAppUpdatesOnStartup"))
-      void handleStartupAppUpdate().catch((error) =>
-        console.warn("Could not check for a WeekBox update", error),
-      );
     await whatsNewModal
       .showIfNeeded()
       .catch((error) =>

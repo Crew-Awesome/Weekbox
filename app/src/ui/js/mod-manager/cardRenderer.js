@@ -279,8 +279,8 @@ export const cardRenderer = {
         const mod = allMods.find(
           (item) => String(item.id) === card.dataset.modId,
         );
-        // Installation progress cards share the card class but do not have
-        // mod actions (and are not part of allMods yet).
+
+
         if (!mod) return;
         const locked = FS.isModLockedForChanges(mod, allMods);
         const message = t("modManager.closeEngineBeforeChange");

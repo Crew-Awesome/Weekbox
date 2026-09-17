@@ -1094,7 +1094,7 @@
   border-radius: var(--border-radius);
   display: flex;
   flex-direction: column;
-  overflow: visible; /* CRÍTICO para que los menús desplegables se vean bien */
+  overflow: visible;
   position: relative;
   isolation: isolate;
   width: 100%;
@@ -1185,7 +1185,7 @@
   font-weight: 700;
 }
 
-/* FIX: Nueva capa para replicar la burbuja de color animada de la Home */
+
 .mod-manager-card-bg {
   position: absolute;
   inset: 0;
@@ -2630,7 +2630,7 @@
   }
 }
 
-/* Mod Manager filter dialog */
+
 .mod-settings-body input.mod-settings-tag-input:not([type="file"]) {
   box-sizing: content-box;
   width: auto;
@@ -2972,7 +2972,7 @@
   position: relative;
 }
 
-/* Keep opened menus above the dialog instead of clipping them at its edge. */
+
 .mod-manager-filter-panel {
   overflow: visible;
   position: relative;

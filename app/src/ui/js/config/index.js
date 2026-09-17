@@ -192,9 +192,9 @@ export const configModal = {
       this.showAvailableAppUpdate(event.detail);
     });
 
-    /**
-     * Initializes tab switching logic for the configuration modal.
-     */
+
+
+
     const tabBtns = document.querySelectorAll(".config-tab-btn");
     tabBtns.forEach((btn) => {
       btn.addEventListener("click", () => {
@@ -228,10 +228,10 @@ export const configModal = {
       });
     });
 
-    /**
-     * Detects changes in configuration toggles and switches,
-     * saving the updated settings to the application store.
-     */
+
+
+
+
     const toggleIds = [
       "launchOnStartup",
       "registerProtocolLinks",
@@ -757,9 +757,9 @@ export const configModal = {
     if (!modal) return;
 
     sidebar.setActive(sidebar.configBtn);
-    /**
-     * Visually loads current configuration values into the UI.
-     */
+
+
+
     this.loadSettingsToUI();
 
     modal.style.display = "flex";

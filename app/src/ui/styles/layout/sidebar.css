@@ -1,4 +1,4 @@
-/* Sidebar Layout */
+
 .sidebar {
   display: flex;
   flex-direction: column;
@@ -40,7 +40,7 @@
   overflow-y: auto;
 }
 
-/* Sidebar Brand */
+
 .sidebar__brand {
   align-items: center;
   background: transparent;
@@ -138,7 +138,7 @@
   outline-offset: 2px;
 }
 
-/* Navigation Buttons */
+
 .sidebar__btn {
   background: transparent;
   border: none;
@@ -267,7 +267,7 @@
   transform: rotate(-90deg);
 }
 
-/* Engine List */
+
 .sidebar__list {
   display: flex;
   flex-direction: column;
@@ -313,7 +313,7 @@
   border-radius: 4px;
 }
 
-/* Dynamic Engine Buttons */
+
 .sidebar__engine-btn {
   border: 1px solid transparent;
 }
@@ -342,7 +342,7 @@
   flex-shrink: 0;
 }
 
-/* Config Button */
+
 .sidebar__btn--config {
   border-radius: 0;
   border-top: 1px solid var(--outline-variant);
@@ -351,7 +351,7 @@
   flex-shrink: 0;
 }
 
-/* Sidebar Resizer */
+
 .sidebar__resizer {
   position: absolute;
   top: 0;
@@ -463,7 +463,7 @@
   padding-inline: 0;
 }
 
-/* Marquee Effect */
+
 .sidebar__marquee-container {
   flex: 1 1 auto;
   min-width: 0;

@@ -16,7 +16,7 @@ export function scoreCandidate(candidate, { snapshotCreatedAt, config }) {
   const likeVolume = clamp(
     Math.log1p(likes) / Math.log1p(config.likeSaturation),
   );
-  // Fresh mods get a boost, but older well-liked mods can still compete.
+
   const freshness =
     0.35 + 0.65 * 2 ** (-ageDays / config.freshnessHalfLifeDays);
   const score =

@@ -81,9 +81,9 @@ async function copyMoveFallback(api, source, destination, lastError) {
 }
 
 var APIneuFileSystem = {
-  /**
-   * Comprueba si un archivo o directorio existe.
-   */
+
+
+
   async exists(path) {
     if (typeof path !== "string" || !path.trim()) return false;
     try {
@@ -93,9 +93,9 @@ var APIneuFileSystem = {
       return false;
     }
   },
-  /**
-   * Asegura que un directorio exista. Si no existe, lo crea.
-   */
+
+
+
   async ensureDir(path) {
     if (typeof path !== "string" || !path.trim()) {
       throw new Error(
@@ -129,9 +129,9 @@ var APIneuFileSystem = {
       );
     }
   },
-  /**
-   * Escribe datos en un archivo. Reemplaza el archivo si ya existe.
-   */
+
+
+
   async write(path, data, isBinary = false) {
     if (typeof path !== "string" || !path.trim()) {
       throw new Error(
@@ -159,9 +159,9 @@ var APIneuFileSystem = {
       );
     }
   },
-  /**
-   * Agrega datos al final de un archivo existente.
-   */
+
+
+
   async append(path, data, isBinary = false) {
     if (typeof path !== "string" || !path.trim()) {
       throw new Error(
@@ -179,9 +179,9 @@ var APIneuFileSystem = {
       await Neutralino.filesystem.appendFile(path, data);
     }
   },
-  /**
-   * Lee el contenido de un archivo.
-   */
+
+
+
   async read(path, isBinary = false) {
     if (typeof path !== "string" || !path.trim()) {
       throw new Error(
@@ -194,9 +194,9 @@ var APIneuFileSystem = {
       return await Neutralino.filesystem.readFile(path);
     }
   },
-  /**
-   * Borra un archivo o directorio.
-   */
+
+
+
   async remove(path) {
     if (typeof path !== "string" || !path.trim()) return;
     const normalizedPath = String(path).replace(/\\/g, "/");

@@ -152,8 +152,8 @@ function getUsefulProcessOutput(output) {
     String(output || "")
       .split(/\r?\n|\r/)
       // curl writes its progress meter with carriage returns. On some Windows
-      // shells its final error lands on the same line as the last meter frame.
-      // Keep the error, but remove that frame before it reaches diagnostics.
+
+
       .map((line) => line.trim().replace(/^[#=O\-\s\d.%]+(?=curl:\s*\()/i, ""))
       .filter((line) => line)
       .filter((line) => !/^[#=O\-\s]+$/.test(line))
@@ -329,7 +329,7 @@ async function retryTransientDownload(
   cleanup,
   shouldRetry = isTransientDownloadError,
 ) {
-  // CDN mirrors can briefly return 503/504 while a replacement mirror is
+
   // becoming available. Give that recovery enough time instead of retrying
   // three times within a second and immediately surfacing a failure.
   let lastError;
@@ -410,8 +410,8 @@ async function verifyArchiveReadable(archivePath, archiveFormat) {
       const exitCode = Number(event.data);
       if (
         exitCode === 0 ||
-        // 7-Zip uses exit code 1 for warnings; extraction remains the final
-        // payload check before an install is accepted.
+
+
         exitCode === 1 ||
         isNonFatalUnzipFilenameWarning(exitCode, processOutput)
       ) {
@@ -1509,11 +1509,11 @@ async function downloadSingleArchive({
     }
   }
 
-  // Keep curl's progress bar enabled. `runCurlDownload` consumes its
-  // percentage updates; using -s here suppressed them and left every
-  // single-connection transfer looking like it was stuck at 2%.
-  // Use a low-speed timeout instead of an absolute transfer limit so a
-  // legitimate large or slow download is not aborted after two minutes.
+
+
+
+
+
   await runCurlDownload(
     `curl --globoff -# -L --fail --show-error -A ${quoteCommandArgument(BROWSER_USER_AGENT)} -H "Accept-Language: en-US,en;q=0.9" --connect-timeout 15 --speed-time 60 --speed-limit 1024 ${quoteCommandArgument(url)} -o ${quoteCommandArgument(outPath)}`,
     getTask,

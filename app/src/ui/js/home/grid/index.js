@@ -4,7 +4,7 @@ import { scrollManager } from "./scrollManager.js";
 import { gridRender } from "./gridRender.js";
 
 export const homeGrid = {
-  // Getters y Setters para exponer el estado a dependencias externas (como search.js)
+
   get currentPage() {
     return gridState.currentPage;
   },

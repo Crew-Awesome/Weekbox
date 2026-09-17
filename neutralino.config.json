@@ -3,7 +3,7 @@
   "storageLocation": "system",
   "dataLocation": "system",
   "applicationIcon": "app/assets/icons/launcher-icon.png",
-  "version": "2.4.1",
+  "version": "2.4.2",
   "defaultMode": "window",
   "port": 0,
   "documentRoot": "/app/",

@@ -60,6 +60,6 @@ async function buildAssets(watch = false) {
   }
 }
 
-// Execute the script based on command line arguments
+
 const isWatchMode = process.argv.includes("--watch");
 buildAssets(isWatchMode);

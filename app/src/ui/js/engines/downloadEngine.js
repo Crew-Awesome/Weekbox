@@ -305,7 +305,7 @@ export const downloadEngine = {
         return false;
       }
       // Mod injection uses directory junctions on Windows. Neutralino cannot
-      // reliably rename an engine directory while those junctions are inside it.
+
       await FS.cleanupEngineMods(engineId, version);
       await FS.cleanupEngineMods(engineId, updateVersion);
       await FS.api.remove(backupDir).catch(() => {});

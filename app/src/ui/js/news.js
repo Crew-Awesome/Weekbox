@@ -14,6 +14,7 @@ import { t } from "./i18n/index.js";
 import { applyDominantColor } from "../utils/media/extract-color.util.js";
 
 const NEWS_SITE_URL = "https://weekbox.immalloy.com";
+const NEWS_PAGE_URL = `${NEWS_SITE_URL}/features/news`;
 const NEWS_FEED_URL = `${NEWS_SITE_URL}/api/news`;
 const NEWS_CACHE_KEY = "weekbox_news_feed_v1";
 const NEWS_SEEN_KEY = "weekbox_news_seen_v1";
@@ -38,7 +39,7 @@ function newsDate(value) {
 }
 
 function newsLink(post) {
-  return `${NEWS_SITE_URL}/news/${encodeURIComponent(String(post.slug || ""))}`;
+  return `${NEWS_PAGE_URL}/${encodeURIComponent(String(post.slug || ""))}`;
 }
 
 const newsMarkdown = new Marked({ gfm: true, breaks: false });
@@ -261,7 +262,6 @@ export const newsView = {
     try {
       localStorage.setItem(NEWS_CACHE_KEY, JSON.stringify(payload));
     } catch {
-      // Storage can be unavailable in a locked-down webview; the feed still works.
     }
   },
 

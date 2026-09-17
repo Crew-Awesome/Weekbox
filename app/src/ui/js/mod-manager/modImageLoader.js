@@ -17,9 +17,9 @@ export function primeModCover(modId, coverUrl) {
 
 export async function getModCover(modId, fetchDetails) {
   const cacheKey = String(modId);
-  // Always reflect the current locally stored cover. The settings modal reads
-  // the same source, so this keeps the card in sync after a cover is edited or
-  // reassigned (imported mods in particular get their cover changed later).
+
+
+
   const localCover = await FS.getModCover(modId);
   if (localCover) {
     primeModCover(modId, localCover);

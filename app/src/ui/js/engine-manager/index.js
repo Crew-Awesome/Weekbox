@@ -892,7 +892,7 @@ export const engineManagerModal = {
   render(engines) {
     const container = document.getElementById("engine-manager-modal-body");
     if (!container) return;
-    // Limpieza de renderizado previo
+
     if (this.resizeObserver) {
       this.resizeObserver.disconnect();
       this.resizeObserver = null;
@@ -925,7 +925,7 @@ export const engineManagerModal = {
       container.appendChild(addEngineButton);
       return;
     }
-    // 1. Agrupar los engines por ID
+
     const groupedEngines = {};
     engines.forEach((engine) => {
       if (!groupedEngines[engine.id]) {
@@ -933,16 +933,16 @@ export const engineManagerModal = {
       }
       groupedEngines[engine.id].push(engine.version);
     });
-    // 2. Keep the carousel and sidebar in the user's preferred order.
+
     const engineOrder = getEngineOrder(Object.keys(groupedEngines));
     const sortedEngineEntries = Object.entries(groupedEngines).sort((a, b) => {
       return engineOrder.indexOf(a[0]) - engineOrder.indexOf(b[0]);
     });
-    // Ajustar el índice por si se borró el último elemento
+
     if (this.currentIndex >= sortedEngineEntries.length) {
       this.currentIndex = Math.max(0, sortedEngineEntries.length - 1);
     }
-    // 3. Crear elementos del layout del carrusel
+
     const carouselTpl = document.getElementById("tpl-engine-manager-carousel");
     let viewport, track, btnPrev, btnNext, indexContainer;
     if (carouselTpl) {
@@ -1003,7 +1003,7 @@ export const engineManagerModal = {
       syncEngineOrder();
     };
 
-    // 4. Generar las tarjetas y los iconos del índice
+
     sortedEngineEntries.forEach(([engineId, versions]) => {
       const details = getEngineDetails(engineId);
       const displayName = getEngineLabel(engineId, details.name);
@@ -1104,7 +1104,7 @@ export const engineManagerModal = {
         header.appendChild(familyActions);
       }
 
-      // Aplicar color extraído con la nueva utilidad y opciones personalizadas
+
       const imgEl = header.querySelector(".engine-col-icon");
       applyDominantColor(imgEl, card, {
         cssVar: "--engine-color",
@@ -1418,7 +1418,7 @@ export const engineManagerModal = {
       versionsList.appendChild(addVersionButton);
       card.appendChild(versionsList);
       track.appendChild(card);
-      // -- Icono del  ndice Inferior (Pastilla) --
+
       const indexIcon = document.createElement("button");
       indexIcon.type = "button";
       indexIcon.className = "em-index-icon";
@@ -1471,7 +1471,7 @@ export const engineManagerModal = {
       () => void this.showDownloadPicker(),
     );
     indexContainer.appendChild(addEngineButton);
-    // 5. L gica de c lculo y actualizaci n del Carrusel
+
     const updateCarousel = () => {
       const vw = viewport.clientWidth;
       if (vw === 0) return;

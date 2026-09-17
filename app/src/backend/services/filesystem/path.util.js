@@ -50,8 +50,8 @@ function getModFolderName(mod) {
 
 function getEngineModFolderName(mod) {
   const name = mod.engineFolderName || getModFolderName(mod);
-  // Psych Online loads folder names directly.  Retain a stable mod ID suffix
-  // when an imported folder would otherwise collide with another mod.
+
+
   if (mod.engineId === "psychonline" && !mod.engineFolderName && mod.id) {
     return `${name}--${String(mod.id).replace(/[^a-z0-9_-]/gi, "_")}`;
   }

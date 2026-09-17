@@ -22,9 +22,9 @@ A Re-Imagined Original FNF Mod Launcher
 - [Discord Server](https://discord.gg/xQTtYF2Cfn)
 - [WeekBox on GameBanana](https://gamebanana.com/tools/23228)
 - [WeekBox Website](https://weekbox.immalloy.com/)
-- [News](https://weekbox.immalloy.com/news)
-- [Downloads](https://weekbox.immalloy.com/downloads)
-- [Credits](https://weekbox.immalloy.com/credits)
+- [News](https://weekbox.immalloy.com/features/news)
+- [Downloads](https://weekbox.immalloy.com/features/downloads)
+- [Credits](https://weekbox.immalloy.com/features/ccredits)
 
 Want to work on WeekBox, translate it, or help in another way? Join the
 Discord server and DM **Malloy** or **Britex**.
@@ -72,7 +72,7 @@ WeekBox is maintained by [ImMalloy](https://github.com/ImMalloy) and
 The app uses [Neutralinojs](https://neutralino.js.org/). Mod listings and
 downloads come from [GameBanana](https://gamebanana.com/) and
 [Sniro's Psych Online site](https://funkin.sniro.boo/mods).
-See the [full credits on the WeekBox website](https://weekbox.immalloy.com/credits).
+See the [full credits on the WeekBox website](https://weekbox.immalloy.com/features/ccredits).
 
 ## License
 

@@ -66,7 +66,7 @@ body.window-unfocused::after {
   width: 100%;
   white-space: nowrap;
   overflow: hidden;
-  /* Evitar que los botones fijos se aplasten */
+
   flex-shrink: 0;
 }
 
@@ -87,7 +87,7 @@ body.window-unfocused::after {
   height: 1px;
   background-color: var(--border-color);
   margin: var(--spacing-xs) 0;
-  /* Evitar aplastamiento */
+
   flex-shrink: 0;
 }
 
@@ -109,7 +109,7 @@ body.window-unfocused::after {
   letter-spacing: 1px;
   margin: 0 var(--spacing-sm);
   font-weight: 800;
-  /* Evitar aplastamiento */
+
   flex-shrink: 0;
 }
 
@@ -2005,9 +2005,9 @@ body.window-unfocused::after {
   transform: scale(0.97);
 }
 
-/* ========================================= */
-/* TYPOGRAPHY                                */
-/* ========================================= */
+
+
+
 
 .text-sizer {
   font-size: 20px;
@@ -2715,7 +2715,7 @@ body.window-unfocused::after {
   }
 }
 
-/* SETTINGS LIST (SWITCHES) */
+
 .settings-list {
   display: flex;
   flex-direction: column;
@@ -2804,7 +2804,7 @@ body.window-unfocused::after {
   outline: none;
 }
 
-/* Animaciones del Switch tipo iOS */
+
 .switch {
   position: relative;
   display: inline-block;

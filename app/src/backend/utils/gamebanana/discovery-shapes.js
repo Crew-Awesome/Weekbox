@@ -1,15 +1,15 @@
-/**
- * Normalized input for the later pure Discovery ranker.
- * @typedef {Object} DiscoveryCandidate
- * @property {number} id
- * @property {number} likes
- * @property {number} views
- * @property {number} createdAt Unix seconds
- * @property {?number} categoryId
- * @property {?string} engineId
- * @property {?string} creatorId
- * @property {Object} raw
- */
+
+
+
+
+
+
+
+
+
+
+
+
 
 export function normalizeDiscoveryCandidate(raw, context = {}) {
   const number = (value, fallback = 0) => {
@@ -36,18 +36,18 @@ export function normalizeDiscoveryCandidate(raw, context = {}) {
   };
 }
 
-/**
- * @typedef {Object} DiscoveryResult
- * @property {Array<Object>} mods
- * @property {number} page
- * @property {number} pageSize
- * @property {?string} snapshotId
- * @property {boolean} exhausted
- * @property {boolean} partial
- * @property {boolean} stale
- * @property {Array<Object>} sourceErrors
- * @property {Object} diagnostics
- */
+
+
+
+
+
+
+
+
+
+
+
+
 export function createDiscoveryResult({
   mods = [],
   page = 1,

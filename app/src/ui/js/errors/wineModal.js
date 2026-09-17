@@ -18,7 +18,7 @@ export const wineModal = {
 
     const modal = document.createElement("section");
     modal.id = "wine-missing-modal";
-    modal.className = "app-update-overlay"; // Reusing the update overlay class for consistency
+    modal.className = "app-update-overlay";
     modal.setAttribute("role", "dialog");
     modal.setAttribute("aria-modal", "true");
     modal.innerHTML = `
@@ -55,7 +55,7 @@ export const wineModal = {
   },
 };
 
-// Automatically listen for the missing wine event
+
 window.addEventListener("wine-missing", () => {
   wineModal.show();
 });

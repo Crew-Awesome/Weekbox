@@ -3,7 +3,7 @@
   border-top: 1px solid var(--border-color);
   padding: var(--spacing-md) var(--spacing-lg);
   background-color: var(--bg-panel);
-  /* Evitar aplastamiento */
+
   flex-shrink: 0;
 }
 
@@ -80,7 +80,7 @@
   transform: scale(1);
 }
 
-/* ASIDE (Sidebar del Config) */
+
 .config-aside {
   width: 220px;
   min-width: 0;
@@ -153,7 +153,7 @@
   box-shadow: inset 3px 0 var(--primary);
 }
 
-/* MAIN CONTENT */
+
 .config-main {
   flex: 1;
   display: flex;

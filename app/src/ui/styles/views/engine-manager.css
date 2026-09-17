@@ -9,27 +9,27 @@
   color: var(--text-muted);
 }
 
-/* El contenedor principal de cada lista (Engines / Standalone Mods) */
+
 .engines-list {
   display: flex;
   flex-direction: column;
   gap: var(--spacing-sm);
   margin-top: var(--spacing-sm);
-  /* Compartir el espacio entre las listas disponibles */
+
   flex: 1 1 auto;
   min-height: 0;
 }
 
-/* El ├írea espec├¡fica con Overflow donde viven los botones din├ímicos */
+
 .engines-wrapper {
   display: flex;
   flex-direction: column;
   gap: var(--spacing-sm);
-  /* Propiedades de Scroll */
+
   flex: 1 1 auto;
   min-height: 0;
   overflow-y: auto;
-  padding-right: 4px; /* Un poco de margen para que el scrollbar se vea limpio */
+  padding-right: 4px;
 }
 
 .engine-btn {
@@ -49,14 +49,14 @@
   flex-shrink: 0;
 }
 
-/* Scrollbar personalizado para la lista de Engines y Standalone Mods */
-.engines-wrapper/* Removed scrollbar */
 
-.engines-wrapper/* Removed track */
+.engines-wrapper
 
-.engines-wrapper/* Removed thumb */
+.engines-wrapper
 
-.engines-wrapper/* Removed thumb:hover */
+.engines-wrapper
+
+.engines-wrapper
 
 .engines-offline-message {
   margin: 0;
@@ -171,7 +171,7 @@
   color: #ff9b9b;
 }
 
-/* Keep the download cancel action out of Engine Manager's 32px icon-button rule. */
+
 .engine-fixed-bottom .engine-download-actions .engine-action-btn {
   width: auto;
   height: auto;
@@ -633,7 +633,7 @@
   }
 }
 
-/* Limpiamos el body para que el viewport ocupe el 100% y esconda el desbordamiento */
+
 .engine-manager-body {
   padding: 0;
   flex: 1;
@@ -667,7 +667,7 @@
   }
 }
 
-/* Envoltura del carrusel (Namespaced) */
+
 .em-carousel-viewport {
   flex: 1;
   width: 100%;
@@ -682,7 +682,7 @@
   );
 }
 
-/* La pista animada (Namespaced para evitar conflicto con el Home) */
+
 .em-carousel-track {
   display: flex;
   align-items: center;
@@ -692,7 +692,7 @@
   height: 100%;
 }
 
-/* Tarjeta (Card) individual */
+
 .engine-column {
   width: 300px;
   height: 80%;
@@ -702,7 +702,7 @@
   flex-direction: column;
   flex-shrink: 0;
 
-  /* Animaciones de estado inactivo a activo */
+
   transition:
     transform 360ms cubic-bezier(0.2, 0, 0, 1),
     opacity 360ms cubic-bezier(0.2, 0, 0, 1),
@@ -719,7 +719,7 @@
   --engine-color: rgba(255, 255, 255, 0.1);
 }
 
-/* Estado Activo (Card Centrada) */
+
 .engine-column.active {
   opacity: 1;
   transform: scale(1);
@@ -728,16 +728,16 @@
   background-color: color-mix(in srgb, var(--bg-panel) 38%, transparent);
 }
 
-/* Permitir clic en columnas inactivas pero deshabilitar interacciones internas */
+
 .engine-column:not(.active) {
   cursor: pointer;
 }
 
 .engine-column:not(.active) .engine-versions-list {
-  pointer-events: none; /* Bloquea clics y scrolls accidentales en listas no activas */
+  pointer-events: none;
 }
 
-/* Botones de Navegaci├│n del Carrusel (< >) */
+
 .em-nav-btn {
   position: absolute;
   top: 50%;
@@ -777,7 +777,7 @@
   right: 24px;
 }
 
-/* === ├ìNDICE INFERIOR (TIPO PILL/PASTILLA) === */
+
 .em-carousel-index {
   position: absolute;
   right: auto;
@@ -853,7 +853,7 @@
   transform: scale(1.16) rotate(-2deg);
 }
 
-/* === LISTAS DE VERSIONES (Transparente y L├¡neas top/bottom) === */
+
 .engine-column-header {
   display: flex;
   flex-direction: column;
@@ -970,7 +970,7 @@
     transform 180ms cubic-bezier(0.2, 0, 0, 1);
 }
 
-/* El HOVER en la versi├│n SOLO se aplica cuando la tarjeta est├í ACTIVA */
+
 .engine-column.active .version-item:hover {
   background-color: var(--engine-color);
 }

@@ -1,12 +1,11 @@
 #ifndef MyAppVersion
-#define MyAppVersion "2.4.1"
+#define MyAppVersion "2.4.2"
 #endif
 
 #define MyAppName "WeekBox"
 #define MyAppPublisher "Crew Awesome"
 #define MyAppURL "https://github.com/Crew-Awesome/Weekbox"
 #define MyAppExeName "WeekBox-win_x64.exe"
-; TODO: replace with the real WeekBox Discord invite before shipping.
 #define MyDiscordURL "https://discord.gg/xQTtYF2Cfn"
 
 [Setup]

@@ -44,7 +44,6 @@
   --info: #80d4ff;
   --info-container: rgb(90 182 255 / 16%);
 
-  /* Fallbacks for unmigrated components (Legacy) */
   --bg-color: var(--surface);
   --bg-panel: var(--surface-container);
   --bg-hover: var(--surface-container-high);

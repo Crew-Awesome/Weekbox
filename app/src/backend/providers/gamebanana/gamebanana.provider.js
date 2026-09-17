@@ -426,7 +426,7 @@ export const gameBananaApi = {
   engineCategories: ENGINE_CATEGORY_IDS,
   modKindCategories: MOD_KIND_CATEGORY_IDS,
   legacyEngineCategories: {
-    43774: "vslice", // Originals / Full Mods (Base)
+    43774: "vslice",
   },
   featuredUrl:
     "https://raw.githubusercontent.com/Crew-Awesome/weekbox.featured/main/public/featured.json",
@@ -597,7 +597,7 @@ export const gameBananaApi = {
           });
         }
       } catch (error) {
-        // Ignore non-URL text found in submission metadata.
+
       }
     };
 
@@ -674,7 +674,7 @@ export const gameBananaApi = {
       return available;
     } catch {
       // A blocked or unsupported HEAD request does not prove the download is
-      // broken, so leave the option available in that case.
+
       return null;
     }
   },
@@ -1079,7 +1079,7 @@ export const gameBananaApi = {
               await options.onProgress(chunk.map((mod) => this.toGridMod(mod)));
           }
 
-          // Subfeed normally returns fifteen records. A short response is its last page.
+
           if (records.length < 15) feed.complete = true;
         }
         if (!successfulPages)

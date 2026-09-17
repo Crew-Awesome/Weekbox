@@ -251,8 +251,8 @@ export const modManagerModal = {
         });
       }
 
-      // FIX: Escuchar eventos globales de actualización para refrescar automáticamente
-      // si la ventana está abierta y una descarga termina.
+
+
       if (!this.eventBound) {
         document.addEventListener("mods-updated", () => {
           if (

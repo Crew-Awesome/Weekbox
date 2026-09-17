@@ -1,4 +1,4 @@
-/* Efecto marquee */
+
 .marquee-container {
   flex: 1 1 auto;
   min-width: 0;
@@ -440,9 +440,9 @@
   color: #dfdfdf;
 }
 
-/* ------------------------------------
-   P├¡ldora del Engine (Carousel / Grid)
------------------------------------- */
+
+
+
 .home-engine-badge {
   width: fit-content;
   height: 24px;
@@ -459,7 +459,7 @@
   font-size: 0.75rem;
   font-weight: 600;
   margin: 2px 0;
-  position: static; /* Fuerzo posicionamiento est├ítico por defecto */
+  position: static;
 }
 
 .home-engine-badge img {

@@ -155,11 +155,11 @@ UPDATE_DIRECTORY = ".weekbox-update";
 
 appUpdater = {
   getCurrentVersion,
-  /**
-   * Checks for available updates by comparing the current application version
-   * against the latest version reported by the GitHub API.
-   * @returns {Promise<Object>} An object detailing the update availability status.
-   */
+
+
+
+
+
   async check() {
     const release = await fetchLatestRelease();
     const latestVersion = normalizeVersion(release.tag_name);
@@ -241,12 +241,12 @@ appUpdater = {
       releaseUrl: release.html_url || RELEASES_PAGE,
     };
   },
-  /**
-   * Orchestrates the installation of a new update based on its type and target platform.
-   * @param {Object} update - The update data object returned by check().
-   * @param {Function} [onProgress] - Callback to report installation progress.
-   * @param {Function} [onHandoff] - Callback executed immediately before exiting the app.
-   */
+
+
+
+
+
+
   async install(update, onProgress = () => {}, onHandoff = () => {}) {
     if (update?.isResourcesUpdate) {
       return this.installResourcesUpdate(update, onProgress, onHandoff);

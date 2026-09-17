@@ -3,7 +3,7 @@ function setupDropdown(trigger, container, options = {}) {
   const {
     openClass = "open",
     menuElement = null,
-    // Si se provee, controlará la propiedad "hidden"
+
     onToggle = null,
   } = options;
   if (!trigger || !container) return { close: () => {}, destroy: () => {} };

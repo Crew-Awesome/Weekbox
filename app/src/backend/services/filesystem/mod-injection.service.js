@@ -367,7 +367,7 @@ var _ModInjectionService = class _ModInjectionService {
     let removed = false;
     for (const linkPath of paths) {
       if (!(await this.api.exists(linkPath))) continue;
-      // Directly downloaded engine mods are normal folders. They do not belong
+
       // to this WeekBox library entry, so never delete them as if they were links.
       removed =
         (await removeEngineModLink({

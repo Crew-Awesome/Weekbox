@@ -200,7 +200,7 @@ export const enginesView = {
           this.currentVersion,
         );
 
-        // Settings: Hide on launch
+
         if (appSettings.get("hideOnLaunch")) {
           Neutralino.window.hide();
         }
@@ -216,7 +216,7 @@ export const enginesView = {
               state === "error" ||
               state === "not_found"
             ) {
-              // Settings: Show back when closed
+
               if (appSettings.get("hideOnLaunch")) {
                 Neutralino.window.show();
                 Neutralino.window.focus();
@@ -313,11 +313,11 @@ export const enginesView = {
             versionData,
           );
           if (dlUI) dlUI.style.display = "none";
-          await this.updateButtonState(); // Actualiza a "Launch"
+          await this.updateButtonState();
 
           document.dispatchEvent(new CustomEvent("mods-updated"));
 
-          // Settings: Autostart Engine after download!
+
           if (appSettings.get("autoStartAfterDownload")) {
             setTimeout(() => {
               const freshBtn = document.getElementById("launch-engine-btn");
@@ -328,7 +328,7 @@ export const enginesView = {
               ) {
                 freshBtn.click();
               }
-            }, 500); // Pequeño retraso para evitar bugs de la UI
+            }, 500);
           }
         } else {
           engineInstallToast.error(

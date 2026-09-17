@@ -48,7 +48,7 @@ export function createCard(mod, index) {
   };
   imageContainer.appendChild(image);
 
-  // Engine / category indicator at top-left
+
   const engine = FS.getEngineDetails(mod.engineId);
   const engineIndicator = document.createElement("span");
   engineIndicator.className = "grid-engine-indicator";

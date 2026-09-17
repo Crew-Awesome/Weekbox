@@ -497,7 +497,7 @@ async function importCustomEngineContent(service, install, engineId, version) {
       );
       if (sourceMatch) {
         // ponytail: legacy records have no source metadata; use their engine
-        // content folder identity until content hashes are ever needed.
+
         const legacyMatch = existingMods.find(
           (mod) =>
             sourceMatch.source === "custom-engine" &&
@@ -2286,7 +2286,7 @@ var _FileSystemService = class _FileSystemService {
           `Remove ${consumers.map((item) => item.name).join(", ")} before changing ${mod.name}`,
         );
     }
-    // Remove the current link before changing its destination (mods vs Codename addons).
+
     if ((mod.kind || "mod") !== type)
       await this.injection.unlinkFromInstalledEngines(mod, engines);
     const updated = await this.mods.setType(modId, type);

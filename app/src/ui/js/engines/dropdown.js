@@ -70,7 +70,7 @@ export const engineDropdown = {
         optionDiv.classList.add("selected");
         optionDiv.setAttribute("aria-selected", "true");
 
-        // Cerramos usando la nueva utilidad
+
         this.dropdownController?.close();
 
         fetchAndRenderReleaseNotes(v, getTargetLink(v));
@@ -86,7 +86,7 @@ export const engineDropdown = {
     fetchAndRenderReleaseNotes(initialVersion, getTargetLink(initialVersion));
     if (onVersionChanged) onVersionChanged(initialVersion.version);
 
-    this.destroy(); // Limpia previos
+    this.destroy();
     this.dropdownController = setupDropdown(trigger, dropdown, {
       menuElement: optionsContainer,
     });

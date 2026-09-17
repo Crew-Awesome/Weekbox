@@ -79,8 +79,8 @@ export async function rememberInstalledEngineBuild(
 }
 
 async function findAvailableUpdate(engineId, installedVersion) {
-  // A numbered Psych Online install is deliberately pinned. Only its moving
-  // Latest entry follows new releases.
+
+
   if (engineId === "psychonline" && installedVersion !== "Latest") {
     return { status: "pinned" };
   }
@@ -95,8 +95,8 @@ async function findAvailableUpdate(engineId, installedVersion) {
   const savedBuild = await getInstalledBuild(engineId, installedVersion);
   if (savedBuild === key) return { status: "current" };
 
-  // Older installs did not record which release the moving Latest folder
-  // contained. Establish a baseline once instead of offering a false update.
+
+
   if (engineId === "psychonline" && installedVersion === "Latest") {
     await saveInstalledBuild(engineId, installedVersion, key);
     return { status: "current" };
