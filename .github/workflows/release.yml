@@ -209,23 +209,6 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: gh release upload "$RELEASE_TAG" dist/release-assets/* --clobber
 
-  refresh-downloads:
-    needs: [build-and-upload, package-macos, package-linux]
-    runs-on: ubuntu-latest
-    steps:
-      - name: Refresh the Downloads page
-        env:
-          REVALIDATE_SECRET: ${{ secrets.WEEKBOX_SITE_REVALIDATE_SECRET }}
-        run: |
-          if [ -z "$REVALIDATE_SECRET" ]; then
-            echo "::error::WEEKBOX_SITE_REVALIDATE_SECRET is not configured."
-            exit 1
-          fi
-          curl --fail-with-body --silent --show-error --request POST \
-            --max-time 30 \
-            'https://weekbox.immalloy.com/api/revalidate-release' \
-            --header "Authorization: Bearer $REVALIDATE_SECRET"
-
   announce-discord:
     needs: [build-and-upload, package-macos, package-linux]
     runs-on: ubuntu-latest

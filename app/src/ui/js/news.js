@@ -13,16 +13,28 @@ import { sanitizeReleaseHtml } from "./engines/releaseNotes.js";
 import { t } from "./i18n/index.js";
 import { applyDominantColor } from "../utils/media/extract-color.util.js";
 
-const NEWS_SITE_URL = "https://weekbox.immalloy.com";
-const NEWS_PAGE_URL = `${NEWS_SITE_URL}/features/news`;
-const NEWS_FEED_URL = `${NEWS_SITE_URL}/api/news`;
-const NEWS_CACHE_KEY = "weekbox_news_feed_v1";
+const NEWS_REPOSITORY = "Crew-Awesome/weekbox.news";
+const NEWS_BRANCH = "main";
+const NEWS_GITHUB_URL = `https://github.com/${NEWS_REPOSITORY}`;
+const NEWS_RAW_URL = `https://raw.githubusercontent.com/${NEWS_REPOSITORY}/${NEWS_BRANCH}`;
+const NEWS_PUBLIC_URL = `${NEWS_RAW_URL}/public`;
+const NEWS_INDEX_PATH = "content/news/index.json";
+const NEWS_SLUG = /^[a-z0-9]+(?:-[a-z0-9]+)*$/i;
+const NEWS_CACHE_KEY = "weekbox_news_feed_v6";
 const NEWS_SEEN_KEY = "weekbox_news_seen_v1";
 const NEWS_REQUEST_TIMEOUT = 8000;
 
-function safeNewsUrl(value) {
+function safeNewsUrl(value, baseUrl = `${NEWS_PUBLIC_URL}/`) {
   try {
-    const url = new URL(String(value || "").trim(), NEWS_SITE_URL);
+    const rawValue = String(value || "").trim();
+    const rootRelative = rawValue.startsWith("/");
+    const relativeValue = rawValue.startsWith("/")
+      ? rawValue.slice(1)
+      : rawValue;
+    const url = new URL(
+      relativeValue,
+      rootRelative ? `${NEWS_PUBLIC_URL}/` : baseUrl,
+    );
     return url.protocol === "https:" || url.protocol === "http:"
       ? url.href
       : "";
@@ -38,19 +50,115 @@ function newsDate(value) {
     : new Intl.DateTimeFormat(undefined, { dateStyle: "medium" }).format(date);
 }
 
+function githubRawUrl(path) {
+  return `${NEWS_RAW_URL}/${path.split("/").map(encodeURIComponent).join("/")}`;
+}
+
+function githubRawDirectoryUrl(path) {
+  return githubRawUrl(path.slice(0, path.lastIndexOf("/") + 1));
+}
+
+async function fetchNewsPost(catalogPost, signal) {
+  const slug = catalogPost.slug;
+  const postPath = `content/news/posts/${slug}/post.json`;
+  const response = await nativeFetch(githubRawUrl(postPath), {
+    headers: { Accept: "application/json" },
+    signal,
+  });
+  if (!response.ok)
+    throw new Error(`GitHub news post returned ${response.status}`);
+  const post = await response.json();
+  const bodyPath = `content/news/posts/${slug}/body.md`;
+  const bodyResponse = await nativeFetch(githubRawUrl(bodyPath), {
+    headers: { Accept: "text/markdown" },
+    signal,
+  });
+  if (!bodyResponse.ok)
+    throw new Error(`GitHub news body returned ${bodyResponse.status}`);
+  return normalizeNewsPost(
+    { ...post, body: await bodyResponse.text() },
+    catalogPost,
+    postPath,
+  );
+}
+
+function githubPostUrl(path) {
+  return `${NEWS_GITHUB_URL}/blob/${NEWS_BRANCH}/${path
+    .split("/")
+    .map(encodeURIComponent)
+    .join("/")}`;
+}
+
+function normalizeNewsPost(post, catalogPost, sourcePath) {
+  if (!post || typeof post !== "object") return null;
+  const slug =
+    typeof catalogPost.slug === "string"
+      ? catalogPost.slug.trim().toLowerCase()
+      : "";
+  const publishedAt = Date.parse(catalogPost.publishedAt || "");
+  if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(slug)) return null;
+  if (typeof post.title !== "string" || !post.title.trim()) return null;
+  if (!Number.isFinite(publishedAt) || publishedAt > Date.now()) return null;
+  return {
+    slug,
+    title: post.title.trim(),
+    excerpt: typeof post.excerpt === "string" ? post.excerpt.trim() : "",
+    publishedAt: catalogPost.publishedAt,
+    coverUrl:
+      typeof post.coverUrl === "string" && post.coverUrl.trim()
+        ? post.coverUrl
+        : "/assets/images/banner.webp",
+    tags: Array.isArray(catalogPost.tags)
+      ? catalogPost.tags.filter((tag) => typeof tag === "string").slice(0, 8)
+      : [],
+    body: typeof post.body === "string" ? post.body : "",
+    sourcePath,
+    sourceBaseUrl: githubRawDirectoryUrl(sourcePath),
+  };
+}
+
+async function fetchNewsPayload(signal) {
+  const indexResponse = await nativeFetch(githubRawUrl(NEWS_INDEX_PATH), {
+    headers: { Accept: "application/json" },
+    signal,
+  });
+  if (!indexResponse.ok)
+    throw new Error(`GitHub news index returned ${indexResponse.status}`);
+  const index = await indexResponse.json();
+  const catalogPosts = Array.isArray(index?.posts)
+    ? index.posts.filter(
+        (post) =>
+          post &&
+          typeof post === "object" &&
+          typeof post.slug === "string" &&
+          NEWS_SLUG.test(post.slug),
+      )
+    : [];
+  const posts = await Promise.all(
+    catalogPosts.map((post) => fetchNewsPost(post, signal)),
+  );
+  return {
+    schemaVersion: 1,
+    generatedAt: new Date().toISOString(),
+    posts: posts.filter(Boolean).slice(0, 24),
+  };
+}
+
 function newsLink(post) {
-  return `${NEWS_PAGE_URL}/${encodeURIComponent(String(post.slug || ""))}`;
+  return post.sourcePath ? githubPostUrl(post.sourcePath) : NEWS_GITHUB_URL;
 }
 
 const newsMarkdown = new Marked({ gfm: true, breaks: false });
 
-function renderNewsMarkdown(value) {
+function renderNewsMarkdown(value, post) {
   const source = String(value || "").replace(/\r\n?/g, "\n");
   if (!source.trim()) return "";
   const html = newsMarkdown.parse(source, {
     walkTokens(token) {
       if (token.type !== "link" && token.type !== "image") return;
-      token.href = token.href ? safeNewsUrl(token.href) : "";
+      token.href = token.href
+        ? safeNewsUrl(token.href, post?.sourceBaseUrl)
+        : "";
     },
   });
   return sanitizeReleaseHtml(html);
@@ -116,7 +224,6 @@ function handleNewsLoadError(view, error, cached, badgeOnly) {
 
 export const newsView = {
   request: null,
-  detailRequest: null,
   modal: null,
 
   init() {
@@ -131,9 +238,7 @@ export const newsView = {
 
   destroy() {
     this.request?.abort();
-    this.detailRequest?.abort();
     this.request = null;
-    this.detailRequest = null;
     this.closeModal(false);
     this.grid = null;
     this.status = null;
@@ -161,10 +266,9 @@ export const newsView = {
     return modal;
   },
 
-  async open(post) {
+  open(post) {
     const modal = this.ensureModal();
     if (!modal) return;
-    this.detailRequest?.abort();
     const image = modal.querySelector("#news-detail-image");
     const title = modal.querySelector("#news-detail-title");
     const meta = modal.querySelector("#news-detail-meta");
@@ -172,7 +276,7 @@ export const newsView = {
     const body = modal.querySelector("#news-detail-body");
     const link = modal.querySelector("#news-detail-link");
     const renderBody = (value) => {
-      body.innerHTML = renderNewsMarkdown(value);
+      body.innerHTML = renderNewsMarkdown(value, post);
       enhanceContentLinks(body, {
         onGameBanana: (submission) => modModal.openSubmission(submission),
       });
@@ -181,13 +285,13 @@ export const newsView = {
     renderNewsMeta(meta, post);
     excerpt.textContent = String(post.excerpt || "");
     excerpt.hidden = !post.excerpt;
-    body.textContent = post.excerpt || t("news.loadingArticle");
+    renderBody(post.body || post.excerpt || t("news.articleUnavailable"));
     link.href = newsLink(post);
     link.onclick = (event) => {
       event.preventDefault();
       Neutralino.os.open(link.href).catch(() => {});
     };
-    const coverUrl = safeNewsUrl(post.coverUrl);
+    const coverUrl = safeNewsUrl(post.coverUrl, post.sourceBaseUrl);
     applyNewsCover(modal, image, post, coverUrl);
     modal.style.display = "flex";
     requestAnimationFrame(() => {
@@ -199,35 +303,11 @@ export const newsView = {
         () => this.closeModal(),
       );
     });
-    const controller = new AbortController();
-    this.detailRequest = controller;
-    const timeout = setTimeout(() => controller.abort(), NEWS_REQUEST_TIMEOUT);
-    try {
-      const response = await nativeFetch(
-        `${NEWS_SITE_URL}/api/news/${encodeURIComponent(String(post.slug))}`,
-        { headers: { Accept: "application/json" }, signal: controller.signal },
-      );
-      if (!response.ok)
-        throw new Error(`News post returned ${response.status}`);
-      const payload = await response.json();
-      if (!controller.signal.aborted && typeof payload?.body === "string") {
-        renderBody(payload.body || post.excerpt || "");
-      }
-    } catch (error) {
-      if (!controller.signal.aborted) {
-        renderBody(post.excerpt || t("news.articleUnavailable"));
-      }
-    } finally {
-      clearTimeout(timeout);
-      if (this.detailRequest === controller) this.detailRequest = null;
-    }
   },
 
   closeModal(restoreFocus = true) {
     const modal = this.modal;
     if (!modal) return;
-    this.detailRequest?.abort();
-    this.detailRequest = null;
     deactivateCheckoutDialog(modal, restoreFocus);
     modal.classList.remove("show");
     setTimeout(() => {
@@ -261,8 +341,7 @@ export const newsView = {
   writeCache(payload) {
     try {
       localStorage.setItem(NEWS_CACHE_KEY, JSON.stringify(payload));
-    } catch {
-    }
+    } catch {}
   },
 
   updateUnreadBadge(posts) {
@@ -327,7 +406,7 @@ export const newsView = {
         t("news.openArticle", { title: post.title }),
       );
       card.addEventListener("click", () => void this.open(post));
-      const coverUrl = safeNewsUrl(post.coverUrl);
+      const coverUrl = safeNewsUrl(post.coverUrl, post.sourceBaseUrl);
       if (coverUrl) {
         const image = document.createElement("img");
         image.className = "news-view__card-image";
@@ -393,16 +472,7 @@ export const newsView = {
     const timeout = setTimeout(() => controller.abort(), NEWS_REQUEST_TIMEOUT);
     if (this.refreshButton) this.refreshButton.disabled = true;
     try {
-      const response = await nativeFetch(NEWS_FEED_URL, {
-        headers: { Accept: "application/json" },
-        signal: controller.signal,
-      });
-      if (!response.ok)
-        throw new Error(`News feed returned ${response.status}`);
-      const payload = await response.json();
-      if (payload?.schemaVersion !== 1 || !Array.isArray(payload.posts)) {
-        throw new Error("Unsupported news feed");
-      }
+      const payload = await fetchNewsPayload(controller.signal);
       this.writeCache(payload);
       this.updateUnreadBadge(payload.posts);
       if (!badgeOnly) {

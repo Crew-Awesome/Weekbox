@@ -22,7 +22,7 @@ A Re-Imagined Original FNF Mod Launcher
 - [Discord Server](https://discord.gg/xQTtYF2Cfn)
 - [WeekBox on GameBanana](https://gamebanana.com/tools/23228)
 - [WeekBox Website](https://weekbox.immalloy.com/)
-- [News](https://weekbox.immalloy.com/features/news)
+- [News](https://github.com/Crew-Awesome/weekbox.news)
 - [Downloads](https://weekbox.immalloy.com/features/downloads)
 - [Credits](https://weekbox.immalloy.com/features/ccredits)
 

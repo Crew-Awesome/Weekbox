@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Newsletter posts now load from the WeekBox GitHub repository.
+
+### Removed
+
+- Removed the release workflow request to the old WeekBox website API.
+
 ## [2.4.2] - 2026-09-16
 
 ### Changed
