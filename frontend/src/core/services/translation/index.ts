@@ -1,5 +1,4 @@
 import { http } from "../../backend/http";
-import { platform } from "@platform";
 
 /**
  * Cache entry for translated content.
@@ -80,6 +79,10 @@ function splitIntoChunks(text: string, maxChunkLength = 4500): string[] {
       }
     }
 
+    if (splitIndex <= 0) {
+      splitIndex = maxChunkLength;
+    }
+
     chunks.push(remaining.slice(0, splitIndex));
     remaining = remaining.slice(splitIndex);
   }
@@ -87,9 +90,51 @@ function splitIntoChunks(text: string, maxChunkLength = 4500): string[] {
   return chunks;
 }
 
+function parseTranslationResponse(
+  rawData: any,
+  fallbackText: string,
+  targetLang: string
+): TranslationCacheEntry {
+  if (!rawData) {
+    return { translated: fallbackText, sourceLang: "unknown" };
+  }
+
+  let translatedText = "";
+  let detectedSource = "";
+
+  if (Array.isArray(rawData)) {
+    if (Array.isArray(rawData[0]) && typeof rawData[0][0] === "string") {
+      translatedText = rawData
+        .map((item: any) =>
+          Array.isArray(item) && typeof item[0] === "string" ? item[0] : ""
+        )
+        .join("");
+      detectedSource =
+        typeof rawData[0][1] === "string" ? rawData[0][1] : "";
+    } else if (Array.isArray(rawData[0]) && Array.isArray(rawData[0][0])) {
+      translatedText = rawData[0]
+        .map((chunk: any) =>
+          Array.isArray(chunk) && typeof chunk[0] === "string" ? chunk[0] : ""
+        )
+        .join("");
+      detectedSource = typeof rawData[2] === "string" ? rawData[2] : "";
+    } else if (typeof rawData[0] === "string") {
+      translatedText = rawData[0];
+      detectedSource = typeof rawData[1] === "string" ? rawData[1] : "";
+    }
+  } else if (typeof rawData === "string") {
+    translatedText = rawData;
+  }
+
+  return {
+    translated: translatedText || fallbackText,
+    sourceLang: detectedSource || (translatedText ? targetLang : "unknown"),
+  };
+}
+
 /**
  * Translates a single text segment via Google Translate single API.
- * Uses dev proxy in web environments to circumvent browser CORS limitations.
+ * Uses direct fetch, with Node IPC and local proxy fallbacks.
  * @param {string} segment - The text or HTML segment to translate.
  * @param {"es" | "en"} targetLang - Target language code.
  * @param {AbortSignal} [signal] - Optional abort signal.
@@ -100,17 +145,7 @@ async function translateSingleSegment(
   targetLang: "es" | "en",
   signal?: AbortSignal
 ): Promise<TranslationCacheEntry> {
-  const isWebEnvironment =
-    typeof window !== "undefined" &&
-    (!window.NODE?.call || platform.platformName === "web");
-
-  /**
-   * Route through Vite proxy in browser/web environments to avoid CORS blocking.
-   */
-  const url = isWebEnvironment
-    ? `/api/translate?client=dict-chrome-ex&sl=auto&tl=${targetLang}`
-    : `https://clients5.google.com/translate_a/t?client=dict-chrome-ex&sl=auto&tl=${targetLang}`;
-
+  const directUrl = `https://clients5.google.com/translate_a/t?client=dict-chrome-ex&sl=auto&tl=${targetLang}`;
   const body = `q=${encodeURIComponent(segment)}`;
   const fetchOptions: RequestInit = {
     method: "POST",
@@ -121,63 +156,58 @@ async function translateSingleSegment(
     signal,
   };
 
-  let rawData: any;
   try {
-    if (isWebEnvironment) {
-      const response = await fetch(url, fetchOptions);
-      if (response.status === 429) {
-        rateLimitCooldownUntil = Date.now() + 60000;
-        return { translated: segment, sourceLang: targetLang };
+    const response = await fetch(directUrl, fetchOptions);
+    if (response.status === 429) {
+      rateLimitCooldownUntil = Date.now() + 60000;
+      return { translated: segment, sourceLang: "unknown" };
+    }
+    if (response.ok) {
+      const rawData = await response.json();
+      const parsed = parseTranslationResponse(rawData, segment, targetLang);
+      if (parsed.sourceLang !== "unknown") {
+        return parsed;
       }
-      if (!response.ok) {
-        throw new Error(`Translation HTTP error: ${response.status}`);
-      }
-      rawData = await response.json();
-    } else {
-      rawData = await http.fetchJson(url, fetchOptions);
     }
   } catch (err: any) {
-    if (err?.name === "AbortError") {
-      throw err;
-    }
-    if (err?.message?.includes("429")) {
-      rateLimitCooldownUntil = Date.now() + 60000;
-    }
-    return {
-      translated: segment,
-      sourceLang: targetLang,
-    };
+    if (err?.name === "AbortError") throw err;
   }
 
-  let translatedText = "";
-  let detectedSource = "";
-
-  if (Array.isArray(rawData)) {
-    if (typeof rawData[0] === "string") {
-      translatedText = rawData[0];
-      detectedSource = typeof rawData[1] === "string" ? rawData[1] : "";
-    } else if (Array.isArray(rawData[0])) {
-      translatedText = rawData
-        .map((item: any) =>
-          Array.isArray(item)
-            ? item[0] || ""
-            : typeof item === "string"
-            ? item
-            : ""
-        )
-        .join("");
-      detectedSource =
-        Array.isArray(rawData[0]) && typeof rawData[0][1] === "string"
-          ? rawData[0][1]
-          : "";
+  if (typeof window !== "undefined" && window.NODE?.call) {
+    try {
+      const rawData = await http.fetchJson(directUrl, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/x-www-form-urlencoded;charset=utf-8",
+        },
+        body,
+      });
+      const parsed = parseTranslationResponse(rawData, segment, targetLang);
+      if (parsed.sourceLang !== "unknown") {
+        return parsed;
+      }
+    } catch (err: any) {
+      if (err?.name === "AbortError") throw err;
     }
-  } else if (typeof rawData === "string") {
-    translatedText = rawData;
+  }
+
+  try {
+    const proxyUrl = `/api/translate?client=dict-chrome-ex&sl=auto&tl=${targetLang}`;
+    const response = await fetch(proxyUrl, fetchOptions);
+    if (response.ok) {
+      const rawData = await response.json();
+      const parsed = parseTranslationResponse(rawData, segment, targetLang);
+      if (parsed.sourceLang !== "unknown") {
+        return parsed;
+      }
+    }
+  } catch (err: any) {
+    if (err?.name === "AbortError") throw err;
   }
 
   return {
-    translated: translatedText || segment,
-    sourceLang: detectedSource || targetLang,
+    translated: segment,
+    sourceLang: "unknown",
   };
 }
 
@@ -229,14 +259,16 @@ export async function translateModText({
       }
 
       const translated = results.map((r) => r.translated).join("");
-      const sourceLang = results[0]?.sourceLang || "";
+      const sourceLang = results[0]?.sourceLang || "unknown";
 
       const finalResult: TranslationCacheEntry = {
         translated,
         sourceLang,
       };
 
-      translationCache.set(cacheKey, finalResult);
+      if (sourceLang !== "unknown") {
+        translationCache.set(cacheKey, finalResult);
+      }
       return finalResult;
     } catch (error: any) {
       if (error?.name === "AbortError") {

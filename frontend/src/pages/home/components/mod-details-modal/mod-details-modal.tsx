@@ -86,25 +86,35 @@ export const ModDetailsModal: React.FC<ModDetailsModalProps> = ({
     [displayCard?.id]
   );
 
+  const translateReqIdRef = useRef<number>(0);
+
   const performTranslation = useCallback(
     async (textToTranslate: string) => {
       if (!textToTranslate || !textToTranslate.trim()) return;
-      if (typeof navigator !== "undefined" && !navigator.onLine) return;
 
+      const reqId = ++translateReqIdRef.current;
       setIsTranslating(true);
       try {
         const res = await Core.services.translation.translateModText({
           text: textToTranslate,
           targetLang: targetLanguage,
         });
-        if (res && res.translated) {
+        if (
+          reqId === translateReqIdRef.current &&
+          res?.translated &&
+          res.sourceLang !== "unknown"
+        ) {
           setTranslatedHtml(res.translated);
           setShowTranslated(true);
         }
       } catch {
-        setTranslatedHtml(null);
+        if (reqId === translateReqIdRef.current) {
+          setTranslatedHtml(null);
+        }
       } finally {
-        setIsTranslating(false);
+        if (reqId === translateReqIdRef.current) {
+          setIsTranslating(false);
+        }
       }
     },
     [targetLanguage]
@@ -115,14 +125,14 @@ export const ModDetailsModal: React.FC<ModDetailsModalProps> = ({
     setShowTranslated(true);
 
     const sourceContent = displayCard?.htmlBody || displayCard?.description || "";
-    if (autoTranslate && sourceContent && selectedCard) {
+    if (autoTranslate && sourceContent && selectedCard?.id) {
       performTranslation(sourceContent);
     }
   }, [
     displayCard?.id,
     displayCard?.htmlBody,
     displayCard?.description,
-    selectedCard,
+    selectedCard?.id,
     autoTranslate,
     targetLanguage,
     performTranslation,

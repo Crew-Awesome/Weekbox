@@ -13,7 +13,6 @@ import {
   Activity,
   AlertTriangle,
   ExternalLink,
-  Check,
 } from "lucide-react";
 
 interface InstancesFooterProps {
@@ -112,12 +111,6 @@ export const InstancesFooter: React.FC<InstancesFooterProps> = ({
             <span className="text-base sm:text-lg md:text-2xl font-black text-[var(--wb-on-surface)] truncate leading-tight tracking-tight">
               {title || "Select an instance"}
             </span>
-            {isBaseGameMobile && isInstalled && (
-              <span className="flex items-center gap-1 text-[11px] font-bold text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded-lg shrink-0">
-                <Check className="w-3 h-3" />
-                <span>Installed</span>
-              </span>
-            )}
           </div>
           {version && (
             <span className="text-xs sm:text-sm md:text-base font-bold text-[var(--wb-primary)] leading-tight mt-0.5 sm:mt-1 truncate">

@@ -1,12 +1,17 @@
 package com.crewawesome.weekbox;
 
+import android.content.BroadcastReceiver;
+import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
+import android.content.pm.ActivityInfo;
 import android.graphics.Color;
 import android.net.Uri;
 import android.os.Bundle;
 import android.view.Window;
 import androidx.core.view.WindowInsetsControllerCompat;
 import com.getcapacitor.BridgeActivity;
+import com.getcapacitor.JSObject;
 import com.getcapacitor.Plugin;
 import com.getcapacitor.PluginCall;
 import com.getcapacitor.PluginMethod;
@@ -17,10 +22,73 @@ public class MainActivity extends BridgeActivity {
     public void onCreate(Bundle savedInstanceState) {
         registerPlugin(AppManagerPlugin.class);
         super.onCreate(savedInstanceState);
+
+        boolean isTablet = getResources().getConfiguration().smallestScreenWidthDp >= 600;
+        if (!isTablet) {
+            setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
+        } else {
+            setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED);
+        }
     }
 
     @CapacitorPlugin(name = "AppManager")
     public static class AppManagerPlugin extends Plugin {
+        private BroadcastReceiver packageReceiver;
+
+        @Override
+        public void load() {
+            super.load();
+            try {
+                packageReceiver = new BroadcastReceiver() {
+                    @Override
+                    public void onReceive(Context context, Intent intent) {
+                        String action = intent.getAction();
+                        Uri data = intent.getData();
+                        String pkgName = data != null ? data.getSchemeSpecificPart() : null;
+                        JSObject payload = new JSObject();
+                        payload.put("packageName", pkgName);
+                        payload.put("action", action);
+                        notifyListeners("packageChanged", payload);
+                    }
+                };
+                IntentFilter filter = new IntentFilter();
+                filter.addAction(Intent.ACTION_PACKAGE_ADDED);
+                filter.addAction(Intent.ACTION_PACKAGE_REMOVED);
+                filter.addAction(Intent.ACTION_PACKAGE_REPLACED);
+                filter.addDataScheme("package");
+                getContext().registerReceiver(packageReceiver, filter);
+            } catch (Exception ignored) {}
+        }
+
+        @Override
+        protected void handleOnDestroy() {
+            if (packageReceiver != null) {
+                try {
+                    getContext().unregisterReceiver(packageReceiver);
+                } catch (Exception ignored) {}
+                packageReceiver = null;
+            }
+            super.handleOnDestroy();
+        }
+
+        @PluginMethod
+        public void isPackageInstalled(PluginCall call) {
+            String packageName = call.getString("packageName");
+            if (packageName == null || packageName.isEmpty()) {
+                call.reject("Must provide packageName");
+                return;
+            }
+            boolean installed = false;
+            try {
+                getContext().getPackageManager().getPackageInfo(packageName, 0);
+                installed = true;
+            } catch (Exception ignored) {
+                installed = false;
+            }
+            JSObject ret = new JSObject();
+            ret.put("installed", installed);
+            call.resolve(ret);
+        }
 
         @PluginMethod
         public void uninstallPackage(PluginCall call) {

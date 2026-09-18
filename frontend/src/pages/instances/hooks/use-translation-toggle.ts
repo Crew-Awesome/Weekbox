@@ -29,6 +29,8 @@ export function useTranslationToggle(
 
   const canTranslate = Boolean(sourceText && sourceText.trim().length > 0);
 
+  const reqIdRef = useRef<number>(0);
+
   /** Reset or restore cached translation when sourceText changes */
   useEffect(() => {
     if (!sourceText || !sourceText.trim()) {
@@ -40,6 +42,9 @@ export function useTranslationToggle(
     const cached = cacheRef.current.get(sourceText);
     if (cached) {
       setTranslatedText(cached);
+      if (autoTranslate) {
+        setShowTranslated(true);
+      }
     } else {
       setTranslatedText(null);
       setShowTranslated(false);
@@ -53,7 +58,6 @@ export function useTranslationToggle(
   const performTranslate = useCallback(
     async (text: string) => {
       if (!text || !text.trim()) return;
-      if (typeof navigator !== "undefined" && !navigator.onLine) return;
 
       const cached = cacheRef.current.get(text);
       if (cached) {
@@ -62,6 +66,7 @@ export function useTranslationToggle(
         return;
       }
 
+      const reqId = ++reqIdRef.current;
       setIsTranslating(true);
       try {
         const res = await Core.services.translation.translateModText({
@@ -69,7 +74,11 @@ export function useTranslationToggle(
           targetLang: (targetLanguage as "es" | "en") || "es",
         });
 
-        if (res?.translated) {
+        if (
+          reqId === reqIdRef.current &&
+          res?.translated &&
+          res.sourceLang !== "unknown"
+        ) {
           cacheRef.current.set(text, res.translated);
           setTranslatedText(res.translated);
           setShowTranslated(true);
@@ -77,7 +86,9 @@ export function useTranslationToggle(
       } catch (err) {
         console.warn("Translation failed:", err);
       } finally {
-        setIsTranslating(false);
+        if (reqId === reqIdRef.current) {
+          setIsTranslating(false);
+        }
       }
     },
     [targetLanguage]

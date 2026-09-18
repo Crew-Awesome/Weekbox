@@ -32,30 +32,39 @@ export class CapacitorAppLauncher {
       return Boolean(cache[packageOrScheme]);
     }
 
-    try {
-      const platform = typeof Capacitor?.getPlatform === "function" ? Capacitor.getPlatform() : "android";
-
-      // 1. Try raw package name first (required by Capacitor Android AppLauncher for getPackageInfo)
+    if (isNative) {
       try {
-        const { value } = await AppLauncher.canOpenUrl({ url: packageOrScheme });
-        if (value) {
-          await this.setAppInstalledCache(packageOrScheme, true);
-          return true;
+        const AppManager = registerPlugin<any>("AppManager");
+        const res = await AppManager.isPackageInstalled({ packageName: packageOrScheme });
+        if (res && typeof res.installed === "boolean") {
+          await this.setAppInstalledCache(packageOrScheme, res.installed);
+          return res.installed;
         }
       } catch {}
 
-      // 2. Try URL scheme / package prefix
-      const targetUrl = platform === "ios" ? `${packageOrScheme}://` : `package:${packageOrScheme}`;
       try {
-        const { value } = await AppLauncher.canOpenUrl({ url: targetUrl });
-        if (value) {
-          await this.setAppInstalledCache(packageOrScheme, true);
-          return true;
-        }
-      } catch {}
-    } catch {}
+        const platform = typeof Capacitor?.getPlatform === "function" ? Capacitor.getPlatform() : "android";
 
-    // Fallback: check stored cache in case queries permission prevents broad inspection
+        // 1. Try raw package name
+        try {
+          const { value } = await AppLauncher.canOpenUrl({ url: packageOrScheme });
+          await this.setAppInstalledCache(packageOrScheme, value);
+          return value;
+        } catch {}
+
+        // 2. Try URL scheme / package prefix
+        const targetUrl = platform === "ios" ? `${packageOrScheme}://` : `package:${packageOrScheme}`;
+        try {
+          const { value } = await AppLauncher.canOpenUrl({ url: targetUrl });
+          await this.setAppInstalledCache(packageOrScheme, value);
+          return value;
+        } catch {}
+      } catch {}
+
+      await this.setAppInstalledCache(packageOrScheme, false);
+      return false;
+    }
+
     const cache = await CapacitorJsonStorage.readJson<Record<string, boolean>>(
       this.INSTALLED_CACHE_PATH,
       {}
@@ -191,6 +200,22 @@ export class CapacitorAppLauncher {
    */
   static async uninstallBaseGame(): Promise<boolean> {
     return await this.uninstallPackage(FNF_MOBILE_PACKAGE);
+  }
+
+  /**
+   * Subscribes to package install/uninstall events emitted by the native Android system.
+   */
+  static addPackageListener(callback: (data: { packageName?: string; action?: string }) => void): () => void {
+    if (Capacitor.isNativePlatform()) {
+      try {
+        const AppManager = registerPlugin<any>("AppManager");
+        const handlePromise = AppManager.addListener("packageChanged", callback);
+        return () => {
+          handlePromise.then((h: any) => h?.remove?.()).catch(() => {});
+        };
+      } catch {}
+    }
+    return () => {};
   }
 }
 

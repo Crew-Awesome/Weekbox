@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import Core, { platform, CapacitorAppLauncher } from "@core";
+import { App } from "@capacitor/app";
 import Utils from "@utils";
 import { ENGINE_CATEGORIES } from "../../../core/services/gamebanana/constants";
 import { useEngineReleases } from "./use-engine-releases";
@@ -60,11 +61,46 @@ export function useInstances() {
     const handleFocus = () => {
       checkBaseGameStatus();
     };
+
     window.addEventListener("focus", handleFocus);
     document.addEventListener("visibilitychange", handleFocus);
+
+    let resumeListener: { remove: () => Promise<void> } | null = null;
+    let stateListener: { remove: () => Promise<void> } | null = null;
+
+    App.addListener("resume", () => {
+      checkBaseGameStatus();
+    })
+      .then((handle) => {
+        resumeListener = handle;
+      })
+      .catch(() => {});
+
+    App.addListener("appStateChange", ({ isActive }) => {
+      if (isActive) {
+        checkBaseGameStatus();
+      }
+    })
+      .then((handle) => {
+        stateListener = handle;
+      })
+      .catch(() => {});
+
+    const unsubscribePackage = CapacitorAppLauncher.addPackageListener(() => {
+      checkBaseGameStatus();
+    });
+
+    const intervalId = setInterval(() => {
+      checkBaseGameStatus();
+    }, 2000);
+
     return () => {
       window.removeEventListener("focus", handleFocus);
       document.removeEventListener("visibilitychange", handleFocus);
+      resumeListener?.remove();
+      stateListener?.remove();
+      unsubscribePackage();
+      clearInterval(intervalId);
     };
   }, [checkBaseGameStatus]);
 

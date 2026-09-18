@@ -1,4 +1,4 @@
-import React, { useMemo, useState, useEffect } from "react";
+import React, { useMemo, useState, useEffect, useRef } from "react";
 import DOMPurify from "dompurify";
 import { FileText, Calendar, Loader2, Languages } from "lucide-react";
 import type { EngineReleaseItem } from "@core";
@@ -69,6 +69,20 @@ export const InstancesMarkdownViewer: React.FC<InstancesMarkdownViewerProps> = (
     }, 4500);
     return () => clearInterval(interval);
   }, [mediaList.length, isHovered]);
+
+  const thumbnailsRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (thumbnailsRef.current && mediaList.length > 0) {
+      const container = thumbnailsRef.current;
+      const activeButton = container.children[activeMediaIndex] as HTMLElement;
+      if (activeButton) {
+        const scrollLeft =
+          activeButton.offsetLeft - container.clientWidth / 2 + activeButton.clientWidth / 2;
+        container.scrollTo({ left: scrollLeft, behavior: "smooth" });
+      }
+    }
+  }, [activeMediaIndex, mediaList.length]);
 
   const handleNextMedia = () => {
     if (!mediaList.length) return;
@@ -142,7 +156,10 @@ export const InstancesMarkdownViewer: React.FC<InstancesMarkdownViewerProps> = (
           />
 
           {mediaList.length > 1 && (
-            <div className="flex gap-3 mt-4 overflow-x-auto pb-2.5 scrollbar-thin scrollbar-thumb-[var(--wb-outline-variant)]/40">
+            <div
+              ref={thumbnailsRef}
+              className="flex gap-3 mt-4 overflow-x-auto pb-2.5 scrollbar-thin scrollbar-thumb-[var(--wb-outline-variant)]/40"
+            >
               {mediaList.map((src, i) => (
                 <button
                   key={`thumb-${i}`}

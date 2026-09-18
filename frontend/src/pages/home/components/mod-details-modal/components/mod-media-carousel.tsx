@@ -246,19 +246,38 @@ export const ModThumbnailStrip: React.FC<ModThumbnailStripProps> = ({
   media,
   activeIndex,
   onSelectIndex,
-  stripRef,
+  stripRef: externalRef,
   onPrev,
   onNext,
   variant = "desktop",
 }) => {
+  const internalRef = React.useRef<HTMLDivElement>(null);
+  const stripRef = externalRef || internalRef;
+
   const validMedia = (Array.isArray(media) ? media : []).filter(
     (item): item is string => typeof item === "string" && item.trim().length > 0,
   );
+
+  React.useEffect(() => {
+    if (stripRef.current && validMedia.length > 0) {
+      const container = stripRef.current;
+      const activeButton = container.children[activeIndex] as HTMLElement;
+      if (activeButton) {
+        const scrollLeft =
+          activeButton.offsetLeft - container.clientWidth / 2 + activeButton.clientWidth / 2;
+        container.scrollTo({ left: scrollLeft, behavior: "smooth" });
+      }
+    }
+  }, [activeIndex, stripRef, validMedia.length]);
+
   if (validMedia.length <= 1) return null;
 
   if (variant === "mobile") {
     return (
-      <div className="flex gap-2 w-full overflow-x-auto touch-pan-x pb-4 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+      <div
+        ref={stripRef}
+        className="flex gap-2 w-full overflow-x-auto touch-pan-x pb-4 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]"
+      >
         {validMedia.map((src, i) => (
           <ThumbnailItem
             key={`mobile-thumb-${i}`}
