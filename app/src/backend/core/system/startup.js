@@ -44,6 +44,7 @@ import {
 } from "../../../ui/js/i18n/index.js";
 
 const SINGLE_INSTANCE_MUTEX = "Global\\WeekBox-com.weekbox.app";
+const PENDING_HANDOFF_FILE = "weekbox-deeplink.json";
 
 function encodePowerShellCommand(script) {
   const bytes = new Uint8Array(script.length * 2);
@@ -152,6 +153,15 @@ async function ensureSingleInstance() {
 
 async function handoffToPrimaryInstance() {
   const link = getWeekboxLinkFromArgs();
+  const dataPath = String(window.NL_DATAPATH || "").trim();
+  if (dataPath) {
+    await Neutralino.filesystem
+      .writeFile(
+        `${dataPath}/${PENDING_HANDOFF_FILE}`,
+        JSON.stringify({ link, timestamp: Date.now() }),
+      )
+      .catch(() => {});
+  }
   await Neutralino.window.hide().catch(() => {});
   if (link) {
     await Neutralino.app
@@ -160,21 +170,8 @@ async function handoffToPrimaryInstance() {
   } else {
     await Neutralino.app.broadcast("weekbox:focus").catch(() => {});
   }
+  await new Promise((resolve) => setTimeout(resolve, 250));
   await Neutralino.app.exit().catch(() => {});
-}
-
-// i shouldnt do this
-function getArgsFromNewInstanceEvent(event) {
-  if (!event) return [];
-  if (Array.isArray(event)) return event;
-  if (Array.isArray(event.args)) return event.args;
-  if (Array.isArray(event.detail?.args)) return event.detail.args;
-  if (Array.isArray(event.detail)) return event.detail;
-  if (Array.isArray(event.data?.args)) return event.data.args;
-  if (Array.isArray(event.data)) return event.data;
-  if (typeof event.detail === "string") return [event.detail];
-  if (typeof event === "string") return [event];
-  return [];
 }
 
 function installGlobalErrorReporter() {
@@ -440,8 +437,16 @@ async function startApp() {
     patchNeutralinoMessageBox();
     let deepLinkReady = false;
     let queuedDeepLink = null;
+    let lastIncomingLink = null;
+    let lastIncomingLinkAt = 0;
+    let primaryInstance = false;
+    let pendingHandoffCheck = false;
     const handleIncomingLink = (link) => {
       if (!parseWeekboxLink(link)) return;
+      const now = Date.now();
+      if (link === lastIncomingLink && now - lastIncomingLinkAt < 2000) return;
+      lastIncomingLink = link;
+      lastIncomingLinkAt = now;
       if (!deepLinkReady) {
         queuedDeepLink = link;
         return;
@@ -457,16 +462,40 @@ async function startApp() {
         typeof detail === "string" ? detail : detail?.link || detail?.url,
       );
     });
-    await Neutralino.events.on("newInstance", (event) => {
-      const link = getWeekboxLinkFromArgs(getArgsFromNewInstanceEvent(event));
-      if (link) handleIncomingLink(link);
-      else void focusWeekBoxWindow();
-    });
+    const checkPendingHandoff = async () => {
+      if (!primaryInstance || pendingHandoffCheck) return;
+      pendingHandoffCheck = true;
+      let pendingHandoff = null;
+      const dataPath = String(window.NL_DATAPATH || "").trim();
+      try {
+        if (dataPath) {
+          const path = `${dataPath}/${PENDING_HANDOFF_FILE}`;
+          const raw = await Neutralino.filesystem
+            .readFile(path)
+            .catch(() => "");
+          if (raw) {
+            await Neutralino.filesystem.remove(path).catch(() => {});
+            pendingHandoff = JSON.parse(raw);
+          }
+        }
+      } catch {}
+      pendingHandoffCheck = false;
+      const isFresh =
+        pendingHandoff?.timestamp &&
+        Date.now() - Number(pendingHandoff.timestamp) < 10000;
+      if (isFresh && pendingHandoff.link) {
+        handleIncomingLink(pendingHandoff.link);
+      } else if (isFresh) {
+        void focusWeekBoxWindow();
+      }
+    };
     await Neutralino.events.on("weekbox:focus", () => void focusWeekBoxWindow());
     if (!(await ensureSingleInstance())) {
       await handoffToPrimaryInstance();
       return;
     }
+    primaryInstance = true;
+    setInterval(() => void checkPendingHandoff(), 250);
     void startupLoader.initVersion();
     networkStatus.init();
     await focusWeekBoxWindow();

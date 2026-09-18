@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.5.2] - 2026-09-18
+
+(this release is for testing fixes)
+
+### Fixed
+
+- Protocol links now reach the running WeekBox instance
+
 ## [2.5.1] - 2026-09-18
 
 ### Changed
@@ -1175,7 +1183,8 @@ This is the Last content update I will do in a long while :)
 - Downloads for Windows, Linux, and macOS.
 - Packages for x64, ARM64, ARMHF, and Universal Macs where available.
 
-[unreleased]: https://github.com/Crew-Awesome/Weekbox/compare/v2.5.1...HEAD
+[unreleased]: https://github.com/Crew-Awesome/Weekbox/compare/v2.5.2...HEAD
+[2.5.2]: https://github.com/Crew-Awesome/Weekbox/compare/v2.5.1...v2.5.2
 [2.5.1]: https://github.com/Crew-Awesome/Weekbox/compare/v2.5.0...v2.5.1
 [2.5.0]: https://github.com/Crew-Awesome/Weekbox/compare/v2.4.1...v2.5.0
 [2.4.1]: https://github.com/Crew-Awesome/Weekbox/compare/v2.4.0...v2.4.1
