@@ -34,6 +34,6 @@ The people who have helped make WeekBox.
 - [Luminercy](https://www.youtube.com/channel/UCXY-FHb2aGfI2Pd5rtnWvhw) · Beta testing
 - [SaturdayNightModding21](https://x.com/snm21_fnf) · Beta testing
 - noahwrshkhy · Beta testing
-- [JustMaskiu](https://x.com/JustMaskiu) · Beta testing
+- [JustMaskiu](https://www.youtube.com/channel/UCbJYJQJQwZ3kGPUYM3uwzHg) · Beta testing
 
 If you aren't credited or credited incorrectly make it known in Github Issues or make a Pull Request
