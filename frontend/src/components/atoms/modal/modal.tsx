@@ -295,7 +295,7 @@ export const Modal: React.FC<ModalProps> = ({
           )}
         </div>
 
-        <div className="relative flex flex-col z-10 text-[var(--wb-on-surface)] h-full overflow-hidden">
+        <div className="relative flex flex-col z-10 text-[var(--wb-on-surface)] h-full overflow-hidden rounded-[inherit]">
           {!hideCloseButton && (
             <button
               onClick={handleClose}

@@ -654,7 +654,7 @@ export const MobileView: React.FC<MobileViewProps> = ({
   return (
     <div ref={mobileContainerRef} className="flex md:hidden flex-col w-full h-full p-4 pointer-events-auto">
       <div
-        className={`sticky top-0 z-30 flex items-center justify-between gap-2 px-4 py-2.5 bg-[var(--wb-surface-container)]/70 backdrop-blur-xl border-b border-[var(--wb-outline-variant)]/20 shadow-md -mx-4 -mt-4 mb-4 transition-transform duration-300 ease-in-out ${
+        className={`sticky top-0 z-30 flex items-center justify-between gap-2 px-4 py-2.5 bg-[var(--wb-surface-container)]/70 backdrop-blur-xl border-b border-[var(--wb-outline-variant)]/20 shadow-md -mx-4 -mt-4 mb-4 rounded-t-2xl transition-transform duration-300 ease-in-out ${
           isHeaderVisible ? "translate-y-0" : "-translate-y-full pointer-events-none"
         }`}
       >

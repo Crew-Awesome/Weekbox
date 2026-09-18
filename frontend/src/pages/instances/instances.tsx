@@ -7,7 +7,6 @@ import { InstancesFooter } from "./components/instances-footer";
 import { ConfirmationModal } from "@components";
 import { useInstances } from "./hooks/use-instances";
 import { useSettingsStore } from "../../store";
-import { ArrowLeft } from "lucide-react";
 
 /**
  * Organism / Feature: Instances View.
@@ -59,21 +58,16 @@ export const Instances: React.FC = () => {
     isBaseGameInstalled,
   } = useInstances();
 
-  const [isMobileDetailOpen, setIsMobileDetailOpen] = React.useState(false);
-
   const handleSelectCategory = (cat: string) => {
     setSelectedCategory(cat);
-    setIsMobileDetailOpen(false);
   };
 
   const handleSelectVersion = (ver: any) => {
     setSelectedVersion(ver);
-    setIsMobileDetailOpen(true);
   };
 
   const handleSelectMod = (mod: any) => {
     setSelectedModId(String(mod.id));
-    setIsMobileDetailOpen(true);
   };
 
   return (
@@ -93,8 +87,8 @@ export const Instances: React.FC = () => {
 
       {/** Main split area */}
       <div className="flex flex-col md:flex-row flex-1 w-full min-h-0 overflow-hidden relative z-10">
-        {/** Left Aside: on mobile, full width and hidden when detail is open */}
-        <div className={`w-full md:w-auto h-full flex flex-col ${isMobileDetailOpen ? "hidden md:flex" : "flex flex-1"}`}>
+        {/** Left Aside: only on desktop/tablet, hidden on mobile */}
+        <div className="hidden md:flex w-full md:w-auto h-full flex-col">
           <InstancesVersionAside
             isExecutable={isExecutable}
             releases={releases}
@@ -112,23 +106,8 @@ export const Instances: React.FC = () => {
           />
         </div>
 
-        {/** Right Content View: on mobile, full width and hidden when detail is NOT open */}
-        <main className={`flex-1 flex flex-col min-w-0 h-full overflow-hidden bg-[var(--wb-surface)]/20 relative ${!isMobileDetailOpen ? "hidden md:flex" : "flex"}`}>
-          {/** Mobile back button to return to versions */}
-          <div className="md:hidden flex items-center justify-between px-4 py-2.5 bg-[var(--wb-surface-container-low)] border-b border-[var(--wb-outline-variant)]/20 shrink-0">
-            <button
-              type="button"
-              onClick={() => setIsMobileDetailOpen(false)}
-              className="flex items-center gap-2 text-sm font-semibold text-[var(--wb-primary)] hover:opacity-80 active:scale-95 transition-all cursor-pointer"
-            >
-              <ArrowLeft className="w-4 h-4" />
-              <span>Back to versions</span>
-            </button>
-            <span className="text-xs text-[var(--wb-on-surface-variant)] truncate max-w-[160px] font-medium">
-              {footerTitle} {footerVersion}
-            </span>
-          </div>
-
+        {/** Right Content View: always visible, full width on mobile */}
+        <main className="flex-1 flex flex-col min-w-0 h-full overflow-hidden bg-[var(--wb-surface)]/20 relative">
           <div className="flex-1 min-h-0 overflow-y-auto">
             {isExecutable ? (
               <InstancesExecutableView mod={selectedMod} />
