@@ -31,7 +31,6 @@ import { storageRecommendationModal } from "../../../ui/js/storageRecommendation
 import { modManagerModal } from "../../../ui/js/mod-manager/index.js";
 import { firstRunStorageModal } from "../../../ui/js/firstRunStorageModal.js";
 import { firstRunLanguageModal } from "../../../ui/js/firstRunLanguageModal.js";
-import { whatsNewModal } from "../../../ui/js/updates/whatsNewModal.js";
 import {
   getCachedHue,
   getCachedTheme,
@@ -56,10 +55,13 @@ function encodePowerShellCommand(script) {
   return btoa(String.fromCharCode(...bytes));
 }
 
-async function focusWeekBoxWindow() {
+async function focusWeekBoxWindow({ center = false } = {}) {
   try {
     if (typeof Neutralino.window.unminimize === "function") {
       await Neutralino.window.unminimize();
+    }
+    if (center && typeof Neutralino.window.center === "function") {
+      await Neutralino.window.center();
     }
     if (typeof Neutralino.window.show === "function") {
       await Neutralino.window.show();
@@ -498,7 +500,7 @@ async function startApp() {
     setInterval(() => void checkPendingHandoff(), 250);
     void startupLoader.initVersion();
     networkStatus.init();
-    await focusWeekBoxWindow();
+    await focusWeekBoxWindow({ center: true });
     disableProductionRefreshShortcuts();
 
     const handleAppExit = async () => {
@@ -645,11 +647,6 @@ async function startApp() {
     }).catch((error) =>
       console.warn("Background library maintenance failed", error),
     );
-    await whatsNewModal
-      .showIfNeeded()
-      .catch((error) =>
-        console.warn("Could not show the What's New prompt", error),
-      );
     await openLaunchDeepLink().catch((error) =>
       console.warn("Could not open the WeekBox launch link", error),
     );
