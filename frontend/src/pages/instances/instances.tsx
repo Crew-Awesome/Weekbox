@@ -106,9 +106,8 @@ export const Instances: React.FC = () => {
           />
         </div>
 
-        {/** Right Content View: always visible, full width on mobile */}
         <main className="flex-1 flex flex-col min-w-0 h-full overflow-hidden bg-[var(--wb-surface)]/20 relative">
-          <div className="flex-1 min-h-0 overflow-y-auto">
+          <div className="flex-1 min-h-0 overflow-y-auto -mt-[4.5rem] md:mt-0 pt-[4.5rem] md:pt-0">
             {isExecutable ? (
               <InstancesExecutableView mod={selectedMod} />
             ) : (

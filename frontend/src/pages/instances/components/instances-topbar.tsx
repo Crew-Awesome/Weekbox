@@ -36,7 +36,7 @@ export const InstancesTopbar: React.FC<InstancesTopbarProps> = ({
   }, []);
 
   return (
-    <div className="sticky top-0 z-40 flex items-center w-full md:w-auto min-h-[4rem] sm:min-h-[5rem] pt-10 md:pt-2.5 pb-2.5 rounded-none md:rounded-b-[16px] bg-[var(--wb-surface-container)]/80 backdrop-blur-xl mx-0 md:mx-2 px-4 sm:px-6 shadow-md border-b md:border-b-0 border-[var(--wb-outline-variant)]/20">
+    <div className="sticky top-0 z-40 flex items-center w-full md:w-auto min-h-[4rem] sm:min-h-[5rem] pt-10 md:pt-2.5 pb-2.5 rounded-none md:rounded-b-[16px] bg-[var(--wb-surface-container)]/70 backdrop-blur-2xl mx-0 md:mx-2 px-4 sm:px-6 shadow-[0_4px_24px_rgba(0,0,0,0.25)] border-b md:border-b-0 border-white/10">
       <div className="flex items-center gap-2 sm:gap-3 flex-wrap w-full">
         {/* Mobile: Direct Engine Filter Pills */}
         <div className="flex md:hidden items-center gap-2 overflow-x-auto no-scrollbar py-1 w-full">

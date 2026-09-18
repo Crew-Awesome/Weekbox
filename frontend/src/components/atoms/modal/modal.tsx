@@ -76,6 +76,7 @@ export interface ModalProps {
    * If true, hides the top-right close button on mobile screens (< 768px).
    */
   hideCloseButtonMobile?: boolean;
+  onBack?: () => boolean | void;
 }
 
 export const Modal: React.FC<ModalProps> = ({
@@ -95,6 +96,7 @@ export const Modal: React.FC<ModalProps> = ({
   zIndex = 100,
   hideCloseButton = false,
   hideCloseButtonMobile = false,
+  onBack,
 }) => {
   const [isRendered, setIsRendered] = useState(isOpen);
   const [isVisible, setIsVisible] = useState(false);
@@ -117,11 +119,19 @@ export const Modal: React.FC<ModalProps> = ({
     onClose();
   }, [onClose]);
 
+  const handleBackAction = React.useCallback(() => {
+    if (onBack) {
+      const handled = onBack();
+      if (handled) return;
+    }
+    handleClose();
+  }, [onBack, handleClose]);
+
   useEffect(() => {
     if (!isOpen) return;
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
-        handleClose();
+        handleBackAction();
       }
     };
     window.addEventListener("keydown", handleKeyDown);
@@ -129,12 +139,11 @@ export const Modal: React.FC<ModalProps> = ({
     let backListenerHandle: { remove: () => Promise<void> } | null = null;
     let isSubscribed = true;
 
-    // Listen to Android hardware / gesture Back button via Capacitor
     import("@capacitor/app")
       .then(({ App }) => {
         if (!isSubscribed) return;
         App.addListener("backButton", () => {
-          handleClose();
+          handleBackAction();
         })
           .then((handle) => {
             if (!isSubscribed) {

@@ -98,12 +98,21 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
     }
   }, [isOpen]);
 
+  const handleModalBack = React.useCallback(() => {
+    if (typeof window !== "undefined" && window.innerWidth < 768 && mobileView === "detail") {
+      setMobileView("list");
+      return true;
+    }
+    return false;
+  }, [mobileView]);
+
   const currentTab = TABS.find((t) => t.id === activeTab) || TABS[0];
 
   return (
     <Modal
       isOpen={isOpen}
       onClose={onClose}
+      onBack={handleModalBack}
       edgeSpacing={{
         isStaticSize: true,
         mobile: ["95vw", "88vh"],
@@ -112,7 +121,6 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
       contentClassName="p-0 flex-1 overflow-hidden"
       modalClassName="w-full h-full max-h-[90vh] overflow-hidden border border-white/10 shadow-2xl rounded-3xl bg-[var(--wb-surface-container)]"
     >
-      {/* Sliding track for mobile; side-by-side flex for desktop */}
       <div
         className={`flex flex-row w-[200%] md:w-full h-full transition-transform duration-300 ease-out ${
           mobileView === "detail"
@@ -120,11 +128,9 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
             : "translate-x-0"
         }`}
       >
-        {/* Slide 1 on mobile: Categories List / Desktop: Left Aside Navigation */}
         <aside className="w-1/2 md:w-68 lg:w-76 shrink-0 bg-[var(--wb-surface-container-low)] border-r border-white/5 flex flex-col justify-between h-full overflow-hidden">
           <div className="flex flex-col p-5 sm:p-7 h-full overflow-hidden">
-            {/* Header */}
-            <div className="flex items-center gap-3.5 pb-5 mb-3 border-b border-white/5 pr-12 md:pr-0 shrink-0">
+            <div className="flex items-center gap-3.5 pb-4 mb-3 border-b border-white/10 bg-[var(--wb-surface-container-low)]/75 backdrop-blur-2xl pr-12 md:pr-0 shrink-0 sticky top-0 z-10 shadow-sm rounded-t-2xl">
               <img
                 src={launcherIcon}
                 alt="WeekBox"
@@ -205,12 +211,9 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
           </div>
         </aside>
 
-        {/* Slide 2 on mobile: Selected Tab Detail / Desktop: Main Content Area */}
         <main className="w-1/2 md:w-auto md:flex-1 shrink-0 md:shrink flex flex-col overflow-hidden bg-[var(--wb-surface-container)] h-full">
-          {/* Header */}
-          <div className="flex items-center justify-between px-5 sm:px-10 py-4 sm:py-7 pr-16 sm:pr-20 border-b border-white/5 shrink-0 bg-[var(--wb-surface-container)]">
+          <div className="flex items-center justify-between px-5 sm:px-10 py-4 sm:py-6 pr-16 sm:pr-20 border-b border-white/10 shrink-0 bg-[var(--wb-surface-container)]/75 backdrop-blur-2xl sticky top-0 z-20 shadow-sm">
             <div className="flex flex-col">
-              {/* Mobile Back Button */}
               <button
                 type="button"
                 onClick={() => setMobileView("list")}
