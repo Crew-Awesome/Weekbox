@@ -284,3 +284,25 @@ button[disabled]:active {
     scrollbar-width: none !important;
   }
 }
+
+.glass-header {
+  background-color: rgba(27, 33, 34, 0.72) !important;
+  backdrop-filter: blur(24px) saturate(180%) !important;
+  -webkit-backdrop-filter: blur(24px) saturate(180%) !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1) !important;
+}
+
+.glass-pill {
+  background-color: rgba(255, 255, 255, 0.08) !important;
+  backdrop-filter: blur(16px) !important;
+  -webkit-backdrop-filter: blur(16px) !important;
+  border: 1px solid rgba(255, 255, 255, 0.15) !important;
+}
+
+.glass-pill-active {
+  background-color: rgba(130, 211, 224, 0.25) !important;
+  backdrop-filter: blur(16px) !important;
+  -webkit-backdrop-filter: blur(16px) !important;
+  border: 1px solid rgba(130, 211, 224, 0.6) !important;
+  color: var(--wb-primary) !important;
+}

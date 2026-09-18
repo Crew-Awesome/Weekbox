@@ -98,13 +98,18 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
     }
   }, [isOpen]);
 
+  const mobileViewRef = React.useRef(mobileView);
+  useEffect(() => {
+    mobileViewRef.current = mobileView;
+  }, [mobileView]);
+
   const handleModalBack = React.useCallback(() => {
-    if (typeof window !== "undefined" && window.innerWidth < 768 && mobileView === "detail") {
+    if (typeof window !== "undefined" && window.innerWidth < 768 && mobileViewRef.current === "detail") {
       setMobileView("list");
       return true;
     }
     return false;
-  }, [mobileView]);
+  }, []);
 
   const currentTab = TABS.find((t) => t.id === activeTab) || TABS[0];
 
@@ -130,7 +135,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
       >
         <aside className="w-1/2 md:w-68 lg:w-76 shrink-0 bg-[var(--wb-surface-container-low)] border-r border-white/5 flex flex-col justify-between h-full overflow-hidden">
           <div className="flex flex-col p-5 sm:p-7 h-full overflow-hidden">
-            <div className="flex items-center gap-3.5 pb-4 mb-3 border-b border-white/10 bg-[var(--wb-surface-container-low)]/75 backdrop-blur-2xl pr-12 md:pr-0 shrink-0 sticky top-0 z-10 shadow-sm rounded-t-2xl">
+            <div className="flex items-center gap-3.5 pb-4 mb-3 pr-12 md:pr-0 shrink-0 sticky top-0 z-10 shadow-sm rounded-t-2xl glass-header">
               <img
                 src={launcherIcon}
                 alt="WeekBox"
@@ -212,7 +217,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
         </aside>
 
         <main className="w-1/2 md:w-auto md:flex-1 shrink-0 md:shrink flex flex-col overflow-hidden bg-[var(--wb-surface-container)] h-full">
-          <div className="flex items-center justify-between px-5 sm:px-10 py-4 sm:py-6 pr-16 sm:pr-20 border-b border-white/10 shrink-0 bg-[var(--wb-surface-container)]/75 backdrop-blur-2xl sticky top-0 z-20 shadow-sm">
+          <div className="flex items-center justify-between px-5 sm:px-10 py-4 sm:py-6 pr-16 sm:pr-20 shrink-0 sticky top-0 z-20 shadow-sm glass-header">
             <div className="flex flex-col">
               <button
                 type="button"

@@ -4,9 +4,8 @@ import { InstancesVersionAside } from "./components/instances-version-aside";
 import { InstancesMarkdownViewer } from "./components/instances-markdown-viewer";
 import { InstancesExecutableView } from "./components/instances-executable-view";
 import { InstancesFooter } from "./components/instances-footer";
-import { ConfirmationModal } from "@components";
+import { InstancesUninstallModal } from "./components/instances-uninstall-modal";
 import { useInstances } from "./hooks/use-instances";
-import { useSettingsStore } from "../../store";
 
 /**
  * Organism / Feature: Instances View.
@@ -146,30 +145,12 @@ export const Instances: React.FC = () => {
       </div>
 
       {currentRelease && (
-        <ConfirmationModal
+        <InstancesUninstallModal
           isOpen={isUninstallConfirmOpen}
           onClose={() => setIsUninstallConfirmOpen(false)}
-          onConfirm={async (dontAskAgain: boolean) => {
-            if (dontAskAgain) {
-              await useSettingsStore.getState().dismissWarning("delete-engine");
-            }
-            setIsUninstallConfirmOpen(false);
-            await executeUninstallEngine();
-          }}
-          title="Uninstall Engine Version"
-          description={
-            <span>
-              Are you sure you want to uninstall{" "}
-              <strong>
-                {currentEngineMeta.name} v{currentRelease.version}
-              </strong>
-              ? This engine version and all its local files will be permanently deleted from disk.
-            </span>
-          }
-          cancelLabel="Nevermind!"
-          confirmLabel="Uninstall"
-          isDestructive={true}
-          showDontAskAgain={true}
+          onConfirm={executeUninstallEngine}
+          engineName={currentEngineMeta.name}
+          version={currentRelease.version}
         />
       )}
     </div>
