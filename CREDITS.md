@@ -39,7 +39,7 @@ The people who have helped make WeekBox.
 
 | Contributor | Role |
 | --- | --- |
-| Nezumieepy | Social Media Manager |
+| Nezumieepy | Secondary Social Media Manager |
 | Aubree | Support |
 | [SaturdayNightModding21](https://x.com/snm21_fnf) | Support |
 
@@ -48,7 +48,6 @@ The people who have helped make WeekBox.
 | Contributor | Language |
 | --- | --- |
 | [Raupy1.0](https://github.com/Raupy10) | German |
-| Gunibert | German |
 | [Trofem](https://github.com/Trofem) | Russian |
 | [LéaNimatics](https://leanimatics.carrd.co/) | French |
 | Merssak | Polish |
