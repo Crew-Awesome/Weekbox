@@ -1,5 +1,5 @@
 #ifndef MyAppVersion
-#define MyAppVersion "2.5.1"
+#define MyAppVersion "2.5.3"
 #endif
 
 #define MyAppName "WeekBox"
@@ -64,7 +64,7 @@ Name: "{autodesktop}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; Tasks: de
 Root: HKCU; Subkey: "Software\Classes\weekbox"; ValueType: string; ValueName: ""; ValueData: "URL:WeekBox Protocol"; Flags: uninsdeletekey
 Root: HKCU; Subkey: "Software\Classes\weekbox"; ValueType: string; ValueName: "URL Protocol"; ValueData: ""
 Root: HKCU; Subkey: "Software\Classes\weekbox\DefaultIcon"; ValueType: string; ValueName: ""; ValueData: "{app}\{#MyAppExeName},0"
-Root: HKCU; Subkey: "Software\Classes\weekbox\shell\open\command"; ValueType: string; ValueName: ""; ValueData: """{app}\{#MyAppExeName}"" ""%1"""
+Root: HKCU; Subkey: "Software\Classes\weekbox\shell\open\command"; ValueType: string; ValueName: ""; ValueData: """{app}\{#MyAppExeName}"" --window-hidden ""%1"""
 
 [Run]
 Filename: "{app}\{#MyAppExeName}"; Description: "{cm:LaunchProgram,{#StringChange(MyAppName, '&', '&&')}}"; Flags: nowait postinstall skipifsilent

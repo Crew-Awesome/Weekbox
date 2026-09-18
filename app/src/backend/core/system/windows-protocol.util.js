@@ -29,7 +29,7 @@ async function syncWindowsProtocolRegistration(enabled) {
         `$key = ${key}`,
         `$exe = ${executable}`,
         `$exeDir = Split-Path $exe -Parent`,
-        `$command = '"' + $exe + '" --path="' + $exeDir + '" "%1"'`,
+        `$command = '"' + $exe + '" --path="' + $exeDir + '" --window-hidden "%1"'`,
         "New-Item -Path $key -Force | Out-Null",
         "Set-Item -Path $key -Value 'URL:WeekBox Protocol'",
         "New-ItemProperty -Path $key -Name 'URL Protocol' -Value '' -PropertyType String -Force | Out-Null",
