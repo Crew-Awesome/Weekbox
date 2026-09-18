@@ -3,8 +3,8 @@
 # Sources are the CI zips. Build Copr AFTER those zips exist on the release.
 
 Name:           weekbox
-Version:        2.5.0
-Release:        5%{?dist}
+Version:        2.5.1
+Release:        1%{?dist}
 Summary:        A re-imagined Friday Night Funkin' mod launcher
 License:        MIT
 URL:            https://github.com/Crew-Awesome/Weekbox
@@ -109,6 +109,10 @@ fi
 %{_datadir}/pixmaps/weekbox.png
 
 %changelog
+* Fri Sep 18 2026 Crew Awesome <info@weekbox.app> - 2.5.1-1
+- Fix protocol links opening the existing WeekBox window.
+- Update Spanish translations.
+
 * Mon Sep 14 2026 Crew Awesome <info@weekbox.app> - 2.3.4-5
 - Linux close-to-tray and AppIndicator tray menu (same as Windows)
 

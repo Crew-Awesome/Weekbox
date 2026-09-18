@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.5.1] - 2026-09-18
+
 ### Changed
 
 - Revisions to the Spanish translation
@@ -1173,7 +1175,8 @@ This is the Last content update I will do in a long while :)
 - Downloads for Windows, Linux, and macOS.
 - Packages for x64, ARM64, ARMHF, and Universal Macs where available.
 
-[unreleased]: https://github.com/Crew-Awesome/Weekbox/compare/v2.5.0...HEAD
+[unreleased]: https://github.com/Crew-Awesome/Weekbox/compare/v2.5.1...HEAD
+[2.5.1]: https://github.com/Crew-Awesome/Weekbox/compare/v2.5.0...v2.5.1
 [2.5.0]: https://github.com/Crew-Awesome/Weekbox/compare/v2.4.1...v2.5.0
 [2.4.1]: https://github.com/Crew-Awesome/Weekbox/compare/v2.4.0...v2.4.1
 [2.4.0]: https://github.com/Crew-Awesome/Weekbox/compare/v2.3.4...v2.4.0
