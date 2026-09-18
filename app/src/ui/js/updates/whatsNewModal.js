@@ -72,12 +72,16 @@ async function getAppVersion(markdown) {
 }
 
 const whatsNewModal = {
-  async showIfNeeded() {
+  async showIfNeeded({ force = false } = {}) {
     const markdown = await readChangelog();
     const version = await getAppVersion(markdown);
     const release = findRelease(markdown, version);
-    if (!release || appSettings.get("lastSeenWhatsNewVersion") === version)
+    if (
+      !release ||
+      (!force && appSettings.get("lastSeenWhatsNewVersion") === version)
+    )
       return false;
+    appSettings.set("lastSeenWhatsNewVersion", version);
 
     const modal = document.createElement("div");
     modal.className = "modal-overlay news-detail-modal whats-new-modal";
@@ -112,7 +116,6 @@ const whatsNewModal = {
       const finish = () => {
         if (settled) return;
         settled = true;
-        appSettings.set("lastSeenWhatsNewVersion", version);
         deactivateCheckoutDialog(modal);
         modal.classList.remove("show");
         setTimeout(() => {

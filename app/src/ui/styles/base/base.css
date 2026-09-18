@@ -4,6 +4,12 @@
   padding: 0;
 }
 
+:root.theme-switching *,
+:root.theme-switching *::before,
+:root.theme-switching *::after {
+  transition: none !important;
+}
+
 ::-webkit-scrollbar {
   width: 8px;
   height: 8px;
@@ -31,6 +37,14 @@ body {
   overflow: hidden;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+button,
+input,
+select,
+textarea {
+  color: inherit;
+  font: inherit;
 }
 
 .visually-hidden {
@@ -77,23 +91,6 @@ a:hover {
   display: flex;
   height: 100vh;
   width: 100vw;
-  transition: filter 180ms ease;
-}
-
-body.window-unfocused .app-layout {
-  filter: brightness(0.72);
-}
-
-body.window-unfocused::after {
-  content: "";
-  position: fixed;
-  inset: 0;
-  z-index: 2147483647;
-  background: var(--scrim);
-  opacity: 0.24;
-  backdrop-filter: blur(7px);
-  -webkit-backdrop-filter: blur(7px);
-  pointer-events: none;
 }
 
 .app-layout__content {

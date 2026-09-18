@@ -17,12 +17,12 @@
 .download-progress-toast {
   pointer-events: auto;
   padding: 14px;
-  border: 1px solid rgb(255 255 255 / 14%);
+  border: 1px solid var(--surface-border);
   border-radius: 12px;
-  background: rgb(16 16 16 / 88%);
-  box-shadow: 0 12px 38px rgb(0 0 0 / 38%);
+  background: var(--surface-floating);
+  box-shadow: 0 12px 38px color-mix(in srgb, var(--shadow) 38%, transparent);
   backdrop-filter: blur(16px);
-  color: #fff;
+  color: var(--on-surface-strong);
   opacity: 0;
   transform: translateX(calc(100% + 36px));
   transition:
@@ -57,7 +57,7 @@
 
 .download-progress-toast span {
   margin-top: 3px;
-  color: #a9a9a9;
+  color: var(--text-muted);
   font-size: 0.77rem;
 }
 
@@ -66,7 +66,7 @@
   margin-top: 10px;
   overflow: hidden;
   border-radius: 999px;
-  background: #393939;
+  background: var(--surface-track);
 }
 
 .download-progress-toast-track i {
@@ -74,7 +74,7 @@
   width: 0;
   height: 100%;
   border-radius: inherit;
-  background: #fff;
+  background: var(--on-surface-strong);
   transition: width 180ms ease;
 }
 
@@ -83,7 +83,7 @@
   padding: 0;
   border: 0;
   background: transparent;
-  color: #d5d5d5;
+  color: var(--text-muted);
   cursor: pointer;
   font: inherit;
   font-size: 0.77rem;
@@ -91,11 +91,11 @@
 
 .download-progress-toast-cancel:hover,
 .download-progress-toast-cancel:focus-visible {
-  color: #fff;
+  color: var(--text-main);
 }
 
 .download-progress-toast-cancel:focus-visible {
-  outline: 2px solid #fff;
+  outline: 2px solid var(--focus-ring);
   outline-offset: 3px;
 }
 
@@ -132,8 +132,8 @@
   flex: 0 0 32px;
   place-items: center;
   border-radius: 9px;
-  background: #fff;
-  color: #121212;
+  background: var(--surface-icon);
+  color: var(--surface-icon-content);
 }
 
 .download-toast-body {
@@ -152,7 +152,7 @@
 
 .download-toast-body .toast-title {
   overflow: hidden;
-  color: #fff;
+  color: var(--on-surface-strong);
   font-size: 0.82rem;
   font-weight: 800;
   text-overflow: ellipsis;
@@ -168,7 +168,7 @@
 .download-toast-body .toast-status {
   overflow: hidden;
   margin-top: 3px !important;
-  color: #a9a9a9;
+  color: var(--text-muted);
   font-size: 0.77rem;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -179,14 +179,14 @@
   margin-top: auto;
   overflow: hidden;
   border-radius: 999px;
-  background: #393939;
+  background: var(--surface-track);
 }
 
 .download-toast-body .toast-mod-progress {
   width: 0;
   height: 100%;
   border-radius: inherit;
-  background: #fff;
+  background: var(--on-surface-strong);
   transition: width 180ms ease;
 }
 
@@ -196,7 +196,7 @@
 
 .toast-card-error .download-toast-icon {
   background: #d95b5b;
-  color: #fff;
+  color: var(--on-error);
 }
 
 
@@ -285,10 +285,10 @@
   font-size: 20px;
   line-height: 20px;
   font-weight: 800;
-  color: #ffffff;
+  color: var(--bg-color);
   letter-spacing: 0.5px;
   white-space: nowrap;
-  mix-blend-mode: difference;
+  mix-blend-mode: normal;
   pointer-events: none;
   z-index: 2;
 }

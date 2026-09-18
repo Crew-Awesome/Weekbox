@@ -5,21 +5,30 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [2.5.0] - Unreleased
+
+### Added
+
+- Added light mode and an accent hue picker.
+- Added a settings reset button and a current version and changelog view.
+- Added repository-based news and contributor credits.
 
 ### Changed
 
-- Newsletter posts now load from the WeekBox GitHub repository.
+- Reworked settings and library cleanup into simpler flows.
+- Improved the light and dark themes across cards, loading screens, icons, and controls.
+- Improved engine downloads, imports, modal navigation, and update startup handling.
+
+### Fixed
+
+- Fixed themes resetting after hard refreshes.
+- Fixed What's New appearing on every startup.
+- Fixed WeekBox links opening a second instance instead of the running app.
 
 ### Removed
 
-- Removed the release workflow request to the old WeekBox website API.
-
-## [2.4.2] - 2026-09-16
-
-### Changed
-
-- WeekBox now installs available app updates before finishing startup.
+- Removed the Desktop notifications setting and the out-of-focus blur effect.
+- Removed the old website release refresh request and the news GitHub shortcut.
 
 ## [2.4.1] - 2026-09-16
 
@@ -1151,8 +1160,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Downloads for Windows, Linux, and macOS.
 - Packages for x64, ARM64, ARMHF, and Universal Macs where available.
 
-[unreleased]: https://github.com/Crew-Awesome/Weekbox/compare/v2.4.2...HEAD
-[2.4.2]: https://github.com/Crew-Awesome/Weekbox/compare/v2.4.1...v2.4.2
+[unreleased]: https://github.com/Crew-Awesome/Weekbox/compare/v2.5.0...HEAD
+[2.5.0]: https://github.com/Crew-Awesome/Weekbox/compare/v2.4.1...v2.5.0
 [2.4.1]: https://github.com/Crew-Awesome/Weekbox/compare/v2.4.0...v2.4.1
 [2.4.0]: https://github.com/Crew-Awesome/Weekbox/compare/v2.3.4...v2.4.0
 [2.3.4]: https://github.com/Crew-Awesome/Weekbox/compare/v2.3.3...v2.3.4

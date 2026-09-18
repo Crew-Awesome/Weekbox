@@ -90,6 +90,20 @@ function setButtonIcon(button, iconClass) {
   if (!icon.parentNode) button.appendChild(icon);
 }
 
+function beginEngineManagerTransition(container) {
+  container.classList.remove("engine-manager-body--switched");
+  container.classList.add("engine-manager-body--switching");
+}
+
+function finishEngineManagerTransition(container) {
+  container.classList.remove("engine-manager-body--switching");
+  void container.offsetWidth;
+  container.classList.add("engine-manager-body--switched");
+  requestAnimationFrame(() =>
+    container.classList.remove("engine-manager-body--switched"),
+  );
+}
+
 function bindVersionActions({
   item,
   engineId,
@@ -544,7 +558,7 @@ export const engineManagerModal = {
     );
     requestAnimationFrame(() => modal.classList.add("show"));
     await this.loadInstalledEngines();
-    if (engineId) await this.showDownloadPicker(engineId, "installed");
+    if (engineId) await this.showInstallMethodChooser(engineId, "installed");
   },
   close() {
     const modal = document.getElementById("engine-manager-modal");
@@ -572,14 +586,90 @@ export const engineManagerModal = {
     if (!container) return;
     this.isPickerOpen = false;
     this.pickerRequestId += 1;
-    container.classList.add("engine-manager-body--switching");
+    beginEngineManagerTransition(container);
     await new Promise((resolve) => setTimeout(resolve, 120));
     await this.loadInstalledEngines();
-    container.classList.remove("engine-manager-body--switching");
-    container.classList.add("engine-manager-body--switched");
-    requestAnimationFrame(() =>
-      container.classList.remove("engine-manager-body--switched"),
+    finishEngineManagerTransition(container);
+  },
+  async showInstallMethodChooser(engineId, returnTo = "chooser") {
+    const container = document.getElementById("engine-manager-modal-body");
+    if (!container || !engineId) return;
+    if (FS.isCustomEngine(engineId) && !ENGINE_DETAILS[engineId]) {
+      this.isPickerOpen = false;
+      this.pickerRequestId += 1;
+      await customEngineModal.open({
+        engineId,
+        onImported: () => this.loadInstalledEngines(),
+      });
+      return;
+    }
+    this.isPickerOpen = true;
+    const requestId = ++this.pickerRequestId;
+    beginEngineManagerTransition(container);
+    await new Promise((resolve) => setTimeout(resolve, 120));
+    if (requestId !== this.pickerRequestId) return;
+    const panel = this.renderInstallMethodChooser(engineId, returnTo);
+    if (!panel) return;
+    finishEngineManagerTransition(container);
+  },
+  renderInstallMethodChooser(engineId, returnTo = "chooser") {
+    const container = document.getElementById("engine-manager-modal-body");
+    if (!container) return null;
+    const details = getEngineDetails(engineId);
+    const panel = document.createElement("section");
+    panel.className = "engine-download-picker engine-download-picker--method";
+    const header = document.createElement("header");
+    header.className = "engine-download-picker__header";
+    const back = document.createElement("button");
+    back.type = "button";
+    back.className = "engine-download-picker__back";
+    back.title = t("common.back");
+    back.setAttribute("aria-label", t("common.back"));
+    back.innerHTML =
+      '<i class="fa-solid fa-arrow-left" aria-hidden="true"></i>';
+    back.addEventListener(
+      "click",
+      () =>
+        void (returnTo === "installed"
+          ? this.returnToInstalledEngines()
+          : this.showDownloadPicker()),
     );
+    const heading = document.createElement("div");
+    heading.className = "engine-download-picker__identity";
+    const icon = document.createElement("img");
+    icon.src = FS.getEngineIconSource(engineId);
+    icon.alt = "";
+    const title = document.createElement("h3");
+    title.textContent = getEngineLabel(engineId, details.name);
+    heading.append(icon, title);
+    header.append(back, heading);
+
+    const grid = document.createElement("div");
+    grid.className = "engine-download-picker__engine-grid";
+    const importButton = document.createElement("button");
+    importButton.type = "button";
+    importButton.className = "engine-download-picker__engine";
+    importButton.innerHTML = `<i class="engine-download-picker__method-icon fa-solid fa-folder-plus" aria-hidden="true"></i><span>${t("engineManager.addCustomVersion")}</span>`;
+    importButton.addEventListener("click", () => {
+      this.isPickerOpen = false;
+      this.pickerRequestId += 1;
+      void customEngineModal.open({
+        engineId,
+        onImported: () => this.loadInstalledEngines(),
+      });
+    });
+    const downloadButton = document.createElement("button");
+    downloadButton.type = "button";
+    downloadButton.className = "engine-download-picker__engine";
+    downloadButton.innerHTML = `<i class="engine-download-picker__method-icon fa-solid fa-cloud-arrow-down" aria-hidden="true"></i><span>${t("common.download")}</span>`;
+    downloadButton.addEventListener(
+      "click",
+      () => void this.showDownloadPicker(engineId, returnTo),
+    );
+    grid.append(downloadButton, importButton);
+    panel.append(header, grid);
+    container.replaceChildren(panel);
+    return panel;
   },
   async renderEngineChooser() {
     const container = document.getElementById("engine-manager-modal-body");
@@ -626,7 +716,7 @@ export const engineManagerModal = {
         button.append(icon, name);
         button.addEventListener(
           "click",
-          () => void this.showDownloadPicker(engineId, "chooser"),
+          () => void this.showInstallMethodChooser(engineId, "chooser"),
         );
         grid.appendChild(button);
       });
@@ -846,7 +936,7 @@ export const engineManagerModal = {
     }
     this.isPickerOpen = true;
     const requestId = ++this.pickerRequestId;
-    container.classList.add("engine-manager-body--switching");
+    beginEngineManagerTransition(container);
     await new Promise((resolve) => setTimeout(resolve, 120));
     if (requestId !== this.pickerRequestId) return;
     if (!engineId) {
@@ -861,11 +951,7 @@ export const engineManagerModal = {
           createLoadingState(t("common.loading"), 24, "engine-list-loading"),
         );
     }
-    container.classList.remove("engine-manager-body--switching");
-    container.classList.add("engine-manager-body--switched");
-    requestAnimationFrame(() =>
-      container.classList.remove("engine-manager-body--switched"),
-    );
+    finishEngineManagerTransition(container);
     if (!engineId) return;
     try {
       const versions = normalizeEngineVersions(
@@ -1003,7 +1089,6 @@ export const engineManagerModal = {
       syncEngineOrder();
     };
 
-
     sortedEngineEntries.forEach(([engineId, versions]) => {
       const details = getEngineDetails(engineId);
       const displayName = getEngineLabel(engineId, details.name);
@@ -1103,7 +1188,6 @@ export const engineManagerModal = {
         familyActions.append(editFamily, deleteFamily);
         header.appendChild(familyActions);
       }
-
 
       const imgEl = header.querySelector(".engine-col-icon");
       applyDominantColor(imgEl, card, {
@@ -1413,7 +1497,7 @@ export const engineManagerModal = {
         '<i class="fa-solid fa-plus" aria-hidden="true"></i>';
       addVersionButton.addEventListener("click", (event) => {
         event.stopPropagation();
-        void this.showDownloadPicker(engineId, "installed");
+        void this.showInstallMethodChooser(engineId, "installed");
       });
       versionsList.appendChild(addVersionButton);
       card.appendChild(versionsList);

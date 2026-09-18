@@ -3,7 +3,7 @@
 # Sources are the CI zips. Build Copr AFTER those zips exist on the release.
 
 Name:           weekbox
-Version:        2.4.2
+Version:        2.5.0
 Release:        5%{?dist}
 Summary:        A re-imagined Friday Night Funkin' mod launcher
 License:        MIT

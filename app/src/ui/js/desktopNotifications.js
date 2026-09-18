@@ -1,5 +1,3 @@
-import { appSettings } from "../../backend/core/system/settings.service.js";
-
 let nativeWindowFocused = true;
 
 function escapeXml(value) {
@@ -74,7 +72,6 @@ export function notifyDesktop(title, message, icon = "INFO", force = false) {
   if (
     typeof Neutralino === "undefined" ||
     !Neutralino.os?.showNotification ||
-    !appSettings.get("desktopNotifications") ||
     (!force && !document.hidden && document.hasFocus() && nativeWindowFocused)
   ) {
     return;

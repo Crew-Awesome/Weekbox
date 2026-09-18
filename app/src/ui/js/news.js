@@ -11,7 +11,6 @@ import { createLoadingState } from "./hourglass.js";
 import { modModal } from "./home/modal/index.js";
 import { sanitizeReleaseHtml } from "./engines/releaseNotes.js";
 import { t } from "./i18n/index.js";
-import { applyDominantColor } from "../utils/media/extract-color.util.js";
 
 const NEWS_REPOSITORY = "Crew-Awesome/weekbox.news";
 const NEWS_BRANCH = "main";
@@ -173,21 +172,10 @@ function renderNewsMeta(meta, post) {
 }
 
 function applyNewsCover(modal, image, post, coverUrl) {
-  modal.style.setProperty("--card-color", "rgba(255, 255, 255, 0.08)");
-  modal.style.setProperty("--news-accent", "var(--primary)");
   image.hidden = !coverUrl;
   image.src = coverUrl;
   image.alt = post.title ? `${post.title} cover` : "";
   setModalBackdrop(modal, coverUrl);
-  if (!coverUrl) return;
-  const colorProbe = new Image();
-  colorProbe.crossOrigin = "anonymous";
-  colorProbe.src = coverUrl;
-  applyDominantColor(colorProbe, modal, {
-    alpha: 0.2,
-    fallback: "rgba(255, 255, 255, 0.08)",
-    accentVar: "--news-accent",
-  });
 }
 
 function applyCachedNews(view, cached, badgeOnly) {
@@ -441,14 +429,6 @@ export const newsView = {
         image.addEventListener("error", () => image.remove(), { once: true });
         card.appendChild(image);
 
-        const colorProbe = new Image();
-        colorProbe.crossOrigin = "anonymous";
-        colorProbe.src = coverUrl;
-        applyDominantColor(colorProbe, card, {
-          alpha: 0.28,
-          fallback: "rgba(255, 255, 255, 0.08)",
-          accentVar: "--news-accent",
-        });
       }
       const body = document.createElement("div");
       body.className = "news-view__card-body";

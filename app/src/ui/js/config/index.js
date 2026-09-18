@@ -6,6 +6,7 @@ import { downloadMod } from "../home/modal/downloadMod.js";
 import { appUpdater } from "../../../backend/core/updates/app-updater.service.js";
 import { toastSystem } from "../toasts/toastSystem.js";
 import { AppUpdateController } from "./appUpdateController.js";
+import { whatsNewModal } from "../updates/whatsNewModal.js";
 import { StorageMoveFeedback } from "./storageMoveFeedback.js";
 import { existingStorageModal } from "../existingStorageModal.js";
 import { networkStatus } from "../../../backend/core/system/network-status.service.js";
@@ -16,6 +17,8 @@ import {
 import { sidebar } from "../sidebar.js";
 import { getLocaleCoverage, i18n, LANGUAGES, t } from "../i18n/index.js";
 import { firstRunLanguageModal } from "../firstRunLanguageModal.js";
+import iro from "@jaames/iro";
+import { hueToHex, setAccentHue, setTheme } from "../theme.js";
 import {
   activateCheckoutDialog,
   deactivateCheckoutDialog,
@@ -138,11 +141,8 @@ export const configModal = {
       .getElementById("cleanup-incomplete-downloads")
       ?.addEventListener("click", () => this.cleanupIncompleteDownloads());
     document
-      .getElementById("delete-all-mods")
-      ?.addEventListener("click", () => this.showLibraryDeleteModal("mods"));
-    document
-      .getElementById("delete-all-engines")
-      ?.addEventListener("click", () => this.showLibraryDeleteModal("engines"));
+      .getElementById("delete-all-library")
+      ?.addEventListener("click", () => this.showLibraryDeleteModal());
 
     document
       .getElementById("setting-language")
@@ -187,6 +187,15 @@ export const configModal = {
         if (appUpdates.pendingUpdate) return appUpdates.install();
         return this.checkForAppUpdate();
       });
+    document
+      .getElementById("view-app-changelog")
+      ?.addEventListener("click", () =>
+        whatsNewModal
+          .showIfNeeded({ force: true })
+          .catch((error) =>
+            console.warn("Could not show the WeekBox changelog", error),
+          ),
+      );
 
     document.addEventListener("app-update-available", (event) => {
       this.showAvailableAppUpdate(event.detail);
@@ -233,12 +242,11 @@ export const configModal = {
 
 
     const toggleIds = [
+      "darkMode",
       "launchOnStartup",
       "registerProtocolLinks",
-      "blurOutOfFocus",
       "hideOnLaunch",
       "closeToTray",
-      "desktopNotifications",
       "autoStartAfterDownload",
       "multithreadDownloads",
       "multithreadStorageMoves",
@@ -266,10 +274,38 @@ export const configModal = {
               return;
             }
           }
+          if (settingKey === "darkMode") {
+            setTheme(enabled);
+            this.syncAccentPicker(appSettings.get("accentHue"));
+          }
           appSettings.set(settingKey, enabled);
         });
       }
     });
+
+    const accentPickerElement = document.getElementById("setting-accentPicker");
+    if (accentPickerElement) {
+      this.accentPicker = new iro.ColorPicker(accentPickerElement, {
+        width: 190,
+        color: hueToHex(appSettings.get("accentHue")),
+        layout: [
+          {
+            component: iro.ui.Slider,
+            options: { sliderType: "hue" },
+          },
+        ],
+      });
+      this.accentPicker.on("color:change", (color) => {
+        const hue = setAccentHue(color.hue);
+        if (!this.accentPickerSyncing) appSettings.set("accentHue", hue);
+      });
+    }
+    document
+      .getElementById("reset-accent")
+      ?.addEventListener("click", () => this.resetAccent());
+    document
+      .getElementById("reset-settings")
+      ?.addEventListener("click", () => this.resetSettings());
 
     document
       .getElementById("setting-wineCommand")
@@ -326,14 +362,77 @@ export const configModal = {
     }
   },
 
+  syncAccentPicker(hue) {
+    if (!this.accentPicker) return;
+    this.accentPickerSyncing = true;
+    this.accentPicker.color.hexString = hueToHex(hue);
+    this.accentPickerSyncing = false;
+  },
+
+  resetAccent() {
+    const hue = appSettings.defaultSettings.accentHue;
+    appSettings.set("accentHue", hue);
+    setAccentHue(hue);
+    this.syncAccentPicker(hue);
+  },
+
+  showSettingsResetModal() {
+    const template = document.getElementById("tpl-settings-reset-modal");
+    if (!template) return Promise.resolve(false);
+    const wrapper = document.createElement("div");
+    wrapper.innerHTML = template.innerHTML;
+    const overlay = wrapper.firstElementChild;
+    if (!overlay) return Promise.resolve(false);
+
+    const dialog = overlay.querySelector(".settings-reset-dialog");
+    const cancel = overlay.querySelector("#settings-reset-cancel");
+    const confirm = overlay.querySelector("#settings-reset-confirm");
+
+    return new Promise((resolve) => {
+      let closed = false;
+      const close = (accepted) => {
+        if (closed) return;
+        closed = true;
+        deactivateCheckoutDialog(overlay);
+        overlay.remove();
+        resolve(accepted);
+      };
+
+      cancel.addEventListener("click", () => close(false));
+      confirm.addEventListener("click", () => close(true));
+      overlay.addEventListener("click", (event) => {
+        if (event.target === overlay) close(false);
+      });
+      document.body.appendChild(overlay);
+      i18n.apply(overlay);
+      overlay.hidden = false;
+      requestAnimationFrame(() => overlay.classList.add("show"));
+      activateCheckoutDialog(overlay, dialog, confirm, () => close(false));
+    });
+  },
+
+  async resetSettings() {
+    if (!(await this.showSettingsResetModal())) return;
+
+    await appSettings.resetUserSettings();
+    await this.handleStartupToggle(appSettings.get("launchOnStartup"));
+    await syncWindowsProtocolRegistration(
+      appSettings.get("registerProtocolLinks"),
+    );
+    setTheme(appSettings.get("darkMode"), {
+      hue: appSettings.get("accentHue"),
+    });
+    i18n.setLocale(appSettings.get("language"));
+    this.loadSettingsToUI();
+  },
+
   loadSettingsToUI() {
     const toggleIds = [
+      "darkMode",
       "launchOnStartup",
       "registerProtocolLinks",
-      "blurOutOfFocus",
       "hideOnLaunch",
       "closeToTray",
-      "desktopNotifications",
       "autoStartAfterDownload",
       "multithreadDownloads",
       "multithreadStorageMoves",
@@ -348,7 +447,10 @@ export const configModal = {
         checkbox.checked = appSettings.get(settingKey);
       }
     });
+    const hue = setAccentHue(appSettings.get("accentHue"));
+    this.syncAccentPicker(hue);
     this.loadWineSettings();
+    void this.loadAppVersion();
     this.updateStorageLocationLabel();
     this.updateNetworkAvailability();
     try {
@@ -403,6 +505,16 @@ export const configModal = {
     }
   },
 
+  async loadAppVersion() {
+    const versionElement = document.getElementById("app-current-version");
+    if (!versionElement) return;
+    try {
+      versionElement.textContent = await appUpdater.getCurrentVersion();
+    } catch {
+      versionElement.textContent = t("common.unknown");
+    }
+  },
+
   async updateStorageLocationLabel() {
     const label = document.getElementById("storage-location-path");
     if (label)
@@ -428,8 +540,7 @@ export const configModal = {
     }, 1800);
   },
 
-  showLibraryDeleteModal(target) {
-    if (target !== "mods" && target !== "engines") return;
+  showLibraryDeleteModal() {
     const template = document.getElementById("tpl-library-delete-modal");
     if (!template) return;
     const wrapper = document.createElement("div");
@@ -437,62 +548,172 @@ export const configModal = {
     const overlay = wrapper.firstElementChild;
     if (!overlay) return;
     const dialog = overlay.querySelector(".library-delete-dialog");
-    const stepLabel = overlay.querySelector("#library-delete-step");
     const title = overlay.querySelector("#library-delete-title");
     const description = overlay.querySelector("#library-delete-description");
     const status = overlay.querySelector("#library-delete-status");
+    const targetPicker = overlay.querySelector(
+      "#library-delete-target-picker",
+    );
+    const targetPickerLabel = overlay.querySelector(
+      "#library-delete-target-label",
+    );
+    const targetDropdown = overlay.querySelector(
+      "#library-delete-target-dropdown",
+    );
+    const targetTrigger = overlay.querySelector(
+      "#library-delete-target-trigger",
+    );
+    const targetMenu = overlay.querySelector("#library-delete-target-options");
+    const targetSelected = overlay.querySelector(
+      "#library-delete-target-selected",
+    );
+    const targetSelect = overlay.querySelector("#library-delete-target");
+    const confirmationField = overlay.querySelector(
+      "#library-delete-confirmation",
+    );
+    const confirmationLabel = overlay.querySelector(
+      "#library-delete-confirmation-label",
+    );
+    const confirmationInput = overlay.querySelector(
+      "#library-delete-confirmation-input",
+    );
     const cancel = overlay.querySelector("#library-delete-cancel");
     const confirm = overlay.querySelector("#library-delete-confirm");
-    const targetLabel = t(
-      target === "mods" ? "settings.modsLabel" : "settings.enginesLabel",
-    );
-    let step = 1;
+    let target = "";
+    let targetLabel = "";
+    let step = 0;
     let closed = false;
+    const targetDropdownController = setupDropdown(
+      targetTrigger,
+      targetDropdown,
+      { menuElement: targetMenu },
+    );
+
+    const getTargetLabel = () =>
+      t(
+        target === "mods"
+          ? "settings.modsLabel"
+          : target === "engines"
+            ? "settings.enginesLabel"
+            : "settings.allLibraryLabel",
+      );
+
+    const syncTargetPicker = () => {
+      targetSelected.textContent = target
+        ? getTargetLabel()
+        : t("settings.clearLibraryChooseOption");
+      targetMenu.querySelectorAll("[data-target]").forEach((option) => {
+        const selected = option.dataset.target === target;
+        option.classList.toggle("selected", selected);
+        option.setAttribute("aria-selected", String(selected));
+        option.textContent = t(
+          option.dataset.target === "mods"
+            ? "settings.modsLabel"
+            : option.dataset.target === "engines"
+              ? "settings.enginesLabel"
+              : "settings.allLibraryLabel",
+        );
+      });
+      targetSelect.value = target;
+    };
 
     const close = (restoreFocus = true) => {
       if (closed) return;
       closed = true;
+      targetDropdownController.destroy();
       deactivateCheckoutDialog(overlay, restoreFocus);
       overlay.remove();
     };
 
     const renderStep = () => {
-      stepLabel.textContent = t("settings.clearLibraryStep", { step });
+      targetPickerLabel.textContent = t("settings.clearLibraryTargetLabel");
+      targetLabel = getTargetLabel();
+      syncTargetPicker();
       title.textContent = t(
-        step === 1
-          ? "settings.clearLibraryFirstTitle"
-          : step === 2
-            ? "settings.clearLibrarySecondTitle"
-            : "settings.clearLibraryFinalTitle",
+        step === 0
+          ? "settings.clearLibraryChooseTitle"
+          : step === 1
+            ? "settings.clearLibraryFirstTitle"
+            : step === 2
+              ? "settings.clearLibrarySecondTitle"
+              : "settings.clearLibraryFinalTitle",
         { target: targetLabel },
       );
       description.textContent = t(
-        step === 1
-          ? "settings.clearLibraryFirstDescription"
-          : step === 2
-            ? "settings.clearLibrarySecondDescription"
-            : "settings.clearLibraryFinalDescription",
+        step === 0
+          ? "settings.clearLibraryChooseDescription"
+          : step === 1
+            ? "settings.clearLibraryFirstDescription"
+            : step === 2
+              ? "settings.clearLibrarySecondDescription"
+              : "settings.clearLibraryFinalDescription",
         { target: targetLabel },
       );
       status.textContent = "";
       cancel.textContent = t("common.cancel");
       confirm.textContent = t(
-        step === 3
-          ? "settings.clearLibraryFinalButton"
-          : step === 2
-            ? "settings.clearLibraryUnderstand"
-            : "common.continue",
+        step === 0
+          ? "common.continue"
+          : step === 3
+            ? "settings.clearLibraryFinalButton"
+            : step === 2
+              ? "settings.clearLibraryUnderstand"
+              : "common.continue",
         { target: targetLabel },
       );
+      targetPicker.hidden = step !== 0;
+      confirmationField.hidden = step !== 3;
+      if (step === 0) {
+        targetSelect.value = target;
+        confirm.disabled = !target;
+      } else if (step === 3) {
+        const confirmationText = t("settings.clearLibraryFinalButton", {
+          target: targetLabel,
+        });
+        confirmationLabel.textContent = t(
+          "settings.clearLibraryFinalInputLabel",
+          { confirmation: confirmationText },
+        );
+        confirmationInput.value = "";
+        confirm.disabled = true;
+      } else {
+        confirm.disabled = false;
+      }
     };
 
     cancel.addEventListener("click", () => close());
+    targetMenu.addEventListener("click", (event) => {
+      const option = event.target.closest("[data-target]");
+      if (!option) return;
+      target = option.dataset.target;
+      syncTargetPicker();
+      targetDropdownController.close();
+      status.textContent = "";
+      confirm.disabled = !target;
+    });
+    confirmationInput.addEventListener("input", () => {
+      const confirmationText = t("settings.clearLibraryFinalButton", {
+        target: targetLabel,
+      });
+      confirm.disabled = confirmationInput.value.trim() !== confirmationText;
+    });
     confirm.addEventListener("click", async () => {
+      if (step === 0) {
+        target = targetSelect.value;
+        if (!target) return;
+        step = 1;
+        renderStep();
+        return;
+      }
       if (step < 3) {
         step += 1;
         renderStep();
         return;
       }
+      const confirmationText = t("settings.clearLibraryFinalButton", {
+        target: targetLabel,
+      });
+      if (confirmationInput.value.trim() !== confirmationText) return;
       if (this.hasActiveDownloads()) {
         status.textContent = t("settings.clearLibraryStopDownloads");
         return;

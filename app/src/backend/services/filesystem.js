@@ -1329,12 +1329,12 @@ var _FileSystemService = class _FileSystemService {
   async clearInstalledLibrary(target) {
     this.assertStorageUnlocked();
     if (!this.isInitialized) throw new Error("WeekBox storage is not ready");
-    if (target !== "mods" && target !== "engines")
+    if (target !== "mods" && target !== "engines" && target !== "all")
       throw new Error("Unknown library cleanup target");
     if (!(await this.processes.closeAll()))
       throw new Error("Close running engines before deleting library files.");
 
-    if (target === "mods") {
+    if (target === "mods" || target === "all") {
       const mods = await this.mods.getAll();
       const engines = await this.getInstalledEngines();
       const unlinkResults = await Promise.allSettled(
@@ -1350,7 +1350,8 @@ var _FileSystemService = class _FileSystemService {
       await this.api.ensureDir(this.modsPath);
       await this.api.remove(this.covers.coversPath);
       await this.mods.saveAll([]);
-    } else {
+    }
+    if (target === "engines" || target === "all") {
       await this.api.remove(this.enginesPath);
       await this.api.ensureDir(this.enginesPath);
       while (this.customEngines.getAll().length)

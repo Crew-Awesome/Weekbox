@@ -33,6 +33,11 @@ import { firstRunStorageModal } from "../../../ui/js/firstRunStorageModal.js";
 import { firstRunLanguageModal } from "../../../ui/js/firstRunLanguageModal.js";
 import { whatsNewModal } from "../../../ui/js/updates/whatsNewModal.js";
 import {
+  getCachedHue,
+  getCachedTheme,
+  setTheme,
+} from "../../../ui/js/theme.js";
+import {
   i18n,
   localizeProgressStatus,
   t,
@@ -86,46 +91,73 @@ async function ensureSingleInstance() {
   if (!Number.isInteger(parentPid) || parentPid <= 0) return true;
 
   const script = `$created = $false\n$mutex = [System.Threading.Mutex]::new($false, '${SINGLE_INSTANCE_MUTEX}', [ref]$created)\n$owned = $false\ntry { $owned = $mutex.WaitOne(0) } catch [System.Threading.AbandonedMutexException] { $owned = $true }\nif (-not $owned) { [Console]::Out.WriteLine('duplicate'); exit 2 }\n[Console]::Out.WriteLine('acquired')\ntry { while (Get-Process -Id ${parentPid} -ErrorAction SilentlyContinue) { Start-Sleep -Milliseconds 500 } } finally { $mutex.ReleaseMutex(); $mutex.Dispose() }`;
-  let process;
+  let resolveGuard;
+  const guardResult = new Promise((resolve) => {
+    resolveGuard = resolve;
+  });
+  let processId = null;
+  let timeoutHandle;
+  let settled = false;
+  let outputBuffer = "";
+  const pendingEvents = [];
+  const finish = (isPrimary) => {
+    if (settled) return;
+    settled = true;
+    clearTimeout(timeoutHandle);
+    Neutralino.events.off("spawnedProcess", handler);
+    resolveGuard(isPrimary);
+  };
+  const handleEvent = (event) => {
+    if (processId === null) {
+      pendingEvents.push(event);
+      return;
+    }
+    if (event.detail.id !== processId) return;
+    if (event.detail.action === "stdOut") {
+      outputBuffer += String(event.detail.data || "").toLowerCase();
+    }
+    if (event.detail.action === "stdOut" && outputBuffer.includes("acquired")) {
+      finish(true);
+    } else if (
+      event.detail.action === "stdOut" &&
+      outputBuffer.includes("duplicate")
+    ) {
+      finish(false);
+    } else if (event.detail.action === "exit") {
+      finish(Number(event.detail.data) === 2 ? false : true);
+    }
+  };
+  const handler = (event) => handleEvent(event);
+
   try {
-    process = await Neutralino.os.spawnProcess(
+    await Neutralino.events.on("spawnedProcess", handler);
+    const process = await Neutralino.os.spawnProcess(
       `powershell.exe -NoLogo -NoProfile -NonInteractive -ExecutionPolicy Bypass -EncodedCommand ${encodePowerShellCommand(script)}`,
     );
-  } catch (error) {
-    console.warn("Could not start the WeekBox single-instance guard", error);
-    return true;
-  }
-
-  return new Promise((resolve) => {
-    let settled = false;
-    let timeoutHandle;
-    const finish = (isPrimary) => {
-      if (settled) return;
-      settled = true;
-      clearTimeout(timeoutHandle);
-      Neutralino.events.off("spawnedProcess", handler);
-      resolve(isPrimary);
-    };
-    const handler = (event) => {
-      if (event.detail.id !== process.id) return;
-      const output = String(event.detail.data || "").toLowerCase();
-      if (event.detail.action === "stdOut" && output.includes("acquired")) {
-        finish(true);
-      } else if (
-        event.detail.action === "stdOut" &&
-        output.includes("duplicate")
-      ) {
-        finish(false);
-      } else if (event.detail.action === "exit") {
-        finish(true);
-      }
-    };
+    processId = process.id;
     timeoutHandle = setTimeout(() => {
       console.warn("The WeekBox single-instance guard did not respond in time");
       finish(true);
     }, 5000);
-    Neutralino.events.on("spawnedProcess", handler).catch(() => finish(true));
-  });
+    pendingEvents.splice(0).forEach(handleEvent);
+  } catch (error) {
+    console.warn("Could not start the WeekBox single-instance guard", error);
+    finish(true);
+  }
+  return guardResult;
+}
+
+async function handoffToPrimaryInstance() {
+  const link = getWeekboxLinkFromArgs();
+  await Neutralino.window.hide().catch(() => {});
+  if (link) {
+    await Neutralino.app
+      .broadcast("weekbox:deep-link", { link })
+      .catch(() => {});
+  } else {
+    await Neutralino.app.broadcast("weekbox:focus").catch(() => {});
+  }
+  await Neutralino.app.exit().catch(() => {});
 }
 
 function installGlobalErrorReporter() {
@@ -391,7 +423,7 @@ async function startApp() {
     patchNeutralinoMessageBox();
     let deepLinkReady = false;
     let queuedDeepLink = null;
-    Neutralino.events.on("weekbox:deep-link", (event) => {
+    await Neutralino.events.on("weekbox:deep-link", (event) => {
       const detail = event?.detail;
       const link =
         typeof detail === "string" ? detail : detail?.link || detail?.url;
@@ -405,42 +437,14 @@ async function startApp() {
         console.warn("Could not open the WeekBox link", error),
       );
     });
-    Neutralino.events.on("weekbox:focus", () => void focusWeekBoxWindow());
+    await Neutralino.events.on("weekbox:focus", () => void focusWeekBoxWindow());
     if (!(await ensureSingleInstance())) {
-      const link = getWeekboxLinkFromArgs();
-      await Neutralino.app
-        .broadcast(link ? "weekbox:deep-link" : "weekbox:focus", link)
-        .catch(() => {});
-      await Neutralino.app.exit().catch(() => {});
+      await handoffToPrimaryInstance();
       return;
     }
     void startupLoader.initVersion();
     networkStatus.init();
     await focusWeekBoxWindow();
-    const setWindowFocus = (isFocused) => {
-      if (isFocused) {
-        document.body.classList.remove("window-unfocused");
-      } else if (appSettings.get("blurOutOfFocus")) {
-        document.body.classList.add("window-unfocused");
-      }
-    };
-    Neutralino.events.on("windowBlur", () => setWindowFocus(false));
-    Neutralino.events.on("windowFocus", () => setWindowFocus(true));
-    window.addEventListener("focus", () => setWindowFocus(true));
-    window.addEventListener("focusin", () => setWindowFocus(true), {
-      passive: true,
-    });
-    window.addEventListener("pointerdown", () => setWindowFocus(true), {
-      capture: true,
-      passive: true,
-    });
-    window.addEventListener("keydown", () => setWindowFocus(true), {
-      capture: true,
-      passive: true,
-    });
-    document.addEventListener("visibilitychange", () => {
-      if (!document.hidden) setWindowFocus(true);
-    });
     disableProductionRefreshShortcuts();
 
     const handleAppExit = async () => {
@@ -508,6 +512,10 @@ async function startApp() {
       `${settingsDataPath}/settings.json`,
     );
     await appSettings.init(settingsDataPath);
+    setTheme(getCachedTheme() ?? appSettings.get("darkMode"), {
+      animate: false,
+      hue: getCachedHue() ?? appSettings.get("accentHue"),
+    });
     i18n.init();
     if (appSettings.get("checkAppUpdatesOnStartup")) {
       startupLoader.setPhase(t("startup.checkingAppUpdates"), 24);
@@ -527,6 +535,22 @@ async function startApp() {
     startupStep = "preparing the WeekBox library";
     await FS.init({ deferMaintenance: true });
     await appSettings.setDataPath(FS.dataPath);
+    const cachedTheme = getCachedTheme();
+    const cachedHue = getCachedHue();
+    let repairedSettings = false;
+    if (cachedTheme !== null && cachedTheme !== appSettings.get("darkMode")) {
+      appSettings.set("darkMode", cachedTheme);
+      repairedSettings = true;
+    }
+    if (cachedHue !== null && cachedHue !== appSettings.get("accentHue")) {
+      appSettings.set("accentHue", cachedHue);
+      repairedSettings = true;
+    }
+    if (repairedSettings) await appSettings.write();
+    setTheme(cachedTheme ?? appSettings.get("darkMode"), {
+      animate: false,
+      hue: cachedHue ?? appSettings.get("accentHue"),
+    });
     try {
       await completeFirstRunStorageSetup(defaultStoragePath, hadSettings);
     } catch (error) {

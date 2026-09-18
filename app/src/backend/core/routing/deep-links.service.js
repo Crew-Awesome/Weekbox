@@ -12,13 +12,19 @@ function getWeekboxLinkFromArgs(
     args.find(
       (argument) =>
         typeof argument === "string" &&
-        argument.trim().toLowerCase().startsWith("weekbox:"),
+        argument
+          .trim()
+          .replace(/^"|"$/g, "")
+          .toLowerCase()
+          .startsWith("weekbox:"),
     ) || null
   );
 }
 
 function parseWeekboxLink(value) {
-  const link = String(value || "").trim();
+  const link = String(value || "")
+    .trim()
+    .replace(/^"|"$/g, "");
   const directMatch = link.match(/^weekbox:\/\/mod(?:\/|,)(\d+)\/?$/i);
   if (directMatch) return { type: "mod", id: Number(directMatch[1]) };
   try {

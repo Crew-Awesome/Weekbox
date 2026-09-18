@@ -29,7 +29,12 @@ function normaliseDocument(document2) {
     }
   }
   for (const [key, saved] of Object.entries(savedSettings)) {
-    if (!(key in defaults.settings) && saved && typeof saved === "object") {
+    if (
+      !(key in defaults.settings) &&
+      !removedSettingKeys.has(key) &&
+      saved &&
+      typeof saved === "object"
+    ) {
       defaults.settings[key] = saved;
     }
   }
@@ -50,13 +55,13 @@ SETTINGS_PATH_KEY = "weekbox-settings-data-path-v2";
 LEGACY_SETTINGS_PATH_KEY = "weekbox-settings-data-path";
 settingDefinitions = {
   language: { type: "string", defaultValue: "en" },
+  darkMode: { type: "boolean", defaultValue: true },
+  accentHue: { type: "number", defaultValue: 190 },
   firstRunLanguageSetupComplete: { type: "boolean", defaultValue: false },
   launchOnStartup: { type: "boolean", defaultValue: true },
   registerProtocolLinks: { type: "boolean", defaultValue: true },
-  blurOutOfFocus: { type: "boolean", defaultValue: true },
   hideOnLaunch: { type: "boolean", defaultValue: false },
   closeToTray: { type: "boolean", defaultValue: false },
-  desktopNotifications: { type: "boolean", defaultValue: true },
   autoStartAfterDownload: { type: "boolean", defaultValue: false },
   multithreadDownloads: { type: "boolean", defaultValue: true },
   multithreadStorageMoves: { type: "boolean", defaultValue: true },
@@ -71,6 +76,16 @@ settingDefinitions = {
   baseGameSupportWarningShown: { type: "boolean", defaultValue: false },
   lastSeenWhatsNewVersion: { type: "string", defaultValue: "" },
 };
+const removedSettingKeys = new Set(["desktopNotifications", "blurOutOfFocus"]);
+const preservedOnReset = new Set([
+  "storagePath",
+  "storageMoveRecommendationDismissed",
+  "engineVersionPreferences",
+  "firstRunLanguageSetupComplete",
+  "firstRunStorageSetupComplete",
+  "baseGameSupportWarningShown",
+  "lastSeenWhatsNewVersion",
+]);
 
 appSettings = {
   defaultSettings: Object.fromEntries(
@@ -221,6 +236,17 @@ appSettings = {
     document.dispatchEvent(
       new CustomEvent("settings-changed", { detail: { key, value } }),
     );
+  },
+  async resetUserSettings() {
+    for (const [key, definition] of Object.entries(settingDefinitions)) {
+      if (preservedOnReset.has(key)) continue;
+      this.document.settings[key] = {
+        type: definition.type,
+        value: definition.defaultValue,
+      };
+    }
+    document.dispatchEvent(new CustomEvent("settings-reset"));
+    if (this.initialized) await this.write();
   },
   async write(path = this.path) {
     if (!path) return;

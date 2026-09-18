@@ -74,9 +74,9 @@
 }
 
 .pill-btn.active {
-  background-color: var(--text-main);
-  color: var(--bg-color);
-  border-color: var(--text-main);
+  background-color: var(--primary);
+  color: var(--on-primary);
+  border-color: var(--primary);
 }
 
 .pill-dropdown {
@@ -104,7 +104,7 @@
 
 .pill-btn:focus-visible,
 .pill-dropdown .custom-option:focus-visible {
-  outline: 2px solid var(--text-main);
+  outline: 2px solid var(--focus-ring);
   outline-offset: 2px;
 }
 
@@ -167,7 +167,7 @@
 
 .pill-dropdown .custom-option.selected {
   color: var(--text-main);
-  background-color: rgba(255, 255, 255, 0.05);
+  background-color: var(--surface-control);
 }
 
 .custom-options-container {
@@ -179,7 +179,7 @@
   background-color: var(--bg-panel);
   border: 1px solid var(--border-color);
   border-radius: 8px;
-  box-shadow: 0 -8px 24px rgba(0, 0, 0, 0.4);
+  box-shadow: 0 -8px 24px color-mix(in srgb, var(--shadow) 40%, transparent);
   overflow-y: auto;
   max-height: 200px;
   display: none;
@@ -211,5 +211,5 @@
 .custom-option.selected {
   color: var(--text-main);
   font-weight: 700;
-  background-color: rgba(255, 255, 255, 0.05);
+  background-color: var(--surface-control);
 }

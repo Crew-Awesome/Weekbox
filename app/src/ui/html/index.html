@@ -288,16 +288,6 @@
             <i class="fa-solid fa-sliders"></i>
             <span data-i18n="settings.general">General</span>
           </button>
-          <button class="config-tab-btn" data-tab-target="appearance">
-            <i class="fa-solid fa-palette"></i>
-            <span data-i18n="settings.appearance"
-              >Appearance &amp; behavior</span
-            >
-          </button>
-          <button class="config-tab-btn" data-tab-target="notifications">
-            <i class="fa-solid fa-bell"></i>
-            <span data-i18n="settings.notifications">Notifications</span>
-          </button>
           <button class="config-tab-btn" data-tab-target="downloads">
             <i class="fa-solid fa-download"></i>
             <span data-i18n="settings.downloads">Downloads</span>
@@ -408,6 +398,52 @@
 
               <div class="setting-item">
                 <div class="setting-info">
+                  <h4 data-i18n="settings.darkMode">Dark mode</h4>
+                  <p data-i18n="settings.darkModeDescription">
+                    Use the dark WeekBox theme.
+                  </p>
+                </div>
+                <label class="switch">
+                  <input
+                    type="checkbox"
+                    id="setting-darkMode"
+                    data-i18n-attr="aria-label:settings.darkMode"
+                    aria-label="Dark mode"
+                  />
+                  <span class="slider round"></span>
+                </label>
+              </div>
+
+              <div class="setting-item setting-item-accent">
+                <div class="setting-info">
+                  <h4 data-i18n="settings.accentColor">Accent color</h4>
+                  <p data-i18n="settings.accentColorDescription">
+                    Choose the color used for buttons, highlights, and focus rings.
+                  </p>
+                </div>
+                <div class="setting-color-control">
+                  <div
+                    class="setting-iro-picker"
+                    id="setting-accentPicker"
+                    data-i18n-attr="aria-label:settings.accentHue"
+                    aria-label="Accent color hue"
+                  ></div>
+                  <button
+                    class="setting-accent-default"
+                    id="reset-accent"
+                    type="button"
+                    data-i18n-attr="title:common.useDefault,aria-label:common.useDefault"
+                    title="Use default"
+                    aria-label="Use default"
+                  >
+                    <i class="fa-solid fa-rotate-left" aria-hidden="true"></i>
+                    <span data-i18n="common.useDefault">Use default</span>
+                  </button>
+                </div>
+              </div>
+
+              <div class="setting-item">
+                <div class="setting-info">
                   <h4 data-i18n="settings.protocolLinks">Open WeekBox links</h4>
                   <p>
                     <span
@@ -423,29 +459,7 @@
                   <span class="slider round"></span>
                 </label>
               </div>
-            </div>
-          </div>
 
-
-          <div
-            id="config-appearance"
-            class="config-tab-content"
-            style="display: none"
-          >
-            <div class="settings-list">
-              <div class="setting-item">
-                <div class="setting-info">
-                  <h4 data-i18n="settings.blurOutOfFocus">Blur out of focus</h4>
-                  <p data-i18n="settings.blurOutOfFocusDescription">
-                    Apply a blur effect to the background when the window loses
-                    focus.
-                  </p>
-                </div>
-                <label class="switch">
-                  <input type="checkbox" id="setting-blurOutOfFocus" />
-                  <span class="slider round"></span>
-                </label>
-              </div>
               <div class="setting-item">
                 <div class="setting-info">
                   <h4 data-i18n="settings.hideOnLaunch">
@@ -473,34 +487,27 @@
                   <span class="slider round"></span>
                 </label>
               </div>
-            </div>
-          </div>
-
-
-          <div
-            id="config-notifications"
-            class="config-tab-content"
-            style="display: none"
-          >
-            <div class="settings-list">
-              <div class="setting-item">
+              <div class="setting-item setting-item-reset">
                 <div class="setting-info">
-                  <h4 data-i18n="settings.desktopNotifications">
-                    Desktop notifications
-                  </h4>
-                  <p data-i18n="settings.desktopNotificationsDescription">
-                    Show notifications for downloads, installs, updates, and
-                    tray actions.
+                  <h4 data-i18n="settings.resetSettings">Reset settings</h4>
+                  <p data-i18n="settings.resetSettingsDescription">
+                    Restore WeekBox preferences to their default values.
                   </p>
                 </div>
-                <label class="switch">
-                  <input type="checkbox" id="setting-desktopNotifications" />
-                  <span class="slider round"></span>
-                </label>
+                <button
+                  class="storage-location-button config-reset-button"
+                  id="reset-settings"
+                  type="button"
+                  data-i18n-attr="title:settings.resetSettings,aria-label:settings.resetSettings"
+                  title="Reset settings"
+                  aria-label="Reset settings"
+                >
+                  <i class="fa-solid fa-rotate-left" aria-hidden="true"></i>
+                  <span data-i18n="common.reset">Reset</span>
+                </button>
               </div>
             </div>
           </div>
-
 
           <div
             id="config-downloads"
@@ -697,22 +704,10 @@
                   <button
                     type="button"
                     class="storage-location-button storage-location-button-danger"
-                    id="delete-all-mods"
+                    id="delete-all-library"
                   >
                     <i class="fa-solid fa-trash" aria-hidden="true"></i>
-                    <span data-i18n="settings.deleteAllMods"
-                      >Delete all mods</span
-                    >
-                  </button>
-                  <button
-                    type="button"
-                    class="storage-location-button storage-location-button-danger"
-                    id="delete-all-engines"
-                  >
-                    <i class="fa-solid fa-trash-can" aria-hidden="true"></i>
-                    <span data-i18n="settings.deleteAllEngines"
-                      >Delete all engines</span
-                    >
+                    <span data-i18n="settings.clearLibrary">Clear library data</span>
                   </button>
                 </div>
               </div>
@@ -726,6 +721,20 @@
             style="display: none"
           >
             <div class="settings-list">
+              <div class="setting-item setting-item-storage">
+                <div class="setting-info">
+                  <h4 data-i18n="settings.currentVersion">Current version</h4>
+                  <p id="app-current-version">—</p>
+                </div>
+                <button
+                  class="storage-location-button"
+                  id="view-app-changelog"
+                  type="button"
+                >
+                  <span data-i18n="settings.viewChangelog">View changelog</span>
+                </button>
+              </div>
+
               <div class="setting-item setting-item-storage">
                 <div class="setting-info">
                   <h4 data-i18n="settings.weekboxUpdates">WeekBox updates</h4>
@@ -783,7 +792,6 @@
         <i class="fa-solid fa-triangle-exclamation"></i>
       </div>
       <div class="library-delete-copy">
-        <p class="library-delete-step" id="library-delete-step"></p>
         <h2 id="library-delete-title"></h2>
         <p id="library-delete-description"></p>
         <p
@@ -791,6 +799,46 @@
           id="library-delete-status"
           role="status"
         ></p>
+        <div class="library-delete-target-picker" id="library-delete-target-picker">
+          <label for="library-delete-target-trigger" id="library-delete-target-label"></label>
+          <div class="mod-settings-dropdown library-delete-target-dropdown" id="library-delete-target-dropdown">
+            <button
+              type="button"
+              class="mod-settings-dropdown-trigger"
+              id="library-delete-target-trigger"
+              aria-haspopup="listbox"
+              aria-expanded="false"
+            >
+              <span id="library-delete-target-selected"></span>
+              <i class="fa-solid fa-chevron-down mod-settings-select-chevron" aria-hidden="true"></i>
+            </button>
+            <div
+              class="mod-settings-dropdown-menu"
+              id="library-delete-target-options"
+              role="listbox"
+              hidden
+            >
+              <button type="button" role="option" data-target="mods"></button>
+              <button type="button" role="option" data-target="engines"></button>
+              <button type="button" role="option" data-target="all"></button>
+            </div>
+            <select id="library-delete-target" hidden>
+              <option value=""></option>
+              <option value="mods"></option>
+              <option value="engines"></option>
+              <option value="all"></option>
+            </select>
+          </div>
+        </div>
+        <div class="library-delete-confirmation" id="library-delete-confirmation" hidden>
+          <label for="library-delete-confirmation-input" id="library-delete-confirmation-label"></label>
+          <input
+            id="library-delete-confirmation-input"
+            type="text"
+            autocomplete="off"
+            spellcheck="false"
+          />
+        </div>
         <div class="library-delete-actions">
           <button
             type="button"
@@ -802,6 +850,46 @@
             class="library-delete-confirm"
             id="library-delete-confirm"
           ></button>
+        </div>
+      </div>
+    </section>
+  </div>
+</template>
+<template id="tpl-settings-reset-modal">
+  <div class="library-delete-overlay settings-reset-overlay" hidden>
+    <section
+      class="library-delete-dialog settings-reset-dialog"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="settings-reset-title"
+    >
+      <div class="library-delete-icon settings-reset-icon" aria-hidden="true">
+        <i class="fa-solid fa-rotate-left"></i>
+      </div>
+      <div class="library-delete-copy">
+        <h2 id="settings-reset-title" data-i18n="settings.resetSettings">
+          Reset settings
+        </h2>
+        <p data-i18n="settings.resetSettingsConfirm">
+          Reset WeekBox preferences to their default values?
+        </p>
+        <div class="library-delete-actions">
+          <button
+            type="button"
+            class="library-delete-cancel"
+            id="settings-reset-cancel"
+            data-i18n="common.cancel"
+          >
+            Cancel
+          </button>
+          <button
+            type="button"
+            class="library-delete-confirm settings-reset-confirm"
+            id="settings-reset-confirm"
+            data-i18n="common.reset"
+          >
+            Reset
+          </button>
         </div>
       </div>
     </section>

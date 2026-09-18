@@ -1,6 +1,6 @@
 {
   "name": "weekbox",
-  "version": "2.4.2",
+  "version": "2.5.0",
   "description": "A Re-Imagined Original FNF Mod Launcher",
   "main": "index.js",
   "scripts": {
@@ -38,6 +38,7 @@
     "prettier": "^3.9.5"
   },
   "dependencies": {
+    "@jaames/iro": "^5.5.2",
     "flag-icons": "^7.5.0",
     "ldrs": "^1.1.9",
     "marked": "^18.0.7"

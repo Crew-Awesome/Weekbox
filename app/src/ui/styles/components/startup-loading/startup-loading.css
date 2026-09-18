@@ -7,7 +7,7 @@
   justify-content: flex-end;
   align-items: center;
   padding: 28px 36px 36px;
-  background-color: var(--surface);
+  background-color: var(--loading-surface);
   opacity: 1;
   transition: opacity 220ms ease;
   user-select: none;
@@ -27,7 +27,7 @@
   inset: -24px;
   z-index: 0;
   background: url("../assets/img/loading.webp") center / cover no-repeat;
-  filter: blur(14px) brightness(0.42);
+  filter: var(--loading-image-start-filter);
   transform: scale(1.12);
   animation: startup-loading-background-reveal 4.5s
     cubic-bezier(0.16, 1, 0.3, 1) forwards;
@@ -35,15 +35,15 @@
 
 .startup-loading::after {
   z-index: 0;
-  background: var(--scrim);
-  opacity: 0.38;
+  background: var(--loading-overlay);
+  opacity: 1;
   animation: startup-loading-overlay-reveal 4s cubic-bezier(0.16, 1, 0.3, 1)
     forwards;
 }
 
 @keyframes startup-loading-background-reveal {
   to {
-    filter: blur(0) brightness(1);
+    filter: var(--loading-image-end-filter);
     transform: scale(1);
   }
 }
@@ -95,7 +95,7 @@
   position: absolute;
   top: 20px;
   right: 24px;
-  color: var(--on-surface);
+  color: var(--loading-foreground);
   font-size: 0.85rem;
   font-weight: 600;
   letter-spacing: 0.5px;
@@ -130,7 +130,7 @@
 
 .startup-loading__label {
   margin: 0;
-  color: var(--on-surface);
+  color: var(--loading-foreground);
   font-weight: 600;
   white-space: nowrap;
   overflow: hidden;
@@ -143,7 +143,7 @@
 
 .startup-loading__percentage {
   margin: 0;
-  color: var(--primary);
+  color: var(--loading-foreground);
   font-weight: 700;
   font-variant-numeric: tabular-nums;
   flex-shrink: 0;
@@ -159,8 +159,8 @@
   z-index: 2;
   width: auto;
   height: 12px;
-  border-top: 1px solid var(--outline-variant);
-  background: var(--surface-container-highest);
+  border-top: 1px solid var(--loading-border);
+  background: var(--loading-track);
 }
 
 .startup-loading__progress-bar {
@@ -168,8 +168,8 @@
   height: 100%;
   position: relative;
   overflow: hidden;
-  background-color: var(--primary);
-  box-shadow: 0 0 10px color-mix(in srgb, var(--primary) 55%, transparent);
+  background-color: var(--loading-primary);
+  box-shadow: 0 0 10px color-mix(in srgb, var(--loading-primary) 55%, transparent);
   transition: width 220ms cubic-bezier(0.4, 0, 0.2, 1);
 }
 
@@ -184,8 +184,8 @@
   content: "";
   background: repeating-linear-gradient(
     45deg,
-    color-mix(in srgb, var(--on-primary) 22%, var(--primary)) 0 8px,
-    var(--primary) 8px 16px
+    color-mix(in srgb, var(--loading-foreground) 22%, var(--loading-primary)) 0 8px,
+    var(--loading-primary) 8px 16px
   );
   animation: startup-loading-barber-pole 700ms linear infinite;
 }

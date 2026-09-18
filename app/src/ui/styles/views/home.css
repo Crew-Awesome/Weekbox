@@ -167,7 +167,7 @@
   z-index: 3;
   max-width: calc(100% - 72px);
   overflow: hidden;
-  color: rgba(255, 255, 255, 0.3);
+  color: var(--text-muted);
   font-size: 0.95rem;
   font-weight: 400;
   pointer-events: none;
@@ -200,7 +200,7 @@
 }
 
 #mod-search-input.search-input:focus::placeholder {
-  color: rgba(255, 255, 255, 0.5) !important;
+  color: var(--text-muted) !important;
 }
 
 .search-container:focus-within .search-icon {
@@ -395,7 +395,7 @@
   min-width: 0;
   min-height: inherit;
   position: relative;
-  background: #1e1e1e url("../assets/img/placeholder-mini.jpg") center / cover
+  background: var(--surface-media) url("../assets/img/placeholder-mini.jpg") center / cover
     no-repeat;
   background-size: cover;
   background-position: center;
@@ -408,8 +408,8 @@
   inset: 0;
   background: linear-gradient(
     to top,
-    rgba(10, 10, 10, 0.95) 0%,
-    rgba(10, 10, 10, 0.6) 25%,
+    rgb(0 0 0 / 0.95) 0%,
+    rgb(0 0 0 / 0.6) 25%,
     transparent 45%
   );
   z-index: 1;
@@ -429,7 +429,7 @@
 .carousel-content h1 {
   font-size: 2.2rem;
   margin-bottom: var(--spacing-xs);
-  color: var(--text-main);
+  color: #fff;
   text-shadow: 0px 4px 10px rgba(0, 0, 0, 0.8);
   overflow-wrap: anywhere;
 }
@@ -437,7 +437,7 @@
 .carousel-author {
   font-size: 1rem;
   margin-bottom: 2px;
-  color: #dfdfdf;
+  color: #fff;
 }
 
 
@@ -447,9 +447,9 @@
   width: fit-content;
   height: 24px;
   padding: 0 9px 0 5px;
-  border: 1px solid rgba(255, 255, 255, 0.15);
+  border: 1px solid var(--surface-border);
   border-radius: 6px;
-  background: rgba(20, 20, 20, 0.45);
+  background: color-mix(in srgb, var(--surface) 75%, transparent);
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
   display: inline-flex;
@@ -493,9 +493,9 @@
 }
 
 .carousel-btn {
-  background: rgba(0, 0, 0, 0.6);
-  color: white;
-  border: 1px solid var(--border-color);
+  background: rgb(0 0 0 / 0.6);
+  color: #fff;
+  border: 1px solid rgb(255 255 255 / 0.36);
   width: 32px;
   height: 32px;
   border-radius: 50%;
@@ -507,13 +507,14 @@
 }
 
 .carousel-btn:focus-visible {
-  outline: 2px solid var(--text-main);
+  outline: 2px solid var(--focus-ring);
   outline-offset: 3px;
 }
 
 .carousel-btn:hover {
-  background: var(--text-main);
-  color: black;
+  background: rgb(0 0 0 / 0.84);
+  color: #fff;
+  border-color: rgb(255 255 255 / 0.64);
 }
 
 .carousel-dots {

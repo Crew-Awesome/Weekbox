@@ -5,6 +5,22 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link rel="icon" href="favicon.ico" sizes="any" />
     <title>WeekBox</title>
+    <script>
+      try {
+        const savedTheme = localStorage.getItem("weekbox-theme-dark-mode");
+        const savedHue = localStorage.getItem("weekbox-accent-hue");
+        if (savedTheme === "true" || savedTheme === "false") {
+          document.documentElement.dataset.theme =
+            savedTheme === "true" ? "dark" : "light";
+        }
+        if (/^\d{1,3}$/.test(savedHue || "")) {
+          document.documentElement.style.setProperty(
+            "--accent-hue",
+            Math.min(360, Number(savedHue)),
+          );
+        }
+      } catch {}
+    </script>
     <meta
       http-equiv="Cache-Control"
       content="no-cache, no-store, must-revalidate"

@@ -1,8 +1,8 @@
 
 
 .action-btn {
-  background-color: var(--text-main);
-  color: var(--bg-color);
+  background-color: var(--primary);
+  color: var(--on-primary);
   border: none;
   padding: var(--spacing-sm) var(--spacing-lg);
   border-radius: 4px;
