@@ -57,6 +57,9 @@ function encodePowerShellCommand(script) {
 
 async function focusWeekBoxWindow() {
   try {
+    if (typeof Neutralino.window.unminimize === "function") {
+      await Neutralino.window.unminimize();
+    }
     if (typeof Neutralino.window.show === "function") {
       await Neutralino.window.show();
     }
@@ -158,6 +161,20 @@ async function handoffToPrimaryInstance() {
     await Neutralino.app.broadcast("weekbox:focus").catch(() => {});
   }
   await Neutralino.app.exit().catch(() => {});
+}
+
+// i shouldnt do this
+function getArgsFromNewInstanceEvent(event) {
+  if (!event) return [];
+  if (Array.isArray(event)) return event;
+  if (Array.isArray(event.args)) return event.args;
+  if (Array.isArray(event.detail?.args)) return event.detail.args;
+  if (Array.isArray(event.detail)) return event.detail;
+  if (Array.isArray(event.data?.args)) return event.data.args;
+  if (Array.isArray(event.data)) return event.data;
+  if (typeof event.detail === "string") return [event.detail];
+  if (typeof event === "string") return [event];
+  return [];
 }
 
 function installGlobalErrorReporter() {
@@ -423,10 +440,7 @@ async function startApp() {
     patchNeutralinoMessageBox();
     let deepLinkReady = false;
     let queuedDeepLink = null;
-    await Neutralino.events.on("weekbox:deep-link", (event) => {
-      const detail = event?.detail;
-      const link =
-        typeof detail === "string" ? detail : detail?.link || detail?.url;
+    const handleIncomingLink = (link) => {
       if (!parseWeekboxLink(link)) return;
       if (!deepLinkReady) {
         queuedDeepLink = link;
@@ -436,6 +450,17 @@ async function startApp() {
       void openWeekboxLink(link).catch((error) =>
         console.warn("Could not open the WeekBox link", error),
       );
+    };
+    await Neutralino.events.on("weekbox:deep-link", (event) => {
+      const detail = event?.detail;
+      handleIncomingLink(
+        typeof detail === "string" ? detail : detail?.link || detail?.url,
+      );
+    });
+    await Neutralino.events.on("newInstance", (event) => {
+      const link = getWeekboxLinkFromArgs(getArgsFromNewInstanceEvent(event));
+      if (link) handleIncomingLink(link);
+      else void focusWeekBoxWindow();
     });
     await Neutralino.events.on("weekbox:focus", () => void focusWeekBoxWindow());
     if (!(await ensureSingleInstance())) {

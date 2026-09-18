@@ -11,6 +11,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Revisions to the Spanish translation
 
+### Fixed
+
+- Protocols Now focuse on the main window
+
 ## [2.5.0] - 2026-09-17
 
 This is the Last content update I will do in a long while :)
