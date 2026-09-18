@@ -1,5 +1,5 @@
 import { AppLauncher } from "@capacitor/app-launcher";
-import { Capacitor } from "@capacitor/core";
+import { Capacitor, registerPlugin } from "@capacitor/core";
 import { CapacitorJsonStorage } from "./json-storage";
 
 export const FNF_MOBILE_PACKAGE = "me.funkin.fnf";
@@ -163,22 +163,34 @@ export class CapacitorAppLauncher {
   }
 
   /**
-   * Prompts user to uninstall Friday Night Funkin' Base Game using the native OS dialog on Android,
-   * or redirects to store as fallback.
+   * Prompts user to uninstall an Android package using the native OS dialog.
    */
-  static async uninstallBaseGame(): Promise<void> {
-    if (Capacitor.isNativePlatform()) {
+  static async uninstallPackage(packageName: string): Promise<boolean> {
+    const isNative =
+      (typeof Capacitor !== "undefined" &&
+        typeof Capacitor.isNativePlatform === "function" &&
+        Capacitor.isNativePlatform()) ||
+      (typeof window !== "undefined" && Boolean((window as any).Capacitor?.isNativePlatform?.()));
+
+    if (isNative) {
       try {
-        const { registerPlugin } = await import("@capacitor/core");
         const AppManager = registerPlugin<any>("AppManager");
-        await AppManager.uninstallPackage({ packageName: FNF_MOBILE_PACKAGE });
-        await this.setAppInstalledCache(FNF_MOBILE_PACKAGE, false);
-        return;
+        await AppManager.uninstallPackage({ packageName });
+        await this.setAppInstalledCache(packageName, false);
+        return true;
       } catch (e) {
         console.warn("AppManager.uninstallPackage failed:", e);
       }
     }
-    await this.setAppInstalledCache(FNF_MOBILE_PACKAGE, false);
-    await this.openBaseGameStore();
+    await this.setAppInstalledCache(packageName, false);
+    return false;
+  }
+
+  /**
+   * Prompts user to uninstall Friday Night Funkin' Base Game using the native OS dialog on Android.
+   */
+  static async uninstallBaseGame(): Promise<boolean> {
+    return await this.uninstallPackage(FNF_MOBILE_PACKAGE);
   }
 }
+

@@ -582,10 +582,16 @@ Hey, hope you’re enjoying Funkin’ on the go! We’ve been hard at work to ma
   const executeUninstallEngine = async () => {
     if (!currentRelease) return;
     if (isBaseGameMobile) {
-      await CapacitorAppLauncher.uninstallBaseGame();
-      Utils.toast.info("Opening uninstallation dialog...", {
-        title: "Base Game",
-      });
+      const ok = await CapacitorAppLauncher.uninstallBaseGame();
+      if (ok) {
+        Utils.toast.info("Opening uninstallation dialog...", {
+          title: "Base Game",
+        });
+      } else {
+        Utils.toast.error("Could not open uninstallation dialog.", {
+          title: "Uninstall Error",
+        });
+      }
       return;
     }
 
