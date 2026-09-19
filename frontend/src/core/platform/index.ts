@@ -11,21 +11,21 @@ export function isMobilePlatform(): boolean {
   if (typeof window === "undefined") return false;
 
   const isNativeCapacitor =
-    (window as any).Capacitor?.isNativePlatform?.() ||
     (typeof Capacitor !== "undefined" &&
       typeof Capacitor.isNativePlatform === "function" &&
-      Capacitor.isNativePlatform());
+      Capacitor.isNativePlatform()) ||
+    Boolean((window as any).Capacitor?.isNativePlatform?.());
 
   if (isNativeCapacitor) return true;
 
-  const capacitorPlatform =
-    typeof Capacitor?.getPlatform === "function" ? Capacitor.getPlatform() : "";
-  if (capacitorPlatform === "android" || capacitorPlatform === "ios") {
-    return true;
-  }
+  const platformName =
+    typeof Capacitor?.getPlatform === "function"
+      ? Capacitor.getPlatform()
+      : typeof (window as any).Capacitor?.getPlatform === "function"
+        ? (window as any).Capacitor.getPlatform()
+        : "";
 
-  // Fallback check for mobile webview or capacitor wrapper
-  if ((window as any).Capacitor && (window as any).Capacitor.platform !== "web") {
+  if (platformName === "android" || platformName === "ios") {
     return true;
   }
 

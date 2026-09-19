@@ -26,6 +26,32 @@ export const PillDropdown: React.FC<PillDropdownProps> = ({
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
+  const [effectiveAlign, setEffectiveAlign] = useState<"left" | "right">(align);
+
+  useEffect(() => {
+    setEffectiveAlign(align);
+  }, [align]);
+
+  useEffect(() => {
+    if (!isOpen || !containerRef.current) return;
+    const rect = containerRef.current.getBoundingClientRect();
+    const dropdownWidth = 260;
+    const padding = 16;
+
+    if (align === "left") {
+      if (rect.left + dropdownWidth > window.innerWidth - padding) {
+        setEffectiveAlign("right");
+      } else {
+        setEffectiveAlign("left");
+      }
+    } else {
+      if (rect.right - dropdownWidth < padding) {
+        setEffectiveAlign("left");
+      } else {
+        setEffectiveAlign("right");
+      }
+    }
+  }, [isOpen, align]);
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
@@ -139,7 +165,7 @@ export const PillDropdown: React.FC<PillDropdownProps> = ({
 
       <Dropdown
         isOpen={isOpen}
-        className={`w-64 max-w-[calc(100vw-2.5rem)] ${align === "right" ? "right-0 origin-top-right" : "left-0 origin-top-left"}`}
+        className={`w-64 max-w-[calc(100vw-2.5rem)] ${effectiveAlign === "right" ? "right-0 origin-top-right" : "left-0 origin-top-left"}`}
       >
         {options.map((opt) => (
           <button

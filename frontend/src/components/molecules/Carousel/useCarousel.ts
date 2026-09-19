@@ -2,8 +2,8 @@ import { useRef, useEffect, useCallback, useState, Children } from "react";
 import type { PointerEvent } from "react";
 import gsap from "gsap";
 import { calculateVisuals } from "./carouselMath";
-import { platform } from "@platform";
 import type { CarouselProps, CarouselAPI } from "./types";
+import { isMobilePlatform } from "@core";
 
 /**
  * @description Custom hook for managing Carousel state, GSAP animations, infinite scrolling mathematics, and touch/pointer interactions.
@@ -22,6 +22,22 @@ export function useCarousel(props: CarouselProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const scrollerRef = useRef<HTMLDivElement>(null);
   const visualRefs = useRef<(HTMLDivElement | null)[]>([]);
+
+  const checkIsMobile = useCallback((): boolean => {
+    if (props.isMobile !== undefined) return props.isMobile;
+    if (typeof window === "undefined") return false;
+
+    // 1. Native mobile platform: Capacitor on Android / iOS
+    if (isMobilePlatform()) return true;
+
+    // 2. On Web: Responsive adaptation based on container / viewport width (md breakpoint: 768px)
+    const containerWidth =
+      containerRef.current?.clientWidth ||
+      scrollerRef.current?.clientWidth ||
+      window.innerWidth;
+
+    return containerWidth < 768;
+  }, [props.isMobile]);
 
   const dragState = useRef({
     isDown: false,
@@ -72,10 +88,8 @@ export function useCarousel(props: CarouselProps) {
 
     const scrollPos = scroller.scrollLeft;
     const progress = scrollPos / scroller.clientWidth;
+    const isMobile = checkIsMobile();
 
-    const isMobile =
-      platform.platformName === "capacitor" ||
-      (typeof window !== "undefined" && window.innerWidth < 768);
     const layouts = calculateVisuals(
       totalItems,
       progress,
@@ -87,9 +101,10 @@ export function useCarousel(props: CarouselProps) {
       const item = visualRefs.current[index];
       if (!item) return;
 
-      item.style.width = `${layout.w.toFixed(2)}cqw`;
-      item.style.transform = `translateX(${layout.x.toFixed(2)}cqw)`;
-      item.style.left = "0";
+      item.style.width = `${layout.w.toFixed(2)}%`;
+      item.style.left = `${layout.x.toFixed(2)}%`;
+      item.style.transform = "translateZ(0)";
+      item.style.zIndex = layout.w > 40 ? "10" : "1";
 
       if (layout.display === "none") {
         item.style.visibility = "hidden";
@@ -127,7 +142,7 @@ export function useCarousel(props: CarouselProps) {
         setTimeout(() => playAuto(), 0);
       }
     }
-  }, [isInfinite, totalItems, childrenArray.length, isAuto]);
+  }, [isInfinite, totalItems, childrenArray.length, isAuto, checkIsMobile]);
 
   const pauseAuto = useCallback(() => {
     if (autoTimerRef.current) {
@@ -233,7 +248,7 @@ export function useCarousel(props: CarouselProps) {
 
   const goToLogicalIndex = useCallback(
     (targetUniqueIndex: number) => {
-      if (dragState.current.isDown) return;
+      if (dragState.current.isDown || dragState.current.hasDragged) return;
 
       const scroller = scrollerRef.current;
       if (!scroller || scroller.clientWidth === 0 || totalItems === 0) return;
@@ -328,30 +343,16 @@ export function useCarousel(props: CarouselProps) {
       const currentIndexFloat = scroller.scrollLeft / scroller.clientWidth;
 
       let snapIndex = Math.round(currentIndexFloat);
-      const isMobile =
-        platform.platformName === "capacitor" ||
-        (typeof window !== "undefined" && window.innerWidth < 768);
+      const startIndex = Math.round(
+        dragState.current.scrollLeft / scroller.clientWidth,
+      );
 
-      if (isMobile) {
-        const startIndex = Math.round(
-          dragState.current.scrollLeft / scroller.clientWidth,
-        );
-        if (isHorizontalSwipe) {
-          if (dx > 50) snapIndex = startIndex + 1;
-          else if (dx < -50) snapIndex = startIndex - 1;
-          else snapIndex = startIndex;
-
-          if (snapIndex > startIndex + 1) snapIndex = startIndex + 1;
-          if (snapIndex < startIndex - 1) snapIndex = startIndex - 1;
-        }
-      } else {
-        if (isHorizontalSwipe) {
-          if (dx > 50) {
-            snapIndex = Math.ceil(currentIndexFloat);
-          } else if (dx < -50) {
-            snapIndex = Math.floor(currentIndexFloat);
-          }
-        }
+      if (isHorizontalSwipe) {
+        if (dx > 40)
+          snapIndex = Math.max(startIndex + 1, Math.round(currentIndexFloat));
+        else if (dx < -40)
+          snapIndex = Math.min(startIndex - 1, Math.round(currentIndexFloat));
+        else snapIndex = startIndex;
       }
 
       setTimeout(() => {

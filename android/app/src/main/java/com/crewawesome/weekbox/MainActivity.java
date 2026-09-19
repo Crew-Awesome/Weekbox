@@ -21,6 +21,7 @@ public class MainActivity extends BridgeActivity {
     @Override
     public void onCreate(Bundle savedInstanceState) {
         registerPlugin(AppManagerPlugin.class);
+        registerPlugin(ModFileManagerPlugin.class);
         super.onCreate(savedInstanceState);
 
         boolean isTablet = getResources().getConfiguration().smallestScreenWidthDp >= 600;
@@ -120,6 +121,51 @@ public class MainActivity extends BridgeActivity {
                     }
                 }
             });
+        }
+
+        @PluginMethod
+        public void killApp(PluginCall call) {
+            String packageName = call.getString("packageName");
+            if (packageName != null && !packageName.isEmpty()) {
+                try {
+                    android.app.ActivityManager am = (android.app.ActivityManager) getContext().getSystemService(Context.ACTIVITY_SERVICE);
+                    if (am != null) {
+                        am.killBackgroundProcesses(packageName);
+                    }
+                } catch (Exception ignored) {}
+            }
+            JSObject ret = new JSObject();
+            ret.put("success", true);
+            call.resolve(ret);
+        }
+
+        @PluginMethod
+        public void isAppRunning(PluginCall call) {
+            String packageName = call.getString("packageName");
+            if (packageName == null || packageName.isEmpty()) {
+                call.reject("Must provide packageName");
+                return;
+            }
+            boolean running = false;
+            try {
+                android.app.ActivityManager am = (android.app.ActivityManager) getContext().getSystemService(Context.ACTIVITY_SERVICE);
+                if (am != null) {
+                    java.util.List<android.app.ActivityManager.RunningAppProcessInfo> processes = am.getRunningAppProcesses();
+                    if (processes != null) {
+                        for (android.app.ActivityManager.RunningAppProcessInfo pi : processes) {
+                            if (pi.processName != null && (pi.processName.equals(packageName) || (pi.pkgList != null && java.util.Arrays.asList(pi.pkgList).contains(packageName)))) {
+                                if (pi.importance < android.app.ActivityManager.RunningAppProcessInfo.IMPORTANCE_GONE) {
+                                    running = true;
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                }
+            } catch (Exception ignored) {}
+            JSObject ret = new JSObject();
+            ret.put("running", running);
+            call.resolve(ret);
         }
 
         @PluginMethod

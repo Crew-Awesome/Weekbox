@@ -34,20 +34,62 @@ export const MobileNav: React.FC<MobileNavProps> = ({
     const mainElement = document.getElementById("main-scroll-container");
     if (!mainElement) return;
 
+    let ticking = false;
+    let accumulatedDelta = 0;
+
     const handleScroll = () => {
-      const currentScrollY = mainElement.scrollTop;
-      const diff = currentScrollY - lastScrollY.current;
+      if (!ticking) {
+        window.requestAnimationFrame(() => {
+          const currentScrollY = mainElement.scrollTop;
+          const maxScroll = mainElement.scrollHeight - mainElement.clientHeight;
 
-      // Scrolling down past threshold -> hide
-      if (diff > 10 && currentScrollY > 40) {
-        setIsVisible(false);
-      }
-      // Scrolling up or near top -> show
-      else if (diff < -8 || currentScrollY < 20) {
-        setIsVisible(true);
-      }
+          // Ignore elastic overscroll bouncing at top/bottom (iOS / Android)
+          if (currentScrollY <= 0) {
+            setIsVisible(true);
+            lastScrollY.current = 0;
+            accumulatedDelta = 0;
+            ticking = false;
+            return;
+          }
 
-      lastScrollY.current = currentScrollY;
+          if (currentScrollY >= maxScroll - 5) {
+            ticking = false;
+            return;
+          }
+
+          const delta = currentScrollY - lastScrollY.current;
+
+          // Near top: always visible
+          if (currentScrollY <= 40) {
+            setIsVisible(true);
+            lastScrollY.current = currentScrollY;
+            accumulatedDelta = 0;
+            ticking = false;
+            return;
+          }
+
+          // Accumulate delta in same direction
+          if (
+            (delta > 0 && accumulatedDelta < 0) ||
+            (delta < 0 && accumulatedDelta > 0)
+          ) {
+            accumulatedDelta = 0;
+          }
+          accumulatedDelta += delta;
+
+          if (accumulatedDelta > 20) {
+            setIsVisible(false);
+            accumulatedDelta = 0;
+          } else if (accumulatedDelta < -15) {
+            setIsVisible(true);
+            accumulatedDelta = 0;
+          }
+
+          lastScrollY.current = currentScrollY;
+          ticking = false;
+        });
+        ticking = true;
+      }
     };
 
     mainElement.addEventListener("scroll", handleScroll, { passive: true });

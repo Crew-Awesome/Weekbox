@@ -230,7 +230,52 @@ export const processApi = {
    * @returns {boolean}
    */
   isInstanceRunning(instanceId) {
-    return activeProcesses.has(instanceId);
+    if (!instanceId) return false;
+    let entry = activeProcesses.get(instanceId);
+    let targetKey = instanceId;
+
+    if (!entry) {
+      for (const [key, val] of activeProcesses.entries()) {
+        const keyLower = String(key).toLowerCase();
+        const idLower = String(instanceId).toLowerCase();
+        const folderLower = String(val.folderPath || "").toLowerCase();
+
+        if (
+          keyLower === idLower ||
+          folderLower.includes(idLower) ||
+          idLower.includes(folderLower) ||
+          (idLower.includes("vslice") && (folderLower.includes("vslice") || keyLower.includes("vslice"))) ||
+          (idLower.includes("funkin") && (folderLower.includes("funkin") || keyLower.includes("funkin")))
+        ) {
+          entry = val;
+          targetKey = key;
+          break;
+        }
+      }
+    }
+
+    if (!entry && activeProcesses.size === 1) {
+      targetKey = Array.from(activeProcesses.keys())[0];
+      entry = activeProcesses.get(targetKey);
+    }
+
+    if (!entry) return false;
+
+    try {
+      process.kill(entry.pid, 0);
+      return true;
+    } catch {
+      modLinkManager.cleanupModLinks(targetKey);
+      activeProcesses.delete(targetKey);
+      if (onProcessExitCallback) {
+        onProcessExitCallback({
+          instanceId: targetKey,
+          pid: entry.pid,
+          folderPath: entry.folderPath,
+        });
+      }
+      return false;
+    }
   },
 
   /**
@@ -346,12 +391,39 @@ export const processApi = {
    */
   async kill(instanceId) {
     if (!instanceId) return { ok: false, error: "No instanceId provided" };
-    const entry = activeProcesses.get(instanceId);
+    let entry = activeProcesses.get(instanceId);
+    let targetKey = instanceId;
+
+    if (!entry) {
+      for (const [key, val] of activeProcesses.entries()) {
+        const keyLower = String(key).toLowerCase();
+        const idLower = String(instanceId).toLowerCase();
+        const folderLower = String(val.folderPath || "").toLowerCase();
+
+        if (
+          keyLower === idLower ||
+          folderLower.includes(idLower) ||
+          idLower.includes(folderLower) ||
+          (idLower.includes("vslice") && (folderLower.includes("vslice") || keyLower.includes("vslice"))) ||
+          (idLower.includes("funkin") && (folderLower.includes("funkin") || keyLower.includes("funkin")))
+        ) {
+          entry = val;
+          targetKey = key;
+          break;
+        }
+      }
+    }
+
+    if (!entry && activeProcesses.size === 1) {
+      targetKey = Array.from(activeProcesses.keys())[0];
+      entry = activeProcesses.get(targetKey);
+    }
+
     if (!entry) return { ok: false, error: "Process not found or already stopped" };
 
     try {
       /* Clean up mod links associated with this instance */
-      modLinkManager.cleanupModLinks(instanceId);
+      modLinkManager.cleanupModLinks(targetKey);
 
       const pid = entry.pid;
       if (process.platform === "win32") {
@@ -364,11 +436,11 @@ export const processApi = {
         }
       }
 
-      activeProcesses.delete(instanceId);
+      activeProcesses.delete(targetKey);
       if (onProcessExitCallback) {
         onProcessExitCallback({
-          instanceId,
-          pid,
+          instanceId: targetKey,
+          pid: entry.pid,
           folderPath: entry.folderPath,
         });
       }

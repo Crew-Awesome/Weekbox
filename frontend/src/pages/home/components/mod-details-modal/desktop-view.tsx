@@ -634,7 +634,7 @@ export const DesktopView: React.FC<DesktopViewProps> = ({
         </div>
       )}
 
-      <div className="flex flex-col h-full overflow-hidden text-[var(--wb-on-surface)] w-full relative z-10 filter drop-shadow-[0_8px_32px_rgba(0,0,0,0.6)] pointer-events-none">
+      <div className="flex flex-col h-full overflow-hidden text-[var(--wb-on-surface)] w-full relative z-10 pointer-events-none">
         <div className="relative z-30 flex items-center px-4 md:px-6 pt-2 pb-3 md:pt-3 md:pb-4 shrink-0 bg-[var(--wb-surface-container)] min-h-[56px] pr-16 md:pr-4 rounded-t-2xl pointer-events-auto">
           <div className="flex items-center gap-1.5 md:gap-2 flex-wrap z-10">
             <a href={`https://gamebanana.com/mods/${displayCard.id}`} target="_blank" rel="noopener noreferrer" className="flex items-center justify-center w-8 h-8 rounded-full bg-[var(--wb-surface-bright)] hover:bg-white/10 transition-colors relative group shrink-0">

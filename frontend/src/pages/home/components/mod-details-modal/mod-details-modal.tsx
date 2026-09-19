@@ -261,7 +261,7 @@ export const ModDetailsModal: React.FC<ModDetailsModalProps> = ({
         mobile: ["95vw", "auto"],
         desktop: ["min(1200px, 90vw, calc(90vh * 16 / 9))", "auto"],
       }}
-      modalClassName="flex flex-col md:aspect-[16/9] max-h-[90vh] md:max-h-full rounded-2xl md:rounded-3xl overflow-hidden border border-[var(--wb-outline-variant)]/30 bg-[var(--wb-surface-container)] md:bg-transparent shadow-2xl"
+      modalClassName="flex flex-col md:aspect-[16/9] max-h-[90vh] md:max-h-full rounded-2xl md:rounded-3xl overflow-hidden bg-[var(--wb-surface-container)] md:bg-transparent shadow-none"
     >
       <MobileView
         onClose={onClose}

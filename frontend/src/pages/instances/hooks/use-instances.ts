@@ -499,12 +499,16 @@ Hey, hope you’re enjoying Funkin’ on the go! We’ve been hard at work to ma
   const handlePlayEngine = async () => {
     if (!currentRelease) return;
     if (isBaseGameMobile) {
-      const launched = await CapacitorAppLauncher.launchBaseGame();
+      const instanceKey = currentInstanceKey || `engine:vslice:${currentRelease.version}`;
+      const launched = await useProcessStore.getState().launchInstance(instanceKey, "vslice");
       if (!launched) {
-        Utils.toast.warning("Base Game is not installed or could not be opened. Redirecting to Play Store...", {
-          title: "Base Game",
-        });
-        await CapacitorAppLauncher.openBaseGameStore();
+        const isInstalled = await CapacitorAppLauncher.isBaseGameInstalled();
+        if (!isInstalled) {
+          Utils.toast.warning("Base Game is not installed or could not be opened. Redirecting to Play Store...", {
+            title: "Base Game",
+          });
+          await CapacitorAppLauncher.openBaseGameStore();
+        }
       }
       return;
     }

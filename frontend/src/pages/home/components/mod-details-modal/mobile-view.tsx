@@ -19,12 +19,13 @@ import {
   Layers,
   X,
 } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import { type ModalViewProps, formatFileSize } from "./types";
 import { ModMediaCarousel, ModThumbnailStrip } from "./components/mod-media-carousel";
 import { ModNavPills, type ModModalTab } from "./components/mod-nav-pills";
 import { ModCreditsView } from "./components/mod-credits-view";
 import { ModDetailsTab } from "./components/mod-details-tab";
-import Core from "@core";
+import Core, { CapacitorAppLauncher } from "@core";
 import Utils from "@utils";
 import { getSupportedEngineCategories } from "../../../../core/services/gamebanana/constants";
 import {
@@ -116,6 +117,8 @@ export const MobileView: React.FC<MobileViewProps> = ({
   const engineDropdownRef = useRef<HTMLDivElement>(null);
   const [isVersionDropdownOpen, setIsVersionDropdownOpen] = useState(false);
   const versionDropdownRef = useRef<HTMLDivElement>(null);
+  const navigate = useNavigate();
+  const isMobilePlatform = Core.isMobilePlatform();
   const [selectedVersion, setSelectedVersion] = useState<string>(
     (displayCard as any).engineVersion || ""
   );
@@ -124,6 +127,7 @@ export const MobileView: React.FC<MobileViewProps> = ({
     Record<string, Record<string, any>>
   >({});
   const [isInstallingEngine, setIsInstallingEngine] = useState<boolean>(false);
+  const [isEngineInstalledOnDevice, setIsEngineInstalledOnDevice] = useState<boolean>(true);
 
   const loadEngines = useCallback(async () => {
     if (!Core.platform.getInstalledEngines) return;
@@ -146,6 +150,35 @@ export const MobileView: React.FC<MobileViewProps> = ({
   }, [loadEngines]);
 
   const currentEngineKey = String(displayCard?.engineId || "vslice").toLowerCase();
+
+  useEffect(() => {
+    if (!isMobilePlatform) return;
+    let isMounted = true;
+    const check = async () => {
+      let installed = false;
+      if (currentEngineKey === "vslice" || currentEngineKey === "base_game" || currentEngineKey === "fnf") {
+        installed = await CapacitorAppLauncher.isBaseGameInstalled();
+      } else if (currentEngineKey.includes("psych")) {
+        installed = await CapacitorAppLauncher.isAppInstalled("com.shadowmario.psychengine");
+      } else if (currentEngineKey.includes("codename")) {
+        installed = await CapacitorAppLauncher.isAppInstalled("org.codenameengine.fnf");
+      } else if (currentEngineKey.includes("kade")) {
+        installed = await CapacitorAppLauncher.isAppInstalled("com.kade.kadeengine");
+      } else {
+        installed = await CapacitorAppLauncher.isAppInstalled(currentEngineKey);
+      }
+      if (isMounted) setIsEngineInstalledOnDevice(installed);
+    };
+    check();
+    const unsub = CapacitorAppLauncher.addPackageListener(() => check());
+    window.addEventListener("focus", check);
+    return () => {
+      isMounted = false;
+      unsub();
+      window.removeEventListener("focus", check);
+    };
+  }, [isMobilePlatform, currentEngineKey]);
+
   const installedEngineVersions = React.useMemo(() => {
     const catData = installedEnginesRegistry[currentEngineKey];
     if (!catData) return [];
@@ -167,6 +200,16 @@ export const MobileView: React.FC<MobileViewProps> = ({
   }, [installedEngineVersions, selectedVersion]);
 
   const handleInstallLatestEngine = async () => {
+    if (isMobilePlatform) {
+      if (currentEngineKey === "vslice" || currentEngineKey === "base_game") {
+        await CapacitorAppLauncher.openBaseGameStore();
+      } else {
+        onClose?.();
+        navigate(`/instances/${currentEngineKey}`);
+      }
+      return;
+    }
+
     if (isInstallingEngine) return;
     setIsInstallingEngine(true);
     try {
@@ -614,7 +657,10 @@ export const MobileView: React.FC<MobileViewProps> = ({
       let modFolderPath: string | undefined = undefined;
       let args: string[] | undefined = undefined;
 
-      if (engId && engId !== "executable" && engId !== "3827") {
+      if (Core.platform.platformName === "capacitor") {
+        targetFolder = engId || "vslice";
+        modFolderPath = modPath;
+      } else if (engId && engId !== "executable" && engId !== "3827") {
         const enginesDir = (await Core.platform.getEnginesPath?.()) || "";
         const engVer =
           selectedVersion && selectedVersion !== "Any version" && selectedVersion !== "any"
@@ -726,7 +772,20 @@ export const MobileView: React.FC<MobileViewProps> = ({
             </div>
           )}
           {!isExecutable && isInstalled && (
-            installedEngineVersions.length > 0 ? (
+            isMobilePlatform ? (
+              !isEngineInstalledOnDevice ? (
+                <button
+                  type="button"
+                  onClick={handleInstallLatestEngine}
+                  disabled={isInstallingEngine}
+                  className="flex items-center gap-1.5 px-2.5 py-1 rounded-[4px] bg-[var(--wb-primary)] hover:opacity-90 text-[var(--wb-on-primary)] shrink-0 cursor-pointer transition-all select-none shadow-sm text-xs font-bold active:scale-95 disabled:opacity-50"
+                  title={`Install ${engineName}`}
+                >
+                  <Download className="w-3.5 h-3.5 shrink-0" />
+                  <span>Install Engine</span>
+                </button>
+              ) : null
+            ) : installedEngineVersions.length > 0 ? (
               <div className="relative z-40 shrink-0" ref={versionDropdownRef}>
                 <div
                   onClick={() => setIsVersionDropdownOpen((prev) => !prev)}
@@ -1088,8 +1147,8 @@ export const MobileView: React.FC<MobileViewProps> = ({
                 )
               )}
               <button 
-                onClick={playStatus === "playing" ? handleStop : handleManage}
-                disabled={playStatus === "launching" || playStatus === "stopping"}
+                onClick={playStatus === "playing" || playStatus === "stopping" ? handleStop : handleManage}
+                disabled={playStatus === "launching"}
                 className={`flex-1 ${
                   playStatus === "launching"
                     ? "bg-amber-500/20 text-amber-300 border border-amber-500/30 cursor-wait"

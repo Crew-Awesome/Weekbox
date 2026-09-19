@@ -71,7 +71,7 @@ export const LibraryFilterPopover: React.FC<LibraryFilterPopoverProps> = ({
 
         {showFilters && (
           <div className="absolute top-full right-0 md:left-0 md:right-auto pt-2 z-50">
-            <div className="bg-[var(--wb-surface-container)] border border-[var(--wb-outline-variant)]/60 rounded-2xl p-4 shadow-2xl flex flex-row flex-wrap items-center gap-3 min-w-[320px] backdrop-blur-xl">
+            <div className="bg-[var(--wb-surface-container)] border border-[var(--wb-outline-variant)]/60 rounded-2xl p-4 shadow-2xl flex flex-row flex-wrap items-center gap-3 min-w-[320px] max-w-[calc(100vw-2rem)] backdrop-blur-xl">
               <Shared.molecules.PillDropdown
                 label="Sort by"
                 value={sortOption}

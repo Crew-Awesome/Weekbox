@@ -32,4 +32,6 @@ export interface CarouselProps {
   renderIndicators?: (api: CarouselAPI) => React.ReactNode;
   /** Optional callback executed when the active (centered) item is clicked. */
   onItemClick?: (index: number) => void;
+  /** Explicitly enforce mobile (0-100-0) or desktop (10-80-10) layout. If omitted, auto-detected. */
+  isMobile?: boolean;
 }

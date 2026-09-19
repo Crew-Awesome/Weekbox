@@ -44,14 +44,15 @@ export const Carousel: React.FC<CarouselProps> = (props) => {
 
       let lastClientWidth = scroller.clientWidth;
 
-      if (isInfinite && lastClientWidth > 0) {
+      if (isInfinite && totalItems > 0 && lastClientWidth > 0) {
         const middlePadding = Math.floor(25 / totalItems) * totalItems;
         scroller.scrollLeft = middlePadding * lastClientWidth;
       }
       updateVisuals();
 
-      const observer = new ResizeObserver(() => {
+      const handleResize = () => {
         if (
+          !scroller ||
           scroller.clientWidth === 0 ||
           dragState.current.isAnimating ||
           dragState.current.isDown
@@ -67,13 +68,19 @@ export const Carousel: React.FC<CarouselProps> = (props) => {
 
         lastClientWidth = scroller.clientWidth;
         updateVisuals();
-      });
+      };
+
+      const observer = new ResizeObserver(handleResize);
 
       if (containerRef.current) {
         observer.observe(containerRef.current);
       }
+      window.addEventListener("resize", handleResize);
 
-      return () => observer.disconnect();
+      return () => {
+        observer.disconnect();
+        window.removeEventListener("resize", handleResize);
+      };
     },
     {
       scope: containerRef,
@@ -86,6 +93,10 @@ export const Carousel: React.FC<CarouselProps> = (props) => {
       ],
     },
   );
+
+  React.useLayoutEffect(() => {
+    updateVisuals();
+  });
 
   return (
     <div className={`flex flex-col w-full max-w-full overflow-hidden ${className}`}>
@@ -120,10 +131,10 @@ export const Carousel: React.FC<CarouselProps> = (props) => {
                 }}
                 className="absolute h-full pointer-events-auto cursor-pointer select-none"
                 style={{
-                  width: "0cqw",
-                  transform: "translateX(100cqw)",
-                  left: "0",
+                  left: "100%",
+                  width: "0%",
                   visibility: "hidden",
+                  willChange: "transform, width, left",
                 }}
                 onClick={() => api.goToLogicalIndex(idx % childrenArray.length)}
               >

@@ -61,7 +61,7 @@ export const FeaturedMods: React.FC<FeaturedModsProps> = React.memo(({
         align="center"
       />
 
-      <div className="-mx-8 sm:mx-0 mt-4 overflow-hidden w-[calc(100%+4rem)] sm:w-full">
+      <div className="-mx-8 mt-4 overflow-hidden w-[calc(100%+4rem)]">
         <Shared.molecules.Carousel
           isInfinite
           isAuto
@@ -160,7 +160,7 @@ export const FeaturedMods: React.FC<FeaturedModsProps> = React.memo(({
               key={`featured-${item.id}`}
               className="w-full h-full p-2 sm:p-4"
             >
-              <div className="m3-card w-full h-full bg-[var(--wb-surface-container)] rounded-[32px] relative shadow-none border border-white/5">
+              <div className="m3-card w-full h-full bg-[var(--wb-surface-container)] rounded-[32px] relative shadow-none border border-white/5 overflow-hidden">
                 <div className="absolute inset-0 overflow-hidden rounded-[32px] pointer-events-none z-0 bg-[var(--wb-surface-container)]">
                   <img
                     src={item.thumbnail || placeholderImg}

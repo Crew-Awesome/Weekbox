@@ -1,4 +1,5 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import { registerPlugin } from "@capacitor/core";
 import { HardDrive, Trash2, Folder, DownloadCloud, Cpu, RotateCcw } from "lucide-react";
 import Core from "@core";
 import Utils from "@utils";
@@ -26,6 +27,17 @@ const formatEstimatedTime = (bytes: number): string => {
 };
 
 export const StorageTab: React.FC = () => {
+  const isMobile = Core.isMobilePlatform();
+  const [mobileModsPath, setMobileModsPath] = useState<string>("");
+
+  useEffect(() => {
+    if (isMobile && Core.platform.getModsPath) {
+      Core.platform.getModsPath().then((p: string) => {
+        if (p) setMobileModsPath(p);
+      }).catch(() => {});
+    }
+  }, [isMobile]);
+
   const {
     modsPath,
     enginesPath,
@@ -34,6 +46,33 @@ export const StorageTab: React.FC = () => {
     isWarningDismissed,
     dismissWarning,
   } = useSettingsStore();
+
+  const displayedModsPath = isMobile
+    ? mobileModsPath || modsPath || "Android/data/com.crewawesome.weekbox/files/mods"
+    : modsPath || "%APPDATA%\\WeekBox\\mods";
+
+  const handleViewMobileModsFolder = async () => {
+    const path = mobileModsPath || modsPath || (await Core.platform.getModsPath?.()) || "";
+    try {
+      if (Core.platform.openFolder) {
+        await Core.platform.openFolder(path);
+        return;
+      }
+      const ModFileManager = registerPlugin<any>("ModFileManager");
+      const res = await ModFileManager.openFolder({ path });
+      if (res?.fallbackPath) {
+        await navigator.clipboard.writeText(res.fallbackPath);
+        Utils.toast.info(`Mods path copied to clipboard: ${res.fallbackPath}`, {
+          title: "Mods Location",
+        });
+      }
+    } catch {
+      await navigator.clipboard.writeText(path);
+      Utils.toast.info(`Mods path copied to clipboard: ${path}`, {
+        title: "Mods Location",
+      });
+    }
+  };
 
   const { isMigrating, startMigration } = useStorageMigrationStore();
 
@@ -300,15 +339,15 @@ export const StorageTab: React.FC = () => {
                 </span>
                 <span
                   className="text-xs sm:text-sm text-[var(--wb-on-surface-variant)] font-mono truncate"
-                  title={modsPath || "%APPDATA%\\WeekBox\\mods"}
+                  title={displayedModsPath}
                 >
-                  {modsPath || "%APPDATA%\\WeekBox\\mods"}
+                  {displayedModsPath}
                 </span>
               </div>
             </div>
 
             <div className="flex items-center gap-2 shrink-0">
-              {isModsCustom && (
+              {isModsCustom && !isMobile && (
                 <button
                   type="button"
                   disabled={isMigrating}
@@ -321,60 +360,72 @@ export const StorageTab: React.FC = () => {
                 </button>
               )}
 
-              <button
-                type="button"
-                disabled={isMigrating}
-                onClick={() => handlePickFolder("mods")}
-                className="px-4 py-2.5 rounded-2xl bg-[var(--wb-surface-container-highest)] hover:bg-[var(--wb-surface-container-high)] text-[var(--wb-on-surface)] text-sm font-semibold border border-white/10 transition-colors cursor-pointer disabled:opacity-50"
-              >
-                Change Location
-              </button>
-            </div>
-          </div>
-
-          {/* Engines Folder Location */}
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between p-5 sm:p-6 rounded-3xl bg-[var(--wb-surface-container-low)]/80 border border-white/5 gap-4">
-            <div className="flex items-center gap-4 sm:gap-5 min-w-0">
-              <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-[var(--wb-surface-container-highest)] text-[var(--wb-on-surface)] flex items-center justify-center shrink-0 shadow-sm">
-                <Cpu className="w-6 h-6 sm:w-7 sm:h-7 text-[var(--wb-primary)]" />
-              </div>
-              <div className="flex flex-col gap-1 min-w-0">
-                <span className="text-base sm:text-lg font-bold text-[var(--wb-on-surface)]">
-                  Engines Folder Location
-                </span>
-                <span
-                  className="text-xs sm:text-sm text-[var(--wb-on-surface-variant)] font-mono truncate"
-                  title={enginesPath || "%APPDATA%\\WeekBox\\engines"}
+              {isMobile ? (
+                <button
+                  type="button"
+                  onClick={handleViewMobileModsFolder}
+                  className="px-4 py-2.5 rounded-2xl bg-[var(--wb-surface-container-highest)] hover:bg-[var(--wb-surface-container-high)] text-[var(--wb-on-surface)] text-sm font-semibold border border-white/10 transition-colors cursor-pointer"
                 >
-                  {enginesPath || "%APPDATA%\\WeekBox\\engines"}
-                </span>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-2 shrink-0">
-              {isEnginesCustom && (
+                  View Location
+                </button>
+              ) : (
                 <button
                   type="button"
                   disabled={isMigrating}
-                  onClick={() => handleUseDefault("engines")}
-                  className="flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-[var(--wb-surface-container-highest)] hover:bg-white/10 text-[var(--wb-on-surface-variant)] hover:text-[var(--wb-on-surface)] text-sm font-semibold border border-white/10 transition-colors cursor-pointer disabled:opacity-50"
-                  title="Reset to default engines directory"
+                  onClick={() => handlePickFolder("mods")}
+                  className="px-4 py-2.5 rounded-2xl bg-[var(--wb-surface-container-highest)] hover:bg-[var(--wb-surface-container-high)] text-[var(--wb-on-surface)] text-sm font-semibold border border-white/10 transition-colors cursor-pointer disabled:opacity-50"
                 >
-                  <RotateCcw className="w-4 h-4" />
-                  <span>Use Default</span>
+                  Change Location
                 </button>
               )}
-
-              <button
-                type="button"
-                disabled={isMigrating}
-                onClick={() => handlePickFolder("engines")}
-                className="px-4 py-2.5 rounded-2xl bg-[var(--wb-surface-container-highest)] hover:bg-[var(--wb-surface-container-high)] text-[var(--wb-on-surface)] text-sm font-semibold border border-white/10 transition-colors cursor-pointer disabled:opacity-50"
-              >
-                Change Location
-              </button>
             </div>
           </div>
+
+          {/* Engines Folder Location - Desktop only */}
+          {!isMobile && (
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between p-5 sm:p-6 rounded-3xl bg-[var(--wb-surface-container-low)]/80 border border-white/5 gap-4">
+              <div className="flex items-center gap-4 sm:gap-5 min-w-0">
+                <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-[var(--wb-surface-container-highest)] text-[var(--wb-on-surface)] flex items-center justify-center shrink-0 shadow-sm">
+                  <Cpu className="w-6 h-6 sm:w-7 sm:h-7 text-[var(--wb-primary)]" />
+                </div>
+                <div className="flex flex-col gap-1 min-w-0">
+                  <span className="text-base sm:text-lg font-bold text-[var(--wb-on-surface)]">
+                    Engines Folder Location
+                  </span>
+                  <span
+                    className="text-xs sm:text-sm text-[var(--wb-on-surface-variant)] font-mono truncate"
+                    title={enginesPath || "%APPDATA%\\WeekBox\\engines"}
+                  >
+                    {enginesPath || "%APPDATA%\\WeekBox\\engines"}
+                  </span>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2 shrink-0">
+                {isEnginesCustom && (
+                  <button
+                    type="button"
+                    disabled={isMigrating}
+                    onClick={() => handleUseDefault("engines")}
+                    className="flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-[var(--wb-surface-container-highest)] hover:bg-white/10 text-[var(--wb-on-surface-variant)] hover:text-[var(--wb-on-surface)] text-sm font-semibold border border-white/10 transition-colors cursor-pointer disabled:opacity-50"
+                    title="Reset to default engines directory"
+                  >
+                    <RotateCcw className="w-4 h-4" />
+                    <span>Use Default</span>
+                  </button>
+                )}
+
+                <button
+                  type="button"
+                  disabled={isMigrating}
+                  onClick={() => handlePickFolder("engines")}
+                  className="px-4 py-2.5 rounded-2xl bg-[var(--wb-surface-container-highest)] hover:bg-[var(--wb-surface-container-high)] text-[var(--wb-on-surface)] text-sm font-semibold border border-white/10 transition-colors cursor-pointer disabled:opacity-50"
+                >
+                  Change Location
+                </button>
+              </div>
+            </div>
+          )}
 
           {/* Simultaneous Downloads */}
           <div className="flex flex-col sm:flex-row sm:items-center justify-between p-5 sm:p-6 rounded-3xl bg-[var(--wb-surface-container-low)]/80 border border-white/5 gap-4">
