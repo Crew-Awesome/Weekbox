@@ -215,6 +215,7 @@ jobs:
     env:
       GH_TOKEN: ${{ github.token }}
       DISCORD_WEBHOOK: ${{ secrets.DISCORD_RELEASE_WEBHOOK }}
+      SITE_REPO_TOKEN: ${{ secrets.SITE_REPO_TOKEN }}
       RELEASE_TAG: ${{ github.event.release.tag_name || inputs.tag }}
     steps:
       - name: Verify release and announce on Discord
@@ -255,3 +256,9 @@ jobs:
             --header "Content-Type: application/json" \
             --data "$payload" \
             "$DISCORD_WEBHOOK?with_components=true"
+
+      - name: Trigger website rebuild
+        if: ${{ env.SITE_REPO_TOKEN != '' }}
+        env:
+          GH_TOKEN: ${{ env.SITE_REPO_TOKEN }}
+        run: gh api --method POST repos/Crew-Awesome/weekbox.site/dispatches -f event_type=release-published
