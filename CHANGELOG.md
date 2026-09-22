@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.5.5] - 2026-09-21
+
 ### Changed
 
 - Updated the Chinese translation.
@@ -14,7 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
-- error shown when engine release versions fail to load.
+- Fixed an error shown when engine release versions fail to load.
 
 ## [2.5.4] - 2026-09-21
 
@@ -1210,7 +1212,8 @@ This is the Last content update I will do in a long while :)
 - Downloads for Windows, Linux, and macOS.
 - Packages for x64, ARM64, ARMHF, and Universal Macs where available.
 
-[unreleased]: https://github.com/Crew-Awesome/Weekbox/compare/v2.5.4...HEAD
+[unreleased]: https://github.com/Crew-Awesome/Weekbox/compare/v2.5.5...HEAD
+[2.5.5]: https://github.com/Crew-Awesome/Weekbox/compare/v2.5.4...v2.5.5
 [2.5.4]: https://github.com/Crew-Awesome/Weekbox/compare/v2.5.3...v2.5.4
 [2.5.3]: https://github.com/Crew-Awesome/Weekbox/compare/v2.5.2...v2.5.3
 [2.5.2]: https://github.com/Crew-Awesome/Weekbox/compare/v2.5.1...v2.5.2
