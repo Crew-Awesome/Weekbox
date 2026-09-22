@@ -969,7 +969,7 @@ export const engineManagerModal = {
       panel.querySelector(".engine-download-picker__versions").textContent = t(
         "network.loadVersionFailed",
         {
-          name: getEngineLabel(engineId, details.name),
+          name: getEngineLabel(engineId, getEngineDetails(engineId).name),
         },
       );
       console.warn("Could not load engine versions", error);
