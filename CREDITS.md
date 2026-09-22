@@ -51,6 +51,7 @@ The people who have helped make WeekBox.
 | [Trofem](https://github.com/Trofem) | Russian |
 | [LéaNimatics](https://leanimatics.carrd.co/) | French |
 | Merssak | Polish |
+| 墨玲Cynthia | Chinese |
 | Frosttie | Chinese |
 | [KaruSoda](https://linktr.ee/KaruSoda) | Brazilian Portuguese |
 | [Oyachi / Shinjou](https://github.com/KittyCat300700) | Brazilian Portuguese |

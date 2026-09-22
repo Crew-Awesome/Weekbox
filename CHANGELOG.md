@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Updated the Chinese translation.
+- Added 墨玲Cynthia to the localization credits.
+
 ### Fixed
 
 - error shown when engine release versions fail to load.
