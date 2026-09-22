@@ -60,7 +60,12 @@ async function focusWeekBoxWindow({ center = false } = {}) {
     if (typeof Neutralino.window.unminimize === "function") {
       await Neutralino.window.unminimize();
     }
-    if (center && typeof Neutralino.window.center === "function") {
+    if (
+      center &&
+      // thank u juniperwuniper123 for the diagnostic!!!
+      window.NL_OS !== "Darwin" &&
+      typeof Neutralino.window.center === "function"
+    ) {
       await Neutralino.window.center();
     }
     if (typeof Neutralino.window.show === "function") {

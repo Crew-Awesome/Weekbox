@@ -3,7 +3,7 @@
 # Sources are the CI zips. Build Copr AFTER those zips exist on the release.
 
 Name:           weekbox
-Version:        2.5.3
+Version:        2.5.4
 Release:        1%{?dist}
 Summary:        A re-imagined Friday Night Funkin' mod launcher
 License:        MIT
@@ -109,6 +109,10 @@ fi
 %{_datadir}/pixmaps/weekbox.png
 
 %changelog
+* Mon Sep 21 2026 Crew Awesome <info@weekbox.app> - 2.5.4-1
+- Skip runtime window centering on macOS.
+- Update Indonesian translations.
+
 * Fri Sep 18 2026 Crew Awesome <info@weekbox.app> - 2.5.3-1
 - Center the primary window for protocol launches.
 - Stop opening the changelog automatically at startup.
