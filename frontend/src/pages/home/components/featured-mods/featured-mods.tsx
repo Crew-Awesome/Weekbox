@@ -24,7 +24,7 @@ export const FeaturedMods: React.FC<FeaturedModsProps> = React.memo(({
   searchQuery = "",
   engineIds = ["all"],
 }) => {
-  const { featuredMods, categories } = useFeaturedMods(searchQuery, engineIds);
+  const { featuredMods, categories, isLoading } = useFeaturedMods(searchQuery, engineIds);
   const [hoveredTooltip, setHoveredTooltip] = useState<number | string | null>(
     null,
   );
@@ -34,6 +34,15 @@ export const FeaturedMods: React.FC<FeaturedModsProps> = React.memo(({
   if (displayMods.length === 0) {
     if (searchQuery.trim().length > 0) {
       return null;
+    }
+
+    if (isLoading) {
+      return (
+        <div className="mb-6 w-full">
+          <Shared.atoms.Titles title="Featured Mods" align="center" />
+          <Shared.atoms.LoadingContent text="featured mods" size="md" />
+        </div>
+      );
     }
 
     return (
@@ -84,6 +93,8 @@ export const FeaturedMods: React.FC<FeaturedModsProps> = React.memo(({
                 submittedAt: item.submittedAt,
                 updatedAt: item.updatedAt,
                 engineId: item.engineId,
+                userPfp: item.userPfp,
+                userId: item.userId,
               };
               onCardClick(modItem as any);
             }

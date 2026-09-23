@@ -6,6 +6,7 @@ import { InstancesExecutableView } from "./components/instances-executable-view"
 import { InstancesFooter } from "./components/instances-footer";
 import { InstancesUninstallModal } from "./components/instances-uninstall-modal";
 import { useInstances } from "./hooks/use-instances";
+import Utils from "@utils";
 
 /**
  * Organism / Feature: Instances View.
@@ -13,6 +14,7 @@ import { useInstances } from "./hooks/use-instances";
  * Synchronizes route (/instances/:category/:version) and document title.
  */
 export const Instances: React.FC = () => {
+  const { isOnline } = Utils.hooks.useNetwork();
   const {
     selectedCategory,
     setSelectedCategory,
@@ -69,6 +71,25 @@ export const Instances: React.FC = () => {
     setSelectedModId(String(mod.id));
   };
 
+  const isItemAvailable = isExecutable ? Boolean(selectedMod) : Boolean(currentRelease);
+
+  if (!isOnline && !isItemAvailable) {
+    return (
+      <div className="flex flex-col flex-1 w-[calc(100%+4rem)] h-[calc(100%+9rem)] md:h-[calc(100%+4rem)] overflow-hidden bg-[var(--wb-bg)] text-[var(--wb-text-main)] -mx-8 -mt-8 -mb-28 md:-m-8">
+        <main className="flex-1 flex flex-col min-w-0 h-full overflow-hidden bg-[var(--wb-surface)]/20 relative items-center justify-center p-6 sm:p-12">
+          {isExecutable ? (
+            <InstancesExecutableView mod={null} />
+          ) : (
+            <InstancesMarkdownViewer
+              release={null}
+              isLoading={isLoadingReleases}
+            />
+          )}
+        </main>
+      </div>
+    );
+  }
+
   return (
     <div className="flex flex-col flex-1 w-[calc(100%+4rem)] h-[calc(100%+9rem)] md:h-[calc(100%+4rem)] overflow-hidden bg-[var(--wb-bg)] text-[var(--wb-text-main)] -mx-8 -mt-8 -mb-28 md:-m-8">
       {/** Topbar: sticky fixed at the top */}
@@ -117,30 +138,32 @@ export const Instances: React.FC = () => {
             )}
           </div>
 
-          <InstancesFooter
-            isExecutable={isExecutable}
-            isBaseGameMobile={isBaseGameMobile}
-            icon={footerIcon}
-            title={footerTitle}
-            version={footerVersion}
-            downloadUrl={currentRelease?.downloadUrl}
-            isInstalled={isExecutable ? true : isBaseGameMobile ? isBaseGameInstalled : isCurrentEngineInstalled}
-            isNightly={isNightly}
-            isNightlyOutdated={isNightlyOutdated}
-            onDownload={handleDownloadRelease}
-            onCancelDownload={cancelEngineDownload}
-            onUpdate={handleDownloadRelease}
-            onUninstall={handleUninstallEngine}
-            onOpenFolder={handleOpenEngineFolder}
-            onPlay={isExecutable ? handlePlayExecutable : handlePlayEngine}
-            onStop={handleStopInstance}
-            playStatus={playStatus}
-            isStorageMigrating={isStorageMigrating}
-            isDownloading={isDownloadingCurrent}
-            downloadProgress={isDownloadingCurrent ? currentEngineTask?.progress ?? 0 : 0}
-            downloadStatusText={isDownloadingCurrent ? currentEngineTask?.status ?? "" : ""}
-            currentExtractingFile={isDownloadingCurrent ? currentEngineTask?.currentFile : undefined}
-          />
+          {((isExecutable ? Boolean(selectedMod) : Boolean(currentRelease))) && (
+            <InstancesFooter
+              isExecutable={isExecutable}
+              isBaseGameMobile={isBaseGameMobile}
+              icon={footerIcon}
+              title={footerTitle}
+              version={footerVersion}
+              downloadUrl={currentRelease?.downloadUrl}
+              isInstalled={isExecutable ? true : isBaseGameMobile ? isBaseGameInstalled : isCurrentEngineInstalled}
+              isNightly={isNightly}
+              isNightlyOutdated={isNightlyOutdated}
+              onDownload={handleDownloadRelease}
+              onCancelDownload={cancelEngineDownload}
+              onUpdate={handleDownloadRelease}
+              onUninstall={handleUninstallEngine}
+              onOpenFolder={handleOpenEngineFolder}
+              onPlay={isExecutable ? handlePlayExecutable : handlePlayEngine}
+              onStop={handleStopInstance}
+              playStatus={playStatus}
+              isStorageMigrating={isStorageMigrating}
+              isDownloading={isDownloadingCurrent}
+              downloadProgress={isDownloadingCurrent ? currentEngineTask?.progress ?? 0 : 0}
+              downloadStatusText={isDownloadingCurrent ? currentEngineTask?.status ?? "" : ""}
+              currentExtractingFile={isDownloadingCurrent ? currentEngineTask?.currentFile : undefined}
+            />
+          )}
         </main>
       </div>
 

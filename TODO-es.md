@@ -6,9 +6,10 @@
 - **Problema:** Actualmente, `fs.readBinaryFile` y `fs.writeBinaryFile` transfieren archivos binarios a traves del canal IPC de Neutralino cargando todo en memoria. Para mods pesados (ej. 200MB+), esto puede saturar el puente IPC y causar *crashes* de memoria en Node o en el frontend.
 - **Solucion:** Delegar las descargas e instalaciones completamente al backend de Node. Crear comandos IPC como `http.downloadToFile(url, destPath)` o `fs.extractZip(zipPath, destFolder)` para manejar los flujos de datos (*streams*) de manera local en el sistema, enviando solo eventos de progreso (`progress: 45%`) al frontend.
 
-### - [ ] [Fix] [UI] Error Boundary en React
+### - [x] [Fix] [UI] Error Boundary en React
 - **Problema:** Las excepciones no capturadas en el ciclo de vida de React causaran una pantalla blanca, bloqueando totalmente la aplicacion de escritorio sin dar explicaciones al usuario.
 - **Solucion:** Envolver el componente raiz (`App.tsx` o `Layout.tsx`) en un componente `ErrorBoundary` de React. Esto permitira capturar los errores, evitar la pantalla blanca, y mostrar una UI amigable (ej. "Algo salio mal, haz clic aqui para recargar la interfaz").
+- **Implementación:** Se implementó `ErrorBoundary` como organismo en `frontend/src/components/organisms/error-boundary/error-boundary.tsx`, integrado con los tokens de diseño de WeekBox, opciones de recarga, regreso a inicio (`#/home`) y copiado de detalles técnicos/stack trace al portapapeles. Se envolvió la raíz en `main.tsx`.
 
 ## Prioridad Media (Medium Priority)
 

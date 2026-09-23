@@ -11,6 +11,52 @@ export interface UseLibraryFiltersParams {
   downloadingModIds: Set<string>;
 }
 
+const LIBRARY_SORT_STORAGE_KEY = "wb_library_sort";
+const LIBRARY_ENGINES_STORAGE_KEY = "wb_library_engines";
+const LIBRARY_FAVORITES_STORAGE_KEY = "wb_library_favorites_only";
+
+function loadSavedLibrarySort(): LibrarySortOption {
+  if (typeof window === "undefined") return "recent";
+  try {
+    const raw = localStorage.getItem(LIBRARY_SORT_STORAGE_KEY);
+    if (raw && ["recent", "az", "za", "popular", "author"].includes(raw)) {
+      return raw as LibrarySortOption;
+    }
+  } catch (e) {
+    console.warn("Could not load library sort from storage:", e);
+  }
+  return "recent";
+}
+
+function loadSavedLibraryEngines(): string[] {
+  if (typeof window === "undefined") return ["all"];
+  try {
+    const raw = localStorage.getItem(LIBRARY_ENGINES_STORAGE_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        return parsed;
+      }
+    }
+  } catch (e) {
+    console.warn("Could not load library engines from storage:", e);
+  }
+  return ["all"];
+}
+
+function loadSavedLibraryFavoritesOnly(): boolean {
+  if (typeof window === "undefined") return false;
+  try {
+    const raw = localStorage.getItem(LIBRARY_FAVORITES_STORAGE_KEY);
+    if (raw !== null) {
+      return raw === "true";
+    }
+  } catch (e) {
+    console.warn("Could not load library favorites only from storage:", e);
+  }
+  return false;
+}
+
 export function useLibraryFilters({
   installedMods,
   favorites,
@@ -22,10 +68,28 @@ export function useLibraryFilters({
   const isInitializedRef = useRef(false);
 
   const [searchQuery, setSearchQuery] = useState("");
-  const [sortOption, setSortOption] = useState<LibrarySortOption>("recent");
-  const [engineFilter, setEngineFilter] = useState<string[]>(["all"]);
-  const [showFavoritesOnly, setShowFavoritesOnly] = useState(false);
+  const [sortOption, setSortOption] = useState<LibrarySortOption>(loadSavedLibrarySort);
+  const [engineFilter, setEngineFilter] = useState<string[]>(loadSavedLibraryEngines);
+  const [showFavoritesOnly, setShowFavoritesOnly] = useState<boolean>(loadSavedLibraryFavoritesOnly);
   const [showFilters, setShowFilters] = useState(false);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(LIBRARY_SORT_STORAGE_KEY, sortOption);
+    } catch {}
+  }, [sortOption]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(LIBRARY_ENGINES_STORAGE_KEY, JSON.stringify(engineFilter));
+    } catch {}
+  }, [engineFilter]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(LIBRARY_FAVORITES_STORAGE_KEY, String(showFavoritesOnly));
+    } catch {}
+  }, [showFavoritesOnly]);
 
   // Parse initial state from URL on mount
   useEffect(() => {
@@ -46,6 +110,10 @@ export function useLibraryFilters({
 
     const allTokens = [...pathTokens, ...filterTokens];
 
+    let hasUrlFavorites = false;
+    let hasUrlSort = false;
+    let hasUrlEngines = false;
+
     let initialFavorites = false;
     let initialSort: LibrarySortOption = "recent";
     const initialEngines: string[] = [];
@@ -53,14 +121,19 @@ export function useLibraryFilters({
     for (const token of allTokens) {
       if (token === "favorites" || token === "favorite" || token === "fav") {
         initialFavorites = true;
+        hasUrlFavorites = true;
       } else if (token === "az" || token === "a-z") {
         initialSort = "az";
+        hasUrlSort = true;
       } else if (token === "za" || token === "z-a") {
         initialSort = "za";
+        hasUrlSort = true;
       } else if (token === "popular") {
         initialSort = "popular";
+        hasUrlSort = true;
       } else if (token === "author") {
         initialSort = "author";
+        hasUrlSort = true;
       } else {
         const subTokens = token.split(",");
         for (const st of subTokens) {
@@ -69,14 +142,15 @@ export function useLibraryFilters({
           );
           if (matchingEngine) {
             initialEngines.push(matchingEngine.id);
+            hasUrlEngines = true;
           }
         }
       }
     }
 
-    if (initialFavorites) setShowFavoritesOnly(true);
-    if (initialSort !== "recent") setSortOption(initialSort);
-    if (initialEngines.length > 0) setEngineFilter(initialEngines);
+    if (hasUrlFavorites) setShowFavoritesOnly(initialFavorites);
+    if (hasUrlSort) setSortOption(initialSort);
+    if (hasUrlEngines && initialEngines.length > 0) setEngineFilter(initialEngines);
 
     const qParam = searchParams.get("q");
     if (qParam) setSearchQuery(qParam);

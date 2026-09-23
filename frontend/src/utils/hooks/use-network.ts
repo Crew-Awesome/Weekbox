@@ -1,4 +1,5 @@
-import { useState, useEffect, useRef } from "react";
+import { useEffect, useRef } from "react";
+import { create } from "zustand";
 
 export interface NetworkState {
   isOnline: boolean;
@@ -7,52 +8,123 @@ export interface NetworkState {
   rtt: number;
 }
 
-/**
- * @description Hook to monitor network status and connection speed.
- * Uses the Network Information API available in modern browsers (and Chromium webviews).
- */
-export function useNetwork(): NetworkState {
-  const [networkState, setNetworkState] = useState<NetworkState>({
-    isOnline: navigator.onLine,
-    effectiveType: (navigator as any).connection?.effectiveType || "4g",
-    downlink: (navigator as any).connection?.downlink || 10,
-    rtt: (navigator as any).connection?.rtt || 50,
-  });
+interface NetworkStoreState extends NetworkState {
+  setOnline: (online: boolean) => void;
+  checkConnectivity: () => Promise<boolean>;
+}
 
-  useEffect(() => {
-    const updateNetworkInfo = () => {
-      const conn = (navigator as any).connection;
-      setNetworkState({
-        isOnline: navigator.onLine,
-        effectiveType: conn?.effectiveType || "4g",
-        downlink: conn?.downlink || 10,
-        rtt: conn?.rtt || 50,
-      });
-    };
-
-    window.addEventListener("online", updateNetworkInfo);
-    window.addEventListener("offline", updateNetworkInfo);
-
-    const conn = (navigator as any).connection;
-    if (conn) {
-      conn.addEventListener("change", updateNetworkInfo);
+export const useNetworkStore = create<NetworkStoreState>((set, get) => ({
+  isOnline: typeof navigator !== "undefined" ? navigator.onLine : true,
+  effectiveType:
+    (typeof navigator !== "undefined" && (navigator as any).connection?.effectiveType) || "4g",
+  downlink:
+    (typeof navigator !== "undefined" && (navigator as any).connection?.downlink) || 10,
+  rtt:
+    (typeof navigator !== "undefined" && (navigator as any).connection?.rtt) || 50,
+  setOnline: (online: boolean) => {
+    if (get().isOnline !== online) {
+      set({ isOnline: online });
+    }
+  },
+  checkConnectivity: async () => {
+    // If navigator explicitly reports offline, trust it immediately
+    if (typeof navigator !== "undefined" && !navigator.onLine) {
+      set({ isOnline: false });
+      return false;
     }
 
-    return () => {
-      window.removeEventListener("online", updateNetworkInfo);
-      window.removeEventListener("offline", updateNetworkInfo);
-      if (conn) {
-        conn.removeEventListener("change", updateNetworkInfo);
-      }
-    };
-  }, []);
+    try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 2500);
 
-  return networkState;
+      // Probe GitHub raw with no-cors. If DNS fails or there's no internet connection,
+      // fetch immediately throws TypeError: Failed to fetch (net::ERR_NAME_NOT_RESOLVED)
+      await fetch(
+        "https://raw.githubusercontent.com/Crew-Awesome/weekbox.featured/main/public/featured.json",
+        {
+          method: "HEAD",
+          mode: "no-cors",
+          cache: "no-store",
+          signal: controller.signal,
+        }
+      );
+      clearTimeout(timeoutId);
+      set({ isOnline: true });
+      return true;
+    } catch {
+      // Fallback probe (Cloudflare / 1.1.1.1)
+      try {
+        const controller2 = new AbortController();
+        const timeoutId2 = setTimeout(() => controller2.abort(), 2000);
+        await fetch("https://1.1.1.1/cdn-cgi/trace", {
+          method: "HEAD",
+          mode: "no-cors",
+          cache: "no-store",
+          signal: controller2.signal,
+        });
+        clearTimeout(timeoutId2);
+        set({ isOnline: true });
+        return true;
+      } catch {
+        set({ isOnline: false });
+        return false;
+      }
+    }
+  },
+}));
+
+export const checkNetworkConnectivity = () => useNetworkStore.getState().checkConnectivity();
+export const setNetworkOnline = (online: boolean) => useNetworkStore.getState().setOnline(online);
+
+if (typeof window !== "undefined") {
+  const handleOnline = () => {
+    useNetworkStore.getState().checkConnectivity();
+  };
+  const handleOffline = () => {
+    useNetworkStore.getState().setOnline(false);
+  };
+
+  window.addEventListener("online", handleOnline);
+  window.addEventListener("offline", handleOffline);
+
+  const conn = (navigator as any).connection;
+  if (conn) {
+    conn.addEventListener("change", () => {
+      const c = (navigator as any).connection;
+      useNetworkStore.setState({
+        effectiveType: c?.effectiveType || "4g",
+        downlink: c?.downlink || 10,
+        rtt: c?.rtt || 50,
+      });
+      useNetworkStore.getState().checkConnectivity();
+    });
+  }
+
+  window.addEventListener("focus", () => {
+    useNetworkStore.getState().checkConnectivity();
+  });
+}
+
+/**
+ * @description Hook to monitor network status and connection speed.
+ * Uses a centralized store with active probe verification.
+ */
+export function useNetwork(): NetworkState {
+  const isOnline = useNetworkStore((s) => s.isOnline);
+  const effectiveType = useNetworkStore((s) => s.effectiveType);
+  const downlink = useNetworkStore((s) => s.downlink);
+  const rtt = useNetworkStore((s) => s.rtt);
+
+  return {
+    isOnline,
+    effectiveType,
+    downlink,
+    rtt,
+  };
 }
 
 /**
  * @description Helper hook that automatically triggers a callback when the internet connection is restored.
- * Useful for auto-reloading failed requests.
  * @param {() => void} onReconnect - The function to call when the network is restored.
  */
 export function useNetworkRecovery(onReconnect: () => void) {

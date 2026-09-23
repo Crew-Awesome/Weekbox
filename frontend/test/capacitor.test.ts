@@ -68,13 +68,13 @@ describe("Capacitor Mobile Adapter Test Suite", () => {
     it("gracefully denies launchExecutable with descriptive error", async () => {
       const result = await adapter.launchExecutable("/path/to/game.exe", { args: ["--fullscreen"] });
       expect(result.ok).toBe(false);
-      expect(result.error).toContain("mobile/Capacitor");
+      expect(typeof result.error).toBe("string");
+      expect(result.error).toMatch(/not installed|not supported/i);
     });
 
-    it("gracefully denies killProcess with descriptive error", async () => {
+    it("gracefully handles killProcess without throwing", async () => {
       const result = await adapter.killProcess("1234");
-      expect(result.ok).toBe(false);
-      expect(result.error).toContain("mobile/Capacitor");
+      expect(result.ok).toBe(true);
     });
 
     it("reports no running instances or processes", async () => {

@@ -41,6 +41,7 @@ import { notificationApi } from "../src/core/backend/notification";
 import { isWindowUnfocused, useNotifications } from "../src/utils/hooks/use-notifications";
 import Core from "@core";
 import { toast } from "../src/utils/toast";
+import { DesktopNotification } from "../src/core/platform/desktop/notification";
 
 describe("Notifications System", () => {
   beforeEach(() => {
@@ -185,6 +186,54 @@ describe("Notifications System", () => {
         expect.stringContaining(modName),
         expect.objectContaining({ title: "Mod Installed" })
       );
+    });
+  });
+
+  describe("DesktopNotification platform service", () => {
+    it("delegates to backend transport on success", async () => {
+      const mockTransport = {
+        call: vi.fn().mockResolvedValue({ ok: true, method: "node-ipc" }),
+      };
+      const desktopNotification = new DesktopNotification(mockTransport as any);
+      const res = await desktopNotification.showNotification({
+        title: "Hello",
+        content: "World",
+        icon: "INFO",
+      });
+
+      expect(mockTransport.call).toHaveBeenCalledWith("notification.show", {
+        title: "Hello",
+        content: "World",
+        icon: "INFO",
+      });
+      expect(res.ok).toBe(true);
+      expect(res.method).toBe("node-ipc");
+    });
+
+    it("falls back to Darwin osascript via Neutralino.os.execCommand when on macOS", async () => {
+      const mockTransport = {
+        call: vi.fn().mockRejectedValue(new Error("Node backend down")),
+      };
+      const execCommandMock = vi.fn().mockResolvedValue({});
+      (window as any).NL_OS = "Darwin";
+      (window as any).Neutralino = {
+        os: {
+          execCommand: execCommandMock,
+        },
+      };
+
+      const desktopNotification = new DesktopNotification(mockTransport as any);
+      const res = await desktopNotification.showNotification({
+        title: "Mac Title",
+        content: "Mac Content",
+      });
+
+      expect(execCommandMock).toHaveBeenCalled();
+      const calledCmd = execCommandMock.mock.calls[0][0];
+      expect(calledCmd).toContain("osascript -e");
+      expect(calledCmd).toContain("Mac Content");
+      expect(res.ok).toBe(true);
+      expect(res.method).toBe("neutralino-exec-darwin");
     });
   });
 });

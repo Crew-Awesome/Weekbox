@@ -1,5 +1,11 @@
 import { useModals } from "./hooks/use-modals";
-import { useNetwork, useNetworkRecovery } from "./hooks/use-network";
+import {
+  useNetwork,
+  useNetworkRecovery,
+  useNetworkStore,
+  checkNetworkConnectivity,
+  setNetworkOnline,
+} from "./hooks/use-network";
 import { useDeeplinkManager } from "./hooks/use-deeplink-manager";
 import { useAppNavigation } from "./hooks/use-app-navigation";
 import { useShowWindow } from "./hooks/use-show-window";
@@ -57,6 +63,9 @@ const Utils = {
     useModals,
     useNetwork,
     useNetworkRecovery,
+    useNetworkStore,
+    checkNetworkConnectivity,
+    setNetworkOnline,
     useDeeplinkManager,
     useAppNavigation,
     useShowWindow,

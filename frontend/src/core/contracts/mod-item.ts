@@ -42,6 +42,8 @@ export interface ModItem {
   installedAt?: number;
   isInstalled?: boolean;
   favorite?: boolean;
+  userPfp?: string;
+  userId?: number;
 }
 
 /**

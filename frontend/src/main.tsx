@@ -3,6 +3,7 @@ import { createRoot } from "react-dom/client";
 import { HashRouter, Routes, Route, Navigate } from "react-router-dom";
 import App from "./App";
 import { Home, Library, Instances } from "@pages";
+import { ErrorBoundary } from "@components";
 import "./index.css";
 
 if (typeof window !== "undefined") {
@@ -66,35 +67,11 @@ if (typeof window !== "undefined") {
   );
 }
 
-async function startApplication() {
-  if (typeof window !== "undefined") {
-    const rawArgs = window.NL_ARGS || [];
-    try {
-      const res = await fetch("http://127.0.0.1:45555/deeplink", {
-        method: "POST",
-        headers: { "Content-Type": "text/plain" },
-        body: JSON.stringify(rawArgs),
-      });
-
-      if (res && res.ok) {
-        console.log("[SingleInstance] Forwarded to existing instance. Exiting secondary process.");
-        try {
-          const { platform } = await import("@platform");
-          await platform.window.close();
-        } catch {
-          window.close();
-        }
-        return;
-      }
-    } catch {
-      // No primary instance listening; continue as primary instance
-    }
-  }
-
-  const rootElement = document.getElementById("root");
-  if (rootElement) {
-    createRoot(rootElement).render(
-      <StrictMode>
+const rootElement = document.getElementById("root");
+if (rootElement) {
+  createRoot(rootElement).render(
+    <StrictMode>
+      <ErrorBoundary>
         <HashRouter>
           <Routes>
             <Route path="/" element={<App />}>
@@ -109,9 +86,7 @@ async function startApplication() {
             </Route>
           </Routes>
         </HashRouter>
-      </StrictMode>,
-    );
-  }
+      </ErrorBoundary>
+    </StrictMode>,
+  );
 }
-
-startApplication();

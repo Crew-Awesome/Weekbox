@@ -69,8 +69,11 @@ function readCache(engineId: string): EngineReleaseItem[] | null {
     const raw = localStorage.getItem(`${CACHE_PREFIX}${engineId}`);
     if (!raw) return null;
     const parsed = JSON.parse(raw);
-    if (parsed && Array.isArray(parsed.data) && Date.now() - parsed.savedAt < CACHE_TTL_MS) {
-      return parsed.data;
+    if (parsed && Array.isArray(parsed.data)) {
+      const isOffline = typeof navigator !== "undefined" && !navigator.onLine;
+      if (isOffline || Date.now() - parsed.savedAt < CACHE_TTL_MS) {
+        return parsed.data;
+      }
     }
     return null;
   } catch {
@@ -96,6 +99,10 @@ export async function fetchEngineReleases(engineId: string): Promise<EngineRelea
     return cached;
   }
 
+  if (typeof navigator !== "undefined" && !navigator.onLine) {
+    return cached || [];
+  }
+
   try {
     const res = await fetch(`https://api.github.com/repos/${source.repository}/releases?per_page=50`, {
       headers: {
@@ -105,6 +112,7 @@ export async function fetchEngineReleases(engineId: string): Promise<EngineRelea
 
     if (!res.ok) {
       if (cached) return cached;
+      if (typeof navigator !== "undefined" && !navigator.onLine) return [];
       throw new Error(`GitHub request failed: ${res.status}`);
     }
 

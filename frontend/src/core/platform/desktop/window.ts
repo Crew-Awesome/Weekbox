@@ -51,21 +51,26 @@ export class DesktopWindow implements IWindowService {
     try {
       if (window.Neutralino?.window) {
         await window.Neutralino.window.show().catch(() => {});
-        if (window.Neutralino.window.unminimize) {
-          await window.Neutralino.window.unminimize().catch(() => {});
-        }
-        if (window.Neutralino.window.setAlwaysOnTop) {
-          await window.Neutralino.window.setAlwaysOnTop(true).catch(() => {});
-          await window.Neutralino.window.focus().catch(() => {});
-          setTimeout(async () => {
-            try {
-              const win = window.Neutralino?.window;
-              if (win?.setAlwaysOnTop) {
-                await win.setAlwaysOnTop(false).catch(() => {});
-              }
-              await win?.focus?.().catch(() => {});
-            } catch {}
-          }, 200);
+        const isWindows = window.NL_OS === "Windows";
+        if (isWindows) {
+          if (window.Neutralino.window.unminimize) {
+            await window.Neutralino.window.unminimize().catch(() => {});
+          }
+          if (window.Neutralino.window.setAlwaysOnTop) {
+            await window.Neutralino.window.setAlwaysOnTop(true).catch(() => {});
+            await window.Neutralino.window.focus().catch(() => {});
+            setTimeout(async () => {
+              try {
+                const win = window.Neutralino?.window;
+                if (win?.setAlwaysOnTop) {
+                  await win.setAlwaysOnTop(false).catch(() => {});
+                }
+                await win?.focus?.().catch(() => {});
+              } catch {}
+            }, 200);
+          } else {
+            await window.Neutralino.window.focus().catch(() => {});
+          }
         } else {
           await window.Neutralino.window.focus().catch(() => {});
         }
@@ -154,8 +159,13 @@ export class DesktopWindow implements IWindowService {
   }
 
   async close(): Promise<void> {
-    if (window.Neutralino?.app?.exit) {
-      return await window.Neutralino.app.exit();
+    if (window.Neutralino?.app) {
+      if (window.NL_OS === "Darwin" && (window.Neutralino.app as any).killProcess) {
+        return await (window.Neutralino.app as any).killProcess();
+      }
+      if (window.Neutralino.app.exit) {
+        return await window.Neutralino.app.exit();
+      }
     }
     await this.transport.call("window.close" as BackendOperation);
   }
@@ -163,26 +173,28 @@ export class DesktopWindow implements IWindowService {
   async center(): Promise<void> {
     if (window.Neutralino) {
       try {
-        const size = await this.getSize();
-        const displays = await this.getDisplays();
-        const pos = await this.getPosition();
+        const size = await this.getSize().catch(() => null);
+        const displays = await this.getDisplays().catch(() => []);
+        const pos = await this.getPosition().catch(() => null);
+
+        if (!size || !pos || !Array.isArray(displays) || displays.length === 0) {
+          return;
+        }
 
         let currentDisplay = displays[0];
-        if (Array.isArray(displays)) {
-          for (const display of displays) {
-            const bx = display.bounds?.x || 0;
-            const by = display.bounds?.y || 0;
-            const bw = display.resolution?.width || 1920;
-            const bh = display.resolution?.height || 1080;
-            if (
-              pos.x >= bx &&
-              pos.x < bx + bw &&
-              pos.y >= by &&
-              pos.y < by + bh
-            ) {
-              currentDisplay = display;
-              break;
-            }
+        for (const display of displays) {
+          const bx = display.bounds?.x || 0;
+          const by = display.bounds?.y || 0;
+          const bw = display.resolution?.width || 1920;
+          const bh = display.resolution?.height || 1080;
+          if (
+            pos.x >= bx &&
+            pos.x < bx + bw &&
+            pos.y >= by &&
+            pos.y < by + bh
+          ) {
+            currentDisplay = display;
+            break;
           }
         }
 

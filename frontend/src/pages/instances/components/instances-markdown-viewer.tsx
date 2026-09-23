@@ -1,6 +1,8 @@
 import React, { useMemo, useState, useEffect, useRef } from "react";
 import DOMPurify from "dompurify";
 import { FileText, Calendar, Loader2, Languages } from "lucide-react";
+import { LoadingContent, OfflineContent } from "@components";
+import Utils from "@utils";
 import type { EngineReleaseItem } from "@core";
 import { useTranslationToggle } from "../hooks/use-translation-toggle";
 import { ModMediaCarousel } from "../../home/components/mod-details-modal/components/mod-media-carousel";
@@ -51,6 +53,7 @@ export const InstancesMarkdownViewer: React.FC<InstancesMarkdownViewerProps> = (
   release,
   isLoading = false,
 }) => {
+  const { isOnline } = Utils.hooks.useNetwork();
   const [activeMediaIndex, setActiveMediaIndex] = useState(0);
   const [isHovered, setIsHovered] = useState(false);
 
@@ -112,16 +115,25 @@ export const InstancesMarkdownViewer: React.FC<InstancesMarkdownViewerProps> = (
 
   if (isLoading) {
     return (
-      <div className="flex-1 flex flex-col items-center justify-center p-16 gap-4 opacity-60">
-        <Loader2 className="w-10 h-10 animate-spin text-[var(--wb-primary)]" />
-        <span className="text-base font-bold text-[var(--wb-on-surface)]">
-          Loading release notes...
-        </span>
+      <div className="flex-1 flex flex-col items-center justify-center p-8 sm:p-16">
+        <LoadingContent text="version release notes" size="md" />
       </div>
     );
   }
 
   if (!release) {
+    if (!isOnline) {
+      return (
+        <div className="flex-1 flex flex-col items-center justify-center p-6 sm:p-12 w-full h-full">
+          <OfflineContent
+            title="You're Offline"
+            message="No installed engine instances found. Please connect to the internet to download engine versions."
+            size="lg"
+          />
+        </div>
+      );
+    }
+
     return (
       <div className="flex-1 flex flex-col items-center justify-center p-16 text-center opacity-60">
         <FileText className="w-16 h-16 mb-4 text-[var(--wb-on-surface-variant)]" />

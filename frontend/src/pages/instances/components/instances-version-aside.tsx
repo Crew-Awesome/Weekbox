@@ -1,5 +1,7 @@
 import React, { useMemo } from "react";
-import { Loader2, HardDrive, Check } from "lucide-react";
+import { HardDrive, Check } from "lucide-react";
+import { LoadingContent, OfflineContent } from "@components";
+import Utils from "@utils";
 import type { EngineReleaseItem } from "@core";
 import type { InstanceSortOption } from "./instances-topbar";
 
@@ -39,10 +41,13 @@ export const InstancesVersionAside: React.FC<InstancesVersionAsideProps> = ({
   onlyInstalled = false,
   installedVersions = [],
 }) => {
+  const { isOnline } = Utils.hooks.useNetwork();
+  const effectiveOnlyInstalled = onlyInstalled || !isOnline;
+
   const processedReleases = useMemo(() => {
     let list = [...releases];
 
-    if (onlyInstalled) {
+    if (effectiveOnlyInstalled) {
       const set = new Set(installedVersions.map((v) => v.toLowerCase().replace(/^v/, "")));
       list = list.filter((r) => set.has(r.version.toLowerCase().replace(/^v/, "")));
 
@@ -111,14 +116,19 @@ export const InstancesVersionAside: React.FC<InstancesVersionAsideProps> = ({
 
         <div className="flex flex-col p-3 sm:p-4 gap-2.5 overflow-y-auto pb-28 sm:pb-4">
           {isLoadingMods ? (
-            <div className="flex flex-col items-center justify-center p-12 gap-3 opacity-60">
-              <Loader2 className="w-7 h-7 animate-spin text-[var(--wb-primary)]" />
-              <span className="text-sm font-semibold">Loading installed mods...</span>
-            </div>
+            <LoadingContent text="installed instances" size="sm" />
           ) : installedMods.length === 0 ? (
-            <div className="p-12 text-center text-sm text-[var(--wb-on-surface-variant)] opacity-70">
-              No executable mods currently installed.
-            </div>
+            !isOnline ? (
+              <OfflineContent
+                title="You're Offline"
+                message="No installed executable mods found. Please connect to the internet to download mods."
+                size="sm"
+              />
+            ) : (
+              <div className="p-12 text-center text-sm text-[var(--wb-on-surface-variant)] opacity-70">
+                No executable mods currently installed.
+              </div>
+            )
           ) : (
             installedMods.map((mod) => {
               const isSelected = String(mod.id) === String(selectedModId);
@@ -159,16 +169,21 @@ export const InstancesVersionAside: React.FC<InstancesVersionAsideProps> = ({
     <aside className="w-full md:w-80 lg:w-96 xl:w-[420px] flex flex-col shrink-0 border-b md:border-b-0 md:border-r border-[var(--wb-outline-variant)]/20 bg-[var(--wb-surface-container-low)]/40 overflow-y-auto h-full flex-1 md:flex-none">
       <div className="flex flex-col p-2.5 sm:p-4 gap-2 sm:gap-2.5 overflow-y-auto pb-28 sm:pb-4">
         {isLoadingReleases ? (
-          <div className="flex flex-col items-center justify-center p-8 sm:p-12 gap-3 opacity-60">
-            <Loader2 className="w-6 h-6 sm:w-7 sm:h-7 animate-spin text-[var(--wb-primary)]" />
-            <span className="text-xs sm:text-sm font-semibold">Fetching engine versions...</span>
-          </div>
+          <LoadingContent text="engine versions" size="sm" />
         ) : processedReleases.length === 0 ? (
-          <div className="p-8 sm:p-12 text-center text-xs sm:text-sm text-[var(--wb-on-surface-variant)] opacity-70">
-            {onlyInstalled
-              ? "No installed versions found for this engine."
-              : "No release versions available."}
-          </div>
+          !isOnline ? (
+            <OfflineContent
+              title="You're Offline"
+              message="No installed engine instances found. Please connect to the internet to download engine versions."
+              size="sm"
+            />
+          ) : (
+            <div className="p-8 sm:p-12 text-center text-xs sm:text-sm text-[var(--wb-on-surface-variant)] opacity-70">
+              {effectiveOnlyInstalled
+                ? "No installed versions found for this engine."
+                : "No release versions available."}
+            </div>
+          )
         ) : (
           processedReleases.map((rel) => {
             const isSelected = rel.version === selectedVersion;

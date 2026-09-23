@@ -5,6 +5,7 @@ import type { FeaturedSchema, FeaturedModRaw } from "./types";
 import { FNF_GAME_ID } from "../constants";
 import { isMobilePlatform } from "../../../platform";
 import { getMods } from "../api/getMods";
+import { setNetworkOnline } from "../../../../utils/hooks/use-network";
 
 export const FEATURED_URL =
   "https://raw.githubusercontent.com/Crew-Awesome/weekbox.featured/main/public/featured.json";
@@ -100,6 +101,9 @@ export class FeaturedService {
 
       return mods;
     } catch (error) {
+      try {
+        setNetworkOnline(false);
+      } catch {}
       console.warn("FeaturedService error (static JSON failed):", error);
       return [];
     }

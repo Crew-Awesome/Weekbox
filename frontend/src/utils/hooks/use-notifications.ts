@@ -108,9 +108,7 @@ export function useNotifications() {
    */
   const notifyDownloadComplete = useCallback(
     async (modName: string) => {
-      const isUnfocused = isWindowUnfocused();
-
-      if (osNotifyOnDownload && isUnfocused) {
+      if (osNotifyOnDownload) {
         try {
           await Core.notification.showNotification({
             title: "WeekBox - Download Complete",

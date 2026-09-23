@@ -66,43 +66,10 @@ export const AllMods: React.FC<AllModsProps> = React.memo(({
     return (
       <>
         <Shared.atoms.Titles title={dynamicTitle} />
-        <div
-          className="grid gap-4 sm:gap-6 -mx-8 sm:mx-0 h-auto w-auto grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4"
-          style={{ gridAutoFlow: "row dense" }}
-        >
-          {Array.from({ length: 16 }).map((_, i) => {
-            const isBanner = !isMobile && (i === 3 || i === 11);
-            if (isBanner) {
-              return (
-                <div
-                  key={`skel-${i}`}
-                  className="col-span-1 sm:col-span-2 lg:col-span-3 2xl:col-span-4 h-full"
-                >
-                  <Shared.molecules.Banner
-                    isLoading
-                    title="Loading"
-                    thumbnail="skeleton"
-                    icon="skeleton"
-                    pillTitle="Loading"
-                    author="Loading"
-                    viewsCount="0"
-                  />
-                </div>
-              );
-            }
-            return (
-              <div key={`skel-${i}`} className="h-full">
-                <Shared.molecules.Card
-                  isLoading
-                  title="Loading"
-                  description="Loading description"
-                  thumbnail="skeleton"
-                  icon="skeleton"
-                />
-              </div>
-            );
-          })}
-        </div>
+        <Shared.atoms.LoadingContent
+          text={searchQuery.trim() ? `mods for "${searchQuery.trim()}"` : "mods"}
+          size="lg"
+        />
       </>
     );
   }
@@ -191,6 +158,8 @@ export const AllMods: React.FC<AllModsProps> = React.memo(({
             submittedAt: item.submittedAt,
             updatedAt: item.updatedAt,
             engineId: item.engineId,
+            userPfp: item.userPfp,
+            userId: item.userId,
           };
 
           const isLastElement = index === mods.length - 1;
@@ -324,9 +293,7 @@ export const AllMods: React.FC<AllModsProps> = React.memo(({
         })}
       </div>
       {loadingMore && (
-        <div className="flex justify-center items-center py-6 w-full mt-4">
-          <span className="loader text-lg animate-pulse">Loading more...</span>
-        </div>
+        <Shared.atoms.LoadingContent text="more mods" size="sm" />
       )}
       {!hasMore && mods.length > 0 && (
         <div className="flex justify-center items-center py-6 w-full mt-4">

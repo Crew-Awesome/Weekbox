@@ -97,7 +97,11 @@ export class DesktopLifecycle {
         }
 
         try {
-          await neutralino.app?.exit();
+          if (window.NL_OS === "Darwin" && (neutralino.app as any)?.killProcess) {
+            await (neutralino.app as any).killProcess();
+          } else {
+            await neutralino.app?.exit();
+          }
         } catch {
           window.close();
         }

@@ -56,7 +56,7 @@ export const NotificationsTab: React.FC = () => {
                   OS Download Notifications
                 </span>
                 <span className="text-xs sm:text-sm text-[var(--wb-on-surface-variant)] leading-relaxed">
-                  Send a native system notification (Windows, macOS, Linux) when a download finishes and WeekBox does not have focus
+                  Send a native system notification (Windows, macOS, Linux) when a download finishes
                 </span>
               </div>
             </div>

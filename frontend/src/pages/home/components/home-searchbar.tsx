@@ -172,10 +172,14 @@ export const HomeSearchbar: React.FC<HomeSearchbarProps> = ({
     <div className="hidden md:block relative z-50" ref={filterRef}>
       <button
         onClick={() => setShowFilters(!showFilters)}
-        className="h-10 w-10 flex items-center justify-center rounded-xl bg-[var(--wb-surface-container)] hover:bg-[var(--wb-surface-container-high)] text-[var(--wb-icon-default)] hover:text-[var(--wb-icon-hover)] transition-all cursor-pointer shadow-none"
+        className={`h-10 w-10 md:h-14 md:w-14 flex items-center justify-center rounded-2xl border transition-all cursor-pointer shadow-none ${
+          showFilters
+            ? "bg-[var(--wb-surface-container-highest)] border-[var(--wb-primary)] text-[var(--wb-primary)]"
+            : "bg-[var(--wb-surface-container-high)] border-[var(--wb-outline-variant)]/60 hover:bg-[var(--wb-surface-container-highest)] text-[var(--wb-icon-default)] hover:text-[var(--wb-icon-hover)]"
+        }`}
         aria-label="Filtros"
       >
-        <Filter className="w-5 h-5" />
+        <Filter className="w-5 h-5 md:w-6 md:h-6" />
       </button>
 
       {showFilters && (
@@ -232,7 +236,7 @@ export const HomeSearchbar: React.FC<HomeSearchbarProps> = ({
       className={`sticky top-0 z-30 w-full pt-10 md:pt-0 bg-[var(--wb-surface-container)]/70 backdrop-blur-xl border-b md:border-b-0 border-[var(--wb-outline-variant)]/20 shadow-sm md:bg-transparent md:backdrop-blur-none transition-all duration-300 ease-in-out ${
         isSearchVisible
           ? "translate-y-0 opacity-100 pointer-events-auto"
-          : "-translate-y-full opacity-0 pointer-events-none md:translate-y-0 md:opacity-100 md:pointer-events-auto"
+          : "-translate-y-full opacity-0 pointer-events-none"
       }`}
     >
       <div>
@@ -281,8 +285,8 @@ export const HomeSearchbar: React.FC<HomeSearchbarProps> = ({
 
         <div className="h-4 w-[1px] bg-[var(--wb-outline-variant)]/60 shrink-0 mx-0.5" />
 
-        {/* Engine Categories (only pslice and vslice on mobile) */}
-        {getSupportedEngineCategories(true).map((cat) => {
+        {/* Engine Categories (all on web/pc, limited to pslice, codename and vslice on capacitor) */}
+        {getSupportedEngineCategories().map((cat) => {
           const isSelected = categoryFilter.includes(cat.id);
           return (
             <button

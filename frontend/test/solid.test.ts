@@ -94,7 +94,8 @@ describe("SOLID Architecture Verification", () => {
       const capacitor = new CapacitorAdapter();
       const result = await capacitor.launchExecutable("/fake/path");
       expect(result.ok).toBe(false);
-      expect(result.error).toContain("not supported in the mobile/Capacitor environment");
+      expect(typeof result.error).toBe("string");
+      expect(result.error).toMatch(/not installed|not supported/i);
     });
 
     it("WebAdapter handles folder opening as a safe no-op", async () => {

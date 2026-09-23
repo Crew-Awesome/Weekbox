@@ -35,32 +35,23 @@ export interface UseBlurOnTopReturn {
  */
 export function useBlurOnTop(options: UseBlurOnTopOptions = {}): UseBlurOnTopReturn {
   const {
-    blurAmount = 36,
-    durationMs = 3800,
-    delayMs = 700,
+    blurAmount = 16,
+    durationMs = 600,
+    delayMs = 200,
     immediate = true,
   } = options;
 
   const [isActive, setIsActive] = useState<boolean>(immediate);
-  const [blur, setBlur] = useState<number>(immediate ? blurAmount : 0);
-  const [hasTransition, setHasTransition] = useState<boolean>(false);
-  const [duration, setDuration] = useState<number>(durationMs);
+  const [isFading, setIsFading] = useState<boolean>(false);
 
   useEffect(() => {
     if (!immediate) return;
 
     let isMounted = true;
 
-    const transitionTimer = setTimeout(() => {
+    const fadeTimer = setTimeout(() => {
       if (!isMounted) return;
-      setHasTransition(true);
-    }, 60);
-
-    const unblurTimer = setTimeout(() => {
-      if (!isMounted) return;
-      setDuration(durationMs);
-      setHasTransition(true);
-      setBlur(0);
+      setIsFading(true);
     }, delayMs);
 
     const finishTimer = setTimeout(() => {
@@ -70,33 +61,20 @@ export function useBlurOnTop(options: UseBlurOnTopOptions = {}): UseBlurOnTopRet
 
     return () => {
       isMounted = false;
-      clearTimeout(transitionTimer);
-      clearTimeout(unblurTimer);
+      clearTimeout(fadeTimer);
       clearTimeout(finishTimer);
     };
   }, [immediate, delayMs, durationMs]);
 
-  const fadeIn = useCallback(
-    (customDuration?: number) => {
-      const dur = customDuration ?? 600;
-      setDuration(dur);
-      setIsActive(true);
-      setHasTransition(true);
-      requestAnimationFrame(() => {
-        setBlur(blurAmount);
-      });
-    },
-    [blurAmount]
-  );
+  const fadeIn = useCallback((_customDuration?: number) => {
+    setIsActive(true);
+    setIsFading(false);
+  }, []);
 
   const fadeOut = useCallback(
     (customDuration?: number) => {
       const dur = customDuration ?? durationMs;
-      setDuration(dur);
-      setHasTransition(true);
-      requestAnimationFrame(() => {
-        setBlur(0);
-      });
+      setIsFading(true);
       setTimeout(() => {
         setIsActive(false);
       }, dur);
@@ -110,18 +88,15 @@ export function useBlurOnTop(options: UseBlurOnTopOptions = {}): UseBlurOnTopRet
   }) => {
     if (!isActive) return null;
 
-    const transitionStyle = hasTransition
-      ? `backdrop-filter ${duration}ms cubic-bezier(0.25, 0.1, 0.25, 1), -webkit-backdrop-filter ${duration}ms cubic-bezier(0.25, 0.1, 0.25, 1)`
-      : "none";
-
     return (
       <div
-        className={`fixed inset-0 w-screen h-screen ${zIndexClassName} pointer-events-none ${className}`}
+        className={`fixed inset-0 w-screen h-screen ${zIndexClassName} pointer-events-none transition-opacity ease-out ${className} ${
+          isFading ? "opacity-0" : "opacity-100"
+        }`}
         style={{
-          backdropFilter: `blur(${blur}px)`,
-          WebkitBackdropFilter: `blur(${blur}px)`,
-          transition: transitionStyle,
-          willChange: "backdrop-filter",
+          backdropFilter: `blur(${blurAmount}px)`,
+          WebkitBackdropFilter: `blur(${blurAmount}px)`,
+          transitionDuration: `${durationMs}ms`,
         }}
         aria-hidden="true"
       />
@@ -130,8 +105,8 @@ export function useBlurOnTop(options: UseBlurOnTopOptions = {}): UseBlurOnTopRet
 
   return {
     isActive,
-    opacity: isActive ? 1 : 0,
-    blur,
+    opacity: isFading ? 0 : 1,
+    blur: isFading ? 0 : blurAmount,
     fadeIn,
     fadeOut,
     BlurOverlay,

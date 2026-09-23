@@ -47,7 +47,38 @@ export const deeplinkApi = {
     deeplinkServer.on('error', (e) => {
       if (e.code === 'EADDRINUSE') {
         deeplinkApi.isPrimary = false;
-        console.log("Deeplink server port in use. Secondary instance will be killed by frontend.");
+        console.log("[Deeplink] Port 45555 is in use. Secondary instance detected. Forwarding args to primary...");
+        const argsToForward = process.argv.slice(2);
+        const postData = JSON.stringify(argsToForward);
+        const req = http.request({
+          hostname: '127.0.0.1',
+          port: 45555,
+          path: '/deeplink',
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Content-Length': Buffer.byteLength(postData),
+          },
+        }, () => {
+          console.log("[Deeplink] Arguments successfully forwarded to primary instance. Terminating secondary instance.");
+          if (extContext) {
+            extContext.callApi("app.exit").catch(() => process.exit(0));
+          } else {
+            process.exit(0);
+          }
+        });
+
+        req.on('error', (err) => {
+          console.warn("[Deeplink] Failed to forward args to primary instance:", err.message);
+          if (extContext) {
+            extContext.callApi("app.exit").catch(() => process.exit(0));
+          } else {
+            process.exit(0);
+          }
+        });
+
+        req.write(postData);
+        req.end();
       }
     });
   }

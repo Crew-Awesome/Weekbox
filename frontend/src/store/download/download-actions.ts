@@ -1,5 +1,4 @@
 import { toast } from "../../utils/toast";
-import { isWindowUnfocused } from "../../utils/hooks/use-notifications";
 import { DownloadStatus } from "../download-constants";
 import type {
   ActiveDownloadTask,
@@ -94,7 +93,6 @@ export async function handleStartDownload(
       toast.dismiss(finishedTask.toastId);
     }
 
-    const isUnfocused = isWindowUnfocused();
     const osNotifySetting =
       typeof window !== "undefined"
         ? localStorage.getItem("wb_os_notify_download") !== "false"
@@ -104,7 +102,7 @@ export async function handleStartDownload(
         ? localStorage.getItem("wb_toast_notify_download") !== "false"
         : true;
 
-    if (osNotifySetting && isUnfocused) {
+    if (osNotifySetting) {
       try {
         await deps.notification.showNotification({
           title: "WeekBox - Download Complete",

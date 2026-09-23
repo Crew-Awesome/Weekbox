@@ -7,12 +7,46 @@ import type { IPlatformTransport, IPlatformEvents } from "@contracts";
 export class DesktopTransport implements IPlatformTransport, IPlatformEvents {
   private eventListeners: Map<string, Set<(data: any) => void>> = new Map();
 
-  call<Operation extends BackendOperation>(
+  async call<Operation extends BackendOperation>(
     operation: Operation,
     params?: unknown,
     signal?: AbortSignal,
     timeoutMs?: number
   ): Promise<BackendResult<Operation>> {
+    if (operation === "http.fetchJson" || operation === "http.fetchText") {
+      const p = (params as any) || {};
+      const timeout = timeoutMs ?? 15000;
+      if (window.NODE?.call) {
+        try {
+          return await window.NODE.call<BackendResult<Operation>>(
+            operation,
+            params,
+            timeout,
+            signal
+          );
+        } catch (nodeErr) {
+          console.warn(
+            `[DesktopTransport] Node backend failed for ${operation}, falling back to web fetch:`,
+            nodeErr
+          );
+        }
+      }
+      try {
+        const response = await fetch(p.url, { ...p.options, signal });
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        if (operation === "http.fetchJson") {
+          return (await response.json()) as BackendResult<Operation>;
+        }
+        return (await response.text()) as BackendResult<Operation>;
+      } catch (fetchErr) {
+        throw new Error(
+          `Fetch failed for ${p?.url}: ${fetchErr instanceof Error ? fetchErr.message : String(fetchErr)}`
+        );
+      }
+    }
+
     if (!window.NODE?.call) {
       return Promise.reject(new Error("The Node backend is not available."));
     }

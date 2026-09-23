@@ -24,7 +24,7 @@ export const InstancesTopbar: React.FC<InstancesTopbarProps> = ({
   onSelectCategory,
 }) => {
   const desktopEngineOptions = React.useMemo(() => {
-    return getSupportedEngineCategories(false).map((cat) => ({
+    return getSupportedEngineCategories().map((cat) => ({
       label: cat.id === "vslice" ? "Base Game" : cat.name,
       value: cat.id,
       icon: cat.icon,
@@ -32,7 +32,7 @@ export const InstancesTopbar: React.FC<InstancesTopbarProps> = ({
   }, []);
 
   const mobileEngineCategories = React.useMemo(() => {
-    return getSupportedEngineCategories(true);
+    return getSupportedEngineCategories();
   }, []);
 
   const containerRef = React.useRef<HTMLDivElement>(null);

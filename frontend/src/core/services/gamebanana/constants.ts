@@ -68,20 +68,24 @@ export const GB_BASE_URL = "https://gamebanana.com/apiv11";
 
 /**
  * @description Returns the engine categories allowed on the current platform.
- * On mobile/Android, only pslice and vslice are available for category filtering and engine selection.
+ * In Capacitor (native mobile environment), it is strictly limited to pslice, codename, and vslice.
+ * In web and PC (desktop), all engines are available.
  */
-export function getSupportedEngineCategories(isMobileOverride?: boolean): Array<{
+export function getSupportedEngineCategories(isCapacitorOverride?: boolean): Array<{
   key: number;
   id: string;
   name: string;
   icon: string;
 }> {
-  const canLaunch = platform.capabilities.canLaunchProcesses;
-  const isMobile = isMobileOverride ?? (isMobilePlatform() || !canLaunch);
+  const isCapacitor =
+    isCapacitorOverride !== undefined
+      ? isCapacitorOverride
+      : (platform.platformName === "capacitor" || isMobilePlatform());
+
   return Object.entries(ENGINE_CATEGORIES)
     .filter(([_, cat]) => {
-      if (isMobile) {
-        return cat.id === "pslice" || cat.id === "vslice";
+      if (isCapacitor) {
+        return cat.id === "pslice" || cat.id === "codename" || cat.id === "vslice";
       }
       return true;
     })

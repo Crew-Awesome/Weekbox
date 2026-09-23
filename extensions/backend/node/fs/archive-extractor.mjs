@@ -70,7 +70,104 @@ export async function getBundled7zPath() {
 }
 
 /**
- * Parses extraction output lines to extract relative file paths.
+ * Validates whether an archive entry path resolves strictly within the destination directory,
+ * preventing Directory Traversal / Zip Slip attacks.
+ *
+ * @param {string} destinationBase - The target extraction directory.
+ * @param {string} relativeOrResolvedPath - The path found in or extracted from the archive.
+ * @returns {boolean} True if safely contained within destinationBase, false otherwise.
+ */
+export function isSafeExtractionPath(destinationBase, relativeOrResolvedPath) {
+  if (!destinationBase || !relativeOrResolvedPath) return false;
+  if (typeof destinationBase !== "string" || typeof relativeOrResolvedPath !== "string") return false;
+
+  // Reject paths with null bytes or suspicious characters
+  if (relativeOrResolvedPath.includes("\0")) return false;
+
+  const resolvedBase = path.resolve(destinationBase);
+  const resolvedTarget = path.isAbsolute(relativeOrResolvedPath)
+    ? path.resolve(relativeOrResolvedPath)
+    : path.resolve(resolvedBase, relativeOrResolvedPath);
+
+  const relative = path.relative(resolvedBase, resolvedTarget);
+  // If the relative path starts with '..' or is root/empty outside, it escapes the target directory
+  if (relative.startsWith("..") || path.isAbsolute(relative)) {
+    return false;
+  }
+
+  // On Windows, also verify drive letters match
+  if (isWin) {
+    const baseRoot = path.parse(resolvedBase).root.toLowerCase();
+    const targetRoot = path.parse(resolvedTarget).root.toLowerCase();
+    if (baseRoot !== targetRoot) {
+      return false;
+    }
+  }
+
+  return true;
+}
+
+/**
+ * Recursively scans an extracted folder to ensure no file or symlink escapes the base folder.
+ * If any malicious traversal entry or external symlink is detected, it is immediately removed (quarantined).
+ *
+ * @param {string} baseFolder - The target extraction folder to sanitize.
+ * @returns {Promise<string[]>} List of quarantined file paths, if any.
+ */
+export async function sanitizeExtractedDirectory(baseFolder) {
+  const resolvedBase = path.resolve(baseFolder);
+  const quarantined = [];
+
+  async function scan(currentDir) {
+    let entries;
+    try {
+      entries = await fs.readdir(currentDir, { withFileTypes: true });
+    } catch {
+      return;
+    }
+
+    for (const entry of entries) {
+      const fullPath = path.join(currentDir, entry.name);
+
+      if (!isSafeExtractionPath(resolvedBase, fullPath)) {
+        quarantined.push(fullPath);
+        await fs.rm(fullPath, { recursive: true, force: true }).catch(() => {});
+        continue;
+      }
+
+      if (entry.isSymbolicLink()) {
+        try {
+          const target = await fs.readlink(fullPath);
+          const resolvedLink = path.isAbsolute(target)
+            ? path.resolve(target)
+            : path.resolve(path.dirname(fullPath), target);
+
+          if (!isSafeExtractionPath(resolvedBase, resolvedLink)) {
+            quarantined.push(fullPath);
+            await fs.unlink(fullPath).catch(() => {});
+            continue;
+          }
+        } catch {
+          await fs.unlink(fullPath).catch(() => {});
+          continue;
+        }
+      }
+
+      if (entry.isDirectory()) {
+        await scan(fullPath);
+      }
+    }
+  }
+
+  await scan(resolvedBase);
+  if (quarantined.length > 0) {
+    console.warn(`[Security Alert] Zip Slip / Traversal attempt blocked! Quarantined ${quarantined.length} unsafe entries:`, quarantined);
+  }
+  return quarantined;
+}
+
+/**
+ * Parses extraction output lines to extract relative file paths with path traversal protection.
  * @param {string} rawLine
  * @returns {string|null}
  */
@@ -79,21 +176,36 @@ export function parseExtractedFileName(rawLine) {
   const line = rawLine.trim();
   if (!line) return null;
 
+  const filterCandidate = (candidate) => {
+    if (!candidate) return null;
+    const trimmed = candidate.trim();
+    if (trimmed.endsWith("/") || trimmed.endsWith("\\")) return null;
+    // Check against Zip Slip / Traversal patterns
+    if (
+      trimmed.includes("..") ||
+      trimmed.startsWith("/") ||
+      trimmed.startsWith("\\") ||
+      /^[a-zA-Z]:/.test(trimmed) ||
+      trimmed.includes("\0")
+    ) {
+      console.warn(`[Security] Filtered traversal or unsafe entry: "${trimmed}"`);
+      return null;
+    }
+    return trimmed;
+  };
+
   const match7z = line.match(/^Extracting\s+(.+)$/i);
   if (match7z) {
-    const candidate = match7z[1].trim();
-    return candidate.endsWith("/") || candidate.endsWith("\\") ? null : candidate;
+    return filterCandidate(match7z[1]);
   }
 
   const matchUnzip = line.match(/^(?:inflating|extracting):\s+(.+)$/i);
   if (matchUnzip) {
-    const candidate = matchUnzip[1].trim();
-    return candidate.endsWith("/") || candidate.endsWith("\\") ? null : candidate;
+    return filterCandidate(matchUnzip[1]);
   }
 
   if (line.startsWith("x ")) {
-    const candidate = line.substring(2).trim();
-    return candidate.endsWith("/") || candidate.endsWith("\\") ? null : candidate;
+    return filterCandidate(line.substring(2));
   }
 
   if (
@@ -104,9 +216,7 @@ export function parseExtractedFileName(rawLine) {
     !line.startsWith("Everything") &&
     (line.includes("/") || line.includes("\\") || line.includes("."))
   ) {
-    if (!line.endsWith("/") && !line.endsWith("\\")) {
-      return line;
-    }
+    return filterCandidate(line);
   }
 
   return null;
@@ -229,6 +339,8 @@ export const archiveExtractorApi = {
     } else {
       commandsToTry.push(`tar -xvf ${qArchive} -C ${qDest}`);
       if (q7z) commandsToTry.push(`${q7z} x -y -aoa -o${qDest} ${qArchive}`);
+      const psSafeScript = `$zip = [System.IO.Compression.ZipFile]::OpenRead('${normalizedArchive.replace(/'/g, "''")}'); $dest = [System.IO.Path]::GetFullPath('${normalizedDest.replace(/'/g, "''")}'); foreach ($entry in $zip.Entries) { $target = [System.IO.Path]::GetFullPath([System.IO.Path]::Combine($dest, $entry.FullName)); if ($target.StartsWith($dest, [System.StringComparison]::OrdinalIgnoreCase)) { if ($entry.FullName.EndsWith('/') -or $entry.FullName.EndsWith('\\')) { [System.IO.Directory]::CreateDirectory($target) | Out-Null; } else { $dir = [System.IO.Path]::GetDirectoryName($target); if (-not [System.IO.Directory]::Exists($dir)) { [System.IO.Directory]::CreateDirectory($dir) | Out-Null }; [System.IO.Compression.ZipFileExtensions]::ExtractToFile($entry, $target, $true); } } }; $zip.Dispose();`;
+      commandsToTry.push(`powershell -NoProfile -NonInteractive -Command "Add-Type -AssemblyName System.IO.Compression.FileSystem; ${psSafeScript}"`);
       const psCommand = `powershell -NoProfile -NonInteractive -Command "Expand-Archive -LiteralPath '${normalizedArchive.replace(/'/g, "''")}' -DestinationPath '${normalizedDest.replace(/'/g, "''")}' -Force"`;
       commandsToTry.push(psCommand);
     }
@@ -250,6 +362,13 @@ export const archiveExtractorApi = {
       throw new Error(
         `Failed to extract archive "${archivePath}". Attempted commands:\n${errors.join("\n")}`
       );
+    }
+
+    // Zip Slip and Path Traversal security audit after extraction
+    try {
+      await sanitizeExtractedDirectory(destFolder);
+    } catch (secErr) {
+      console.warn(`[fs.extractArchive] Warning during post-extraction security sanitization:`, secErr);
     }
 
     try {

@@ -18,6 +18,7 @@ import {
   AlertTriangle,
   Layers,
   X,
+  User,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { type ModalViewProps, formatFileSize } from "./types";
@@ -76,6 +77,22 @@ export const MobileView: React.FC<MobileViewProps> = ({
   const playStatus = useProcessStore((s) => s.getPlayState(modInstanceKey));
   const isStorageMigrating = useStorageMigrationStore((s) => s.isMigrating);
   const [activeTab, setActiveTab] = useState<ModModalTab>("description");
+
+  const authorAvatar = useMemo(() => {
+    if (displayCard?.userPfp) return displayCard.userPfp;
+    const authorLower = (displayCard?.author || "").trim().toLowerCase();
+    return displayCard?.credits
+      ?.flatMap((g) => g.authors || [])
+      ?.find(
+        (a) =>
+          a.name?.trim().toLowerCase() === authorLower && Boolean(a.avatarUrl)
+      )?.avatarUrl;
+  }, [displayCard?.userPfp, displayCard?.credits, displayCard?.author]);
+  const [avatarError, setAvatarError] = useState(false);
+
+  useEffect(() => {
+    setAvatarError(false);
+  }, [authorAvatar]);
 
   const mobileContainerRef = useRef<HTMLDivElement>(null);
   const [isHeaderVisible, setIsHeaderVisible] = useState(true);
@@ -737,7 +754,7 @@ export const MobileView: React.FC<MobileViewProps> = ({
 
               {isInstalled && isEngineDropdownOpen && (
                 <div className="absolute left-0 top-full mt-1.5 z-50 min-w-[210px] bg-[var(--wb-surface-container-highest)] border border-[var(--wb-outline-variant)]/60 rounded-xl shadow-2xl p-1.5 flex flex-col gap-0.5 animate-in fade-in slide-in-from-top-1 duration-150">
-                  {getSupportedEngineCategories(true).map((cat) => {
+                  {getSupportedEngineCategories().map((cat) => {
                     const isSelected =
                       String(cat.id).toLowerCase() === String(displayCard.engineId).toLowerCase() ||
                       cat.name.toLowerCase() === engineName.toLowerCase();
@@ -969,7 +986,28 @@ export const MobileView: React.FC<MobileViewProps> = ({
           {displayCard.description}
         </p>
       )}
-      <span className="text-[var(--wb-on-surface-variant)] text-xs block">by {displayCard.author || "Unknown"}</span>
+      <div className="flex items-center gap-1.5 mt-1 mb-0.5">
+        <span className="text-[var(--wb-on-surface-variant)] text-xs">
+          by
+        </span>
+        <div className="flex items-center gap-1.5 min-w-0">
+          {authorAvatar && !avatarError ? (
+            <img
+              src={authorAvatar}
+              alt={displayCard?.author || "Author"}
+              className="w-4.5 h-4.5 rounded-full object-cover shrink-0 border border-white/10 shadow-sm"
+              onError={() => setAvatarError(true)}
+            />
+          ) : (
+            <div className="w-4.5 h-4.5 rounded-full bg-[var(--wb-surface-container-highest)] flex items-center justify-center shrink-0 border border-white/10">
+              <User className="w-2.5 h-2.5 text-[var(--wb-on-surface-variant)] opacity-70" />
+            </div>
+          )}
+          <span className="text-[var(--wb-on-surface)] text-xs font-semibold truncate">
+            {displayCard?.author || "Unknown"}
+          </span>
+        </div>
+      </div>
       <ModNavPills
         activeTab={activeTab}
         onChangeTab={setActiveTab}

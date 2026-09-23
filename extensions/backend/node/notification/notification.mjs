@@ -141,20 +141,30 @@ Start-Sleep -Milliseconds 1200
           }
         });
       } else if (platform === "darwin") {
-        const cleanContent = safeContent.replace(/["`$\\]/g, "");
-        const cleanTitle = safeTitle.replace(/["`$\\]/g, "");
+        const cleanContent = safeContent.replace(/["\\]/g, " ");
+        const cleanTitle = safeTitle.replace(/["\\]/g, " ");
         const script = `display notification "${cleanContent}" with title "WeekBox" subtitle "${cleanTitle}"`;
-        exec(`osascript -e "${script}"`, (error) => {
-          if (error) {
-            console.warn("[notification.mjs] osascript notification error:", error);
+        const child = spawn("osascript", ["-e", script], { stdio: "ignore" });
+        child.on("close", (code) => {
+          if (code !== 0) {
+            console.warn("[notification.mjs] osascript exit code:", code);
             if (typeof callApi === "function") {
               return callApi("os", "showNotification", { title: safeTitle, content: safeContent, icon })
-                .then((r) => resolve(r ?? { ok: true }))
-                .catch(() => resolve({ ok: false, error: String(error) }));
+                .then((r) => resolve(r ?? { ok: true, method: "neutralino-os" }))
+                .catch(() => resolve({ ok: false, error: `osascript exited with code ${code}` }));
             }
-            return resolve({ ok: false, error: String(error) });
+            return resolve({ ok: false, error: `osascript exited with code ${code}` });
           }
           resolve({ ok: true, method: "darwin-osascript" });
+        });
+        child.on("error", (err) => {
+          console.warn("[notification.mjs] osascript spawn error:", err);
+          if (typeof callApi === "function") {
+            return callApi("os", "showNotification", { title: safeTitle, content: safeContent, icon })
+              .then((r) => resolve(r ?? { ok: true, method: "neutralino-os" }))
+              .catch(() => resolve({ ok: false, error: String(err) }));
+          }
+          resolve({ ok: false, error: String(err) });
         });
       } else {
         const cleanContent = safeContent.replace(/["`$\\]/g, "");

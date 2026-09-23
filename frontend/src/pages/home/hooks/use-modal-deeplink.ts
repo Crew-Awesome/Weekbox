@@ -71,6 +71,8 @@ const mapGameBananaMod = (mod: any, baseCard?: ModItem | null): ModItem => {
     views: mod.views ?? (baseCard as any)?.views,
     likes: mod.likes ?? (baseCard as any)?.likes,
     downloads: mod.downloads ?? (baseCard as any)?.downloads,
+    userPfp: mod.userPfp || (baseCard as any)?.userPfp,
+    userId: mod.userId || (baseCard as any)?.userId,
   };
 };
 

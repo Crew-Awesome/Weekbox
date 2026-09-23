@@ -86,7 +86,20 @@ Start-Sleep -Milliseconds 1200
         } catch {}
       }
 
-      // Fallback 2: Direct Neutralino OS Notification
+      // Fallback 2: Direct macOS osascript via Neutralino execCommand
+      if (typeof window !== "undefined" && window.Neutralino?.os?.execCommand && window.NL_OS === "Darwin") {
+        try {
+          const cleanTitle = (options.title || "WeekBox").replace(/["\\]/g, " ");
+          const cleanContent = (options.content || "").replace(/["\\]/g, " ");
+          await (window.Neutralino.os as any).execCommand(
+            `osascript -e 'display notification "${cleanContent}" with title "WeekBox" subtitle "${cleanTitle}"'`,
+            { background: true }
+          );
+          return { ok: true, method: "neutralino-exec-darwin" };
+        } catch {}
+      }
+
+      // Fallback 3: Direct Neutralino OS Notification
       if (typeof window !== "undefined" && window.Neutralino?.os?.showNotification) {
         try {
           await window.Neutralino.os.showNotification(

@@ -75,6 +75,8 @@ export function useAllMods(
     [loading, loadingMore, hasMore, setPage],
   );
 
+  const { isOnline } = Utils.hooks.useNetwork();
+
   Utils.hooks.useNetworkRecovery(() => {
     if (mods.length === 0) {
       setRetryTrigger((prev) => prev + 1);
@@ -82,7 +84,7 @@ export function useAllMods(
   });
 
   useEffect(() => {
-    if (featuredPool.length > 0) return;
+    if (!isOnline || featuredPool.length > 0) return;
     Core.services.gamebanana
       .getFeaturedMods()
       .then((featuredItems) => {
@@ -99,8 +101,11 @@ export function useAllMods(
 
         setFeaturedPool(pool);
       })
-      .catch(console.error);
-  }, [retryTrigger, featuredPool.length, setFeaturedPool]);
+      .catch((err) => {
+        Utils.hooks.setNetworkOnline(false);
+        console.error(err);
+      });
+  }, [retryTrigger, featuredPool.length, setFeaturedPool, isOnline]);
 
   useEffect(() => {
     if (mods.length > 0) {
@@ -120,6 +125,13 @@ export function useAllMods(
     let isMounted = true;
 
     const fetchMods = async () => {
+      if (!isOnline) {
+        if (isMounted) {
+          setLoading(false);
+          setLoadingMore(false);
+        }
+        return;
+      }
       try {
         setHasError(false);
 
@@ -162,6 +174,7 @@ export function useAllMods(
           }
         }
       } catch (error) {
+        Utils.hooks.setNetworkOnline(false);
         console.error("Failed to fetch mods:", error);
         if (isMounted) {
           setHasError(true);
@@ -188,7 +201,7 @@ export function useAllMods(
     return () => {
       isMounted = false;
     };
-  }, [page, retryTrigger, currentParamsKey, filter, engineIds, searchQuery, loadedParamsKey, mods.length, setMods, setHasMore, setLoadedParamsKey]);
+  }, [page, retryTrigger, currentParamsKey, filter, engineIds, searchQuery, loadedParamsKey, mods.length, setMods, setHasMore, setLoadedParamsKey, isOnline]);
 
   const combinedMods = useMemo(() => {
     const result = [...mods];

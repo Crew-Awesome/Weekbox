@@ -50,9 +50,9 @@ export const LibraryFilterPopover: React.FC<LibraryFilterPopoverProps> = ({
         type="button"
         onClick={onRefresh}
         title="Refresh library"
-        className="p-3 rounded-2xl flex items-center justify-center border bg-[var(--wb-surface-container-high)] hover:bg-[var(--wb-surface-container-highest)] border-[var(--wb-outline-variant)]/60 text-[var(--wb-on-surface)] transition-colors cursor-pointer"
+        className="h-10 w-10 md:h-14 md:w-14 rounded-2xl flex items-center justify-center border bg-[var(--wb-surface-container-high)] hover:bg-[var(--wb-surface-container-highest)] border-[var(--wb-outline-variant)]/60 text-[var(--wb-on-surface)] transition-colors cursor-pointer"
       >
-        <RefreshCw className={`w-6 h-6 ${isLoading ? "animate-spin" : ""}`} />
+        <RefreshCw className={`w-5 h-5 md:w-6 md:h-6 ${isLoading ? "animate-spin" : ""}`} />
       </button>
 
       <div className="relative" ref={filtersRef}>
@@ -60,13 +60,13 @@ export const LibraryFilterPopover: React.FC<LibraryFilterPopoverProps> = ({
           type="button"
           onClick={() => setShowFilters((prev) => !prev)}
           title="Filter & Sort"
-          className={`p-3 rounded-2xl flex items-center justify-center border transition-colors cursor-pointer ${
+          className={`h-10 w-10 md:h-14 md:w-14 rounded-2xl flex items-center justify-center border transition-colors cursor-pointer ${
             showFilters || isFilterActive
-              ? "bg-[var(--wb-primary)] border-[var(--wb-primary)] text-[var(--wb-on-primary)] shadow-sm"
+              ? "bg-[var(--wb-surface-container-highest)] border-[var(--wb-primary)] text-[var(--wb-primary)] shadow-sm"
               : "bg-[var(--wb-surface-container-high)] hover:bg-[var(--wb-surface-container-highest)] border-[var(--wb-outline-variant)]/60 text-[var(--wb-on-surface)]"
           }`}
         >
-          <Filter className="w-6 h-6" />
+          <Filter className="w-5 h-5 md:w-6 md:h-6" />
         </button>
 
         {showFilters && (

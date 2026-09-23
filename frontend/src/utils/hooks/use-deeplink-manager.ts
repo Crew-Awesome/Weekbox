@@ -69,7 +69,7 @@ export function useDeeplinkManager() {
       }
 
       try {
-        if (isStartup) {
+        if (isStartup && window.NL_OS === "Windows") {
           await Core.window.setSize(1280, 720).catch(() => {});
           await Core.window.center().catch(() => {});
         }

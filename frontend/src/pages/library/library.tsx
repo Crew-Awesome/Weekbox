@@ -212,22 +212,7 @@ export const Library: React.FC = () => {
         </Shared.atoms.Titles>
 
         {isLoading && installedMods.length === 0 && activeFileIds.length === 0 && (
-          <div
-            className="grid gap-4 sm:gap-6 -mx-8 sm:mx-0 h-auto w-auto grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4"
-            style={{ gridAutoFlow: "row dense" }}
-          >
-            {Array.from({ length: 8 }).map((_, i) => (
-              <div key={`skel-lib-${i}`} className="h-full">
-                <Shared.molecules.Card
-                  isLoading
-                  title="Loading"
-                  description="Loading description"
-                  thumbnail="skeleton"
-                  icon="skeleton"
-                />
-              </div>
-            ))}
-          </div>
+          <Shared.atoms.LoadingContent text="library" size="lg" />
         )}
 
         {showFavoritesOnly && !isLoading && totalFavoritesCount === 0 && (

@@ -34,15 +34,57 @@ interface HomeState {
   resetState: () => void;
 }
 
+const HOME_SORT_STORAGE_KEY = "wb_home_sort";
+const HOME_CATEGORIES_STORAGE_KEY = "wb_home_categories";
+
+function loadSavedHomeSort(): string {
+  if (typeof window === "undefined") return "popular";
+  try {
+    const raw = localStorage.getItem(HOME_SORT_STORAGE_KEY);
+    if (raw && ["popular", "new", "ripe", "updated"].includes(raw)) {
+      return raw;
+    }
+  } catch (e) {
+    console.warn("Could not load home sort from storage:", e);
+  }
+  return "popular";
+}
+
+function loadSavedHomeCategories(): string[] {
+  if (typeof window === "undefined") return ["all"];
+  try {
+    const raw = localStorage.getItem(HOME_CATEGORIES_STORAGE_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        return parsed;
+      }
+    }
+  } catch (e) {
+    console.warn("Could not load home categories from storage:", e);
+  }
+  return ["all"];
+}
+
 export const useHomeStore = create<HomeState>((set) => ({
   searchQuery: "",
   setSearchQuery: (query) => set({ searchQuery: query }),
 
-  sortFilter: "popular",
-  setSortFilter: (val) => set({ sortFilter: val }),
+  sortFilter: loadSavedHomeSort(),
+  setSortFilter: (val) => {
+    try {
+      localStorage.setItem(HOME_SORT_STORAGE_KEY, val);
+    } catch {}
+    set({ sortFilter: val });
+  },
 
-  categoryFilter: ["all"],
-  setCategoryFilter: (val) => set({ categoryFilter: val }),
+  categoryFilter: loadSavedHomeCategories(),
+  setCategoryFilter: (val) => {
+    try {
+      localStorage.setItem(HOME_CATEGORIES_STORAGE_KEY, JSON.stringify(val));
+    } catch {}
+    set({ categoryFilter: val });
+  },
 
   mods: [],
   setMods: (updater) =>

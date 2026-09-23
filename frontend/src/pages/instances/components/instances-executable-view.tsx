@@ -2,6 +2,8 @@ import React, { useState, useEffect } from "react";
 import DOMPurify from "dompurify";
 import { ModMediaCarousel } from "../../home/components/mod-details-modal/components/mod-media-carousel";
 import { ModCreditsView } from "../../home/components/mod-details-modal/components/mod-credits-view";
+import { OfflineContent } from "@components";
+import Utils from "@utils";
 import {
   HardDrive,
   Layers,
@@ -34,6 +36,7 @@ interface InstancesExecutableViewProps {
  * 6. Rich mod details and statistics (views, likes, downloads, dates, size, rating)
  */
 export const InstancesExecutableView: React.FC<InstancesExecutableViewProps> = ({ mod }) => {
+  const { isOnline } = Utils.hooks.useNetwork();
   const [activeMediaIndex, setActiveMediaIndex] = useState(0);
   const [isHovered, setIsHovered] = useState(false);
 
@@ -70,6 +73,18 @@ export const InstancesExecutableView: React.FC<InstancesExecutableViewProps> = (
     : "No description provided.";
 
   if (!mod) {
+    if (!isOnline) {
+      return (
+        <div className="flex-1 flex flex-col items-center justify-center p-6 sm:p-12 w-full h-full">
+          <OfflineContent
+            title="You're Offline"
+            message="No installed executable mods found. Please connect to the internet to download mods."
+            size="lg"
+          />
+        </div>
+      );
+    }
+
     return (
       <div className="flex-1 flex flex-col items-center justify-center p-16 text-center opacity-60">
         <HardDrive className="w-16 h-16 mb-4 text-[var(--wb-on-surface-variant)]" />

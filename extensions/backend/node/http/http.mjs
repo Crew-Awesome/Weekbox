@@ -89,28 +89,39 @@ export const httpApi = {
    * @returns {Promise<void>}
    */
   async downloadToFile({ url, destPath, options = {}, signal, onProgress }) {
-    const res = await fetchWithTimeout(url, options, 300000, 1, signal);
+    const res = await fetchWithTimeout(url, {
+      ...options,
+      headers: {
+        'User-Agent': 'WeekBox/3.0.0 (Macintosh; Intel Mac OS X 10_15_7)',
+        'Accept': '*/*',
+        ...(options.headers || {}),
+      },
+    }, 300000, 1, signal);
     if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
     
     const total = Number(res.headers.get('content-length')) || 0;
     
     const nodeStream = Readable.fromWeb(res.body);
-    const writeStream = fs.createWriteStream(destPath);
+    const writeStream = fs.createWriteStream(destPath, { highWaterMark: 1024 * 1024 });
 
     let downloaded = 0;
     let lastReportTime = 0;
 
-    nodeStream.on('data', (chunk) => {
-      downloaded += chunk.length;
-      const now = Date.now();
-      if (onProgress && now - lastReportTime > 250) {
-        onProgress(downloaded, total);
-        lastReportTime = now;
-      }
+    const progressTransform = new Transform({
+      highWaterMark: 1024 * 1024,
+      transform(chunk, _encoding, callback) {
+        downloaded += chunk.length;
+        const now = Date.now();
+        if (onProgress && now - lastReportTime > 250) {
+          onProgress(downloaded, total);
+          lastReportTime = now;
+        }
+        callback(null, chunk);
+      },
     });
     
     try {
-      await pipeline(nodeStream, writeStream);
+      await pipeline(nodeStream, progressTransform, writeStream);
       if (onProgress) onProgress(downloaded, downloaded);
     } catch (error) {
       await fs.promises.rm(destPath, { force: true }).catch(() => {});

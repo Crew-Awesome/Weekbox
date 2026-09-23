@@ -24,25 +24,100 @@ export const VSLICE_PLAYSTORE_SCREENSHOTS = [
   "/assets/images/carousel-base/base-game-preview (8).webp",
 ];
 
+const INSTANCES_CATEGORY_STORAGE_KEY = "wb_instances_category";
+const INSTANCES_SORT_STORAGE_KEY = "wb_instances_sort";
+const INSTANCES_ONLY_INSTALLED_STORAGE_KEY = "wb_instances_only_installed";
+
+function loadSavedInstancesCategory(): string {
+  if (typeof window === "undefined") return "vslice";
+  try {
+    const raw = localStorage.getItem(INSTANCES_CATEGORY_STORAGE_KEY);
+    if (raw && typeof raw === "string") {
+      const trimmed = raw.trim().toLowerCase();
+      const isValid = Object.values(ENGINE_CATEGORIES).some(
+        (c) => c.id.toLowerCase() === trimmed
+      );
+      if (isValid) return trimmed;
+    }
+  } catch (e) {
+    console.warn("Could not load instances category from storage:", e);
+  }
+  return "vslice";
+}
+
+function loadSavedInstancesSort(): InstanceSortOption {
+  if (typeof window === "undefined") return "newest";
+  try {
+    const raw = localStorage.getItem(INSTANCES_SORT_STORAGE_KEY);
+    if (raw && ["newest", "oldest", "version", "date"].includes(raw)) {
+      return raw as InstanceSortOption;
+    }
+  } catch (e) {
+    console.warn("Could not load instances sort from storage:", e);
+  }
+  return "newest";
+}
+
+function loadSavedInstancesOnlyInstalled(): boolean {
+  if (typeof window === "undefined") return false;
+  try {
+    const raw = localStorage.getItem(INSTANCES_ONLY_INSTALLED_STORAGE_KEY);
+    if (raw !== null) {
+      return raw === "true";
+    }
+  } catch (e) {
+    console.warn("Could not load instances onlyInstalled from storage:", e);
+  }
+  return false;
+}
+
 export function useInstances() {
   const location = useLocation();
   const navigate = useNavigate();
   const isInitializedRef = useRef(false);
 
-  const [selectedCategory, setSelectedCategory] = useState<string>("vslice");
-  const [sortOption, setSortOption] = useState<InstanceSortOption>("newest");
-  const [onlyInstalled, setOnlyInstalled] = useState<boolean>(false);
+  const [selectedCategory, setSelectedCategory] = useState<string>(() => {
+    const saved = loadSavedInstancesCategory();
+    const isCapacitorPlatform =
+      platform.platformName === "capacitor" || Core.isMobilePlatform();
+    const isAllowedOnCapacitor =
+      saved === "pslice" || saved === "codename" || saved === "vslice";
+    if (isCapacitorPlatform && !isAllowedOnCapacitor) {
+      return "vslice";
+    }
+    return saved;
+  });
+  const [sortOption, setSortOption] = useState<InstanceSortOption>(loadSavedInstancesSort);
+  const [onlyInstalled, setOnlyInstalled] = useState<boolean>(loadSavedInstancesOnlyInstalled);
 
-  const isMobile = useMemo(() => {
+  useEffect(() => {
+    try {
+      localStorage.setItem(INSTANCES_CATEGORY_STORAGE_KEY, selectedCategory);
+    } catch {}
+  }, [selectedCategory]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(INSTANCES_SORT_STORAGE_KEY, sortOption);
+    } catch {}
+  }, [sortOption]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(INSTANCES_ONLY_INSTALLED_STORAGE_KEY, String(onlyInstalled));
+    } catch {}
+  }, [onlyInstalled]);
+
+  const isCapacitor = useMemo(() => {
     if (typeof window === "undefined") return false;
     return (
       platform.platformName === "capacitor" ||
-      /android|iphone|ipad|ipod/i.test(navigator.userAgent)
+      Core.isMobilePlatform()
     );
   }, []);
   const isBaseGameMobile = useMemo(() => {
-    return isMobile && selectedCategory.toLowerCase() === "vslice";
-  }, [isMobile, selectedCategory]);
+    return isCapacitor && selectedCategory.toLowerCase() === "vslice";
+  }, [isCapacitor, selectedCategory]);
 
   const [isBaseGameInstalled, setIsBaseGameInstalled] = useState<boolean>(false);
 
@@ -108,16 +183,46 @@ export function useInstances() {
     return selectedCategory === "executable" || selectedCategory === "3827";
   }, [selectedCategory]);
 
+  const { isOnline } = Utils.hooks.useNetwork();
+
+  const currentEngineMeta = useMemo(() => {
+    const match = Object.values(ENGINE_CATEGORIES).find(
+      (cat) => cat.id.toLowerCase() === selectedCategory.toLowerCase()
+    );
+    return (
+      match || {
+        id: selectedCategory,
+        name: selectedCategory === "vslice" ? "Base Game" : selectedCategory,
+        icon: "/assets/icons/categories/vslice.png",
+      }
+    );
+  }, [selectedCategory]);
+
+  const [installedEngineMap, setInstalledEngineMap] = useState<Record<string, boolean>>({});
+  const [installedEnginesRegistry, setInstalledEnginesRegistry] = useState<
+    Record<string, Record<string, any>>
+  >({});
+  const [isUninstallConfirmOpen, setIsUninstallConfirmOpen] = useState<boolean>(false);
+
+  /** List of installed versions for the selected category */
+  const installedVersionsForCategory = useMemo(() => {
+    const catData = installedEnginesRegistry[selectedCategory.toLowerCase()];
+    if (!catData) return [];
+    return Object.keys(catData);
+  }, [installedEnginesRegistry, selectedCategory]);
+
   const {
     releases: rawReleases,
     selectedVersion: rawSelectedVersion,
     setSelectedVersion,
-    currentRelease: rawCurrentRelease,
     isLoading: isLoadingReleases,
   } = useEngineReleases(selectedCategory);
 
   const releases = useMemo(() => {
     if (isBaseGameMobile) {
+      if (!isOnline && !isBaseGameInstalled) {
+        return [];
+      }
       const ver = "0.8.8";
       const body = `### About the Game
 Hey, hope you’re enjoying Funkin’ on the go! We’ve been hard at work to make the game better for you:
@@ -143,22 +248,94 @@ Hey, hope you’re enjoying Funkin’ on the go! We’ve been hard at work to ma
         },
       ];
     }
-    return rawReleases;
-  }, [isBaseGameMobile, rawReleases, isBaseGameInstalled]);
+
+    if (!isOnline) {
+      // Offline: only include installed engine versions
+      const installedSet = new Set(
+        installedVersionsForCategory.map((v) => v.toLowerCase().replace(/^v/, ""))
+      );
+      const list = rawReleases.filter((r) =>
+        installedSet.has(r.version.toLowerCase().replace(/^v/, ""))
+      );
+
+      for (const instVer of installedVersionsForCategory) {
+        const cleanInst = instVer.toLowerCase().replace(/^v/, "");
+        const alreadyInList = list.some(
+          (r) => r.version.toLowerCase().replace(/^v/, "") === cleanInst
+        );
+        if (!alreadyInList) {
+          list.push({
+            id: `installed-${instVer}`,
+            version: instVer,
+            name: `${currentEngineMeta.name} v${instVer}`,
+            body: `### ${currentEngineMeta.name} v${instVer}\n\nThis engine version is installed locally on your system.`,
+            releasedAt: null,
+            downloadUrl: null,
+          });
+        }
+      }
+      return list;
+    }
+
+    // Online: include rawReleases plus any local installed versions not present in GitHub
+    const list = [...rawReleases];
+    for (const instVer of installedVersionsForCategory) {
+      const cleanInst = instVer.toLowerCase().replace(/^v/, "");
+      const alreadyInList = list.some(
+        (r) => r.version.toLowerCase().replace(/^v/, "") === cleanInst
+      );
+      if (!alreadyInList) {
+        list.push({
+          id: `installed-${instVer}`,
+          version: instVer,
+          name: `${currentEngineMeta.name} v${instVer}`,
+          body: `### ${currentEngineMeta.name} v${instVer}\n\nThis engine version is installed locally on your system.`,
+          releasedAt: null,
+          downloadUrl: null,
+        });
+      }
+    }
+    return list;
+  }, [
+    isBaseGameMobile,
+    isOnline,
+    isBaseGameInstalled,
+    rawReleases,
+    installedVersionsForCategory,
+    currentEngineMeta.name,
+  ]);
 
   const selectedVersion = useMemo(() => {
-    if (isBaseGameMobile && releases.length > 0) {
+    if (isBaseGameMobile) {
+      return releases.length > 0 ? releases[0].version : "";
+    }
+    if (!isOnline && !isExecutable) {
+      if (releases.length === 0) return "";
+      const match = releases.find(
+        (r) =>
+          r.version.toLowerCase().replace(/^v/, "") ===
+          rawSelectedVersion.toLowerCase().replace(/^v/, "")
+      );
+      if (match) return match.version;
       return releases[0].version;
     }
     return rawSelectedVersion;
-  }, [isBaseGameMobile, releases, rawSelectedVersion]);
+  }, [isBaseGameMobile, isOnline, isExecutable, releases, rawSelectedVersion]);
 
   const currentRelease = useMemo(() => {
+    if (!releases.length) return null;
     if (isBaseGameMobile) {
       return releases[0] || null;
     }
-    return rawCurrentRelease;
-  }, [isBaseGameMobile, releases, rawCurrentRelease]);
+    const cleanSel = selectedVersion.toLowerCase().replace(/^v/, "");
+    return (
+      releases.find(
+        (r) => r.version.toLowerCase().replace(/^v/, "") === cleanSel
+      ) ||
+      releases[0] ||
+      null
+    );
+  }, [isBaseGameMobile, releases, selectedVersion]);
 
   const [installedMods, setInstalledMods] = useState<any[]>([]);
   const [selectedModId, setSelectedModId] = useState<string | null>(null);
@@ -169,12 +346,6 @@ Hey, hope you’re enjoying Funkin’ on the go! We’ve been hard at work to ma
   const cancelEngineDownload = useEngineDownloadStore((s) => s.cancelEngineDownload);
   const setCurrentView = useEngineDownloadStore((s) => s.setCurrentView);
   const setNavigateCallback = useEngineDownloadStore((s) => s.setNavigateCallback);
-
-  const [installedEngineMap, setInstalledEngineMap] = useState<Record<string, boolean>>({});
-  const [installedEnginesRegistry, setInstalledEnginesRegistry] = useState<
-    Record<string, Record<string, any>>
-  >({});
-  const [isUninstallConfirmOpen, setIsUninstallConfirmOpen] = useState<boolean>(false);
 
   /** Parse initial category and version/mod from route path */
   useEffect(() => {
@@ -187,13 +358,22 @@ Hey, hope you’re enjoying Funkin’ on the go! We’ve been hard at work to ma
         (c) => c.id.toLowerCase() === catParam || c.name.toLowerCase() === catParam
       );
       if (matchCat) {
-        if (Core.isMobilePlatform() && (matchCat.id === "executable" || matchCat.id === "3827")) {
+        const isCapacitorPlatform =
+          Core.isMobilePlatform() || platform.platformName === "capacitor";
+        const isAllowedOnCapacitor =
+          matchCat.id === "pslice" ||
+          matchCat.id === "codename" ||
+          matchCat.id === "vslice";
+
+        if (isCapacitorPlatform && !isAllowedOnCapacitor) {
           setSelectedCategory("vslice");
         } else {
           setSelectedCategory(matchCat.id);
         }
       } else if (catParam === "executable" || catParam === "3827") {
-        setSelectedCategory(Core.isMobilePlatform() ? "vslice" : "executable");
+        const isCapacitorPlatform =
+          Core.isMobilePlatform() || platform.platformName === "capacitor";
+        setSelectedCategory(isCapacitorPlatform ? "vslice" : "executable");
       }
 
       if (parts.length > 1) {
@@ -282,6 +462,42 @@ Hey, hope you’re enjoying Funkin’ on the go! We’ve been hard at work to ma
     };
   }, [isExecutable]);
 
+  /**
+   * When offline, if the currently selected category has no installed instances/mods,
+   * automatically switch to the first category that has installed instances or executable mods.
+   */
+  useEffect(() => {
+    if (!isOnline) {
+      const currentHasInstalled = isExecutable
+        ? installedMods.length > 0
+        : isBaseGameMobile
+        ? isBaseGameInstalled
+        : installedVersionsForCategory.length > 0;
+
+      if (!currentHasInstalled) {
+        const catWithInstalled = Object.keys(installedEnginesRegistry).find((cat) => {
+          const versions = installedEnginesRegistry[cat];
+          return versions && Object.keys(versions).length > 0;
+        });
+
+        if (catWithInstalled) {
+          setSelectedCategory(catWithInstalled);
+        } else if (installedMods.length > 0 && !isCapacitor) {
+          setSelectedCategory("executable");
+        }
+      }
+    }
+  }, [
+    isOnline,
+    isExecutable,
+    isBaseGameMobile,
+    isBaseGameInstalled,
+    installedVersionsForCategory.length,
+    installedMods.length,
+    installedEnginesRegistry,
+    isCapacitor,
+  ]);
+
   const selectedMod = useMemo(() => {
     if (!isExecutable || !installedMods.length) return null;
     return (
@@ -290,26 +506,6 @@ Hey, hope you’re enjoying Funkin’ on the go! We’ve been hard at work to ma
       null
     );
   }, [isExecutable, installedMods, selectedModId]);
-
-  const currentEngineMeta = useMemo(() => {
-    const match = Object.values(ENGINE_CATEGORIES).find(
-      (cat) => cat.id.toLowerCase() === selectedCategory.toLowerCase()
-    );
-    return (
-      match || {
-        id: selectedCategory,
-        name: selectedCategory === "vslice" ? "Base Game" : selectedCategory,
-        icon: "/assets/icons/categories/vslice.png",
-      }
-    );
-  }, [selectedCategory]);
-
-  /** List of installed versions for the selected category */
-  const installedVersionsForCategory = useMemo(() => {
-    const catData = installedEnginesRegistry[selectedCategory.toLowerCase()];
-    if (!catData) return [];
-    return Object.keys(catData);
-  }, [installedEnginesRegistry, selectedCategory]);
 
   /** Checks if selected version is installed on disk */
   useEffect(() => {

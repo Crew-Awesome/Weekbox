@@ -84,13 +84,13 @@ export async function handleStartEngineDownload(
         title: "Engine Ready",
       });
 
-      const isUnfocused = typeof document !== "undefined" && (!document.hasFocus() || document.hidden);
       const osNotifySetting =
         typeof window !== "undefined"
-          ? localStorage.getItem("wb_system_notifications") !== "false"
+          ? localStorage.getItem("wb_system_notifications") !== "false" &&
+            localStorage.getItem("wb_os_notify_download") !== "false"
           : true;
 
-      if (osNotifySetting && isUnfocused) {
+      if (osNotifySetting) {
         try {
           await deps.notification.showNotification({
             title: "WeekBox - Engine Ready",

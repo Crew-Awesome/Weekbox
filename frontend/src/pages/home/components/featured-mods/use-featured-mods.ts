@@ -15,6 +15,7 @@ export function useFeaturedMods(
 ) {
   const featuredPool = useHomeStore((state) => state.featuredPool);
   const [featuredMods, setFeaturedMods] = useState<GameBananaMod[]>(featuredPool);
+  const [isLoading, setIsLoading] = useState(featuredPool.length === 0);
   const [retryTrigger, setRetryTrigger] = useState(0);
 
   useEffect(() => {
@@ -31,6 +32,8 @@ export function useFeaturedMods(
     }
   }, [featuredPool, searchQuery]);
 
+  const { isOnline } = Utils.hooks.useNetwork();
+
   Utils.hooks.useNetworkRecovery(() => {
     if (featuredMods.length === 0 && featuredPool.length === 0) {
       setRetryTrigger((prev) => prev + 1);
@@ -39,7 +42,12 @@ export function useFeaturedMods(
 
   useEffect(() => {
     const fetchFeatured = async () => {
+      if (!isOnline) {
+        setIsLoading(false);
+        return;
+      }
       try {
+        setIsLoading(true);
         if (searchQuery.trim().length > 0) {
           const mods = await Core.services.gamebanana.getMods(
             "popular",
@@ -52,6 +60,7 @@ export function useFeaturedMods(
         } else {
           if (featuredPool.length > 0) {
             setFeaturedMods(featuredPool);
+            setIsLoading(false);
             return;
           }
           const mods = await Core.services.gamebanana.getFeaturedMods();
@@ -67,11 +76,14 @@ export function useFeaturedMods(
           }
         }
       } catch (e) {
+        Utils.hooks.setNetworkOnline(false);
         console.error("Failed to load featured mods", e);
+      } finally {
+        setIsLoading(false);
       }
     };
     fetchFeatured();
-  }, [retryTrigger, searchQuery, engineIds, featuredPool.length]);
+  }, [retryTrigger, searchQuery, engineIds, featuredPool.length, isOnline]);
 
   const categories = Array.from(
     new Set(featuredMods.map((m) => m.__featuredLabel).filter(Boolean)),
@@ -80,5 +92,6 @@ export function useFeaturedMods(
   return {
     featuredMods,
     categories,
+    isLoading,
   };
 }

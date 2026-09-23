@@ -19,6 +19,7 @@ import {
   Activity,
   AlertTriangle,
   Layers,
+  User,
 } from "lucide-react";
 import { type ModalViewProps, formatFileSize } from "./types";
 import { ModMediaCarousel, ModThumbnailStrip } from "./components/mod-media-carousel";
@@ -27,7 +28,7 @@ import { ModCreditsView } from "./components/mod-credits-view";
 import { ModDetailsTab } from "./components/mod-details-tab";
 import Core from "@core";
 import Utils from "@utils";
-import { ENGINE_CATEGORIES } from "../../../../core/services/gamebanana/constants";
+import { getSupportedEngineCategories } from "../../../../core/services/gamebanana/constants";
 import {
   useDownloadStore,
   DownloadStatus,
@@ -81,6 +82,22 @@ export const DesktopView: React.FC<DesktopViewProps> = ({
   const isStorageMigrating = useStorageMigrationStore((s) => s.isMigrating);
   const [activeTab, setActiveTab] = useState<ModModalTab>("description");
   const isDropdownOpen = activeTab === "details";
+
+  const authorAvatar = useMemo(() => {
+    if (displayCard.userPfp) return displayCard.userPfp;
+    const authorLower = (displayCard.author || "").trim().toLowerCase();
+    return displayCard.credits
+      ?.flatMap((g) => g.authors || [])
+      ?.find(
+        (a) =>
+          a.name?.trim().toLowerCase() === authorLower && Boolean(a.avatarUrl)
+      )?.avatarUrl;
+  }, [displayCard.userPfp, displayCard.credits, displayCard.author]);
+  const [avatarError, setAvatarError] = useState(false);
+
+  useEffect(() => {
+    setAvatarError(false);
+  }, [authorAvatar]);
 
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   const [titleInput, setTitleInput] = useState(displayCard.name || "");
@@ -666,7 +683,7 @@ export const DesktopView: React.FC<DesktopViewProps> = ({
 
                 {isInstalled && isEngineDropdownOpen && (
                   <div className="absolute left-0 top-full mt-1.5 z-50 min-w-[240px] bg-[var(--wb-surface-container-highest)] border border-[var(--wb-outline-variant)]/60 rounded-xl shadow-2xl p-1.5 flex flex-col gap-0.5 animate-in fade-in slide-in-from-top-1 duration-150">
-                    {Object.values(ENGINE_CATEGORIES).map((cat) => {
+                    {getSupportedEngineCategories().map((cat) => {
                       const isSelected =
                         String(cat.id).toLowerCase() === String(displayCard.engineId).toLowerCase() ||
                         cat.name.toLowerCase() === engineName.toLowerCase();
@@ -908,9 +925,28 @@ export const DesktopView: React.FC<DesktopViewProps> = ({
                   {displayCard.description}
                 </p>
               )}
-              <span className="text-[var(--wb-on-surface-variant)] text-xs md:text-sm mt-1 block">
-                by {displayCard.author || "Unknown"}
-              </span>
+              <div className="flex items-center gap-2 mt-1.5 mb-0.5">
+                <span className="text-[var(--wb-on-surface-variant)] text-xs md:text-sm">
+                  by
+                </span>
+                <div className="flex items-center gap-1.5 min-w-0">
+                  {authorAvatar && !avatarError ? (
+                    <img
+                      src={authorAvatar}
+                      alt={displayCard.author || "Author"}
+                      className="w-5 h-5 md:w-5.5 md:h-5.5 rounded-full object-cover shrink-0 border border-white/10 shadow-sm"
+                      onError={() => setAvatarError(true)}
+                    />
+                  ) : (
+                    <div className="w-5 h-5 md:w-5.5 md:h-5.5 rounded-full bg-[var(--wb-surface-container-highest)] flex items-center justify-center shrink-0 border border-white/10">
+                      <User className="w-3 h-3 md:w-3.5 md:h-3.5 text-[var(--wb-on-surface-variant)] opacity-70" />
+                    </div>
+                  )}
+                  <span className="text-[var(--wb-on-surface)] text-xs md:text-sm font-semibold truncate">
+                    {displayCard.author || "Unknown"}
+                  </span>
+                </div>
+              </div>
               <ModNavPills
                 activeTab={activeTab}
                 onChangeTab={setActiveTab}

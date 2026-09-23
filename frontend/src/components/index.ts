@@ -8,6 +8,8 @@ import { Pill } from "./atoms/pill/pill";
 import { ProgressBar } from "./atoms/progress-bar/progress-bar";
 import Titles from "./atoms/titles/titles";
 import { Toast } from "./atoms/toast";
+import { LoadingContent } from "./atoms/loading-content/loading-content";
+import { OfflineContent } from "./atoms/offline-content/offline-content";
 
 import { Carousel } from "./molecules/Carousel";
 import Banner from "./molecules/banner/banner";
@@ -21,6 +23,7 @@ import { Sidebar } from "./organisms/sidebar/sidebar";
 import { InfoModal } from "./organisms/info-modal/info-modal";
 import { LoadingScreen } from "./organisms/loading-screen/loading-screen";
 import { SettingsModal } from "./organisms/settings-modal/settings-modal";
+import { ErrorBoundary } from "./organisms/error-boundary/error-boundary";
 
 export * from "./atoms/animated-input/animated-input";
 export * from "./atoms/app-version/app-version";
@@ -32,6 +35,8 @@ export * from "./atoms/pill/pill";
 export * from "./atoms/progress-bar/progress-bar";
 export { default as Titles } from "./atoms/titles/titles";
 export * from "./atoms/toast";
+export * from "./atoms/loading-content/loading-content";
+export * from "./atoms/offline-content/offline-content";
 
 export * from "./molecules/Carousel";
 export { default as Banner } from "./molecules/banner/banner";
@@ -45,6 +50,7 @@ export * from "./organisms/sidebar/sidebar";
 export * from "./organisms/info-modal/info-modal";
 export * from "./organisms/loading-screen/loading-screen";
 export * from "./organisms/settings-modal/settings-modal";
+export * from "./organisms/error-boundary/error-boundary";
 
 /**
  * Atomic Design Components Catalog (Atoms, Molecules, Organisms).
@@ -63,6 +69,8 @@ export const Components = {
     ProgressBar,
     Titles,
     Toast,
+    LoadingContent,
+    OfflineContent,
   },
   molecules: {
     Carousel,
@@ -79,6 +87,7 @@ export const Components = {
     InfoModal,
     LoadingScreen,
     SettingsModal,
+    ErrorBoundary,
   },
 };
 

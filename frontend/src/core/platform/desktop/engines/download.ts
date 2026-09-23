@@ -111,9 +111,10 @@ export async function downloadEngine(
     onProgress?.(100, DownloadStatus.COMPLETED);
 
     if (typeof window !== "undefined") {
-      const sysEnabled = localStorage.getItem("wb_system_notifications") !== "false";
-      const isUnfocused = typeof document !== "undefined" && (!document.hasFocus() || document.hidden);
-      if (sysEnabled && isUnfocused) {
+      const sysEnabled =
+        localStorage.getItem("wb_system_notifications") !== "false" &&
+        localStorage.getItem("wb_os_notify_download") !== "false";
+      if (sysEnabled) {
         try {
           await transport.call("notification.show" as any, {
             title: "Engine Installed",

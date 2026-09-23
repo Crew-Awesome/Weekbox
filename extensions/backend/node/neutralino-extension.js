@@ -9,22 +9,46 @@ class NeutralinoExtension {
     this.debugTermColorCALL = "\x1b[91m";
     this.debugTermColorOUT = "\x1b[33m";
 
-    if (process.argv.length > 2) {
-      this.port = process.argv[2].split("=")[1];
-      this.token = process.argv[3].split("=")[1];
-      this.connectToken = "";
-      this.idExtension = process.argv[4].split("=")[1];
-      this.urlSocket = `ws://127.0.0.1:${this.port}?extensionId=${this.idExtension}`;
-    } else {
-      let fs = require("fs");
-      let d = fs.readFileSync(0, "utf-8");
-      let conf = JSON.parse(d);
+    let port = null;
+    let token = null;
+    let connectToken = "";
+    let idExtension = null;
 
-      this.port = conf.nlPort;
-      this.token = conf.nlToken;
-      this.connectToken = conf.nlConnectToken;
-      this.idExtension = conf.nlExtensionId;
-      this.urlSocket = `ws://127.0.0.1:${this.port}?extensionId=${this.idExtension}&connectToken=${this.connectToken}`;
+    for (let i = 2; i < process.argv.length; i++) {
+      const arg = process.argv[i];
+      if (arg.startsWith("--nl-port=")) {
+        port = arg.split("=")[1];
+      } else if (arg.startsWith("--nl-token=")) {
+        token = arg.split("=")[1];
+      } else if (arg.startsWith("--nl-extension-id=")) {
+        idExtension = arg.split("=")[1];
+      } else if (arg.startsWith("--nl-connect-token=")) {
+        connectToken = arg.split("=")[1];
+      }
+    }
+
+    if (port && token && idExtension) {
+      this.port = port;
+      this.token = token;
+      this.connectToken = connectToken;
+      this.idExtension = idExtension;
+      this.urlSocket = connectToken
+        ? `ws://127.0.0.1:${this.port}?extensionId=${this.idExtension}&connectToken=${this.connectToken}`
+        : `ws://127.0.0.1:${this.port}?extensionId=${this.idExtension}`;
+    } else {
+      try {
+        let fs = require("fs");
+        let d = fs.readFileSync(0, "utf-8");
+        let conf = JSON.parse(d);
+
+        this.port = conf.nlPort;
+        this.token = conf.nlToken;
+        this.connectToken = conf.nlConnectToken || "";
+        this.idExtension = conf.nlExtensionId;
+        this.urlSocket = `ws://127.0.0.1:${this.port}?extensionId=${this.idExtension}&connectToken=${this.connectToken}`;
+      } catch (err) {
+        console.warn("Could not read extension config from stdin:", err?.message || err);
+      }
     }
 
     this.socket = undefined;

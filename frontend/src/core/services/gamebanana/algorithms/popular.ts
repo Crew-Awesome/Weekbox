@@ -1,6 +1,7 @@
 import http from "@http";
 import { FNF_GAME_ID, ENGINE_CATEGORIES } from "../constants";
 import { isExcluded } from "../utils";
+import { setNetworkOnline } from "../../../../utils/hooks/use-network";
 /**
  * In-memory cache to store the pagination state and records for the "Popular" algorithm.
  */
@@ -115,6 +116,9 @@ export async function fetchPopularRecords(
       }
 
       if (hasNetworkError && allFetched.length === 0) {
+        try {
+          setNetworkOnline(false);
+        } catch {}
         if (state.records.length === 0) {
           popularCache.delete(cacheKey);
           throw new Error("Failed to fetch popular mods from GameBanana (network error or timeout)");
