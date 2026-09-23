@@ -343,6 +343,19 @@
   flex-shrink: 0;
 }
 
+.sidebar__recent-mod-icon {
+  align-items: center;
+  display: inline-flex;
+  flex-shrink: 0;
+  justify-content: center;
+  width: 20px;
+}
+
+.sidebar__recent-mod-stop {
+  color: #ff4a4a;
+  font-size: 0.9rem;
+}
+
 
 .sidebar__btn--config {
   border-radius: 0;

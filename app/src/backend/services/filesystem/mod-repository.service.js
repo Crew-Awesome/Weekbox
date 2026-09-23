@@ -53,6 +53,14 @@ var _ModRepository = class _ModRepository {
     await this.saveAll(mods);
     return mod;
   }
+  async setLastPlayed(modId, lastPlayedAt = Date.now()) {
+    const mods = await this.getAll();
+    const mod = mods.find((item) => sameId(item.id, modId));
+    if (!mod) return null;
+    mod.lastPlayedAt = Number(lastPlayedAt) || Date.now();
+    await this.saveAll(mods);
+    return mod;
+  }
   async setEngineVersion(modId, engineVersion) {
     const mods = await this.getAll();
     const mod = mods.find((item) => sameId(item.id, modId));
@@ -127,7 +135,7 @@ var _ModRepository = class _ModRepository {
     await this.saveAll(mods);
     return mod;
   }
-  async updateAppearance(modId, { name, coverPath } = {}) {
+  async updateAppearance(modId, { name, coverPath, iconPath } = {}) {
     const mods = await this.getAll();
     const mod = mods.find((item) => sameId(item.id, modId));
     if (!mod) return null;
@@ -144,6 +152,7 @@ var _ModRepository = class _ModRepository {
       delete mod.image;
       delete mod.imageBase64;
     }
+    if (iconPath !== void 0) mod.iconPath = iconPath || null;
     await this.saveAll(mods);
     return mod;
   }

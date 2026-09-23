@@ -7,24 +7,24 @@ import {
 export const existingStorageModal = {
   show({ weekboxPath }) {
     const modal = document.createElement("section");
-    modal.className = "error-overlay";
+    modal.className = "storage-migration-choice-overlay error-overlay";
     modal.setAttribute("role", "dialog");
     modal.setAttribute("aria-modal", "true");
     modal.setAttribute("aria-labelledby", "existing-storage-title");
     modal.innerHTML = `
-      <div class="error-content" role="document">
-        <div class="error-rail" aria-hidden="true"><i class="fa-solid fa-hard-drive"></i></div>
-        <div class="error-main">
-          <header class="error-header">
-            <div><h2 id="existing-storage-title">${t("storage.chooseExistingTitle")}</h2></div>
-            <button type="button" class="error-close" aria-label="${t("common.cancel")}"><i class="fa-solid fa-xmark" aria-hidden="true"></i></button>
+      <div class="storage-migration-choice-content storage-migration-panel" role="document">
+        <div class="storage-migration-choice-main">
+          <header class="storage-migration-header">
+            <h2 id="existing-storage-title">${t("storage.chooseExistingTitle")}</h2>
+            <button type="button" class="storage-migration-close" aria-label="${t("common.cancel")}"><i class="fa-solid fa-xmark" aria-hidden="true"></i></button>
           </header>
-          <p class="error-summary">${t("storage.chooseExistingSummary")}</p>
+          <p class="storage-migration-summary">${t("storage.chooseExistingSummary")}</p>
           <p class="storage-recommendation-path"></p>
-          <footer class="error-actions">
-            <button type="button" class="error-action existing-storage-cancel">${t("common.cancel")}</button>
-            <button type="button" class="error-action existing-storage-replace"><i class="fa-solid fa-right-left" aria-hidden="true"></i><span>${t("storage.replaceCurrent")}</span></button>
-            <button type="button" class="error-action error-settings existing-storage-use"><i class="fa-solid fa-folder-open" aria-hidden="true"></i><span>${t("storage.useExisting")}</span></button>
+          <p class="existing-storage-warning">${t("storage.replaceExistingWarning")}</p>
+          <footer class="storage-migration-actions">
+            <button type="button" class="storage-migration-button storage-migration-button-secondary existing-storage-cancel">${t("common.cancel")}</button>
+            <button type="button" class="storage-migration-button storage-migration-button-primary existing-storage-use"><i class="fa-solid fa-folder-open" aria-hidden="true"></i><span>${t("storage.useExisting")}</span></button>
+            <button type="button" class="storage-migration-button storage-migration-button-danger existing-storage-replace"><i class="fa-solid fa-trash" aria-hidden="true"></i><span>${t("storage.replaceExisting")}</span></button>
           </footer>
         </div>
       </div>`;
@@ -46,7 +46,8 @@ export const existingStorageModal = {
           resolve(choice);
         }, 260);
       };
-      modal.querySelector(".error-close").onclick = () => close("cancel");
+      modal.querySelector(".storage-migration-close").onclick = () =>
+        close("cancel");
       modal.querySelector(".existing-storage-cancel").onclick = () =>
         close("cancel");
       modal.querySelector(".existing-storage-use").onclick = () => close("use");
@@ -59,7 +60,7 @@ export const existingStorageModal = {
         if (settled) return;
         activateCheckoutDialog(
           modal,
-          modal.querySelector(".error-content"),
+          modal.querySelector(".storage-migration-choice-content"),
           modal.querySelector(".existing-storage-use"),
           () => close("cancel"),
         );

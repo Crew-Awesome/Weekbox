@@ -26,8 +26,9 @@ import { downloadMod } from "../../../ui/js/home/modal/downloadMod.js";
 import { engineUpdateService } from "../../../ui/js/engines/engineUpdateService.js";
 import { FS } from "../../services/filesystem.js";
 import { errorHandler } from "../../../ui/js/errors/errorHandler.js";
-import { toastSystem } from "../../../ui/js/toasts/toastSystem.js";
 import { storageRecommendationModal } from "../../../ui/js/storageRecommendationModal.js";
+import { storageMoveFeedback } from "../../../ui/js/config/storageMoveFeedback.js";
+import { existingStorageModal } from "../../../ui/js/existingStorageModal.js";
 import { modManagerModal } from "../../../ui/js/mod-manager/index.js";
 import { firstRunStorageModal } from "../../../ui/js/firstRunStorageModal.js";
 import { firstRunLanguageModal } from "../../../ui/js/firstRunLanguageModal.js";
@@ -36,11 +37,7 @@ import {
   getCachedTheme,
   setTheme,
 } from "../../../ui/js/theme.js";
-import {
-  i18n,
-  localizeProgressStatus,
-  t,
-} from "../../../ui/js/i18n/index.js";
+import { i18n, localizeProgressStatus, t } from "../../../ui/js/i18n/index.js";
 
 const SINGLE_INSTANCE_MUTEX = "Global\\WeekBox-com.weekbox.app";
 const PENDING_HANDOFF_FILE = "weekbox-deeplink.json";
@@ -223,36 +220,35 @@ async function completeFirstRunStorageSetup(defaultStoragePath, hadSettings) {
     );
     if (selectedPath) {
       const existing = await FS.findExistingStorage(selectedPath);
-      if (choice === "existing") {
-        if (existing) {
+      if (existing) {
+        const existingChoice = await existingStorageModal.show({
+          ...existing,
+          weekboxPath: existing.weekboxPath,
+        });
+        if (existingChoice === "use") {
           await FS.useExistingStorage(existing.basePath);
           completed = true;
-        } else
-          await Neutralino.os.showMessageBox(
-            t("storage.libraryNotFoundTitle"),
-            t("storage.libraryNotFoundMessage"),
-            "OK",
-            "WARNING",
-          );
+        } else if (existingChoice === "replace") {
+          await FS.removeExistingStorage(existing.basePath);
+          completed = await runStorageMoveWithFeedback(existing.basePath, true);
+        }
+      } else if (choice === "existing") {
+        await storageMoveFeedback.showNotice({
+          title: t("storage.libraryNotFoundTitle"),
+          message: t("storage.libraryNotFoundMessage"),
+        });
+      } else if (await FS.hasStorageFolder(selectedPath)) {
+        await storageMoveFeedback.showNotice({
+          title: t("storage.destinationNotEmptyTitle"),
+          message: t("storage.destinationNotEmpty"),
+        });
       } else {
-        if (existing || (await FS.hasStorageFolder(selectedPath))) {
-          const replaceChoice = await Neutralino.os.showMessageBox(
-            t("storage.moveFilesTitle"),
-            t("storage.moveFilesMessage", {
-              path: selectedPath,
-            }),
-            "YES_NO",
-            "QUESTION",
-          );
-          if (replaceChoice === "YES") {
-            await FS.moveStorageTo(selectedPath, () => {}, {
-              replaceExisting: true,
-            });
-            completed = true;
-          }
-        } else if (!existing) {
-          await FS.moveStorageTo(selectedPath);
-          completed = true;
+        const destination = FS.getStorageDestinationPath(selectedPath);
+        const confirmed = await storageMoveFeedback.showMoveConfirmation({
+          destination,
+        });
+        if (confirmed) {
+          completed = await runStorageMoveWithFeedback(destination);
         }
       }
     }
@@ -261,6 +257,47 @@ async function completeFirstRunStorageSetup(defaultStoragePath, hadSettings) {
 }
 
 installGlobalErrorReporter();
+
+async function runStorageMoveWithFeedback(
+  destination,
+  destinationIsResolved = false,
+) {
+  const resolvedDestination = destinationIsResolved
+    ? destination
+    : FS.getStorageDestinationPath(destination);
+  storageMoveFeedback.show({
+    destination: resolvedDestination,
+    onCancel: () => FS.cancelStorageMove(),
+  });
+  try {
+    await FS.moveStorageTo(
+      resolvedDestination,
+      (progress) => storageMoveFeedback.update(progress),
+      { destinationIsResolved: true },
+    );
+    storageMoveFeedback.complete();
+    return true;
+  } catch (error) {
+    if (error?.code === "STORAGE_MOVE_CANCELLED") {
+      storageMoveFeedback.cancelled();
+      return false;
+    }
+    storageMoveFeedback.fail(error?.message || t("storage.moveFailedMessage"));
+    return false;
+  }
+}
+
+async function resumeInterruptedStorageMove() {
+  const pending = FS.getPendingStorageMove();
+  if (!pending) return true;
+  const resume = await storageMoveFeedback.showResumePrompt({
+    source: pending.source,
+    destination: pending.destination,
+  });
+  if (!resume) return false;
+  return runStorageMoveWithFeedback(pending.destination, true);
+}
+
 async function recommendSaferStorageLocation() {
   if (!(await FS.shouldRecommendDefaultStorage())) return;
   const defaultPath = await FS.getDefaultStoragePath();
@@ -273,59 +310,22 @@ async function recommendSaferStorageLocation() {
     return;
   }
   if (choice !== "move") return;
-  const toastId = "weekbox-storage-recommendation";
-  const lock = document.createElement("div");
-  lock.id = "storage-move-lock";
-  lock.className = "storage-move-lock";
-  lock.setAttribute("aria-hidden", "true");
-  document.body.appendChild(lock);
-  toastSystem.show(toastId, {
-    title: t("storage.movingWeekBoxFiles"),
-    message: t("storage.preparingFiles"),
-    mediaHtml: '<i class="fa-solid fa-folder-open" aria-hidden="true"></i>',
-    showPercent: true,
-    indeterminate: true,
-  });
-  try {
-    await FS.api.ensureDir(defaultPath);
-    await FS.moveStorageTo(
-      defaultPath,
-      ({ progress, copiedFiles, totalFiles, phase }) => {
-        const preparing = phase === "preparing";
-        const nativeMove = phase === "moving" && !totalFiles;
-        toastSystem.update(toastId, {
-          message: preparing
-            ? t("storage.preparingFiles")
-            : nativeMove
-              ? t("storage.movingFiles")
-              : t("storage.movingFilesProgress", {
-                  copied: copiedFiles,
-                  total: totalFiles,
-                }),
-          progress,
-        });
-      },
-      { replaceExisting: true },
-    );
-    toastSystem.setState(toastId, "complete", {
-      badgeHtml: '<i class="fa-solid fa-check" aria-hidden="true"></i>',
+  const existing = await FS.findExistingStorage(defaultPath);
+  if (existing) {
+    const existingChoice = await existingStorageModal.show({
+      ...existing,
+      weekboxPath: existing.weekboxPath,
     });
-    toastSystem.update(toastId, {
-      message: t("storage.filesMoved"),
-      progress: 100,
-    });
-    setTimeout(() => toastSystem.hide(toastId), 3600);
-  } catch (error) {
-    toastSystem.setState(toastId, "error", {
-      badgeHtml: '<i class="fa-solid fa-xmark" aria-hidden="true"></i>',
-    });
-    toastSystem.update(toastId, {
-      message: error.message || t("storage.moveFailedMessage"),
-      progress: 100,
-    });
-  } finally {
-    lock.remove();
+    if (existingChoice === "use") {
+      await FS.useExistingStorage(existing.basePath);
+      location.reload();
+    } else if (existingChoice === "replace") {
+      await FS.removeExistingStorage(existing.basePath);
+      await runStorageMoveWithFeedback(existing.basePath, true);
+    }
+    return;
   }
+  await runStorageMoveWithFeedback(defaultPath);
 }
 
 async function handleStartupAppUpdate() {
@@ -436,6 +436,16 @@ function patchNeutralinoMessageBox() {
   };
 }
 
+function startBackgroundMaintenance() {
+  if (FS.getPendingStorageMove()) return;
+  void FS.runStartupMaintenance({
+    onProgress: (message, progress) =>
+      startupLoader.setPhase(message, progress),
+  }).catch((error) =>
+    console.warn("Background library maintenance failed", error),
+  );
+}
+
 async function startApp() {
   let startupStep = "starting native services";
   try {
@@ -496,7 +506,10 @@ async function startApp() {
         void focusWeekBoxWindow();
       }
     };
-    await Neutralino.events.on("weekbox:focus", () => void focusWeekBoxWindow());
+    await Neutralino.events.on(
+      "weekbox:focus",
+      () => void focusWeekBoxWindow(),
+    );
     if (!(await ensureSingleInstance())) {
       await handoffToPrimaryInstance();
       return;
@@ -556,7 +569,11 @@ async function startApp() {
     });
 
     Neutralino.events.on("windowClose", async () => {
-      if (!allowAppExit && supportsSystemTray() && appSettings.get("closeToTray")) {
+      if (
+        !allowAppExit &&
+        supportsSystemTray() &&
+        appSettings.get("closeToTray")
+      ) {
         await Neutralino.window.hide();
         return;
       }
@@ -612,6 +629,7 @@ async function startApp() {
       animate: false,
       hue: cachedHue ?? appSettings.get("accentHue"),
     });
+    await resumeInterruptedStorageMove();
     try {
       await completeFirstRunStorageSetup(defaultStoragePath, hadSettings);
     } catch (error) {
@@ -646,12 +664,7 @@ async function startApp() {
       });
     }
     await startupLoader.complete();
-    void FS.runStartupMaintenance({
-      onProgress: (message, progress) =>
-        startupLoader.setPhase(message, progress),
-    }).catch((error) =>
-      console.warn("Background library maintenance failed", error),
-    );
+    startBackgroundMaintenance();
     await openLaunchDeepLink().catch((error) =>
       console.warn("Could not open the WeekBox launch link", error),
     );

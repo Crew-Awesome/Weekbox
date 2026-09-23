@@ -1,3 +1,551 @@
+.storage-migration-overlay {
+  z-index: 30000;
+}
+
+.error-overlay.storage-migration-overlay,
+.error-overlay.storage-migration-recovery-overlay,
+.error-overlay.storage-migration-confirmation-overlay,
+.error-overlay.storage-migration-notice-overlay,
+.error-overlay.storage-migration-choice-overlay {
+  z-index: 30000;
+}
+
+.storage-migration-main {
+  max-height: calc(100vh - 32px);
+  overflow-y: auto;
+}
+
+.storage-migration-destination {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  min-width: 0;
+  margin: 14px 0 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+}
+
+.storage-migration-destination span,
+.storage-migration-current > span {
+  flex: 0 0 auto;
+  color: var(--text-muted);
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: normal;
+  text-transform: none;
+}
+
+.storage-migration-destination-path,
+.storage-migration-confirmation-path,
+.storage-migration-current-file,
+.storage-migration-recovery-paths code {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--text-main);
+  font:
+    0.82rem/1.45 ui-monospace,
+    SFMono-Regular,
+    Consolas,
+    monospace;
+  overflow-wrap: anywhere;
+  text-overflow: ellipsis;
+}
+
+.storage-migration-progress-heading {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  color: var(--text-main);
+  font-weight: 700;
+}
+
+.storage-migration-percent {
+  color: var(--primary);
+  font-size: 1.15rem;
+}
+
+.storage-migration-progress-track {
+  position: relative;
+  width: 100%;
+  height: 10px;
+  margin: 10px 0 8px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: var(--surface-track);
+}
+
+.storage-migration-progress-fill {
+  width: 0;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--primary);
+  box-shadow: 0 0 14px color-mix(in srgb, var(--primary) 45%, transparent);
+  transition: width 150ms linear;
+}
+
+.storage-migration-progress-track.is-indeterminate
+  .storage-migration-progress-fill {
+  animation: storage-migration-indeterminate 1.15s ease-in-out infinite;
+}
+
+@keyframes storage-migration-indeterminate {
+  0% {
+    transform: translateX(-115%);
+  }
+  50% {
+    transform: translateX(85%);
+  }
+  100% {
+    transform: translateX(260%);
+  }
+}
+
+.storage-migration-subphase {
+  min-height: 1.35em;
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 0.82rem;
+}
+
+.storage-migration-subphase:empty,
+.storage-migration-speed-summary:empty,
+.storage-migration-message:empty,
+.storage-migration-error:empty {
+  display: none;
+}
+
+.storage-migration-current {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  min-width: 0;
+  margin-top: 12px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+}
+
+.storage-migration-current > span {
+  flex: 0 0 auto;
+  color: var(--text-muted);
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: normal;
+  text-transform: none;
+}
+
+.storage-migration-current-file {
+  min-width: 0;
+  flex: 1 1 auto;
+  color: var(--text-muted);
+  font-size: 0.78rem;
+  line-height: 1.4;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.storage-migration-message {
+  min-height: 1.35em;
+  margin: 12px 0 0;
+  color: var(--text-muted);
+  font-size: 0.82rem;
+}
+
+.storage-migration-error {
+  margin: 14px 0 0;
+  color: var(--danger);
+  white-space: pre-wrap;
+}
+
+.storage-migration-actions {
+  margin-top: 18px;
+}
+
+.storage-migration-cancel {
+  min-width: 116px;
+}
+
+.storage-migration-recovery-paths {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: center;
+  gap: 10px;
+  padding: 12px;
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius);
+  background: var(--bg-color);
+}
+
+.storage-migration-recovery-paths code {
+  display: block;
+  overflow-wrap: anywhere;
+}
+
+.storage-migration-recovery-paths i {
+  color: var(--primary);
+}
+
+.storage-migration-recovery-safe {
+  margin: 16px 0 0;
+  color: var(--text-muted);
+  line-height: 1.5;
+}
+
+.storage-migration-confirmation-safe,
+.storage-migration-confirmation-duration {
+  margin: 14px 0 0;
+  color: var(--text-muted);
+  line-height: 1.5;
+}
+
+.storage-migration-confirmation-duration {
+  margin-top: 6px;
+}
+
+.storage-migration-notice-message {
+  white-space: pre-wrap;
+}
+
+@media (max-width: 560px) {
+  .storage-migration-recovery-paths {
+    grid-template-columns: 1fr;
+  }
+
+  .storage-migration-recovery-paths i {
+    justify-self: center;
+    transform: rotate(90deg);
+  }
+}
+
+/* Storage migration uses the same compact app-panel language as Mods Manager. */
+.storage-migration-panel {
+  display: block;
+  box-sizing: border-box;
+  width: min(680px, calc(100vw - 32px));
+  max-width: 100%;
+  max-height: calc(100dvh - 40px);
+  overflow-x: hidden;
+  overflow-y: auto;
+  background: var(--bg-panel);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  box-shadow: 0 20px 55px color-mix(in srgb, var(--shadow) 55%, transparent);
+  transform: scale(0.96);
+  transition: transform 260ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.storage-migration-overlay.show .storage-migration-panel,
+.storage-migration-recovery-overlay.show .storage-migration-panel,
+.storage-migration-confirmation-overlay.show .storage-migration-panel,
+.storage-migration-notice-overlay.show .storage-migration-panel,
+.storage-migration-choice-overlay.show .storage-migration-panel {
+  transform: scale(1);
+}
+
+.storage-migration-main,
+.storage-migration-choice-main {
+  max-height: inherit;
+  overflow: visible;
+}
+
+.storage-migration-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 58px;
+  padding: 0 18px;
+  border-bottom: 1px solid var(--border-color);
+  background: rgb(0 0 0 / 20%);
+}
+
+.storage-migration-header h2 {
+  margin: 0;
+  color: var(--text-main);
+  font-size: 1.25rem;
+  line-height: 1.25;
+  text-wrap: balance;
+}
+
+.storage-migration-summary,
+.storage-migration-main > .storage-migration-destination,
+.storage-migration-main > .storage-migration-progress-heading,
+.storage-migration-main > .storage-migration-progress-track,
+.storage-migration-main > .storage-migration-subphase,
+.storage-migration-main > .storage-migration-transfer-summary,
+.storage-migration-main > .storage-migration-speed-summary,
+.storage-migration-main > .storage-migration-current,
+.storage-migration-main > .storage-migration-message,
+.storage-migration-main > .storage-migration-error,
+.storage-migration-main > .storage-migration-recovery-paths,
+.storage-migration-main > .storage-migration-recovery-safe,
+.storage-migration-main > .storage-migration-confirmation-safe,
+.storage-migration-main > .storage-migration-confirmation-duration,
+.storage-migration-main > .storage-migration-actions,
+.storage-migration-choice-main > .storage-recommendation-path,
+.storage-migration-choice-main > .existing-storage-warning,
+.storage-migration-choice-main > .storage-migration-actions {
+  margin-right: 20px;
+  margin-left: 20px;
+}
+
+.storage-migration-summary {
+  margin-top: 18px;
+  color: var(--text-main);
+  line-height: 1.5;
+  text-wrap: pretty;
+}
+
+.storage-migration-destination {
+  margin-top: 14px;
+}
+
+.storage-migration-progress-heading {
+  margin-top: 18px;
+  font-size: 1.06rem;
+}
+
+.storage-migration-panel * {
+  box-sizing: border-box;
+}
+
+.storage-migration-progress-track {
+  width: auto;
+  max-width: 100%;
+}
+
+.storage-migration-overlay,
+.storage-migration-recovery-overlay,
+.storage-migration-confirmation-overlay,
+.storage-migration-notice-overlay,
+.storage-migration-choice-overlay {
+  padding: 16px;
+  overflow-x: hidden;
+}
+
+.storage-migration-destination-path,
+.storage-migration-confirmation-path,
+.storage-migration-current-file,
+.storage-migration-recovery-paths code {
+  max-width: 100%;
+  overflow: hidden;
+  overflow-wrap: normal;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.storage-migration-destination-path {
+  flex: 1 1 auto;
+}
+
+.storage-migration-transfer-summary,
+.storage-migration-speed-summary {
+  color: var(--text-main);
+  font-size: 0.88rem;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.45;
+}
+
+.storage-migration-transfer-summary {
+  margin-top: 16px;
+  font-weight: 700;
+}
+
+.storage-migration-speed-summary {
+  margin-top: 4px;
+  color: var(--text-muted);
+}
+
+.storage-migration-percent {
+  font-variant-numeric: tabular-nums;
+}
+
+.storage-migration-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding-bottom: 20px;
+}
+
+.storage-migration-button {
+  display: inline-flex;
+  min-height: 38px;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 0 13px;
+  border: 1px solid transparent;
+  border-radius: 7px;
+  font: inherit;
+  font-size: 0.84rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition:
+    background-color 160ms ease,
+    border-color 160ms ease,
+    color 160ms ease,
+    transform 160ms ease;
+}
+
+.storage-migration-button:active:not(:disabled) {
+  transform: scale(0.96);
+}
+
+.storage-migration-button:focus-visible,
+.storage-migration-close:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+
+.storage-migration-button:disabled {
+  cursor: wait;
+  opacity: 0.65;
+}
+
+.storage-migration-button-secondary {
+  color: var(--text-main);
+  background: var(--surface-control);
+  border-color: var(--border-color);
+}
+
+.storage-migration-button-secondary:hover:not(:disabled) {
+  background: var(--surface-control-hover);
+}
+
+.storage-migration-button-primary {
+  color: var(--on-primary);
+  background: var(--primary);
+}
+
+.storage-migration-button-primary:hover:not(:disabled) {
+  background: var(--accent-hover);
+}
+
+.storage-migration-button-danger {
+  color: var(--danger);
+  background: var(--danger-container);
+  border-color: color-mix(in srgb, var(--danger) 55%, var(--border-color));
+}
+
+.storage-migration-button-danger:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--danger) 20%, var(--danger-container));
+  border-color: var(--danger);
+}
+
+.storage-migration-close {
+  display: inline-grid;
+  width: 32px;
+  height: 32px;
+  flex: 0 0 auto;
+  place-items: center;
+  color: var(--text-muted);
+  background: transparent;
+  border: 0;
+  border-radius: 7px;
+  cursor: pointer;
+  transition:
+    color 160ms ease,
+    background-color 160ms ease;
+}
+
+.storage-migration-close:hover {
+  color: var(--text-main);
+  background: var(--bg-hover);
+}
+
+.storage-migration-choice-overlay .storage-migration-choice-content {
+  width: min(620px, 100%);
+}
+
+.storage-migration-choice-main > .storage-recommendation-path {
+  margin-top: 16px;
+  margin-bottom: 0;
+  padding: 11px 12px;
+  overflow-wrap: anywhere;
+  color: var(--text-main);
+  font:
+    0.82rem/1.45 ui-monospace,
+    SFMono-Regular,
+    Consolas,
+    monospace;
+  background: var(--bg-color);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+}
+
+.storage-migration-choice-main > .existing-storage-warning {
+  margin-top: 12px;
+  margin-bottom: 0;
+  color: var(--text-muted);
+  font-size: 0.82rem;
+  line-height: 1.45;
+}
+
+.storage-migration-choice-main > .storage-migration-actions {
+  margin-top: 18px;
+}
+
+@media (max-width: 560px) {
+  .storage-migration-panel {
+    width: min(680px, calc(100vw - 32px));
+    max-height: calc(100dvh - 24px);
+  }
+
+  .storage-migration-header {
+    min-height: 54px;
+    padding: 0 15px;
+  }
+
+  .storage-migration-summary,
+  .storage-migration-main > .storage-migration-destination,
+  .storage-migration-main > .storage-migration-progress-heading,
+  .storage-migration-main > .storage-migration-progress-track,
+  .storage-migration-main > .storage-migration-subphase,
+  .storage-migration-main > .storage-migration-transfer-summary,
+  .storage-migration-main > .storage-migration-speed-summary,
+  .storage-migration-main > .storage-migration-current,
+  .storage-migration-main > .storage-migration-message,
+  .storage-migration-main > .storage-migration-error,
+  .storage-migration-main > .storage-migration-recovery-paths,
+  .storage-migration-main > .storage-migration-recovery-safe,
+  .storage-migration-main > .storage-migration-confirmation-safe,
+  .storage-migration-main > .storage-migration-confirmation-duration,
+  .storage-migration-main > .storage-migration-actions,
+  .storage-migration-choice-main > .storage-recommendation-path,
+  .storage-migration-choice-main > .existing-storage-warning,
+  .storage-migration-choice-main > .storage-migration-actions {
+    margin-right: 15px;
+    margin-left: 15px;
+  }
+
+  .storage-migration-actions {
+    justify-content: stretch;
+  }
+
+  .storage-migration-button {
+    flex: 1 1 auto;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .storage-migration-panel,
+  .storage-migration-button,
+  .storage-migration-close {
+    transition: none;
+  }
+
+  .storage-migration-progress-track.is-indeterminate
+    .storage-migration-progress-fill {
+    animation: none;
+    width: 100%;
+  }
+}
+
 .error-overlay {
   position: fixed;
   inset: 0;
@@ -201,6 +749,18 @@
 .error-settings {
   border-color: rgba(255, 178, 87, 0.45);
   background: rgba(255, 178, 87, 0.12);
+}
+
+.existing-storage-replace {
+  border-color: color-mix(in srgb, var(--danger) 55%, var(--border-color));
+  background: var(--danger-container);
+  color: var(--danger);
+}
+
+.existing-storage-warning {
+  margin: 14px 0 0;
+  color: var(--danger);
+  line-height: 1.5;
 }
 
 .storage-recommendation-path {
@@ -1093,7 +1653,8 @@
   background: var(--surface-control);
 }
 
-.library-delete-target-dropdown .mod-settings-dropdown-trigger:hover:not(:disabled),
+.library-delete-target-dropdown
+  .mod-settings-dropdown-trigger:hover:not(:disabled),
 .library-delete-target-dropdown.open .mod-settings-dropdown-trigger {
   background: var(--surface-control-hover);
 }

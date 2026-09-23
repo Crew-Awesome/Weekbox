@@ -76,7 +76,7 @@ async function syncWindowsStartupRegistration(enabled) {
         `$key = ${key}`,
         `$exe = ${executable}`,
         `$command = '"' + $exe + '"'`,
-        "New-Item -Path $key -Force | Out-Null",
+        "if (-not (Test-Path -LiteralPath $key)) { New-Item -Path $key | Out-Null }",
         "New-ItemProperty -Path $key -Name 'WeekBox' -Value $command -PropertyType String -Force | Out-Null",
       ].join("; ")
     : [

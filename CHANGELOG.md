@@ -7,6 +7,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.5.6]
+
+### Added
+
+- Added a Recently Played section to the sidebar.
+- Added custom sidebar icons in mod identity settings.
+
+### Changed
+
+- Reworked storage moves into a Neutralino pure version with live progress.
+- Extended the French translation (LeaNimatics).
+- Extended the Spanish translation (ImMalloy).
+
+### Fixed
+
+- Fixed Windows startup registration erasing other startup applications.
+- Fixed downloaded mods being installed inside an unnecessary nested folder.
+
 ## [2.5.5] - 2026-09-21
 
 ### Changed
@@ -1212,7 +1230,8 @@ This is the Last content update I will do in a long while :)
 - Downloads for Windows, Linux, and macOS.
 - Packages for x64, ARM64, ARMHF, and Universal Macs where available.
 
-[unreleased]: https://github.com/Crew-Awesome/Weekbox/compare/v2.5.5...HEAD
+[unreleased]: https://github.com/Crew-Awesome/Weekbox/compare/v2.5.6...HEAD
+[2.5.5]: https://github.com/Crew-Awesome/Weekbox/compare/v2.5.5...v2.5.6
 [2.5.5]: https://github.com/Crew-Awesome/Weekbox/compare/v2.5.4...v2.5.5
 [2.5.4]: https://github.com/Crew-Awesome/Weekbox/compare/v2.5.3...v2.5.4
 [2.5.3]: https://github.com/Crew-Awesome/Weekbox/compare/v2.5.2...v2.5.3

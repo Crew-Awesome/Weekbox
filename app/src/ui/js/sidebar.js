@@ -59,12 +59,22 @@ export const sidebar = {
         appEvents.dispatchEvent(new CustomEvent("news:refresh-badge"));
     };
     appEvents.addEventListener("view:loaded", this.viewChangeListener);
+    this.modsUpdatedListener = () => {
+      void this.loadStandaloneMods();
+      void this.loadRecentlyPlayedMods();
+    };
+    document.addEventListener("mods-updated", this.modsUpdatedListener);
+    document.addEventListener(
+      "recently-played-mods-updated",
+      this.modsUpdatedListener,
+    );
     this.setupBrandButton();
     this.networkStatusListener = () => {
       void this.refreshNetworkFeatures();
     };
     networkStatus.addEventListener("change", this.networkStatusListener);
     void this.refreshNetworkFeatures();
+    void this.loadRecentlyPlayedMods();
     this.setupResponsiveCollapse();
   },
   setupResponsiveCollapse() {
@@ -363,6 +373,101 @@ export const sidebar = {
           btn.classList.remove("running");
           this.syncActive();
         });
+      });
+      wrapper.appendChild(btn);
+      this.updateEngineMarquee(btn);
+      this.updateCollapsedTooltips();
+    }
+  },
+  async loadRecentlyPlayedMods() {
+    const container = document.getElementById("recently-played-container");
+    const wrapper = document.getElementById("recently-played-wrapper");
+    if (!container || !wrapper) return;
+    if (!FS.isInitialized) {
+      container.hidden = true;
+      return;
+    }
+
+    const recentMods = await FS.getRecentlyPlayedMods();
+    wrapper.replaceChildren();
+    container.hidden = recentMods.length === 0;
+    if (!recentMods.length) return;
+
+    this.setupCollapsibleSections(container);
+    for (const mod of recentMods) {
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className =
+        "sidebar__btn sidebar__engine-btn sidebar__recent-mod-btn";
+      btn.title = mod.name;
+      const iconBox = document.createElement("span");
+      iconBox.className = "sidebar__recent-mod-icon";
+      const customIcon = await FS.getModIcon(mod.id).catch(() => null);
+      const engineIcon = mod.engineId
+        ? FS.getEngineIconSource(mod.engineId)
+        : "assets/icons/exe.png";
+      const renderIcon = (running) => {
+        const icon = document.createElement("i");
+        icon.className = running
+          ? "fa-solid fa-square sidebar__recent-mod-stop"
+          : "fa-solid fa-gamepad";
+        icon.setAttribute("aria-hidden", "true");
+        if (running) {
+          iconBox.replaceChildren(icon);
+          return;
+        }
+        if (customIcon) {
+          const image = document.createElement("img");
+          image.className = "sidebar__engine-icon";
+          image.src = customIcon;
+          image.alt = "";
+          image.onerror = () => {
+            image.replaceWith(icon);
+          };
+          iconBox.replaceChildren(image);
+          return;
+        }
+        if (mod.engineId) {
+          const image = document.createElement("img");
+          image.className = "sidebar__engine-icon";
+          image.src = engineIcon;
+          image.alt = "";
+          image.onerror = () => image.replaceWith(icon);
+          iconBox.replaceChildren(image);
+          return;
+        }
+        iconBox.replaceChildren(icon);
+      };
+      const text = document.createElement("span");
+      text.className = "sidebar__marquee-text";
+      text.textContent = mod.name;
+      const marquee = document.createElement("span");
+      marquee.className = "sidebar__marquee-container";
+      marquee.appendChild(text);
+      btn.append(iconBox, marquee);
+
+      const setRunning = (running) => {
+        btn.classList.toggle("running", running);
+        renderIcon(running);
+        this.updateEngineMarquee(btn);
+      };
+      const onStateChange = (state) => {
+        if (state === "running" || state === "launched") setRunning(true);
+        if (["completed", "closing", "error", "not_found"].includes(state))
+          setRunning(false);
+      };
+      setRunning(FS.isModRunning(mod.id));
+      btn.addEventListener("click", async () => {
+        this.setActive(btn);
+        const wasRunning = btn.classList.contains("running");
+        setRunning(!wasRunning);
+        if (appSettings.get("hideOnLaunch")) Neutralino.window.hide();
+        await FS.launchRecentlyPlayedMod(mod.id, onStateChange).catch(() => {});
+        if (appSettings.get("hideOnLaunch")) {
+          Neutralino.window.show();
+          Neutralino.window.focus();
+        }
+        setRunning(FS.isModRunning(mod.id));
       });
       wrapper.appendChild(btn);
       this.updateEngineMarquee(btn);

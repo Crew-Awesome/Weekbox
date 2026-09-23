@@ -22,11 +22,19 @@ var _ModCoverService = class _ModCoverService {
   getCoverPath(modId) {
     return `${this.coversPath}/${safeCoverName(modId)}.webp`;
   }
-  async read(modId) {
-    const path = this.getCoverPath(modId);
+  getIconPath(modId) {
+    return `${this.coversPath}/${safeCoverName(modId)}.icon.webp`;
+  }
+  async readPath(path) {
     if (!(await this.api.exists(path))) return null;
     const bytes = await this.api.read(path, true);
     return blobToDataUrl(new Blob([bytes], { type: "image/webp" }));
+  }
+  async read(modId) {
+    return this.readPath(this.getCoverPath(modId));
+  }
+  async readIcon(modId) {
+    return this.readPath(this.getIconPath(modId));
   }
   async optimize(blob) {
     if (typeof document === "undefined") return blob;
@@ -52,6 +60,39 @@ var _ModCoverService = class _ModCoverService {
       URL.revokeObjectURL(sourceUrl);
     }
   }
+  async optimizeIcon(blob) {
+    if (typeof document === "undefined") return blob;
+    const sourceUrl = URL.createObjectURL(blob);
+    try {
+      const image = new Image();
+      image.src = sourceUrl;
+      await image.decode();
+      const cropSize = Math.min(image.naturalWidth, image.naturalHeight);
+      const canvas = document.createElement("canvas");
+      canvas.width = 256;
+      canvas.height = 256;
+      canvas
+        .getContext("2d")
+        .drawImage(
+          image,
+          (image.naturalWidth - cropSize) / 2,
+          (image.naturalHeight - cropSize) / 2,
+          cropSize,
+          cropSize,
+          0,
+          0,
+          256,
+          256,
+        );
+      return await new Promise((resolve) =>
+        canvas.toBlob((result) => resolve(result || blob), "image/webp", 0.84),
+      );
+    } catch {
+      return blob;
+    } finally {
+      URL.revokeObjectURL(sourceUrl);
+    }
+  }
   async saveBlob(modId, blob) {
     await this.api.ensureDir(this.coversPath);
     const optimized = await this.optimize(blob);
@@ -66,6 +107,19 @@ var _ModCoverService = class _ModCoverService {
     if (!dataUrl) return null;
     return this.saveBlob(modId, await (await fetch(dataUrl)).blob());
   }
+  async saveIconDataUrl(modId, dataUrl) {
+    if (!dataUrl) return null;
+    await this.api.ensureDir(this.coversPath);
+    const optimized = await this.optimizeIcon(
+      await (await fetch(dataUrl)).blob(),
+    );
+    await this.api.write(
+      this.getIconPath(modId),
+      await optimized.arrayBuffer(),
+      true,
+    );
+    return `mod-covers/${safeCoverName(modId)}.icon.webp`;
+  }
   async saveUrl(modId, url) {
     if (!url) return null;
     const response = await fetch(url);
@@ -79,6 +133,9 @@ var _ModCoverService = class _ModCoverService {
   }
   async remove(modId) {
     await this.api.remove(this.getCoverPath(modId));
+  }
+  async removeIcon(modId) {
+    await this.api.remove(this.getIconPath(modId));
   }
 };
 

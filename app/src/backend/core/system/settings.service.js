@@ -64,7 +64,6 @@ settingDefinitions = {
   closeToTray: { type: "boolean", defaultValue: false },
   autoStartAfterDownload: { type: "boolean", defaultValue: false },
   multithreadDownloads: { type: "boolean", defaultValue: true },
-  multithreadStorageMoves: { type: "boolean", defaultValue: true },
   storagePath: { type: "string", defaultValue: null, nullable: true },
   storageMoveRecommendationDismissed: { type: "boolean", defaultValue: false },
   checkUpdatesOnStartup: { type: "boolean", defaultValue: true },
@@ -76,7 +75,11 @@ settingDefinitions = {
   baseGameSupportWarningShown: { type: "boolean", defaultValue: false },
   lastSeenWhatsNewVersion: { type: "string", defaultValue: "" },
 };
-const removedSettingKeys = new Set(["desktopNotifications", "blurOutOfFocus"]);
+const removedSettingKeys = new Set([
+  "desktopNotifications",
+  "blurOutOfFocus",
+  "multithreadStorageMoves",
+]);
 const preservedOnReset = new Set([
   "storagePath",
   "storageMoveRecommendationDismissed",

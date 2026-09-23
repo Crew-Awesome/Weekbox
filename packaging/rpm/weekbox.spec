@@ -3,7 +3,7 @@
 # Sources are the CI zips. Build Copr AFTER those zips exist on the release.
 
 Name:           weekbox
-Version:        2.5.5
+Version:        2.5.6
 Release:        1%{?dist}
 Summary:        A re-imagined Friday Night Funkin' mod launcher
 License:        MIT
@@ -109,6 +109,14 @@ fi
 %{_datadir}/pixmaps/weekbox.png
 
 %changelog
+* Tue Sep 22 2026 Crew Awesome <info@weekbox.app> - 2.5.6-1
+- Add a Recently Played section to the sidebar.
+- Add custom sidebar icons in mod identity settings.
+- Rework storage moves into a resumable Neutralino migration with live progress.
+- Update French and Spanish translations.
+- Fix Windows startup registration erasing other startup applications.
+- Fix downloaded mods being installed inside an unnecessary nested folder.
+
 * Mon Sep 21 2026 Crew Awesome <info@weekbox.app> - 2.5.5-1
 - Fix engine release version loading errors.
 - Update Chinese translations.

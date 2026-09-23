@@ -20,8 +20,9 @@ import { isValidEngineVersion } from "./filesystem/engine-version.service.js";
 import {
   getEngineLaunchBehavior,
   getEngineModLaunchArgs,
-  ENGINE_DETAILS as ENGINE_DETAILS,
+  ENGINE_DETAILS,
 } from "../../backend/config/engines.config.js";
+import { getPreferredEngineVersion } from "../config/engine-preferences.js";
 
 function sameId(left, right) {
   return String(left) === String(right);
@@ -37,10 +38,6 @@ function isICloudPath(path) {
   );
 }
 
-function isWeekBoxFolder(path) {
-  return /(?:^|[\\/])weekbox$/i.test(String(path).replace(/[\\/]+$/, ""));
-}
-
 function trimPath(path) {
   return String(path || "")
     .trim()
@@ -49,112 +46,298 @@ function trimPath(path) {
 }
 
 const STORAGE_MOVE_MARKER_SUFFIX = ".weekbox-moving.json";
-const STORAGE_REPLACEMENT_SUFFIX = ".weekbox-replacing";
+const STORAGE_MOVE_PARTIAL_SUFFIX = ".weekbox-partial";
+const STORAGE_MOVE_CHUNK_SIZE = 4 * 1024 * 1024;
+const STORAGE_FOLDER_NAME = "WeekBoxLibrary";
 
 function storageMoveMarkerPath(path) {
-  return `${trimPath(path)}${STORAGE_MOVE_MARKER_SUFFIX}`;
+  const markerRoot = trimPath(window.NL_DATAPATH) || trimPath(path);
+  return `${markerRoot}/${STORAGE_MOVE_MARKER_SUFFIX.replace(/^\./, "")}`;
 }
 
-function quoteWindowsArgument(value) {
-  return `"${String(value)
-    .replace(/(["^%])/g, "^$1")
-    .replace(/\//g, "\\")}"`;
-}
-
-function isMatchingStorageMove(marker, sourcePath, destinationPath) {
-  return (
-    normalizeComparablePath(marker?.sourcePath) ===
-      normalizeComparablePath(sourcePath) &&
-    normalizeComparablePath(marker?.destinationPath) ===
-      normalizeComparablePath(destinationPath)
-  );
-}
-
-async function readStorageMoveMarker(service, markerPath) {
+async function readStorageMoveMarker(service) {
+  const markerPath = storageMoveMarkerPath(service.basePath);
   if (!(await service.api.exists(markerPath))) return null;
   try {
-    return JSON.parse(await service.api.read(markerPath));
+    const marker = JSON.parse(await service.api.read(markerPath));
+    if (
+      marker?.version !== 1 ||
+      marker?.operation !== "move" ||
+      (normalizeComparablePath(marker.source) !==
+        normalizeComparablePath(service.basePath) &&
+        normalizeComparablePath(marker.destination) !==
+          normalizeComparablePath(service.basePath))
+    ) {
+      return null;
+    }
+    return { ...marker, markerPath };
   } catch {
     return null;
   }
 }
 
-function getWindowsBulkCopyCommand(sourcePath, destinationPath) {
-  return [
-    "robocopy",
-    quoteWindowsArgument(sourcePath),
-    quoteWindowsArgument(destinationPath),
-    "/E",
-    "/COPY:DAT",
-    "/DCOPY:DA",
-    "/MT:16",
-    "/J",
-    "/Z",
-    "/R:2",
-    "/W:2",
-    "/XJ",
-    "/NFL",
-    "/NDL",
-  ].join(" ");
+function relativeStoragePath(path, sourcePath) {
+  const value = String(path || "").replace(/\\/g, "/");
+  const source = trimPath(sourcePath).replace(/\\/g, "/");
+  const prefix = `${source}/`;
+  return value.startsWith(prefix) ? value.slice(prefix.length) : value;
 }
 
-async function moveStorageDirectory(service, sourcePath, destinationPath) {
-  let nativeError = null;
-  for (let attempt = 1; attempt <= 3; attempt += 1) {
-    try {
-      await Neutralino.filesystem.move(sourcePath, destinationPath);
-      return;
-    } catch (error) {
-      nativeError = error;
-      if (attempt < 3)
-        await new Promise((resolve) => setTimeout(resolve, attempt * 150));
-    }
-  }
+function storageMoveCancelled(service) {
+  if (!service.storageMoveCancelled) return;
+  const error = new Error("Storage move cancelled");
+  error.code = "STORAGE_MOVE_CANCELLED";
+  throw error;
+}
 
-  if (!(await service.api.exists(sourcePath))) {
-    if (await service.api.exists(destinationPath)) return;
-    throw nativeError || new Error("Storage source disappeared during move");
-  }
-
-  if (window.NL_OS === "Windows") {
-    const result = await Neutralino.os.execCommand(
-      getWindowsBulkCopyCommand(sourcePath, destinationPath),
-      { background: false },
+async function scanStorageFiles(
+  sourcePath,
+  markerPath,
+  onProgress,
+  allowedRootEntries = null,
+) {
+  const files = [];
+  const directories = [];
+  let totalBytes = 0;
+  const marker = normalizeComparablePath(markerPath);
+  const walk = async (directoryPath) => {
+    directories.push(directoryPath);
+    const entries = getRealEntries(
+      await Neutralino.filesystem.readDirectory(directoryPath),
     );
-    if (Number(result?.exitCode) >= 8) {
-      const detail = String(result?.stdErr || result?.stdOut || "")
-        .replace(/[\0\r\n]+/g, " ")
-        .trim();
-      throw new Error(
-        `Windows could not finish the storage move${detail ? `: ${detail}` : "."}`,
-      );
-    }
-    if (await service.api.exists(sourcePath)) {
-      const remaining = getRealEntries(
-        await Neutralino.filesystem.readDirectory(sourcePath).catch(() => []),
-      );
-      if (remaining.length) {
-        throw new Error(
-          "Some storage files could not be copied. Retry the move to continue.",
-        );
+    for (const entry of entries) {
+      if (
+        directoryPath === sourcePath &&
+        allowedRootEntries &&
+        !allowedRootEntries.has(entry.entry)
+      ) {
+        continue;
       }
-      await service.api.remove(sourcePath);
+      const entryPath = `${directoryPath}/${entry.entry}`;
+      if (normalizeComparablePath(entryPath) === marker) continue;
+      if (entry.type === "DIRECTORY") {
+        await walk(entryPath);
+        continue;
+      }
+      if (entry.type !== "FILE") continue;
+      const stats = await Neutralino.filesystem.getStats(entryPath);
+      const file = {
+        path: entryPath,
+        relativePath: relativeStoragePath(entryPath, sourcePath),
+        size: Number(stats.size) || 0,
+      };
+      files.push(file);
+      totalBytes += file.size;
+      onProgress({
+        phase: "PREPARING",
+        status: "SCANNING",
+        progress: null,
+        bytesMoved: 0,
+        totalBytes,
+        copiedFiles: 0,
+        totalFiles: files.length,
+        currentFile: file.relativePath,
+      });
     }
+  };
+  await walk(sourcePath);
+  return { files, directories };
+}
+
+async function removeEmptyStorageDirectories(directories) {
+  const sourceRoot = directories[0];
+  for (const directoryPath of [...directories].sort(
+    (left, right) => right.length - left.length,
+  )) {
+    if (directoryPath === sourceRoot) continue;
+    if (!(await APIneuFileSystem.exists(directoryPath))) continue;
+    const entries = getRealEntries(
+      await Neutralino.filesystem.readDirectory(directoryPath).catch(() => []),
+    );
+    if (!entries.length) await Neutralino.filesystem.remove(directoryPath);
+  }
+}
+
+async function copyStorageChunks(service, file, partialPath, state, report) {
+  if (!file.size) {
+    storageMoveCancelled(service);
+    await Neutralino.filesystem.writeBinaryFile(
+      partialPath,
+      new ArrayBuffer(0),
+    );
+    report({
+      ...state,
+      currentFile: file.relativePath,
+      progress: state.totalBytes
+        ? (state.bytesMoved / state.totalBytes) * 100
+        : 100,
+    });
     return;
   }
+  let offset = 0;
+  while (offset < file.size) {
+    storageMoveCancelled(service);
+    const requested = file.size
+      ? Math.min(STORAGE_MOVE_CHUNK_SIZE, file.size - offset)
+      : 0;
+    const chunk = await Neutralino.filesystem.readBinaryFile(file.path, {
+      pos: offset,
+      size: requested,
+    });
+    if (file.size && !chunk?.byteLength) {
+      throw new Error(`Could not read ${file.relativePath} while moving it.`);
+    }
+    if (offset === 0) {
+      await Neutralino.filesystem.writeBinaryFile(partialPath, chunk);
+    } else {
+      await Neutralino.filesystem.appendBinaryFile(partialPath, chunk);
+    }
+    offset += chunk?.byteLength || 0;
+    report({
+      ...state,
+      currentFile: file.relativePath,
+      bytesMoved: state.bytesMoved + offset,
+      progress: state.totalBytes
+        ? ((state.bytesMoved + offset) / state.totalBytes) * 100
+        : 100,
+    });
+  }
+}
 
-  await service.api.ensureDir(destinationPath);
-  await Neutralino.filesystem.copy(sourcePath, destinationPath, {
-    recursive: true,
-    overwrite: true,
-    skip: false,
-  });
-  if (!(await service.api.exists(destinationPath))) {
-    throw (
-      nativeError || new Error("Storage copy did not create its destination")
+async function moveStorageFile(
+  service,
+  file,
+  destinationRoot,
+  state,
+  report,
+  onTransferStart = () => {},
+) {
+  const destinationPath = `${destinationRoot}/${file.relativePath}`;
+  const partialPath = `${destinationPath}${STORAGE_MOVE_PARTIAL_SUFFIX}`;
+  await service.api.ensureDir(getParentPath(destinationPath));
+  storageMoveCancelled(service);
+
+  const existingStats = await Neutralino.filesystem
+    .getStats(destinationPath)
+    .catch(() => null);
+  if (existingStats && Number(existingStats.size) === file.size) {
+    const sourceStats = await Neutralino.filesystem.getStats(file.path);
+    if (Number(sourceStats.size) !== file.size) {
+      throw new Error(`The source changed while moving ${file.relativePath}.`);
+    }
+    if (await service.api.exists(partialPath)) {
+      await Neutralino.filesystem.remove(partialPath);
+    }
+    await Neutralino.filesystem.remove(file.path);
+    state.bytesMoved += file.size;
+    state.copiedFiles += 1;
+    report({ ...state, currentFile: file.relativePath });
+    return;
+  }
+  if (existingStats) await Neutralino.filesystem.remove(destinationPath);
+  if (await service.api.exists(partialPath)) {
+    await Neutralino.filesystem.remove(partialPath);
+  }
+
+  onTransferStart();
+  await copyStorageChunks(service, file, partialPath, state, report);
+
+  const partialStats = await Neutralino.filesystem.getStats(partialPath);
+  if (Number(partialStats.size) !== file.size) {
+    throw new Error(`Could not verify ${file.relativePath} after copying it.`);
+  }
+  storageMoveCancelled(service);
+  await Neutralino.filesystem.move(partialPath, destinationPath);
+  const destinationStats =
+    await Neutralino.filesystem.getStats(destinationPath);
+  if (Number(destinationStats.size) !== file.size) {
+    throw new Error(`Could not verify ${file.relativePath} after moving it.`);
+  }
+  storageMoveCancelled(service);
+  const sourceStats = await Neutralino.filesystem.getStats(file.path);
+  if (Number(sourceStats.size) !== file.size) {
+    throw new Error(`The source changed while moving ${file.relativePath}.`);
+  }
+  storageMoveCancelled(service);
+  await Neutralino.filesystem.remove(file.path);
+  if (await service.api.exists(file.path)) {
+    throw new Error(`Could not remove ${file.relativePath} after moving it.`);
+  }
+  state.bytesMoved += file.size;
+  state.copiedFiles += 1;
+  report({ ...state, currentFile: file.relativePath });
+}
+
+async function transferStorageFiles(
+  service,
+  sourcePath,
+  destinationPath,
+  markerPath,
+  report,
+) {
+  await service.ensureStorageDirectoriesAt(destinationPath);
+  const sourceExists = await service.api.exists(sourcePath);
+  let files = [];
+  let directories = [];
+  if (sourceExists) {
+    const allowedRootEntries = service.isStorageInExecutableDirectory()
+      ? new Set([
+          "data",
+          "engines",
+          "mods",
+          "settings.json",
+          "storage-manifest.json",
+        ])
+      : null;
+    ({ files, directories } = await scanStorageFiles(
+      sourcePath,
+      markerPath,
+      report,
+      allowedRootEntries,
+    ));
+  }
+  const totalBytes = files.reduce((total, file) => total + file.size, 0);
+  const state = {
+    phase: "MOVING",
+    progress: totalBytes ? 0 : 100,
+    bytesMoved: 0,
+    totalBytes,
+    copiedFiles: 0,
+    totalFiles: files.length,
+    currentFile: "",
+  };
+  let transferStartedAt = null;
+  const reportMove = (event) => {
+    const bytesMoved = Number(event.bytesMoved) || 0;
+    const elapsed = transferStartedAt
+      ? Math.max(0.001, (performance.now() - transferStartedAt) / 1000)
+      : 0;
+    const speed = elapsed ? bytesMoved / elapsed : 0;
+    report({
+      ...event,
+      phase: "MOVING",
+      speed,
+      eta:
+        speed > 0 && totalBytes > bytesMoved
+          ? (totalBytes - bytesMoved) / speed
+          : null,
+    });
+  };
+  reportMove(state);
+  for (const file of files) {
+    await moveStorageFile(
+      service,
+      file,
+      destinationPath,
+      state,
+      reportMove,
+      () => {
+        if (transferStartedAt === null) transferStartedAt = performance.now();
+      },
     );
   }
-  await service.api.remove(sourcePath);
+  if (sourceExists) await removeEmptyStorageDirectories(directories);
+  return state;
 }
 
 const LOCAL_MOD_COVER_FILES = [
@@ -184,142 +367,121 @@ function getDataUrlMimeType(path) {
       : "image/png";
 }
 
-async function prepareMoveDestination(
-  service,
-  { destinationBasePath, markerPath, marker, isResume, options },
-) {
-  let replacedDestinationPath = marker?.replacedDestinationPath || null;
-  const destinationExists = await service.api.exists(destinationBasePath);
-  if (!destinationExists) return replacedDestinationPath;
-  if (isResume) {
-    if (
-      replacedDestinationPath &&
-      !(await service.api.exists(replacedDestinationPath))
-    ) {
-      await service.api.move(destinationBasePath, replacedDestinationPath);
-    }
-    return replacedDestinationPath;
-  }
-
+async function prepareStorageDestination(service, destinationPath, marker) {
+  if (!(await service.api.exists(destinationPath))) return;
+  const markerPath = storageMoveMarkerPath(destinationPath);
   const entries = getRealEntries(
-    await Neutralino.filesystem.readDirectory(destinationBasePath),
+    await Neutralino.filesystem.readDirectory(destinationPath),
+  ).filter(
+    (entry) =>
+      normalizeComparablePath(`${destinationPath}/${entry.entry}`) !==
+      normalizeComparablePath(markerPath),
   );
   if (!entries.length) {
-    if (!service.isStorageInExecutableDirectory()) {
-      await service.api.remove(destinationBasePath);
-    }
-    return replacedDestinationPath;
+    return;
   }
-  if (!options.replaceExisting) {
+  if (await isStorageBootstrapFolder(service, destinationPath, entries)) {
+    await service.api.remove(`${destinationPath}/data/settings.json`);
+    return;
+  }
+  if (
+    !marker ||
+    normalizeComparablePath(marker.destination) !==
+      normalizeComparablePath(destinationPath)
+  ) {
     throw new Error(
-      "The selected folder already contains files. Choose an empty folder or replace it explicitly.",
+      "The selected storage folder must be empty. Use the existing WeekBox library directly instead.",
     );
   }
-  replacedDestinationPath = `${destinationBasePath}${STORAGE_REPLACEMENT_SUFFIX}`;
-  if (await service.api.exists(replacedDestinationPath)) {
-    throw new Error(
-      "A previous storage move is waiting for recovery. Retry the original destination or choose another folder.",
-    );
-  }
-  await service.api.write(
-    markerPath,
-    `${JSON.stringify({
-      version: 1,
-      sourcePath: service.basePath,
-      destinationPath: destinationBasePath,
-      replacedDestinationPath,
-      startedAt: new Date().toISOString(),
-    })}\n`,
-  );
-  try {
-    await service.api.move(destinationBasePath, replacedDestinationPath);
-  } catch (error) {
-    await service.api.remove(markerPath).catch(() => {});
-    throw error;
-  }
-  return replacedDestinationPath;
 }
 
-async function prepareStorageMove(service, basePath, options = {}) {
-  const destinationBasePath = service.getStorageDestinationPath(basePath);
-  if (!destinationBasePath) throw new Error("Choose a storage folder first");
+async function isStorageBootstrapFolder(service, destinationPath, entries) {
   if (
-    normalizeComparablePath(destinationBasePath) ===
+    entries.length !== 1 ||
+    entries[0].type !== "DIRECTORY" ||
+    String(entries[0].entry).toLocaleLowerCase() !== "data"
+  ) {
+    return false;
+  }
+  const dataEntries = getRealEntries(
+    await Neutralino.filesystem.readDirectory(`${destinationPath}/data`),
+  );
+  return (
+    dataEntries.length === 1 &&
+    dataEntries[0].type === "FILE" &&
+    String(dataEntries[0].entry).toLocaleLowerCase() === "settings.json" &&
+    (await service.api.exists(`${service.basePath}/data/settings.json`))
+  );
+}
+
+async function getStorageMovePlan(
+  service,
+  basePath,
+  { destinationIsResolved = false } = {},
+) {
+  const destinationPath = destinationIsResolved
+    ? trimPath(basePath)
+    : service.getStorageDestinationPath(basePath);
+  if (!destinationPath) throw new Error("Choose a storage folder first");
+  const pending = service.pendingStorageMove;
+  if (
+    normalizeComparablePath(destinationPath) ===
     normalizeComparablePath(service.basePath)
   ) {
-    return { samePath: service.weekboxPath };
+    return { destinationPath, pending, samePath: true };
   }
-  await service.assertStoragePathAllowed(destinationBasePath);
+  await service.assertStoragePathAllowed(destinationPath);
   if (service.hasRunningProcesses()) {
     throw new Error("Close running engines before moving WeekBox files");
   }
-  if (pathsOverlap(destinationBasePath, service.basePath)) {
+  if (pathsOverlap(destinationPath, service.basePath)) {
     throw new Error(
       "Choose a storage folder outside the current storage folder.",
     );
   }
-  await service.api.ensureDir(getParentPath(destinationBasePath));
-  const markerPath = storageMoveMarkerPath(destinationBasePath);
-  const marker = await readStorageMoveMarker(service, markerPath);
-  const isResume = isMatchingStorageMove(
-    marker,
-    service.basePath,
-    destinationBasePath,
-  );
-  const replacedDestinationPath = await prepareMoveDestination(service, {
-    destinationBasePath,
-    markerPath,
-    marker,
-    isResume,
-    options,
-  });
   if (
-    replacedDestinationPath &&
-    pathsOverlap(replacedDestinationPath, service.basePath)
+    pending &&
+    normalizeComparablePath(pending.destination) !==
+      normalizeComparablePath(destinationPath)
   ) {
-    throw new Error("Choose a storage folder outside the current library.");
+    throw new Error(
+      `Resume the interrupted storage move to ${pending.destination} before choosing another location.`,
+    );
   }
   return {
-    destinationBasePath,
-    markerPath,
-    marker,
-    isResume,
-    replacedDestinationPath,
-    storageOnlyMove: service.isStorageInExecutableDirectory(),
+    destinationPath,
+    pending,
+    samePath: false,
+    markerPath: pending?.markerPath || storageMoveMarkerPath(service.basePath),
   };
 }
 
-async function completeStorageMove(
-  service,
-  destinationBasePath,
-  replacedDestinationPath,
-  markerPath,
-) {
-  service.setStoragePaths(destinationBasePath);
-  await service.customEngines.load();
-  await appSettings.setDataPath(destinationBasePath);
-  await appSettings.write();
-  const movedMods = (await service.mods.getAll()) || [];
-  const movedEngines = await service.getInstalledEngines();
-  await Promise.all(
-    movedMods.map((mod) =>
-      service.injection.injectIntoInstalledEngines(mod.id, movedEngines),
-    ),
-  );
+async function finishSamePathStorageMove(service, plan) {
   if (
-    replacedDestinationPath &&
-    (await service.api.exists(replacedDestinationPath))
+    plan.pending &&
+    normalizeComparablePath(plan.pending.destination) ===
+      normalizeComparablePath(service.basePath) &&
+    (await service.isCompleteStorage(service.basePath))
   ) {
-    await service.api
-      .remove(replacedDestinationPath)
-      .catch((cleanupError) =>
-        console.warn(
-          "Could not remove the temporary replaced library",
-          cleanupError,
-        ),
-      );
+    await service.api.remove(plan.pending.markerPath);
+    service.pendingStorageMove = null;
   }
-  await service.api.remove(markerPath).catch(() => {});
+  return service.weekboxPath;
+}
+
+async function restoreStorageMoveState(
+  service,
+  { basePath, settingsPath, settingsDocument, storagePath, mods, engines },
+) {
+  service.setStoragePaths(basePath);
+  appSettings.path = settingsPath;
+  appSettings.document = settingsDocument;
+  appSettings.set("storagePath", storagePath, { persist: false });
+  await Promise.all(
+    mods.map((mod) =>
+      service.injection.injectIntoInstalledEngines(mod.id, engines),
+    ),
+  ).catch(() => {});
 }
 
 async function prepareLocalModImport(
@@ -584,6 +746,8 @@ var _FileSystemService = class _FileSystemService {
     this.initPromise = null;
     this.startupMaintenancePromise = null;
     this.isStorageMoveInProgress = false;
+    this.pendingStorageMove = null;
+    this.storageMoveCancelled = false;
     this.activeDownload = null;
     this.abortController = null;
     this.isPaused = false;
@@ -662,6 +826,7 @@ var _FileSystemService = class _FileSystemService {
 
       storagePath ||= defaultStoragePath;
       this.setStoragePaths(storagePath);
+      this.pendingStorageMove = await readStorageMoveMarker(this);
       await this.ensureStorageDirectories();
       await this.ensureStorageManifest();
       await this.selectSettingsPath(storagePath);
@@ -818,7 +983,11 @@ var _FileSystemService = class _FileSystemService {
   }
   getStorageDestinationPath(path) {
     const selectedPath = trimPath(path);
-    return selectedPath;
+    if (!selectedPath) return "";
+    if (/(?:^|[\\/])WeekBoxLibrary$/i.test(selectedPath)) {
+      return selectedPath;
+    }
+    return `${selectedPath}/${STORAGE_FOLDER_NAME}`;
   }
   async assertStoragePathAllowed(path) {
     const selectedPath = trimPath(path);
@@ -853,51 +1022,6 @@ var _FileSystemService = class _FileSystemService {
         "Choose a storage folder outside the WeekBox application folder.",
       );
     }
-  }
-  async copyFileAndVerify(sourcePath, destinationPath, { force = false } = {}) {
-    if (
-      typeof sourcePath !== "string" ||
-      !sourcePath.trim() ||
-      typeof destinationPath !== "string" ||
-      !destinationPath.trim()
-    ) {
-      throw new Error("Storage copy paths are missing");
-    }
-    const sourceStats = await Neutralino.filesystem.getStats(sourcePath);
-    const destinationStats = await Neutralino.filesystem
-      .getStats(destinationPath)
-      .catch(() => null);
-    if (
-      !force &&
-      destinationStats &&
-      Number(destinationStats.size) === Number(sourceStats.size)
-    ) {
-      return;
-    }
-    let lastError;
-    for (let attempt = 1; attempt <= 8; attempt += 1) {
-      try {
-        await this.api.remove(destinationPath);
-        await Neutralino.filesystem.copy(sourcePath, destinationPath, {
-          recursive: false,
-          overwrite: true,
-          skip: false,
-        });
-        const copiedStats =
-          await Neutralino.filesystem.getStats(destinationPath);
-        if (Number(copiedStats.size) === Number(sourceStats.size)) return;
-        lastError = new Error(
-          `Storage verification failed for ${destinationPath}`,
-        );
-      } catch (error) {
-        lastError = error;
-      }
-      if (attempt < 8)
-        await new Promise((resolve) => setTimeout(resolve, attempt * 250));
-    }
-    throw new Error(
-      `Could not copy ${sourcePath} -> ${destinationPath}: ${lastError?.message || lastError}`,
-    );
   }
   async writeStorageManifest(root, { force = false } = {}) {
     const manifestPath = `${root}/storage-manifest.json`;
@@ -962,17 +1086,37 @@ var _FileSystemService = class _FileSystemService {
   hasRunningProcesses() {
     return this.activeEngineProcesses.size > 0;
   }
-  assertStorageUnlocked() {
-    if (this.isStorageMoveInProgress) {
+  assertStorageUnlocked({ allowPending = false } = {}) {
+    if (
+      this.isStorageMoveInProgress ||
+      (this.pendingStorageMove && !allowPending)
+    ) {
       throw new Error("Wait for WeekBox files to finish moving first");
     }
+  }
+  getPendingStorageMove() {
+    return this.pendingStorageMove;
+  }
+  async cancelStorageMove() {
+    if (!this.isStorageMoveInProgress) return false;
+    this.storageMoveCancelled = true;
+    return true;
   }
   async findExistingStorage(basePath) {
     const selectedPath = trimPath(basePath);
     if (!selectedPath) return null;
-    const candidates = isWeekBoxFolder(selectedPath)
-      ? [selectedPath]
-      : [selectedPath, `${selectedPath}/WeekBox`];
+    const candidates = [
+      selectedPath,
+      this.getStorageDestinationPath(selectedPath),
+      `${selectedPath}/WeekBox`,
+    ].filter(
+      (candidate, index, paths) =>
+        paths.findIndex(
+          (path) =>
+            normalizeComparablePath(path) ===
+            normalizeComparablePath(candidate),
+        ) === index,
+    );
     for (const candidate of candidates) {
       if (await this.isCompleteStorage(candidate)) {
         return {
@@ -984,12 +1128,47 @@ var _FileSystemService = class _FileSystemService {
     return null;
   }
   async hasStorageFolder(basePath) {
-    const selectedPath = trimPath(basePath);
-    if (!selectedPath) return false;
-    if (isWeekBoxFolder(selectedPath)) {
-      return this.api.exists(selectedPath);
+    const destinationPath = this.getStorageDestinationPath(basePath);
+    if (!destinationPath || !(await this.api.exists(destinationPath))) {
+      return false;
     }
-    return this.api.exists(`${selectedPath}/WeekBox`);
+    const entries = await Neutralino.filesystem
+      .readDirectory(destinationPath)
+      .catch(() => []);
+    if (
+      await isStorageBootstrapFolder(
+        this,
+        destinationPath,
+        getRealEntries(entries),
+      )
+    ) {
+      return false;
+    }
+    return getRealEntries(entries).length > 0;
+  }
+
+  async removeExistingStorage(basePath) {
+    this.assertStorageUnlocked();
+    if (this.hasRunningProcesses()) {
+      throw new Error("Close running engines before replacing WeekBox storage");
+    }
+    const storage = await this.findExistingStorage(basePath);
+    if (!storage) {
+      throw new Error(
+        "The selected folder does not contain a complete WeekBox library.",
+      );
+    }
+    if (pathsOverlap(storage.basePath, this.basePath)) {
+      throw new Error(
+        "Choose a storage folder outside the current storage folder.",
+      );
+    }
+    await this.assertStoragePathAllowed(storage.basePath);
+    await this.api.remove(storage.basePath);
+    if (await this.api.exists(storage.basePath)) {
+      throw new Error("Could not remove the existing WeekBox library.");
+    }
+    return storage.basePath;
   }
   async useExistingStorage(basePath) {
     this.assertStorageUnlocked();
@@ -1010,40 +1189,54 @@ var _FileSystemService = class _FileSystemService {
     await this.customEngines.load();
     return this.weekboxPath;
   }
-  async moveStorageTo(basePath, onProgress = () => {}, options = {}) {
-    this.assertStorageUnlocked();
-    const move = await prepareStorageMove(this, basePath, options);
-    if (move.samePath) return move.samePath;
-    const {
-      destinationBasePath,
-      markerPath,
-      marker: previousMarker,
-      replacedDestinationPath,
-      storageOnlyMove,
-    } = move;
-    this.isStorageMoveInProgress = true;
+  async moveStorageTo(
+    basePath,
+    onProgress = () => {},
+    { destinationIsResolved = false } = {},
+  ) {
+    this.assertStorageUnlocked({ allowPending: true });
+    const plan = await getStorageMovePlan(this, basePath, {
+      destinationIsResolved,
+    });
+    if (plan.samePath) return finishSamePathStorageMove(this, plan);
+    const { destinationPath, pending, markerPath } = plan;
+    const isResume = Boolean(pending);
     const previousBasePath = this.basePath;
     const previousSettingsPath = appSettings.path;
     const previousStoragePath = appSettings.get("storagePath");
+    const previousSettingsDocument = JSON.parse(
+      JSON.stringify(appSettings.document),
+    );
     let mods = [];
     let engines = [];
-    let transferComplete = false;
+    this.isStorageMoveInProgress = true;
+    this.storageMoveCancelled = false;
+    let lastProgress = {};
+    const report = (event) => {
+      lastProgress = { ...lastProgress, ...event };
+      onProgress({ phase: "PREPARING", ...lastProgress });
+    };
     try {
-      await this.api.write(
-        markerPath,
-        `${JSON.stringify({
-          version: 1,
-          sourcePath: previousBasePath,
-          destinationPath: destinationBasePath,
-          replacedDestinationPath,
-          startedAt: previousMarker?.startedAt || new Date().toISOString(),
-        })}\n`,
+      await this.api.ensureDir(getParentPath(destinationPath));
+      await prepareStorageDestination(this, destinationPath, pending);
+      const marker = {
+        version: 1,
+        source: previousBasePath,
+        destination: destinationPath,
+        startedAt: pending?.startedAt || new Date().toISOString(),
+        operation: "move",
+      };
+      await this.api.write(markerPath, `${JSON.stringify(marker)}\n`);
+      this.pendingStorageMove = { ...marker, markerPath };
+      console.info(
+        `[WeekBox] Storage move ${isResume ? "resumed" : "started"}`,
+        { source: previousBasePath, destination: destinationPath },
       );
-      onProgress({
-        progress: 0,
-        copiedFiles: 0,
-        totalFiles: 0,
-        phase: "moving",
+      report({
+        phase: "PREPARING",
+        progress: null,
+        bytesMoved: 0,
+        totalBytes: 0,
       });
       const storedMods = await this.mods.getAll();
       mods = Array.isArray(storedMods) ? storedMods : [];
@@ -1053,246 +1246,69 @@ var _FileSystemService = class _FileSystemService {
           this.injection.unlinkFromInstalledEngines(mod, engines),
         ),
       );
-      if (storageOnlyMove) {
-        await this.api.ensureDir(destinationBasePath);
-        for (const [index, directory] of [
-          "data",
-          "engines",
-          "mods",
-        ].entries()) {
-          await moveStorageDirectory(
-            this,
-            `${this.weekboxPath}/${directory}`,
-            `${destinationBasePath}/${directory}`,
-          );
-          onProgress({
-            progress: ((index + 1) / 3) * 100,
-            copiedFiles: 0,
-            totalFiles: 0,
-            phase: "moving",
-          });
-        }
-      } else {
-        await moveStorageDirectory(this, this.weekboxPath, destinationBasePath);
-      }
-      transferComplete = true;
-      await this.api.remove(`${destinationBasePath}/data/settings.json`);
-      await this.ensureStorageDirectoriesAt(destinationBasePath);
-      appSettings.set("storagePath", destinationBasePath, { persist: false });
-      await appSettings.write(`${destinationBasePath}/settings.json`);
-      await this.writeStorageManifest(destinationBasePath);
-      if (
-        !(await this.isCompleteStorage(destinationBasePath)) ||
-        !(await this.api.exists(`${destinationBasePath}/settings.json`))
-      ) {
-        throw new Error("WeekBox storage move did not pass verification");
-      }
-      await completeStorageMove(
+      const transferState = await transferStorageFiles(
         this,
-        destinationBasePath,
-        replacedDestinationPath,
+        previousBasePath,
+        destinationPath,
         markerPath,
+        (event) => report(event),
       );
-      onProgress({
-        progress: 100,
-        copiedFiles: 0,
-        totalFiles: 0,
-        phase: "moving",
+      report({ ...transferState, phase: "VERIFYING", progress: 100 });
+      await this.ensureStorageDirectoriesAt(destinationPath);
+      if (!(await this.isCompleteStorage(destinationPath))) {
+        throw new Error("The destination is missing required WeekBox folders.");
+      }
+      report({ ...transferState, phase: "FINALIZING", progress: 100 });
+      this.setStoragePaths(destinationPath);
+      await this.customEngines.load();
+      await this.selectSettingsPath(destinationPath);
+      await this.writeStorageManifest(destinationPath);
+      const movedMods = (await this.mods.getAll()) || [];
+      const movedEngines = await this.getInstalledEngines();
+      await Promise.all(
+        movedMods.map((mod) =>
+          this.injection.injectIntoInstalledEngines(mod.id, movedEngines),
+        ),
+      );
+      await this.api.remove(markerPath);
+      this.pendingStorageMove = null;
+      report({ phase: "COMPLETE", progress: 100 });
+      console.info("[WeekBox] Storage move completed", {
+        source: previousBasePath,
+        destination: destinationPath,
       });
       return this.weekboxPath;
     } catch (error) {
-      if (transferComplete) {
-        try {
-          await completeStorageMove(
-            this,
-            destinationBasePath,
-            replacedDestinationPath,
-            markerPath,
-          );
-          return this.weekboxPath;
-        } catch (recoveryError) {
-          console.error(
-            "Could not finish the completed storage move",
-            recoveryError,
-          );
-          this.setStoragePaths(destinationBasePath);
-          appSettings.path = `${destinationBasePath}/settings.json`;
-          appSettings.set("storagePath", destinationBasePath, {
-            persist: false,
-          });
-          throw new Error(
-            `The storage files were moved, but WeekBox could not finish saving the new location. Restart WeekBox and retry if needed. ${recoveryError?.message || recoveryError}`,
-          );
-        }
+      const cancelled = error?.code === "STORAGE_MOVE_CANCELLED";
+      await restoreStorageMoveState(this, {
+        basePath: previousBasePath,
+        settingsPath: previousSettingsPath,
+        settingsDocument: previousSettingsDocument,
+        storagePath: previousStoragePath,
+        mods,
+        engines,
+      });
+      if (cancelled) {
+        report({ ...lastProgress, phase: "CANCELLED" });
+        console.info("[WeekBox] Storage move cancelled");
+        throw error;
       }
-      this.setStoragePaths(previousBasePath);
-      appSettings.path = previousSettingsPath;
-      appSettings.set("storagePath", previousStoragePath, { persist: false });
-      await Promise.all(
-        mods.map((mod) =>
-          this.injection.injectIntoInstalledEngines(mod.id, engines),
-        ),
-      ).catch(() => {});
+      report({
+        ...lastProgress,
+        phase: "FAILED",
+        error: error?.message || String(error),
+      });
+      console.error("[WeekBox] Storage move failed", error);
       throw new Error(
-        `Could not move WeekBox files: ${error?.message || error}. The original files were kept where possible; retry the same destination to resume.`,
+        `Could not move the WeekBox library. The files already transferred are safe. You can retry the move to continue where it stopped.\n\nReason: ${error?.message || error}`,
       );
     } finally {
       this.isStorageMoveInProgress = false;
-    }
-  }
-  async copyDirectoryWithProgress(
-    sourcePath,
-    destinationPath,
-    onProgress,
-    { continueOnError = false, forcePaths = new Set() } = {},
-  ) {
-    const files = [];
-    const directories = [];
-    const failures = [];
-    let failedFileCount = 0;
-    const recordFailure = (path, error) => {
-      failedFileCount += 1;
-      if (failures.length >= 100) return;
-      const relativePath = String(path)
-        .slice(sourcePath.length)
-        .replace(/^[\\/]+/, "");
-      failures.push({
-        path: relativePath || String(path),
-        reason: error?.message || String(error),
-      });
-    };
-    onProgress({
-      progress: 0,
-      copiedFiles: 0,
-      totalFiles: 0,
-      failedFiles: 0,
-      phase: "preparing",
-    });
-    const collectFiles = async (directoryPath) => {
-      directories.push(directoryPath);
-      let entries;
-      try {
-        entries = getRealEntries(
-          await Neutralino.filesystem.readDirectory(directoryPath),
-        );
-      } catch (error) {
-        if (!continueOnError) throw error;
-        recordFailure(directoryPath, error);
-        return;
-      }
-      for (const entry of entries) {
-        const entryPath = `${directoryPath}/${entry.entry}`;
-        if (entry.type === "DIRECTORY") {
-          await collectFiles(entryPath);
-        } else if (entry.type === "FILE") {
-          try {
-            const stats = await Neutralino.filesystem.getStats(entryPath);
-            files.push({ path: entryPath, size: Number(stats.size) || 0 });
-          } catch (error) {
-            if (!continueOnError) throw error;
-            recordFailure(entryPath, error);
-          }
-          onProgress({
-            progress: 0,
-            copiedFiles: 0,
-            totalFiles: files.length,
-            failedFiles: failedFileCount,
-            phase: "preparing",
-          });
-        }
-      }
-    };
-    await collectFiles(sourcePath);
-    const totalBytes = files.reduce((total, file) => total + file.size, 0);
-    let copiedBytes = 0;
-    let copiedFiles = 0;
-    let processedBytes = 0;
-    let processedFiles = 0;
-    const reportProgress = () => {
-      const progress = totalBytes
-        ? (processedBytes / totalBytes) * 100
-        : files.length
-          ? (processedFiles / files.length) * 100
-          : 100;
-      onProgress({
-        progress,
-        copiedFiles,
-        totalFiles: files.length,
-        failedFiles: failedFileCount,
-        phase: "copying",
-      });
-    };
-    reportProgress();
-    for (const sourceDirectory of directories) {
-      const relativePath = sourceDirectory.slice(sourcePath.length);
-      try {
-        await this.api.ensureDir(`${destinationPath}${relativePath}`);
-      } catch (error) {
-        if (!continueOnError) throw error;
-        recordFailure(sourceDirectory, error);
-      }
-    }
-    const concurrency = appSettings.get("multithreadStorageMoves") ? 4 : 1;
-    let nextFileIndex = 0;
-    const copyNextFile = async () => {
-      while (nextFileIndex < files.length) {
-        const file = files[nextFileIndex++];
-        const relativePath = file.path.slice(sourcePath.length);
-        try {
-          await this.copyFileAndVerify(
-            file.path,
-            `${destinationPath}${relativePath}`,
-            {
-              force: forcePaths.has(relativePath.replace(/^[\\/]+/, "")),
-            },
-          );
-          copiedBytes += file.size;
-          copiedFiles += 1;
-        } catch (error) {
-          if (!continueOnError) throw error;
-          recordFailure(file.path, error);
-        } finally {
-          processedBytes += file.size;
-          processedFiles += 1;
-          reportProgress();
-        }
-      }
-    };
-    await Promise.all(
-      Array.from({ length: Math.min(concurrency, files.length) }, copyNextFile),
-    );
-    return {
-      failures,
-      failedFileCount,
-      totalFiles: files.length,
-      copiedFiles,
-      totalBytes,
-      copiedBytes,
-    };
-  }
-  async copyStorageDirectoriesWithProgress(
-    sourceWeekboxPath,
-    destinationWeekboxPath,
-    onProgress,
-  ) {
-    const directories = ["data", "engines", "mods"];
-    for (let index = 0; index < directories.length; index += 1) {
-      const directory = directories[index];
-      await this.copyDirectoryWithProgress(
-        `${sourceWeekboxPath}/${directory}`,
-        `${destinationWeekboxPath}/${directory}`,
-        (event) =>
-          onProgress({
-            ...event,
-            progress:
-              ((index + Math.max(0, Math.min(100, event.progress)) / 100) /
-                directories.length) *
-              100,
-          }),
-      );
+      this.storageMoveCancelled = false;
     }
   }
   async shouldRecommendDefaultStorage() {
+    if (this.pendingStorageMove) return false;
     if (appSettings.get("storageMoveRecommendationDismissed")) return false;
     if (this.isStorageInExecutableDirectory()) return true;
     if (window.NL_OS !== "Windows" && window.NL_OS !== "Darwin") {
@@ -1375,7 +1391,7 @@ var _FileSystemService = class _FileSystemService {
         .filter((engine) => engine.custom)
         .map((engine) => `${engine.id}/${engine.version}`),
     );
-    for (const engine of [...this.customEngines.getAll()]) {
+    for (const engine of this.customEngines.getAll()) {
       const versions = Array.isArray(engine.versions) ? engine.versions : [];
       const validVersions = versions.filter((version) =>
         installedVersions.has(`${engine.id}/${version.version}`),
@@ -1633,7 +1649,15 @@ var _FileSystemService = class _FileSystemService {
     if (!customEngine || !install) throw new Error("Custom engine not found");
     return importCustomEngineContent(this, install, engineId, version);
   }
-  async runEngine(engineId, version, onStateChange, args = [], modId = null) {
+  async runEngine(
+    engineId,
+    version,
+    onStateChange,
+    args = [],
+    modId = null,
+    playedModId = null,
+  ) {
+    this.assertStorageUnlocked();
     const install = this.getEngineInstall(engineId, version);
     if (!install) {
       onStateChange?.("not_found");
@@ -1651,6 +1675,9 @@ var _FileSystemService = class _FileSystemService {
       key,
       executable,
       (state) => {
+        if (state === "launched" && playedModId) {
+          this.markModPlayed(playedModId);
+        }
         if (state === "completed" || state === "error") {
           this.activeEngineMods.delete(key);
           this.importPsychOnlineEngineMods()
@@ -1660,7 +1687,7 @@ var _FileSystemService = class _FileSystemService {
         onStateChange?.(state);
       },
       args,
-      { modId },
+      { modId, recentlyPlayedModId: playedModId },
     );
     if (launched) this.activeEngineMods.set(key, modId);
     return launched;
@@ -1759,6 +1786,7 @@ var _FileSystemService = class _FileSystemService {
         onStateChange,
         args,
         behavior.scope === "exclusive-mod" ? mod.id : null,
+        mod.id,
       );
     };
     if (state === "launch") return launch();
@@ -1869,7 +1897,7 @@ var _FileSystemService = class _FileSystemService {
         }
       }
       return [...installed, ...customInstalled];
-    } catch (error) {
+    } catch {
       return [];
     }
   }
@@ -1933,7 +1961,7 @@ var _FileSystemService = class _FileSystemService {
       for (const e of entries) {
         if (e.type === "DIRECTORY") validFolders.add(e.entry);
       }
-    } catch (error) {}
+    } catch {}
     const available = mods.filter((mod) => {
       const folderName = getModFolderName(mod);
       return folderName && validFolders.has(folderName);
@@ -1963,6 +1991,7 @@ var _FileSystemService = class _FileSystemService {
     return standaloneMods;
   }
   async runStandaloneMod(modId, onStateChange) {
+    this.assertStorageUnlocked();
     const mod = (await this.getStandaloneMods()).find((item) =>
       sameId(item.id, modId),
     );
@@ -1973,10 +2002,54 @@ var _FileSystemService = class _FileSystemService {
     return this.processes.launch(
       `standalone:${mod.id}`,
       mod.exePath,
-      onStateChange,
+      (state) => {
+        if (state === "launched") this.markModPlayed(mod.id);
+        onStateChange?.(state);
+      },
       [],
       { modId: mod.id },
     );
+  }
+  async markModPlayed(modId) {
+    await this.mods.setLastPlayed(modId).catch(() => {});
+    document.dispatchEvent(new CustomEvent("recently-played-mods-updated"));
+  }
+  async getRecentlyPlayedMods(limit = 8) {
+    return (await this.getInstalledMods())
+      .filter(
+        (mod) =>
+          !mod.hidden &&
+          !["dependency", "addon"].includes(mod.kind) &&
+          Number(mod.lastPlayedAt) > 0,
+      )
+      .sort((left, right) => Number(right.lastPlayedAt) - Number(left.lastPlayedAt))
+      .slice(0, limit);
+  }
+  async launchRecentlyPlayedMod(modId, onStateChange) {
+    const mod = (await this.getInstalledMods()).find((item) =>
+      sameId(item.id, modId),
+    );
+    if (!mod) {
+      onStateChange?.("not_found");
+      return false;
+    }
+    if (mod.engineId === "executable") {
+      return this.toggleModLaunch(mod, null, true, onStateChange);
+    }
+    const installedEngines = await this.getInstalledEngines();
+    const versions = installedEngines
+      .filter((engine) => engine.id === mod.engineId)
+      .map((engine) => engine.version);
+    const version =
+      mod.engineVersion || getPreferredEngineVersion(mod.engineId, versions);
+    const engine = installedEngines.find(
+      (item) => item.id === mod.engineId && item.version === version,
+    );
+    if (!engine) {
+      onStateChange?.("not_found");
+      return false;
+    }
+    return this.toggleModLaunch(mod, engine, false, onStateChange);
   }
   async closeStandaloneMod(modId, onStateChange) {
     return this.processes.close(`standalone:${modId}`, onStateChange);
@@ -1986,6 +2059,13 @@ var _FileSystemService = class _FileSystemService {
   }
   isModRunning(modId) {
     if (this.isStandaloneModRunning(modId)) return true;
+    if (
+      [...this.activeEngineProcesses.values()].some((process) =>
+        sameId(process.metadata?.recentlyPlayedModId, modId),
+      )
+    ) {
+      return true;
+    }
     return [...this.activeEngineMods.values()].some(
       (runningModId) =>
         runningModId !== null && String(runningModId) === String(modId),
@@ -2146,6 +2226,7 @@ var _FileSystemService = class _FileSystemService {
       await this.api.remove(destinationPath).catch(() => {});
       await this.mods.remove(modId).catch(() => {});
       await this.covers.remove(modId).catch(() => {});
+      await this.covers.removeIcon(modId).catch(() => {});
       throw error;
     }
   }
@@ -2197,8 +2278,9 @@ var _FileSystemService = class _FileSystemService {
   }
   async updateModAppearance(modId, appearance) {
     if (!this.isInitialized) return null;
-    const { coverDataUrl, coverUrl, ...metadata } = appearance;
+    const { coverDataUrl, coverUrl, iconDataUrl, ...metadata } = appearance;
     let coverPath;
+    let iconPath;
     if (coverDataUrl !== void 0) {
       coverPath = coverDataUrl
         ? await this.covers.saveDataUrl(modId, coverDataUrl)
@@ -2206,12 +2288,28 @@ var _FileSystemService = class _FileSystemService {
     } else if (coverUrl !== void 0) {
       coverPath = coverUrl ? await this.covers.saveUrl(modId, coverUrl) : null;
     }
-    return this.mods.updateAppearance(modId, { ...metadata, coverPath });
+    if (iconDataUrl !== void 0) {
+      if (iconDataUrl) {
+        iconPath = await this.covers.saveIconDataUrl(modId, iconDataUrl);
+      } else {
+        await this.covers.removeIcon(modId);
+        iconPath = null;
+      }
+    }
+    return this.mods.updateAppearance(modId, { ...metadata, coverPath, iconPath });
   }
   async getModCover(modId) {
     if (!this.isInitialized) return null;
     try {
       return await this.covers.read(modId);
+    } catch {
+      return null;
+    }
+  }
+  async getModIcon(modId) {
+    if (!this.isInitialized) return null;
+    try {
+      return await this.covers.readIcon(modId);
     } catch {
       return null;
     }
@@ -2360,6 +2458,7 @@ var _FileSystemService = class _FileSystemService {
     await removeModFiles(this, mod, getModFolderName(mod));
     await this.mods.remove(modId);
     await this.covers.remove(modId).catch(() => {});
+    await this.covers.removeIcon(modId).catch(() => {});
     if (Array.isArray(mod.dependencies)) {
       await Promise.all(
         mod.dependencies.map((dependencyId) =>
@@ -2405,7 +2504,7 @@ var _FileSystemService = class _FileSystemService {
         );
       }
       await this.api.remove(sourceDir);
-    } catch (error) {}
+    } catch {}
   }
 };
 

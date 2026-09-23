@@ -132,7 +132,12 @@ async function prepareInstalledFolder(
   }
   await new Promise((resolve) => setTimeout(resolve, 150));
   if (wrapper) {
-    await FS.api.move(`${targetModFolder}/${wrapper.entry}`, finalModFolder);
+    const wrapperPath = `${targetModFolder}/${wrapper.entry}`;
+    const wrapperEntries = await Neutralino.filesystem.readDirectory(
+      wrapperPath,
+    );
+    await service.moveEntries(wrapperEntries, wrapperPath, finalModFolder);
+    await FS.api.remove(wrapperPath);
   } else {
     await FS.api.ensureDir(finalModFolder);
     await service.moveEntries(realEntries, targetModFolder, finalModFolder);
@@ -390,18 +395,18 @@ export const downloadMod = {
   ) {
     try {
       if (tempFilePath) await FS.api.remove(tempFilePath);
-    } catch (error) {}
+    } catch {}
     try {
       if (targetModFolder) await FS.api.remove(targetModFolder);
-    } catch (error) {}
+    } catch {}
     try {
       if (finalModFolder && finalModFolder !== targetModFolder) {
         await FS.api.remove(finalModFolder);
       }
-    } catch (error) {}
+    } catch {}
     try {
       await FS.removeInstalledMod(modId);
-    } catch (error) {}
+    } catch {}
   },
 
   async install(

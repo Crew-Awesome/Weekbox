@@ -4,10 +4,9 @@ import { setupDropdown } from "../../utils/components/dropdown.component.js";
 import { downloadEngine } from "../engines/downloadEngine.js";
 import { downloadMod } from "../home/modal/downloadMod.js";
 import { appUpdater } from "../../../backend/core/updates/app-updater.service.js";
-import { toastSystem } from "../toasts/toastSystem.js";
 import { AppUpdateController } from "./appUpdateController.js";
 import { whatsNewModal } from "../updates/whatsNewModal.js";
-import { StorageMoveFeedback } from "./storageMoveFeedback.js";
+import { storageMoveFeedback } from "./storageMoveFeedback.js";
 import { existingStorageModal } from "../existingStorageModal.js";
 import { networkStatus } from "../../../backend/core/system/network-status.service.js";
 import {
@@ -25,8 +24,6 @@ import {
 } from "../home/modal/dialogFocus.js";
 
 const appUpdates = new AppUpdateController(appUpdater);
-const storageMoveFeedback = new StorageMoveFeedback(toastSystem);
-
 async function formatStoragePath(path) {
   const value = String(path || "");
   if (window.NL_OS !== "Windows") return value;
@@ -201,9 +198,6 @@ export const configModal = {
       this.showAvailableAppUpdate(event.detail);
     });
 
-
-
-
     const tabBtns = document.querySelectorAll(".config-tab-btn");
     tabBtns.forEach((btn) => {
       btn.addEventListener("click", () => {
@@ -237,10 +231,6 @@ export const configModal = {
       });
     });
 
-
-
-
-
     const toggleIds = [
       "darkMode",
       "launchOnStartup",
@@ -249,7 +239,6 @@ export const configModal = {
       "closeToTray",
       "autoStartAfterDownload",
       "multithreadDownloads",
-      "multithreadStorageMoves",
       "checkUpdatesOnStartup",
       "checkUpdatesInBackground",
       "checkAppUpdatesOnStartup",
@@ -435,7 +424,6 @@ export const configModal = {
       "closeToTray",
       "autoStartAfterDownload",
       "multithreadDownloads",
-      "multithreadStorageMoves",
       "checkUpdatesOnStartup",
       "checkUpdatesInBackground",
       "checkAppUpdatesOnStartup",
@@ -551,9 +539,7 @@ export const configModal = {
     const title = overlay.querySelector("#library-delete-title");
     const description = overlay.querySelector("#library-delete-description");
     const status = overlay.querySelector("#library-delete-status");
-    const targetPicker = overlay.querySelector(
-      "#library-delete-target-picker",
-    );
+    const targetPicker = overlay.querySelector("#library-delete-target-picker");
     const targetPickerLabel = overlay.querySelector(
       "#library-delete-target-label",
     );
@@ -780,30 +766,53 @@ export const configModal = {
     );
   },
 
-  showStorageMoveToast() {
-    storageMoveFeedback.show();
-  },
-
-  updateStorageMoveToast({ progress, copiedFiles, totalFiles, phase }) {
-    storageMoveFeedback.update({ progress, copiedFiles, totalFiles, phase });
-  },
-
-  completeStorageMoveToast() {
-    storageMoveFeedback.complete();
-  },
-
-  failStorageMoveToast(message) {
-    storageMoveFeedback.fail(message);
+  async runStorageMove(
+    destination,
+    buttons = [],
+    { destinationIsResolved = false } = {},
+  ) {
+    const resolvedDestination = destinationIsResolved
+      ? destination
+      : FS.getStorageDestinationPath(destination);
+    buttons.filter(Boolean).forEach((button) => {
+      button.disabled = true;
+    });
+    storageMoveFeedback.show({
+      destination: resolvedDestination,
+      onCancel: () => FS.cancelStorageMove(),
+    });
+    try {
+      await FS.moveStorageTo(
+        resolvedDestination,
+        (progress) => storageMoveFeedback.update(progress),
+        { destinationIsResolved: true },
+      );
+      this.updateStorageLocationLabel();
+      storageMoveFeedback.complete();
+      return true;
+    } catch (error) {
+      if (error?.code === "STORAGE_MOVE_CANCELLED") {
+        storageMoveFeedback.cancelled();
+        return false;
+      }
+      console.error("Could not move WeekBox storage", error);
+      storageMoveFeedback.fail(
+        error?.message || t("storage.moveFailedMessage"),
+      );
+      return false;
+    } finally {
+      buttons.filter(Boolean).forEach((button) => {
+        button.disabled = false;
+      });
+    }
   },
 
   async chooseStorageLocation() {
     if (FS.hasRunningProcesses() || this.hasActiveDownloads()) {
-      await Neutralino.os.showMessageBox(
-        t("storage.cannotMoveTitle"),
-        t("storage.cannotMoveMessage"),
-        "OK",
-        "WARNING",
-      );
+      await storageMoveFeedback.showNotice({
+        title: t("storage.cannotMoveTitle"),
+        message: t("storage.cannotMoveMessage"),
+      });
       return;
     }
 
@@ -814,16 +823,15 @@ export const configModal = {
         { defaultPath: FS.basePath },
       );
       if (!selectedPath) return;
+      const destination = FS.getStorageDestinationPath(selectedPath);
       if (
-        (await isSameStoragePath(selectedPath, FS.basePath)) ||
-        (await isSameStoragePath(selectedPath, FS.weekboxPath))
+        (await isSameStoragePath(destination, FS.basePath)) ||
+        (await isSameStoragePath(destination, FS.weekboxPath))
       ) {
-        await Neutralino.os.showMessageBox(
-          t("storage.alreadyUsingTitle"),
-          t("storage.alreadyUsingMessage"),
-          "OK",
-          "INFO",
-        );
+        await storageMoveFeedback.showNotice({
+          title: t("storage.alreadyUsingTitle"),
+          message: t("storage.alreadyUsingMessage"),
+        });
         return;
       }
       const existingStorage = await FS.findExistingStorage(selectedPath);
@@ -835,14 +843,10 @@ export const configModal = {
         if (choice === "replace") {
           button.disabled = true;
           button.innerHTML = `<i class="fa-solid fa-folder-open"></i> ${t("storage.movingFiles")}`;
-          this.showStorageMoveToast();
-          await FS.moveStorageTo(
-            existingStorage.basePath,
-            (progress) => this.updateStorageMoveToast(progress),
-            { replaceExisting: true },
-          );
-          this.updateStorageLocationLabel();
-          this.completeStorageMoveToast();
+          await FS.removeExistingStorage(existingStorage.basePath);
+          await this.runStorageMove(existingStorage.basePath, [button], {
+            destinationIsResolved: true,
+          });
           return;
         }
         if (choice !== "use") return;
@@ -854,61 +858,33 @@ export const configModal = {
         return;
       }
       if (await FS.hasStorageFolder(selectedPath)) {
-        const replaceChoice = await Neutralino.os.showMessageBox(
-          t("storage.moveFilesTitle"),
-          t("storage.moveFilesMessage", {
-            path: await formatStoragePath(selectedPath),
-          }),
-          "YES_NO",
-          "QUESTION",
-        );
-        if (replaceChoice !== "YES") return;
-        button.disabled = true;
-        button.innerHTML = `<i class="fa-solid fa-folder-open"></i> ${t("storage.movingFiles")}`;
-        this.showStorageMoveToast();
-        await FS.moveStorageTo(
-          selectedPath,
-          (progress) => this.updateStorageMoveToast(progress),
-          { replaceExisting: true },
-        );
-        this.updateStorageLocationLabel();
-        this.completeStorageMoveToast();
+        await storageMoveFeedback.showNotice({
+          title: t("storage.destinationNotEmptyTitle"),
+          message: t("storage.destinationNotEmpty"),
+        });
         return;
       }
-      const choice = await Neutralino.os.showMessageBox(
-        t("storage.moveFilesTitle"),
-        t("storage.moveFilesMessage", {
-          path: await formatStoragePath(selectedPath),
-        }),
-        "YES_NO",
-        "QUESTION",
-      );
-      if (choice !== "YES") return;
+      const confirmed = await storageMoveFeedback.showMoveConfirmation({
+        destination: await formatStoragePath(destination),
+      });
+      if (!confirmed) return;
 
       if (FS.hasRunningProcesses() || this.hasActiveDownloads()) {
         throw new Error(t("storage.cannotMoveMessage"));
       }
 
-      button.disabled = true;
       button.innerHTML = `<i class="fa-solid fa-folder-open"></i> ${t("storage.movingFiles")}`;
-      this.showStorageMoveToast();
-      await FS.moveStorageTo(selectedPath, (progress) =>
-        this.updateStorageMoveToast(progress),
-      );
-      this.updateStorageLocationLabel();
-      this.completeStorageMoveToast();
+      await this.runStorageMove(destination, [button], {
+        destinationIsResolved: true,
+      });
     } catch (error) {
       console.error("Could not move WeekBox storage", error);
-      this.failStorageMoveToast(t("storage.moveFailedMessage"));
-      await Neutralino.os.showMessageBox(
-        t("storage.moveFailedTitle"),
-        error?.message || t("storage.unexpectedMoveError"),
-        "OK",
-        "ERROR",
-      );
+      await storageMoveFeedback.showNotice({
+        title: t("storage.moveFailedTitle"),
+        message: error?.message || t("storage.unexpectedMoveError"),
+      });
     } finally {
       if (button) {
-        button.disabled = false;
         button.innerHTML = `<i class="fa-solid fa-folder-open"></i> ${t("common.chooseFolder")}`;
       }
     }
@@ -916,12 +892,10 @@ export const configModal = {
 
   async useDefaultStorageLocation() {
     if (FS.hasRunningProcesses() || this.hasActiveDownloads()) {
-      await Neutralino.os.showMessageBox(
-        t("storage.cannotMoveTitle"),
-        t("storage.cannotMoveMessage"),
-        "OK",
-        "WARNING",
-      );
+      await storageMoveFeedback.showNotice({
+        title: t("storage.cannotMoveTitle"),
+        message: t("storage.cannotMoveMessage"),
+      });
       return;
     }
 
@@ -929,38 +903,65 @@ export const configModal = {
     const chooseButton = document.getElementById("choose-storage-location");
     try {
       const defaultPath = await FS.getDefaultStoragePath();
-      const defaultWeekboxPath = defaultPath;
-      const choice = await Neutralino.os.showMessageBox(
-        t("storage.useDefaultTitle"),
-        t("storage.moveFilesMessage", {
-          path: await formatStoragePath(defaultWeekboxPath),
-        }),
-        "YES_NO",
-        "QUESTION",
-      );
-      if (choice !== "YES") return;
+      const destination = FS.getStorageDestinationPath(defaultPath);
+      if (await isSameStoragePath(destination, FS.basePath)) {
+        await storageMoveFeedback.showNotice({
+          title: t("storage.alreadyUsingTitle"),
+          message: t("storage.alreadyUsingMessage"),
+        });
+        return;
+      }
+      const existingStorage = await FS.findExistingStorage(defaultPath);
+      if (existingStorage) {
+        const choice = await existingStorageModal.show({
+          ...existingStorage,
+          weekboxPath: await formatStoragePath(existingStorage.weekboxPath),
+        });
+        if (choice === "replace") {
+          button.disabled = true;
+          chooseButton.disabled = true;
+          button.innerHTML = `<i class="fa-solid fa-folder-open"></i> ${t("storage.movingFiles")}`;
+          await FS.removeExistingStorage(existingStorage.basePath);
+          await this.runStorageMove(
+            existingStorage.basePath,
+            [button, chooseButton],
+            { destinationIsResolved: true },
+          );
+          return;
+        }
+        if (choice === "use") {
+          button.disabled = true;
+          chooseButton.disabled = true;
+          button.innerHTML = `<i class="fa-solid fa-folder-open"></i> ${t("storage.switchingLibrary")}`;
+          await FS.useExistingStorage(existingStorage.basePath);
+          location.reload();
+        }
+        return;
+      }
+      if (await FS.hasStorageFolder(defaultPath)) {
+        await storageMoveFeedback.showNotice({
+          title: t("storage.destinationNotEmptyTitle"),
+          message: t("storage.destinationNotEmpty"),
+        });
+        return;
+      }
+      const confirmed = await storageMoveFeedback.showMoveConfirmation({
+        destination: await formatStoragePath(destination),
+      });
+      if (!confirmed) return;
 
       button.disabled = true;
       chooseButton.disabled = true;
       button.innerHTML = `<i class="fa-solid fa-folder-open"></i> ${t("storage.movingFiles")}`;
-      this.showStorageMoveToast();
-      await FS.api.ensureDir(defaultPath);
-      await FS.moveStorageTo(
-        defaultPath,
-        (progress) => this.updateStorageMoveToast(progress),
-        { replaceExisting: true },
-      );
-      this.updateStorageLocationLabel();
-      this.completeStorageMoveToast();
+      await this.runStorageMove(destination, [button, chooseButton], {
+        destinationIsResolved: true,
+      });
     } catch (error) {
       console.error("Could not use the default WeekBox storage", error);
-      this.failStorageMoveToast(t("storage.moveFailedMessage"));
-      await Neutralino.os.showMessageBox(
-        t("storage.moveFailedTitle"),
-        error?.message || t("storage.unexpectedMoveError"),
-        "OK",
-        "ERROR",
-      );
+      await storageMoveFeedback.showNotice({
+        title: t("storage.moveFailedTitle"),
+        message: error?.message || t("storage.unexpectedMoveError"),
+      });
     } finally {
       if (button) {
         button.disabled = false;
@@ -978,8 +979,6 @@ export const configModal = {
     if (!modal) return;
 
     sidebar.setActive(sidebar.configBtn);
-
-
 
     this.loadSettingsToUI();
 

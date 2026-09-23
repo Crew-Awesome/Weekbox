@@ -114,6 +114,7 @@ async function saveModSettings({
   tags,
   pendingCoverDataUrl,
   pendingCoverUrl,
+  pendingIconDataUrl,
   onSaved,
 }) {
   if (!fileLocked) await FS.assertModChangeAllowed(mod.id);
@@ -128,8 +129,10 @@ async function saveModSettings({
     fileLocked,
     pendingCoverDataUrl,
     pendingCoverUrl,
+    pendingIconDataUrl,
   });
   await onSaved?.();
+  document.dispatchEvent(new CustomEvent("recently-played-mods-updated"));
   modal.close();
 }
 
@@ -171,6 +174,7 @@ async function saveModAppearance({
   fileLocked,
   pendingCoverDataUrl,
   pendingCoverUrl,
+  pendingIconDataUrl,
 }) {
   const appearance = { name };
   if (fileLocked && !mod.folderName) {
@@ -178,6 +182,8 @@ async function saveModAppearance({
   }
   if (pendingCoverDataUrl) appearance.coverDataUrl = pendingCoverDataUrl;
   else if (pendingCoverUrl) appearance.coverUrl = pendingCoverUrl;
+  if (pendingIconDataUrl !== undefined)
+    appearance.iconDataUrl = pendingIconDataUrl;
   if (!(await FS.updateModAppearance(mod.id, appearance))) {
     throw new Error(t("modSettings.saveFailed"));
   }
@@ -219,8 +225,12 @@ export const modSettingsModal = {
     requestAnimationFrame(() => overlay.classList.add("show"));
 
     let localCover;
+    let localIcon;
     try {
-      localCover = await FS.getModCover(mod.id);
+      [localCover, localIcon] = await Promise.all([
+        FS.getModCover(mod.id),
+        FS.getModIcon(mod.id),
+      ]);
     } finally {
       this.isOpening = false;
     }
@@ -248,8 +258,11 @@ export const modSettingsModal = {
     overlay.innerHTML = settingsContent({
       mod,
       localCover,
+      localIcon,
       controlsDisabled,
-      canReset: Boolean(getGameBananaSource(mod)) && networkStatus.online,
+      canReset:
+        (Boolean(getGameBananaSource(mod)) && networkStatus.online) ||
+        Boolean(localIcon),
       resetTitle: networkStatus.online
         ? t("modSettings.defaultsOnlyGameBanana")
         : t("modSettings.connectToReset"),
@@ -264,6 +277,11 @@ export const modSettingsModal = {
     const nameInput = overlay.querySelector(".mod-settings-name");
     const cover = overlay.querySelector(".mod-settings-cover");
     const fileInput = overlay.querySelector(".mod-settings-file");
+    const icon = overlay.querySelector(".mod-settings-icon");
+    const iconFileInput = overlay.querySelector(".mod-settings-icon-file");
+    const defaultIcon = mod.engineId
+      ? FS.getEngineIconSource(mod.engineId)
+      : "assets/icons/exe.png";
     const status = overlay.querySelector(".mod-settings-status");
     const typeSelect = overlay.querySelector(".mod-settings-type");
     const tagEditor = setupTagEditor({ overlay, mod, readOnly });
@@ -273,6 +291,7 @@ export const modSettingsModal = {
     this.dropdowns = dropdowns;
     let pendingCoverDataUrl = null;
     let pendingCoverUrl = null;
+    let pendingIconDataUrl = null;
 
     fileInput.addEventListener("change", () => {
       const file = fileInput.files?.[0];
@@ -282,6 +301,16 @@ export const modSettingsModal = {
         pendingCoverDataUrl = String(reader.result || "");
         pendingCoverUrl = null;
         cover.src = pendingCoverDataUrl;
+      });
+      reader.readAsDataURL(file);
+    });
+    iconFileInput.addEventListener("change", () => {
+      const file = iconFileInput.files?.[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.addEventListener("load", () => {
+        pendingIconDataUrl = String(reader.result || "");
+        icon.src = pendingIconDataUrl;
       });
       reader.readAsDataURL(file);
     });
@@ -310,7 +339,11 @@ export const modSettingsModal = {
       .querySelector(".mod-settings-reset")
       .addEventListener("click", async () => {
         const source = getGameBananaSource(mod);
-        if (!source) return;
+        if (!source) {
+          pendingIconDataUrl = "";
+          icon.src = defaultIcon;
+          return;
+        }
         status.textContent = t("modSettings.loadingDefaults");
         try {
           const details =
@@ -328,8 +361,10 @@ export const modSettingsModal = {
               : details.images?.[0] || null;
           pendingCoverDataUrl = null;
           cover.src = pendingCoverUrl || "assets/img/placeholder-mini.jpg";
+          pendingIconDataUrl = "";
+          icon.src = defaultIcon;
           status.textContent = t("modSettings.defaultsLoaded");
-        } catch (error) {
+        } catch {
           status.textContent = t("modSettings.defaultsFailed");
         }
       });
@@ -356,7 +391,7 @@ export const modSettingsModal = {
           if (!movedMod) throw new Error(t("modSettings.dependencyMoveFailed"));
           await onSaved?.();
           close();
-        } catch (error) {
+        } catch {
           status.textContent = t("modSettings.couldNotMoveDependency");
           moveButton.disabled = false;
         }
@@ -382,6 +417,7 @@ export const modSettingsModal = {
           tags: tagEditor.getTags(),
           pendingCoverDataUrl,
           pendingCoverUrl,
+          pendingIconDataUrl,
           onSaved,
         });
       } catch (error) {

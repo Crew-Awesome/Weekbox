@@ -2408,6 +2408,58 @@
   transition: opacity 0.18s ease;
 }
 
+.mod-settings-icon-picker {
+  position: relative;
+  display: block;
+  width: 56px;
+  height: 56px;
+  flex: 0 0 56px;
+  align-self: center;
+  overflow: hidden;
+  border: 1px solid var(--border-color);
+  border-radius: 9px;
+  background: var(--bg-color);
+  cursor: pointer;
+}
+
+.mod-settings-icon {
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: cover;
+  box-sizing: border-box;
+}
+
+.mod-settings-icon-upload {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgb(0 0 0 / 58%);
+  color: #fff;
+  font-size: 0.9rem;
+  font-weight: 700;
+  opacity: 0;
+  transition: opacity 0.18s ease;
+  cursor: pointer;
+}
+
+.mod-settings-icon-picker:hover,
+.mod-settings-icon-picker:focus-within {
+  border-color: var(--text-muted);
+}
+
+.mod-settings-icon-picker:hover .mod-settings-icon,
+.mod-settings-icon-picker:focus-within .mod-settings-icon {
+  filter: brightness(0.65);
+}
+
+.mod-settings-icon-picker:hover .mod-settings-icon-upload,
+.mod-settings-icon-picker:focus-within .mod-settings-icon-upload {
+  opacity: 1;
+}
+
 .mod-settings-cover-picker:hover,
 .mod-settings-cover-picker:focus-within {
   border-color: var(--text-muted);
@@ -2442,7 +2494,8 @@
   outline: none;
 }
 
-.mod-settings-file {
+.mod-settings-file,
+.mod-settings-icon-file {
   position: absolute;
   width: 1px;
   height: 1px;
@@ -2781,13 +2834,6 @@
   flex-direction: column;
   flex-shrink: 0;
   gap: 8px;
-}
-
-.storage-move-lock {
-  position: fixed;
-  inset: 0;
-  z-index: 9000;
-  cursor: wait;
 }
 
 .setting-item-storage #storage-location-path {

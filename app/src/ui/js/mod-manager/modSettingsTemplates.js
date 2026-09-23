@@ -48,7 +48,6 @@ function renderEngineSection({
   hasEngine,
   isExecutable,
   controlsDisabled,
-  readOnly,
   tagsField,
 }) {
   if (isExecutable) {
@@ -118,9 +117,31 @@ function renderSettingsFooter({
       </footer>`;
 }
 
+function renderIdentitySection({ mod, localCover, localIcon, readOnly }) {
+  const defaultIcon = mod.engineId
+    ? FS.getEngineIconSource(mod.engineId)
+    : "assets/icons/exe.png";
+  return `<div class="mod-settings-identity">
+          <label class="mod-settings-cover-picker" title="${readOnly ? t("modSettings.changesUnavailable") : t("modSettings.changeCoverImage")}">
+            <img class="mod-settings-cover" src="${escapeHtml(localCover || "assets/img/placeholder-mini.jpg")}" alt="${t("modSettings.currentCover")}">
+            <span><i class="fa-solid fa-image" aria-hidden="true"></i> ${t("modSettings.changeImage")}</span>
+            <input class="mod-settings-file" type="file" accept="image/*" ${readOnly ? "disabled" : ""}>
+          </label>
+          <div class="mod-settings-icon-picker">
+            <img class="mod-settings-icon" src="${escapeHtml(localIcon || defaultIcon)}" alt="${t("modSettings.currentSidebarIcon")}">
+            <label class="mod-settings-icon-upload" title="${readOnly ? t("modSettings.changesUnavailable") : t("modSettings.changeSidebarIcon")}" aria-label="${readOnly ? t("modSettings.changesUnavailable") : t("modSettings.changeSidebarIcon")}" tabindex="0">
+              <i class="fa-solid fa-upload" aria-hidden="true"></i>
+              <input class="mod-settings-icon-file" type="file" accept="image/*" ${readOnly ? "disabled" : ""}>
+            </label>
+          </div>
+          <input class="mod-settings-name" aria-label="${t("import.modName")}" value="${escapeHtml(mod.name)}" maxlength="120" required ${readOnly ? "disabled" : ""}>
+        </div>`;
+}
+
 export function settingsContent({
   mod,
   localCover,
+  localIcon,
   controlsDisabled,
   canReset,
   resetTitle,
@@ -147,19 +168,11 @@ export function settingsContent({
         </div>
       </header>
       <div class="mod-settings-body">
-        <div class="mod-settings-identity">
-          <label class="mod-settings-cover-picker" title="${readOnly ? t("modSettings.changesUnavailable") : t("modSettings.changeCoverImage")}">
-            <img class="mod-settings-cover" src="${escapeHtml(localCover || "assets/img/placeholder-mini.jpg")}" alt="${t("modSettings.currentCover")}">
-            <span><i class="fa-solid fa-image" aria-hidden="true"></i> ${t("modSettings.changeImage")}</span>
-            <input class="mod-settings-file" type="file" accept="image/*" ${readOnly ? "disabled" : ""}>
-          </label>
-          <input class="mod-settings-name" aria-label="${t("import.modName")}" value="${escapeHtml(mod.name)}" maxlength="120" required ${readOnly ? "disabled" : ""}>
-        </div>
+        ${renderIdentitySection({ mod, localCover, localIcon, readOnly })}
         ${renderEngineSection({
           hasEngine,
           isExecutable,
           controlsDisabled,
-          readOnly,
           tagsField,
         })}
         ${!isExecutable && mod.engineLocked ? `<p class="mod-settings-note">${t("modSettings.lockedToPsychOnline")}</p>` : ""}
