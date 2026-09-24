@@ -9,10 +9,24 @@ import fr from "../../locales/fr.json";
 import ru from "../../locales/ru.json";
 import tr from "../../locales/tr.json";
 import zh from "../../locales/zh.json";
+import zhTW from "../../locales/zh-TW.json";
 import shared from "../../locales/shared.json";
 import { appSettings } from "../../../backend/core/system/settings.service.js";
 
-const catalogs = { en, es, de, id, it, pt, pl, fr, ru, tr, zh };
+const catalogs = {
+  en,
+  es,
+  de,
+  id,
+  it,
+  pt,
+  pl,
+  fr,
+  ru,
+  tr,
+  zh,
+  "zh-TW": zhTW,
+};
 const fallbackLocale = "en";
 export const LANGUAGES = [
   { id: "en", flag: "us", name: "English (United States)" },
@@ -26,6 +40,7 @@ export const LANGUAGES = [
   { id: "ru", flag: "ru", name: "Russian (Russia)" },
   { id: "tr", flag: "tr", name: "Türkçe (Türkiye)" },
   { id: "zh", flag: "cn", name: "\u7b80\u4f53\u4e2d\u6587" },
+  { id: "zh-TW", flag: "tw", name: "\u7e41\u9ad4\u4e2d\u6587 (\u53f0\u7063)" },
 ];
 const engineLabelKeys = {
   vslice: "home.baseGame",

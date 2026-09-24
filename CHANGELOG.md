@@ -9,6 +9,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [2.5.7] - 2026-09-24
 
+### Added
+
+- Added Traditional Chinese (`zh-TW`) language support. (Not Translated Yet)
+
+### Changed
+
+- Updated the Simplified Chinese translation.
+
 ### Fixed
 
 - Prompted before downloading a missing engine when launching a mod.
