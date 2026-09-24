@@ -35,14 +35,13 @@ export const useNetworkStore = create<NetworkStoreState>((set, get) => ({
 
     try {
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 2500);
+      const timeoutId = setTimeout(() => controller.abort(), 2000);
 
-      // Probe GitHub raw with no-cors. If DNS fails or there's no internet connection,
-      // fetch immediately throws TypeError: Failed to fetch (net::ERR_NAME_NOT_RESOLVED)
+      // Probe GitHub raw with GET and no-cors. WebKit/Safari allows GET in no-cors mode seamlessly.
       await fetch(
         "https://raw.githubusercontent.com/Crew-Awesome/weekbox.featured/main/public/featured.json",
         {
-          method: "HEAD",
+          method: "GET",
           mode: "no-cors",
           cache: "no-store",
           signal: controller.signal,
@@ -52,12 +51,12 @@ export const useNetworkStore = create<NetworkStoreState>((set, get) => ({
       set({ isOnline: true });
       return true;
     } catch {
-      // Fallback probe (Cloudflare / 1.1.1.1)
+      // Fallback probe (Cloudflare CDN)
       try {
         const controller2 = new AbortController();
-        const timeoutId2 = setTimeout(() => controller2.abort(), 2000);
-        await fetch("https://1.1.1.1/cdn-cgi/trace", {
-          method: "HEAD",
+        const timeoutId2 = setTimeout(() => controller2.abort(), 1500);
+        await fetch("https://cloudflare.com/cdn-cgi/trace", {
+          method: "GET",
           mode: "no-cors",
           cache: "no-store",
           signal: controller2.signal,
@@ -66,6 +65,11 @@ export const useNetworkStore = create<NetworkStoreState>((set, get) => ({
         set({ isOnline: true });
         return true;
       } catch {
+        // If navigator explicitly reports online, do not force offline on flaky opaque probes
+        if (typeof navigator !== "undefined" && navigator.onLine) {
+          set({ isOnline: true });
+          return true;
+        }
         set({ isOnline: false });
         return false;
       }

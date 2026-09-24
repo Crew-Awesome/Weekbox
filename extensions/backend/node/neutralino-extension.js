@@ -9,47 +9,87 @@ class NeutralinoExtension {
     this.debugTermColorCALL = "\x1b[91m";
     this.debugTermColorOUT = "\x1b[33m";
 
-    let port = null;
-    let token = null;
-    let connectToken = "";
-    let idExtension = null;
+    const path = require("path");
+    const fs = require("fs");
 
+    let port = process.env.NL_PORT || null;
+    let token = process.env.NL_TOKEN || null;
+    let connectToken = process.env.NL_CONNECT_TOKEN || "";
+    let idExtension = process.env.NL_EXTENSION_ID || "extNode";
+
+    // 1. Check process.argv
     for (let i = 2; i < process.argv.length; i++) {
       const arg = process.argv[i];
       if (arg.startsWith("--nl-port=")) {
         port = arg.split("=")[1];
+      } else if (arg === "--nl-port" && i + 1 < process.argv.length) {
+        port = process.argv[++i];
       } else if (arg.startsWith("--nl-token=")) {
         token = arg.split("=")[1];
+      } else if (arg === "--nl-token" && i + 1 < process.argv.length) {
+        token = process.argv[++i];
       } else if (arg.startsWith("--nl-extension-id=")) {
         idExtension = arg.split("=")[1];
+      } else if (arg === "--nl-extension-id" && i + 1 < process.argv.length) {
+        idExtension = process.argv[++i];
       } else if (arg.startsWith("--nl-connect-token=")) {
         connectToken = arg.split("=")[1];
+      } else if (arg === "--nl-connect-token" && i + 1 < process.argv.length) {
+        connectToken = process.argv[++i];
       }
     }
 
-    if (port && token && idExtension) {
-      this.port = port;
-      this.token = token;
-      this.connectToken = connectToken;
-      this.idExtension = idExtension;
-      this.urlSocket = connectToken
-        ? `ws://127.0.0.1:${this.port}?extensionId=${this.idExtension}&connectToken=${this.connectToken}`
-        : `ws://127.0.0.1:${this.port}?extensionId=${this.idExtension}`;
-    } else {
-      try {
-        let fs = require("fs");
-        let d = fs.readFileSync(0, "utf-8");
-        let conf = JSON.parse(d);
+    // 2. Fallback: Parse from .tmp/auth_info.json exported by Neutralino
+    if (!port || !token) {
+      const searchDirs = [
+        process.cwd(),
+        path.resolve(__dirname, "../../.."),
+        path.resolve(__dirname, "../../../.."),
+        process.env.NL_PATH || "",
+      ].filter(Boolean);
 
-        this.port = conf.nlPort;
-        this.token = conf.nlToken;
-        this.connectToken = conf.nlConnectToken || "";
-        this.idExtension = conf.nlExtensionId;
-        this.urlSocket = `ws://127.0.0.1:${this.port}?extensionId=${this.idExtension}&connectToken=${this.connectToken}`;
+      for (const dir of searchDirs) {
+        const authPath = path.resolve(dir, ".tmp/auth_info.json");
+        try {
+          if (fs.existsSync(authPath)) {
+            const raw = fs.readFileSync(authPath, "utf-8");
+            const auth = JSON.parse(raw);
+            if (auth.port && (auth.accessToken || auth.token)) {
+              port = port || String(auth.port);
+              token = token || auth.accessToken || auth.token;
+              connectToken = connectToken || auth.connectToken || "";
+              break;
+            }
+          }
+        } catch {}
+      }
+    }
+
+    // 3. Fallback: Non-blocking read from stdin (single chunk readSync, never blocking readFileSync on pipe)
+    if (!port || !token) {
+      try {
+        const buf = Buffer.alloc(4096);
+        const bytesRead = fs.readSync(0, buf, 0, buf.length, null);
+        if (bytesRead > 0) {
+          const raw = buf.toString("utf-8", 0, bytesRead).trim();
+          const conf = JSON.parse(raw);
+          port = port || conf.nlPort || conf.port;
+          token = token || conf.nlToken || conf.accessToken || conf.token;
+          connectToken = connectToken || conf.nlConnectToken || conf.connectToken || "";
+          idExtension = conf.nlExtensionId || conf.extensionId || idExtension;
+        }
       } catch (err) {
         console.warn("Could not read extension config from stdin:", err?.message || err);
       }
     }
+
+    this.port = port;
+    this.token = token;
+    this.connectToken = connectToken || "";
+    this.idExtension = idExtension || "extNode";
+    this.urlSocket = this.connectToken
+      ? `ws://127.0.0.1:${this.port}?extensionId=${this.idExtension}&connectToken=${this.connectToken}`
+      : `ws://127.0.0.1:${this.port}?extensionId=${this.idExtension}`;
 
     this.socket = undefined;
 

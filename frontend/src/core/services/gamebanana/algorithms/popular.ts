@@ -116,9 +116,11 @@ export async function fetchPopularRecords(
       }
 
       if (hasNetworkError && allFetched.length === 0) {
-        try {
-          setNetworkOnline(false);
-        } catch {}
+        if (typeof navigator !== "undefined" && !navigator.onLine) {
+          try {
+            setNetworkOnline(false);
+          } catch {}
+        }
         if (state.records.length === 0) {
           popularCache.delete(cacheKey);
           throw new Error("Failed to fetch popular mods from GameBanana (network error or timeout)");

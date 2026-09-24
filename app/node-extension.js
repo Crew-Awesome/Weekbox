@@ -20,7 +20,7 @@ class NodeExtension {
     let data = { function: func, parameter: param };
     if (this.debug) console.log("OUT: ", JSON.stringify(data));
 
-    window.Neutralino.extensions.dispatch("extNode", "runNode", data);
+    return window.Neutralino?.extensions?.dispatch?.("extNode", "runNode", data);
   }
   call(operation, params, timeoutMs = 300000, signal) {
     const requestId =
@@ -35,7 +35,7 @@ class NodeExtension {
           : null;
 
       const abortHandler = () => {
-        this.run("backend.cancel", { requestId });
+        this.run("backend.cancel", { requestId })?.catch?.(() => {});
         this.pending.delete(requestId);
         if (timeout) clearTimeout(timeout);
         reject(new Error("Cancelled"));
@@ -49,7 +49,14 @@ class NodeExtension {
       }
 
       this.pending.set(requestId, { resolve, reject, timeout });
-      this.run("backend.call", { requestId, operation, params });
+      const dispatchPromise = this.run("backend.call", { requestId, operation, params });
+      if (dispatchPromise && typeof dispatchPromise.catch === "function") {
+        dispatchPromise.catch((err) => {
+          if (timeout) clearTimeout(timeout);
+          this.pending.delete(requestId);
+          reject(new Error(err?.message || "Extension dispatch failed"));
+        });
+      }
     });
   }
   stop() {

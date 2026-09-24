@@ -43,7 +43,7 @@
   "extensions": [
     {
       "id": "extNode",
-      "commandDarwin": "sh -c 'export PATH=\"/opt/homebrew/bin:/usr/local/bin:$HOME/.nvm/versions/node/$(ls $HOME/.nvm/versions/node 2>/dev/null | tail -n 1)/bin:$PATH\"; exec node \"${NL_PATH}/extensions/backend/node/main.js\" \"$@\"' dummy",
+      "commandDarwin": "bash ${NL_PATH}/extensions/backend/node/run-mac.sh",
       "commandLinux": "node ${NL_PATH}/extensions/backend/node/main.js",
       "commandWindows": "node ${NL_PATH}/extensions/backend/node/main.js"
     }

@@ -11,8 +11,8 @@ import { useTheme } from "./components/organisms/settings-modal/hooks/use-theme"
 const initTasks: LoadingTask[] = [
   {
     name: "Initializing environment...",
-    timeoutMs: 10000,
-    retries: 1,
+    timeoutMs: 4000,
+    retries: 0,
     action: async () => {
       try {
         await Core.os.syncProtocolRegistration(true);
@@ -27,8 +27,8 @@ const initTasks: LoadingTask[] = [
   {
     name: "Obtaining Featured Mods...",
     retryName: "Retrying to obtain featured mods",
-    timeoutMs: 18000,
-    retries: 3,
+    timeoutMs: 6000,
+    retries: 1,
     action: async () => {
       if (!Utils.hooks.useNetworkStore.getState().isOnline) {
         return;
@@ -43,8 +43,11 @@ const initTasks: LoadingTask[] = [
           })) as any;
           useHomeStore.getState().setFeaturedPool(pool);
         }
-      } catch {
-        Utils.hooks.setNetworkOnline(false);
+      } catch (e) {
+        console.warn("[App] Could not load featured mods on startup:", e);
+        if (typeof navigator !== "undefined" && !navigator.onLine) {
+          Utils.hooks.setNetworkOnline(false);
+        }
       }
     },
     onAttemptComplete: async () => {
@@ -63,35 +66,36 @@ const initTasks: LoadingTask[] = [
               })) as any,
             );
           }
-        } catch {
-          Utils.hooks.setNetworkOnline(false);
-        }
+        } catch {}
       }
     },
   },
   {
     name: "Obtaining Gamebanana Mods...",
     retryName: "Retrying to obtain GameBanana mods",
-    timeoutMs: 15000,
-    retries: 2,
+    timeoutMs: 6000,
+    retries: 1,
     action: async () => {
       if (!Utils.hooks.useNetworkStore.getState().isOnline) {
         return;
       }
       try {
-        const mods = await Core.services.gamebanana.getMods("popular", 1, 45);
+        const mods = await Core.services.gamebanana.getMods("popular", 1, 30);
         if (mods && mods.length > 0) {
           useHomeStore.getState().setMods(mods);
         }
-      } catch {
-        Utils.hooks.setNetworkOnline(false);
+      } catch (e) {
+        console.warn("[App] Could not load initial popular mods:", e);
+        if (typeof navigator !== "undefined" && !navigator.onLine) {
+          Utils.hooks.setNetworkOnline(false);
+        }
       }
     },
     onAttemptComplete: async (attempt: number, success: boolean) => {
       if (!Utils.hooks.useNetworkStore.getState().isOnline || success) {
         return;
       }
-      if (attempt >= 2) {
+      if (attempt >= 1) {
         const currentMods = useHomeStore.getState().mods;
         if (currentMods.length === 0) {
           try {
@@ -99,14 +103,13 @@ const initTasks: LoadingTask[] = [
             const fallback = await Promise.race([
               fallbackPromise,
               new Promise<any[]>((_, reject) =>
-                setTimeout(() => reject(new Error("Fallback timeout")), 6000),
+                setTimeout(() => reject(new Error("Fallback timeout")), 3000),
               ),
             ]);
             if (fallback && fallback.length > 0) {
               useHomeStore.getState().setMods(fallback);
             }
           } catch (e) {
-            Utils.hooks.setNetworkOnline(false);
             console.warn(`[App initTasks] Attempt ${attempt} fallback could not fetch mods:`, e);
           }
         }

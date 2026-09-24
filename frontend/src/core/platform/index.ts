@@ -54,10 +54,14 @@ function createPlatformBridge(): IPlatformBridge {
       );
     }
 
-    if (
-      typeof (window as any).NL_TOKEN !== "undefined" &&
-      typeof (window as any).Neutralino !== "undefined"
-    ) {
+    const isNeutralino =
+      typeof (window as any).Neutralino !== "undefined" ||
+      typeof (window as any).NL_TOKEN !== "undefined" ||
+      typeof (window as any).NL_PORT !== "undefined" ||
+      typeof (window as any).NL_OS !== "undefined" ||
+      (typeof sessionStorage !== "undefined" && Boolean(sessionStorage.getItem("NL_TOKEN")));
+
+    if (isNeutralino) {
       if (!isTest) {
         console.log("APP_INIT: Neutralino detected. Using DesktopAdapter.");
       }

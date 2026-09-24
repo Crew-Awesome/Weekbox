@@ -15,7 +15,7 @@ export class DesktopTransport implements IPlatformTransport, IPlatformEvents {
   ): Promise<BackendResult<Operation>> {
     if (operation === "http.fetchJson" || operation === "http.fetchText") {
       const p = (params as any) || {};
-      const timeout = timeoutMs ?? 15000;
+      const timeout = timeoutMs ?? 8000;
       if (window.NODE?.call) {
         try {
           return await window.NODE.call<BackendResult<Operation>>(
