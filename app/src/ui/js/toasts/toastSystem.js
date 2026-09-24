@@ -1,4 +1,4 @@
-const TOAST_STATES = ["complete", "error", "offer", "missing-engine"];
+const TOAST_STATES = ["complete", "error", "offer"];
 import { t } from "../i18n/index.js";
 
 function isStartupActive() {

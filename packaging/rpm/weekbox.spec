@@ -3,7 +3,7 @@
 # Sources are the CI zips. Build Copr AFTER those zips exist on the release.
 
 Name:           weekbox
-Version:        2.5.6
+Version:        2.5.7
 Release:        1%{?dist}
 Summary:        A re-imagined Friday Night Funkin' mod launcher
 License:        MIT
@@ -109,6 +109,11 @@ fi
 %{_datadir}/pixmaps/weekbox.png
 
 %changelog
+* Thu Sep 24 2026 Crew Awesome <info@weekbox.app> - 2.5.7-1
+- Prompt before downloading a missing engine.
+- Keep Mod Manager and sidebar dynamic data current.
+- Clear the newsletter badge when no valid posts are available.
+
 * Tue Sep 22 2026 Crew Awesome <info@weekbox.app> - 2.5.6-1
 - Add a Recently Played section to the sidebar.
 - Add custom sidebar icons in mod identity settings.

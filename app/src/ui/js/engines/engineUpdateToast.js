@@ -94,24 +94,6 @@ export const engineUpdateToast = {
     setTimeout(() => this.hide(engineId), 5200);
   },
 
-  missingEngine(engineId, name, icon) {
-    const id = getToastId(`missing-engine-${engineId || "unassigned"}`);
-    toastSystem.show(id, {
-      title: t("engineUpdates.engineMissing"),
-      message: engineId
-        ? t("engineUpdates.installToLaunch", { name })
-        : t("engineUpdates.assignInModManager"),
-      mediaHtml: `<img src="${getIconSource(icon, engineId)}" alt="" />`,
-      badgeHtml: '<i class="fa-solid fa-xmark" aria-hidden="true"></i>',
-      showProgress: false,
-    });
-    toastSystem.setState(id, "error");
-    setTimeout(
-      () => this.hide(`missing-engine-${engineId || "unassigned"}`),
-      4600,
-    );
-  },
-
   hide(engineId) {
     toastSystem.hide(getToastId(engineId));
   },

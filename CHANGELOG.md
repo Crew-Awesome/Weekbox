@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.5.7] - 2026-09-24
+
+### Fixed
+
+- Prompted before downloading a missing engine when launching a mod.
+- Preserved Mod Manager state while reopening, filtering, and sorting.
+- Kept sidebar dynamic mod entries current after launches, closes, and metadata changes.
+- Cleared the newsletter unread badge when no valid posts are available.
+
 ## [2.5.6]
 
 ### Added
@@ -1230,8 +1239,9 @@ This is the Last content update I will do in a long while :)
 - Downloads for Windows, Linux, and macOS.
 - Packages for x64, ARM64, ARMHF, and Universal Macs where available.
 
-[unreleased]: https://github.com/Crew-Awesome/Weekbox/compare/v2.5.6...HEAD
-[2.5.5]: https://github.com/Crew-Awesome/Weekbox/compare/v2.5.5...v2.5.6
+[unreleased]: https://github.com/Crew-Awesome/Weekbox/compare/v2.5.7...HEAD
+[2.5.7]: https://github.com/Crew-Awesome/Weekbox/compare/v2.5.6...v2.5.7
+[2.5.6]: https://github.com/Crew-Awesome/Weekbox/compare/v2.5.5...v2.5.6
 [2.5.5]: https://github.com/Crew-Awesome/Weekbox/compare/v2.5.4...v2.5.5
 [2.5.4]: https://github.com/Crew-Awesome/Weekbox/compare/v2.5.3...v2.5.4
 [2.5.3]: https://github.com/Crew-Awesome/Weekbox/compare/v2.5.2...v2.5.3

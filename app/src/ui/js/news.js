@@ -362,7 +362,12 @@ export const newsView = {
     const validPosts = (Array.isArray(posts) ? posts : []).filter(
       (post) => post && post.slug && post.title,
     );
-    if (!badge || !validPosts.length) return;
+    if (!badge) return;
+    if (!validPosts.length) {
+      badge.textContent = "";
+      badge.hidden = true;
+      return;
+    }
 
     let seenSlug = "";
     try {
@@ -428,7 +433,6 @@ export const newsView = {
         image.loading = "lazy";
         image.addEventListener("error", () => image.remove(), { once: true });
         card.appendChild(image);
-
       }
       const body = document.createElement("div");
       body.className = "news-view__card-body";

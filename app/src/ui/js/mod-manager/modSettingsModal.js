@@ -132,7 +132,11 @@ async function saveModSettings({
     pendingIconDataUrl,
   });
   await onSaved?.();
-  document.dispatchEvent(new CustomEvent("recently-played-mods-updated"));
+  document.dispatchEvent(
+    new CustomEvent("recently-played-mods-updated", {
+      detail: { refreshStandalone: true },
+    }),
+  );
   modal.close();
 }
 

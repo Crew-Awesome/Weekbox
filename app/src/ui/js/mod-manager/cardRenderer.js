@@ -2,7 +2,7 @@ import { FS } from "../../../backend/services/filesystem.js";
 import { gameBananaApi } from "../../../backend/providers/gamebanana/gamebanana.provider.js";
 import { getEngineLaunchBehavior } from "../../../backend/config/engines.config.js";
 import { applyDominantColor } from "../../utils/media/extract-color.util.js";
-import { engineUpdateToast } from "../engines/engineUpdateToast.js";
+import { engineUpdateModal } from "../engines/engineUpdateModal.js";
 import { modManagerTemplates } from "./templates.js";
 import { createHourglass } from "../hourglass.js";
 import { loadModCardImage } from "./modImageLoader.js";
@@ -146,14 +146,14 @@ function bindModManagerCardActions({
         FS.getModLaunchState(mod, engine, launchAsStandalone) === "unavailable"
       ) {
         const engineInfo = FS.getEngineDetails(mod.engineId);
-        engineUpdateToast.missingEngine(
-          mod.engineId,
-          getEngineLabel(
+        void engineUpdateModal.missing({
+          engineId: mod.engineId,
+          name: getEngineLabel(
             mod.engineId,
             engineInfo?.name || t("engineUpdates.assignedEngine"),
           ),
-          engineInfo?.icon,
-        );
+          icon: engineInfo?.icon,
+        });
         return;
       }
       await FS.toggleModLaunch(mod, engine, launchAsStandalone, () => {
@@ -187,7 +187,11 @@ function bindModManagerCardActions({
           );
         }
       }, 300);
-      document.dispatchEvent(new CustomEvent("mods-updated"));
+      document.dispatchEvent(
+        new CustomEvent("mods-updated", {
+          detail: { source: "mod-manager", action: "deleted", modId: mod.id },
+        }),
+      );
     } catch (error) {
       deleteBtn.disabled = false;
       deleteBtn.innerHTML = modManagerTemplates.deleteIcon();
@@ -226,7 +230,11 @@ function bindModManagerCardActions({
       : "fa-solid fa-eye";
     try {
       await FS.setModHidden(mod.id, isNowHidden);
-      document.dispatchEvent(new CustomEvent("mods-updated"));
+      document.dispatchEvent(
+        new CustomEvent("mods-updated", {
+          detail: { source: "mod-manager", action: "hidden", modId: mod.id },
+        }),
+      );
     } catch (error) {
       mod.hidden = !isNowHidden;
       card.classList.toggle("is-hidden", mod.hidden);

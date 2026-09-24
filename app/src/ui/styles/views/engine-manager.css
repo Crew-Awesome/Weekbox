@@ -280,6 +280,10 @@
   font-size: 0.75rem;
 }
 
+.engine-update-build[hidden] {
+  display: none;
+}
+
 .engine-update-actions {
   display: flex;
   justify-content: flex-end;
@@ -563,46 +567,6 @@
   border-radius: 9px;
   background: var(--surface-container-high);
   color: var(--on-surface-strong);
-}
-
-.engine-update-toast.missing-engine {
-  overflow: visible;
-  border-color: rgb(217 91 91 / 72%);
-}
-
-.engine-update-toast.missing-engine .engine-update-toast-icon {
-  position: relative;
-  z-index: 1;
-  overflow: visible !important;
-  background: var(--surface-container-high);
-  color: var(--on-surface-strong);
-}
-
-.engine-missing-icon {
-  position: relative;
-  display: grid;
-  width: 24px;
-  height: 24px;
-  place-items: center;
-  overflow: visible !important;
-}
-
-.engine-missing-icon i {
-  position: absolute;
-  z-index: 3;
-  left: 0;
-  bottom: 0;
-  display: grid;
-  width: 18px;
-  height: 18px;
-  place-items: center;
-  border: 2px solid var(--surface-container-highest);
-  border-radius: 999px;
-  background: rgb(217 91 91 / 94%);
-  color: var(--on-error);
-  font-size: 9px;
-  transform: translate(-50%, 50%);
-  box-shadow: 0 2px 5px rgb(0 0 0 / 45%);
 }
 
 @media (max-width: 480px) {
@@ -1100,19 +1064,52 @@
   transition:
     background-color 180ms cubic-bezier(0.2, 0, 0, 1),
     border-color 180ms cubic-bezier(0.2, 0, 0, 1),
-    color 180ms cubic-bezier(0.2, 0, 0, 1);
+    color 180ms cubic-bezier(0.2, 0, 0, 1),
+    transform 180ms cubic-bezier(0.2, 0, 0, 1),
+    filter 180ms cubic-bezier(0.2, 0, 0, 1);
 }
 
-.engine-manager-empty-add {
-  margin: 16px auto 24px;
+.engine-manager-empty-state {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  flex-direction: column;
+  padding: 32px;
 }
 
-.em-index-add:hover,
+.engine-manager-empty-state .empty-mods-state {
+  margin: 0;
+  width: auto;
+  padding: 0;
+}
+
+.engine-manager-empty-index {
+  position: static;
+  max-width: none;
+  padding: 8px 12px;
+  transform: none;
+}
+
+.em-index-add:hover {
+  border-color: transparent;
+  background: transparent;
+  color: var(--primary);
+  transform: translateY(-1px) scale(1.08);
+  filter: drop-shadow(
+    0 0 7px color-mix(in srgb, var(--primary) 45%, transparent)
+  );
+}
+
+.em-index-add:active {
+  transform: scale(0.96);
+}
+
 .em-index-add:focus-visible {
-  border-color: var(--text-main);
-  background: var(--bg-hover);
-  color: var(--text-main);
-  outline: none;
+  border-radius: 50%;
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 3px;
 }
 
 .engine-download-picker {

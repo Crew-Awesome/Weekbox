@@ -985,21 +985,23 @@ export const engineManagerModal = {
     }
     container.replaceChildren();
     if (engines.length === 0) {
+      const emptyState = document.createElement("div");
+      emptyState.className = "engine-manager-empty-state";
       const emptyTpl = document.getElementById("tpl-engine-manager-empty");
       if (emptyTpl) {
-        container.appendChild(emptyTpl.content.cloneNode(true));
-        i18n.apply(container);
+        emptyState.appendChild(emptyTpl.content.cloneNode(true));
       } else {
         const empty = document.createElement("div");
         empty.className = "empty-mods-state";
-        empty.style.margin = "auto";
         empty.dataset.i18n = "engineManager.noEngines";
         empty.textContent = t("engineManager.noEngines");
-        container.appendChild(empty);
+        emptyState.appendChild(empty);
       }
+      const index = document.createElement("div");
+      index.className = "em-carousel-index engine-manager-empty-index";
       const addEngineButton = document.createElement("button");
       addEngineButton.type = "button";
-      addEngineButton.className = "em-index-add engine-manager-empty-add";
+      addEngineButton.className = "em-index-add";
       addEngineButton.title = t("engines.select");
       addEngineButton.setAttribute("aria-label", t("engines.select"));
       addEngineButton.innerHTML =
@@ -1008,7 +1010,10 @@ export const engineManagerModal = {
         "click",
         () => void this.showDownloadPicker(),
       );
-      container.appendChild(addEngineButton);
+      index.appendChild(addEngineButton);
+      emptyState.appendChild(index);
+      container.appendChild(emptyState);
+      i18n.apply(emptyState);
       return;
     }
 

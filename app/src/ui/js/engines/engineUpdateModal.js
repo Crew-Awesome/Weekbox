@@ -81,6 +81,13 @@ export const engineUpdateModal = {
       : `Release v${candidate.version}`;
 
     overlay.querySelector("#engine-update-title").textContent = name;
+    overlay.querySelector(".engine-update-copy").textContent = t(
+      "engineUpdates.detected",
+    );
+    overlay.querySelector(".engine-update-confirm span").textContent = t(
+      "engineUpdates.updateEngine",
+    );
+    overlay.querySelector(".engine-update-build").hidden = false;
     const iconElement = overlay.querySelector(".engine-update-mark");
     iconElement.src = icon ? FS.getEngineIconSource(engineId) : "";
     iconElement.hidden = !icon;
@@ -111,5 +118,66 @@ export const engineUpdateModal = {
         () => finish("dismissed"),
       );
     });
+  },
+
+  async missing({ engineId, name, icon }) {
+    const overlay = ensureModal();
+    const isCustom = FS.isCustomEngine(engineId);
+    const confirm = overlay.querySelector(".engine-update-confirm");
+    const later = overlay.querySelector(".engine-update-later");
+    const iconElement = overlay.querySelector(".engine-update-mark");
+    const confirmLabel = confirm.querySelector("span");
+    overlay.querySelector("#engine-update-title").textContent = t(
+      "engineUpdates.engineMissing",
+    );
+    overlay.querySelector(".engine-update-copy").textContent = t(
+      "engineUpdates.installToLaunch",
+      { name },
+    );
+    const build = overlay.querySelector(".engine-update-build");
+    build.hidden = true;
+    build.textContent = isCustom
+      ? t("engineManager.customEngine")
+      : t("common.download");
+    confirmLabel.textContent = isCustom
+      ? t("engineManager.importCustomEngine")
+      : t("common.download");
+    iconElement.src = icon ? FS.getEngineIconSource(engineId) : "";
+    iconElement.hidden = !icon;
+
+    const result = await new Promise((resolve) => {
+      const finish = (value) => {
+        deactivateCheckoutDialog(overlay);
+        overlay.classList.remove("show");
+        overlay.removeEventListener("click", onOverlayClick);
+        setTimeout(() => (overlay.hidden = true), 260);
+        resolve(value);
+      };
+      const onOverlayClick = (event) => {
+        if (event.target === overlay) finish("dismissed");
+      };
+      confirm.onclick = () => finish("confirm");
+      later.onclick = () => finish("dismissed");
+      overlay.hidden = false;
+      requestAnimationFrame(() => overlay.classList.add("show"));
+      overlay.addEventListener("click", onOverlayClick);
+      activateCheckoutDialog(
+        overlay,
+        overlay.querySelector(".engine-update-modal"),
+        confirm,
+        () => finish("dismissed"),
+      );
+    });
+
+    if (result !== "confirm") return result;
+    try {
+      const { engineManagerModal } = await import("../engine-manager/index.js");
+      if (isCustom) return engineManagerModal.open(engineId);
+      await engineManagerModal.open();
+      await engineManagerModal.showDownloadPicker(engineId, "installed");
+    } catch (error) {
+      console.warn("Could not open engine manager", error);
+    }
+    return result;
   },
 };

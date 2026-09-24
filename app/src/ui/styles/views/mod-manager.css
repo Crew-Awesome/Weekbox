@@ -708,7 +708,8 @@
   font-size: 0.82rem;
 }
 
-.mod-manager-card.is-search-hidden {
+.mod-manager-card.is-search-hidden,
+.mod-manager-card.is-filter-hidden {
   display: none;
 }
 
