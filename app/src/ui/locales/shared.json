@@ -1,8 +1,3 @@
 {
-  "common.separator": "•",
-  "home.psychEngine": "Psych Engine",
-  "home.codenameEngine": "Codename Engine",
-  "home.pSlice": "P-Slice",
-  "home.fpsPlus": "FPS Plus",
-  "home.psychOnline": "Psych Online"
+  "common.separator": "•"
 }

@@ -40,7 +40,11 @@ export const LANGUAGES = [
   { id: "ru", flag: "ru", name: "Russian (Russia)" },
   { id: "tr", flag: "tr", name: "Türkçe (Türkiye)" },
   { id: "zh", flag: "cn", name: "\u7b80\u4f53\u4e2d\u6587" },
-  { id: "zh-TW", flag: "tw", name: "\u7e41\u9ad4\u4e2d\u6587 (\u53f0\u7063)" },
+  {
+    id: "zh-TW",
+    flag: "tw",
+    name: "\u7e41\u9ad4\u4e2d\u6587 (\u4e2d\u570b\u53f0\u7063)",
+  },
 ];
 const engineLabelKeys = {
   vslice: "home.baseGame",

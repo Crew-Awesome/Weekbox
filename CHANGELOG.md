@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Updated the Traditional Chinese translation and language flags.
+- engine names are now translatable.
+
 ## [2.5.7] - 2026-09-24
 
 ### Added

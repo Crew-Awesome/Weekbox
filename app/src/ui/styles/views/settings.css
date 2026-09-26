@@ -297,6 +297,10 @@
   background-image: url("../../../../../node_modules/flag-icons/flags/4x3/cn.svg");
 }
 
+.language-flag.fi-tw {
+  background-image: url("../../../../../node_modules/flag-icons/flags/4x3/tw.svg");
+}
+
 #config-modal .setting-language-option > span:last-child {
   min-width: 0;
   overflow-wrap: anywhere;
