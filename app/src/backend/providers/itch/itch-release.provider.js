@@ -1,6 +1,7 @@
 import { nativeFetch } from "../../services/network/native-http.js";
 
 const ITCH_REQUEST_TIMEOUT_MS = 15_000;
+const ITCH_REQUEST_ATTEMPTS = 3;
 
 function getItchUrl(pageUrl, path) {
   const page = new URL(pageUrl.endsWith("/") ? pageUrl : `${pageUrl}/`);
@@ -17,52 +18,106 @@ function parseSize(value) {
   return Math.round(Number(match[1]) * units[match[2].toUpperCase()]);
 }
 
-// ponytail: parse Itch's public HTML until it exposes stable upload metadata.
-function parseUploads(html, source) {
-  const uploads = [];
+function cleanText(value) {
+  return String(value || "")
+    .replace(/<[^>]*>/g, " ")
+    .replace(/&nbsp;|&#160;/gi, " ")
+    .replace(/&amp;/gi, "&")
+    .replace(/&quot;/gi, '"')
+    .replace(/&#39;|&apos;/gi, "'")
+    .replace(/&lt;/gi, "<")
+    .replace(/&gt;/gi, ">")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function isRetryableItchResponse(response) {
+  return response.status === 408 || response.status === 429 || response.status >= 500;
+}
+
+async function fetchItch(url, options = {}) {
+  let lastError;
+  for (let attempt = 1; attempt <= ITCH_REQUEST_ATTEMPTS; attempt += 1) {
+    try {
+      const response = await nativeFetch(url, options);
+      if (!isRetryableItchResponse(response) || attempt === ITCH_REQUEST_ATTEMPTS)
+        return response;
+      lastError = new Error(`Itch.io request failed: ${response.status}`);
+    } catch (error) {
+      lastError = error;
+      if (attempt === ITCH_REQUEST_ATTEMPTS) throw error;
+    }
+    await new Promise((resolve) => setTimeout(resolve, 300 * 2 ** (attempt - 1)));
+  }
+  throw lastError;
+}
+
+function parseUploadRows(html) {
+  const rows = [];
   const uploadPattern =
-    /data-upload_id=["'](\d+)["'][\s\S]*?title=["']([^"']+)["'][\s\S]*?file_size[\s\S]*?>([^<]+)<[\s\S]*?Version\s+([\d][\w.-]*)/gi;
-  for (const match of html.matchAll(uploadPattern)) {
-    uploads.push({
-      id: match[1],
-      name: match[2],
-      size: parseSize(match[3]),
-      version: match[4],
+    /<div\b(?=[^>]*\bclass=["'][^"']*\bupload\b[^"']*["'])[^>]*>[\s\S]*?(?=<div\b(?=[^>]*\bclass=["'][^"']*\bupload\b)|<\/body\b|$)/gi;
+
+  for (const match of String(html || "").matchAll(uploadPattern)) {
+    const row = match[0];
+    const name = cleanText(
+      row.match(
+        /<strong\b[^>]*\bclass=["'][^"']*\bname\b[^"']*["'][^>]*>([\s\S]*?)<\/strong>/i,
+      )?.[1],
+    );
+    if (!name) continue;
+
+    rows.push({
+      id: row.match(/\bdata-upload_id=["'](\d+)["']/i)?.[1],
+      name,
+      size: parseSize(
+        row.match(/\bfile_size\b[\s\S]*?<span\b[^>]*>([^<]+)</i)?.[1],
+      ),
+      version: cleanText(row.match(/\bVersion\s+([\d][\w.-]*)/i)?.[1]),
     });
   }
+  return rows;
+}
 
+function parseUploads(html, source) {
+  const uploads = parseUploadRows(html);
   const platformUploads = {};
   for (const [platform, pattern] of Object.entries(source.platforms)) {
-    const upload = uploads.find((item) => pattern.test(item.name));
+    const upload = uploads.find((item) => {
+      pattern.lastIndex = 0;
+      return pattern.test(item.name);
+    });
     if (upload) platformUploads[platform] = upload;
   }
   return platformUploads;
 }
 
 export async function getItchRelease(source, githubRepository = "") {
-  const response = await nativeFetch(source.pageUrl, {
+  const response = await fetchItch(source.pageUrl, {
     timeout: ITCH_REQUEST_TIMEOUT_MS,
   });
   if (!response.ok)
     throw new Error(`Itch.io request failed: ${response.status}`);
-  const version = (await response.text()).match(
+  const html = await response.text();
+  const version = html.match(
     /\bVersion\s+([\d][\w.-]*)/i,
   )?.[1];
   if (!version) return null;
+  const uploads = parseUploads(html, source);
 
   return {
     version,
     label: `Itch (${version})`,
     itch: {
       pageUrl: source.pageUrl,
-      platforms: Object.keys(source.platforms),
+      platforms: Object.keys(uploads),
+      uploads,
     },
     githubRepository,
   };
 }
 
 export async function resolveItchDownloadUrl(itch, platform) {
-  const purchaseResponse = await nativeFetch(
+  const purchaseResponse = await fetchItch(
     getItchUrl(itch.pageUrl, "purchase"),
     { timeout: ITCH_REQUEST_TIMEOUT_MS },
   );
@@ -77,7 +132,7 @@ export async function resolveItchDownloadUrl(itch, platform) {
   )?.[1];
   if (!csrfToken) throw new Error("Itch.io download token is unavailable");
 
-  const downloadPageResponse = await nativeFetch(
+  const downloadPageResponse = await fetchItch(
     getItchUrl(itch.pageUrl, "download_url"),
     {
       method: "POST",
@@ -97,7 +152,7 @@ export async function resolveItchDownloadUrl(itch, platform) {
   const downloadPageUrl = (await downloadPageResponse.json())?.url;
   if (!downloadPageUrl) throw new Error("Itch.io download page is unavailable");
 
-  const downloadPage = await nativeFetch(downloadPageUrl, {
+  const downloadPage = await fetchItch(downloadPageUrl, {
     timeout: ITCH_REQUEST_TIMEOUT_MS,
   });
   if (!downloadPage.ok)
@@ -112,7 +167,7 @@ export async function resolveItchDownloadUrl(itch, platform) {
   const uploadId = uploads[platform]?.id;
   if (!uploadId) throw new Error("Itch.io upload is unavailable");
 
-  const response = await nativeFetch(
+  const response = await fetchItch(
     getItchUrl(
       itch.pageUrl,
       `file/${encodeURIComponent(uploadId)}?source=game_download`,

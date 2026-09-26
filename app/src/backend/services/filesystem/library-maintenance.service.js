@@ -348,9 +348,10 @@ var _LibraryMaintenanceService = class _LibraryMaintenanceService {
       for (const engineRoot of engineRoots) {
         if (engineRoot.type !== "DIRECTORY") continue;
         const rootPath = `${enginesPath}/${engineRoot.entry}`;
+        const customEngine = this.getCustomEngine?.(engineRoot.entry);
         if (
           !ENGINE_DETAILS[engineRoot.entry] &&
-          !this.getCustomEngine?.(engineRoot.entry)
+          !customEngine
         ) {
           await this.api.remove(rootPath);
           continue;
@@ -363,9 +364,13 @@ var _LibraryMaintenanceService = class _LibraryMaintenanceService {
           if (version.type !== "DIRECTORY") continue;
           const versionPath = `${rootPath}/${version.entry}`;
           const isInstalled =
-            isValidEngineVersion(version.entry) &&
-            (engineRoot.entry !== "psychonline" ||
-              version.entry === "Latest") &&
+            (customEngine
+              ? customEngine.versions.some(
+                  (candidate) => candidate?.installId === version.entry,
+                )
+              : isValidEngineVersion(version.entry) &&
+                (engineRoot.entry !== "psychonline" ||
+                  version.entry === "Latest")) &&
             !(await this.api.exists(`${versionPath}/.downloading`)) &&
             Boolean(await this.findExecutable(versionPath));
           if (isInstalled) {

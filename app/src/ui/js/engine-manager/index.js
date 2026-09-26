@@ -896,7 +896,12 @@ export const engineManagerModal = {
           downloadUrl,
           updateInstallProgress,
           undefined,
-          { expectedSize: getTargetSize(selected) },
+          {
+            expectedSize: getTargetSize(selected),
+            refreshUrl: targetPlatform
+              ? () => resolveItchDownloadUrl(selected.itch, targetPlatform)
+              : undefined,
+          },
         );
         if (!success) {
           if (cancelRequested) return;

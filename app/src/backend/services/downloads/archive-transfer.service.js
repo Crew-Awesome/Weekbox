@@ -1865,6 +1865,7 @@ async function downloadArchive({
   onProgress,
   sourceType,
   onDiagnostic,
+  refreshUrl,
   expectedSize = 0,
   validateArchive = true,
 }) {
@@ -1882,11 +1883,11 @@ async function downloadArchive({
     onDiagnostic,
   );
   url = resolved.url;
-  const { isGoogleDriveUrl } = resolved;
+  let { isGoogleDriveUrl } = resolved;
   const isNightlyLink = /^https?:\/\/nightly\.link\//i.test(String(url));
 
   const useMultithreadDownloads = appSettings.get("multithreadDownloads");
-  const { remoteFileSize, verifiedRemoteFileSize } =
+  let { remoteFileSize, verifiedRemoteFileSize } =
     await getVerifiedRemoteSize({
       url,
       isGoogleDriveUrl,
@@ -1903,19 +1904,44 @@ async function downloadArchive({
       Neutralino.filesystem.remove(outPath).catch(() => {}),
     ]);
   };
-  const performDownload = createArchiveDownloadAttempt({
-    url,
-    partPath,
-    outPath,
-    remoteFileSize,
-    verifiedRemoteFileSize,
-    useMultithreadDownloads,
-    isGoogleDriveUrl,
-    getTask,
-    onProgress,
-    onDiagnostic,
-    validateArchive,
-  });
+  let attempt = 0;
+  const performDownload = async () => {
+    attempt += 1;
+    if (attempt > 1 && refreshUrl) {
+      const refreshed = await resolveArchiveDownloadUrl(
+        await refreshUrl(),
+        sourceType,
+        onProgress,
+        onDiagnostic,
+      );
+      url = refreshed.url;
+      isGoogleDriveUrl = refreshed.isGoogleDriveUrl;
+      const refreshedSize = await getVerifiedRemoteSize({
+        url,
+        isGoogleDriveUrl: refreshed.isGoogleDriveUrl,
+        useMultithreadDownloads,
+        expectedSize,
+        getTask,
+        onProgress,
+        onDiagnostic,
+      });
+      remoteFileSize = refreshedSize.remoteFileSize;
+      verifiedRemoteFileSize = refreshedSize.verifiedRemoteFileSize;
+    }
+    return createArchiveDownloadAttempt({
+      url,
+      partPath,
+      outPath,
+      remoteFileSize,
+      verifiedRemoteFileSize,
+      useMultithreadDownloads,
+      isGoogleDriveUrl,
+      getTask,
+      onProgress,
+      onDiagnostic,
+      validateArchive,
+    })();
+  };
   try {
     return await retryTransientDownload(
       performDownload,
@@ -1924,6 +1950,8 @@ async function downloadArchive({
       cleanupDownloadAttempt,
       (error) =>
         isTransientDownloadError(error) ||
+        (refreshUrl &&
+          [401, 403].includes(Number(error?.downloadDiagnostics?.httpStatus))) ||
         (isNightlyLink &&
           Number(error?.downloadDiagnostics?.httpStatus) === 404) ||
         isRetryableArchiveValidationError(error),

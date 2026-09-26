@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.5.9] - 2026-09-26
+
+### Changed
+
+- Updated the Chinese language names.
+
+### Fixed
+
+- Keep manually imported engines after restart.
+- Refresh expired Base Game download links during retries.
+- Show only available Itch uploads and retry temporary Itch.io failures.
+
 ## [2.5.8] - 2026-09-26
 
 ### Changed
@@ -1260,7 +1272,8 @@ This is the Last content update I will do in a long while :)
 - Downloads for Windows, Linux, and macOS.
 - Packages for x64, ARM64, ARMHF, and Universal Macs where available.
 
-[unreleased]: https://github.com/Crew-Awesome/Weekbox/compare/v2.5.8...HEAD
+[unreleased]: https://github.com/Crew-Awesome/Weekbox/compare/v2.5.9...HEAD
+[2.5.9]: https://github.com/Crew-Awesome/Weekbox/compare/v2.5.8...v2.5.9
 [2.5.8]: https://github.com/Crew-Awesome/Weekbox/compare/v2.5.7...v2.5.8
 [2.5.7]: https://github.com/Crew-Awesome/Weekbox/compare/v2.5.6...v2.5.7
 [2.5.6]: https://github.com/Crew-Awesome/Weekbox/compare/v2.5.5...v2.5.6

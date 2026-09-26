@@ -119,7 +119,7 @@ export const downloadEngine = {
     downloadUrl,
     onProgress,
     onStateChange,
-    { expectedSize = 0 } = {},
+    { expectedSize = 0, refreshUrl } = {},
   ) {
     if (!FS.isInitialized) await FS.init();
     FS.assertStorageUnlocked();
@@ -179,6 +179,7 @@ export const downloadEngine = {
         url: downloadUrl,
         outPath: tempFilePath,
         expectedSize,
+        refreshUrl,
         getTask: () => this.activeTasks.get(taskKey),
         onProgress: updateProgress,
       });

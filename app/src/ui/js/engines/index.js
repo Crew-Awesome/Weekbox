@@ -292,7 +292,13 @@ export const enginesView = {
               });
           },
           (state) => this.updateInstallState(state),
-          { expectedSize: getTargetSize(versionData) },
+          {
+            expectedSize: getTargetSize(versionData),
+            refreshUrl: targetItchPlatform
+              ? () =>
+                  resolveItchDownloadUrl(versionData.itch, targetItchPlatform)
+              : undefined,
+          },
         );
         const wasCancelled = this.cancelledInstall === installKey;
         if (wasCancelled && this.rollbackPromise) await this.rollbackPromise;

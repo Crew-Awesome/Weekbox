@@ -43,7 +43,7 @@ export const LANGUAGES = [
   {
     id: "zh-TW",
     flag: "tw",
-    name: "\u7e41\u9ad4\u4e2d\u6587 (\u4e2d\u570b\u53f0\u7063)",
+    name: "\u7e41\u9ad4\u4e2d\u6587\uff08\u4e2d\u570b\u53f0\u7063\uff09",
   },
 ];
 const engineLabelKeys = {
