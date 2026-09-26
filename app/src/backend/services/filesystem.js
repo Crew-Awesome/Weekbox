@@ -1968,32 +1968,35 @@ var _FileSystemService = class _FileSystemService {
     });
     return available;
   }
-  async getStandaloneMods() {
+  async getStandaloneMods({ includeIcons = true } = {}) {
     if (!this.isInitialized) return [];
-    const standaloneMods = [];
-    for (const mod of await this.mods.getAll()) {
-      const folderName = getModFolderName(mod);
-      if (!folderName) continue;
-      const executable = await this.findExecutable(
-        `${this.modsPath}/${folderName}`,
-      );
-      if (!executable) continue;
-      standaloneMods.push({
-        ...mod,
-        engineId: "executable",
-        engineVersion: null,
-        engineLocked: false,
-        kind: "mod",
-        exePath: executable,
-        icoPath: await this.executables.getIconDataUrl(executable),
-      });
-    }
-    return standaloneMods;
+    const standaloneMods = await Promise.all(
+      (await this.mods.getAll()).map(async (mod) => {
+        const folderName = getModFolderName(mod);
+        if (!folderName) return null;
+        const executable = await this.findExecutable(
+          `${this.modsPath}/${folderName}`,
+        );
+        if (!executable) return null;
+        return {
+          ...mod,
+          engineId: "executable",
+          engineVersion: null,
+          engineLocked: false,
+          kind: "mod",
+          exePath: executable,
+          icoPath: includeIcons
+            ? await this.executables.getIconDataUrl(executable)
+            : "",
+        };
+      }),
+    );
+    return standaloneMods.filter(Boolean);
   }
   async runStandaloneMod(modId, onStateChange) {
     this.assertStorageUnlocked();
-    const mod = (await this.getStandaloneMods()).find((item) =>
-      sameId(item.id, modId),
+    const mod = (await this.getStandaloneMods({ includeIcons: false })).find(
+      (item) => sameId(item.id, modId),
     );
     if (!mod) {
       onStateChange?.("error");

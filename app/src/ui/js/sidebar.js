@@ -270,11 +270,24 @@ export const sidebar = {
         "wheel",
         (e) => {
           const wrapper = section.querySelector(".sidebar__wrapper");
-          if (wrapper && !wrapper.contains(e.target)) {
-            wrapper.scrollTop += e.deltaY;
-          }
+          if (!wrapper || e.deltaY === 0) return;
+          const maxScrollTop = wrapper.scrollHeight - wrapper.clientHeight;
+          if (maxScrollTop <= 0) return;
+          const delta =
+            e.deltaMode === 1
+              ? e.deltaY * 16
+              : e.deltaMode === 2
+                ? e.deltaY * wrapper.clientHeight
+                : e.deltaY;
+          const nextScrollTop = Math.min(
+            maxScrollTop,
+            Math.max(0, wrapper.scrollTop + delta),
+          );
+          if (nextScrollTop === wrapper.scrollTop) return;
+          e.preventDefault();
+          wrapper.scrollTop = nextScrollTop;
         },
-        { passive: true },
+        { passive: false },
       );
     });
   },

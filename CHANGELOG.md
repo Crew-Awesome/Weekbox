@@ -7,10 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.5.8] - 2026-09-26
+
 ### Changed
 
 - Updated the Traditional Chinese translation and language flags.
-- engine names are now translatable.
+- Engine names are now translatable.
+- Made Recently Played and Standalone Mods lists vertically scrollable.
+- Loaded Standalone Mods faster during startup.
+
+### Fixed
+
+- Fixed duplicate sidebar scrollbars.
 
 ## [2.5.7] - 2026-09-24
 
@@ -1252,7 +1260,8 @@ This is the Last content update I will do in a long while :)
 - Downloads for Windows, Linux, and macOS.
 - Packages for x64, ARM64, ARMHF, and Universal Macs where available.
 
-[unreleased]: https://github.com/Crew-Awesome/Weekbox/compare/v2.5.7...HEAD
+[unreleased]: https://github.com/Crew-Awesome/Weekbox/compare/v2.5.8...HEAD
+[2.5.8]: https://github.com/Crew-Awesome/Weekbox/compare/v2.5.7...v2.5.8
 [2.5.7]: https://github.com/Crew-Awesome/Weekbox/compare/v2.5.6...v2.5.7
 [2.5.6]: https://github.com/Crew-Awesome/Weekbox/compare/v2.5.5...v2.5.6
 [2.5.5]: https://github.com/Crew-Awesome/Weekbox/compare/v2.5.4...v2.5.5
