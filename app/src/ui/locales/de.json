@@ -325,6 +325,7 @@
   "modSettings.settings": "Mod-Einstellungen",
   "modSettings.dependencySettings": "Abhängigkeitseinstellungen",
   "modSettings.tags": "Tags",
+  "modSettings.resetChanges": "Reset changes",
   "modSettings.tagPlaceholder": "Tag eingeben und Enter drücken",
   "modSettings.openDependencyFolder": "Abhängigkeitsordner öffnen",
   "modSettings.openModFolder": "Mod-Ordner öffnen",

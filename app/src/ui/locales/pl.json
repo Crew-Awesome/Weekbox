@@ -325,6 +325,7 @@
   "modSettings.settings": "Ustawienia moda",
   "modSettings.dependencySettings": "Ustawienia zależności",
   "modSettings.tags": "Tagi",
+  "modSettings.resetChanges": "Reset changes",
   "modSettings.tagPlaceholder": "Wpisz tag i kliknij Enter",
   "modSettings.openDependencyFolder": "Otwórz folder zależności",
   "modSettings.openModFolder": "Otwórz folder moda",

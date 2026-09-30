@@ -325,6 +325,7 @@
   "modSettings.settings": "Opções do mod",
   "modSettings.dependencySettings": "Opções da dependência",
   "modSettings.tags": "Etiquetas",
+  "modSettings.resetChanges": "Reset changes",
   "modSettings.tagPlaceholder": "Digite uma etiqueta e pressione Enter",
   "modSettings.openDependencyFolder": "Abrir pasta de dependências",
   "modSettings.openModFolder": "Abrir pasta de mods",

@@ -325,6 +325,7 @@
   "modSettings.settings": "模组设置",
   "modSettings.dependencySettings": "依赖项设置",
   "modSettings.tags": "标签",
+  "modSettings.resetChanges": "Reset changes",
   "modSettings.tagPlaceholder": "输入标签并按回车",
   "modSettings.openDependencyFolder": "打开依赖项文件",
   "modSettings.openModFolder": "打开模组文件夹",

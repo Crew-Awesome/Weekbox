@@ -5,15 +5,28 @@ import {
 
 const FALLBACK_IMAGE = "assets/img/placeholder-mini.jpg";
 
+function getPreviewImageUrl(image) {
+  if (!image?._sBaseUrl) return null;
+  const filename = image._sFile530 || image._sFile220 || image._sFile;
+  return filename ? `${image._sBaseUrl}/${filename}` : null;
+}
+
+export function getImageUrls(mod) {
+  const screenshots = Array.isArray(mod?._aPreviewContent?.screenshots)
+    ? mod._aPreviewContent.screenshots
+    : mod?._aPreviewContent?.screenshot
+      ? [mod._aPreviewContent.screenshot]
+      : [];
+  const legacyImages = Array.isArray(mod?._aPreviewMedia?._aImages)
+    ? mod._aPreviewMedia._aImages
+    : [];
+  return [...screenshots, ...legacyImages]
+    .map(getPreviewImageUrl)
+    .filter(Boolean);
+}
+
 export function getImageUrl(mod) {
-  const screenshot = mod?._aPreviewContent?.screenshot;
-  if (screenshot?._sBaseUrl) {
-    const filename =
-      screenshot._sFile530 || screenshot._sFile220 || screenshot._sFile;
-    if (filename) return `${screenshot._sBaseUrl}/${filename}`;
-  }
-  const image = mod?._aPreviewMedia?._aImages?.[0];
-  return image ? `${image._sBaseUrl}/${image._sFile}` : FALLBACK_IMAGE;
+  return getImageUrls(mod)[0] || FALLBACK_IMAGE;
 }
 
 export function getTimeAgo(timestamp) {

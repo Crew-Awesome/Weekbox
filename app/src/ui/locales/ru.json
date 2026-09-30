@@ -325,6 +325,7 @@
   "modSettings.settings": "Настройки мода",
   "modSettings.dependencySettings": "Настройки зависимостей",
   "modSettings.tags": "Теги",
+  "modSettings.resetChanges": "Reset changes",
   "modSettings.tagPlaceholder": "Введите тег и нажмите Enter",
   "modSettings.openDependencyFolder": "Открыть папку зависимости",
   "modSettings.openModFolder": "Открыть папку мода",

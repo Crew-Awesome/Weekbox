@@ -10,6 +10,7 @@ import {
 import {
   formatBytes,
   getImageUrl,
+  getImageUrls,
   getTimeAgo,
   toGridMod,
 } from "../../utils/gamebanana/mod-presentation.js";
@@ -596,9 +597,7 @@ export const gameBananaApi = {
             downloadUrl: url.href,
           });
         }
-      } catch (error) {
-
-      }
+      } catch (error) {}
     };
 
     const rawAlternateSources = data?._aAlternateFileSources;
@@ -673,8 +672,6 @@ export const gameBananaApi = {
       );
       return available;
     } catch {
-      // A blocked or unsupported HEAD request does not prove the download is
-
       return null;
     }
   },
@@ -768,9 +765,7 @@ export const gameBananaApi = {
       const data = await response.json();
       const file = this.getPrimaryDownloadFile(data);
       if (!file && requireDownload) return null;
-      const images = (data._aPreviewMedia?._aImages || []).map(
-        (image) => `${image._sBaseUrl}/${image._sFile}`,
-      );
+      const images = getImageUrls(data);
       if (!images.length) images.push("assets/img/placeholder-mini.jpg");
       return buildToolDetails(this, data, file, images);
     } catch (error) {
@@ -876,12 +871,7 @@ export const gameBananaApi = {
     try {
       const data = await this.getModProfile(modId);
       if (!data) return null;
-      let images = [];
-      if (data._aPreviewMedia && data._aPreviewMedia._aImages) {
-        images = data._aPreviewMedia._aImages.map(
-          (img) => `${img._sBaseUrl}/${img._sFile}`,
-        );
-      }
+      let images = getImageUrls(data);
       if (images.length === 0) images.push("assets/img/placeholder-mini.jpg");
       await notifyProgress(
         buildModDetails(this, data, images, [], [], {
@@ -1033,7 +1023,6 @@ export const gameBananaApi = {
       const streamFirstPage =
         Number(page) === 1 && typeof options.onProgress === "function";
       while (!feed.complete && feed.mods.length < requiredMods) {
-        // ponytail: three requests per batch; increase only if API latency outweighs rate-limit risk.
         const sourcePages = Array.from(
           { length: 3 },
           (_, index) => feed.sourcePage + index,
@@ -1078,7 +1067,6 @@ export const gameBananaApi = {
             if (chunk.length)
               await options.onProgress(chunk.map((mod) => this.toGridMod(mod)));
           }
-
 
           if (records.length < 15) feed.complete = true;
         }

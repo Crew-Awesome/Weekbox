@@ -2,6 +2,7 @@ import { gameBananaApi } from "../../../backend/providers/gamebanana/gamebanana.
 import { FS } from "../../../backend/services/filesystem.js";
 import { setupModSettingsDropdowns } from "./modSettingsDropdowns.js";
 import { escapeHtml } from "./modSettingsTemplates.js";
+import { openGameBananaImport } from "./gameBananaImportModal.js";
 import { t } from "../i18n/index.js";
 import {
   activateCheckoutDialog,
@@ -52,6 +53,7 @@ export const localModImportModal = {
   tagSuggestions: [],
   pendingCoverDataUrl: null,
   pendingCoverUrl: null,
+  gameBananaSource: null,
   dropdowns: null,
   draft: null,
   previousFocus: null,
@@ -61,6 +63,7 @@ export const localModImportModal = {
     this.sourcePath = "";
     this.pendingCoverDataUrl = null;
     this.pendingCoverUrl = null;
+    this.gameBananaSource = null;
     this.draft = {
       name: t("import.localMod"),
       kind: "mod",
@@ -275,7 +278,7 @@ export const localModImportModal = {
         <footer class="mod-settings-footer local-mod-import-footer">
           <button type="button" class="mod-settings-cancel local-mod-import-back"><i class="fa-solid fa-arrow-left" aria-hidden="true"></i> ${t("common.back")}</button>
           <span class="mod-settings-status" role="status"></span>
-          <button type="button" class="mod-settings-reset local-mod-import-gamebanana"><i class="fa-solid fa-cloud-arrow-down" aria-hidden="true"></i> ${t("import.importGameBanana")}</button>
+          <button type="button" class="mod-settings-reset local-mod-import-gamebanana"><img class="gamebanana-icon" src="assets/icons/gamebanana.png" alt=""> ${t("import.importGameBanana")}</button>
           <button type="submit" class="mod-settings-save local-mod-import-submit"><i class="fa-solid fa-plus" aria-hidden="true"></i> ${t("import.addMod")}</button>
         </footer>
       </form>`;
@@ -352,8 +355,6 @@ export const localModImportModal = {
     coverImage.addEventListener("error", () => {
       if (coverImage.dataset.fallback) return;
       coverImage.dataset.fallback = "true";
-      this.pendingCoverDataUrl = null;
-      this.pendingCoverUrl = null;
       coverImage.src = DEFAULT_COVER;
     });
     this.overlay
@@ -384,9 +385,31 @@ export const localModImportModal = {
       .addEventListener("click", () => this.renderFolderStep());
     this.overlay
       .querySelector(".local-mod-import-gamebanana")
-      .addEventListener("click", () =>
-        this.openGameBananaImport({ coverImage, nameInput }),
-      );
+      .addEventListener("click", () => {
+        openGameBananaImport({
+          onImported: ({ details, source }) => {
+            this.gameBananaSource = source;
+            this.draft.name = details.title;
+            this.draft.kind = details.kind || "mod";
+            this.draft.engineId =
+              details.engineId ||
+              gameBananaApi.getEngineIdForCategory(details.categoryId) ||
+              "";
+            this.draft.engineVersion = "";
+            nameInput.value = this.draft.name;
+            this.dropdowns?.refresh({
+              engineId: this.draft.engineId,
+              version: this.draft.engineVersion,
+              type: this.draft.kind,
+            });
+            this.pendingCoverDataUrl = null;
+            this.pendingCoverUrl =
+              details.images?.[0] || details.thumbnail || null;
+            delete coverImage.dataset.fallback;
+            coverImage.src = this.pendingCoverUrl || DEFAULT_COVER;
+          },
+        });
+      });
     form.addEventListener("submit", (event) =>
       this.import(event, { nameInput }),
     );
@@ -394,93 +417,6 @@ export const localModImportModal = {
       if (event.target === this.overlay) this.close();
     };
     requestAnimationFrame(() => nameInput.focus());
-  },
-
-  openGameBananaImport({ coverImage, nameInput }) {
-    const overlay = document.createElement("div");
-    overlay.className = "mod-settings-overlay local-mod-gamebanana-overlay";
-    overlay.setAttribute("role", "dialog");
-    overlay.setAttribute("aria-modal", "true");
-    overlay.setAttribute("aria-labelledby", "gamebanana-import-title");
-    overlay.innerHTML = `
-      <form class="mod-settings-modal local-mod-gamebanana-modal">
-        <header class="mod-settings-header">
-          <h2 id="gamebanana-import-title">${t("import.gameBananaTitle")}</h2>
-          <button type="button" class="mod-settings-close" aria-label="${t("common.close")} ${t("import.gameBananaTitle")}"><i class="fa-solid fa-xmark" aria-hidden="true"></i></button>
-        </header>
-        <div class="mod-settings-body local-mod-gamebanana-body">
-          <label for="local-gamebanana-id">${t("import.gameBananaIdOrLink")}</label>
-          <input id="local-gamebanana-id" required placeholder="${escapeHtml(t("import.gameBananaPlaceholder"))}">
-          <p class="mod-settings-status local-mod-gamebanana-status" role="status"></p>
-        </div>
-        <footer class="mod-settings-footer">
-          <button type="button" class="mod-settings-cancel local-mod-gamebanana-cancel">${t("common.cancel")}</button>
-          <button type="submit" class="mod-settings-save"><i class="fa-solid fa-cloud-arrow-down" aria-hidden="true"></i> ${t("import.importDetails")}</button>
-        </footer>
-      </form>`;
-    document.body.appendChild(overlay);
-    const close = () => {
-      deactivateCheckoutDialog(overlay);
-      overlay.classList.remove("show");
-      setTimeout(() => overlay.remove(), 260);
-    };
-    const status = overlay.querySelector(".local-mod-gamebanana-status");
-    overlay
-      .querySelector(".mod-settings-close")
-      .addEventListener("click", close);
-    overlay
-      .querySelector(".local-mod-gamebanana-cancel")
-      .addEventListener("click", close);
-    overlay.addEventListener("click", (event) => {
-      if (event.target === overlay) close();
-    });
-    overlay.querySelector("form").addEventListener("submit", async (event) => {
-      event.preventDefault();
-      const submit = event.currentTarget.querySelector('[type="submit"]');
-      const value = event.currentTarget.querySelector("input").value.trim();
-      const parsed = gameBananaApi.getGameBananaSubmission(value);
-      const modId = parsed?.type === "mod" ? parsed.id : Number(value);
-      if (!Number.isInteger(modId) || modId <= 0) {
-        status.textContent = t("import.invalidGameBananaInput");
-        return;
-      }
-      submit.disabled = true;
-      status.textContent = t("import.loadingGameBanana");
-      try {
-        const details = await gameBananaApi.getModDetails(modId, {
-          includeRequirements: false,
-        });
-        if (!details?.title) throw new Error(t("import.gameBananaNotFound"));
-        this.draft.name = details.title;
-        this.draft.kind = details.kind || "mod";
-        this.draft.engineId =
-          details.engineId ||
-          gameBananaApi.getEngineIdForCategory(details.categoryId) ||
-          "";
-        this.draft.engineVersion = "";
-        nameInput.value = this.draft.name;
-        this.dropdowns?.refresh({
-          engineId: this.draft.engineId,
-          version: this.draft.engineVersion,
-          type: this.draft.kind,
-        });
-        this.pendingCoverDataUrl = null;
-        this.pendingCoverUrl = details.images?.[0] || null;
-        delete coverImage.dataset.fallback;
-        coverImage.src = this.pendingCoverUrl || DEFAULT_COVER;
-        close();
-      } catch {
-        status.textContent = t("import.gameBananaImportFailed");
-        submit.disabled = false;
-      }
-    });
-    activateCheckoutDialog(
-      overlay,
-      overlay,
-      overlay.querySelector("input"),
-      close,
-    );
-    requestAnimationFrame(() => overlay.classList.add("show"));
   },
 
   async import(event, { nameInput }) {
@@ -509,6 +445,8 @@ export const localModImportModal = {
         coverUrl: /^https?:\/\//i.test(this.pendingCoverUrl || "")
           ? this.pendingCoverUrl
           : null,
+        gameBananaId: this.gameBananaSource?.id || null,
+        gameBananaType: this.gameBananaSource?.type || null,
       });
       await this.onImported?.();
       this.close();

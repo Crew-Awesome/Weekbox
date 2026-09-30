@@ -353,8 +353,8 @@
   position: relative;
   width: 100%;
   height: var(--card-image-height);
-  background: var(--surface-media) url("../assets/img/placeholder-mini.jpg") center / cover
-    no-repeat;
+  background: var(--surface-media) url("../assets/img/placeholder-mini.jpg")
+    center / cover no-repeat;
   overflow: hidden;
   border-radius: var(--border-radius) var(--border-radius) 0 0;
   -webkit-mask-image:
@@ -389,8 +389,8 @@
   object-fit: cover;
   object-position: center;
   display: block;
-  background: var(--surface-media) url("../assets/img/placeholder-mini.jpg") center / cover
-    no-repeat;
+  background: var(--surface-media) url("../assets/img/placeholder-mini.jpg")
+    center / cover no-repeat;
   border-radius: var(--border-radius) var(--border-radius) 0 0;
   -webkit-mask-image:
     url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 60 60'%3E%3Cpath fill='%23000' d='M56 0 L60 0 L60 60 L0 60 L0 56 A8 8 0 0 1 8 48 L40 48 A8 8 0 0 0 48 40 L48 8 A8 8 0 0 1 56 0 Z'/%3E%3C/svg%3E"),
@@ -623,7 +623,8 @@
 
 :root[data-theme="light"] #popular-grid .mod-stats,
 :root[data-theme="light"] .mod-profile-grid .mod-stats {
-  border: 1px solid color-mix(in srgb, var(--primary) 22%, var(--outline-variant));
+  border: 1px solid
+    color-mix(in srgb, var(--primary) 22%, var(--outline-variant));
   background: color-mix(
     in srgb,
     var(--primary-container) 58%,
@@ -2016,10 +2017,6 @@
   transform: scale(0.97);
 }
 
-
-
-
-
 .text-sizer {
   font-size: 20px;
   line-height: 20px;
@@ -2306,6 +2303,7 @@
 .mod-settings-cancel,
 .mod-settings-save,
 .mod-settings-reset,
+.mod-settings-import-gamebanana,
 .mod-settings-move-to-mods,
 .mod-settings-convert-engine {
   box-sizing: border-box;
@@ -2323,6 +2321,7 @@
 .mod-settings-open-folder:hover,
 .mod-settings-cancel:hover,
 .mod-settings-reset:hover:not(:disabled),
+.mod-settings-import-gamebanana:hover:not(:disabled),
 .mod-settings-move-to-mods:hover:not(:disabled),
 .mod-settings-convert-engine:hover:not(:disabled) {
   border-color: var(--text-muted);
@@ -2671,6 +2670,7 @@
 
 .mod-settings-save:disabled,
 .mod-settings-reset:disabled,
+.mod-settings-import-gamebanana:disabled,
 .mod-settings-move-to-mods:disabled,
 .mod-settings-convert-engine:disabled {
   cursor: not-allowed;
@@ -2678,8 +2678,26 @@
 }
 
 .mod-settings-convert-engine {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
   flex: 0 0 auto;
   overflow-wrap: anywhere;
+}
+
+.mod-settings-import-gamebanana {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.gamebanana-icon {
+  display: block;
+  width: 18px;
+  height: 18px;
+  flex: 0 0 18px;
+  object-fit: contain;
+  opacity: 1;
 }
 
 @media (max-width: 500px) {
@@ -2699,6 +2717,7 @@
   }
 
   .mod-settings-footer .mod-settings-reset,
+  .mod-settings-footer .mod-settings-import-gamebanana,
   .mod-settings-footer .mod-settings-convert-engine {
     width: 100%;
   }
@@ -2778,7 +2797,6 @@
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
-
 
 .settings-list {
   display: flex;
@@ -2860,7 +2878,6 @@
   color: var(--text-main);
   outline: none;
 }
-
 
 .switch {
   position: relative;
@@ -3095,4 +3112,208 @@ input:checked + .slider:before {
   color: var(--text-muted);
   opacity: 0.45;
   cursor: default;
+}
+
+.mod-settings-modal--editor {
+  width: min(920px, calc(100vw - 32px));
+  max-height: min(780px, calc(100vh - 32px));
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.mod-settings-modal--editor .mod-settings-header {
+  padding: 18px 24px;
+}
+
+.mod-settings-modal--editor .mod-settings-body {
+  display: grid;
+  grid-template-columns: 300px minmax(0, 1fr);
+  gap: 0;
+  min-height: 0;
+  padding: 0;
+  overflow: hidden;
+  flex: 1;
+}
+
+.mod-settings-modal--editor .mod-settings-sidebar {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+  padding: 28px 22px;
+  border-right: 1px solid var(--border-color);
+  background: color-mix(in srgb, var(--bg-color) 42%, var(--bg-panel));
+  text-align: center;
+}
+
+.mod-settings-modal--editor .mod-settings-cover-picker {
+  width: 100%;
+  height: 132px;
+  flex: 0 0 auto;
+}
+
+.mod-settings-modal--editor .mod-settings-icon-picker {
+  width: 64px;
+  height: 64px;
+  flex: 0 0 64px;
+}
+
+.mod-settings-modal--editor .mod-settings-open-folder {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: auto;
+  min-width: 0;
+  gap: 7px;
+  margin-top: 4px;
+  padding: 0 12px;
+}
+
+.mod-settings-modal--editor .mod-settings-main {
+  min-width: 0;
+  min-height: 0;
+  padding: 28px 32px;
+  overflow-y: auto;
+}
+
+.mod-settings-modal--editor .mod-settings-section {
+  display: grid;
+  gap: 16px;
+}
+
+.mod-settings-modal--editor .mod-settings-section + .mod-settings-section {
+  margin-top: 28px;
+  padding-top: 24px;
+  border-top: 1px solid var(--border-color);
+}
+
+.mod-settings-modal--editor .mod-settings-engine,
+.mod-settings-modal--editor .mod-settings-engine.has-version,
+.mod-settings-modal--editor .mod-settings-executable-type {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+  padding-top: 0;
+  border-top: 0;
+}
+
+.mod-settings-modal--editor .mod-settings-source-actions {
+  display: grid;
+  justify-items: start;
+  gap: 12px;
+}
+
+.mod-settings-modal--editor .mod-settings-source-actions button {
+  width: auto;
+}
+
+.mod-settings-modal--editor .mod-settings-footer {
+  padding: 16px 24px;
+}
+
+.mod-settings-modal--editor .mod-settings-footer .mod-settings-reset {
+  margin-right: auto;
+}
+
+@media (max-width: 760px) {
+  .mod-settings-modal--editor .mod-settings-body {
+    display: block;
+    overflow-y: auto;
+  }
+
+  .mod-settings-modal--editor .mod-settings-sidebar {
+    display: grid;
+    grid-template-columns: 120px minmax(0, 1fr);
+    justify-items: start;
+    padding: 20px;
+    border-right: 0;
+    border-bottom: 1px solid var(--border-color);
+    text-align: left;
+  }
+
+  .mod-settings-modal--editor .mod-settings-cover-picker {
+    grid-row: span 4;
+    width: 120px;
+    height: 84px;
+  }
+
+  .mod-settings-modal--editor .mod-settings-icon-picker {
+    width: 46px;
+    height: 46px;
+    flex-basis: 46px;
+  }
+
+  .mod-settings-modal--editor .mod-settings-main {
+    padding: 24px 20px;
+    overflow: visible;
+  }
+
+  .mod-settings-modal--editor .mod-settings-engine,
+  .mod-settings-modal--editor .mod-settings-engine.has-version,
+  .mod-settings-modal--editor .mod-settings-executable-type {
+    grid-template-columns: 1fr;
+  }
+}
+
+.mod-settings-modal--editor .mod-settings-sidebar {
+  align-items: stretch;
+  justify-content: flex-start;
+  background: transparent;
+  text-align: start;
+}
+
+.mod-settings-modal--editor .mod-settings-cover-picker {
+  height: 144px;
+}
+
+.mod-settings-modal--editor .mod-settings-identity-header {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-width: 0;
+  width: 100%;
+}
+
+.mod-settings-modal--editor
+  .mod-settings-identity-header
+  .mod-settings-icon-picker {
+  width: 56px;
+  height: 56px;
+  flex: 0 0 56px;
+}
+
+.mod-settings-modal--editor .mod-settings-identity-header .mod-settings-name {
+  align-self: center;
+  min-width: 0;
+  width: 100%;
+  border-bottom-width: 2px !important;
+  font-size: 1.3rem !important;
+}
+
+.mod-settings-modal--editor .mod-settings-main > .mod-settings-identity-header {
+  padding-bottom: 20px;
+  border-bottom: 1px solid var(--border-color);
+  margin-bottom: 28px;
+}
+
+.mod-settings-modal--editor .mod-settings-open-folder {
+  align-self: flex-start;
+  justify-content: flex-start;
+}
+
+.mod-settings-modal--editor .mod-settings-general {
+  gap: 20px;
+}
+
+.mod-settings-modal--editor .mod-settings-source-actions {
+  gap: 12px;
+}
+
+@media (max-width: 760px) {
+  .mod-settings-modal--editor .mod-settings-sidebar {
+    display: flex;
+    align-items: stretch;
+    text-align: start;
+  }
 }

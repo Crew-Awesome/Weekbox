@@ -325,6 +325,7 @@
   "modSettings.settings": "模組設定",
   "modSettings.dependencySettings": "相依性設定",
   "modSettings.tags": "標籤",
+  "modSettings.resetChanges": "Reset changes",
   "modSettings.tagPlaceholder": "輸入標籤並按 Enter",
   "modSettings.openDependencyFolder": "開啟相依性檔案",
   "modSettings.openModFolder": "開啟模組資料夾",

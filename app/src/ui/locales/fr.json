@@ -325,6 +325,7 @@
   "modSettings.settings": "Paramètres du mod",
   "modSettings.dependencySettings": "Paramètres des dépendances",
   "modSettings.tags": "Tags",
+  "modSettings.resetChanges": "Reset changes",
   "modSettings.tagPlaceholder": "Écrivez un tag et appuyez sur Entrer",
   "modSettings.openDependencyFolder": "Ouvrir le dossier des dépendances",
   "modSettings.openModFolder": "Ouvrir le dossier du mod",

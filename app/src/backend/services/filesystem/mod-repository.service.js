@@ -135,7 +135,10 @@ var _ModRepository = class _ModRepository {
     await this.saveAll(mods);
     return mod;
   }
-  async updateAppearance(modId, { name, coverPath, iconPath } = {}) {
+  async updateAppearance(
+    modId,
+    { name, coverPath, iconPath, gameBananaId, gameBananaType } = {},
+  ) {
     const mods = await this.getAll();
     const mod = mods.find((item) => sameId(item.id, modId));
     if (!mod) return null;
@@ -153,6 +156,8 @@ var _ModRepository = class _ModRepository {
       delete mod.imageBase64;
     }
     if (iconPath !== void 0) mod.iconPath = iconPath || null;
+    if (gameBananaId !== void 0) mod.gameBananaId = gameBananaId || null;
+    if (gameBananaType !== void 0) mod.gameBananaType = gameBananaType || null;
     await this.saveAll(mods);
     return mod;
   }
@@ -180,7 +185,6 @@ var _ModRepository = class _ModRepository {
     if (!(await this.api.exists(this.filePath))) return;
     const mods = await this.getAll();
     const remainingMods = mods.filter((mod) => !sameId(mod.id, modId));
-
 
     for (const mod of remainingMods) {
       if (Array.isArray(mod.dependencies)) {

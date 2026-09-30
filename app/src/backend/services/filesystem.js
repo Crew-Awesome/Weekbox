@@ -658,8 +658,6 @@ async function importCustomEngineContent(service, install, engineId, version) {
           mod.sourceEngineFolder === sourceEngineFolder,
       );
       if (sourceMatch) {
-        // ponytail: legacy records have no source metadata; use their engine
-
         const legacyMatch = existingMods.find(
           (mod) =>
             sourceMatch.source === "custom-engine" &&
@@ -759,8 +757,8 @@ var _FileSystemService = class _FileSystemService {
       getDataPath: () => this.dataPath,
     });
     this.activeEngineProcesses = this.processes.activeProcesses;
-    this.activeEngineMods = /* @__PURE__ */ new Map();
-    this.engineUpdates = /* @__PURE__ */ new Set();
+    this.activeEngineMods = new Map();
+    this.engineUpdates = new Set();
     document.addEventListener("weekbox-process-exit", (event) => {
       this.activeEngineMods.delete(event.detail.key);
     });
@@ -853,8 +851,6 @@ var _FileSystemService = class _FileSystemService {
           `[WeekBox] Startup maintenance: ${label} finished in ${Math.round(performance.now() - startedAt)}ms`,
         );
       } catch (error) {
-        // Maintenance repairs stale files and metadata; a single failed repair
-        // must not prevent an otherwise healthy library from opening.
         console.warn(`[WeekBox] Startup maintenance skipped: ${label}`, error);
       }
     };
@@ -1955,7 +1951,7 @@ var _FileSystemService = class _FileSystemService {
       }
     }
     if (migrated) await this.mods.saveAll(mods);
-    let validFolders = /* @__PURE__ */ new Set();
+    let validFolders = new Set();
     try {
       const entries = await Neutralino.filesystem.readDirectory(this.modsPath);
       for (const e of entries) {
@@ -2174,6 +2170,8 @@ var _FileSystemService = class _FileSystemService {
     tags = [],
     coverDataUrl,
     coverUrl,
+    gameBananaId,
+    gameBananaType,
   }) {
     this.assertStorageUnlocked();
     const prepared = await prepareLocalModImport(this, {
@@ -2207,6 +2205,8 @@ var _FileSystemService = class _FileSystemService {
             ? engineVersion || null
             : null,
         source: "local",
+        gameBananaId: gameBananaId || null,
+        gameBananaType: gameBananaType || null,
       });
       if (requestedKind !== "mod") {
         await this.setModType(modId, requestedKind);
@@ -2486,9 +2486,6 @@ var _FileSystemService = class _FileSystemService {
     );
     return installed.reduce((count, value) => count + value, 0);
   }
-  /**
-   * @fix 2026-08-05T03:31:10.964Z - Fix NE_FS_MOVEERR during mod folder flattening
-   */
   async flattenModFolder(targetDir) {
     if (!this.isInitialized) return;
     try {

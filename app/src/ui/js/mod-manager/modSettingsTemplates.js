@@ -10,6 +10,12 @@ export function escapeHtml(value) {
 }
 
 export function getGameBananaSource(mod) {
+  if (mod?.gameBananaId) {
+    return {
+      type: mod.gameBananaType === "tool" ? "tool" : "mod",
+      id: String(mod.gameBananaId),
+    };
+  }
   const match = String(mod?.id || "").match(/^(?:(mod|tool):)?(\d+)$/);
   if (!match) return null;
   return { type: match[1] || "mod", id: match[2] };
@@ -100,16 +106,13 @@ function renderSettingsFooter({
   readOnly,
   resetTitle,
   isDependency,
-  isExecutable,
-  fileLocked,
 }) {
   const resetDisabled =
     canReset && !readOnly
       ? ""
       : `disabled title="${escapeHtml(readOnly ? t("modSettings.closeEngineToChangeShort") : resetTitle)}"`;
   return `<footer class="mod-settings-footer">
-        ${isExecutable ? `<button type="button" class="mod-settings-convert-engine" ${readOnly || fileLocked ? "disabled" : ""}>${t("engineManager.convertExecutable")}</button>` : ""}
-        <button type="button" class="mod-settings-reset" ${resetDisabled}>${t("common.reset")}</button>
+        <button type="button" class="mod-settings-reset" ${resetDisabled}>${t("modSettings.resetChanges")}</button>
         ${isDependency ? `<button type="button" class="mod-settings-move-to-mods" ${readOnly ? "disabled" : ""}>${t("modSettings.moveToMods")}</button>` : ""}
         <span class="mod-settings-status" role="status"></span>
         <button type="button" class="mod-settings-cancel">${t("common.cancel")}</button>
@@ -117,16 +120,22 @@ function renderSettingsFooter({
       </footer>`;
 }
 
-function renderIdentitySection({ mod, localCover, localIcon, readOnly }) {
-  const defaultIcon = mod.engineId
-    ? FS.getEngineIconSource(mod.engineId)
-    : "assets/icons/exe.png";
-  return `<div class="mod-settings-identity">
+function renderIdentitySection({ localCover, readOnly, isDependency }) {
+  return `<aside class="mod-settings-sidebar">
           <label class="mod-settings-cover-picker" title="${readOnly ? t("modSettings.changesUnavailable") : t("modSettings.changeCoverImage")}">
             <img class="mod-settings-cover" src="${escapeHtml(localCover || "assets/img/placeholder-mini.jpg")}" alt="${t("modSettings.currentCover")}">
             <span><i class="fa-solid fa-image" aria-hidden="true"></i> ${t("modSettings.changeImage")}</span>
             <input class="mod-settings-file" type="file" accept="image/*" ${readOnly ? "disabled" : ""}>
           </label>
+          <button type="button" class="mod-settings-open-folder"><i class="fa-solid fa-folder-open" aria-hidden="true"></i> ${t(isDependency ? "modSettings.openDependencyFolder" : "modSettings.openModFolder")}</button>
+        </aside>`;
+}
+
+function renderIdentityHeader({ mod, localIcon, readOnly }) {
+  const defaultIcon = mod.engineId
+    ? FS.getEngineIconSource(mod.engineId)
+    : "assets/icons/exe.png";
+  return `<div class="mod-settings-identity-header">
           <div class="mod-settings-icon-picker">
             <img class="mod-settings-icon" src="${escapeHtml(localIcon || defaultIcon)}" alt="${t("modSettings.currentSidebarIcon")}">
             <label class="mod-settings-icon-upload" title="${readOnly ? t("modSettings.changesUnavailable") : t("modSettings.changeSidebarIcon")}" aria-label="${readOnly ? t("modSettings.changesUnavailable") : t("modSettings.changeSidebarIcon")}" tabindex="0">
@@ -159,25 +168,35 @@ export function settingsContent({
   );
   const tagsField = renderTagsField(readOnly, tagSuggestions);
   return `
-    <form class="mod-settings-modal">
+    <form class="mod-settings-modal mod-settings-modal--editor">
       <header class="mod-settings-header">
         <h2 id="mod-settings-title">${isDependency ? t("modSettings.dependencySettings") : t("modSettings.settings")}</h2>
         <div class="mod-settings-header-actions">
-          <button type="button" class="mod-settings-open-folder" title="${isDependency ? t("modSettings.openDependencyFolder") : t("modSettings.openModFolder")}" aria-label="${isDependency ? t("modSettings.openDependencyFolder") : t("modSettings.openModFolder")}"><i class="fa-solid fa-folder-open"></i></button>
           <button type="button" class="mod-settings-close" aria-label="${t("common.close")} ${isDependency ? t("modSettings.dependencySettings") : t("modSettings.settings")}"><i class="fa-solid fa-xmark"></i></button>
         </div>
       </header>
       <div class="mod-settings-body">
-        ${renderIdentitySection({ mod, localCover, localIcon, readOnly })}
-        ${renderEngineSection({
-          hasEngine,
-          isExecutable,
-          controlsDisabled,
-          tagsField,
-        })}
-        ${!isExecutable && mod.engineLocked ? `<p class="mod-settings-note">${t("modSettings.lockedToPsychOnline")}</p>` : ""}
-        ${readOnly ? `<p class="mod-settings-note">${t("modSettings.closeEngineToChange")}</p>` : ""}
+        ${renderIdentitySection({ localCover, readOnly, isDependency })}
+        <main class="mod-settings-main">
+          ${renderIdentityHeader({ mod, localIcon, readOnly })}
+          <section class="mod-settings-section mod-settings-general">
+            ${renderEngineSection({
+              hasEngine,
+              isExecutable,
+              controlsDisabled,
+              tagsField,
+            })}
+            ${!isExecutable && mod.engineLocked ? `<p class="mod-settings-note">${t("modSettings.lockedToPsychOnline")}</p>` : ""}
+            ${readOnly ? `<p class="mod-settings-note">${t("modSettings.closeEngineToChange")}</p>` : ""}
+          </section>
+          <section class="mod-settings-section mod-settings-sources">
+            <div class="mod-settings-source-actions">
+              ${isExecutable ? `<button type="button" class="mod-settings-convert-engine" ${readOnly || fileLocked ? "disabled" : ""}><i class="fa-solid fa-arrows-rotate" aria-hidden="true"></i> ${t("engineManager.convertExecutable")}</button>` : ""}
+              <button type="button" class="mod-settings-import-gamebanana" ${readOnly || fileLocked ? "disabled" : ""}><img class="gamebanana-icon" src="assets/icons/gamebanana.png" alt=""> ${t("import.importGameBanana")}</button>
+            </div>
+          </section>
+        </main>
       </div>
-      ${renderSettingsFooter({ canReset, readOnly, resetTitle, isDependency, isExecutable, fileLocked })}
+      ${renderSettingsFooter({ canReset, readOnly, resetTitle, isDependency })}
     </form>`;
 }

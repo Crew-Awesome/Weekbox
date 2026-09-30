@@ -1,6 +1,5 @@
 import { gameBananaApi } from "../../../backend/providers/gamebanana/gamebanana.provider.js";
 import { FS } from "../../../backend/services/filesystem.js";
-import { sanitizePathSegment } from "../../../backend/services/filesystem/path.util.js";
 import { setupModSettingsDropdowns } from "./modSettingsDropdowns.js";
 import {
   getGameBananaSource,
@@ -14,6 +13,7 @@ import {
   deactivateCheckoutDialog,
 } from "../home/modal/dialogFocus.js";
 import { customEngineModal } from "../engine-manager/customEngineModal.js";
+import { openGameBananaImport } from "./gameBananaImportModal.js";
 
 function setupTagEditor({ overlay, mod, readOnly }) {
   const tagInput = overlay.querySelector(".mod-settings-tag-input");
@@ -115,6 +115,7 @@ async function saveModSettings({
   pendingCoverDataUrl,
   pendingCoverUrl,
   pendingIconDataUrl,
+  gameBananaSource,
   onSaved,
 }) {
   if (!fileLocked) await FS.assertModChangeAllowed(mod.id);
@@ -130,6 +131,7 @@ async function saveModSettings({
     pendingCoverDataUrl,
     pendingCoverUrl,
     pendingIconDataUrl,
+    gameBananaSource,
   });
   await onSaved?.();
   document.dispatchEvent(
@@ -179,8 +181,13 @@ async function saveModAppearance({
   pendingCoverDataUrl,
   pendingCoverUrl,
   pendingIconDataUrl,
+  gameBananaSource,
 }) {
   const appearance = { name };
+  if (gameBananaSource) {
+    appearance.gameBananaId = gameBananaSource.id;
+    appearance.gameBananaType = gameBananaSource.type;
+  }
   if (fileLocked && !mod.folderName) {
     appearance.folderName = mod.name ? sanitizePathSegment(mod.name) : null;
   }
@@ -191,6 +198,65 @@ async function saveModAppearance({
   if (!(await FS.updateModAppearance(mod.id, appearance))) {
     throw new Error(t("modSettings.saveFailed"));
   }
+}
+
+function getGameBananaImage(details) {
+  return details.images?.[0] || details.thumbnail || null;
+}
+
+function applyGameBananaDetails({
+  details,
+  source,
+  nameInput,
+  cover,
+  dropdowns,
+  setSource,
+  setStatus,
+}) {
+  setSource(source);
+  nameInput.value = details.title;
+  cover.src = getGameBananaImage(details) || "assets/img/placeholder-mini.jpg";
+  const engineId =
+    details.engineId ||
+    gameBananaApi.getEngineIdForCategory(details.categoryId) ||
+    "";
+  dropdowns?.refresh({
+    engineId,
+    version: "",
+    type: details.kind || "mod",
+  });
+  setStatus(t("modSettings.defaultsLoaded"));
+}
+
+function setupGameBananaImportButton({
+  overlay,
+  nameInput,
+  cover,
+  dropdowns,
+  status,
+  setSource,
+  setCoverDataUrl,
+  setCoverUrl,
+}) {
+  overlay
+    .querySelector(".mod-settings-import-gamebanana")
+    ?.addEventListener("click", () => {
+      openGameBananaImport({
+        onImported: ({ details, source }) => {
+          setCoverDataUrl(null);
+          setCoverUrl(getGameBananaImage(details));
+          applyGameBananaDetails({
+            details,
+            source,
+            nameInput,
+            cover,
+            dropdowns,
+            setSource,
+            setStatus: (value) => (status.textContent = value),
+          });
+        },
+      });
+    });
 }
 
 export const modSettingsModal = {
@@ -296,6 +362,7 @@ export const modSettingsModal = {
     let pendingCoverDataUrl = null;
     let pendingCoverUrl = null;
     let pendingIconDataUrl = null;
+    let gameBananaSource = getGameBananaSource(mod);
 
     fileInput.addEventListener("change", () => {
       const file = fileInput.files?.[0];
@@ -339,6 +406,16 @@ export const modSettingsModal = {
           status.textContent = t("modSettings.openFolderFailed");
         }
       });
+    setupGameBananaImportButton({
+      overlay,
+      nameInput,
+      cover,
+      dropdowns,
+      status,
+      setSource: (value) => (gameBananaSource = value),
+      setCoverDataUrl: (value) => (pendingCoverDataUrl = value),
+      setCoverUrl: (value) => (pendingCoverUrl = value),
+    });
     overlay
       .querySelector(".mod-settings-reset")
       .addEventListener("click", async () => {
@@ -367,6 +444,7 @@ export const modSettingsModal = {
           cover.src = pendingCoverUrl || "assets/img/placeholder-mini.jpg";
           pendingIconDataUrl = "";
           icon.src = defaultIcon;
+          gameBananaSource = source;
           status.textContent = t("modSettings.defaultsLoaded");
         } catch {
           status.textContent = t("modSettings.defaultsFailed");
@@ -422,6 +500,7 @@ export const modSettingsModal = {
           pendingCoverDataUrl,
           pendingCoverUrl,
           pendingIconDataUrl,
+          gameBananaSource,
           onSaved,
         });
       } catch (error) {
