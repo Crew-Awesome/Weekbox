@@ -325,7 +325,7 @@
   "modSettings.settings": "Pengaturan mod",
   "modSettings.dependencySettings": "Pengaturan dependensi",
   "modSettings.tags": "Tag",
-  "modSettings.resetChanges": "Reset changes",
+  "modSettings.resetChanges": "Atur ulang perubahan",
   "modSettings.tagPlaceholder": "Ketik tag dan tekan Enter",
   "modSettings.openDependencyFolder": "Buka folder dependensi",
   "modSettings.openModFolder": "Buka folder mod",
