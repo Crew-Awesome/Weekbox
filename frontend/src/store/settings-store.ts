@@ -11,6 +11,7 @@ export interface SettingsState {
   confirmWarnings: boolean;
   autoCheckUpdates: boolean;
   dismissedWarnings: Record<string, boolean>;
+  uiScale: number;
   isLoaded: boolean;
 
   loadSettings: () => Promise<void>;
@@ -27,6 +28,51 @@ export interface SettingsStoreDependencies {
 
 const SETTINGS_STORAGE_KEY = "wb_app_settings";
 
+/**
+ * Detects whether the current runtime is a mobile platform or device.
+ */
+export function isMobileDeviceOrPlatform(): boolean {
+  if (typeof window === "undefined") return false;
+
+  const isCapacitor = Boolean(
+    (window as any).Capacitor?.isNativePlatform?.() ||
+      ((window as any).Capacitor?.getPlatform &&
+        ["android", "ios"].includes((window as any).Capacitor.getPlatform()))
+  );
+  if (isCapacitor) return true;
+
+  if (typeof navigator !== "undefined" && navigator.userAgent) {
+    return /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+  }
+  return false;
+}
+
+/**
+ * Applies the UI scale percentage to document.documentElement.style.fontSize.
+ * Only applied on PC (desktop / web on PC). On mobile, fontSize is cleared/reset.
+ * Also explicitly resets any inline document zoom to prevent viewport clipping.
+ */
+export function applyUiScale(scale: number): void {
+  if (typeof document === "undefined") return;
+
+  // Clear any existing zoom style so the viewport canvas never shrinks or bugs out
+  document.documentElement.style.zoom = "";
+
+  if (isMobileDeviceOrPlatform()) {
+    document.documentElement.style.fontSize = "";
+    return;
+  }
+
+  const validScale = typeof scale === "number" && !isNaN(scale) ? scale : 100;
+  const clamped = Math.min(Math.max(validScale, 70), 150);
+
+  if (clamped === 100) {
+    document.documentElement.style.fontSize = "";
+  } else {
+    document.documentElement.style.fontSize = `${clamped}%`;
+  }
+}
+
 function readLocalSettings(): Record<string, any> {
   if (typeof window === "undefined") return {};
   try {
@@ -42,6 +88,16 @@ function writeLocalSettings(settings: Record<string, any>): void {
   try {
     localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify(settings));
   } catch {}
+}
+
+const initialLocalSettings = readLocalSettings();
+const initialUiScale =
+  typeof initialLocalSettings.uiScale === "number" && !isNaN(initialLocalSettings.uiScale)
+    ? initialLocalSettings.uiScale
+    : 100;
+
+if (typeof document !== "undefined") {
+  applyUiScale(initialUiScale);
 }
 
 /**
@@ -62,6 +118,7 @@ export function createSettingsStore(customDeps?: Partial<SettingsStoreDependenci
     confirmWarnings: true,
     autoCheckUpdates: true,
     dismissedWarnings: {},
+    uiScale: initialUiScale,
     isLoaded: false,
 
     loadSettings: async () => {
@@ -81,21 +138,54 @@ export function createSettingsStore(customDeps?: Partial<SettingsStoreDependenci
           ...platformSettings,
         };
 
+        const isWindows =
+          typeof window !== "undefined" &&
+          (window.NL_OS === "Windows" || navigator.userAgent.includes("Windows"));
+
+        let finalModsPath = merged.modsPath;
+        let finalEnginesPath = merged.enginesPath;
+
+        if (!isWindows) {
+          if (finalModsPath && finalModsPath.includes("%APPDATA%")) {
+            finalModsPath = "";
+          }
+          if (finalEnginesPath && finalEnginesPath.includes("%APPDATA%")) {
+            finalEnginesPath = "";
+          }
+        }
+
+        const resolvedMods = finalModsPath || defaults.defaultModsPath;
+        const resolvedEngines = finalEnginesPath || defaults.defaultEnginesPath;
+        const resolvedUiScale =
+          typeof merged.uiScale === "number" && !isNaN(merged.uiScale)
+            ? merged.uiScale
+            : 100;
+
+        applyUiScale(resolvedUiScale);
+
         // Keep both local storage and platform in sync with merged state
-        writeLocalSettings(merged);
+        const sanitizedMerged = {
+          ...merged,
+          modsPath: resolvedMods,
+          enginesPath: resolvedEngines,
+          uiScale: resolvedUiScale,
+        };
+
+        writeLocalSettings(sanitizedMerged);
         if (deps.settings.saveSettings) {
-          await deps.settings.saveSettings(merged).catch(() => {});
+          await deps.settings.saveSettings(sanitizedMerged).catch(() => {});
         }
 
         set({
-          modsPath: merged.modsPath || defaults.defaultModsPath,
-          enginesPath: merged.enginesPath || defaults.defaultEnginesPath,
+          modsPath: resolvedMods,
+          enginesPath: resolvedEngines,
           defaultModsPath: defaults.defaultModsPath,
           defaultEnginesPath: defaults.defaultEnginesPath,
           preventCloseOnActive: merged.preventCloseOnActive !== false,
           confirmWarnings: merged.confirmWarnings !== false,
           autoCheckUpdates: merged.autoCheckUpdates !== false,
           dismissedWarnings: merged.dismissedWarnings || {},
+          uiScale: resolvedUiScale,
           isLoaded: true,
         });
       } catch {
@@ -105,6 +195,9 @@ export function createSettingsStore(customDeps?: Partial<SettingsStoreDependenci
 
     updateSetting: async (key, value) => {
       set((state) => ({ ...state, [key]: value }));
+      if (key === "uiScale") {
+        applyUiScale(value as number);
+      }
       try {
         const local = readLocalSettings();
         const platformSettings = (await deps.settings.getSettings?.()) || {};

@@ -1,4 +1,5 @@
 import { toast } from "../../utils/toast";
+import { DownloadStatus } from "@contracts";
 import type {
   ActiveEngineDownloadTask,
   EngineDownloadStoreDependencies,
@@ -33,7 +34,7 @@ export async function handleStartEngineDownload(
     engineName,
     downloadUrl,
     progress: 0,
-    status: "Starting download...",
+    status: DownloadStatus.STARTING,
     abortController,
     toastId: null,
   };

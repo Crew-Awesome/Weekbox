@@ -38,6 +38,10 @@ export const StorageTab: React.FC = () => {
     }
   }, [isMobile]);
 
+  useEffect(() => {
+    useSettingsStore.getState().loadSettings();
+  }, []);
+
   const {
     modsPath,
     enginesPath,
@@ -47,9 +51,25 @@ export const StorageTab: React.FC = () => {
     dismissWarning,
   } = useSettingsStore();
 
+  const isWindows =
+    typeof window !== "undefined" &&
+    (window.NL_OS === "Windows" || navigator.userAgent.includes("Windows"));
+  const fallbackMods =
+    defaultModsPath ||
+    (isMobile
+      ? "Android/data/com.crewawesome.weekbox/files/mods"
+      : isWindows
+      ? "%APPDATA%\\WeekBox\\mods"
+      : "~/Library/Application Support/WeekBox/mods");
+  const fallbackEngines =
+    defaultEnginesPath ||
+    (isWindows ? "%APPDATA%\\WeekBox\\engines" : "~/Library/Application Support/WeekBox/engines");
+
   const displayedModsPath = isMobile
-    ? mobileModsPath || modsPath || "Android/data/com.crewawesome.weekbox/files/mods"
-    : modsPath || "%APPDATA%\\WeekBox\\mods";
+    ? mobileModsPath || modsPath || fallbackMods
+    : modsPath || defaultModsPath || fallbackMods;
+
+  const displayedEnginesPath = enginesPath || defaultEnginesPath || fallbackEngines;
 
   const handleViewMobileModsFolder = async () => {
     const path = mobileModsPath || modsPath || (await Core.platform.getModsPath?.()) || "";
@@ -230,7 +250,7 @@ export const StorageTab: React.FC = () => {
   const handlePickFolder = async (type: "mods" | "engines") => {
     if (isMigrating) return;
     const title = type === "mods" ? "Select New Mods Folder" : "Select New Engines Folder";
-    const current = type === "mods" ? modsPath : enginesPath;
+    const current = type === "mods" ? (modsPath || defaultModsPath) : (enginesPath || defaultEnginesPath);
 
     if (Core.platform.showFolderDialog) {
       const selected = await Core.platform.showFolderDialog(title, current);
@@ -394,9 +414,9 @@ export const StorageTab: React.FC = () => {
                   </span>
                   <span
                     className="text-xs sm:text-sm text-[var(--wb-on-surface-variant)] font-mono truncate"
-                    title={enginesPath || "%APPDATA%\\WeekBox\\engines"}
+                    title={displayedEnginesPath}
                   >
-                    {enginesPath || "%APPDATA%\\WeekBox\\engines"}
+                    {displayedEnginesPath}
                   </span>
                 </div>
               </div>

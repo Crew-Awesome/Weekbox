@@ -1,14 +1,32 @@
 import React from "react";
-import { Moon, Sun, Laptop, Palette, Pipette, Sparkles, CircleDot, Image } from "lucide-react";
+import {
+  Moon,
+  Sun,
+  Laptop,
+  Palette,
+  Pipette,
+  Sparkles,
+  CircleDot,
+  Image,
+  Monitor,
+  Maximize2,
+  RotateCcw,
+  ZoomIn,
+  ZoomOut,
+} from "lucide-react";
 import { useTheme } from "../hooks/use-theme";
 import { Switch } from "./switch";
 import Utils from "@utils";
+import { useSettingsStore, isMobileDeviceOrPlatform } from "../../../../store";
 
 export const AppearanceTab: React.FC = () => {
   const { isDark, themeSetting, setThemeSetting } = useTheme();
   const { isExtractActive, setExtractActive } = Utils.hooks.useExtractColor();
   const { isCirclePatternActive, setCirclePatternActive } = Utils.hooks.useModalPattern();
   const { isModalBackdropActive, setModalBackdropActive } = Utils.hooks.useModalBackdrop();
+  const { uiScale, updateSetting } = useSettingsStore();
+
+  const isMobile = isMobileDeviceOrPlatform();
 
   return (
     <div className="flex flex-col gap-6 w-full pb-10">
@@ -110,6 +128,89 @@ export const AppearanceTab: React.FC = () => {
           </div>
         </div>
       </section>
+
+      {!isMobile && (
+        <section className="flex flex-col gap-4">
+          <div className="flex items-center gap-2.5 text-xs sm:text-sm font-bold uppercase tracking-wider text-[var(--wb-primary)]">
+            <Monitor className="w-4 h-4 sm:w-5 sm:h-5" />
+            <span>Interface Scale</span>
+          </div>
+
+          <div className="flex flex-col gap-3.5">
+            <div className="flex flex-col gap-5 p-5 sm:p-6 rounded-3xl bg-[var(--wb-surface-container-low)]/80 border border-white/5 transition-colors">
+              <div className="flex items-center justify-between gap-4">
+                <div className="flex items-center gap-4 sm:gap-5">
+                  <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-[var(--wb-surface-container-highest)] text-[var(--wb-on-surface)] flex items-center justify-center shrink-0 shadow-sm">
+                    <Maximize2 className="w-6 h-6 sm:w-7 sm:h-7 text-[var(--wb-primary)]" />
+                  </div>
+                  <div className="flex flex-col gap-1">
+                    <span className="text-base sm:text-lg font-bold text-[var(--wb-on-surface)]">
+                      UI Scale
+                    </span>
+                    <span className="text-xs sm:text-sm text-[var(--wb-on-surface-variant)] leading-relaxed">
+                      Adjust the size of text and interface elements on desktop
+                    </span>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2.5 shrink-0">
+                  <span className="px-3 py-1.5 rounded-xl bg-[var(--wb-primary)]/15 border border-[var(--wb-primary)]/20 text-[var(--wb-primary)] font-bold text-sm sm:text-base">
+                    {uiScale}%
+                  </span>
+                  {uiScale !== 100 && (
+                    <button
+                      type="button"
+                      onClick={() => updateSetting("uiScale", 100)}
+                      title="Reset to default (100%)"
+                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[var(--wb-surface-container-highest)] hover:bg-[var(--wb-surface-container-high)] text-xs sm:text-sm font-semibold text-[var(--wb-on-surface-variant)] hover:text-[var(--wb-on-surface)] transition-all cursor-pointer"
+                    >
+                      <RotateCcw className="w-3.5 h-3.5" />
+                      <span>Reset</span>
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              <div className="flex flex-col gap-3 pt-1">
+                <div className="flex items-center gap-3">
+                  <ZoomOut className="w-4 h-4 text-[var(--wb-on-surface-variant)] shrink-0 opacity-70" />
+                  <input
+                    type="range"
+                    min={75}
+                    max={125}
+                    step={5}
+                    value={uiScale}
+                    onChange={(e) => updateSetting("uiScale", Number(e.target.value))}
+                    className="flex-1 h-2 rounded-lg bg-[var(--wb-surface-container-highest)] appearance-none cursor-pointer accent-[var(--wb-primary)]"
+                    aria-label="UI Scale Slider"
+                  />
+                  <ZoomIn className="w-4 h-4 text-[var(--wb-on-surface-variant)] shrink-0 opacity-70" />
+                </div>
+
+                <div className="grid grid-cols-5 gap-1.5 sm:gap-2 pt-1">
+                  {[80, 90, 100, 110, 125].map((preset) => {
+                    const isSelected = uiScale === preset;
+                    return (
+                      <button
+                        key={preset}
+                        type="button"
+                        onClick={() => updateSetting("uiScale", preset)}
+                        className={`py-1.5 px-2 rounded-xl text-xs sm:text-sm font-semibold transition-all cursor-pointer text-center ${
+                          isSelected
+                            ? "bg-[var(--wb-primary)] text-[var(--wb-on-primary)] shadow-sm font-bold scale-[1.02]"
+                            : "bg-[var(--wb-surface-container-highest)]/70 text-[var(--wb-on-surface-variant)] hover:text-[var(--wb-on-surface)] hover:bg-[var(--wb-surface-container-highest)]"
+                        }`}
+                      >
+                        {preset}%{preset === 100 ? " (Default)" : ""}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+      )}
 
       <section className="flex flex-col gap-4">
         <div className="flex items-center gap-2.5 text-xs sm:text-sm font-bold uppercase tracking-wider text-[var(--wb-primary)]">

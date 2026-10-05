@@ -5,7 +5,7 @@ import { MainLayoutTemplate } from "@templates";
 import type { LoadingTask } from "@components";
 import { Outlet, useLocation } from "react-router-dom";
 import { useHomeStore } from "./store/home-store";
-import { useDownloadStore } from "./store";
+import { useDownloadStore, useSettingsStore } from "./store";
 import { useTheme } from "./components/organisms/settings-modal/hooks/use-theme";
 
 const initTasks: LoadingTask[] = [
@@ -22,6 +22,11 @@ const initTasks: LoadingTask[] = [
       try {
         await Utils.hooks.checkNetworkConnectivity();
       } catch {}
+      try {
+        await useSettingsStore.getState().loadSettings();
+      } catch (e) {
+        console.warn("Could not load settings on startup:", e);
+      }
     },
   },
   {
@@ -128,6 +133,10 @@ function App() {
   useEffect(() => {
     useDownloadStore.getState().setCurrentRoute(location.pathname);
   }, [location.pathname]);
+
+  useEffect(() => {
+    useSettingsStore.getState().loadSettings();
+  }, []);
 
   return (
     <ServicesProvider>
