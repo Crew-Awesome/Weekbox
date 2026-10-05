@@ -5,8 +5,7 @@ import Utils from "@utils";
 import Core from "@core";
 import type { ModItem } from "../../types";
 import { ENGINE_CATEGORIES } from "../../../../core/services/gamebanana/constants";
-import { MobileView } from "./mobile-view";
-import { DesktopView } from "./desktop-view";
+import { ModDetailsView } from "./mod-details-view";
 import { useDownloadStore, useEngineDownloadStore } from "../../../../store";
 
 interface ModDetailsModalProps {
@@ -16,7 +15,7 @@ interface ModDetailsModalProps {
 
 /**
  * Main wrapper for the Mod Details Modal.
- * Manages state and refs, and delegates rendering to Desktop or Mobile views.
+ * Manages state and refs, and delegates rendering to the unified responsive ModDetailsView.
  */
 export const ModDetailsModal: React.FC<ModDetailsModalProps> = ({
   selectedCard,
@@ -25,8 +24,7 @@ export const ModDetailsModal: React.FC<ModDetailsModalProps> = ({
   const { isCirclePatternActive } = Utils.hooks.useModalPattern();
   const { isModalBackdropActive } = Utils.hooks.useModalBackdrop();
   const setModalOpen = useDownloadStore((s) => s.setModalOpen);
-  const mobileCarouselRef = useRef<HTMLDivElement>(null);
-  const desktopCarouselRef = useRef<HTMLDivElement>(null);
+  const carouselRef = useRef<HTMLDivElement>(null);
   const thumbnailsRef = useRef<HTMLDivElement>(null);
   const [activeIndex, setActiveIndex] = useState(0);
   const [isCarouselHovered, setIsCarouselHovered] = useState(false);
@@ -258,12 +256,12 @@ export const ModDetailsModal: React.FC<ModDetailsModalProps> = ({
       hideCloseButtonMobile={true}
       edgeSpacing={{
         isStaticSize: true,
-        mobile: ["95vw", "auto"],
+        mobile: ["min(95vw, 100vw)", "auto"],
         desktop: ["min(1200px, 90vw, calc(90vh * 16 / 9))", "auto"],
       }}
       modalClassName="flex flex-col md:aspect-[16/9] max-h-[90vh] md:max-h-full rounded-2xl md:rounded-3xl overflow-hidden bg-[var(--wb-surface-container)] md:bg-transparent shadow-none"
     >
-      <MobileView
+      <ModDetailsView
         onClose={onClose}
         displayCard={displayCard}
         engineName={engineName}
@@ -275,29 +273,7 @@ export const ModDetailsModal: React.FC<ModDetailsModalProps> = ({
         nextImage={nextImage}
         onMouseEnterCarousel={handleMouseEnterCarousel}
         onMouseLeaveCarousel={handleMouseLeaveCarousel}
-        carouselRef={mobileCarouselRef}
-        translatedHtml={translatedHtml}
-        isTranslating={isTranslating}
-        showTranslated={showTranslated}
-        setShowTranslated={setShowTranslated}
-        onManualTranslate={handleManualTranslate}
-        targetLanguage={targetLanguage}
-        isInstalled={isInstalled}
-        onUpdateMod={handleUpdateMod}
-      />
-      
-      <DesktopView
-        displayCard={displayCard}
-        engineName={engineName}
-        formatDate={formatDate}
-        formatFullDate={formatFullDate}
-        activeIndex={activeIndex}
-        scrollToIndex={scrollToIndex}
-        prevImage={prevImage}
-        nextImage={nextImage}
-        onMouseEnterCarousel={handleMouseEnterCarousel}
-        onMouseLeaveCarousel={handleMouseLeaveCarousel}
-        carouselRef={desktopCarouselRef}
+        carouselRef={carouselRef}
         thumbnailsRef={thumbnailsRef}
         translatedHtml={translatedHtml}
         isTranslating={isTranslating}
