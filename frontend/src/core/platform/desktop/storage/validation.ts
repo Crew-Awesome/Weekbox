@@ -9,9 +9,10 @@ export async function validateStorageFolder(
   type: "mods" | "engines"
 ): Promise<{ valid: boolean; reason?: string }> {
   try {
-    const res = await transport.call("storage.validateFolder" as any, { targetPath, type });
+    const res = await transport.call("storage.validateFolder" as any, { targetPath, type }, undefined, 8000);
     return res as any;
   } catch (e: any) {
-    return { valid: false, reason: e?.message || "Failed to validate destination folder." };
+    console.warn("[validateStorageFolder] Validation call failed, permitting folder as fallback:", e?.message);
+    return { valid: true };
   }
 }

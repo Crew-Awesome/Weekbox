@@ -49,11 +49,11 @@ export async function downloadEngine(
 
         let percent = 0;
         if (data.total > 0) {
-          percent = Math.min(98, Math.round((data.downloaded / data.total) * 98));
-        } else {
-          percent = Math.min(98, Math.round(data.downloaded / (1024 * 1024)));
+          percent = data.downloaded > 0 ? Math.max(1, Math.min(98, Math.round((data.downloaded / data.total) * 98))) : 0;
+        } else if (data.downloaded > 0) {
+          percent = Math.max(1, Math.min(98, Math.round(data.downloaded / (1024 * 1024))));
         }
-        onProgress(percent, "Downloading...", {
+        onProgress(percent, DownloadStatus.DOWNLOADING, {
           downloaded: data.downloaded,
           total: data.total,
         });
@@ -62,6 +62,7 @@ export async function downloadEngine(
   }
 
   try {
+    onProgress?.(0, DownloadStatus.DOWNLOADING, { downloaded: 0, total: 0 });
     await transport.call("fs.createDirectory" as any, { path: enginesDir }).catch(() => {});
     await transport.call("fs.createDirectory" as any, { path: engineDir }).catch(() => {});
     await transport.call("fs.createDirectory" as any, { path: targetFolder }).catch(() => {});
@@ -98,34 +99,12 @@ export async function downloadEngine(
 
     await transport.call("fs.remove" as any, { path: tempArchivePath }).catch(() => {});
 
-    onProgress?.(99, DownloadStatus.FLATTENING);
-    await transport
-      .call("fs.flattenFolder" as any, { path: targetFolder, progressId }, signal, 0)
-      .catch(() => {});
-
     await registerFn(safeEngineId, safeVersion, {
       downloadUrl: url,
       installedAt: new Date().toISOString(),
     });
 
     onProgress?.(100, DownloadStatus.COMPLETED);
-
-    if (typeof window !== "undefined") {
-      const sysEnabled =
-        localStorage.getItem("wb_system_notifications") !== "false" &&
-        localStorage.getItem("wb_os_notify_download") !== "false";
-      if (sysEnabled) {
-        try {
-          await transport.call("notification.show" as any, {
-            title: "Engine Installed",
-            content: `${engineId} v${version} has been downloaded and installed.`,
-            icon: "INFO",
-          });
-        } catch (notifErr) {
-          console.warn("Could not dispatch system notification on engine download finish:", notifErr);
-        }
-      }
-    }
   } catch (error: any) {
     await transport.call("fs.remove" as any, { path: tempArchivePath }).catch(() => {});
     if (error?.message !== "Cancelled") {

@@ -43,19 +43,19 @@ export class DesktopStorage implements IStorageService {
   }
 
   getDefaultPaths(): Promise<{ basePath: string; defaultModsPath: string; defaultEnginesPath: string }> {
-    return getDefaultPaths();
+    return getDefaultPaths(this.transport);
   }
 
   getModsPath(): Promise<string> {
-    return getModsPath(this.settings);
+    return getModsPath(this.settings, this.transport);
   }
 
   getEnginesPath(): Promise<string> {
-    return getEnginesPath(this.settings);
+    return getEnginesPath(this.settings, this.transport);
   }
 
   showFolderDialog(title: string, defaultPath?: string): Promise<string | null> {
-    return showFolderDialog(title, defaultPath);
+    return showFolderDialog(this.transport, title, defaultPath);
   }
 
   validateStorageFolder(

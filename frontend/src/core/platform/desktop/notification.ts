@@ -30,7 +30,7 @@ export class DesktopNotification implements INotificationService {
       const result = await this.transport.call("notification.show" as BackendOperation, options);
       return (result as NotificationResult) || { ok: true, method: "node-ipc" };
     } catch (e: any) {
-      // Fallback 1: Direct Windows PowerShell Toast Notification
+      // Fallback: Direct Windows PowerShell Toast Notification
       if (typeof window !== "undefined" && window.Neutralino?.os?.execCommand && window.NL_OS === "Windows") {
         try {
           const basePath = window.NL_PATH || "";
@@ -86,7 +86,7 @@ Start-Sleep -Milliseconds 1200
         } catch {}
       }
 
-      // Fallback 2: Direct macOS osascript via Neutralino execCommand
+      // Fallback: Direct macOS osascript via Neutralino execCommand
       if (typeof window !== "undefined" && window.Neutralino?.os?.execCommand && window.NL_OS === "Darwin") {
         try {
           const cleanTitle = (options.title || "WeekBox").replace(/["\\]/g, " ");
@@ -99,7 +99,7 @@ Start-Sleep -Milliseconds 1200
         } catch {}
       }
 
-      // Fallback 3: Direct Neutralino OS Notification
+      // Fallback: Direct Neutralino OS Notification
       if (typeof window !== "undefined" && window.Neutralino?.os?.showNotification) {
         try {
           await window.Neutralino.os.showNotification(
@@ -108,6 +108,22 @@ Start-Sleep -Milliseconds 1200
             (options.icon as any) || "INFO"
           );
           return { ok: true, method: "neutralino-direct" };
+        } catch {}
+      }
+
+      // Fallback: Web Notification API
+      if (typeof window !== "undefined" && "Notification" in window) {
+        try {
+          if (Notification.permission === "granted") {
+            new Notification(options.title, { body: options.content });
+            return { ok: true, method: "web-notification" };
+          } else if (Notification.permission !== "denied") {
+            const permission = await Notification.requestPermission();
+            if (permission === "granted") {
+              new Notification(options.title, { body: options.content });
+              return { ok: true, method: "web-notification" };
+            }
+          }
         } catch {}
       }
 

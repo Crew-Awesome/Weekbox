@@ -2,13 +2,26 @@ import type { ISettingsService } from "@contracts";
 import type { DesktopTransport } from "./transport";
 
 export async function getDesktopBasePath(): Promise<string> {
-  let basePath = window.NL_CWD || window.NL_PATH || "";
+  let basePath = "";
   try {
     if (window.Neutralino?.os?.getPath) {
       const dataPath = await window.Neutralino.os.getPath("data");
-      basePath = `${dataPath}/WeekBox`;
+      if (dataPath) {
+        basePath = `${dataPath}/WeekBox`;
+      }
     }
   } catch {}
+
+  if (!basePath) {
+    if (typeof window !== "undefined" && window.NL_OS === "Darwin") {
+      basePath = "~/Library/Application Support/WeekBox";
+    } else if (typeof window !== "undefined" && window.NL_OS === "Windows") {
+      basePath = window.NL_PATH || window.NL_CWD || "";
+    } else {
+      basePath = window.NL_CWD || window.NL_PATH || "";
+    }
+  }
+
   return basePath.replace(/\\/g, "/");
 }
 
