@@ -143,8 +143,10 @@ Start-Sleep -Milliseconds 1200
       } else if (platform === "darwin") {
         const cleanContent = safeContent.replace(/["\\]/g, " ");
         const cleanTitle = safeTitle.replace(/["\\]/g, " ");
-        const script = `display notification "${cleanContent}" with title "WeekBox" subtitle "${cleanTitle}"`;
-        const child = spawn("osascript", ["-e", script], { stdio: "ignore" });
+        const script = cleanTitle && cleanTitle !== "WeekBox"
+          ? `display notification "${cleanContent}" with title "WeekBox" subtitle "${cleanTitle}"`
+          : `display notification "${cleanContent}" with title "WeekBox"`;
+        const child = spawn("osascript", ["-e", script], { stdio: ["ignore", "pipe", "pipe"] });
         child.on("close", (code) => {
           if (code !== 0) {
             console.warn("[notification.mjs] osascript exit code:", code);

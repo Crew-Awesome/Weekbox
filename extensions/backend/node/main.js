@@ -1,5 +1,13 @@
 console.log("STARTING NODE MAIN.JS");
 
+process.on("uncaughtException", (err) => {
+  console.error("[NodeBackend] Uncaught Exception:", err);
+});
+
+process.on("unhandledRejection", (reason) => {
+  console.error("[NodeBackend] Unhandled Rejection:", reason);
+});
+
 const NeutralinoExtension = require("./neutralino-extension");
 const discordRPC = require("./discord/discordRPC");
 const DEBUG = false;
@@ -104,7 +112,7 @@ async function processAppEvent(data) {
   }
 }
 
-const ext = new NeutralinoExtension(true);
+const ext = new NeutralinoExtension(DEBUG);
 console.log("---");
 console.log("NodeJS Version:", process.version);
 console.log("NodeJS Path:", process.execPath);

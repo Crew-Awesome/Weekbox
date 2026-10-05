@@ -50,7 +50,7 @@ export function registerOperations(ops) {
   }
 }
 
-// 1. System domain
+// System domain
 registerOperations({
   "system.ping": () => {
     zombieManager.ping();
@@ -63,7 +63,7 @@ registerOperations({
   "deeplink.isPrimary": () => APINodeDeeplink.isPrimary,
 });
 
-// 2. File System atomic I/O domain
+// File system atomic I/O domain
 registerOperations({
   "fs.readDirectory": async ({ path }) => fsIoApi.readDirectory(path),
   "fs.readFile": async ({ path }) => fsIoApi.readFile(path),
@@ -76,7 +76,7 @@ registerOperations({
   "fs.createDirectory": async ({ path }) => fsIoApi.createDirectory(path),
 });
 
-// 3. Archive extraction & flattening domain
+// Archive extraction & flattening domain
 registerOperations({
   "fs.extractArchive": async ({ archivePath, destFolder, progressId }, onProgress) =>
     archiveExtractorApi.extractArchive(archivePath, destFolder, (file) => {
@@ -91,7 +91,7 @@ registerOperations({
   "fs.flattenFolder": async ({ path }) => flattenFolder(path),
 });
 
-// 4. HTTP networking domain
+// HTTP networking domain
 registerOperations({
   "http.fetchJson": async ({ url, options, signal }) => APINodeHttp.fetchJson({ url, options, signal }),
   "http.fetchText": async ({ url, options, signal }) => APINodeHttp.fetchText({ url, options, signal }),
@@ -105,7 +105,7 @@ registerOperations({
     }),
 });
 
-// 5. Window management domain
+// Window management domain
 registerOperations({
   "window.minimize": async () => APINodeWindow.minimize(callApi),
   "window.maximize": async () => APINodeWindow.maximize(callApi),
@@ -125,13 +125,13 @@ registerOperations({
   "window.center": async () => APINodeWindow.center(callApi),
 });
 
-// 6. OS notification domain
+// OS notification domain
 registerOperations({
   "notification.show": async ({ title, content, icon }) =>
     APINodeNotification.show(callApi, { title, content, icon }),
 });
 
-// 7. Process lifecycle runner domain
+// Process lifecycle runner domain
 registerOperations({
   "process.launch": async ({ folderPath, executableName, instanceId, args, env, modFolderPath, modFolderPaths }) =>
     APINodeProcess.launch({ folderPath, executableName, instanceId, args, env, modFolderPath, modFolderPaths }),
@@ -141,8 +141,11 @@ registerOperations({
   "process.isInstanceRunning": ({ instanceId }) => APINodeProcess.isInstanceRunning(instanceId),
 });
 
-// 8. Storage inspection & migration domain
+// Storage inspection & migration domain
 registerOperations({
+  "storage.getDefaultPaths": async () => storageMigratorApi.getDefaultPaths(),
+  "storage.showFolderDialog": async ({ title, defaultPath }) =>
+    storageMigratorApi.showFolderDialog(title, defaultPath),
   "storage.validateFolder": async ({ targetPath, type }) =>
     storageMigratorApi.validateStorageFolder(targetPath, type),
   "storage.inspect": async ({ folderPath }) => storageMigratorApi.inspectStorage(folderPath),

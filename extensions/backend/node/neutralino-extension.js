@@ -12,12 +12,26 @@ class NeutralinoExtension {
     const path = require("path");
     const fs = require("fs");
 
+    this.port = null;
+    this.token = null;
+    this.connectToken = "";
+    this.idExtension = "extNode";
+    this.urlSocket = "";
+    this.socket = undefined;
+    this.termOnWindowClose = true;
+
+    this.resolveAuthSync();
+  }
+
+  resolveAuthSync() {
+    const path = require("path");
+    const fs = require("fs");
+
     let port = process.env.NL_PORT || null;
     let token = process.env.NL_TOKEN || null;
     let connectToken = process.env.NL_CONNECT_TOKEN || "";
     let idExtension = process.env.NL_EXTENSION_ID || "extNode";
 
-    // 1. Check process.argv
     for (let i = 2; i < process.argv.length; i++) {
       const arg = process.argv[i];
       if (arg.startsWith("--nl-port=")) {
@@ -39,7 +53,6 @@ class NeutralinoExtension {
       }
     }
 
-    // 2. Fallback: Parse from .tmp/auth_info.json exported by Neutralino
     if (!port || !token) {
       const searchDirs = [
         process.cwd(),
@@ -65,40 +78,33 @@ class NeutralinoExtension {
       }
     }
 
-    // 3. Fallback: Non-blocking read from stdin (single chunk readSync, never blocking readFileSync on pipe)
-    if (!port || !token) {
-      try {
-        const buf = Buffer.alloc(4096);
-        const bytesRead = fs.readSync(0, buf, 0, buf.length, null);
-        if (bytesRead > 0) {
-          const raw = buf.toString("utf-8", 0, bytesRead).trim();
-          const conf = JSON.parse(raw);
-          port = port || conf.nlPort || conf.port;
-          token = token || conf.nlToken || conf.accessToken || conf.token;
-          connectToken = connectToken || conf.nlConnectToken || conf.connectToken || "";
-          idExtension = conf.nlExtensionId || conf.extensionId || idExtension;
-        }
-      } catch (err) {
-        console.warn("Could not read extension config from stdin:", err?.message || err);
-      }
+    if (port && token) {
+      this.port = port;
+      this.token = token;
+      this.connectToken = connectToken || "";
+      this.idExtension = idExtension || "extNode";
+      this.urlSocket = this.connectToken
+        ? `ws://127.0.0.1:${this.port}?extensionId=${this.idExtension}&connectToken=${this.connectToken}`
+        : `ws://127.0.0.1:${this.port}?extensionId=${this.idExtension}`;
+      return true;
     }
+    return false;
+  }
 
-    this.port = port;
-    this.token = token;
-    this.connectToken = connectToken || "";
-    this.idExtension = idExtension || "extNode";
-    this.urlSocket = this.connectToken
-      ? `ws://127.0.0.1:${this.port}?extensionId=${this.idExtension}&connectToken=${this.connectToken}`
-      : `ws://127.0.0.1:${this.port}?extensionId=${this.idExtension}`;
+  async ensureAuth() {
+    if (this.resolveAuthSync()) return true;
 
-    this.socket = undefined;
-
-    this.termOnWindowClose = true;
-
-    this.debugLog(`${this.idExtension} running on port ${this.port}`);
+    for (let i = 0; i < 40; i++) {
+      await new Promise((resolve) => setTimeout(resolve, 200));
+      if (this.resolveAuthSync()) return true;
+    }
+    return false;
   }
 
   sendMessage(event, data = null) {
+    if (!this.socket || this.socket.readyState !== 1) {
+      return;
+    }
 
     let d = {
       id: crypto.randomUUID(),
@@ -116,6 +122,10 @@ class NeutralinoExtension {
 
   callApi(method, data = {}, timeoutMs = 45000) {
     return new Promise((resolve, reject) => {
+      if (!this.socket || this.socket.readyState !== 1) {
+        return reject(new Error("WebSocket is not connected"));
+      }
+
       let id = crypto.randomUUID();
       let d = {
         id: id,
@@ -135,58 +145,79 @@ class NeutralinoExtension {
     });
   }
 
-  run(onReceiveMessage) {
+  async run(onReceiveMessage) {
+    const hasAuth = await this.ensureAuth();
+    if (!hasAuth) {
+      console.error("[NeutralinoExtension] Could not obtain port and token for connection.");
+      return;
+    }
+
     const WebSocket = require("ws");
-    this.socket = new WebSocket(this.urlSocket);
-    let self = this;
+    let hasOpened = false;
+    let retryCount = 0;
 
-    this.socket.on("open", () => {
-      console.log("WebSocket ready");
-      console.log(`Running on port ${self.port}`);
-    });
+    const connect = () => {
+      const socket = new WebSocket(this.urlSocket);
+      this.socket = socket;
 
-    this.socket.on("message", (data) => {
-      let msg = data.toString("utf-8");
+      socket.on("open", () => {
+        hasOpened = true;
+        console.log(`[NeutralinoExtension] WebSocket ready on port ${this.port}`);
+      });
 
-      try {
-        msg = JSON.parse(msg);
-      } catch (e) {}
+      socket.on("message", (data) => {
+        let msg = data.toString("utf-8");
 
-      if (msg.id && self.pendingRequests.has(msg.id)) {
-        self.debugLog(`API RESPONSE: ${JSON.stringify(msg)}`, "in");
-        const { resolve, reject } = self.pendingRequests.get(msg.id);
-        self.pendingRequests.delete(msg.id);
-        if (msg.error) {
-          reject(msg.error);
-        } else {
-          resolve(msg);
-        }
-        return;
-      }
+        try {
+          msg = JSON.parse(msg);
+        } catch (e) {}
 
-      try {
-        if (self.termOnWindowClose) {
-          if (msg.event === "windowClose" || msg.event === "appClose") {
-            try {
-              process.exit(0);
-            } catch (e) {}
-            return;
+        if (msg.id && this.pendingRequests.has(msg.id)) {
+          this.debugLog(`API RESPONSE: ${JSON.stringify(msg)}`, "in");
+          const { resolve, reject } = this.pendingRequests.get(msg.id);
+          this.pendingRequests.delete(msg.id);
+          if (msg.error) {
+            reject(msg.error);
+          } else {
+            resolve(msg);
           }
+          return;
         }
-      } catch (e) {}
 
-      self.debugLog(msg, "in");
-      onReceiveMessage(msg);
-    });
+        try {
+          if (this.termOnWindowClose) {
+            if (msg.event === "windowClose" || msg.event === "appClose") {
+              try {
+                process.exit(0);
+              } catch (e) {}
+              return;
+            }
+          }
+        } catch (e) {}
 
-    this.socket.on("close", (code, reason) => {
-      console.log(`WebSocket closed: ${code} - ${reason}`);
-      process.exit(0);
-    });
+        this.debugLog(msg, "in");
+        onReceiveMessage(msg);
+      });
 
-    this.socket.on("error", (error) => {
-      console.error(`WebSocket Error: ${error}`);
-    });
+      socket.on("close", (code, reason) => {
+        if (!hasOpened && retryCount < 40) {
+          retryCount++;
+          setTimeout(connect, 300);
+          return;
+        }
+        console.log(`WebSocket closed: ${code} - ${reason}`);
+        process.exit(0);
+      });
+
+      socket.on("error", (error) => {
+        if (!hasOpened && retryCount < 40) {
+          return;
+        }
+        console.error(`WebSocket Error: ${error?.message || error}`);
+      });
+    };
+
+    connect();
   }
   isEvent(e, eventName) {
 

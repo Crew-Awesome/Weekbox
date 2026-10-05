@@ -224,13 +224,19 @@ export function parseExtractedFileName(rawLine) {
 
 /**
  * Executes an extraction command capturing extracted files in real-time.
- * @param {string} command
+ * @param {string|{bin: string, args: string[]}} command
  * @param {Function} [onFile]
  * @returns {Promise<void>}
  */
 export function runExtractionCommand(command, onFile) {
   return new Promise((resolve, reject) => {
-    const child = spawn(command, { shell: true });
+    let child;
+    if (typeof command === "object" && command !== null && command.bin) {
+      child = spawn(command.bin, command.args, { shell: false });
+    } else {
+      child = spawn(command, { shell: true });
+    }
+
     let stdoutBuffer = "";
     let stderrBuffer = "";
     let lastReportedTime = 0;
@@ -244,7 +250,7 @@ export function runExtractionCommand(command, onFile) {
         const file = parseExtractedFileName(line);
         if (file && onFile) {
           const now = Date.now();
-          if (now - lastReportedTime > 40) {
+          if (now - lastReportedTime > 250) {
             lastReportedTime = now;
             onFile(file);
           }
@@ -263,7 +269,8 @@ export function runExtractionCommand(command, onFile) {
       if (code === 0) {
         resolve();
       } else {
-        reject(new Error(`Extraction process failed with code ${code}: ${stderrBuffer || "Unknown error"}`));
+        const cmdName = typeof command === "object" && command !== null ? command.bin : command;
+        reject(new Error(`Extraction process (${cmdName}) failed with code ${code}: ${stderrBuffer || "Unknown error"}`));
       }
     });
   });
@@ -303,41 +310,39 @@ export const archiveExtractorApi = {
 
     if (isDarwin) {
       if (isZip) {
+        commandsToTry.push({ bin: "ditto", args: ["-V", "-xk", normalizedArchive, normalizedDest] });
+        commandsToTry.push({ bin: "tar", args: ["-xvf", normalizedArchive, "-C", normalizedDest] });
+        commandsToTry.push({ bin: "unzip", args: ["-o", normalizedArchive, "-d", normalizedDest] });
+        if (bundled7z) commandsToTry.push({ bin: bundled7z, args: ["x", "-y", "-aoa", `-o${normalizedDest}`, normalizedArchive] });
         commandsToTry.push(`ditto -V -xk ${qArchive} ${qDest}`);
         commandsToTry.push(`unzip -o ${qArchive} -d ${qDest}`);
-        if (q7z) commandsToTry.push(`${q7z} x -y -aoa -o${qDest} ${qArchive}`);
-        commandsToTry.push(`tar -xvf ${qArchive} -C ${qDest}`);
       } else if (isTar) {
-        commandsToTry.push(`tar -xvf ${qArchive} -C ${qDest}`);
-        if (q7z) commandsToTry.push(`${q7z} x -y -aoa -o${qDest} ${qArchive}`);
+        commandsToTry.push({ bin: "tar", args: ["-xvf", normalizedArchive, "-C", normalizedDest] });
+        if (bundled7z) commandsToTry.push({ bin: bundled7z, args: ["x", "-y", "-aoa", `-o${normalizedDest}`, normalizedArchive] });
       } else {
-        if (q7z) commandsToTry.push(`${q7z} x -y -aoa -o${qDest} ${qArchive}`);
-        commandsToTry.push(`7z x -y -aoa -o${qDest} ${qArchive}`);
+        if (bundled7z) commandsToTry.push({ bin: bundled7z, args: ["x", "-y", "-aoa", `-o${normalizedDest}`, normalizedArchive] });
+        commandsToTry.push({ bin: "tar", args: ["-xvf", normalizedArchive, "-C", normalizedDest] });
         commandsToTry.push(`ditto -V -xk ${qArchive} ${qDest}`);
-        commandsToTry.push(`tar -xvf ${qArchive} -C ${qDest}`);
       }
     } else if (isLinux) {
       if (isZip) {
+        commandsToTry.push({ bin: "unzip", args: ["-o", normalizedArchive, "-d", normalizedDest] });
+        commandsToTry.push({ bin: "tar", args: ["-xvf", normalizedArchive, "-C", normalizedDest] });
+        if (bundled7z) commandsToTry.push({ bin: bundled7z, args: ["x", "-y", "-aoa", `-o${normalizedDest}`, normalizedArchive] });
         commandsToTry.push(`unzip -o ${qArchive} -d ${qDest}`);
-        if (q7z) commandsToTry.push(`${q7z} x -y -aoa -o${qDest} ${qArchive}`);
-        commandsToTry.push(`7z x -y -aoa -o${qDest} ${qArchive}`);
-        commandsToTry.push(`7za x -y -aoa -o${qDest} ${qArchive}`);
-        commandsToTry.push(`python3 -m zipfile -e ${qArchive} ${qDest}`);
-        commandsToTry.push(`python -m zipfile -e ${qArchive} ${qDest}`);
         commandsToTry.push(`tar -xvf ${qArchive} -C ${qDest}`);
       } else if (isTar) {
-        commandsToTry.push(`tar -xvf ${qArchive} -C ${qDest}`);
-        if (q7z) commandsToTry.push(`${q7z} x -y -aoa -o${qDest} ${qArchive}`);
-        commandsToTry.push(`7z x -y -aoa -o${qDest} ${qArchive}`);
+        commandsToTry.push({ bin: "tar", args: ["-xvf", normalizedArchive, "-C", normalizedDest] });
+        if (bundled7z) commandsToTry.push({ bin: bundled7z, args: ["x", "-y", "-aoa", `-o${normalizedDest}`, normalizedArchive] });
       } else {
-        if (q7z) commandsToTry.push(`${q7z} x -y -aoa -o${qDest} ${qArchive}`);
-        commandsToTry.push(`7z x -y -aoa -o${qDest} ${qArchive}`);
-        commandsToTry.push(`7za x -y -aoa -o${qDest} ${qArchive}`);
+        if (bundled7z) commandsToTry.push({ bin: bundled7z, args: ["x", "-y", "-aoa", `-o${normalizedDest}`, normalizedArchive] });
+        commandsToTry.push({ bin: "tar", args: ["-xvf", normalizedArchive, "-C", normalizedDest] });
         commandsToTry.push(`unzip -o ${qArchive} -d ${qDest}`);
-        commandsToTry.push(`tar -xvf ${qArchive} -C ${qDest}`);
       }
     } else {
+      commandsToTry.push({ bin: "tar", args: ["-xvf", normalizedArchive, "-C", normalizedDest] });
       commandsToTry.push(`tar -xvf ${qArchive} -C ${qDest}`);
+      if (bundled7z) commandsToTry.push({ bin: bundled7z, args: ["x", "-y", "-aoa", `-o${normalizedDest}`, normalizedArchive] });
       if (q7z) commandsToTry.push(`${q7z} x -y -aoa -o${qDest} ${qArchive}`);
       const psSafeScript = `$zip = [System.IO.Compression.ZipFile]::OpenRead('${normalizedArchive.replace(/'/g, "''")}'); $dest = [System.IO.Path]::GetFullPath('${normalizedDest.replace(/'/g, "''")}'); foreach ($entry in $zip.Entries) { $target = [System.IO.Path]::GetFullPath([System.IO.Path]::Combine($dest, $entry.FullName)); if ($target.StartsWith($dest, [System.StringComparison]::OrdinalIgnoreCase)) { if ($entry.FullName.EndsWith('/') -or $entry.FullName.EndsWith('\\')) { [System.IO.Directory]::CreateDirectory($target) | Out-Null; } else { $dir = [System.IO.Path]::GetDirectoryName($target); if (-not [System.IO.Directory]::Exists($dir)) { [System.IO.Directory]::CreateDirectory($dir) | Out-Null }; [System.IO.Compression.ZipFileExtensions]::ExtractToFile($entry, $target, $true); } } }; $zip.Dispose();`;
       commandsToTry.push(`powershell -NoProfile -NonInteractive -Command "Add-Type -AssemblyName System.IO.Compression.FileSystem; ${psSafeScript}"`);

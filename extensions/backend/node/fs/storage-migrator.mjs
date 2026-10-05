@@ -1,6 +1,8 @@
 import fs from "node:fs/promises";
-import { constants } from "node:fs";
+import { constants, existsSync } from "node:fs";
 import path from "node:path";
+import os from "node:os";
+import { execFile } from "node:child_process";
 
 /**
  * Formats byte count to human-readable string.
@@ -33,6 +35,68 @@ export function estimateTime(bytes) {
  * Storage inspection, validation and migration operations (SRP).
  */
 export const storageMigratorApi = {
+  getDefaultPaths() {
+    let basePath = "";
+    if (process.platform === "darwin") {
+      basePath = path.join(os.homedir(), "Library", "Application Support", "WeekBox");
+    } else if (process.platform === "win32") {
+      const appData = process.env.APPDATA || path.join(os.homedir(), "AppData", "Roaming");
+      basePath = path.join(appData, "WeekBox");
+    } else {
+      const xdgData = process.env.XDG_DATA_HOME || path.join(os.homedir(), ".local", "share");
+      basePath = path.join(xdgData, "WeekBox");
+    }
+    basePath = basePath.replace(/\\/g, "/");
+    return {
+      basePath,
+      defaultModsPath: `${basePath}/mods`,
+      defaultEnginesPath: `${basePath}/engines`,
+    };
+  },
+
+  async showFolderDialog(title = "Select Folder", defaultPath = "") {
+    if (process.platform === "darwin") {
+      return new Promise((resolve) => {
+        let script = `POSIX path of (choose folder with prompt "${title.replace(/"/g, '\\"')}")`;
+        if (defaultPath && !defaultPath.includes("%") && existsSync(defaultPath)) {
+          const cleanDefault = defaultPath.replace(/"/g, '\\"');
+          script = `POSIX path of (choose folder with prompt "${title.replace(/"/g, '\\"')}" default location POSIX file "${cleanDefault}")`;
+        }
+        execFile("osascript", ["-e", script], (err, stdout) => {
+          if (err || !stdout) {
+            resolve(null);
+          } else {
+            const selected = stdout.trim().replace(/\/+$/, "");
+            resolve(selected || null);
+          }
+        });
+      });
+    }
+
+    if (process.platform === "win32") {
+      return new Promise((resolve) => {
+        const psScript = `
+Add-Type -AssemblyName System.Windows.Forms
+$dialog = New-Object System.Windows.Forms.FolderBrowserDialog
+$dialog.Description = '${title.replace(/'/g, "''")}'
+${defaultPath && !defaultPath.includes("%") && existsSync(defaultPath) ? `$dialog.SelectedPath = '${defaultPath.replace(/'/g, "''")}'` : ""}
+if ($dialog.ShowDialog() -eq [System.Windows.Forms.DialogResult]::OK) {
+  Write-Output $dialog.SelectedPath
+}
+`;
+        execFile("powershell.exe", ["-NoProfile", "-NonInteractive", "-Command", psScript], (err, stdout) => {
+          if (err || !stdout) {
+            resolve(null);
+          } else {
+            const selected = stdout.trim();
+            resolve(selected ? selected.replace(/\\/g, "/") : null);
+          }
+        });
+      });
+    }
+
+    return null;
+  },
   async inspectStorage(folderPath) {
     if (!folderPath) {
       return { count: 0, totalBytes: 0, formattedSize: "0 B", estimatedTime: "< 1s" };

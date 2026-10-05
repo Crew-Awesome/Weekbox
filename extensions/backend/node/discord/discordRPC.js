@@ -8,9 +8,14 @@ cliente.on("ready", () => {
   isdiscordready = true;
 });
 
+cliente.on("error", (err) => {
+  isdiscordready = false;
+  console.warn("[DiscordRPC] Client error:", err?.message || err);
+});
+
 function init() {
   cliente.login().catch((err) => {
-    console.log("Discord RPC Login Error:", err.message || err);
+    console.warn("[DiscordRPC] Login error:", err?.message || err);
   });
 }
 
