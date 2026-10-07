@@ -1,5 +1,10 @@
 console.log("STARTING NODE MAIN.JS");
-
+const fs = require("fs");
+const logPath = require("path").join(require("os").homedir(), "weekbox_ext_debug.log");
+try { fs.writeFileSync(logPath, "STARTING NODE MAIN.JS\nArgs: " + JSON.stringify(process.argv) + "\n"); } catch(e) {}
+function logFile(msg) {
+  try { fs.appendFileSync(logPath, msg + "\n"); } catch(e) {}
+}
 process.on("uncaughtException", (err) => {
   console.error("[NodeBackend] Uncaught Exception:", err);
 });
@@ -33,9 +38,11 @@ function ping(d) {
 const activeRequests = new Map();
 
 async function processAppEvent(data) {
+  logFile("RECEIVED DATA: " + JSON.stringify(data));
   if (ext.isEvent(data, "runNode")) {
     const eventName = data.data.function;
     const eventData = data.data.parameter;
+    logFile("EventName: " + eventName + ", EventData: " + JSON.stringify(eventData));
 
     if (eventName === "backend.cancel") {
       const requestId = eventData?.requestId;
@@ -85,7 +92,9 @@ async function processAppEvent(data) {
           ok: true,
           data: result,
         });
+        logFile("backend:response sent ok for: " + requestId);
       } catch (error) {
+        logFile("backend:response error for: " + requestId + " error: " + String(error));
         ext.sendMessage("backend:response", {
           requestId,
           ok: false,

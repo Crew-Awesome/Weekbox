@@ -20,7 +20,7 @@
     "dev:pc": "concurrently \"npm run dev:frontend\" \"neu run\"",
     "dev": "npm run build:frontend && concurrently \"npm run watch:frontend\" \"npm run start:neu\"",
     "prebuild:pc": "node -e \"const fs=require('fs'); const c=JSON.parse(fs.readFileSync('neutralino.config.json')); c.url='/'; c.modes.window.hidden=true; c.modes.window.openInspectorOnStartup=false; c.modes.window.enableInspector=false; fs.writeFileSync('neutralino.config.json', JSON.stringify(c, null, 2));\"",
-    "build:pc": "npm run prebuild:pc && npm run build:frontend && neu build --release",
+    "build:pc": "npm run prebuild:pc && npm run build:frontend && neu build --release && node -e \"const fs=require('fs'); fs.cpSync('extensions', 'dist/WeekBox/extensions', {recursive: true, force: true}); console.log('Extensions copied to dist.');\"",
     "build": "npm run build:pc",
     "format": "node scripts/formatter.js",
     "cap:sync": "npm run build:frontend && npx cap sync android",
