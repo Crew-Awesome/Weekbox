@@ -1,7 +1,11 @@
 import type { ISettingsService } from "@contracts";
 import type { DesktopTransport } from "./transport";
 
+let cachedBasePath = "";
+
 export async function getDesktopBasePath(): Promise<string> {
+  if (cachedBasePath) return cachedBasePath;
+
   let basePath = "";
   try {
     if (window.Neutralino?.os?.getPath) {
@@ -22,7 +26,8 @@ export async function getDesktopBasePath(): Promise<string> {
     }
   }
 
-  return basePath.replace(/\\/g, "/");
+  cachedBasePath = basePath.replace(/\\/g, "/");
+  return cachedBasePath;
 }
 
 /**

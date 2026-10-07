@@ -50,12 +50,22 @@ export class DesktopTransport implements IPlatformTransport, IPlatformEvents {
     if (!window.NODE?.call) {
       return Promise.reject(new Error("The Node backend is not available."));
     }
-    const defaultTimeout =
+    
+    let defaultTimeout = 300000; // 5 mins for slow operations
+    if (
       operation === "http.downloadToFile" ||
       operation === "fs.extractArchive" ||
       operation === "fs.flattenFolder"
-        ? 0
-        : 300000;
+    ) {
+      defaultTimeout = 0; // Infinite timeout
+    } else if (
+      operation === "fs.readFile" ||
+      operation === "fs.readDirectory" ||
+      operation === "fs.exists" ||
+      operation === "fs.getStats"
+    ) {
+      defaultTimeout = 8000; // 8 seconds for fast operations
+    }
 
     return window.NODE.call<BackendResult<Operation>>(
       operation,
