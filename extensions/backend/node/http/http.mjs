@@ -97,6 +97,10 @@ async function curlDownload(targetUrl, destPath, options = {}, signal = null, on
       '2',
       '--retry-delay',
       '1',
+      '--speed-time',
+      '20',
+      '--speed-limit',
+      '1',
       '-o',
       destPath,
       targetUrl,
@@ -286,10 +290,19 @@ async function streamDownload(initialUrl, destPath, options = {}, signal = null,
     if (onProgress) onProgress(0, total);
     let downloaded = 0;
     let lastReportTime = 0;
+    let idleTimeout = null;
+
+    const resetIdleTimeout = () => {
+      if (idleTimeout) clearTimeout(idleTimeout);
+      idleTimeout = setTimeout(() => {
+        if (res && res.destroy) res.destroy(new Error('Download stalled (idle timeout)'));
+      }, 20000);
+    };
 
     const progressTransform = new Transform({
       highWaterMark: 1024 * 1024,
       transform(chunk, _encoding, callback) {
+        resetIdleTimeout();
         downloaded += chunk.length;
         const now = Date.now();
         if (onProgress && (now - lastReportTime > 250 || downloaded === total)) {
@@ -303,10 +316,13 @@ async function streamDownload(initialUrl, destPath, options = {}, signal = null,
     const writeStream = fs.createWriteStream(destPath, { highWaterMark: 1024 * 1024 });
 
     try {
+      resetIdleTimeout();
       await pipeline(res, progressTransform, writeStream);
+      if (idleTimeout) clearTimeout(idleTimeout);
       if (onProgress) onProgress(downloaded, total || downloaded);
       return;
     } catch (err) {
+      if (idleTimeout) clearTimeout(idleTimeout);
       await fs.promises.rm(destPath, { force: true }).catch(() => {});
       throw err;
     }
