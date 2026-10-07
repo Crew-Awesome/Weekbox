@@ -362,6 +362,9 @@ export const httpApi = {
    * @returns {Promise<void>}
    */
   async downloadToFile({ url, destPath, options = {}, signal, onProgress }) {
+    if (process.platform === 'darwin') {
+      return await streamDownload(url, destPath, options, signal, onProgress);
+    }
     try {
       return await curlDownload(url, destPath, options, signal, onProgress);
     } catch (curlErr) {
