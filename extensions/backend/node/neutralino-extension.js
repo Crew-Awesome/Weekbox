@@ -67,10 +67,13 @@ class NeutralinoExtension {
           if (fs.existsSync(authPath)) {
             const raw = fs.readFileSync(authPath, "utf-8");
             const auth = JSON.parse(raw);
-            if (auth.port && (auth.accessToken || auth.token)) {
-              port = port || String(auth.port);
-              token = token || auth.accessToken || auth.token;
-              connectToken = connectToken || auth.connectToken || "";
+            const foundPort = auth.nlPort || auth.port;
+            const foundToken = auth.nlToken || auth.accessToken || auth.token;
+            const foundConnectToken = auth.nlConnectToken || auth.connectToken || "";
+            if (foundPort && foundToken) {
+              port = port || String(foundPort);
+              token = token || foundToken;
+              connectToken = connectToken || foundConnectToken;
               break;
             }
           }

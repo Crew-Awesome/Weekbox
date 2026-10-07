@@ -6,7 +6,7 @@
   "defaultMode": "window",
   "port": 0,
   "documentRoot": "/app/",
-  "url": "/",
+  "url": "http://localhost:5173",
   "enableServer": true,
   "enableNativeAPI": true,
   "enableExtensions": true,
@@ -32,8 +32,8 @@
       "height": 720,
       "minWidth": 800,
       "minHeight": 500,
-      "hidden": true,
-      "enableInspector": false,
+      "hidden": false,
+      "enableInspector": true,
       "openInspectorOnStartup": false,
       "resizable": true,
       "exitProcessOnClose": true,
@@ -43,16 +43,16 @@
   "extensions": [
     {
       "id": "extNode",
-      "commandDarwin": "bash ${NL_PATH}/extensions/backend/node/run-mac.sh",
-      "commandLinux": "node ${NL_PATH}/extensions/backend/node/main.js",
-      "commandWindows": "node ${NL_PATH}/extensions/backend/node/main.js"
+      "commandDarwin": "bash ${NL_PATH}/extensions/backend/node/run-mac.sh --nl-port=${NL_PORT} --nl-token=${NL_TOKEN} --nl-connect-token=${NL_CONNECT_TOKEN}",
+      "commandLinux": "node ${NL_PATH}/extensions/backend/node/main.js --nl-port=${NL_PORT} --nl-token=${NL_TOKEN} --nl-connect-token=${NL_CONNECT_TOKEN}",
+      "commandWindows": "node ${NL_PATH}/extensions/backend/node/main.js --nl-port=${NL_PORT} --nl-token=${NL_TOKEN} --nl-connect-token=${NL_CONNECT_TOKEN}"
     }
   ],
   "cli": {
     "binaryName": "WeekBox",
     "resourcesPath": "/app/",
     "extensionsPath": "/extensions/",
-    "clientLibrary": "/app/neutralino.js",
+    "clientLibrary": "/app/src/backend/core/native/pc/neutralino.js",
     "binaryVersion": "6.5.0",
     "clientVersion": "6.5.0"
   }
