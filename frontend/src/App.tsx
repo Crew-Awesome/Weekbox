@@ -32,8 +32,8 @@ const initTasks: LoadingTask[] = [
   {
     name: "Obtaining Featured Mods...",
     retryName: "Retrying to obtain featured mods",
-    timeoutMs: 6000,
-    retries: 1,
+    timeoutMs: 15000,
+    retries: 3,
     action: async () => {
       if (!Utils.hooks.useNetworkStore.getState().isOnline) {
         return;
@@ -78,8 +78,8 @@ const initTasks: LoadingTask[] = [
   {
     name: "Obtaining Gamebanana Mods...",
     retryName: "Retrying to obtain GameBanana mods",
-    timeoutMs: 6000,
-    retries: 1,
+    timeoutMs: 15000,
+    retries: 3,
     action: async () => {
       if (!Utils.hooks.useNetworkStore.getState().isOnline) {
         return;
@@ -108,7 +108,7 @@ const initTasks: LoadingTask[] = [
             const fallback = await Promise.race([
               fallbackPromise,
               new Promise<any[]>((_, reject) =>
-                setTimeout(() => reject(new Error("Fallback timeout")), 3000),
+                setTimeout(() => reject(new Error("Fallback timeout")), 10000),
               ),
             ]);
             if (fallback && fallback.length > 0) {
