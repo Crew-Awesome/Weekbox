@@ -18,7 +18,9 @@ class NodeExtension {
   }
   run(func, param) {
     let data = { function: func, parameter: param };
-    if (this.debug) console.log("OUT: ", JSON.stringify(data));
+    if (this.debug && param?.operation !== "system.ping") {
+      console.log("OUT: ", JSON.stringify(data));
+    }
 
     return window.Neutralino?.extensions?.dispatch?.("extNode", "runNode", data);
   }
