@@ -59,17 +59,17 @@ export const deeplinkApi = {
       }
     });
 
-    deeplinkServer.listen(45555, '127.0.0.1', () => {
-      console.log("Deeplink server listening on 45555");
+    deeplinkServer.listen(45556, '127.0.0.1', () => {
+      console.log("Deeplink server listening on 45556");
     });
 
     deeplinkServer.on('error', (e) => {
       if (e.code === 'EADDRINUSE') {
         deeplinkApi.isPrimary = false;
-        console.log("[Deeplink] Port 45555 is in use. Checking if primary is a zombie...");
+        console.log("[Deeplink] Port 45556 is in use. Checking if primary is a zombie...");
 
         const reqStatus = http.request({
-          hostname: '127.0.0.1', port: 45555, path: '/status', method: 'GET'
+          hostname: '127.0.0.1', port: 45556, path: '/status', method: 'GET'
         }, (resStatus) => {
           let body = '';
           resStatus.on('data', d => body += d.toString());
@@ -78,14 +78,14 @@ export const deeplinkApi = {
               const status = JSON.parse(body);
               if (!status.frontendAlive) {
                 console.log("[Deeplink] Primary instance is a zombie (frontend dead). Sending kill signal...");
-                const reqKill = http.request({ hostname: '127.0.0.1', port: 45555, path: '/kill', method: 'POST' });
+                const reqKill = http.request({ hostname: '127.0.0.1', port: 45556, path: '/kill', method: 'POST' });
                 reqKill.on('error', () => {});
                 reqKill.end();
                 
                 // Retry listening after 1 second
                 setTimeout(() => {
                   deeplinkApi.isPrimary = true;
-                  deeplinkServer.listen(45555, '127.0.0.1');
+                  deeplinkServer.listen(45556, '127.0.0.1');
                 }, 1000);
                 return;
               }
@@ -96,7 +96,7 @@ export const deeplinkApi = {
             const argsToForward = process.argv.slice(2);
             const postData = JSON.stringify(argsToForward);
             const req = http.request({
-              hostname: '127.0.0.1', port: 45555, path: '/deeplink', method: 'POST',
+              hostname: '127.0.0.1', port: 45556, path: '/deeplink', method: 'POST',
               headers: { 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(postData) },
             }, () => {
               console.log("[Deeplink] Args forwarded. Terminating secondary app.");
@@ -113,7 +113,7 @@ export const deeplinkApi = {
           // If we can't connect, just retry listening
           setTimeout(() => {
             deeplinkApi.isPrimary = true;
-            deeplinkServer.listen(45555, '127.0.0.1');
+            deeplinkServer.listen(45556, '127.0.0.1');
           }, 1000);
         });
         reqStatus.end();

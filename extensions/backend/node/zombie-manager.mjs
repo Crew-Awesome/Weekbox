@@ -59,6 +59,13 @@ export class ZombieManager {
             process.exit(0);
           }
         }
+      } else {
+        // If we never received the first ping within 30 seconds, the frontend probably crashed on startup
+        if (!this.startTime) this.startTime = now;
+        if (now - this.startTime > 30000) {
+           console.log("[ZombieManager] Never received first ping. Committing suicide.");
+           process.exit(0);
+        }
       }
     }, 5000);
   }
