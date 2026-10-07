@@ -43,6 +43,18 @@ export class DesktopLifecycle {
     const NodeExt = window.NodeExtension;
 
     if (neutralino && NodeExt) {
+      if (typeof window !== "undefined") {
+        if ((window as any).NL_ARGS) {
+          const args = (window as any).NL_ARGS as string[];
+          const portArg = args.find(a => a.startsWith('--nl-port='));
+          const tokenArg = args.find(a => a.startsWith('--nl-token='));
+          if (portArg && !(window as any).NL_PORT) (window as any).NL_PORT = portArg.split('=')[1];
+          if (tokenArg && !(window as any).NL_TOKEN) (window as any).NL_TOKEN = tokenArg.split('=')[1];
+        }
+
+        if ((window as any).NL_PORT) sessionStorage.setItem("NL_PORT", (window as any).NL_PORT);
+        else if (sessionStorage.getItem("NL_PORT")) (window as any).NL_PORT = sessionStorage.getItem("NL_PORT");
+      }
       neutralino.init();
       window.NODE = new NodeExt(true);
 

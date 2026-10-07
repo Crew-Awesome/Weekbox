@@ -6,7 +6,7 @@
   "defaultMode": "window",
   "port": 0,
   "documentRoot": "/app/",
-  "url": "http://localhost:5173",
+  "url": "/",
   "enableServer": true,
   "enableNativeAPI": true,
   "enableExtensions": true,
@@ -32,8 +32,8 @@
       "height": 720,
       "minWidth": 800,
       "minHeight": 500,
-      "hidden": false,
-      "enableInspector": true,
+      "hidden": true,
+      "enableInspector": false,
       "openInspectorOnStartup": false,
       "resizable": true,
       "exitProcessOnClose": true,
@@ -52,7 +52,7 @@
     "binaryName": "WeekBox",
     "resourcesPath": "/app/",
     "extensionsPath": "/extensions/",
-    "clientLibrary": "/app/src/backend/core/native/pc/neutralino.js",
+    "clientLibrary": "/app/neutralino.js",
     "binaryVersion": "6.5.0",
     "clientVersion": "6.5.0"
   }
