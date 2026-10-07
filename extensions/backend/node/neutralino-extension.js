@@ -146,11 +146,14 @@ class NeutralinoExtension {
   }
 
   async run(onReceiveMessage) {
+    try { require("fs").appendFileSync(require("path").join(require("os").homedir(), "weekbox_ext_debug.log"), "Extension run() called.\n"); } catch(e){}
     const hasAuth = await this.ensureAuth();
     if (!hasAuth) {
+      try { require("fs").appendFileSync(require("path").join(require("os").homedir(), "weekbox_ext_debug.log"), "Could not obtain port and token for connection.\n"); } catch(e){}
       console.error("[NeutralinoExtension] Could not obtain port and token for connection.");
       return;
     }
+    try { require("fs").appendFileSync(require("path").join(require("os").homedir(), "weekbox_ext_debug.log"), "Auth obtained. Port: " + this.port + "\n"); } catch(e){}
 
     const WebSocket = require("ws");
     let hasOpened = false;
@@ -162,11 +165,13 @@ class NeutralinoExtension {
 
       socket.on("open", () => {
         hasOpened = true;
+        try { require("fs").appendFileSync(require("path").join(require("os").homedir(), "weekbox_ext_debug.log"), "WS OPENED on port " + this.port + "\n"); } catch(e){}
         console.log(`[NeutralinoExtension] WebSocket ready on port ${this.port}`);
       });
 
       socket.on("message", (data) => {
         let msg = data.toString("utf-8");
+        try { require("fs").appendFileSync(require("path").join(require("os").homedir(), "weekbox_ext_debug.log"), "WS RECV: " + msg + "\n"); } catch(e){}
 
         try {
           msg = JSON.parse(msg);

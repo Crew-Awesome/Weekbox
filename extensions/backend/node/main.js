@@ -6,11 +6,11 @@ function logFile(msg) {
   try { fs.appendFileSync(logPath, msg + "\n"); } catch(e) {}
 }
 process.on("uncaughtException", (err) => {
-  console.error("[NodeBackend] Uncaught Exception:", err);
+  logFile("[NodeBackend] Uncaught Exception: " + err?.stack);
 });
 
 process.on("unhandledRejection", (reason) => {
-  console.error("[NodeBackend] Unhandled Rejection:", reason);
+  logFile("[NodeBackend] Unhandled Rejection: " + String(reason));
 });
 
 const NeutralinoExtension = require("./neutralino-extension");
@@ -18,7 +18,13 @@ const discordRPC = require("./discord/discordRPC");
 const DEBUG = false;
 const backendModule = import("../host.mjs");
 
-discordRPC.init();
+logFile("Initializing discordRPC...");
+try {
+  discordRPC.init();
+  logFile("discordRPC initialized.");
+} catch(e) {
+  logFile("discordRPC crashed: " + e);
+}
 
 function delay(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -122,19 +128,18 @@ async function processAppEvent(data) {
 }
 
 const ext = new NeutralinoExtension(DEBUG);
-console.log("---");
-console.log("NodeJS Version:", process.version);
-console.log("NodeJS Path:", process.execPath);
-console.log("---");
+logFile("Extension instance created.");
 
 backendModule
   .then(({ setExtensionContext }) => {
+    logFile("backendModule imported successfully.");
     if (setExtensionContext) {
       setExtensionContext(ext);
     }
   })
   .catch((err) => {
-    console.error("Failed to initialize backend module context:", err);
+    logFile("backendModule import failed: " + err);
   });
 
+logFile("Calling ext.run...");
 ext.run(processAppEvent);
