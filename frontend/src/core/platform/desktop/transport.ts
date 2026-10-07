@@ -64,7 +64,7 @@ export class DesktopTransport implements IPlatformTransport, IPlatformEvents {
       operation === "fs.exists" ||
       operation === "fs.getStats"
     ) {
-      defaultTimeout = 8000; // 8 seconds for fast operations
+      defaultTimeout = 20000; // 20 seconds for fast operations (allows extension startup)
     }
 
     return window.NODE.call<BackendResult<Operation>>(

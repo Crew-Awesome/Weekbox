@@ -98,7 +98,7 @@ async function curlDownload(targetUrl, destPath, options = {}, signal = null, on
       '--retry-delay',
       '1',
       '--speed-time',
-      '20',
+      '60',
       '--speed-limit',
       '1',
       '-o',
@@ -296,7 +296,7 @@ async function streamDownload(initialUrl, destPath, options = {}, signal = null,
       if (idleTimeout) clearTimeout(idleTimeout);
       idleTimeout = setTimeout(() => {
         if (res && res.destroy) res.destroy(new Error('Download stalled (idle timeout)'));
-      }, 20000);
+      }, 60000);
     };
 
     const progressTransform = new Transform({
