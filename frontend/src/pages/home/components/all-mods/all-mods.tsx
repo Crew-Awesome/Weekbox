@@ -140,8 +140,8 @@ export const AllMods: React.FC<AllModsProps> = React.memo(({
     <>
       <Shared.atoms.Titles title={dynamicTitle} />
       <div
-        className="grid gap-4 sm:gap-6 -mx-8 sm:mx-0 h-auto w-auto grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4"
-        style={{ gridAutoFlow: "row dense" }}
+        className="grid gap-4 sm:gap-6 -mx-8 sm:mx-0 h-auto w-auto" style={{ gridAutoFlow: "row dense", gridTemplateColumns: "repeat(auto-fill, minmax(min(100%, 20rem), 1fr))" }}
+        
       >
         {mods.map((item, index) => {
           const modItem: ModItem = {

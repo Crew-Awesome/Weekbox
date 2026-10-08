@@ -100,3 +100,16 @@ INFO 2026-09-19 18:28:28,143 Auth info was exported to ./.tmp/auth_info.json api
 INFO 2026-09-19 19:06:45,850 Auth info was exported to ./.tmp/auth_info.json api\debug\debug.cpp:17 leive@DESKTOP-ESCKB7T
 INFO 2026-09-22 21:41:35,388 Auth info was exported to ./.tmp/auth_info.json api\debug\debug.cpp:17 leive@DESKTOP-ESCKB7T
 INFO 2026-09-22 22:04:48,280 Auth info was exported to ./.tmp/auth_info.json api\debug\debug.cpp:17 leive@DESKTOP-ESCKB7T
+INFO 2026-10-06 22:17:03,792 Auth info was exported to ./.tmp/auth_info.json api\debug\debug.cpp:17 leive@DESKTOP-ESCKB7T
+INFO 2026-10-06 22:46:46,184 Auth info was exported to ./.tmp/auth_info.json api\debug\debug.cpp:17 leive@DESKTOP-ESCKB7T
+INFO 2026-10-06 23:06:49,717 Auth info was exported to ./.tmp/auth_info.json api\debug\debug.cpp:17 leive@DESKTOP-ESCKB7T
+INFO 2026-10-06 23:07:12,241 Auth info was exported to ./.tmp/auth_info.json api\debug\debug.cpp:17 leive@DESKTOP-ESCKB7T
+INFO 2026-10-06 23:10:52,313 Auth info was exported to ./.tmp/auth_info.json api\debug\debug.cpp:17 leive@DESKTOP-ESCKB7T
+INFO 2026-10-06 23:15:34,668 Auth info was exported to ./.tmp/auth_info.json api\debug\debug.cpp:17 leive@DESKTOP-ESCKB7T
+INFO 2026-10-08 01:47:27,851 Auth info was exported to ./.tmp/auth_info.json api\debug\debug.cpp:17 leive@DESKTOP-ESCKB7T
+ERROR 2026-10-08 01:47:27,944 NE_CF_UNBLWCF: Unable to load the window config file: /.tmp/window_state.config.json api\debug\debug.cpp:20 leive@DESKTOP-ESCKB7T
+INFO 2026-10-08 01:55:55,784 Auth info was exported to ./.tmp/auth_info.json api\debug\debug.cpp:17 leive@DESKTOP-ESCKB7T
+ERROR 2026-10-08 01:55:55,814 NE_CF_UNBLWCF: Unable to load the window config file: /.tmp/window_state.config.json api\debug\debug.cpp:20 leive@DESKTOP-ESCKB7T
+INFO 2026-10-08 02:07:00,395 Auth info was exported to ./.tmp/auth_info.json api\debug\debug.cpp:17 leive@DESKTOP-ESCKB7T
+ERROR 2026-10-08 02:07:00,432 NE_CF_UNBLWCF: Unable to load the window config file: /.tmp/window_state.config.json api\debug\debug.cpp:20 leive@DESKTOP-ESCKB7T
+INFO 2026-10-08 03:22:02,464 Auth info was exported to ./.tmp/auth_info.json api\debug\debug.cpp:17 leive@DESKTOP-ESCKB7T

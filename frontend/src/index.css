@@ -305,3 +305,31 @@ button[disabled]:active {
   border: 1px solid rgba(130, 211, 224, 0.6) !important;
   color: var(--wb-primary) !important;
 }
+@keyframes startup-loading-background-reveal {
+  from {
+    filter: blur(14px) brightness(0.42) saturate(1);
+    transform: scale(1.12);
+  }
+  to {
+    filter: blur(0) brightness(1) saturate(1);
+    transform: scale(1);
+  }
+}
+
+@keyframes startup-loading-overlay-reveal {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes startup-loading-barber-pole {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(22.6274px);
+  }
+}

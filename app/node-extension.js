@@ -18,7 +18,6 @@ class NodeExtension {
   }
   run(func, param) {
     let data = { function: func, parameter: param };
-    // Removed debug logging here to avoid spamming the console
     return window.Neutralino?.extensions?.dispatch?.("extNode", "runNode", data);
   }
   call(operation, params, timeoutMs = 300000, signal) {
