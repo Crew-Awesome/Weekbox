@@ -98,11 +98,11 @@ async function syncWindowsProtocol(
     const encoded = encodePowerShell(script);
     if (!window.Neutralino?.os?.execCommand) return false;
 
-    const result = await window.Neutralino.os.execCommand(
-      `powershell.exe -NoProfile -NonInteractive -EncodedCommand ${encoded}`,
+    await window.Neutralino.os.execCommand(
+      `powershell.exe -InputFormat None -NoProfile -NonInteractive -WindowStyle Hidden -EncodedCommand ${encoded}`,
+      { background: true }
     );
 
-    if (result.exitCode !== 0) throw new Error(result.stdErr);
     return true;
   } catch (error) {
     console.warn("Could not update the Windows link association", error);
@@ -134,10 +134,12 @@ update-desktop-database ~/.local/share/applications || true
       `.trim();
       await window.Neutralino.os.execCommand(
         `sh -c '${script.replace(/'/g, "'\\''")}'`,
+        { background: true }
       );
     } else {
       await window.Neutralino.os.execCommand(
         `sh -c 'rm -f ~/.local/share/applications/weekbox-deeplink.desktop && update-desktop-database ~/.local/share/applications || true'`,
+        { background: true }
       );
     }
     return true;
