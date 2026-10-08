@@ -61,17 +61,41 @@ export const ModDetailsModal: React.FC<ModDetailsModalProps> = ({
   const [isInstalled, setIsInstalled] = useState<boolean>(Boolean(selectedCard?.isInstalled));
 
   useEffect(() => {
-    if (!displayCard?.id) return;
+    if (!baseCard?.id) return;
     let isMounted = true;
-    Core.platform.getInstalledMod(displayCard.id.toString()).then((mod: any) => {
-      if (isMounted) {
-        setIsInstalled(Boolean(mod));
-      }
-    });
+    
+    const checkInstall = () => {
+      Core.platform.getInstalledMod(baseCard.id.toString()).then((mod: any) => {
+        if (isMounted) {
+          setIsInstalled(Boolean(mod));
+          if (mod) {
+            setCustomCardData(prev => ({
+              ...prev,
+              engineId: mod.engineId || prev.engineId,
+              engineName: mod.engineName || prev.engineName,
+              icon: mod.icon || prev.icon,
+              defaultEngineId: mod.defaultEngineId || prev.defaultEngineId,
+            }));
+          }
+        }
+      });
+    };
+
+    checkInstall();
+
+    const handleModsChanged = () => {
+      checkInstall();
+    };
+    
+    window.addEventListener("wb:mods-changed", handleModsChanged);
+    const unsubPlatform = Core.platform.onEvent?.("mods:changed", handleModsChanged);
+
     return () => {
       isMounted = false;
+      window.removeEventListener("wb:mods-changed", handleModsChanged);
+      unsubPlatform?.();
     };
-  }, [displayCard?.id]);
+  }, [baseCard?.id]);
 
   const handleUpdateMod = useCallback(
     async (updates: Record<string, any>) => {

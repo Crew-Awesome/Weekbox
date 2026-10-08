@@ -299,7 +299,7 @@ export const processApi = {
     if (!resolved) {
       return {
         ok: false,
-        error: `No executable found in "${folderPath}" for platform "${process.platform}".`,
+        error: `No executable found in this mod. If this is a Psych Engine or V-Slice mod, please click the Engine category icon in the mod details (next to the GameBanana logo) and change it to the correct engine.`,
       };
     }
 

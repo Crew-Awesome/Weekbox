@@ -11,7 +11,7 @@ import { useTheme } from "./components/organisms/settings-modal/hooks/use-theme"
 const initTasks: LoadingTask[] = [
   {
     name: "Initializing environment...",
-    timeoutMs: 4000,
+    timeoutMs: 10000,
     retries: 0,
     action: async () => {
       try {
@@ -32,7 +32,7 @@ const initTasks: LoadingTask[] = [
   {
     name: "Obtaining Featured Mods...",
     retryName: "Retrying to obtain featured mods",
-    timeoutMs: 15000,
+    timeoutMs: 30000,
     retries: 3,
     action: async () => {
       if (!Utils.hooks.useNetworkStore.getState().isOnline) {
@@ -78,7 +78,7 @@ const initTasks: LoadingTask[] = [
   {
     name: "Obtaining Gamebanana Mods...",
     retryName: "Retrying to obtain GameBanana mods",
-    timeoutMs: 15000,
+    timeoutMs: 30000,
     retries: 3,
     action: async () => {
       if (!Utils.hooks.useNetworkStore.getState().isOnline) {
@@ -108,7 +108,7 @@ const initTasks: LoadingTask[] = [
             const fallback = await Promise.race([
               fallbackPromise,
               new Promise<any[]>((_, reject) =>
-                setTimeout(() => reject(new Error("Fallback timeout")), 10000),
+                setTimeout(() => reject(new Error("Fallback timeout")), 20000),
               ),
             ]);
             if (fallback && fallback.length > 0) {

@@ -53,6 +53,10 @@ class NeutralinoExtension {
       }
     }
 
+    if (port === "${NL_PORT}") port = null;
+    if (token === "${NL_TOKEN}") token = null;
+    if (connectToken === "${NL_CONNECT_TOKEN}") connectToken = "";
+
     if (!port || !token) {
       const searchDirs = [
         process.cwd(),

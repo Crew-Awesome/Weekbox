@@ -34,6 +34,7 @@ export interface ModDetailsHeaderDesktopProps {
   handleSelectVersion: (ver: string) => void;
   handleInstallLatestEngine: () => void;
   isInstallingEngine: boolean;
+  handleOpenFolder?: () => void;
 }
 
 export const ModDetailsHeaderDesktop: React.FC<ModDetailsHeaderDesktopProps> = ({
@@ -58,6 +59,7 @@ export const ModDetailsHeaderDesktop: React.FC<ModDetailsHeaderDesktopProps> = (
   handleSelectVersion,
   handleInstallLatestEngine,
   isInstallingEngine,
+  handleOpenFolder,
 }) => {
   return (
     <div className="relative z-30 flex items-center px-4 md:px-6 pt-2 pb-3 md:pt-3 md:pb-4 shrink-0 bg-[var(--wb-surface-container)] min-h-[56px] pr-16 md:pr-4 rounded-t-2xl pointer-events-auto">
@@ -249,8 +251,11 @@ export const ModDetailsHeaderDesktop: React.FC<ModDetailsHeaderDesktopProps> = (
           )}
 
           {isInstalled && localInstalledAt && (
-            <div 
-              className="relative flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[var(--wb-surface-bright)] border border-[var(--wb-outline-variant)]/30 text-[var(--wb-on-surface-variant)] text-xs select-none cursor-default"
+            <button 
+              type="button"
+              onClick={handleOpenFolder}
+              title="Open mod folder"
+              className="relative flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[var(--wb-surface-bright)] hover:bg-[var(--wb-surface-bright)]/80 hover:text-[var(--wb-on-surface)] border border-[var(--wb-outline-variant)]/30 text-[var(--wb-on-surface-variant)] text-xs select-none cursor-pointer transition-colors"
               onMouseEnter={() => setHoverTooltip("installed")}
               onMouseLeave={() => setHoverTooltip(null)}
             >
@@ -262,7 +267,7 @@ export const ModDetailsHeaderDesktop: React.FC<ModDetailsHeaderDesktopProps> = (
                   Installed: {formatFullDate(localInstalledAt)}
                 </div>
               </div>
-            </div>
+            </button>
           )}
         </div>
       </div>

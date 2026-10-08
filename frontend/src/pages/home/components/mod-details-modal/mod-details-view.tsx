@@ -94,6 +94,7 @@ export const ModDetailsView: React.FC<ModDetailsViewProps> = ({
           versionDropdownRef={details.versionDropdownRef}
           selectedVersion={details.selectedVersion}
           handleSelectVersion={details.handleSelectVersion}
+          handleOpenFolder={details.handleOpenFolder}
           onClose={onClose}
         />
 
@@ -231,6 +232,7 @@ export const ModDetailsView: React.FC<ModDetailsViewProps> = ({
             handleSelectVersion={details.handleSelectVersion}
             handleInstallLatestEngine={details.handleInstallLatestEngine}
             isInstallingEngine={details.isInstallingEngine}
+            handleOpenFolder={details.handleOpenFolder}
           />
 
           <div className="flex flex-col md:flex-row flex-1 w-full relative z-10 min-h-0">

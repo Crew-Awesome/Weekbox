@@ -36,6 +36,7 @@ export interface ModDetailsHeaderMobileProps {
   selectedVersion: string;
   handleSelectVersion: (ver: string) => void;
   onClose?: () => void;
+  handleOpenFolder?: () => void;
 }
 
 export const ModDetailsHeaderMobile: React.FC<ModDetailsHeaderMobileProps> = ({
@@ -62,6 +63,7 @@ export const ModDetailsHeaderMobile: React.FC<ModDetailsHeaderMobileProps> = ({
   selectedVersion,
   handleSelectVersion,
   onClose,
+  handleOpenFolder,
 }) => {
   return (
     <div
@@ -241,13 +243,15 @@ export const ModDetailsHeaderMobile: React.FC<ModDetailsHeaderMobileProps> = ({
 
       <div className="flex items-center gap-2 shrink-0 ml-auto">
         {isInstalled && localInstalledAt ? (
-          <div 
-            className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-[var(--wb-surface-bright)] border border-[var(--wb-outline-variant)]/30 text-[var(--wb-on-surface-variant)] text-xs font-semibold shrink-0"
-            title={formatFullDate(localInstalledAt)}
+          <button 
+            type="button"
+            onClick={handleOpenFolder}
+            className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-[var(--wb-surface-bright)] hover:bg-[var(--wb-surface-bright)]/80 hover:text-[var(--wb-on-surface)] border border-[var(--wb-outline-variant)]/30 text-[var(--wb-on-surface-variant)] text-xs font-semibold shrink-0 cursor-pointer transition-colors"
+            title={`Open folder (Installed: ${formatFullDate(localInstalledAt)})`}
           >
             <HardDrive className="w-3.5 h-3.5 text-[var(--wb-primary)] shrink-0" />
             <span>Installed: {formatDate(localInstalledAt)}</span>
-          </div>
+          </button>
         ) : displayCard.updatedAt ? (
           <div 
             className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-[var(--wb-surface-bright)] border border-[var(--wb-outline-variant)]/30 text-[var(--wb-on-surface-variant)] text-xs font-semibold shrink-0"

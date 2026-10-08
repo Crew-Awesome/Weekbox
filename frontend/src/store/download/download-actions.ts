@@ -84,6 +84,61 @@ export async function handleStartDownload(
       controller.signal
     );
 
+    try {
+      const Core = (await import("../../core")).default;
+      if (Core.platform.getModsPath && Core.fs.readDirectory) {
+        const modsDir = await Core.platform.getModsPath();
+        const safeName = (modName || "unknown")
+          .normalize("NFD")
+          .replace(/[\u0300-\u036f]/g, "")
+          .replace(/[^a-zA-Z0-9]/g, "")
+          .toLowerCase();
+        const modPath = `${modsDir}/mod_${modId}_${safeName}`;
+
+        let hasExe = false;
+        let hasPackJson = false;
+        let hasPolymod = false;
+        
+        const scanDir = async (path: string, depth: number) => {
+          if (depth > 2) return;
+          try {
+            const entries = (await Core.fs.readDirectory(path)) as Array<any>;
+            for (const item of entries) {
+              const nameLower = (item.entry || "").toLowerCase();
+              if (item.type === "FILE" || item.isFile) {
+                if (nameLower.endsWith(".exe")) hasExe = true;
+                if (nameLower === "pack.json") hasPackJson = true;
+                if (nameLower === "_polymod_meta.json") hasPolymod = true;
+              } else if (item.type === "DIRECTORY" || item.isDirectory) {
+                await scanDir(`${path}/${item.entry}`, depth + 1);
+              }
+            }
+          } catch {}
+        };
+        
+        await scanDir(modPath, 1);
+        
+        if (hasExe) {
+          payload.engineId = "executable";
+          payload.engineName = "Executable Mods";
+          payload.icon = "/assets/icons/categories/exe.png";
+          payload.defaultEngineId = "executable";
+        } else if (hasPolymod) {
+          payload.engineId = "vslice";
+          payload.engineName = "V-Slice Engine";
+          payload.icon = "/assets/icons/categories/vslice.png";
+          payload.defaultEngineId = "vslice";
+        } else if (hasPackJson || (!hasExe && (payload.engineId === "executable" || payload.engineId === "3827"))) {
+          payload.engineId = "psych";
+          payload.engineName = "Psych Engine";
+          payload.icon = "/assets/icons/categories/psych.png";
+          payload.defaultEngineId = "psych";
+        }
+      }
+    } catch (e) {
+      console.warn("Auto-detect engine failed:", e);
+    }
+
     await deps.mods.registerInstalledMod(payload).catch((e) =>
       console.warn("Failed to register installed mod:", e)
     );

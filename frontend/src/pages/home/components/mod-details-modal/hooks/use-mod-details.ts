@@ -689,6 +689,22 @@ export function useModDetails({
     await useProcessStore.getState().stopInstance(modInstanceKey);
   };
 
+  const handleOpenFolder = async () => {
+    if (!displayCard?.id) return;
+    try {
+      const modsDir = (await Core.platform.getModsPath?.()) || "";
+      const safeName = (displayCard.name || "unknown")
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .replace(/[^a-zA-Z0-9]/g, "")
+        .toLowerCase();
+      const modPath = `${modsDir}/mod_${displayCard.id}_${safeName}`;
+      await Core.platform.openUrl?.(modPath);
+    } catch (err) {
+      Utils.toast.error("Could not open mod folder.", { title: "Error" });
+    }
+  };
+
   return {
     viewportWidth,
     isMobile,
@@ -760,6 +776,7 @@ export function useModDetails({
     handleDownload,
     handleManage,
     handleStop,
+    handleOpenFolder,
     hoverTooltip,
     setHoverTooltip,
   };
