@@ -48,9 +48,11 @@ export function isMobileDeviceOrPlatform(): boolean {
 }
 
 /**
- * Applies the UI scale percentage to document.documentElement.style.fontSize.
- * Only applied on PC (desktop / web on PC). On mobile, fontSize is cleared/reset.
+ * @description Applies the UI scale percentage to the `--ui-scale` CSS variable on the document element.
+ * Only applied on PC (desktop / web on PC). On mobile, scale is reset to 1.
  * Also explicitly resets any inline document zoom to prevent viewport clipping.
+ * @param {number} scale - The scale percentage (e.g., 100 for default).
+ * @returns {void}
  */
 export function applyUiScale(scale: number): void {
   if (typeof document === "undefined") return;
@@ -59,18 +61,14 @@ export function applyUiScale(scale: number): void {
   document.documentElement.style.zoom = "";
 
   if (isMobileDeviceOrPlatform()) {
-    document.documentElement.style.fontSize = "";
+    document.documentElement.style.setProperty("--ui-scale", "1");
     return;
   }
 
   const validScale = typeof scale === "number" && !isNaN(scale) ? scale : 100;
   const clamped = Math.min(Math.max(validScale, 70), 150);
 
-  if (clamped === 100) {
-    document.documentElement.style.fontSize = "";
-  } else {
-    document.documentElement.style.fontSize = `${clamped}%`;
-  }
+  document.documentElement.style.setProperty("--ui-scale", (clamped / 100).toString());
 }
 
 function readLocalSettings(): Record<string, any> {
