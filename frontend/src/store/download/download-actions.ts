@@ -9,7 +9,12 @@ import type {
 import { syncTaskToast } from "./toast-sync";
 
 /**
- * Handles initiation and lifecycle of a mod download task.
+ * @description Handles initiation and lifecycle of a mod download task.
+ * @param {DownloadStoreDependencies} deps - The dependencies object for the store.
+ * @param {StartDownloadParams} params - The parameters to start the download (url, fileId, modId, etc).
+ * @param {Function} get - State getter function.
+ * @param {Function} set - State setter function.
+ * @returns {Promise<void>} Resolves when the download finishes or fails.
  */
 export async function handleStartDownload(
   deps: DownloadStoreDependencies,

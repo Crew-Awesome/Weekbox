@@ -37,6 +37,11 @@ export interface ModDetailsHeaderDesktopProps {
   handleOpenFolder?: () => void;
 }
 
+/**
+ * @description Renders the desktop header section of the Mod Details modal, including title, dates, and engine selection.
+ * @param {ModDetailsHeaderDesktopProps} props - The component props.
+ * @returns {JSX.Element} The desktop header component.
+ */
 export const ModDetailsHeaderDesktop: React.FC<ModDetailsHeaderDesktopProps> = ({
   displayCard,
   engineName,

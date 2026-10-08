@@ -13,6 +13,11 @@ import {
   useStorageMigrationStore,
 } from "../../../../../store";
 
+/**
+ * @description Controller hook for the Mod Details Modal. Manages state for tabs, engine selection, editing, and actions.
+ * @param {Pick<ModalViewProps, "displayCard" | "engineName" | "formatDate" | "formatFullDate" | "isInstalled" | "onUpdateMod" | "onClose">} props - The props containing the active mod card, engine data, and callbacks.
+ * @returns {Object} An object containing all the state variables and handler functions required by the Mod Details view.
+ */
 export function useModDetails({
   displayCard,
   engineName,
@@ -28,7 +33,6 @@ export function useModDetails({
   const navigate = useNavigate();
   const isMobilePlatform = Core.isMobilePlatform();
 
-  // Dynamic viewport width tracking for mobile adaptation
   const [viewportWidth, setViewportWidth] = useState<number>(() =>
     typeof window !== "undefined" ? window.innerWidth : 1024
   );
@@ -42,7 +46,6 @@ export function useModDetails({
 
   const isMobile = viewportWidth < 768;
 
-  // Shared state
   const [hoverTooltip, setHoverTooltip] = useState<"submitted" | "updated" | "installed" | null>(null);
   const [isInstalled, setIsInstalled] = useState(Boolean(isInstalledProp));
   const [localInstalledAt, setLocalInstalledAt] = useState<number | undefined>(displayCard?.installedAt);
@@ -56,7 +59,6 @@ export function useModDetails({
   const [activeTab, setActiveTab] = useState<ModModalTab>("description");
   const isDropdownOpen = activeTab === "details";
 
-  // Author avatar memoization
   const authorAvatar = useMemo(() => {
     if (displayCard?.userPfp) return displayCard.userPfp;
     const authorLower = (displayCard?.author || "").trim().toLowerCase();
@@ -73,7 +75,6 @@ export function useModDetails({
     setAvatarError(false);
   }, [authorAvatar]);
 
-  // Mobile scroll tracking for auto-hiding header
   const mobileContainerRef = useRef<HTMLDivElement>(null);
   const [isHeaderVisible, setIsHeaderVisible] = useState(true);
   const lastScrollY = useRef(0);
@@ -105,7 +106,6 @@ export function useModDetails({
     return () => scrollContainer.removeEventListener("scroll", handleScroll);
   }, []);
 
-  // Title and Description editing
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   const [titleInput, setTitleInput] = useState(displayCard?.name || "");
   const [isEditingDesc, setIsEditingDesc] = useState(false);
@@ -145,7 +145,6 @@ export function useModDetails({
     }
   }, [descInput, displayCard?.htmlBody, displayCard?.description, onUpdateMod]);
 
-  // Engine & Version dropdowns
   const [isEngineDropdownOpen, setIsEngineDropdownOpen] = useState(false);
   const engineDropdownRef = useRef<HTMLDivElement>(null);
   const [isVersionDropdownOpen, setIsVersionDropdownOpen] = useState(false);
@@ -182,7 +181,6 @@ export function useModDetails({
 
   const currentEngineKey = String(displayCard?.engineId || "vslice").toLowerCase();
 
-  // Mobile engine installed check
   useEffect(() => {
     if (!isMobilePlatform) return;
     let isMounted = true;
@@ -393,7 +391,6 @@ export function useModDetails({
     };
   }, [displayCard?.id, downloadTasks]);
 
-  // Date helper
   const getTimestampMs = useCallback((val: any): number => {
     if (!val) return 0;
     if (typeof val === "number") {

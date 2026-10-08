@@ -17,11 +17,9 @@ export interface ModDetailsViewProps extends ModalViewProps {
 }
 
 /**
- * Modularized, responsive view for Mod Details Modal.
- * Refactored under S.O.L.I.D principles:
- * - Single Responsibility: State & handlers in `useModDetails`, headers, info/tabs, and actions in dedicated subcomponents.
- * - Open/Closed: New action buttons or tabs can be added without modifying the root layout.
- * - Viewport adaptation: Mobile layout dynamically accounts for viewportWidth preventing overflow while preserving 100% visual fidelity.
+ * @description Modularized, responsive view for Mod Details Modal. Adapts layout based on viewport width.
+ * @param {ModDetailsViewProps} props - The component props including the active mod card, state hooks from the parent, and action callbacks.
+ * @returns {JSX.Element} The responsive layout of the mod details.
  */
 export const ModDetailsView: React.FC<ModDetailsViewProps> = ({
   displayCard,

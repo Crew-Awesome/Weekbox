@@ -123,6 +123,10 @@ const initTasks: LoadingTask[] = [
   },
 ];
 
+/**
+ * @description Root Application component. Initializes app tasks, services provider, and layouts.
+ * @returns {JSX.Element} The root application layout wrapping the router outlet.
+ */
 function App() {
   useTheme();
   const handleNavigate = Utils.hooks.useAppNavigation();

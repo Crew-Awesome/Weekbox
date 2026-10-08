@@ -39,6 +39,11 @@ export interface ModDetailsHeaderMobileProps {
   handleOpenFolder?: () => void;
 }
 
+/**
+ * @description Renders the mobile header section of the Mod Details modal, optimized for small viewports.
+ * @param {ModDetailsHeaderMobileProps} props - The component props.
+ * @returns {JSX.Element} The mobile header component.
+ */
 export const ModDetailsHeaderMobile: React.FC<ModDetailsHeaderMobileProps> = ({
   displayCard,
   engineName,

@@ -14,8 +14,9 @@ interface ModDetailsModalProps {
 }
 
 /**
- * Main wrapper for the Mod Details Modal.
- * Manages state and refs, and delegates rendering to the unified responsive ModDetailsView.
+ * @description Main wrapper for the Mod Details Modal. Manages state and refs, and delegates rendering to the unified responsive ModDetailsView.
+ * @param {ModDetailsModalProps} props - The component props containing the selected mod card and close handler.
+ * @returns {JSX.Element} The rendered modal component.
  */
 export const ModDetailsModal: React.FC<ModDetailsModalProps> = ({
   selectedCard,
