@@ -48,7 +48,14 @@ export class DesktopTransport implements IPlatformTransport, IPlatformEvents {
     }
 
     if (!window.NODE?.call) {
-      return Promise.reject(new Error("The Node backend is not available."));
+      // Native fallbacks when Node extension is not available (e.g., Mac without Node)
+      if (operation.startsWith("fs.")) {
+        return this.fallbackFsOperation(operation, params);
+      }
+      if (operation === "http.downloadToFile") {
+        return this.fallbackDownloadToFile(params, signal) as any;
+      }
+      return Promise.reject(new Error(`The Node backend is not available for operation: ${operation}`));
     }
     
     let defaultTimeout = 300000; 
@@ -73,6 +80,87 @@ export class DesktopTransport implements IPlatformTransport, IPlatformEvents {
       timeoutMs ?? defaultTimeout,
       signal
     );
+  }
+
+  private async fallbackFsOperation(operation: string, params: any): Promise<any> {
+    const fs = (window as any).Neutralino?.filesystem;
+    if (!fs) throw new Error("Neutralino filesystem API not available.");
+    switch (operation) {
+      case "fs.createDirectory":
+        return fs.createDirectory(params.path);
+      case "fs.remove":
+        return fs.remove(params.path);
+      case "fs.readDirectory":
+        return fs.readDirectory(params.path);
+      case "fs.readFile":
+        return fs.readFile(params.path);
+      case "fs.exists":
+        return fs.getStats(params.path).then(() => true).catch(() => false);
+      case "fs.extractArchive":
+        return this.fallbackExtractArchive(params);
+      default:
+        throw new Error(`Unsupported fallback fs operation: ${operation}`);
+    }
+  }
+
+  private async fallbackDownloadToFile(params: any, signal?: AbortSignal): Promise<void> {
+    const { url, destPath, progressId } = params;
+    const isWindows = (window as any).NL_OS === "Windows";
+    const neu = (window as any).Neutralino;
+    
+    this.emitLocalEvent("download:progress", { progressId, downloaded: 0, total: 100, status: "Starting native download..." });
+    
+    const cmd = isWindows 
+      ? `curl.exe -L -s -o "${destPath}" "${url}"`
+      : `curl -L -s -o "${destPath}" "${url}"`;
+      
+    return new Promise((resolve, reject) => {
+      neu.os.spawnProcess(cmd).then((process: any) => {
+        const checkInterval = setInterval(() => {
+          neu.filesystem.getStats(destPath).then((stats: any) => {
+             this.emitLocalEvent("download:progress", { progressId, downloaded: stats.size, total: 0 });
+          }).catch(() => {});
+        }, 1000);
+
+        const onExit = (evt: CustomEvent) => {
+          if (evt.detail.id === process.id) {
+            clearInterval(checkInterval);
+            neu.events.off("spawnedProcessExited", onExit);
+            if (evt.detail.exitCode === 0) resolve();
+            else reject(new Error(`Native download failed with code ${evt.detail.exitCode}`));
+          }
+        };
+        neu.events.on("spawnedProcessExited", onExit);
+        
+        if (signal) {
+          signal.addEventListener("abort", () => {
+            clearInterval(checkInterval);
+            neu.events.off("spawnedProcessExited", onExit);
+            neu.os.updateSpawnedProcess(process.id, "exit").catch(() => {});
+            reject(new Error("Cancelled"));
+          }, { once: true });
+        }
+      }).catch(reject);
+    });
+  }
+
+  private async fallbackExtractArchive(params: any): Promise<void> {
+    const { archivePath, destFolder, progressId } = params;
+    const isWindows = (window as any).NL_OS === "Windows";
+    const neu = (window as any).Neutralino;
+    
+    this.emitLocalEvent("download:progress", { progressId, status: "Extracting natively..." });
+    
+    const cmd = isWindows
+      ? `tar -xf "${archivePath}" -C "${destFolder}"`
+      : `unzip -q -o "${archivePath}" -d "${destFolder}"`;
+      
+    await neu.filesystem.createDirectory(destFolder).catch(() => {});
+    
+    const execRes = await neu.os.execCommand(cmd);
+    if (execRes.exitCode !== 0) {
+      throw new Error(`Native extract failed: ${execRes.stdErr || "Unknown error"}`);
+    }
   }
 
   onEvent(eventName: string, listener: (data: any) => void): () => void {
