@@ -30,6 +30,36 @@
   gap: var(--spacing-xl);
 }
 
+.secret-poop-button {
+  align-self: center;
+  width: min(250px, 50vw);
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+}
+
+.secret-poop-button img {
+  display: block;
+  width: 100%;
+  border-radius: 50%;
+}
+
+.secret-poop-button:focus-visible {
+  outline: 3px solid var(--primary);
+  outline-offset: 6px;
+}
+
+.secret-poop-button.is-pressed {
+  animation: secret-poop-button-press 400ms ease;
+}
+
+@keyframes secret-poop-button-press {
+  50% {
+    transform: scale(0.8) rotate(-8deg);
+  }
+}
+
 .home-offline-panel {
   display: grid;
   place-items: center;

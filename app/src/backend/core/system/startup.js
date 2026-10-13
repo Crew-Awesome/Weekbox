@@ -446,11 +446,20 @@ function startBackgroundMaintenance() {
   );
 }
 
+function initializeNeutralino() {
+  if (typeof window.Neutralino?.init !== "function") {
+    throw new Error(
+      "The Neutralino client library could not be loaded. Reinstall WeekBox and try again.",
+    );
+  }
+  window.Neutralino.init();
+}
+
 async function startApp() {
   let startupStep = "starting native services";
   try {
     startupLoader.setPhase(t("startup.startingServices"), 8);
-    Neutralino.init();
+    initializeNeutralino();
     patchNeutralinoMessageBox();
     let deepLinkReady = false;
     let queuedDeepLink = null;

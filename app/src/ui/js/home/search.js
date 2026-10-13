@@ -3,6 +3,8 @@ import { homeSearchDropdown } from "./searchDropdown.js";
 import { t } from "../i18n/index.js";
 import { setupDropdown } from "../../utils/components/dropdown.component.js";
 
+const SECRET_POOP_QUERY = "secret poop button";
+
 export const homeSearch = {
   abortController: null,
   searchType: "mods",
@@ -139,6 +141,30 @@ export const homeSearch = {
     this.abortController = null;
     this.searchTypeDropdown?.destroy();
     this.searchTypeDropdown = null;
+    document.getElementById("secret-poop-button")?.remove();
+  },
+
+  // i hate this i hate this i hate this
+  showSecretPoopButton() {
+    const homeContent = document.querySelector(".home-container .home-content");
+    if (!homeContent || document.getElementById("secret-poop-button")) return;
+
+    const button = document.createElement("button");
+    button.id = "secret-poop-button";
+    button.className = "secret-poop-button";
+    button.type = "button";
+    button.innerHTML = '<img src="assets/img/poopbutton.webp" alt="Poop button">';
+    button.addEventListener("click", () => {
+      button.classList.remove("is-pressed");
+      void button.offsetWidth;
+      button.classList.add("is-pressed");
+      const audio = new Audio("assets/audio/poop.mp3");
+      audio.playbackRate = 0.75 + Math.random() * 0.6;
+      audio.preservesPitch = false;
+      audio.webkitPreservesPitch = false;
+      audio.play().catch(() => {});
+    });
+    homeContent.prepend(button);
   },
 
   async executeSearch(query) {
@@ -149,6 +175,11 @@ export const homeSearch = {
     const input = document.getElementById("mod-search-input");
     const hint = document.getElementById("mod-search-hint");
 
+    if (query.toLowerCase() === SECRET_POOP_QUERY) {
+      this.showSecretPoopButton();
+      return;
+    }
+    document.getElementById("secret-poop-button")?.remove();
     homeGrid.isSearchMode = query.length > 0;
     homeGrid.searchQuery = query;
     homeGrid.currentPage = 1;
