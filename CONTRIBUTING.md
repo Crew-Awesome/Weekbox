@@ -60,6 +60,25 @@ WeekBox follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 Contributors should not change the project version unless a maintainer asks
 them to. Maintainers decide when a release is made and what version it gets.
 
+### Release checklist
+
+**Before tagging a release, update all six items below:**
+
+- `package.json`
+- `package-lock.json`: update the root version and `packages[""].version`
+- `neutralino.config.json`
+- `installer/weekbox.iss`
+- `packaging/rpm/weekbox.spec`
+- `CHANGELOG.md`: move `Unreleased` to the dated release and update compare links
+
+Run these checks before tagging:
+
+```text
+npm run build
+npm run locales:check:strict
+git diff --check
+```
+
 ## Translations
 
 User-facing translations live in `app/src/ui/locales/`. Keep English strings

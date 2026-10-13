@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Added a release checklist.
+
+## [2.5.11] - 2026-10-13
+
 ### Fixed
 
 - Fixed Windows startup.
@@ -1295,6 +1301,8 @@ This is the Last content update I will do in a long while :)
 - Downloads for Windows, Linux, and macOS.
 - Packages for x64, ARM64, ARMHF, and Universal Macs where available.
 
+[unreleased]: https://github.com/Crew-Awesome/Weekbox/compare/v2.5.11...HEAD
+[2.5.11]: https://github.com/Crew-Awesome/Weekbox/compare/v2.5.10...v2.5.11
 [2.5.10]: https://github.com/Crew-Awesome/Weekbox/compare/v2.5.9...v2.5.10
 [2.5.9]: https://github.com/Crew-Awesome/Weekbox/compare/v2.5.8...v2.5.9
 [2.5.8]: https://github.com/Crew-Awesome/Weekbox/compare/v2.5.7...v2.5.8
