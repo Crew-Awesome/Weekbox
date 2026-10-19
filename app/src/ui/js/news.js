@@ -32,6 +32,10 @@ const NEWS_SOURCES = [
     name: "GameBanana FNF",
     username: "GameBananaFNF",
   },
+  {
+    name: "WeekBox",
+    username: "WeekBoxTeam",
+  },
 ];
 const NEWS_SEEN_KEY = "weekbox_news_seen_v1";
 const NEWS_HIDDEN_ACCOUNTS_KEY = "weekbox_news_hidden_accounts_v1";

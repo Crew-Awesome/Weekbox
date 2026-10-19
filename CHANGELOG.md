@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Added mod bookmarks and a dedicated Bookmarks page.
 - Added a Twitter News feed with account filtering, media previews, and infinite scrolling.
+- Added the WeekBox Team account to the News feed.
 
 ## [2.5.11] - 2026-10-13
 
