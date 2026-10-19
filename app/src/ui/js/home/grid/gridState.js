@@ -6,6 +6,7 @@ export const gridState = {
   searchType: "mods",
   currentFilter: "popular",
   currentCategoryId: null,
+  isBookmarksMode: false,
   hasMore: true,
   renderVersion: 0,
   pendingInitialRender: false,

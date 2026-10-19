@@ -380,11 +380,13 @@ export const gridRender = {
       }
       return false;
     } finally {
-      this.hideLoadMoreIndicator(grid);
-      gridState.isLoading = false;
-      if (gridState.pendingInitialRender) {
-        gridState.pendingInitialRender = false;
-        this.renderGrid(true);
+      if (renderVersion === gridState.renderVersion) {
+        this.hideLoadMoreIndicator(grid);
+        gridState.isLoading = false;
+        if (gridState.pendingInitialRender) {
+          gridState.pendingInitialRender = false;
+          this.renderGrid(true);
+        }
       }
     }
   },

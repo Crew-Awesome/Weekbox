@@ -8,6 +8,9 @@ const SECRET_POOP_QUERY = "secret poop button";
 export const homeSearch = {
   abortController: null,
   searchType: "mods",
+  mode: "mods",
+  onBookmarkSearch: null,
+  bookmarkSearchTimer: null,
   searchTypeDropdown: null,
 
   init() {
@@ -63,6 +66,13 @@ export const homeSearch = {
       "input",
       () => {
         this.updateHintVisibility(input, hint);
+        if (this.mode === "bookmarks") {
+          clearTimeout(this.bookmarkSearchTimer);
+          this.bookmarkSearchTimer = setTimeout(
+            () => this.onBookmarkSearch?.(input.value),
+            220,
+          );
+        }
       },
       { signal },
     );
@@ -93,6 +103,19 @@ export const homeSearch = {
     this.searchTypeDropdown?.close();
     if (input?.value.trim()) this.executeSearch(input.value);
     else homeSearchDropdown.updateDropdown();
+  },
+
+  setMode(mode) {
+    clearTimeout(this.bookmarkSearchTimer);
+    this.bookmarkSearchTimer = null;
+    this.mode = mode;
+    this.searchType = "mods";
+    homeGrid.searchType = "mods";
+    this.searchTypeDropdown?.close();
+    this.syncSearchType(
+      document.getElementById("mod-search-input"),
+      document.getElementById("mod-search-hint"),
+    );
   },
 
   syncSearchType(input, hint) {
@@ -139,6 +162,8 @@ export const homeSearch = {
   destroy() {
     this.abortController?.abort();
     this.abortController = null;
+    clearTimeout(this.bookmarkSearchTimer);
+    this.bookmarkSearchTimer = null;
     this.searchTypeDropdown?.destroy();
     this.searchTypeDropdown = null;
     document.getElementById("secret-poop-button")?.remove();
@@ -169,6 +194,12 @@ export const homeSearch = {
 
   async executeSearch(query) {
     query = query.trim().replace(/\s+/g, " ");
+    if (this.mode === "bookmarks") {
+      clearTimeout(this.bookmarkSearchTimer);
+      this.bookmarkSearchTimer = null;
+      this.onBookmarkSearch?.(query);
+      return;
+    }
     const carousel = document.getElementById("featured-carousel");
     const sectionTitle = document.getElementById("grid-section-title");
     const filters = document.getElementById("grid-filters");

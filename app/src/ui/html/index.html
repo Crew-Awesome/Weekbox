@@ -1085,7 +1085,7 @@
       <div class="nav-title-area">
         <h2 data-i18n="home.discover">Discover</h2>
       </div>
-      <div class="home-search-controls">
+      <div class="home-search-controls" id="home-search-controls">
         <div class="search-container">
           <i class="fa-solid fa-magnifying-glass search-icon"></i>
           <input
@@ -1180,7 +1180,17 @@
 
       <section class="mods-section">
         <header class="section-header">
-          <h2 id="grid-section-title" data-i18n="common.mods">Mods</h2>
+          <div class="home-grid-switcher" data-home-mode-switcher role="tablist" aria-label="Home content">
+            <button class="pill-btn home-grid-switcher__tab selected" type="button" data-home-mode="mods" role="tab" aria-selected="true">
+              <i class="fa-solid fa-puzzle-piece" aria-hidden="true"></i>
+              <span data-i18n="common.mods">Mods</span>
+            </button>
+            <button class="pill-btn home-grid-switcher__tab" type="button" data-home-mode="bookmarks" role="tab" aria-selected="false">
+              <i class="fa-solid fa-bookmark" aria-hidden="true"></i>
+              <span data-i18n="home.bookmarks">Bookmarks</span>
+            </button>
+          </div>
+          <h2 id="grid-section-title" class="visually-hidden" data-i18n="common.mods">Mods</h2>
           <div class="filter-pills" id="grid-filters">
             <div class="pill-dropdown" id="engine-filter-dropdown">
               <button
@@ -1409,6 +1419,10 @@
             >
           </div>
         </div>
+        <section class="home-bookmarks-empty" id="home-bookmarks-empty" hidden>
+          <i class="fa-regular fa-bookmark" aria-hidden="true"></i>
+          <h3 data-i18n="home.noBookmarks">No bookmarks yet</h3>
+        </section>
       </section>
     </div>
   </div>
@@ -1653,10 +1667,24 @@
               >-- MB</span
             >
           </div>
-          <button class="modal-download-btn" id="modal-download-btn" disabled>
-            <i class="fa-solid fa-download"></i>
-            <span data-i18n="common.download">Download</span>
-          </button>
+          <div class="modal-primary-actions">
+            <button class="modal-download-btn" id="modal-download-btn" disabled>
+              <i class="fa-solid fa-download"></i>
+              <span data-i18n="common.download">Download</span>
+            </button>
+            <button
+              class="modal-bookmark-btn"
+              id="modal-bookmark-btn"
+              type="button"
+              data-i18n-attr="aria-label:modModal.addBookmark,title:modModal.addBookmark"
+              aria-label="Bookmark this mod"
+              title="Bookmark this mod"
+              aria-pressed="false"
+              disabled
+            >
+              <i class="fa-regular fa-bookmark" aria-hidden="true"></i>
+            </button>
+          </div>
         </div>
       </aside>
     </section>
@@ -1743,11 +1771,26 @@
 <template id="tpl-news">
   <section class="news-view" aria-labelledby="news-view-title">
     <header class="news-view__header">
-      <h1 id="news-view-title" data-i18n="nav.news">Newsletter</h1>
-      <button class="news-view__refresh" type="button" data-news-refresh>
-        <i class="fa-solid fa-rotate" aria-hidden="true"></i>
-        <span data-i18n="common.refresh">Refresh</span>
-      </button>
+      <h1 id="news-view-title" data-i18n="nav.news">News</h1>
+      <div class="news-view__actions">
+        <div class="pill-dropdown news-view__account-dropdown" id="news-account-dropdown">
+          <button class="pill-btn dropdown-trigger" id="news-account-trigger" type="button" aria-haspopup="listbox" aria-expanded="false">
+            <span class="filter-engine-icon news-account-trigger-icon" aria-hidden="true"><i class="fa-solid fa-users"></i></span>
+            <span id="news-account-selected">News feeds</span>
+            <i class="fa-solid fa-chevron-down filter-dropdown-chevron" aria-hidden="true"></i>
+          </button>
+          <div class="custom-options-container" id="news-account-options" role="listbox" aria-label="News account filter">
+            <button class="custom-option" type="button" data-account="News_Funkin" role="option" aria-selected="false">Funkin News</button>
+            <button class="custom-option" type="button" data-account="Discussingfnf" role="option" aria-selected="false">Discussing FNF</button>
+            <button class="custom-option" type="button" data-account="FNF_Developers" role="option" aria-selected="false">FNF Developers</button>
+            <button class="custom-option" type="button" data-account="GameBananaFNF" role="option" aria-selected="false">GameBanana FNF</button>
+          </div>
+        </div>
+        <button class="news-view__refresh" type="button" data-news-refresh>
+          <i class="fa-solid fa-rotate" aria-hidden="true"></i>
+          <span data-i18n="common.refresh">Refresh</span>
+        </button>
+      </div>
     </header>
     <div
       class="news-view__status"
@@ -1853,7 +1896,7 @@
         </button>
         <button class="sidebar__btn" data-tab="news">
           <i class="fa-solid fa-newspaper" aria-hidden="true"></i>
-          <span data-i18n="nav.news">Newsletter</span>
+          <span data-i18n="nav.news">News</span>
           <b id="newsletter-unread" class="sidebar__unread-badge" hidden></b>
         </button>
         <button class="sidebar__btn" id="mod-manager-btn">

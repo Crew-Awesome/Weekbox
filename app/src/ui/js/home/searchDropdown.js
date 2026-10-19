@@ -46,7 +46,7 @@ export const homeSearchDropdown = {
     try {
       const saved = localStorage.getItem("weekbox_recent_searches");
       this.recentSearches = saved ? JSON.parse(saved) : [];
-    } catch (e) {
+    } catch {
       this.recentSearches = [];
     }
   },
@@ -66,6 +66,7 @@ export const homeSearchDropdown = {
 
   showDropdown() {
     if (!this.input || !this.dropdown) return;
+    if (homeSearch.mode === "bookmarks") return;
     homeSearch.searchTypeDropdown?.close();
     this.updateDropdown();
     this.dropdown.style.display = "flex";
@@ -78,6 +79,10 @@ export const homeSearchDropdown = {
 
   async updateDropdown() {
     if (!this.input || !this.dropdown) return;
+    if (homeSearch.mode === "bookmarks") {
+      this.hideDropdown();
+      return;
+    }
     const suggestionVersion = ++this.suggestionVersion;
     const query = this.input.value.trim().toLowerCase();
     this.dropdown.replaceChildren();

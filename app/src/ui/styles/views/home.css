@@ -125,6 +125,33 @@
   box-shadow: 0 10px 30px rgb(0 0 0 / 34%) !important;
 }
 
+.home-grid-switcher {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.home-grid-switcher__tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  white-space: nowrap;
+}
+
+.home-grid-switcher__tab:hover,
+.home-grid-switcher__tab.selected {
+  background-color: var(--bg-hover);
+  border-color: var(--text-main);
+  color: var(--text-main);
+}
+
+#featured-carousel[hidden],
+#grid-filters[hidden],
+#search-type-picker[hidden],
+#sort-filter-dropdown[hidden] {
+  display: none !important;
+}
+
 .home-search-controls {
   --search-control-height: 52px;
   --search-control-radius: 30px;
@@ -135,6 +162,36 @@
   gap: var(--spacing-sm);
   width: min(100%, 680px);
   min-width: 0;
+}
+
+.home-bookmarks-empty {
+  align-items: center;
+  color: var(--text-muted);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  justify-content: center;
+  min-height: 260px;
+  padding: 32px 16px;
+  text-align: center;
+}
+
+.home-bookmarks-empty[hidden] {
+  display: none;
+}
+
+.home-bookmarks-empty > i {
+  color: var(--primary);
+  font-size: 2rem;
+}
+
+.home-bookmarks-empty h3,
+.home-bookmarks-empty p {
+  margin: 0;
+}
+
+.home-bookmarks-empty p {
+  max-width: 42rem;
 }
 
 .search-container {

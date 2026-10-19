@@ -88,8 +88,8 @@ router = {
     await sidebar.init();
     await this.navigate("home");
   },
-  async loadComponent(container, path) {},
   async navigate(viewId) {
+    if (this.currentViewId === viewId) return;
     const navigationId = (this.navigationId || 0) + 1;
     this.navigationId = navigationId;
     try {
@@ -122,7 +122,7 @@ router = {
       } else {
         throw new Error("View template not found: tpl-" + viewId);
       }
-    } catch (error) {
+    } catch {
       const errorMsg = document.createElement("p");
       errorMsg.className = "router-error-message";
       errorMsg.style.padding = "24px";

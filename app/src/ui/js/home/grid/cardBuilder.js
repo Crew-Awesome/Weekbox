@@ -109,10 +109,10 @@ export function createCard(mod, index) {
 
   [
     ["fa-regular fa-clock", mod.timeAgo],
-    ["fa-solid fa-heart", Number(mod.likes).toLocaleString()],
+    ["fa-solid fa-heart", Number(mod.likes || 0).toLocaleString()],
     [
       isPeo ? "fa-solid fa-download" : "fa-solid fa-eye",
-      Number(isPeo ? mod.downloads : mod.views).toLocaleString(),
+      Number(isPeo ? mod.downloads || 0 : mod.views || 0).toLocaleString(),
     ],
   ].forEach(([icon, value]) => {
     const stat = document.createElement("span");

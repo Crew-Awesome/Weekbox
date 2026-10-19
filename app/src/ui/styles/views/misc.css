@@ -106,7 +106,7 @@
   margin-left: auto;
   width: 24px;
   height: 24px;
-  border: 0;
+  border: 1px solid var(--outline-variant);
   border-radius: 50%;
   background: transparent;
   color: var(--text-muted);
@@ -269,7 +269,7 @@
   justify-content: flex-start;
   gap: 12px;
   padding: 12px 14px;
-  border: 1px solid var(--outline-variant);
+  border: 0;
   border-radius: var(--border-radius);
   background: var(--surface-container-low);
   color: var(--text-main);
@@ -1791,6 +1791,11 @@
   gap: var(--spacing-md);
 }
 
+.modal-primary-actions {
+  display: flex;
+  gap: var(--spacing-sm);
+}
+
 .modal-file-info {
   font-size: 0.85rem;
   color: var(--text-muted);
@@ -1815,6 +1820,50 @@
   transition:
     transform 0.1s,
     background-color 0.2s;
+  flex: 1;
+}
+
+.modal-bookmark-btn {
+  width: 48px;
+  min-width: 48px;
+  flex: 0 0 48px;
+  border: 0;
+  border-radius: 8px;
+  background-color: var(--surface-container-high);
+  color: var(--tertiary);
+  padding: 14px;
+  cursor: pointer;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-size: 1rem;
+  font-weight: 800;
+  transition:
+    background-color 0.2s,
+    border-color 0.2s,
+    color 0.2s,
+    transform 0.1s;
+}
+
+.modal-bookmark-btn:hover,
+.modal-bookmark-btn[aria-pressed="true"] {
+  background-color: var(--tertiary-container);
+  border-color: var(--tertiary);
+  color: var(--on-tertiary-container);
+}
+
+.modal-bookmark-btn:active {
+  transform: scale(0.96);
+}
+
+.modal-bookmark-btn:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+
+.modal-bookmark-btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
 }
 
 .modal-download-state {

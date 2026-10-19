@@ -65,6 +65,7 @@ export const filterManager = {
   },
 
   selectSortFilter(option) {
+    if (gridState.isBookmarksMode) return;
     const filter = option.dataset.filter;
     if (!filter) return;
     if (filter === gridState.currentFilter) {
@@ -87,6 +88,10 @@ export const filterManager = {
     gridState.currentCategoryId = categoryId;
     this.syncCategoryFilter();
     this.engineDropdownCtrl?.close();
+    if (gridState.isBookmarksMode) {
+      document.dispatchEvent(new CustomEvent("home-bookmark-filter-changed"));
+      return;
+    }
     gridRender.renderGrid(true);
   },
 

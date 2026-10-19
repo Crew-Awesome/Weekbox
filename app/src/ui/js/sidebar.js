@@ -68,8 +68,6 @@ export const sidebar = {
     this.setupNavigation();
     this.viewChangeListener = (event) => {
       this.syncActive(event.detail);
-      if (event.detail === "home")
-        appEvents.dispatchEvent(new CustomEvent("news:refresh-badge"));
     };
     appEvents.addEventListener("view:loaded", this.viewChangeListener);
     this.modsUpdatedListener = () => {
@@ -306,7 +304,7 @@ export const sidebar = {
     });
   },
   syncActive(viewId = router.currentViewId) {
-    if (viewId !== "home" && viewId !== "news") return;
+    if (!["home", "news"].includes(viewId)) return;
     const button = [...this.tabButtons].find(
       (candidate) => candidate.dataset.tab === viewId,
     );

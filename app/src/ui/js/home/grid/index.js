@@ -33,6 +33,20 @@ export const homeGrid = {
     gridState.searchType = val;
   },
 
+  get currentCategoryId() {
+    return gridState.currentCategoryId;
+  },
+  set currentCategoryId(val) {
+    gridState.currentCategoryId = val;
+  },
+
+  get isBookmarksMode() {
+    return gridState.isBookmarksMode;
+  },
+  set isBookmarksMode(val) {
+    gridState.isBookmarksMode = val;
+  },
+
   async init({ prefetchNextPage = false } = {}) {
     gridState.currentPage = 1;
     gridState.isSearchMode = false;
@@ -52,6 +66,10 @@ export const homeGrid = {
   },
 
   destroy() {
+    gridState.discoveryController?.abort();
+    gridState.discoveryController = null;
+    gridState.renderVersion++;
+    gridState.pendingInitialRender = false;
     scrollManager.remove();
     filterManager.remove();
     gridRender.destroyEngineTooltip();

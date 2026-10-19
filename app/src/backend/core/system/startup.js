@@ -21,6 +21,7 @@ import { appUpdater } from "../updates/app-updater.service.js";
 import { homeView, registerHomeView } from "../../../ui/js/home/index.js";
 import { registerEnginesView } from "../../../ui/js/engines/index.js";
 import { registerNewsView } from "../../../ui/js/news.js";
+import { modBookmarks } from "../state/mod-bookmarks.service.js";
 import { downloadEngine } from "../../../ui/js/engines/downloadEngine.js";
 import { downloadMod } from "../../../ui/js/home/modal/downloadMod.js";
 import { engineUpdateService } from "../../../ui/js/engines/engineUpdateService.js";
@@ -622,6 +623,7 @@ async function startApp() {
     startupStep = "preparing the WeekBox library";
     await FS.init({ deferMaintenance: true });
     await appSettings.setDataPath(FS.dataPath);
+    await modBookmarks.init();
     const cachedTheme = getCachedTheme();
     const cachedHue = getCachedHue();
     let repairedSettings = false;

@@ -11,6 +11,7 @@ import { modModal } from "./index.js";
 import { homeCarousel } from "../carousel.js";
 import { getEngineLabel, i18n, t } from "../../i18n/index.js";
 import { setButtonLoading } from "../../hourglass.js";
+import { modBookmarks } from "../../../../backend/core/state/mod-bookmarks.service.js";
 
 const WEEKBOX_AVATAR = "assets/icons/launcher-icon.png";
 
@@ -207,10 +208,37 @@ function resetModal() {
       true,
     );
   }
+  const bookmarkButton = document.getElementById("modal-bookmark-btn");
+  if (bookmarkButton) {
+    bookmarkButton.onclick = null;
+    bookmarkButton.disabled = true;
+    bookmarkButton.setAttribute("aria-pressed", "false");
+    bookmarkButton.setAttribute("aria-label", t("modModal.addBookmark"));
+    bookmarkButton.title = t("modModal.addBookmark");
+    bookmarkButton.querySelector("i")?.classList.remove("fa-solid");
+    bookmarkButton.querySelector("i")?.classList.add("fa-regular");
+  }
   const engineBadge = document.getElementById("modal-engine-badge");
   if (engineBadge) engineBadge.hidden = true;
   const engineName = document.getElementById("modal-engine-name");
   if (engineName) engineName.textContent = "";
+}
+
+function updateBookmarkButton(data) {
+  const button = document.getElementById("modal-bookmark-btn");
+  if (!button) return;
+  const saved = modBookmarks.has(data);
+  const label = t(saved ? "modModal.removeBookmark" : "modModal.addBookmark");
+  button.disabled = !data?.id;
+  button.setAttribute("aria-pressed", String(saved));
+  button.setAttribute("aria-label", label);
+  button.title = label;
+  const icon = button.querySelector("i");
+  icon?.classList.toggle("fa-solid", saved);
+  icon?.classList.toggle("fa-regular", !saved);
+  button.onclick = () => {
+    void modBookmarks.toggle(data).then(() => updateBookmarkButton(data));
+  };
 }
 
 function setModalInfoLoading(loading, loaderId = "modal-info-loader") {
@@ -486,6 +514,7 @@ function showModData(data, installedCount, onDownload) {
 
   const gameBananaLink = document.getElementById("modal-gamebanana-link");
   if (gameBananaLink) updateModalGameBananaLink(gameBananaLink, data);
+  updateBookmarkButton(data);
   const engine =
     FS.getEngineDetails(data.engineId) || ENGINE_DETAILS[data.engineId];
   const engineBadge = document.getElementById("modal-engine-badge");

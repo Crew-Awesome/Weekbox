@@ -41,7 +41,7 @@ function setPillLabel(pill, label, title) {
   pill.setAttribute("aria-label", title);
 }
 
-function createSubmissionPill(link, recognized, onGameBanana) {
+function createSubmissionPill(link, recognized, onGameBanana, loadGameBananaDetails) {
   const originalLabel = link.textContent.trim();
   const pill = document.createElement("button");
   pill.type = "button";
@@ -58,11 +58,10 @@ function createSubmissionPill(link, recognized, onGameBanana) {
   pill.append(icon, label);
 
   if (recognized.kind === "gamebanana") {
-    setPillLabel(
-      pill,
-      t("modModal.loadingGameBananaDetails"),
-      t("modModal.loadingGameBananaDetails"),
-    );
+    const label = loadGameBananaDetails
+      ? t("modModal.loadingGameBananaDetails")
+      : originalLabel || t("modModal.gameBananaSubmission");
+    setPillLabel(pill, label, label);
   } else {
     const title = originalLabel || t("home.psychOnline");
     setPillLabel(pill, title, t("modModal.openOnPsychOnline", { title }));
@@ -83,7 +82,10 @@ function createSubmissionPill(link, recognized, onGameBanana) {
   return { pill, originalLabel };
 }
 
-export function enhanceContentLinks(container, { onGameBanana } = {}) {
+export function enhanceContentLinks(
+  container,
+  { onGameBanana, loadGameBananaDetails = true, loadGameBananaTitle = false } = {},
+) {
   if (!container) return;
   const version = (containerVersions.get(container) || 0) + 1;
   containerVersions.set(container, version);
@@ -114,19 +116,28 @@ export function enhanceContentLinks(container, { onGameBanana } = {}) {
       link,
       recognized,
       onGameBanana,
+      loadGameBananaDetails,
     );
     link.replaceWith(pill);
 
     if (recognized.kind !== "gamebanana") return;
+    if (!loadGameBananaDetails && !loadGameBananaTitle) return;
     const { submission } = recognized;
-    const getDetails =
-      submission.type === "tool"
+    const getDetails = loadGameBananaDetails
+      ? submission.type === "tool"
         ? gameBananaApi.getToolDetails(submission.id, {
             requireDownload: false,
           })
         : gameBananaApi.getModDetails(submission.id, {
             includeRequirements: false,
-          });
+          })
+      : submission.type === "tool"
+        ? gameBananaApi.getToolDetails(submission.id, {
+            requireDownload: false,
+          })
+        : gameBananaApi.getModProfile(submission.id).then((profile) =>
+            profile ? { title: profile._sName } : null,
+          );
     getDetails
       .then((details) => {
         if (!isCurrent()) return;
