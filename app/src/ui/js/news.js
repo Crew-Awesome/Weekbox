@@ -469,30 +469,36 @@ async function fetchNewsSource(source, signal, page = {}) {
   return { cursor, posts };
 }
 
-async function fetchNewsPayload(signal) {
+async function fetchNewsPayload(signal, onPartial) {
   const results = [];
+  const sourcePages = new Map();
+  const posts = [];
   for (const source of NEWS_SOURCES) {
     try {
-      results.push({
+      const result = {
         status: "fulfilled",
         value: await fetchNewsSource(source, signal),
+      };
+      results.push(result);
+      sourcePages.set(source.username, {
+        cursor: result.value.cursor,
+        page: 1,
       });
+      posts.push(...result.value.posts);
+      const uniquePosts = [...new Map(posts.map((post) => [post.id, post])).values()]
+        .sort((a, b) => Date.parse(b.publishedAt) - Date.parse(a.publishedAt))
+        .slice(0, 80);
+      // optimize the loading times for news feed by just making them load individually
+      // instead of all at once like i did last time, hope it doesnt cause fxtwt to block (malloy)
+      if (uniquePosts.length) {
+        onPartial?.({ posts: uniquePosts, sourcePages });
+      }
     } catch (reason) {
       if (reason?.name === "AbortError") throw reason;
       console.warn(`[WeekBox News] ${source.name} FxTwitter unavailable`, reason);
       results.push({ status: "rejected", reason });
     }
   }
-  const sourcePages = new Map();
-  const posts = results.flatMap((result, index) => {
-    if (result.status !== "fulfilled") return [];
-    const source = NEWS_SOURCES[index];
-    sourcePages.set(source.username, {
-      cursor: result.value.cursor,
-      page: 1,
-    });
-    return result.value.posts;
-  });
   const uniquePosts = [...new Map(posts.map((post) => [post.id, post])).values()]
     .sort((a, b) => Date.parse(b.publishedAt) - Date.parse(a.publishedAt))
     .slice(0, 80);
@@ -687,6 +693,7 @@ export const newsView = {
     });
     this.refreshButton?.addEventListener("click", () => void this.load());
     if (this.sessionLoaded) {
+      this.visibleCount = NEWS_PAGE_SIZE;
       this.render({ posts: this.posts, sourcePages: this.sourcePages });
       this.setStatus("");
       return;
@@ -874,6 +881,7 @@ export const newsView = {
   },
 
   async loadMore() {
+    if (this.request || this.loadingMore) return;
     const filteredCount = this.getFilteredPosts().length;
     if (this.visibleCount < filteredCount) {
       this.visibleCount = Math.min(
@@ -884,7 +892,6 @@ export const newsView = {
       this.renderVisiblePosts();
       return;
     }
-    if (this.loadingMore) return;
     const pages = [...this.sourcePages.entries()].filter(
       ([, page]) => page.cursor && page.page < NEWS_MAX_PAGES_PER_ACCOUNT,
     );
@@ -1171,7 +1178,6 @@ export const newsView = {
       ]),
     );
     this.renderAccountOptions();
-    this.visibleCount = NEWS_PAGE_SIZE;
     this.sourcePages =
       payload.sourcePages instanceof Map
         ? payload.sourcePages
@@ -1237,6 +1243,10 @@ export const newsView = {
   async load() {
     if (!this.grid || !this.status) return;
     this.sessionLoaded = false;
+    this.visibleCount = NEWS_PAGE_SIZE;
+    this.posts = [];
+    this.sourcePages = new Map();
+    this.accountMeta = new Map();
     this.setLoading();
     this.request?.abort();
     const controller = new AbortController();
@@ -1244,7 +1254,9 @@ export const newsView = {
     const timeout = setTimeout(() => controller.abort(), NEWS_REQUEST_TIMEOUT);
     if (this.refreshButton) this.refreshButton.disabled = true;
     try {
-      const payload = await fetchNewsPayload(controller.signal);
+      const payload = await fetchNewsPayload(controller.signal, (partial) => {
+        if (this.request === controller) this.render(partial);
+      });
       this.sessionLoaded = !payload.unavailable;
       this.updateUnreadBadge(payload.posts);
       this.render(payload);
