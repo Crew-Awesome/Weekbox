@@ -36,6 +36,10 @@ const NEWS_SOURCES = [
     name: "WeekBox",
     username: "WeekBoxTeam",
   },
+  {
+    name: "DirectMania",
+    username: "DirectMania",
+  },
 ];
 const NEWS_SEEN_KEY = "weekbox_news_seen_v1";
 const NEWS_HIDDEN_ACCOUNTS_KEY = "weekbox_news_hidden_accounts_v1";
@@ -188,7 +192,8 @@ function closeNewsMediaPreview() {
 }
 
 function openNewsMediaPreview(source, type, poster = "") {
-  if (!source) return;
+  const sources = Array.isArray(source) ? source.filter(Boolean) : [source].filter(Boolean);
+  if (!sources.length) return;
   closeNewsMediaPreview();
   const overlay = document.createElement("div");
   overlay.className = "news-media-preview";
@@ -206,11 +211,20 @@ function openNewsMediaPreview(source, type, poster = "") {
     media.controls = true;
     media.autoplay = true;
     media.playsInline = true;
+    media.preload = "metadata";
     media.poster = poster;
+    media.addEventListener("error", () => {
+      const nextSource = sources[sources.indexOf(media.currentSrc || media.src) + 1];
+      if (nextSource) {
+        media.src = nextSource;
+        media.load();
+        void media.play().catch(() => {});
+      }
+    });
   } else {
     media.alt = "Media preview";
   }
-  media.src = source;
+  media.src = sources[0];
   overlay.append(close, media);
   overlay.addEventListener("click", (event) => {
     if (event.target === overlay) closeNewsMediaPreview();
@@ -242,18 +256,42 @@ function makeMediaPreviewable(element, source, type, poster = "") {
   });
 }
 
+function createVideoThumbnail(thumbnailUrl, label, onClick) {
+  const button = document.createElement("button");
+  button.className = "news-video-thumbnail";
+  button.type = "button";
+  button.setAttribute("aria-label", label);
+  if (thumbnailUrl) {
+    const image = document.createElement("img");
+    image.src = thumbnailUrl;
+    image.alt = "Video thumbnail";
+    image.loading = "lazy";
+    button.appendChild(image);
+  }
+  const icon = document.createElement("span");
+  icon.className = "news-video-thumbnail__play";
+  icon.innerHTML = '<i class="fa-solid fa-play" aria-hidden="true"></i>';
+  button.appendChild(icon);
+  button.addEventListener("click", (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    onClick();
+  });
+  return button;
+}
+
 function appendVideoMedia(container, media, post) {
   const frame = document.createElement("div");
   frame.className = "news-detail-modal__media-cell news-detail-modal__video-frame";
+  const sources = [...new Set([media.url, ...(media.sources || [])].filter(Boolean))];
   const showFallback = () => {
-    frame.replaceChildren();
     if (media.thumbnailUrl) {
-      const poster = document.createElement("img");
-      poster.src = media.thumbnailUrl;
-      poster.alt = "Video thumbnail";
-      poster.loading = "lazy";
-      makeMediaPreviewable(poster, media.thumbnailUrl, "image");
-      frame.appendChild(poster);
+      const image = document.createElement("img");
+      image.src = media.thumbnailUrl;
+      image.alt = "Video thumbnail";
+      image.loading = "lazy";
+      makeMediaPreviewable(image, media.thumbnailUrl, "image");
+      frame.appendChild(image);
     }
     const link = document.createElement("a");
     link.href = post.link;
@@ -265,23 +303,17 @@ function appendVideoMedia(container, media, post) {
     });
     frame.appendChild(link);
   };
-  const sources = [...new Set([media.url, ...(media.sources || [])].filter(Boolean))];
-  const trySource = (index) => {
-    if (!sources[index]) {
-      showFallback();
-      return;
-    }
-    frame.replaceChildren();
-    const video = document.createElement("video");
-    video.controls = true;
-    video.preload = "metadata";
-    video.poster = media.thumbnailUrl || "";
-    video.src = sources[index];
-    video.addEventListener("error", () => trySource(index + 1), { once: true });
-    makeMediaPreviewable(video, sources[index], "video", media.thumbnailUrl);
-    frame.appendChild(video);
-  };
-  trySource(0);
+  if (media.thumbnailUrl && sources.length) {
+    frame.appendChild(
+      createVideoThumbnail(
+        media.thumbnailUrl,
+        "Play video",
+        () => openNewsMediaPreview(sources, "video", media.thumbnailUrl),
+      ),
+    );
+  } else {
+    showFallback();
+  }
   container.appendChild(frame);
 }
 
@@ -572,19 +604,15 @@ function createNewsCard(post, index, openPost) {
     quote.textContent = post.quote;
     body.appendChild(quote);
   }
-  const videos = post.videos || [];
+  const videos = (post.videos || []).filter((video) => video.thumbnailUrl);
   const mediaCount = videos.length + post.images.length;
   if (mediaCount) {
     const media = document.createElement("div");
     media.className = `news-view__media news-view__media--${Math.min(mediaCount, 4)}`;
     videos.forEach((video) => {
-      if (!video.thumbnailUrl) return;
-      const image = document.createElement("img");
-      image.src = video.thumbnailUrl;
-      image.alt = "Video thumbnail";
-      image.loading = "lazy";
-      image.className = "news-view__media-poster";
-      media.appendChild(image);
+      media.appendChild(
+        createVideoThumbnail(video.thumbnailUrl, "Open video details", () => openPost(post)),
+      );
     });
     post.images.forEach((src) => {
       const image = document.createElement("img");
