@@ -113,6 +113,7 @@ export class CategoryFeedService {
         this.snapshots.create(queryKey, now);
     const pageStart = (page - 1) * this.config.pageSize;
     while (pageStart >= snapshot.orderedIds.length && !snapshot.exhausted) {
+      const orderedCountBefore = snapshot.orderedIds.length;
       const collection = await this.collector.collect(snapshot, {
         categoryId,
         signal,
@@ -154,7 +155,12 @@ export class CategoryFeedService {
       );
       snapshot.generatedPageCount = Math.max(snapshot.generatedPageCount, page);
       snapshot.partial = snapshot.partial || collection.partial;
-      if (!collection.requested || collection.errors.length) break;
+      if (
+        !collection.requested ||
+        collection.errors.length ||
+        snapshot.orderedIds.length === orderedCountBefore
+      )
+        break;
     }
     const ids = snapshot.orderedIds.slice(
       pageStart,

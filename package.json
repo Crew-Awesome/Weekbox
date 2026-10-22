@@ -1,6 +1,6 @@
 {
   "name": "weekbox",
-  "version": "2.6.1",
+  "version": "2.6.2",
   "description": "A Re-Imagined Original FNF Mod Launcher",
   "main": "index.js",
   "scripts": {
@@ -13,9 +13,12 @@
     "package:macos": "node scripts/package-macos.js",
     "package:linux": "node scripts/package-linux.js",
     "package:rpm": "node scripts/package-rpm.js",
-    "postinstall": "npx @neutralinojs/neu update",
+    "runtime:check": "node scripts/verify-neutralino-runtime.js",
+    "runtime:setup": "node scripts/setup-neutralino-runtime.js",
+    "predev": "npm run runtime:check",
     "dev": "npm run assets && npm-run-all --parallel \"assets -- --watch\" neu",
     "neu": "node scripts/run-neu.js",
+    "prebuild": "npm run runtime:check",
     "build": "npm run assets && npx @neutralinojs/neu build"
   },
   "repository": {

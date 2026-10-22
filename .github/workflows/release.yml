@@ -40,7 +40,7 @@ jobs:
         run: npm ci
 
       - name: Restore Neutralino runtime
-        run: npx @neutralinojs/neu update
+        run: npm run runtime:setup
 
       - name: Build embedded executables
         run: npm run build

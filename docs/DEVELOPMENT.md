@@ -20,11 +20,15 @@ Run all commands from the WeekBox project folder.
    npm install
    ```
 
-4. Update the Neutralino binaries:
+4. On Windows, install the pinned patched runtime:
 
    ```bash
-   neu update
+   npm run runtime:setup
    ```
+
+   WeekBox checks its hash before starting or building. Do not run `neu update`,
+   because it replaces the patched runtime. On macOS or Linux, install the
+   platform runtime with the normal Neutralino CLI if needed.
 
 5. Start WeekBox:
 
@@ -32,8 +36,11 @@ Run all commands from the WeekBox project folder.
    npm run dev
    ```
 
-`npm install` also runs the project's Neutralino update step. Run `neu update`
-manually after changing Neutralino versions or when the binaries are missing.
+`npm install` no longer updates Neutralino automatically. On Windows,
+`npm run dev` and `npm run build` stop if the patched runtime is missing or has
+been replaced. `npm run neu -- update` is also rejected. The pinned
+`6.10.11` runtime must be published in `wb-nl-bin` before `runtime:setup` can
+download it.
 
 ## Commands
 
@@ -41,10 +48,10 @@ manually after changing Neutralino versions or when the binaries are missing.
 | ----------------------- | -------------------------------------------------------- |
 | `npm run dev`           | Start WeekBox and watch frontend asset changes.          |
 | `npm run assets`        | Rebuild frontend assets after changes or updates.        |
+| `npm run runtime:setup` | Download the pinned patched Windows runtime.             |
 | `npm run build`         | Build frontend assets and release executables.           |
 | `npm run package:macos` | Assemble the macOS `.app` bundle from the release build. |
 | `npm run package:linux` | Assemble the Linux AppImage and `.deb` input folders.    |
-| `neu update`            | Download or update Neutralino binaries.                  |
 | `neu build`             | Build executables directly after `npm run assets`.       |
 
 `npm run dev` and `npm run build` already run `npm run assets`. You only need to
@@ -72,6 +79,10 @@ If `neu` is not available globally, use the project-local CLI:
 ```bash
 npx @neutralinojs/neu run
 ```
+
+Do not use `npx @neutralinojs/neu update` in the WeekBox checkout. It can
+replace the patched Windows runtime. Restore the runtime from `wb-nl-bin` if
+the integrity check reports a hash mismatch.
 
 ## Rebuild frontend assets
 
@@ -123,14 +134,9 @@ Install the CLI and reopen your terminal:
 npm install -g @neutralinojs/neu
 ```
 
-The project scripts use the locked CLI package through `npx`, so these commands
-also work without a global install:
-
-```bash
-npx @neutralinojs/neu update
-npx @neutralinojs/neu run
-npx @neutralinojs/neu build
-```
+The project scripts use the locked CLI package through `npx`, so you do not
+need a global install. Use `npm run dev` and `npm run build` so the runtime
+integrity check is applied.
 
 ### The app reports a missing bundle file
 
@@ -143,16 +149,6 @@ npm run dev
 
 Do not use `neu run` by itself unless the current asset bundle is up to date.
 
-### `neu update` fails
-
-Check your internet connection, then use the project-local CLI:
-
-```bash
-npx @neutralinojs/neu update
-```
-
-If it still fails, run `npm install` again and retry from a new terminal.
-
 ### A build fails after changing files
 
 Run the asset build separately so the first error is easier to identify:
@@ -162,7 +158,9 @@ npm run assets
 npm run build
 ```
 
-If dependencies are incomplete, run `npm install` and retry.
+If dependencies are incomplete, run `npm install` and retry. If the runtime
+check fails on Windows, restore the patched binary from `wb-nl-bin` instead of
+running `neu update`.
 
 ### Reporting a problem
 

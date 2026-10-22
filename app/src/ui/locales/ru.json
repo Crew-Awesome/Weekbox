@@ -365,6 +365,8 @@
   "modSettings.saveFailed": "Настройки мода нельзя сохранить",
   "modSettings.couldNotSave": "Не удалось сохранить настройки мода.",
   "news.loading": "Загрузка новостей…",
+  "news.loadingMore": "Loading more…",
+  "news.loadMore": "Load more",
   "news.noNews": "Новостей пока нет.",
   "news.loadingArticle": "Загрузка статьи…",
   "news.articleUnavailable": "Эту статью не удалось загрузить.",

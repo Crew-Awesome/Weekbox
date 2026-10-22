@@ -9,6 +9,7 @@ export const gridState = {
   isBookmarksMode: false,
   hasMore: true,
   renderVersion: 0,
+  lifecycleVersion: 0,
   pendingInitialRender: false,
   discoverySnapshotId: null,
   discoveryController: null,

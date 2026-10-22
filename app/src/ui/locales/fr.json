@@ -365,6 +365,8 @@
   "modSettings.saveFailed": "Les paramètres du mod n'ont pas pu être sauvegarder",
   "modSettings.couldNotSave": "Impossible de sauvegarder les paramètres du mod.",
   "news.loading": "Chargement des nouvelles…",
+  "news.loadingMore": "Loading more…",
+  "news.loadMore": "Load more",
   "news.noNews": "Aucune nouvelles pour l'instant.",
   "news.loadingArticle": "Chargement de l'article…",
   "news.articleUnavailable": "Cette article n'a pas pu être charger.",

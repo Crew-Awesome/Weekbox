@@ -23,7 +23,7 @@ jobs:
         run: npm ci
 
       - name: Restore Neutralino runtime
-        run: npx @neutralinojs/neu update
+        run: npm run runtime:setup
 
       - name: Build app
         run: npm run build

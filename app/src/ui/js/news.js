@@ -46,6 +46,9 @@ const NEWS_HIDDEN_ACCOUNTS_KEY = "weekbox_news_hidden_accounts_v1";
 const NEWS_REQUEST_TIMEOUT = 60000;
 const NEWS_PAGE_SIZE = 10;
 const NEWS_MAX_PAGES_PER_ACCOUNT = 5;
+const NEWS_SOURCE_CONCURRENCY = 3;
+const NEWS_SOURCE_MAX_ATTEMPTS = 3;
+const NEWS_SOURCE_RETRY_DELAY = 500;
 const FX_TWITTER_PROFILE_API = "https://api.fxtwitter.com/2/profile";
 const FX_TWITTER_STATUS_API = "https://api.fxtwitter.com/2/status";
 const FX_TWITTER_VIDEO_HOST = "https://video.fxtwitter.com";
@@ -88,6 +91,21 @@ function isRetweet(post) {
   );
 }
 
+function hasNewsContent(post) {
+  return Boolean(
+    post?.id &&
+      (String(post.text || "").trim() || post.quote?.id) &&
+      post.link &&
+      post.publishedAt &&
+      !Number.isNaN(Date.parse(post.publishedAt)),
+  );
+}
+
+function normalizePublishedAt(value) {
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? "" : date.toISOString();
+}
+
 function mediaIdentity(value) {
   try {
     const url = new URL(value);
@@ -111,7 +129,9 @@ function normalizeFxVideos(media) {
   return Array.isArray(media?.videos)
     ? media.videos
         .map((video) => {
-          const formats = [...(video.formats || [])]
+          const formats = [
+            ...(Array.isArray(video?.formats) ? video.formats : []),
+          ]
             .filter((format) => format.container === "mp4" && format.url)
             .sort((a, b) => (b.bitrate || 0) - (a.bitrate || 0))
             .map((format) => toSafeExternalUrl(format.url))
@@ -120,7 +140,7 @@ function normalizeFxVideos(media) {
               const parsed = new URL(url);
               return `${FX_TWITTER_VIDEO_HOST}${parsed.pathname}${parsed.search}`;
             });
-          const transcodeUrl = toSafeExternalUrl(video.transcode_url);
+          const transcodeUrl = toSafeExternalUrl(video?.transcode_url);
           const sources = [
             ...(transcodeUrl ? [transcodeUrl] : []),
             ...formats,
@@ -133,6 +153,59 @@ function normalizeFxVideos(media) {
         })
         .filter((video) => video.url || video.thumbnailUrl)
     : [];
+}
+
+function normalizeNewsAuthor(author, source, nested) {
+  const name = author.name || author.screen_name;
+  return {
+    sourceName: name || (nested ? "Quoted post" : source.name),
+    username: author.screen_name || (nested ? "" : source.username),
+    avatarUrl: toSafeExternalUrl(author.avatar_url),
+  };
+}
+
+function normalizeNewsMedia(status) {
+  return {
+    images: uniqueMediaUrls(
+      (Array.isArray(status?.media?.photos) ? status.media.photos : []).map(
+        (photo) => toSafeExternalUrl(photo?.url),
+      ),
+    ),
+    videos: normalizeFxVideos(status?.media),
+  };
+}
+
+function normalizeNewsStats(status) {
+  return {
+    likes: status?.likes,
+    reposts: status?.reposts,
+    replies: status?.replies,
+    quotes: status?.quotes,
+    views: status?.views,
+  };
+}
+
+function normalizeNewsStatus(status, source, nested = false) {
+  const author = status?.author || {};
+  const normalized = {
+    id: String(status?.id || ""),
+    text: String(status?.text || "").trim(),
+    ...normalizeNewsMedia(status),
+    link: normalizePostLink(status?.url),
+    publishedAt: normalizePublishedAt(
+      status?.created_timestamp != null
+        ? Number(status.created_timestamp) * 1000
+        : status?.created_at,
+    ),
+    ...normalizeNewsAuthor(author, source, nested),
+    stats: normalizeNewsStats(status),
+    quote: null,
+    isRetweet: false,
+  };
+  if (!nested && status?.quote) {
+    normalized.quote = normalizeNewsStatus(status.quote, source, true);
+  }
+  return normalized;
 }
 
 function openNewsExternal(url) {
@@ -175,6 +248,88 @@ function appendPostText(root, value) {
     cursor = start + raw.length;
   }
   root.append(document.createTextNode(String(value || "").slice(cursor)));
+}
+
+function createQuotePreview(quote, enhance = false, onOpen = null) {
+  const block = document.createElement("div");
+  block.className = "news-view__quote";
+  if (onOpen) {
+    block.dataset.newsQuote = "true";
+    block.tabIndex = 0;
+    block.setAttribute("role", "button");
+    block.setAttribute(
+      "aria-label",
+      `Open ${quote.sourceName || "quoted"} post details`,
+    );
+    const openDetails = (event) => {
+      if (event.target.closest("a")) return;
+      event.preventDefault();
+      event.stopPropagation();
+      onOpen();
+    };
+    block.addEventListener("click", openDetails);
+    block.addEventListener("keydown", (event) => {
+      if (event.key !== "Enter" && event.key !== " ") return;
+      openDetails(event);
+    });
+  }
+
+  const header = document.createElement("div");
+  header.className = "news-view__quote-header";
+  const avatar = document.createElement("span");
+  avatar.className = "news-view__quote-avatar";
+  if (quote.avatarUrl) {
+    const image = document.createElement("img");
+    image.src = quote.avatarUrl;
+    image.alt = "";
+    image.loading = "lazy";
+    image.addEventListener("error", () => image.remove(), { once: true });
+    avatar.appendChild(image);
+  } else {
+    avatar.textContent = String(quote.sourceName || "Q").charAt(0);
+  }
+  const identity = document.createElement("span");
+  identity.className = "news-view__quote-identity";
+  const name = document.createElement("strong");
+  name.textContent = quote.sourceName || "Quoted post";
+  const handle = document.createElement("small");
+  handle.textContent = quote.username ? `@${quote.username}` : "";
+  identity.append(name, handle);
+  header.append(avatar, identity);
+  block.appendChild(header);
+
+  if (quote.text) {
+    const text = document.createElement("p");
+    text.className = "news-view__quote-text";
+    appendPostText(text, quote.text);
+    if (enhance) {
+      enhanceContentLinks(text, {
+        loadGameBananaDetails: false,
+        loadGameBananaTitle: true,
+        onGameBanana: (submission) => modModal.openSubmission(submission),
+      });
+    }
+    block.appendChild(text);
+  }
+
+  const mediaUrls = uniqueMediaUrls([
+    ...(quote.videos || []).map((video) => video.thumbnailUrl),
+    ...(quote.images || []),
+  ]).slice(0, 4);
+  if (mediaUrls.length) {
+    const media = document.createElement("div");
+    media.className = `news-view__media news-view__quote-media news-view__media--${Math.min(mediaUrls.length, 4)}`;
+    mediaUrls.forEach((src) => {
+      const image = document.createElement("img");
+      image.src = src;
+      image.alt = "";
+      image.loading = "lazy";
+      image.addEventListener("error", () => image.remove(), { once: true });
+      media.appendChild(image);
+    });
+    block.appendChild(media);
+  }
+  return block;
 }
 
 function closeNewsMediaPreview() {
@@ -374,15 +529,25 @@ function mergePostDetails(post, detail) {
     (url) => !videoIdentities.has(mediaIdentity(url)),
   );
   const author = detail.author || {};
+  const quote = detail.quote
+    ? normalizeNewsStatus(
+        detail.quote,
+        {
+          name: post.quote?.sourceName || "Quoted post",
+          username: post.quote?.username || "",
+        },
+        true,
+      )
+    : post.quote;
   return {
     ...post,
     text: detail.text || post.text,
-    publishedAt: detail.created_at || post.publishedAt,
-    link: detail.url || post.link,
+    publishedAt: normalizePublishedAt(detail.created_at) || post.publishedAt,
+    link: normalizePostLink(detail.url) || post.link,
     images: photos.length ? photos : feedImages,
     videos,
     authorName: author.name || post.sourceName,
-    avatarUrl: author.avatar_url || post.avatarUrl,
+    avatarUrl: toSafeExternalUrl(author.avatar_url) || post.avatarUrl,
     stats: {
       likes: detail.likes,
       reposts: detail.reposts,
@@ -390,7 +555,7 @@ function mergePostDetails(post, detail) {
       quotes: detail.quotes,
       views: detail.views,
     },
-    quote: detail.quote?.text || post.quote,
+    quote,
   };
 }
 
@@ -409,105 +574,103 @@ async function fetchNewsSource(source, signal, page = {}) {
     `${FX_TWITTER_PROFILE_API}/${encodeURIComponent(source.username)}/statuses`,
   );
   if (page.cursor) url.searchParams.set("cursor", page.cursor);
-  console.info(`[WeekBox News] Fetching ${source.name} from FxTwitter`);
-  let response = await nativeFetch(url.href, {
-    headers: { Accept: "application/json" },
-    signal,
-  });
-  if (response.status === 404 && !signal?.aborted) {
-    await new Promise((resolve) => setTimeout(resolve, 250));
-    response = await nativeFetch(url.href, {
-      headers: { Accept: "application/json" },
-      signal,
-    });
-  }
-  if (!response.ok) {
-    throw new Error(`${source.name} FxTwitter returned ${response.status}`);
-  }
-  const payload = await response.json();
-  if (payload?.code && payload.code !== 200) {
-    throw new Error(`FxTwitter code ${payload.code}`);
-  }
-  const results = Array.isArray(payload?.results) ? payload.results : [];
-  const posts = results
-    .filter((status) => status?.type === "status" && !isRetweet(status))
-    .filter((status) => !status.replying_to)
-    .map((status) => {
-      const author = status.author || {};
-      const publishedAt = status.created_timestamp
-        ? new Date(status.created_timestamp * 1000).toISOString()
-        : status.created_at;
-      const images = uniqueMediaUrls(
-        (status.media?.photos || []).map((photo) => toSafeExternalUrl(photo.url)),
+  for (let attempt = 0; attempt < NEWS_SOURCE_MAX_ATTEMPTS; attempt += 1) {
+    try {
+      console.info(
+        `[WeekBox News] Fetching ${source.name} from FxTwitter${attempt ? ` (retry ${attempt}/${NEWS_SOURCE_MAX_ATTEMPTS - 1})` : ""}`,
       );
-      return {
-        id: String(status.id),
-        text: String(status.text || "").trim(),
-        images,
-        videos: normalizeFxVideos(status.media),
-        link: normalizePostLink(status.url),
-        publishedAt,
-        sourceName: author.name || source.name,
-        username: author.screen_name || source.username,
-        avatarUrl: toSafeExternalUrl(author.avatar_url),
-        stats: {
-          likes: status.likes,
-          reposts: status.reposts,
-          replies: status.replies,
-          quotes: status.quotes,
-          views: status.views,
-        },
-        quote: status.quote?.text || "",
-        isRetweet: false,
-      };
-    })
-    .filter((post) => post.id && post.text && post.link && post.publishedAt);
-  const cursor = payload?.cursor?.bottom || "";
-  console.info(
-    `[WeekBox News] ${source.name} FxTwitter: ${results.length} statuses, ${posts.length} usable posts, pagination cursor ${cursor ? "received" : "missing"}`,
-  );
-  return { cursor, posts };
+      const response = await nativeFetch(url.href, {
+        headers: { Accept: "application/json" },
+        signal,
+      });
+      if (!response.ok) {
+        throw new Error(`${source.name} FxTwitter returned ${response.status}`);
+      }
+      const payload = await response.json();
+      if (payload?.code && payload.code !== 200) {
+        throw new Error(`FxTwitter code ${payload.code}`);
+      }
+      const results = Array.isArray(payload?.results) ? payload.results : [];
+      const posts = results
+        .filter((status) => status?.type === "status" && !isRetweet(status))
+        .filter((status) => !status.replying_to)
+        .map((status) => normalizeNewsStatus(status, source))
+        .filter(hasNewsContent);
+      const cursor = payload?.cursor?.bottom || "";
+      console.info(
+        `[WeekBox News] ${source.name} FxTwitter: ${results.length} statuses, ${posts.length} usable posts, pagination cursor ${cursor ? "received" : "missing"}`,
+      );
+      return { cursor, posts };
+    } catch (error) {
+      if (error?.name === "AbortError" || attempt === NEWS_SOURCE_MAX_ATTEMPTS - 1) {
+        throw error;
+      }
+      console.warn(
+        `[WeekBox News] ${source.name} FxTwitter attempt ${attempt + 1} failed; retrying`,
+        error,
+      );
+      await new Promise((resolve) =>
+        setTimeout(resolve, NEWS_SOURCE_RETRY_DELAY * 2 ** attempt),
+      );
+    }
+  }
+  throw new Error(`${source.name} FxTwitter request failed`);
 }
 
 async function fetchNewsPayload(signal, onPartial) {
   const results = [];
+  const availableSources = new Set();
   const sourcePages = new Map();
-  const posts = [];
-  for (const source of NEWS_SOURCES) {
-    try {
-      const result = {
-        status: "fulfilled",
-        value: await fetchNewsSource(source, signal),
-      };
+  const postsById = new Map();
+  for (let index = 0; index < NEWS_SOURCES.length; index += NEWS_SOURCE_CONCURRENCY) {
+    const batch = NEWS_SOURCES.slice(index, index + NEWS_SOURCE_CONCURRENCY);
+    const batchResults = await Promise.all(
+      batch.map(async (source) => {
+        try {
+          return {
+            source,
+            status: "fulfilled",
+            value: await fetchNewsSource(source, signal),
+          };
+        } catch (reason) {
+          if (reason?.name === "AbortError") throw reason;
+          console.warn(`[WeekBox News] ${source.name} FxTwitter unavailable`, reason);
+          return { source, status: "rejected", reason };
+        }
+      }),
+    );
+
+    for (const result of batchResults) {
       results.push(result);
-      sourcePages.set(source.username, {
+      if (result.status !== "fulfilled") continue;
+      availableSources.add(result.source.username);
+      sourcePages.set(result.source.username, {
         cursor: result.value.cursor,
         page: 1,
       });
-      posts.push(...result.value.posts);
-      const uniquePosts = [...new Map(posts.map((post) => [post.id, post])).values()]
+      result.value.posts.forEach((post) => postsById.set(post.id, post));
+      const uniquePosts = [...postsById.values()]
         .sort((a, b) => Date.parse(b.publishedAt) - Date.parse(a.publishedAt))
         .slice(0, 80);
-      // optimize the loading times for news feed by just making them load individually
-      // instead of all at once like i did last time, hope it doesnt cause fxtwt to block (malloy)
       if (uniquePosts.length) {
-        onPartial?.({ posts: uniquePosts, sourcePages });
+        onPartial?.({
+          posts: uniquePosts,
+          sourcePages,
+          availableSources: new Set(availableSources),
+        });
       }
-    } catch (reason) {
-      if (reason?.name === "AbortError") throw reason;
-      console.warn(`[WeekBox News] ${source.name} FxTwitter unavailable`, reason);
-      results.push({ status: "rejected", reason });
     }
   }
-  const uniquePosts = [...new Map(posts.map((post) => [post.id, post])).values()]
+  const uniquePosts = [...postsById.values()]
     .sort((a, b) => Date.parse(b.publishedAt) - Date.parse(a.publishedAt))
     .slice(0, 80);
   console.info(
-    `[WeekBox News] Combined ${posts.length} parsed posts into ${uniquePosts.length} unique posts`,
+    `[WeekBox News] Combined ${postsById.size} parsed posts into ${uniquePosts.length} unique posts`,
   );
   return {
     posts: uniquePosts,
     sourcePages,
+    availableSources,
     unavailable: !uniquePosts.length && results.every((result) => result.status === "rejected"),
   };
 }
@@ -529,7 +692,12 @@ function createNewsCard(post, index, openPost) {
   card.addEventListener(
     "click",
     (event) => {
-      if (event.target.closest("button")) return;
+      if (
+        event.target.closest("button") ||
+        event.target.closest("[data-news-quote]")
+      ) {
+        return;
+      }
       if (event.target.closest("a")) {
         event.preventDefault();
         event.stopPropagation();
@@ -539,7 +707,12 @@ function createNewsCard(post, index, openPost) {
     true,
   );
   card.addEventListener("keydown", (event) => {
-    if (event.target.closest("button")) return;
+    if (
+      event.target.closest("button") ||
+      event.target.closest("[data-news-quote]")
+    ) {
+      return;
+    }
     if (event.key !== "Enter" && event.key !== " ") return;
     event.preventDefault();
     openPost(post);
@@ -582,33 +755,32 @@ function createNewsCard(post, index, openPost) {
 
   const body = document.createElement("div");
   body.className = "news-view__card-body";
-  const textWrap = document.createElement("div");
-  textWrap.className = "news-view__text-wrap";
-  const text = document.createElement("p");
-  text.className = "news-view__card-text is-collapsed";
-  appendPostText(text, post.text);
-  textWrap.appendChild(text);
-  const showMore = document.createElement("button");
-  showMore.className = "news-view__show-more";
-  showMore.type = "button";
-  showMore.textContent = "Show more";
-  showMore.hidden = true;
-  showMore.setAttribute("aria-haspopup", "dialog");
-  showMore.addEventListener("click", (event) => {
-    event.preventDefault();
-    event.stopPropagation();
-    openPost(post);
-  });
-  textWrap.appendChild(showMore);
-  requestAnimationFrame(() => {
-    showMore.hidden = text.scrollHeight <= text.clientHeight + 1;
-  });
-  body.appendChild(textWrap);
+  if (post.text) {
+    const textWrap = document.createElement("div");
+    textWrap.className = "news-view__text-wrap";
+    const text = document.createElement("p");
+    text.className = "news-view__card-text is-collapsed";
+    appendPostText(text, post.text);
+    textWrap.appendChild(text);
+    const showMore = document.createElement("button");
+    showMore.className = "news-view__show-more";
+    showMore.type = "button";
+    showMore.textContent = "Show more";
+    showMore.hidden = true;
+    showMore.setAttribute("aria-haspopup", "dialog");
+    showMore.addEventListener("click", (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      openPost(post);
+    });
+    textWrap.appendChild(showMore);
+    requestAnimationFrame(() => {
+      showMore.hidden = text.scrollHeight <= text.clientHeight + 1;
+    });
+    body.appendChild(textWrap);
+  }
   if (post.quote) {
-    const quote = document.createElement("blockquote");
-    quote.className = "news-view__quote";
-    quote.textContent = post.quote;
-    body.appendChild(quote);
+    body.appendChild(createQuotePreview(post.quote, false, () => openPost(post)));
   }
   const videos = (post.videos || []).filter((video) => video.thumbnailUrl);
   const mediaCount = videos.length + post.images.length;
@@ -648,18 +820,21 @@ export const newsView = {
   account: "",
   hiddenAccounts: new Set(),
   accountMeta: new Map(),
+  availableSources: new Set(),
   posts: [],
   sessionLoaded: false,
   visibleCount: NEWS_PAGE_SIZE,
   sourcePages: new Map(),
   loadingMore: false,
+  loadMoreFailed: false,
   loadMoreRequest: null,
   initialized: false,
   accountDropdownCtrl: null,
   accountClickHandler: null,
   infiniteObserver: null,
   scrollContainer: null,
-  scrollHandler: null,
+  controls: null,
+  accountSidebar: null,
 
   init() {
     const grid = document.querySelector("[data-news-grid]");
@@ -667,35 +842,35 @@ export const newsView = {
     this.grid = grid;
     this.status = document.querySelector("[data-news-status]");
     this.refreshButton = document.querySelector("[data-news-refresh]");
+    this.controls = document.querySelector("[data-news-controls]");
+    this.accountSidebar = document.querySelector("[data-news-account-sidebar]");
     if (!this.grid || !this.status) return;
     this.initialized = true;
+    this.setControlsReady(false);
     this.readHiddenAccounts();
     this.setupAccountPicker();
     this.scrollContainer = this.grid.closest(".app-layout__content");
     this.infiniteObserver = new IntersectionObserver(
       (entries) => {
-        if (entries.some((entry) => entry.isIntersecting)) this.loadMore();
+        if (
+          entries.some((entry) => entry.isIntersecting) &&
+          !this.loadMoreFailed
+        ) {
+          void this.loadMore();
+        }
       },
       { root: this.scrollContainer || null, rootMargin: "600px" },
     );
-    this.scrollHandler = () => {
-      const container = this.scrollContainer;
-      if (!container) return;
-      if (
-        container.scrollTop + container.clientHeight >=
-        container.scrollHeight - 700
-      ) {
-        this.loadMore();
-      }
-    };
-    this.scrollContainer?.addEventListener("scroll", this.scrollHandler, {
-      passive: true,
-    });
     this.refreshButton?.addEventListener("click", () => void this.load());
     if (this.sessionLoaded) {
       this.visibleCount = NEWS_PAGE_SIZE;
-      this.render({ posts: this.posts, sourcePages: this.sourcePages });
+      this.render({
+        posts: this.posts,
+        sourcePages: this.sourcePages,
+        availableSources: this.availableSources,
+      });
       this.setStatus("");
+      this.setControlsReady(this.availableSources.size > 0);
       return;
     }
     void this.load();
@@ -711,10 +886,6 @@ export const newsView = {
     this.closeModal(false);
     this.infiniteObserver?.disconnect();
     this.infiniteObserver = null;
-    if (this.scrollHandler) {
-      this.scrollContainer?.removeEventListener("scroll", this.scrollHandler);
-      this.scrollHandler = null;
-    }
     if (this.accountClickHandler) {
       document.removeEventListener("click", this.accountClickHandler);
       this.accountClickHandler = null;
@@ -724,9 +895,17 @@ export const newsView = {
     this.grid = null;
     this.status = null;
     this.refreshButton = null;
+    this.controls = null;
+    this.accountSidebar = null;
     this.scrollContainer = null;
     this.initialized = false;
     this.loadingMore = false;
+    this.loadMoreFailed = false;
+  },
+
+  setControlsReady(ready) {
+    this.controls?.toggleAttribute("hidden", !ready);
+    this.accountSidebar?.toggleAttribute("hidden", !ready);
   },
 
   setupAccountPicker() {
@@ -736,7 +915,7 @@ export const newsView = {
     this.accountDropdownCtrl = setupDropdown(trigger, dropdown);
     this.accountClickHandler = (event) => {
       const visibility = event.target.closest(
-        "#news-account-options .news-account-option__visibility",
+        ".news-account-options .news-account-option__visibility",
       );
       if (visibility) {
         event.preventDefault();
@@ -744,25 +923,27 @@ export const newsView = {
         this.toggleAccountVisibility(visibility.dataset.account);
         return;
       }
-      const reset = event.target.closest("#news-account-options .news-account-reset");
+      const reset = event.target.closest(".news-account-options .news-account-reset");
       if (reset) {
         event.preventDefault();
         event.stopPropagation();
         this.account = "";
         this.accountDropdownCtrl?.close();
         this.visibleCount = NEWS_PAGE_SIZE;
+        this.loadMoreFailed = false;
         this.renderAccountOptions();
         this.renderVisiblePosts();
         return;
       }
       const option = event.target.closest(
-        "#news-account-options .news-account-option__select",
+        ".news-account-options .news-account-option__select",
       );
       if (!option) return;
       this.account =
         this.account === option.dataset.account ? "" : option.dataset.account || "";
       this.accountDropdownCtrl?.close();
       this.visibleCount = NEWS_PAGE_SIZE;
+      this.loadMoreFailed = false;
       this.renderAccountOptions();
       this.renderVisiblePosts();
     };
@@ -810,55 +991,62 @@ export const newsView = {
   },
 
   renderAccountOptions() {
-    const options = document.getElementById("news-account-options");
+    const optionLists = document.querySelectorAll(".news-account-options");
     const trigger = document.getElementById("news-account-trigger");
-    if (!options || !trigger) return;
-    const accounts = NEWS_SOURCES.map((source) => ({
+    if (!optionLists.length || !trigger) return;
+    if (this.account && !this.availableSources.has(this.account)) {
+      this.account = "";
+    }
+    const accounts = NEWS_SOURCES.filter((source) =>
+      this.availableSources.has(source.username),
+    ).map((source) => ({
       ...source,
       ...this.accountMeta.get(source.username),
     }));
-    options.replaceChildren();
-    if (this.account) {
-      const reset = document.createElement("button");
-      reset.className = "news-account-reset";
-      reset.type = "button";
-      reset.dataset.account = "";
-      reset.textContent = "Show visible feeds";
-      options.appendChild(reset);
-    }
-    accounts.forEach((account) => {
-      const row = document.createElement("div");
-      row.className = `news-account-option${this.account === account.username ? " selected" : ""}`;
-      row.setAttribute("role", "option");
-      row.setAttribute("aria-selected", String(this.account === account.username));
-      const select = document.createElement("button");
-      select.className = "news-account-option__select";
-      select.type = "button";
-      select.dataset.account = account.username;
-      const avatar = document.createElement("span");
-      avatar.className = "news-account-option__avatar";
-      if (account.avatarUrl) {
-        const image = document.createElement("img");
-        image.src = account.avatarUrl;
-        image.alt = "";
-        avatar.appendChild(image);
-      } else avatar.textContent = account.name.charAt(0);
-      const text = document.createElement("span");
-      text.className = "news-account-option__text";
-      text.innerHTML = `<strong></strong><small></small>`;
-      text.querySelector("strong").textContent = account.name;
-      text.querySelector("small").textContent = `@${account.username}`;
-      select.append(avatar, text);
-      const visibility = document.createElement("button");
-      visibility.className = "news-account-option__visibility";
-      visibility.type = "button";
-      visibility.dataset.account = account.username;
-      const visible = !this.hiddenAccounts.has(account.username);
-      visibility.setAttribute("aria-label", `${visible ? "Hide" : "Show"} ${account.name}`);
-      visibility.setAttribute("aria-pressed", String(visible));
-      visibility.innerHTML = `<i class="fa-solid fa-eye${visible ? "" : "-slash"}" aria-hidden="true"></i>`;
-      row.append(select, visibility);
-      options.appendChild(row);
+    optionLists.forEach((options) => {
+      options.replaceChildren();
+      if (this.account) {
+        const reset = document.createElement("button");
+        reset.className = "news-account-reset";
+        reset.type = "button";
+        reset.dataset.account = "";
+        reset.textContent = "Show visible feeds";
+        options.appendChild(reset);
+      }
+      accounts.forEach((account) => {
+        const row = document.createElement("div");
+        row.className = `news-account-option${this.account === account.username ? " selected" : ""}`;
+        row.setAttribute("role", "option");
+        row.setAttribute("aria-selected", String(this.account === account.username));
+        const select = document.createElement("button");
+        select.className = "news-account-option__select";
+        select.type = "button";
+        select.dataset.account = account.username;
+        const avatar = document.createElement("span");
+        avatar.className = "news-account-option__avatar";
+        if (account.avatarUrl) {
+          const image = document.createElement("img");
+          image.src = account.avatarUrl;
+          image.alt = "";
+          avatar.appendChild(image);
+        } else avatar.textContent = account.name.charAt(0);
+        const text = document.createElement("span");
+        text.className = "news-account-option__text";
+        text.innerHTML = `<strong></strong><small></small>`;
+        text.querySelector("strong").textContent = account.name;
+        text.querySelector("small").textContent = `@${account.username}`;
+        select.append(avatar, text);
+        const visibility = document.createElement("button");
+        visibility.className = "news-account-option__visibility";
+        visibility.type = "button";
+        visibility.dataset.account = account.username;
+        const visible = !this.hiddenAccounts.has(account.username);
+        visibility.setAttribute("aria-label", `${visible ? "Hide" : "Show"} ${account.name}`);
+        visibility.setAttribute("aria-pressed", String(visible));
+        visibility.innerHTML = `<i class="fa-solid fa-eye${visible ? "" : "-slash"}" aria-hidden="true"></i>`;
+        row.append(select, visibility);
+        options.appendChild(row);
+      });
     });
     const selected = this.account
       ? accounts.find((account) => account.username === this.account)
@@ -893,13 +1081,17 @@ export const newsView = {
       return;
     }
     const pages = [...this.sourcePages.entries()].filter(
-      ([, page]) => page.cursor && page.page < NEWS_MAX_PAGES_PER_ACCOUNT,
+      ([username, page]) =>
+        (!this.account || username === this.account) &&
+        page.cursor &&
+        page.page < NEWS_MAX_PAGES_PER_ACCOUNT,
     );
     if (!pages.length) {
       console.info("[WeekBox News] No older FxTwitter cursors available");
       return;
     }
     this.loadingMore = true;
+    this.loadMoreFailed = false;
     this.setLoadMoreIndicator(true, true);
     const controller = new AbortController();
     this.loadMoreRequest = controller;
@@ -922,6 +1114,7 @@ export const newsView = {
           });
         } catch (error) {
           if (error?.name === "AbortError") throw error;
+          this.loadMoreFailed = true;
           console.warn(
             `[WeekBox News] ${username} older FxTwitter page unavailable`,
             error,
@@ -938,6 +1131,7 @@ export const newsView = {
       this.renderVisiblePosts();
     } catch (error) {
       if (error?.name !== "AbortError") {
+        this.loadMoreFailed = true;
         console.warn("[WeekBox News] Loading older posts failed", error);
         this.renderVisiblePosts();
       }
@@ -994,25 +1188,25 @@ export const newsView = {
     excerpt.hidden = true;
     stopModalVideos(modal);
     body.replaceChildren();
-    const text = document.createElement("p");
-    text.className = "news-detail-modal__post-text";
-    appendPostText(text, String(post.text || "").trimEnd());
-    enhanceContentLinks(text, {
-      loadGameBananaDetails: false,
-      loadGameBananaTitle: true,
-      onGameBanana: (submission) => modModal.openSubmission(submission),
-    });
-    body.appendChild(text);
-    if (post.quote) {
-      const quote = document.createElement("blockquote");
-      quote.className = "news-view__quote";
-      appendPostText(quote, post.quote);
-      enhanceContentLinks(quote, {
+    if (post.text) {
+      const text = document.createElement("p");
+      text.className = "news-detail-modal__post-text";
+      appendPostText(text, String(post.text).trimEnd());
+      enhanceContentLinks(text, {
         loadGameBananaDetails: false,
         loadGameBananaTitle: true,
         onGameBanana: (submission) => modModal.openSubmission(submission),
       });
-      body.appendChild(quote);
+      body.appendChild(text);
+    }
+    if (post.quote) {
+      body.appendChild(
+        createQuotePreview(
+          post.quote,
+          true,
+          post.quote.link ? () => openNewsExternal(post.quote.link) : null,
+        ),
+      );
     }
     const mediaGrid = document.createElement("div");
     const videos = post.videos || [];
@@ -1169,8 +1363,12 @@ export const newsView = {
 
   render(payload) {
     this.posts = payload.posts
-      .filter((post) => post && post.id && post.text)
+      .filter(hasNewsContent)
       .sort((a, b) => Date.parse(b.publishedAt) - Date.parse(a.publishedAt));
+    this.availableSources =
+      payload.availableSources instanceof Set
+        ? new Set(payload.availableSources)
+        : new Set(payload.availableSources || []);
     this.accountMeta = new Map(
       this.posts.map((post) => [
         post.username,
@@ -1201,6 +1399,12 @@ export const newsView = {
       ]),
     );
     const visibleIds = new Set(posts.map((post) => post.id));
+    const hasOlderPages = [...this.sourcePages.entries()].some(
+      ([username, page]) =>
+        (!this.account || username === this.account) &&
+        page.cursor &&
+        page.page < NEWS_MAX_PAGES_PER_ACCOUNT,
+    );
 
     if (!posts.length) {
       this.grid.replaceChildren();
@@ -1208,6 +1412,7 @@ export const newsView = {
       empty.className = "news-view__empty";
       empty.textContent = t("news.noNews");
       this.grid.appendChild(empty);
+      this.setLoadMoreIndicator(hasOlderPages);
       return;
     }
 
@@ -1223,19 +1428,29 @@ export const newsView = {
       if (!visibleIds.has(id)) card.remove();
     }
 
-    const hasOlderPages = [...this.sourcePages.values()].some(
-      (page) => page.cursor && page.page < NEWS_MAX_PAGES_PER_ACCOUNT,
-    );
     this.setLoadMoreIndicator(posts.length < filteredPosts.length || hasOlderPages);
   },
 
   setLoadMoreIndicator(visible = false, loading = false) {
-    this.grid?.querySelector(".news-view__load-sentinel")?.remove();
+    const previous = this.grid?.querySelector(".news-view__load-sentinel");
+    if (previous) {
+      this.infiniteObserver?.unobserve(previous);
+      previous.remove();
+    }
     if (!visible || !this.grid) return;
     const sentinel = document.createElement("div");
     sentinel.className = "news-view__load-sentinel";
     sentinel.setAttribute("aria-live", "polite");
-    sentinel.textContent = loading ? "Loading more…" : "";
+    const button = document.createElement("button");
+    button.className = "news-view__load-more";
+    button.type = "button";
+    button.disabled = loading;
+    button.textContent = t(loading ? "news.loadingMore" : "news.loadMore");
+    button.addEventListener("click", () => {
+      this.loadMoreFailed = false;
+      void this.loadMore();
+    });
+    sentinel.appendChild(button);
     this.grid.appendChild(sentinel);
     this.infiniteObserver?.observe(sentinel);
   },
@@ -1246,7 +1461,10 @@ export const newsView = {
     this.visibleCount = NEWS_PAGE_SIZE;
     this.posts = [];
     this.sourcePages = new Map();
+    this.availableSources = new Set();
     this.accountMeta = new Map();
+    this.loadMoreFailed = false;
+    this.setControlsReady(false);
     this.setLoading();
     this.request?.abort();
     const controller = new AbortController();
@@ -1262,6 +1480,7 @@ export const newsView = {
       this.render(payload);
       this.markNewsRead(payload.posts);
       this.setStatus(payload.unavailable ? t("news.unavailable") : "", payload.unavailable ? "error" : "");
+      this.setControlsReady(this.availableSources.size > 0);
     } catch (error) {
       handleNewsLoadError(this, error);
     } finally {

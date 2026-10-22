@@ -2,8 +2,12 @@
   "applicationId": "com.weekbox.app",
   "storageLocation": "system",
   "dataLocation": "system",
+  "singleInstance": {
+    "enabled": true,
+    "handoffFile": "/weekbox-deeplink.json"
+  },
   "applicationIcon": "app/assets/icons/launcher-icon.png",
-  "version": "2.6.1",
+  "version": "2.6.2",
   "defaultMode": "window",
   "port": 0,
   "documentRoot": "/app/",
@@ -47,7 +51,7 @@
     "autoReloadExclude": "[/\\\\]dist([/\\\\]|$)",
     "extensionsPath": "/extensions/",
     "clientLibrary": "/app/neutralino.js",
-    "binaryVersion": "6.9.0",
-    "clientVersion": "6.9.0"
+    "binaryVersion": "6.10.11",
+    "clientVersion": "6.10.11"
   }
 }

@@ -53,18 +53,10 @@ function encodePowerShellCommand(script) {
   return btoa(String.fromCharCode(...bytes));
 }
 
-async function focusWeekBoxWindow({ center = false } = {}) {
+async function focusWeekBoxWindow() {
   try {
     if (typeof Neutralino.window.unminimize === "function") {
       await Neutralino.window.unminimize();
-    }
-    if (
-      center &&
-      // thank u juniperwuniper123 for the diagnostic!!!
-      window.NL_OS !== "Darwin" &&
-      typeof Neutralino.window.center === "function"
-    ) {
-      await Neutralino.window.center();
     }
     if (typeof Neutralino.window.show === "function") {
       await Neutralino.window.show();
@@ -95,6 +87,7 @@ async function applySystemTray() {
 }
 
 async function ensureSingleInstance() {
+  if (window.NL_SINGLE_INSTANCE_OWNER) return true;
   if (isDevelopmentRun() || window.NL_OS !== "Windows") return true;
   const parentPid = Number(window.NL_PID);
   if (!Number.isInteger(parentPid) || parentPid <= 0) return true;
@@ -528,7 +521,7 @@ async function startApp() {
     setInterval(() => void checkPendingHandoff(), 250);
     void startupLoader.initVersion();
     networkStatus.init();
-    await focusWeekBoxWindow({ center: true });
+    await focusWeekBoxWindow();
     disableProductionRefreshShortcuts();
 
     const handleAppExit = async () => {

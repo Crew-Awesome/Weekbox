@@ -1,5 +1,6 @@
 export const homeScroll = {
   frame: null,
+  scrollAnimationFrame: null,
 
   init() {
     this.mainContent = document.getElementById("main-content");
@@ -25,10 +26,34 @@ export const homeScroll = {
     });
   },
 
+  scrollToTop() {
+    const mainContent = this.mainContent;
+    if (!mainContent || mainContent.scrollTop <= 0) return;
+    if (this.scrollAnimationFrame) {
+      cancelAnimationFrame(this.scrollAnimationFrame);
+    }
+    const start = mainContent.scrollTop;
+    const startedAt = performance.now();
+    const duration = 180;
+    const animate = (now) => {
+      const progress = Math.min(1, (now - startedAt) / duration);
+      const eased = 1 - (1 - progress) ** 3;
+      mainContent.scrollTop = start * (1 - eased);
+      if (progress < 1) {
+        this.scrollAnimationFrame = requestAnimationFrame(animate);
+      } else {
+        this.scrollAnimationFrame = null;
+      }
+    };
+    this.scrollAnimationFrame = requestAnimationFrame(animate);
+  },
+
   destroy() {
     this.mainContent?.removeEventListener("scroll", this.handler);
     if (this.frame) cancelAnimationFrame(this.frame);
+    if (this.scrollAnimationFrame) cancelAnimationFrame(this.scrollAnimationFrame);
     this.frame = null;
+    this.scrollAnimationFrame = null;
     this.mainContent = null;
     this.container = null;
   },

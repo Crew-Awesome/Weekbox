@@ -1770,48 +1770,56 @@
 </template>
 <template id="tpl-news">
   <section class="news-view" aria-labelledby="news-view-title">
-    <header class="news-view__header">
-      <h1 id="news-view-title" data-i18n="nav.news">News</h1>
-      <div class="news-view__actions">
-        <div class="pill-dropdown news-view__account-dropdown" id="news-account-dropdown">
-          <button class="pill-btn dropdown-trigger" id="news-account-trigger" type="button" aria-haspopup="listbox" aria-expanded="false">
-            <span class="filter-engine-icon news-account-trigger-icon" aria-hidden="true"><i class="fa-solid fa-users"></i></span>
-            <span id="news-account-selected">News feeds</span>
-            <i class="fa-solid fa-chevron-down filter-dropdown-chevron" aria-hidden="true"></i>
-          </button>
-          <div class="custom-options-container" id="news-account-options" role="listbox" aria-label="News account filter">
-            <button class="custom-option" type="button" data-account="News_Funkin" role="option" aria-selected="false">Funkin News</button>
-            <button class="custom-option" type="button" data-account="Discussingfnf" role="option" aria-selected="false">Discussing FNF</button>
-            <button class="custom-option" type="button" data-account="FNF_Developers" role="option" aria-selected="false">FNF Developers</button>
-            <button class="custom-option" type="button" data-account="GameBananaFNF" role="option" aria-selected="false">GameBanana FNF</button>
+    <div class="news-view__layout">
+      <aside class="news-view__account-sidebar" data-news-account-sidebar hidden>
+        <h2 class="news-view__account-sidebar-title" data-i18n="nav.news">News</h2>
+        <div class="custom-options-container news-account-options" role="listbox" aria-label="News account filter"></div>
+      </aside>
+      <div class="news-view__content">
+        <header class="news-view__header">
+          <h1 id="news-view-title" data-i18n="nav.news">News</h1>
+          <div class="news-view__actions" data-news-controls hidden>
+            <div class="pill-dropdown news-view__account-dropdown" id="news-account-dropdown">
+              <button class="pill-btn dropdown-trigger" id="news-account-trigger" type="button" aria-haspopup="listbox" aria-expanded="false">
+                <span class="filter-engine-icon news-account-trigger-icon" aria-hidden="true"><i class="fa-solid fa-users"></i></span>
+                <span id="news-account-selected">News feeds</span>
+                <i class="fa-solid fa-chevron-down filter-dropdown-chevron" aria-hidden="true"></i>
+              </button>
+              <div class="custom-options-container news-account-options" id="news-account-options" role="listbox" aria-label="News account filter">
+                <button class="custom-option" type="button" data-account="News_Funkin" role="option" aria-selected="false">Funkin News</button>
+                <button class="custom-option" type="button" data-account="Discussingfnf" role="option" aria-selected="false">Discussing FNF</button>
+                <button class="custom-option" type="button" data-account="FNF_Developers" role="option" aria-selected="false">FNF Developers</button>
+                <button class="custom-option" type="button" data-account="GameBananaFNF" role="option" aria-selected="false">GameBanana FNF</button>
+              </div>
+            </div>
+            <button class="news-view__refresh" type="button" data-news-refresh>
+              <i class="fa-solid fa-rotate" aria-hidden="true"></i>
+              <span data-i18n="common.refresh">Refresh</span>
+            </button>
+          </div>
+        </header>
+        <div
+          class="news-view__status"
+          data-news-status
+          role="status"
+          aria-live="polite"
+          data-i18n="news.loading"
+        >
+          Loading news…
+        </div>
+        <div class="grid-layout news-view__grid" data-news-grid>
+          <div class="weekbox-loading weekbox-loading--section">
+            <l-hourglass
+              class="weekbox-hourglass"
+              size="32"
+              color="currentColor"
+              speed="1.75"
+              bg-opacity="0.12"
+              aria-hidden="true"
+            ></l-hourglass>
+            <span data-i18n="news.loading">Loading news…</span>
           </div>
         </div>
-        <button class="news-view__refresh" type="button" data-news-refresh>
-          <i class="fa-solid fa-rotate" aria-hidden="true"></i>
-          <span data-i18n="common.refresh">Refresh</span>
-        </button>
-      </div>
-    </header>
-    <div
-      class="news-view__status"
-      data-news-status
-      role="status"
-      aria-live="polite"
-      data-i18n="news.loading"
-    >
-      Loading news…
-    </div>
-    <div class="grid-layout news-view__grid" data-news-grid>
-      <div class="weekbox-loading weekbox-loading--section">
-        <l-hourglass
-          class="weekbox-hourglass"
-          size="32"
-          color="currentColor"
-          speed="1.75"
-          bg-opacity="0.12"
-          aria-hidden="true"
-        ></l-hourglass>
-        <span data-i18n="news.loading">Loading news…</span>
       </div>
     </div>
   </section>

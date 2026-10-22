@@ -10,6 +10,7 @@ import { appEvents } from "../../backend/core/routing/events.service.js";
 import { t } from "./i18n/index.js";
 import { escapeHtml } from "./mod-manager/modSettingsTemplates.js";
 import { appSettings } from "../../backend/core/system/settings.service.js";
+import { homeView } from "./home/index.js";
 
 const SIDEBAR_WIDTH_KEY = "weekbox_sidebar_width";
 const SIDEBAR_COLLAPSED_KEY = "weekbox_sidebar_collapsed";
@@ -315,6 +316,14 @@ export const sidebar = {
       btn.addEventListener("click", () => {
         this.setActive(btn);
         const viewToLoad = btn.getAttribute("data-tab");
+        if (viewToLoad === "home") {
+          void (async () => {
+            await router.navigate(viewToLoad);
+            await homeView.ready;
+            await homeView.returnToTop();
+          })();
+          return;
+        }
         void router.navigate(viewToLoad);
       });
     });

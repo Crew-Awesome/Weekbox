@@ -4,6 +4,15 @@
   color: var(--text-main);
 }
 
+.news-view__layout {
+  width: min(100%, 1080px);
+  margin-inline: auto;
+}
+
+.news-view__content {
+  min-width: 0;
+}
+
 .news-view__header {
   display: flex;
   align-items: flex-start;
@@ -38,6 +47,10 @@
   padding: 8px;
   border-radius: 14px;
   box-shadow: 0 16px 36px rgb(0 0 0 / 22%);
+}
+
+.news-view__account-sidebar {
+  display: none;
 }
 
 .news-view__account-dropdown .pill-btn,
@@ -207,6 +220,28 @@
   place-items: center;
   color: var(--text-muted);
   font-size: 0.85rem;
+}
+
+.news-view__load-more {
+  min-height: 38px;
+  padding: 8px 16px;
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  background: var(--surface-control);
+  color: var(--text-main);
+  cursor: pointer;
+}
+
+.news-view__load-more:hover,
+.news-view__load-more:focus-visible {
+  background: var(--surface-control-hover);
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+
+.news-view__load-more:disabled {
+  cursor: wait;
+  opacity: 0.7;
 }
 
 .news-view h1 {
@@ -422,6 +457,118 @@
   border-radius: 10px;
   color: var(--text-muted);
   line-height: 1.45;
+}
+
+.news-view__quote[data-news-quote] {
+  cursor: pointer;
+}
+
+.news-view__quote[data-news-quote]:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+
+.news-view__quote-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.news-view__quote-avatar {
+  width: 40px;
+  height: 40px;
+  flex: 0 0 40px;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  border-radius: 50%;
+  background: var(--tertiary-container);
+  color: var(--on-tertiary-container);
+  font-size: 0.75rem;
+  font-weight: 800;
+}
+
+.news-view__quote-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.news-view__quote-identity {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  line-height: 1.2;
+}
+
+.news-view__quote-identity strong {
+  overflow: hidden;
+  color: var(--text-main);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.news-view__quote-identity small {
+  color: var(--text-muted);
+  font-size: 0.78rem;
+}
+
+.news-view__quote-text {
+  margin: 8px 0 0;
+  color: var(--text-main);
+  white-space: pre-wrap;
+}
+
+.news-view__quote-media {
+  margin-top: 8px;
+}
+
+@media (min-width: 1180px) {
+  .news-view__layout {
+    display: grid;
+    grid-template-columns: 220px minmax(0, 1fr);
+    align-items: start;
+    gap: 28px;
+  }
+
+  .news-view__account-sidebar {
+    display: block;
+    position: sticky;
+    top: 24px;
+    min-width: 0;
+    padding: 14px;
+    border: 1px solid var(--border-color);
+    border-radius: 16px;
+    background: var(--bg-panel);
+    box-shadow: 0 8px 24px rgb(0 0 0 / 12%);
+  }
+
+  .news-view__account-sidebar-title {
+    margin: 0 8px 12px;
+    color: var(--text-main);
+    font-size: 0.95rem;
+  }
+
+  .news-view__account-sidebar .news-account-options {
+    position: static;
+    display: flex;
+    width: auto;
+    max-height: none;
+    padding: 0;
+    overflow: visible;
+    border: 0;
+    background: transparent;
+    box-shadow: none;
+  }
+
+  .news-view__account-dropdown {
+    display: none;
+  }
+
+  .news-view__header {
+    width: 100%;
+  }
 }
 
 .news-view__media {
@@ -940,6 +1087,39 @@
   border-radius: 8px;
   outline: 1px solid oklch(0 0 0 / 0.1);
   object-fit: contain;
+}
+
+.news-detail-modal__text .news-view__quote-text {
+  margin: 10px 0 0;
+}
+
+.news-detail-modal__text .news-view__quote-media {
+  margin: 12px 0 0;
+}
+
+.news-detail-modal__text .news-view__quote-avatar img {
+  width: 100%;
+  height: 100%;
+  max-width: none;
+  max-height: none;
+  margin: 0;
+  border-radius: inherit;
+  outline: none;
+  object-fit: cover;
+}
+
+.news-detail-modal__text .news-view__quote-media img {
+  width: 100%;
+  height: auto;
+  max-width: none;
+  max-height: none;
+  margin: 0;
+  border-radius: 8px;
+  outline: 1px solid var(--image-outline);
+  outline-offset: -1px;
+  aspect-ratio: 16 / 9;
+  object-fit: cover;
+  object-position: center;
 }
 
 .news-detail-modal__text > :last-child {

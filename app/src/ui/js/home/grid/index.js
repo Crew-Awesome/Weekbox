@@ -48,6 +48,7 @@ export const homeGrid = {
   },
 
   async init({ prefetchNextPage = false } = {}) {
+    const lifecycleVersion = ++gridState.lifecycleVersion;
     gridState.currentPage = 1;
     gridState.isSearchMode = false;
     gridState.hasMore = true;
@@ -55,10 +56,11 @@ export const homeGrid = {
 
     filterManager.setup();
     await gridRender.renderGrid(true);
+    if (lifecycleVersion !== gridState.lifecycleVersion) return;
     if (prefetchNextPage && gridState.hasMore) {
       gridRender.renderGrid(false).catch(() => {});
     }
-    scrollManager.setup();
+    if (lifecycleVersion === gridState.lifecycleVersion) scrollManager.setup();
   },
 
   renderGrid(isInitial, pagesToLoad) {
@@ -66,9 +68,11 @@ export const homeGrid = {
   },
 
   destroy() {
+    gridState.lifecycleVersion++;
     gridState.discoveryController?.abort();
     gridState.discoveryController = null;
     gridState.renderVersion++;
+    gridState.isLoading = false;
     gridState.pendingInitialRender = false;
     scrollManager.remove();
     filterManager.remove();

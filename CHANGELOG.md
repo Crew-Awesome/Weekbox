@@ -5,7 +5,33 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [2.6.2] - 2026-10-21
+
+### Added
+
+- Added quoted posts to News.
+- Added a "Load more" button for older posts. (incase they dont load)
+- Clicking Home now clears the active search.
+- Clicking Home now scrolls to the top.
+
+### Changed
+
+- News sources now load in small batches.
+- News shows each source as soon as it is ready.
+- News retries after errors.
+- News can now load older posts per account.
+- News controls are now on a side panel on wide screens.
+- WeekBox now uses a Custom Neutralino runtime.
+- More continuation on the Polish locale file. (Thank you Merssak!)
+
+### Fixed
+
+- News no longer shows reposts in the feed.
+- Fixed deeplinks opening a second window.
+- Fixed deeplinks moving or resizing the existing window.
+- Fixed GameBanana feeds getting stuck in endless loading. (Thanks Funkin Interviews!)
+- Fixed Home loading continuing after leaving the page.
+- Fixed a issue with the Polish locale file.
 
 ## [2.6.1] - 2026-10-19
 
@@ -1315,7 +1341,8 @@ This is the Last content update I will do in a long while :)
 - Downloads for Windows, Linux, and macOS.
 - Packages for x64, ARM64, ARMHF, and Universal Macs where available.
 
-[unreleased]: https://github.com/Crew-Awesome/Weekbox/compare/v2.6.1...HEAD
+[unreleased]: https://github.com/Crew-Awesome/Weekbox/compare/v2.6.2...HEAD
+[2.6.2]: https://github.com/Crew-Awesome/Weekbox/compare/v2.6.1...v2.6.2
 [2.6.1]: https://github.com/Crew-Awesome/Weekbox/compare/v2.6.0...v2.6.1
 [2.6.0]: https://github.com/Crew-Awesome/Weekbox/compare/v2.5.11...v2.6.0
 [2.5.11]: https://github.com/Crew-Awesome/Weekbox/compare/v2.5.10...v2.5.11

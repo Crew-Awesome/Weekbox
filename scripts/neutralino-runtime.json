@@ -1,0 +1,9 @@
+{
+  "version": "6.10.11",
+  "releaseUrl": "https://github.com/Crew-Awesome/wb-nl-bin/releases/download/v6.10.11/neutralinojs-v6.10.11.zip",
+  "windows-x64": {
+    "file": "bin/neutralino-win_x64.exe",
+    "archiveFile": "neutralino-win_x64.exe",
+    "sha256": "A974E204219192ACA52951AFDFC80CAB6FE3FACA89E530D8C4A2F919200D1473"
+  }
+}

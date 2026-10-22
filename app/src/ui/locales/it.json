@@ -365,6 +365,8 @@
   "modSettings.saveFailed": "Aggiornamento delle impostazioni fallito",
   "modSettings.couldNotSave": "Impossibile salvare impostazioni mod.",
   "news.loading": "Caricando Notizie…",
+  "news.loadingMore": "Loading more…",
+  "news.loadMore": "Load more",
   "news.noNews": "Nessune notizie disponibili al momento.",
   "news.loadingArticle": "Caricando articolo…",
   "news.articleUnavailable": "Non è stato possibile caricare questo articolo.",

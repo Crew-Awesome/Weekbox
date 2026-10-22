@@ -365,6 +365,8 @@
   "modSettings.saveFailed": "As opções do mod não puderam ser salvas",
   "modSettings.couldNotSave": "Não foi possivel salvar as opções do mod.",
   "news.loading": "Carregando notícias…",
+  "news.loadingMore": "Loading more…",
+  "news.loadMore": "Load more",
   "news.noNews": "Nenhuma notícia ainda.",
   "news.loadingArticle": "Carregando artigos…",
   "news.articleUnavailable": "Este artigo não pôde ser carregado.",

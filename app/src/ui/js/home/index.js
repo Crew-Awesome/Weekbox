@@ -76,6 +76,20 @@ export const homeView = {
     this.hasVisited = true;
   },
 
+  async returnToTop() {
+    const input = document.getElementById("mod-search-input");
+    const hasSearch =
+      homeSearch.mode === "mods" &&
+      (homeGrid.isSearchMode || homeGrid.searchQuery || input?.value.trim());
+    homeSearchDropdown.hideDropdown();
+    homeScroll.scrollToTop();
+    if (hasSearch) {
+      if (input) input.value = "";
+      await homeSearch.executeSearch("");
+      homeScroll.scrollToTop();
+    }
+  },
+
   bindModeSwitcher() {
     this.switcherController?.abort();
     this.switcherController = new AbortController();

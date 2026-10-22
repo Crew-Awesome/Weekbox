@@ -398,6 +398,11 @@ async function loadPsychOnlineBatch(
             snapshotId: state.snapshotId,
           });
   const batch = Array.isArray(result) ? result : result.mods || [];
+  const sourceErrors = Array.isArray(result)
+    ? []
+    : Array.isArray(result.sourceErrors)
+      ? result.sourceErrors
+      : [];
   state.snapshotId = Array.isArray(result)
     ? null
     : result.snapshotId || state.snapshotId;
@@ -406,7 +411,8 @@ async function loadPsychOnlineBatch(
   state.exhausted = Array.isArray(result)
     ? batch.length < pageSize
     : Boolean(result.exhausted);
-  if (!batch.length) state.exhausted = true;
+  if (!batch.length && !sourceErrors.length) state.exhausted = true;
+  return { sourceErrors };
 }
 
 function setBoundedCache(map, key, value, maxSize = 100) {
@@ -1134,8 +1140,10 @@ export const gameBananaApi = {
 
     const pageSize = Math.max(1, Number(options.pageSize) || 12);
     const required = Math.max(1, Number(page) || 1) * pageSize;
+    let sourceErrors = [];
     while (!state.exhausted && state.gameBananaMods.length < required) {
-      await loadPsychOnlineBatch(
+      const modsBefore = state.gameBananaMods.length;
+      const batchResult = await loadPsychOnlineBatch(
         this,
         state,
         filter,
@@ -1143,6 +1151,11 @@ export const gameBananaApi = {
         options,
         pageSize,
       );
+      sourceErrors = batchResult.sourceErrors;
+      if (!state.exhausted && state.gameBananaMods.length === modsBefore) {
+        if (!sourceErrors.length) state.exhausted = true;
+        else break;
+      }
     }
 
     const sortCombinedMods = (left, right) => {
@@ -1170,6 +1183,7 @@ export const gameBananaApi = {
       mods: combined.slice(start, start + pageSize),
       exhausted: state.exhausted && start + pageSize >= combined.length,
       snapshotId: state.snapshotId,
+      sourceErrors,
     };
   },
 

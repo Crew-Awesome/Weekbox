@@ -522,6 +522,8 @@ declare global {
 		NL_PATH: string;
 		/** Application data path */
 		NL_DATAPATH: string;
+		/** True when the native runtime owns the WeekBox single-instance mutex */
+		NL_SINGLE_INSTANCE_OWNER?: boolean;
 		/** Returns true if extensions are enabled */
 		NL_EXTENABLED: boolean;
 		/** Returns true if the client library is injected */

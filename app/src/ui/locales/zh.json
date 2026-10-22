@@ -365,6 +365,8 @@
   "modSettings.saveFailed": "模组设置无法保存",
   "modSettings.couldNotSave": "无法保存模组设置",
   "news.loading": "正在加载新鲜事…",
+  "news.loadingMore": "Loading more…",
+  "news.loadMore": "Load more",
   "news.noNews": "暂无新鲜事",
   "news.loadingArticle": "正在加载文章…",
   "news.articleUnavailable": "无法加载此文章",
