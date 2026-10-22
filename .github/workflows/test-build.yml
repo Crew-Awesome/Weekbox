@@ -74,7 +74,7 @@ jobs:
         run: npm ci
 
       - name: Restore Neutralino runtime
-        run: npx @neutralinojs/neu update
+        run: npm run runtime:setup
 
       - name: Build app packages
         run: npm run build && npm run package:macos
@@ -110,7 +110,7 @@ jobs:
         run: npm ci
 
       - name: Restore Neutralino runtime
-        run: npx @neutralinojs/neu update
+        run: npm run runtime:setup
 
       - name: Install RPM tooling
         run: sudo apt-get update && sudo apt-get install -y rpm gcc

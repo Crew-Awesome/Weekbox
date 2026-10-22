@@ -7,8 +7,6 @@ const https = require("node:https");
 
 const projectRoot = path.join(__dirname, "..");
 const manifest = require("./neutralino-runtime.json");
-const platform = manifest["windows-x64"];
-const runtimePath = path.join(projectRoot, platform.file);
 const statePath = path.join(projectRoot, "bin", ".weekbox-runtime.json");
 
 function download(url, destination, redirects = 0) {
@@ -83,13 +81,7 @@ function extractZip(archive, destination) {
 }
 
 async function main() {
-  if (process.platform !== "win32") {
-    throw new Error(
-      "The patched WeekBox runtime setup is currently Windows-only.",
-    );
-  }
-
-  fs.mkdirSync(path.dirname(runtimePath), { recursive: true });
+  fs.mkdirSync(path.join(projectRoot, "bin"), { recursive: true });
   const temporaryDirectory = fs.mkdtempSync(
     path.join(os.tmpdir(), "weekbox-runtime-"),
   );
@@ -104,27 +96,45 @@ async function main() {
     fs.mkdirSync(extractDirectory);
     extractZip(archivePath, extractDirectory);
 
-    const downloadedRuntime = findFile(extractDirectory, platform.archiveFile);
-    if (!downloadedRuntime) {
-      throw new Error(
-        `The runtime archive did not contain ${platform.archiveFile}.`,
-      );
+    const validatedRuntimes = manifest.binaries.map((binary) => {
+      const downloadedRuntime = findFile(extractDirectory, binary.archiveFile);
+      if (!downloadedRuntime) {
+        throw new Error(
+          `The runtime archive did not contain ${binary.archiveFile}.`,
+        );
+      }
+
+      const sha256 = crypto
+        .createHash("sha256")
+        .update(fs.readFileSync(downloadedRuntime))
+        .digest("hex")
+        .toUpperCase();
+      if (sha256 !== binary.sha256) {
+        throw new Error(
+          `Downloaded Neutralino runtime ${binary.archiveFile} hash ${sha256} does not match the pinned manifest.`,
+        );
+      }
+      return { binary, downloadedRuntime, sha256 };
+    });
+
+    for (const { binary, downloadedRuntime } of validatedRuntimes) {
+      const runtimePath = path.join(projectRoot, binary.file);
+      fs.copyFileSync(downloadedRuntime, runtimePath);
+      if (process.platform !== "win32") fs.chmodSync(runtimePath, 0o755);
     }
 
-    const sha256 = crypto
-      .createHash("sha256")
-      .update(fs.readFileSync(downloadedRuntime))
-      .digest("hex")
-      .toUpperCase();
-    if (sha256 !== platform.sha256) {
-      throw new Error(
-        `Downloaded Neutralino runtime hash ${sha256} does not match the pinned manifest.`,
-      );
-    }
-    fs.copyFileSync(downloadedRuntime, runtimePath);
+    const clientBaseUrl = `https://github.com/neutralinojs/neutralino.js/releases/download/v${manifest.clientVersion}`;
+    await download(
+      `${clientBaseUrl}/neutralino.js`,
+      path.join(projectRoot, "app", "neutralino.js"),
+    );
+    await download(
+      `${clientBaseUrl}/neutralino.d.ts`,
+      path.join(projectRoot, "app", "neutralino.d.ts"),
+    );
     fs.writeFileSync(
       statePath,
-      `${JSON.stringify({ version: manifest.version, sha256 }, null, 2)}\n`,
+      `${JSON.stringify({ version: manifest.version, sha256: manifest.binaries.find((binary) => binary.file === "bin/neutralino-win_x64.exe").sha256 }, null, 2)}\n`,
     );
     console.log(
       `[weekbox] Installed and recorded Neutralino ${manifest.version}.`,

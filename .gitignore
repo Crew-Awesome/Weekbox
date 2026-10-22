@@ -3,6 +3,7 @@
 /dist
 app/dist/
 neutralino.js
+neutralino.d.ts
 .storage
 /data
 *.log

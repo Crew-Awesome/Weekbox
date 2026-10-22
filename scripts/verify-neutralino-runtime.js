@@ -9,7 +9,9 @@ const runtimeStatePath = path.join(projectRoot, "bin", ".weekbox-runtime.json");
 function verifyNeutralinoRuntime() {
   if (process.platform !== "win32") return;
 
-  const expected = runtimeManifest["windows-x64"];
+  const expected = runtimeManifest.binaries.find(
+    (binary) => binary.file === "bin/neutralino-win_x64.exe",
+  );
   const runtimePath = path.join(projectRoot, expected.file);
 
   if (!fs.existsSync(runtimePath)) {

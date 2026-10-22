@@ -1,9 +1,42 @@
 {
   "version": "6.10.11",
   "releaseUrl": "https://github.com/Crew-Awesome/wb-nl-bin/releases/download/v6.10.11/neutralinojs-v6.10.11.zip",
-  "windows-x64": {
-    "file": "bin/neutralino-win_x64.exe",
-    "archiveFile": "neutralino-win_x64.exe",
-    "sha256": "A974E204219192ACA52951AFDFC80CAB6FE3FACA89E530D8C4A2F919200D1473"
-  }
+  "clientVersion": "6.10.0",
+  "binaries": [
+    {
+      "file": "bin/neutralino-linux_x64",
+      "archiveFile": "neutralino-linux_x64",
+      "sha256": "2F0CC93A5CE343521A291489D886C2A12D6DEBC9C517F575E707FC345B1EB3D8"
+    },
+    {
+      "file": "bin/neutralino-linux_arm64",
+      "archiveFile": "neutralino-linux_arm64",
+      "sha256": "1B295999F1DF160C83BF48D04A49679696DC25D46E5291089E09D95C687B02DC"
+    },
+    {
+      "file": "bin/neutralino-linux_armhf",
+      "archiveFile": "neutralino-linux_armhf",
+      "sha256": "13C870AAA55ED7B90475E04C6E408BC587F83B445EBA7F0920F3924D5F82683C"
+    },
+    {
+      "file": "bin/neutralino-win_x64.exe",
+      "archiveFile": "neutralino-win_x64.exe",
+      "sha256": "84FE01CB1EF71BD8109B4A411707B0142DD1121F24D61717B32C56CC497AFF8C"
+    },
+    {
+      "file": "bin/neutralino-mac_x64",
+      "archiveFile": "neutralino-mac_x64",
+      "sha256": "7500A295ADC373C8F1968D8581014A8BCEDDC60DBF3E2F9BADF393C586A857E6"
+    },
+    {
+      "file": "bin/neutralino-mac_arm64",
+      "archiveFile": "neutralino-mac_arm64",
+      "sha256": "2599097802D1BDEC7A1499EC6B87B8C9114301C1AEA06CB4D9044A236D371168"
+    },
+    {
+      "file": "bin/neutralino-mac_universal",
+      "archiveFile": "neutralino-mac_universal",
+      "sha256": "9B0BF59395695B602B681A88D705CAFCBEFC78F5A0364AD123AF312E9A75DFD5"
+    }
+  ]
 }
