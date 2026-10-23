@@ -244,7 +244,7 @@ jobs:
             --arg url "$(jq -r '.url' <<< "$release")" \
             --arg assets "$asset_count" \
             'def trim: if length > 4096 then .[0:4093] + "..." else . end;
-             {content: "<@&1530430162871783614>", allowed_mentions: {parse: [], roles: ["1530430162871783614"]}, embeds: [{
+             {content: "<@&1562415236965736558>", allowed_mentions: {parse: [], roles: ["1562415236965736558"]}, embeds: [{
                title: $name,
                url: $url,
                description: (if ($body | length) > 0 then ($body | trim) else ("Release assets are uploaded and verified (" + $assets + " assets).") end),

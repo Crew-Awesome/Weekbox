@@ -14,6 +14,9 @@ import { setButtonLoading } from "../../hourglass.js";
 import { modBookmarks } from "../../../../backend/core/state/mod-bookmarks.service.js";
 
 const WEEKBOX_AVATAR = "assets/icons/launcher-icon.png";
+const MODAL_OPEN_GUARD_MS = 350;
+const modalHideTimers = new WeakMap();
+const modalShowFrames = new WeakMap();
 
 function isFallbackAvatar(url) {
   return (
@@ -91,7 +94,12 @@ async function ensureModal(onClose, onProfileBack) {
       closeBtn.onclick = onClose;
     });
     element.onclick = (event) => {
-      if (event.target === element) onClose();
+      if (
+        event.target === element &&
+        performance.now() >= Number(element.dataset.openingGuardUntil || 0)
+      ) {
+        onClose();
+      }
     };
   });
   const profileBack = profileModal.querySelector("#modal-profile-back");
@@ -101,6 +109,16 @@ async function ensureModal(onClose, onProfileBack) {
 function showModal(modalId = "mod-modal") {
   homeCarousel.stopAutoSlide();
   const modal = document.getElementById(modalId);
+  const hideTimer = modalHideTimers.get(modal);
+  if (hideTimer) {
+    clearTimeout(hideTimer);
+    modalHideTimers.delete(modal);
+  }
+  const showFrame = modalShowFrames.get(modal);
+  if (showFrame) {
+    cancelAnimationFrame(showFrame);
+    modalShowFrames.delete(modal);
+  }
   const otherModalId =
     modalId === "mod-modal" ? "mod-profile-modal" : "mod-modal";
   const otherModal = document.getElementById(otherModalId);
@@ -109,8 +127,12 @@ function showModal(modalId = "mod-modal") {
     otherModal.classList.remove("show");
     otherModal.style.display = "none";
   }
+  modal.dataset.openingGuardUntil = String(
+    performance.now() + MODAL_OPEN_GUARD_MS,
+  );
   modal.style.display = "flex";
-  requestAnimationFrame(() => {
+  const frame = requestAnimationFrame(() => {
+    modalShowFrames.delete(modal);
     modal.classList.add("show");
     const activeView = modal.querySelector(".modal-content");
     activateCheckoutDialog(
@@ -120,17 +142,27 @@ function showModal(modalId = "mod-modal") {
       () => activeView?.querySelector(".modal-close-btn")?.click(),
     );
   });
+  modalShowFrames.set(modal, frame);
 }
 
 function hideModal(modalId = "mod-modal") {
   homeCarousel.startAutoSlide();
   const modal = document.getElementById(modalId);
   if (!modal) return;
+  const showFrame = modalShowFrames.get(modal);
+  if (showFrame) {
+    cancelAnimationFrame(showFrame);
+    modalShowFrames.delete(modal);
+  }
+  const hideTimer = modalHideTimers.get(modal);
+  if (hideTimer) clearTimeout(hideTimer);
   deactivateCheckoutDialog(modal);
   modal.classList.remove("show");
-  setTimeout(() => {
+  const nextHideTimer = setTimeout(() => {
     modal.style.display = "none";
+    modalHideTimers.delete(modal);
   }, 260);
+  modalHideTimers.set(modal, nextHideTimer);
 }
 
 function resetModal() {
