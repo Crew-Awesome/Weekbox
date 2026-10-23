@@ -23,6 +23,10 @@ import {
   ENGINE_DETAILS,
 } from "../../backend/config/engines.config.js";
 import { getPreferredEngineVersion } from "../config/engine-preferences.js";
+import {
+  STORAGE_LAYOUT_VERSION,
+  getStoragePaths,
+} from "./filesystem/storage-paths.js";
 
 function sameId(left, right) {
   return String(left) === String(right);
@@ -45,35 +49,111 @@ function trimPath(path) {
     .replace(/\/+$/, "");
 }
 
-const STORAGE_MOVE_MARKER_SUFFIX = ".weekbox-moving.json";
 const STORAGE_MOVE_PARTIAL_SUFFIX = ".weekbox-partial";
 const STORAGE_MOVE_CHUNK_SIZE = 4 * 1024 * 1024;
 const STORAGE_FOLDER_NAME = "WeekBoxLibrary";
 
+function getStorageMoveMarkerPaths(path) {
+  const paths = getStoragePaths(path);
+  const applicationRoot = trimPath(window.NL_DATAPATH);
+  return [
+    applicationRoot && `${applicationRoot}/.weekbox-moving.json`,
+    paths.storageMoveMarkerFile,
+    paths.legacyStorageMoveMarkerFile,
+    applicationRoot && `${applicationRoot}/weekbox-moving.json`,
+  ].filter(
+    (markerPath, index, allPaths) =>
+      markerPath && allPaths.indexOf(markerPath) === index,
+  );
+}
+
 function storageMoveMarkerPath(path) {
-  const markerRoot = trimPath(window.NL_DATAPATH) || trimPath(path);
-  return `${markerRoot}/${STORAGE_MOVE_MARKER_SUFFIX.replace(/^\./, "")}`;
+  return getStorageMoveMarkerPaths(path)[0];
 }
 
 async function readStorageMoveMarker(service) {
-  const markerPath = storageMoveMarkerPath(service.basePath);
-  if (!(await service.api.exists(markerPath))) return null;
-  try {
-    const marker = JSON.parse(await service.api.read(markerPath));
-    if (
-      marker?.version !== 1 ||
-      marker?.operation !== "move" ||
-      (normalizeComparablePath(marker.source) !==
-        normalizeComparablePath(service.basePath) &&
-        normalizeComparablePath(marker.destination) !==
-          normalizeComparablePath(service.basePath))
-    ) {
-      return null;
-    }
-    return { ...marker, markerPath };
-  } catch {
-    return null;
+  for (const markerPath of getStorageMoveMarkerPaths(service.basePath)) {
+    if (!(await service.api.exists(markerPath))) continue;
+    try {
+      const marker = JSON.parse(await service.api.read(markerPath));
+      if (
+        marker?.version !== 1 ||
+        marker?.operation !== "move" ||
+        (normalizeComparablePath(marker.source) !==
+          normalizeComparablePath(service.basePath) &&
+          normalizeComparablePath(marker.destination) !==
+            normalizeComparablePath(service.basePath))
+      ) {
+        continue;
+      }
+      return { ...marker, markerPath };
+    } catch {}
   }
+  return null;
+}
+
+async function migrateFile(api, sourcePath, destinationPath) {
+  if (!(await api.exists(sourcePath))) return true;
+  if (!(await api.exists(destinationPath))) {
+    await api.move(sourcePath, destinationPath);
+    return true;
+  }
+  const [source, destination] = await Promise.all([
+    api.read(sourcePath),
+    api.read(destinationPath),
+  ]);
+  if (source === destination) {
+    await api.remove(sourcePath);
+    return true;
+  }
+  console.warn(
+    `[WeekBox] Preserved conflicting legacy metadata file: ${sourcePath}`,
+  );
+  return false;
+}
+
+async function cleanupAtomicWriteTemps(service) {
+  const paths = [
+    service.paths.settingsFile,
+    service.paths.storageManifestFile,
+    service.paths.bookmarksFile,
+    service.paths.customEnginesFile,
+    service.paths.installedModsFile,
+    service.paths.legacyInstalledModsFile,
+    service.paths.engineUpdatesFile,
+    service.paths.legacyEngineUpdatesFile,
+    service.paths.deeplinkFile,
+    service.paths.legacyDeeplinkFile,
+    service.paths.legacySettingsFile,
+    service.paths.legacyDataSettingsFile,
+    ...getStorageMoveMarkerPaths(service.basePath),
+  ];
+  await Promise.all(
+    paths.map(async (path) => {
+      const directory = getParentPath(path);
+      const fileName = path.slice(directory.length + 1);
+      const entries = await Neutralino.filesystem
+        .readDirectory(directory)
+        .catch(() => []);
+      await Promise.all(
+        getRealEntries(entries)
+          .filter(
+            (entry) =>
+              entry.type === "FILE" &&
+              String(entry.entry).startsWith(`${fileName}.tmp-`),
+          )
+          .map((entry) => service.api.remove(`${directory}/${entry.entry}`)),
+      );
+    }),
+  );
+}
+
+function isStorageMoveMarkerPath(path, root) {
+  return getStorageMoveMarkerPaths(root).some(
+    (markerPath) =>
+      markerPath &&
+      normalizeComparablePath(markerPath) === normalizeComparablePath(path),
+  );
 }
 
 function relativeStoragePath(path, sourcePath) {
@@ -114,7 +194,11 @@ async function scanStorageFiles(
         continue;
       }
       const entryPath = `${directoryPath}/${entry.entry}`;
-      if (normalizeComparablePath(entryPath) === marker) continue;
+      if (
+        normalizeComparablePath(entryPath) === marker ||
+        isStorageMoveMarkerPath(entryPath, sourcePath)
+      )
+        continue;
       if (entry.type === "DIRECTORY") {
         await walk(entryPath);
         continue;
@@ -282,11 +366,16 @@ async function transferStorageFiles(
   if (sourceExists) {
     const allowedRootEntries = service.isStorageInExecutableDirectory()
       ? new Set([
+          "config",
           "data",
+          "state",
+          "runtime",
           "engines",
           "mods",
           "settings.json",
           "storage-manifest.json",
+          ".weekbox-moving.json",
+          "weekbox-moving.json",
         ])
       : null;
     ({ files, directories } = await scanStorageFiles(
@@ -369,19 +458,23 @@ function getDataUrlMimeType(path) {
 
 async function prepareStorageDestination(service, destinationPath, marker) {
   if (!(await service.api.exists(destinationPath))) return;
-  const markerPath = storageMoveMarkerPath(destinationPath);
   const entries = getRealEntries(
     await Neutralino.filesystem.readDirectory(destinationPath),
   ).filter(
     (entry) =>
-      normalizeComparablePath(`${destinationPath}/${entry.entry}`) !==
-      normalizeComparablePath(markerPath),
+      !isStorageMoveMarkerPath(
+        `${destinationPath}/${entry.entry}`,
+        destinationPath,
+      ),
   );
   if (!entries.length) {
     return;
   }
   if (await isStorageBootstrapFolder(service, destinationPath, entries)) {
-    await service.api.remove(`${destinationPath}/data/settings.json`);
+    const settingsDirectory = String(entries[0].entry).toLocaleLowerCase();
+    await service.api.remove(
+      `${destinationPath}/${settingsDirectory}/settings.json`,
+    );
     return;
   }
   if (
@@ -399,18 +492,21 @@ async function isStorageBootstrapFolder(service, destinationPath, entries) {
   if (
     entries.length !== 1 ||
     entries[0].type !== "DIRECTORY" ||
-    String(entries[0].entry).toLocaleLowerCase() !== "data"
+    !["config", "data"].includes(String(entries[0].entry).toLocaleLowerCase())
   ) {
     return false;
   }
+  const directory = String(entries[0].entry).toLocaleLowerCase();
   const dataEntries = getRealEntries(
-    await Neutralino.filesystem.readDirectory(`${destinationPath}/data`),
+    await Neutralino.filesystem.readDirectory(
+      `${destinationPath}/${directory}`,
+    ),
   );
   return (
     dataEntries.length === 1 &&
     dataEntries[0].type === "FILE" &&
     String(dataEntries[0].entry).toLocaleLowerCase() === "settings.json" &&
-    (await service.api.exists(`${service.basePath}/data/settings.json`))
+    (await service.api.exists(`${service.basePath}/${directory}/settings.json`))
   );
 }
 
@@ -463,7 +559,13 @@ async function finishSamePathStorageMove(service, plan) {
       normalizeComparablePath(service.basePath) &&
     (await service.isCompleteStorage(service.basePath))
   ) {
-    await service.api.remove(plan.pending.markerPath);
+    await Promise.all(
+      [plan.pending.markerPath, ...getStorageMoveMarkerPaths(service.basePath)]
+        .filter(
+          (path, index, allPaths) => path && allPaths.indexOf(path) === index,
+        )
+        .map((path) => service.api.remove(path)),
+    );
     service.pendingStorageMove = null;
   }
   return service.weekboxPath;
@@ -737,6 +839,10 @@ var _FileSystemService = class _FileSystemService {
   constructor() {
     this.basePath = "";
     this.weekboxPath = "";
+    this.paths = getStoragePaths("");
+    this.configPath = "";
+    this.statePath = "";
+    this.runtimePath = "";
     this.enginesPath = "";
     this.modsPath = "";
     this.dataPath = "";
@@ -754,7 +860,7 @@ var _FileSystemService = class _FileSystemService {
     this.processes = new ProcessService(this.executables);
     this.customEngines = new CustomEngineRepository({
       api: this.api,
-      getDataPath: () => this.dataPath,
+      getStoragePaths: () => this.paths,
     });
     this.activeEngineProcesses = this.processes.activeProcesses;
     this.activeEngineMods = new Map();
@@ -764,11 +870,11 @@ var _FileSystemService = class _FileSystemService {
     });
     this.mods = new ModRepository({
       api: this.api,
-      getDataPath: () => this.dataPath,
+      getStoragePaths: () => this.paths,
     });
     this.covers = new ModCoverService({
       api: this.api,
-      getDataPath: () => this.dataPath,
+      getStoragePaths: () => this.paths,
     });
     this.injection = new ModInjectionService({
       api: this.api,
@@ -826,7 +932,11 @@ var _FileSystemService = class _FileSystemService {
       this.setStoragePaths(storagePath);
       this.pendingStorageMove = await readStorageMoveMarker(this);
       await this.ensureStorageDirectories();
-      await this.ensureStorageManifest();
+      await cleanupAtomicWriteTemps(this);
+      const metadataMigrationComplete = await this.migrateStorageMetadata();
+      await this.ensureStorageManifest({
+        allowUpgrade: metadataMigrationComplete,
+      });
       await this.selectSettingsPath(storagePath);
       await this.customEngines.load();
     }
@@ -1019,40 +1129,88 @@ var _FileSystemService = class _FileSystemService {
       );
     }
   }
-  async writeStorageManifest(root, { force = false } = {}) {
-    const manifestPath = `${root}/storage-manifest.json`;
+  async writeStorageManifest(
+    root,
+    { force = false, allowUpgrade = true } = {},
+  ) {
+    const manifestPath = getStoragePaths(root).storageManifestFile;
+    let manifestVersion = null;
     if (await this.api.exists(manifestPath)) {
       try {
         const manifest = JSON.parse(await this.api.read(manifestPath));
-        if (!force && manifest?.version === 1) return;
+        manifestVersion = Number(manifest?.version) || 0;
+        if (!force && manifestVersion === STORAGE_LAYOUT_VERSION) return;
       } catch {}
     }
-    await this.api.write(
+    if (!allowUpgrade && manifestVersion < STORAGE_LAYOUT_VERSION) return;
+    await this.api.writeAtomic(
       manifestPath,
-      `${JSON.stringify({ version: 1 }, null, 2)}\n`,
+      `${JSON.stringify({ version: STORAGE_LAYOUT_VERSION }, null, 2)}\n`,
     );
   }
+
+  async migrateStorageMetadata() {
+    let manifestVersion = 0;
+    try {
+      manifestVersion = Number(
+        JSON.parse(await this.api.read(this.paths.storageManifestFile))
+          ?.version,
+      );
+    } catch {}
+    if (manifestVersion >= STORAGE_LAYOUT_VERSION) return true;
+    let complete = await migrateFile(
+      this.api,
+      this.paths.legacyInstalledModsFile,
+      this.paths.installedModsFile,
+    );
+    complete =
+      (await migrateFile(
+        this.api,
+        this.paths.legacyEngineUpdatesFile,
+        this.paths.engineUpdatesFile,
+      )) && complete;
+    complete =
+      (await migrateFile(
+        this.api,
+        this.paths.legacyDeeplinkFile,
+        this.paths.deeplinkFile,
+      )) && complete;
+    return complete;
+  }
+
   async ensureStorageManifest() {
     await this.writeStorageManifest(this.basePath);
   }
   async selectSettingsPath(storagePath) {
     const root = trimPath(storagePath);
-    const settingsPath = `${root}/settings.json`;
-    if (
-      normalizeComparablePath(appSettings.path) !==
-      normalizeComparablePath(settingsPath)
-    ) {
-      await appSettings.load(root);
+    const paths = getStoragePaths(root);
+    let loaded = await appSettings.load(paths.configPath);
+    if (!loaded) {
+      for (const legacyPath of [paths.dataPath, root]) {
+        if (await appSettings.load(legacyPath)) {
+          loaded = true;
+          break;
+        }
+      }
     }
     appSettings.set("storagePath", root, { persist: false });
-    await appSettings.setDataPath(root);
+    await appSettings.setDataPath(paths.configPath);
     await appSettings.write();
+    await Promise.all(
+      [paths.legacySettingsFile, paths.legacyDataSettingsFile]
+        .filter(
+          (path) =>
+            normalizeComparablePath(path) !==
+            normalizeComparablePath(paths.settingsFile),
+        )
+        .map((path) => this.api.remove(path)),
+    );
   }
   async ensureStorageDirectoriesAt(root) {
     await this.api.ensureDir(root);
     await Promise.all(
-      ["data", "engines", "mods"].map((directory) =>
-        this.api.ensureDir(`${root}/${directory}`),
+      ["config", "data", "state", "runtime", "engines", "mods"].map(
+        (directory) => this.api.ensureDir(`${root}/${directory}`),
       ),
     );
   }
@@ -1066,18 +1224,20 @@ var _FileSystemService = class _FileSystemService {
     }
     this.basePath = normalizedBasePath;
     this.weekboxPath = this.basePath;
-    this.enginesPath = `${this.basePath}/engines`;
-    this.modsPath = `${this.basePath}/mods`;
-    this.dataPath = `${this.basePath}/data`;
+    this.paths = getStoragePaths(this.basePath);
+    this.configPath = this.paths.configPath;
+    this.statePath = this.paths.statePath;
+    this.runtimePath = this.paths.runtimePath;
+    this.enginesPath = this.paths.enginesPath;
+    this.modsPath = this.paths.modsPath;
+    this.dataPath = this.paths.dataPath;
   }
   async ensureStorageDirectories() {
     await this.api.ensureDir(this.basePath);
     if (!(await this.api.exists(this.basePath))) {
       throw new Error("Selected storage folder is unavailable");
     }
-    await this.api.ensureDir(this.enginesPath);
-    await this.api.ensureDir(this.modsPath);
-    await this.api.ensureDir(this.dataPath);
+    await this.ensureStorageDirectoriesAt(this.basePath);
   }
   hasRunningProcesses() {
     return this.activeEngineProcesses.size > 0;
@@ -1180,7 +1340,11 @@ var _FileSystemService = class _FileSystemService {
     await this.assertStoragePathAllowed(storage.basePath);
     this.setStoragePaths(storage.basePath);
     await this.ensureStorageDirectories();
-    await this.ensureStorageManifest();
+    await cleanupAtomicWriteTemps(this);
+    const metadataMigrationComplete = await this.migrateStorageMetadata();
+    await this.ensureStorageManifest({
+      allowUpgrade: metadataMigrationComplete,
+    });
     await this.selectSettingsPath(storage.basePath);
     await this.customEngines.load();
     return this.weekboxPath;
@@ -1222,7 +1386,13 @@ var _FileSystemService = class _FileSystemService {
         startedAt: pending?.startedAt || new Date().toISOString(),
         operation: "move",
       };
-      await this.api.write(markerPath, `${JSON.stringify(marker)}\n`);
+      await Promise.all(
+        getStorageMoveMarkerPaths(previousBasePath)
+          .slice(0, 2)
+          .map((path) =>
+            this.api.writeAtomic(path, `${JSON.stringify(marker)}\n`),
+          ),
+      );
       this.pendingStorageMove = { ...marker, markerPath };
       console.info(
         `[WeekBox] Storage move ${isResume ? "resumed" : "started"}`,
@@ -1256,9 +1426,13 @@ var _FileSystemService = class _FileSystemService {
       }
       report({ ...transferState, phase: "FINALIZING", progress: 100 });
       this.setStoragePaths(destinationPath);
+      await cleanupAtomicWriteTemps(this);
+      const metadataMigrationComplete = await this.migrateStorageMetadata();
       await this.customEngines.load();
       await this.selectSettingsPath(destinationPath);
-      await this.writeStorageManifest(destinationPath);
+      await this.writeStorageManifest(destinationPath, {
+        allowUpgrade: metadataMigrationComplete,
+      });
       const movedMods = (await this.mods.getAll()) || [];
       const movedEngines = await this.getInstalledEngines();
       await Promise.all(
@@ -1266,7 +1440,17 @@ var _FileSystemService = class _FileSystemService {
           this.injection.injectIntoInstalledEngines(mod.id, movedEngines),
         ),
       );
-      await this.api.remove(markerPath);
+      await Promise.all(
+        [
+          markerPath,
+          ...getStorageMoveMarkerPaths(previousBasePath),
+          ...getStorageMoveMarkerPaths(destinationPath),
+        ]
+          .filter(
+            (path, index, allPaths) => path && allPaths.indexOf(path) === index,
+          )
+          .map((path) => this.api.remove(path)),
+      );
       this.pendingStorageMove = null;
       report({ phase: "COMPLETE", progress: 100 });
       console.info("[WeekBox] Storage move completed", {
@@ -2021,7 +2205,9 @@ var _FileSystemService = class _FileSystemService {
           !["dependency", "addon"].includes(mod.kind) &&
           Number(mod.lastPlayedAt) > 0,
       )
-      .sort((left, right) => Number(right.lastPlayedAt) - Number(left.lastPlayedAt))
+      .sort(
+        (left, right) => Number(right.lastPlayedAt) - Number(left.lastPlayedAt),
+      )
       .slice(0, limit);
   }
   async launchRecentlyPlayedMod(modId, onStateChange) {
@@ -2299,7 +2485,11 @@ var _FileSystemService = class _FileSystemService {
         iconPath = null;
       }
     }
-    return this.mods.updateAppearance(modId, { ...metadata, coverPath, iconPath });
+    return this.mods.updateAppearance(modId, {
+      ...metadata,
+      coverPath,
+      iconPath,
+    });
   }
   async getModCover(modId) {
     if (!this.isInitialized) return null;

@@ -1,3 +1,5 @@
+import { APIneuFileSystem } from "../../services/filesystem/api-neu-file-system.service.js";
+
 function isValidValue(definition, value) {
   if (value === null) return Boolean(definition.nullable);
   return typeof value === definition.type;
@@ -105,13 +107,35 @@ appSettings = {
   writeQueue: Promise.resolve(),
   async resolveDataPath(defaultDataPath) {
     try {
-      return (
+      const savedPath =
         (await Neutralino.storage.getData(SETTINGS_PATH_KEY)) ||
-        (await Neutralino.storage.getData(LEGACY_SETTINGS_PATH_KEY)) ||
-        defaultDataPath
-      );
+        (await Neutralino.storage.getData(LEGACY_SETTINGS_PATH_KEY));
+      const savedRoot = String(savedPath || "")
+        .replace(/\\/g, "/")
+        .replace(/\/(?:config|data)$/i, "");
+      const savedCandidates = savedPath
+        ? [savedPath, savedRoot, `${savedRoot}/data`]
+        : [];
+      const candidates = [
+        ...savedCandidates,
+        `${defaultDataPath}/config`,
+        defaultDataPath,
+        `${defaultDataPath}/data`,
+      ];
+      for (const candidate of candidates.filter(
+        (value, index, allValues) =>
+          value && allValues.indexOf(value) === index,
+      )) {
+        try {
+          await Neutralino.filesystem.getStats(
+            `${candidate}/${SETTINGS_FILE_NAME}`,
+          );
+          return candidate;
+        } catch {}
+      }
+      return `${defaultDataPath}/config`;
     } catch {
-      return defaultDataPath;
+      return `${defaultDataPath}/config`;
     }
   },
   async init(dataPath) {
@@ -260,7 +284,7 @@ appSettings = {
     const previous = this.writeQueue;
     const next = previous
       .catch(() => {})
-      .then(() => Neutralino.filesystem.writeFile(path, contents));
+      .then(() => APIneuFileSystem.writeAtomic(path, contents));
     const settled = next.catch(() => {});
     this.writeQueue = settled;
     settled.finally(() => {

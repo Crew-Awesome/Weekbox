@@ -12,12 +12,12 @@ function blobToDataUrl(blob) {
 }
 
 var _ModCoverService = class _ModCoverService {
-  constructor({ api, getDataPath }) {
+  constructor({ api, getStoragePaths }) {
     this.api = api;
-    this.getDataPath = getDataPath;
+    this.getStoragePaths = getStoragePaths;
   }
   get coversPath() {
-    return `${this.getDataPath()}/mod-covers`;
+    return this.getStoragePaths().modCoversPath;
   }
   getCoverPath(modId) {
     return `${this.coversPath}/${safeCoverName(modId)}.webp`;

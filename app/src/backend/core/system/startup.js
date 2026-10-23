@@ -39,9 +39,25 @@ import {
   setTheme,
 } from "../../../ui/js/theme.js";
 import { i18n, localizeProgressStatus, t } from "../../../ui/js/i18n/index.js";
+import {
+  getStoragePaths,
+  getStorageRootFromSettingsPath,
+} from "../../services/filesystem/storage-paths.js";
 
 const SINGLE_INSTANCE_MUTEX = "Global\\WeekBox-com.weekbox.app";
-const PENDING_HANDOFF_FILE = "weekbox-deeplink.json";
+
+async function getRuntimeHandoffPaths() {
+  const defaultStoragePath = await FS.getDefaultStoragePath();
+  const settingsPath = await appSettings.resolveDataPath(defaultStoragePath);
+  const paths = getStoragePaths(getStorageRootFromSettingsPath(settingsPath));
+  const legacyApplicationPath = String(window.NL_DATAPATH || "").trim();
+  // Neutralino must hand off before the user-selected library is known.
+  return [
+    paths.deeplinkFile,
+    paths.legacyDeeplinkFile,
+    legacyApplicationPath && `${legacyApplicationPath}/weekbox-deeplink.json`,
+  ].filter((path, index, allPaths) => path && allPaths.indexOf(path) === index);
+}
 
 function encodePowerShellCommand(script) {
   const bytes = new Uint8Array(script.length * 2);
@@ -151,11 +167,11 @@ async function ensureSingleInstance() {
 
 async function handoffToPrimaryInstance() {
   const link = getWeekboxLinkFromArgs();
-  const dataPath = String(window.NL_DATAPATH || "").trim();
-  if (dataPath) {
-    await Neutralino.filesystem
-      .writeFile(
-        `${dataPath}/${PENDING_HANDOFF_FILE}`,
+  const handoffPaths = await getRuntimeHandoffPaths().catch(() => []);
+  if (handoffPaths[0]) {
+    await FS.api
+      .writeAtomic(
+        handoffPaths[0],
         JSON.stringify({ link, timestamp: Date.now() }),
       )
       .catch(() => {});
@@ -170,6 +186,19 @@ async function handoffToPrimaryInstance() {
   }
   await new Promise((resolve) => setTimeout(resolve, 250));
   await Neutralino.app.exit().catch(() => {});
+}
+
+async function readPendingHandoff() {
+  try {
+    for (const path of await getRuntimeHandoffPaths()) {
+      const raw = await Neutralino.filesystem.readFile(path).catch(() => "");
+      if (raw) {
+        await Neutralino.filesystem.remove(path).catch(() => {});
+        return JSON.parse(raw);
+      }
+    }
+  } catch {}
+  return null;
 }
 
 function installGlobalErrorReporter() {
@@ -485,20 +514,7 @@ async function startApp() {
     const checkPendingHandoff = async () => {
       if (!primaryInstance || pendingHandoffCheck) return;
       pendingHandoffCheck = true;
-      let pendingHandoff = null;
-      const dataPath = String(window.NL_DATAPATH || "").trim();
-      try {
-        if (dataPath) {
-          const path = `${dataPath}/${PENDING_HANDOFF_FILE}`;
-          const raw = await Neutralino.filesystem
-            .readFile(path)
-            .catch(() => "");
-          if (raw) {
-            await Neutralino.filesystem.remove(path).catch(() => {});
-            pendingHandoff = JSON.parse(raw);
-          }
-        }
-      } catch {}
+      const pendingHandoff = await readPendingHandoff();
       pendingHandoffCheck = false;
       const isFresh =
         pendingHandoff?.timestamp &&
@@ -586,7 +602,8 @@ async function startApp() {
     startupStep = "restoring preferences";
     startupStep = "finding the default storage location";
     const defaultStoragePath = await FS.getDefaultStoragePath();
-    const defaultDataPath = defaultStoragePath;
+    const defaultDataPath =
+      (await FS.findFallbackStorage()) || defaultStoragePath;
     startupStep = "reading saved settings";
     const settingsDataPath = await appSettings.resolveDataPath(defaultDataPath);
     const hadSettings = await FS.api.exists(
@@ -615,7 +632,7 @@ async function startApp() {
     startupLoader.setPhase(t("startup.openingLibrary"), 42);
     startupStep = "preparing the WeekBox library";
     await FS.init({ deferMaintenance: true });
-    await appSettings.setDataPath(FS.dataPath);
+    await appSettings.setDataPath(FS.configPath);
     await modBookmarks.init();
     const cachedTheme = getCachedTheme();
     const cachedHue = getCachedHue();

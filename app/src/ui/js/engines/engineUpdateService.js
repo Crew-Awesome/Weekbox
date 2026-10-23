@@ -1,11 +1,7 @@
 import { getEngineUpdateCandidate } from "../../../backend/providers/github/github-release.provider.js";
 import { ENGINE_DETAILS } from "../../../backend/config/engines.config.js";
 import { FS } from "../../../backend/services/filesystem.js";
-import {
-  getTargetLink,
-  getTargetPlatform,
-  getTargetSize,
-} from "./utils.js";
+import { getTargetLink, getTargetPlatform, getTargetSize } from "./utils.js";
 import { downloadEngine } from "./downloadEngine.js";
 import { engineUpdateModal } from "./engineUpdateModal.js";
 import { engineUpdateToast } from "./engineUpdateToast.js";
@@ -14,7 +10,6 @@ import { networkStatus } from "../../../backend/core/system/network-status.servi
 import { getEngineLabel } from "../i18n/index.js";
 
 const SKIP_PREFIX = "weekbox-engine-update-skip-";
-const UPDATE_STATE_FILE = "engineupdatestate.json";
 const AUTO_CHECK_INTERVAL_MS = 3 * 60 * 60 * 1000;
 let scheduledCheck = null;
 
@@ -25,9 +20,7 @@ function getBuildStateKey(engineId, installedVersion) {
 async function readUpdateState() {
   if (!FS.isInitialized) await FS.init();
   try {
-    const state = JSON.parse(
-      await FS.api.read(`${FS.dataPath}/${UPDATE_STATE_FILE}`),
-    );
+    const state = JSON.parse(await FS.api.read(FS.paths.engineUpdatesFile));
     return state && typeof state === "object" ? state : {};
   } catch {
     return {};
@@ -43,8 +36,8 @@ async function saveInstalledBuild(engineId, installedVersion, buildKey) {
   const state = await readUpdateState();
   state.builds ||= {};
   state.builds[getBuildStateKey(engineId, installedVersion)] = buildKey;
-  await FS.api.write(
-    `${FS.dataPath}/${UPDATE_STATE_FILE}`,
+  await FS.api.writeAtomic(
+    FS.paths.engineUpdatesFile,
     JSON.stringify(state, null, 2),
   );
 }
@@ -79,8 +72,6 @@ export async function rememberInstalledEngineBuild(
 }
 
 async function findAvailableUpdate(engineId, installedVersion) {
-
-
   if (engineId === "psychonline" && installedVersion !== "Latest") {
     return { status: "pinned" };
   }
@@ -94,8 +85,6 @@ async function findAvailableUpdate(engineId, installedVersion) {
     return { status: "skipped" };
   const savedBuild = await getInstalledBuild(engineId, installedVersion);
   if (savedBuild === key) return { status: "current" };
-
-
 
   if (engineId === "psychonline" && installedVersion === "Latest") {
     await saveInstalledBuild(engineId, installedVersion, key);

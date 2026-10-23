@@ -2,7 +2,6 @@ import { appSettings } from "../system/settings.service.js";
 import { FS } from "../../services/filesystem.js";
 
 const BOOKMARKS_SETTING = "modBookmarks";
-const BOOKMARKS_FILE_NAME = "bookmarks.json";
 let bookmarks = [];
 let initialized = false;
 let writeQueue = Promise.resolve();
@@ -28,7 +27,7 @@ function normalizeBookmarks(value) {
 }
 
 function getBookmarksPath() {
-  return FS.dataPath ? `${FS.dataPath}/${BOOKMARKS_FILE_NAME}` : "";
+  return FS.paths.bookmarksFile || "";
 }
 
 async function writeBookmarks() {
@@ -36,7 +35,9 @@ async function writeBookmarks() {
   if (!path) throw new Error("WeekBox data path is not initialized");
   const next = writeQueue
     .catch(() => {})
-    .then(() => FS.api.write(path, `${JSON.stringify(bookmarks, null, 2)}\n`));
+    .then(() =>
+      FS.api.writeAtomic(path, `${JSON.stringify(bookmarks, null, 2)}\n`),
+    );
   writeQueue = next.catch(() => {});
   await next;
 }

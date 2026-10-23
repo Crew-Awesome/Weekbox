@@ -20,12 +20,12 @@ function normalizeTags(tags) {
 }
 
 var _ModRepository = class _ModRepository {
-  constructor({ api, getDataPath }) {
+  constructor({ api, getStoragePaths }) {
     this.api = api;
-    this.getDataPath = getDataPath;
+    this.getStoragePaths = getStoragePaths;
   }
   get filePath() {
-    return `${this.getDataPath()}/installedmods.json`;
+    return this.getStoragePaths().installedModsFile;
   }
   async getAll() {
     if (!(await this.api.exists(this.filePath))) return [];
@@ -37,7 +37,7 @@ var _ModRepository = class _ModRepository {
     }
   }
   async saveAll(mods) {
-    await this.api.write(this.filePath, JSON.stringify(mods, null, 2));
+    await this.api.writeAtomic(this.filePath, JSON.stringify(mods, null, 2));
   }
   async add(modId, modName, metadata = {}) {
     const mods = await this.getAll();

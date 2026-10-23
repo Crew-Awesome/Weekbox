@@ -6,6 +6,25 @@ function quoteShellArgument(value) {
   return `'${argument.replaceAll("'", "'\"'\"'")}'`;
 }
 
+async function replaceFile(sourcePath, destinationPath) {
+  if (!(await APIneuFileSystem.exists(destinationPath))) {
+    await Neutralino.filesystem.move(sourcePath, destinationPath);
+    return;
+  }
+
+  const source =
+    window.NL_OS === "Windows" ? sourcePath.replaceAll("/", "\\") : sourcePath;
+  const destination =
+    window.NL_OS === "Windows"
+      ? destinationPath.replaceAll("/", "\\")
+      : destinationPath;
+  const command =
+    window.NL_OS === "Windows"
+      ? `cmd /c move /Y ${quoteShellArgument(source)} ${quoteShellArgument(destination)}`
+      : `mv -f ${quoteShellArgument(source)} ${quoteShellArgument(destination)}`;
+  await Neutralino.os.execCommand(command, { background: false });
+}
+
 function getRemovalCommand(path, isDirectory) {
   if (window.NL_OS !== "Windows") {
     return `rm -rf ${quoteShellArgument(path)}`;
@@ -81,9 +100,6 @@ async function copyMoveFallback(api, source, destination, lastError) {
 }
 
 var APIneuFileSystem = {
-
-
-
   async exists(path) {
     if (typeof path !== "string" || !path.trim()) return false;
     try {
@@ -93,8 +109,6 @@ var APIneuFileSystem = {
       return false;
     }
   },
-
-
 
   async ensureDir(path) {
     if (typeof path !== "string" || !path.trim()) {
@@ -130,8 +144,6 @@ var APIneuFileSystem = {
     }
   },
 
-
-
   async write(path, data, isBinary = false) {
     if (typeof path !== "string" || !path.trim()) {
       throw new Error(
@@ -160,7 +172,27 @@ var APIneuFileSystem = {
     }
   },
 
-
+  async writeAtomic(path, data, isBinary = false) {
+    if (typeof path !== "string" || !path.trim()) {
+      throw new Error(
+        "WeekBox could not write storage data because the destination path is missing.",
+      );
+    }
+    const token =
+      globalThis.crypto?.randomUUID?.() ||
+      `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+    const temporaryPath = `${path}.tmp-${token}`;
+    try {
+      await this.write(temporaryPath, data, isBinary);
+      await replaceFile(temporaryPath, path);
+      if (!(await this.exists(path)) || (await this.exists(temporaryPath))) {
+        throw new Error(`Could not replace ${path} atomically.`);
+      }
+    } catch (error) {
+      await this.remove(temporaryPath).catch(() => {});
+      throw error;
+    }
+  },
 
   async append(path, data, isBinary = false) {
     if (typeof path !== "string" || !path.trim()) {
@@ -180,8 +212,6 @@ var APIneuFileSystem = {
     }
   },
 
-
-
   async read(path, isBinary = false) {
     if (typeof path !== "string" || !path.trim()) {
       throw new Error(
@@ -194,8 +224,6 @@ var APIneuFileSystem = {
       return await Neutralino.filesystem.readFile(path);
     }
   },
-
-
 
   async remove(path) {
     if (typeof path !== "string" || !path.trim()) return;

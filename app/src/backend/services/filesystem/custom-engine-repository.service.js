@@ -3,14 +3,14 @@ function sameId(left, right) {
 }
 
 class CustomEngineRepository {
-  constructor({ api, getDataPath }) {
+  constructor({ api, getStoragePaths }) {
     this.api = api;
-    this.getDataPath = getDataPath;
+    this.getStoragePaths = getStoragePaths;
     this.engines = [];
   }
 
   get filePath() {
-    return `${this.getDataPath()}/custom-engines.json`;
+    return this.getStoragePaths().customEnginesFile;
   }
 
   async load() {
@@ -34,7 +34,7 @@ class CustomEngineRepository {
   }
 
   async save() {
-    await this.api.write(
+    await this.api.writeAtomic(
       this.filePath,
       `${JSON.stringify(this.engines, null, 2)}\n`,
     );

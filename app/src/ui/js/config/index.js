@@ -583,21 +583,25 @@ export const configModal = {
             ? "settings.enginesLabel"
             : "settings.allLibraryLabel",
       );
+    const formatTargetPickerLabel = (label) =>
+      label ? `${label.charAt(0).toUpperCase()}${label.slice(1)}` : label;
 
     const syncTargetPicker = () => {
       targetSelected.textContent = target
-        ? getTargetLabel()
+        ? formatTargetPickerLabel(getTargetLabel())
         : t("settings.clearLibraryChooseOption");
       targetMenu.querySelectorAll("[data-target]").forEach((option) => {
         const selected = option.dataset.target === target;
         option.classList.toggle("selected", selected);
         option.setAttribute("aria-selected", String(selected));
-        option.textContent = t(
-          option.dataset.target === "mods"
-            ? "settings.modsLabel"
-            : option.dataset.target === "engines"
-              ? "settings.enginesLabel"
-              : "settings.allLibraryLabel",
+        option.textContent = formatTargetPickerLabel(
+          t(
+            option.dataset.target === "mods"
+              ? "settings.modsLabel"
+              : option.dataset.target === "engines"
+                ? "settings.enginesLabel"
+                : "settings.allLibraryLabel",
+          ),
         );
       });
       targetSelect.value = target;
@@ -612,29 +616,39 @@ export const configModal = {
     };
 
     const renderStep = () => {
+      const isChoosingTarget = step === 0;
       targetPickerLabel.textContent = t("settings.clearLibraryTargetLabel");
       targetLabel = getTargetLabel();
       syncTargetPicker();
-      title.textContent = t(
-        step === 0
-          ? "settings.clearLibraryChooseTitle"
-          : step === 1
+      title.hidden = isChoosingTarget;
+      description.hidden = isChoosingTarget;
+      if (isChoosingTarget) {
+        title.textContent = "";
+        description.textContent = "";
+        dialog.removeAttribute("aria-labelledby");
+        dialog.removeAttribute("aria-describedby");
+        dialog.setAttribute("aria-label", t("settings.clearLibrary"));
+      } else {
+        title.textContent = t(
+          step === 1
             ? "settings.clearLibraryFirstTitle"
             : step === 2
               ? "settings.clearLibrarySecondTitle"
               : "settings.clearLibraryFinalTitle",
-        { target: targetLabel },
-      );
-      description.textContent = t(
-        step === 0
-          ? "settings.clearLibraryChooseDescription"
-          : step === 1
+          { target: targetLabel },
+        );
+        description.textContent = t(
+          step === 1
             ? "settings.clearLibraryFirstDescription"
             : step === 2
               ? "settings.clearLibrarySecondDescription"
               : "settings.clearLibraryFinalDescription",
-        { target: targetLabel },
-      );
+          { target: targetLabel },
+        );
+        dialog.setAttribute("aria-labelledby", "library-delete-title");
+        dialog.setAttribute("aria-describedby", "library-delete-description");
+        dialog.removeAttribute("aria-label");
+      }
       status.textContent = "";
       cancel.textContent = t("common.cancel");
       confirm.textContent = t(
