@@ -7,7 +7,7 @@ Thanks for helping improve WeekBox.
 - Search existing issues before opening a new one.
 - Describe bugs with the WeekBox version, operating system, expected result, actual result, and reproducible steps.
 - Keep feature requests focused on a clear player or maintainer need.
-- Join the [WeekBox Discord Server](https://discord.gg/xQTtYF2Cfn) to discuss development, translations, or other project work.
+- Join the [WeekBox Discord Server](https://discord.gg/BEgEYjba5f) to discuss development, translations, or other project work.
 - For project work, contact **Malloy** or **Britex** through Discord first.
 
 ## Pull requests

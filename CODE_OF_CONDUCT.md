@@ -19,5 +19,5 @@ Maintainers may remove content, close discussions, or restrict participation
 when needed to protect the community.
 
 For conduct concerns, contact **Malloy** or **Britex** privately through the
-[WeekBox Discord Server](https://discord.gg/xQTtYF2Cfn). Do not publicly post
+[WeekBox Discord Server](https://discord.gg/BEgEYjba5f). Do not publicly post
 private information when reporting a problem.

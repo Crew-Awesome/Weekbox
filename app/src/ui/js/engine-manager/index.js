@@ -37,6 +37,8 @@ import {
 import { createLoadingState, setButtonLoading } from "../hourglass.js";
 import { appSettings } from "../../../backend/core/system/settings.service.js";
 
+const MODAL_OPEN_GUARD_MS = 350;
+
 function sortableItems(container, selector) {
   return [...container.children].filter((item) => item.matches(selector));
 }
@@ -509,6 +511,7 @@ export const engineManagerModal = {
   resizeObserver: null,
   pickerRequestId: 0,
   isPickerOpen: false,
+  openingGuardUntil: 0,
   async init() {
     if (!document.getElementById("engine-manager-modal")) {
       const tpl = document.getElementById("tpl-engine-manager");
@@ -521,7 +524,12 @@ export const engineManagerModal = {
       document
         .getElementById("engine-manager-modal")
         ?.addEventListener("click", (e) => {
-          if (e.target.id === "engine-manager-modal") this.close();
+          if (
+            e.target.id === "engine-manager-modal" &&
+            performance.now() >= this.openingGuardUntil
+          ) {
+            this.close();
+          }
         });
       networkStatus.addEventListener("change", () => {
         if (
@@ -549,6 +557,7 @@ export const engineManagerModal = {
     const modal = document.getElementById("engine-manager-modal");
     if (!modal) return;
     sidebar.setActive(sidebar.engineManagerBtn);
+    this.openingGuardUntil = performance.now() + MODAL_OPEN_GUARD_MS;
     modal.style.display = "flex";
     activateCheckoutDialog(
       modal,

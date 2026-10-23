@@ -80,7 +80,7 @@ export const firstRunLanguageModal = {
           <p data-i18n="languageSetup.translationReportMessage">${t("languageSetup.translationReportMessage")}</p>
           <div class="language-report-actions">
             <a class="language-report-link" href="https://github.com/Crew-Awesome/Weekbox/issues" data-i18n="languageSetup.translationReportGithub">Report on GitHub</a>
-            <a class="language-report-link" href="https://discord.gg/xQTtYF2Cfn" data-i18n="languageSetup.translationReportDiscord">Join the Discord server</a>
+            <a class="language-report-link" href="https://discord.gg/BEgEYjba5f" data-i18n="languageSetup.translationReportDiscord">Join the Discord server</a>
           </div>
         </div>`;
       document.body.appendChild(reportOverlay);

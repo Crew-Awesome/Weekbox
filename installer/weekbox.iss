@@ -6,7 +6,7 @@
 #define MyAppPublisher "Crew Awesome"
 #define MyAppURL "https://github.com/Crew-Awesome/Weekbox"
 #define MyAppExeName "WeekBox-win_x64.exe"
-#define MyDiscordURL "https://discord.gg/xQTtYF2Cfn"
+#define MyDiscordURL "https://discord.gg/BEgEYjba5f"
 
 [Setup]
 ; !!! DO NOT TOUCH THIS AppId. EVER. UNDER ANY CIRCUMSTANCES. !!!

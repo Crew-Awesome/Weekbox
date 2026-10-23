@@ -6,7 +6,7 @@
 
 <p align="center">
   <a href="https://github.com/Crew-Awesome/Weekbox/blob/main/LICENSE"><img src="https://img.shields.io/github/license/Crew-Awesome/Weekbox?style=flat-square" alt="MIT License" /></a>
-  <a href="https://discord.gg/xQTtYF2Cfn"><img src="https://img.shields.io/badge/Discord-The%20Cellar-5865F2?logo=discord&logoColor=white&style=flat-square" alt="The Cellar Discord server" /></a>
+  <a href="https://discord.gg/BEgEYjba5f"><img src="https://img.shields.io/badge/Discord-The%20Cellar-5865F2?logo=discord&logoColor=white&style=flat-square" alt="The Cellar Discord server" /></a>
 </p>
 
 A Re-Imagined Original FNF Mod Launcher
@@ -19,7 +19,7 @@ A Re-Imagined Original FNF Mod Launcher
 
 ## Community
 
-- [Discord Server](https://discord.gg/xQTtYF2Cfn)
+- [Discord Server](https://discord.gg/BEgEYjba5f)
 - [WeekBox on GameBanana](https://gamebanana.com/tools/23228)
 - [WeekBox Website](https://weekbox.immalloy.com/)
 - [Credits](./CREDITS.md)

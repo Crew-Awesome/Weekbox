@@ -13,6 +13,8 @@ import {
 } from "../home/modal/dialogFocus.js";
 import { createLoadingState } from "../hourglass.js";
 
+const MODAL_OPEN_GUARD_MS = 350;
+
 function sameId(left, right) {
   return String(left) === String(right);
 }
@@ -86,6 +88,7 @@ export const modManagerModal = {
   preloaded: false,
   pendingInstalls: new Map(),
   engineTooltip: null,
+  openingGuardUntil: 0,
 
   async init() {
     if (!document.getElementById("mod-manager-modal")) {
@@ -141,7 +144,12 @@ export const modManagerModal = {
       document
         .getElementById("mod-manager-modal")
         ?.addEventListener("click", (e) => {
-          if (e.target.id === "mod-manager-modal") this.close();
+          if (
+            e.target.id === "mod-manager-modal" &&
+            performance.now() >= this.openingGuardUntil
+          ) {
+            this.close();
+          }
         });
 
       const toggleBtn = document.getElementById("mod-manager-view-toggle");
@@ -357,6 +365,7 @@ export const modManagerModal = {
     if (!modal) return;
 
     sidebar.setActive(sidebar.modManagerBtn);
+    this.openingGuardUntil = performance.now() + MODAL_OPEN_GUARD_MS;
     modal.style.display = "flex";
     activateCheckoutDialog(
       modal,
