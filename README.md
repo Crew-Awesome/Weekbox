@@ -1,54 +1,32 @@
-# WeekBox: FNF Launcher
+# React + TypeScript + Vite
 
-> **One launcher for all your FNF mods.**  
-> Un gestor y lanzador de escritorio moderno diseñado para simplificar la experiencia de jugar y administrar mods de Friday Night Funkin'.
+This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
 
----
+Currently, two official plugins are available:
 
-## Caracteristicas Principales
+- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
+- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
 
-* **Explorador Integrado:** Navega por feeds de mods directamente desde GameBanana y Psych Online sin salir de la app.
-* **Instalacion en 1-Clic:** Descarga, extrae y configura mods automaticamente mediante integracion directa con enlaces de GameBanana.
-* **Gestor de Motores:** Instala, actualiza y alterna entre distintos motores comunitarios:
-  * Psych Engine
-  * Friday Night Funkin' V-Slice
-  * Codename Engine
-  * P-Slice / FPS Plus / Psych Online
-* **Descargas Optimizadas:** Soporte para descargas paralelas por partes, validacion de integridad y descompresion nativa de archivos .zip, .7z y .rar.
-* **Multiplataforma:** Compilaciones nativas para Windows (x64), macOS (Universal: Intel y Apple Silicon) y Linux (x64, ARM64).
-* **Soporte Multilingue:** Interfaz traducida a espanol, ingles, frances, aleman, portugues, ruso, entre otros.
+## React Compiler
 
----
+The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
 
-## Instalacion
+## Expanding the Oxlint configuration
 
-### Descarga de binarios
-1. Dirigete a la seccion de [Releases de GitHub](https://github.com/Crew-Awesome/WeekBox/releases) o a la pagina en [GameBanana](https://gamebanana.com/tools/23228).
-2. Descarga el paquete correspondiente a tu sistema operativo:
-   * **Windows:** `weekbox-*-windows-x64-setup.zip` o instalador ejecutable.
-   * **macOS:** `weekbox-*-macos-universal.zip`.
-   * **Linux:** `weekbox-*-linux-x64.zip` / AppImage.
-3. Ejecuta el instalador o descomprime el archivo y abre `WeekBox`.
+If you are developing a production application, we recommend enabling type-aware lint rules by installing `oxlint-tsgolint` and editing `.oxlintrc.json`:
 
----
+```json
+{
+  "$schema": "./node_modules/oxlint/configuration_schema.json",
+  "plugins": ["react", "typescript", "oxc"],
+  "options": {
+    "typeAware": true
+  },
+  "rules": {
+    "react/rules-of-hooks": "error",
+    "react/only-export-components": ["warn", { "allowConstantExport": true }]
+  }
+}
+```
 
-## Tecnologias Utilizadas
-
-* **Runtime:** [Neutralinojs](https://neutralino.js.org/) (ligero y de bajo consumo de memoria RAM)
-* **Frontend:** JavaScript (ES6+), HTML5, CSS3
-* **APIs:** GameBanana API y Psych Online Feed
-
----
-
-## Creditos y Comunidad
-
-* **Creadores y Programadores Principales:** [ImMalloy](https://github.com/ImMalloy) y [Britex](https://github.com/Britex)
-* **Organizacion:** [Crew-Awesome](https://github.com/Crew-Awesome)
-* **Servidor de Discord:** [Unete a la comunidad](https://discord.gg/xQTtYF2Cfn)
-* **Sitio Web Oficial:** [fnfweekbox.vercel.app](https://fnfweekbox.vercel.app/)
-
----
-
-## Licencia
-
-Este proyecto esta bajo la licencia comunitaria de codigo abierto especificada en el repositorio oficial de [Crew-Awesome/Weekbox](https://github.com/Crew-Awesome/Weekbox). Friday Night Funkin' es una marca registrada de The Funkin' Crew Inc. Weekbox NO está afiliado a The Funkin' Crew Inc. ni similares.
+See the [Oxlint rules documentation](https://oxc.rs/docs/guide/usage/linter/rules) for the full list of rules and categories.

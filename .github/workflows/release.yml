@@ -66,7 +66,6 @@ jobs:
           New-Item -ItemType Directory -Path dist/release-assets -Force | Out-Null
           foreach ($binary in $assets.Keys) {
             $items = @("dist/WeekBox/$binary", "dist/WeekBox/resources.neu")
-            if (Test-Path "dist/WeekBox/extensions") { $items += "dist/WeekBox/extensions" }
             Compress-Archive -LiteralPath $items -DestinationPath "dist/release-assets/$($assets[$binary])" -Force
           }
 

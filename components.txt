@@ -1,0 +1,584 @@
+================================================================================
+M3E (Material 3 Expressive) - Catálogo Completo de Componentes Web
+Documentación oficial: https://matraic.github.io/m3e/#/
+Paquete NPM: @m3e/web (v2.10.1)
+================================================================================
+
+--------------------------------------------------------------------------------
+## Botones y Acciones (Buttons & Actions)
+--------------------------------------------------------------------------------
+• <m3e-button>
+  Descripción: A button users interact with to perform an action.
+  Atributos principales: disabled, disabled-interactive, download, href, name, rel, selected, shape, size, target, toggle, type, value, variant
+
+• <m3e-button-group>
+  Descripción: Organizes buttons and adds interactions between them.
+  Atributos principales: multi, size, variant
+
+• <m3e-icon-button>
+  Descripción: An icon button users interact with to perform a supplementary action.
+  Atributos principales: disabled, disabled-interactive, download, href, name, rel, selected, shape, size, target, toggle, type, value, variant, width
+
+• <m3e-fab>
+  Descripción: A floating action button (FAB) used to present important actions.
+  Atributos principales: disabled, disabled-interactive, download, extended, href, lowered, name, rel, size, target, type, value, variant
+
+• <m3e-fab-menu>
+  Descripción: A menu, opened from a floating action button (FAB), used to display multiple related actions.
+  Atributos principales: variant
+
+• <m3e-fab-menu-item>
+  Descripción: An item of a floating action button (FAB) menu.
+  Atributos principales: disabled, download, href, rel, target
+
+• <m3e-fab-menu-trigger>
+  Descripción: An element, nested within a clickable element, used to open a floating action button (FAB) menu.
+  Atributos principales: for
+
+• <m3e-split-button>
+  Descripción: A button used to show an action with a menu of related actions.
+  Atributos principales: variant, size
+
+• <m3e-segmented-button>
+  Descripción: A button that allows a user to select from a limited set of options.
+  Atributos principales: disabled, hide-selection-indicator, multi, name
+
+• <m3e-button-segment>
+  Descripción: A option that can be selected within a segmented button.
+  Atributos principales: checked, disabled, value
+
+--------------------------------------------------------------------------------
+## Formularios y Entradas (Inputs & Form Controls)
+--------------------------------------------------------------------------------
+• <m3e-checkbox>
+  Descripción: A checkbox that allows a user to select one or more options from a limited number of choices.
+  Atributos principales: checked, disabled, indeterminate, name, required, value, validationMessages
+
+• <m3e-pseudo-checkbox>
+  Descripción: An element which looks like a checkbox.
+  Atributos principales: checked, disabled, indeterminate
+
+• <m3e-radio>
+  Descripción: A radio button that allows a user to select one option from a set of options.
+  Atributos principales: checked, disabled, name, required, value
+
+• <m3e-radio-group>
+  Descripción: A container for a set of radio buttons.
+  Atributos principales: aria-invalid, disabled, name, required, validationMessages
+
+• <m3e-pseudo-radio>
+  Descripción: An element which looks like a radio button.
+  Atributos principales: checked, disabled
+
+• <m3e-switch>
+  Descripción: An on/off control that can be toggled by clicking.
+  Atributos principales: checked, disabled, icons, name, value, validationMessages
+
+• <m3e-slider>
+  Descripción: Allows for the selection of numeric values from a range.
+  Atributos principales: disabled, discrete, labelled, max, min, orientation, step, size
+
+• <m3e-slider-thumb>
+  Descripción: A thumb used to select a value in a slider.
+  Atributos principales: disabled, name, value
+
+• <m3e-select>
+  Descripción: A form control that allows users to select a value from a set of predefined options.
+  Atributos principales: disabled, hide-selection-indicator, multi, name, panel-class, required, value, validationMessages
+
+• <m3e-option>
+  Descripción: An option that can be selected.
+  Atributos principales: disabled, disable-highlight, highlight-mode, selected, term, value
+
+• <m3e-optgroup>
+  Descripción: Groups options under a subheading.
+
+• <m3e-option-panel>
+  Descripción: Presents a list of options on a temporary surface.
+  Atributos principales: scroll-strategy, fit-anchor-width, anchor-offset
+
+• <m3e-autocomplete>
+  Descripción: Enhances a text input with suggested options.
+  Atributos principales: auto-activate, case-sensitive, filter, hide-selection-indicator, hide-loading, hide-no-data, loading, loading-label, no-data-label, panel-class, required, results-label, for
+
+• <m3e-form-field>
+  Descripción: A container for form controls that applies Material Design styling and behavior.
+  Atributos principales: float-label, hide-required-marker, hide-subscript, variant, error
+
+• <m3e-textarea-autosize>
+  Descripción: A non-visual element used to automatically resize a `textarea` to fit its content.
+  Atributos principales: disabled, for, max-rows, min-rows
+
+--------------------------------------------------------------------------------
+## Fecha y Hora (Date & Time Pickers)
+--------------------------------------------------------------------------------
+• <m3e-calendar>
+  Descripción: A calendar used to select a date.
+  Atributos principales: date, max-date, min-date, range-end, range-start, start-at, start-view, previous-month-label, next-month-label, previous-year-label, next-year-label, previous-multi-year-label, next-multi-year-label
+
+• <m3e-datepicker>
+  Descripción: Presents a date picker on a temporary surface.
+  Atributos principales: variant, clearable, date, max-date, min-date, range, range-end, range-start, start-at, start-view, previous-month-label, next-month-label, previous-year-label, next-year-label, previous-multi-year-label, next-multi-year-label, clear-label, confirm-label, dismiss-label, label, for
+
+• <m3e-datepicker-toggle>
+  Descripción: An element, nested within a clickable element, used to toggle a datepicker.
+  Atributos principales: for
+
+• <m3e-date-input>
+  Descripción: A segmented input for entering date and/or time values using a keyboard.
+  Atributos principales: value, type, show-seconds, time-format, min-date, max-date, min-time, max-time, month-label, day-label, year-label, hour-label, minute-label, second-label, period-label, disabled, readonly, required, name, validationMessages
+
+• <m3e-month-view>
+  Descripción: An internal component used to display a single month in a calendar.
+  Atributos principales: range-start, range-end, active, today, date, active-date, min-date, max-date
+
+• <m3e-year-view>
+  Descripción: An internal component used to display a single year in a calendar.
+  Atributos principales: active, today, date, active-date, min-date, max-date
+
+• <m3e-multi-year-view>
+  Descripción: An internal component used to display a year selector in a calendar.
+  Atributos principales: active, today, date, active-date, min-date, max-date
+
+• <m3e-timepicker>
+  Descripción: Presents a time picker on a temporary surface.
+  Atributos principales: variant, mode, orientation, date, format, max-time, min-time, show-seconds, confirm-label, dismiss-label, dial-label, input-label, hour-label, minute-label, second-label, mode-toggle-label, hide-mode-toggle, period-toggle-label, for
+
+• <m3e-timepicker-toggle>
+  Descripción: An element, nested within a clickable element, used to toggle a timepicker.
+  Atributos principales: for
+
+• <m3e-timepicker-dial>
+  Descripción: A clock‑face surface for selecting hours and minutes using a movable hand.
+  Atributos principales: format, hour, max-time, min-time, minute, second, show-seconds, period, view
+
+• <m3e-timepicker-input>
+  Descripción: A keyboard‑based time surface for choosing hours and minutes.
+  Atributos principales: format, hide-labels, hour, max-time, min-time, minute, second, show-seconds, orientation, period, view, hour-label, minute-label, second-label, period-toggle-label, for
+
+• <m3e-timepicker-input-period-toggle>
+  Atributos principales: period, orientation
+
+--------------------------------------------------------------------------------
+## Chips (Fichas / Etiquetas)
+--------------------------------------------------------------------------------
+• <m3e-chip>
+  Descripción: A non-interactive chip used to convey small pieces of information.
+  Atributos principales: value, variant
+
+• <m3e-chip-set>
+  Descripción: A container used to organize chips into a cohesive unit.
+  Atributos principales: vertical
+
+• <m3e-assist-chip>
+  Descripción: A chip users interact with to perform a smart or automated action that can span multiple applications.
+  Atributos principales: disabled, disabled-interactive, download, href, name, rel, target, type, value, variant
+
+• <m3e-filter-chip>
+  Descripción: A chip users interact with to select/deselect options.
+  Atributos principales: disabled, disabled-interactive, selected, value, variant
+
+• <m3e-filter-chip-set>
+  Descripción: A container that organizes filter chips into a cohesive group, enabling selection and
+  Atributos principales: disabled, hide-selection-indicator, multi, name, vertical
+
+• <m3e-input-chip>
+  Descripción: A chip which represents a discrete piece of information entered by a user.
+  Atributos principales: disabled, disabled-interactive, removable, remove-label, value, variant
+
+• <m3e-input-chip-set>
+  Descripción: A container that transforms user input into a cohesive set of interactive chips, supporting entry, editing, and removal of discrete values.
+  Atributos principales: disabled, name, required, vertical, max-chips, validationMessages
+
+• <m3e-suggestion-chip>
+  Descripción: A chip used to help narrow a user's intent by presenting dynamically generated suggestions, such as
+  Atributos principales: disabled, disabled-interactive, download, href, name, rel, target, type, value, variant
+
+--------------------------------------------------------------------------------
+## Diálogos, Hojas y Notificaciones (Dialogs, Sheets & Feedback)
+--------------------------------------------------------------------------------
+• <m3e-dialog>
+  Descripción: A dialog that provides important prompts in a user flow.
+  Atributos principales: alert, close-label, disable-close, dismissible, no-focus-trap, open
+
+• <m3e-dialog-trigger>
+  Descripción: An element, nested within a clickable element, used to open a dialog.
+  Atributos principales: for
+
+• <m3e-dialog-action>
+  Descripción: An element, nested within a clickable element, used to close a parenting dialog.
+  Atributos principales: return-value
+
+• <m3e-bottom-sheet>
+  Descripción: A sheet used to show secondary content anchored to the bottom of the screen.
+  Atributos principales: detent, detents, handle, handle-label, hideable, hide-friction, modal, open, overshoot-limit
+
+• <m3e-bottom-sheet-trigger>
+  Descripción: An element, nested within a clickable element, used to trigger a bottom sheet.
+  Atributos principales: detent, secondary, for
+
+• <m3e-bottom-sheet-action>
+  Descripción: An element, nested within a clickable element, used to close a parenting bottom sheet.
+
+• <m3e-snackbar>
+  Descripción: Presents short updates about application processes at the bottom of the screen.
+  Atributos principales: action, close-label, dismissible, duration, open
+
+• <m3e-tooltip>
+  Descripción: Adds additional context to a button or other UI element.
+  Atributos principales: disabled, for, hide-delay, position, show-delay, touch-gestures
+
+• <m3e-rich-tooltip>
+  Descripción: Provides contextual details for a control, such as explaining the value or purpose of a feature.
+  Atributos principales: disabled, for, hide-delay, position, show-delay, touch-gestures
+
+• <m3e-rich-tooltip-action>
+  Descripción: An element, nested within a clickable element, used to dismiss a parenting rich tooltip.
+  Atributos principales: disable-restore-focus
+
+--------------------------------------------------------------------------------
+## Navegación (Navigation)
+--------------------------------------------------------------------------------
+• <m3e-app-bar>
+  Descripción: A bar, placed a the top of a screen, used to help users navigate through an application.
+  Atributos principales: centered, for, size
+
+• <m3e-toolbar>
+  Descripción: Presents frequently used actions relevant to the current page.
+  Atributos principales: elevated, shape, variant, vertical
+
+• <m3e-nav-bar>
+  Descripción: A horizontal bar, typically used on smaller devices, that allows a user to switch between 3-5 views.
+  Atributos principales: mode
+
+• <m3e-nav-item>
+  Descripción: An item, placed in a navigation bar or rail, used to navigate to destinations in an application.
+  Atributos principales: disabled, disabled-interactive, download, href, orientation, rel, selected, target
+
+• <m3e-nav-rail>
+  Descripción: A vertical bar, typically used on larger devices, that allows a user to switch between views.
+  Atributos principales: mode
+
+• <m3e-nav-rail-toggle>
+  Descripción: An element, nested within a clickable element, used to toggle the expanded state of a navigation rail.
+  Atributos principales: for
+
+• <m3e-nav-menu>
+  Descripción: A hierarchical menu, typically used on larger devices, that allows a user to switch between views.
+
+• <m3e-nav-menu-item>
+  Descripción: An expandable item, selectable item within a navigation menu.
+  Atributos principales: disabled, open, selected
+
+• <m3e-nav-menu-item-group>
+  Descripción: A top-level semantic grouping of items in a navigation menu.
+
+• <m3e-drawer-container>
+  Descripción: A container for one or two sliding drawers.
+  Atributos principales: end, end-mode, end-divider, start, start-mode, start-divider
+
+• <m3e-drawer-toggle>
+  Descripción: An element, nested within a clickable element, used to toggle the opened state of a drawer.
+  Atributos principales: for
+
+• <m3e-tabs>
+  Descripción: Organizes content into separate views where only one view can be visible at a time.
+  Atributos principales: disable-pagination, disable-swipe, header-position, next-page-label, previous-page-label, stretch, variant
+
+• <m3e-tab>
+  Descripción: An interactive element that, when activated, presents an associated tab panel.
+  Atributos principales: disabled, for, selected
+
+• <m3e-tab-panel>
+  Descripción: A panel presented for a tab.
+
+• <m3e-breadcrumb>
+  Descripción: Displays a hierarchical navigation path and identifies the user's
+  Atributos principales: wrap
+
+• <m3e-breadcrumb-item>
+  Descripción: An item in a breadcrumb.
+  Atributos principales: item-label, disabled, current, href, target, download, rel
+
+• <m3e-breadcrumb-item-button>
+  Atributos principales: current, href, target, rel, download, disabled
+
+• <m3e-stepper>
+  Descripción: Provides a wizard-like workflow by dividing content into logical steps.
+  Atributos principales: header-position, label-position, linear, orientation
+
+• <m3e-step>
+  Descripción: A step in a wizard-like workflow.
+  Atributos principales: completed, disabled, editable, for, optional, selected, invalid
+
+• <m3e-step-panel>
+  Descripción: A panel presented for a step in a wizard-like workflow.
+
+• <m3e-stepper-next>
+• <m3e-stepper-previous>
+  Descripción: An element, nested within a clickable element, used to move a stepper to the previous step.
+
+• <m3e-stepper-reset>
+  Descripción: An element, nested within a clickable element, used to reset a stepper to its initial state.
+
+• <m3e-paginator>
+  Descripción: Provides navigation for paged information, typically used with a table.
+  Atributos principales: disabled, first-page-label, hide-page-size, items-per-page-label, last-page-label, length, next-page-label, page-index, page-size, page-sizes, page-size-variant, previous-page-label, show-first-last-buttons
+
+• <m3e-toc>
+  Descripción: A table of contents that provides in-page scroll navigation.
+  Atributos principales: for, max-depth
+
+• <m3e-toc-item>
+  Descripción: An item in a table of contents.
+  Atributos principales: disabled, selected
+
+--------------------------------------------------------------------------------
+## Listas y Árboles (Lists & Trees)
+--------------------------------------------------------------------------------
+• <m3e-list>
+  Descripción: A list of items.
+  Atributos principales: variant
+
+• <m3e-list-item>
+  Descripción: An item in a list.
+
+• <m3e-list-item-button>
+  Atributos principales: href, target, rel, download, disabled
+
+• <m3e-list-action>
+  Descripción: An item in a list that performs an action.
+  Atributos principales: disabled, download, href, rel, target
+
+• <m3e-expandable-list-item>
+  Descripción: An item in a list that can be expanded to show more items.
+  Atributos principales: disabled, open
+
+• <m3e-action-list>
+  Descripción: A list of actions.
+  Atributos principales: variant
+
+• <m3e-selection-list>
+  Descripción: A list of selectable options.
+  Atributos principales: hide-selection-indicator, multi, variant, name, disabled
+
+• <m3e-list-option>
+  Descripción: A selectable option in a list.
+  Atributos principales: disabled, selected, value
+
+• <m3e-tree>
+  Descripción: Presents hierarchical data in a tree structure.
+  Atributos principales: multi, cascade
+
+• <m3e-tree-item>
+  Descripción: An expandable item in a tree.
+  Atributos principales: disabled, indeterminate, open, selected
+
+--------------------------------------------------------------------------------
+## Menús (Menus)
+--------------------------------------------------------------------------------
+• <m3e-menu>
+  Descripción: Presents a list of choices on a temporary surface.
+  Atributos principales: position-x, position-y, variant, submenu
+
+• <m3e-menu-item>
+  Descripción: An item of a menu.
+  Atributos principales: disabled, download, href, rel, target
+
+• <m3e-menu-trigger>
+  Descripción: An element, nested within a clickable element, used to open a menu.
+  Atributos principales: for
+
+• <m3e-menu-item-checkbox>
+  Descripción: An item of a menu which supports a checkable state.
+  Atributos principales: disabled, checked
+
+• <m3e-menu-item-radio>
+  Descripción: An item of a menu which supports a mutually exclusive checkable state.
+  Atributos principales: disabled, checked
+
+• <m3e-menu-item-group>
+  Descripción: Groups related items (such a radios) in a menu.
+
+--------------------------------------------------------------------------------
+## Tarjetas, Contenedores y Layout (Panels, Cards & Layout)
+--------------------------------------------------------------------------------
+• <m3e-card>
+  Descripción: A content container for text, images (or other media), and actions in the context of a single subject.
+  Atributos principales: actionable, inline, orientation, variant, href, target, rel, download, name, value, type, disabled-interactive, disabled
+
+• <m3e-callout>
+  Descripción: A supporting container used to present content with visual emphasis.
+  Atributos principales: variant, shape
+
+• <m3e-accordion>
+  Descripción: Combines multiple expansion panels in to an accordion.
+  Atributos principales: multi
+
+• <m3e-expansion-panel>
+  Descripción: An expandable details-summary view.
+  Atributos principales: disabled, hide-toggle, open, toggle-direction, toggle-position
+
+• <m3e-expansion-header>
+  Descripción: A button used to toggle the expanded state of an expansion panel.
+  Atributos principales: hide-toggle, toggle-direction, toggle-position, disabled
+
+• <m3e-collapsible>
+  Descripción: A container used to expand and collapse content.
+  Atributos principales: open, orientation, no-animate, slide
+
+• <m3e-content-pane>
+  Descripción: A shaped surface for vertically scrollable content.
+
+• <m3e-floating-panel>
+  Descripción: A lightweight, generic floating surface used to present content above the page.
+  Atributos principales: scroll-strategy, fit-anchor-width, anchor-offset
+
+• <m3e-split-pane>
+  Descripción: A dual-view layout that separates content with a movable drag handle.
+  Atributos principales: detents, label, max, min, orientation, overshoot-limit, step, value, wrap-detents, name, disabled
+
+• <m3e-slide-group>
+  Descripción: Presents pagination controls used to scroll overflowing content.
+  Atributos principales: disabled, next-page-label, previous-page-label, threshold, vertical
+
+• <m3e-scroll-container>
+  Descripción: A vertically oriented content container which presents dividers above and below content when scrolled.
+  Atributos principales: dividers, thin
+
+• <m3e-divider>
+  Descripción: A thin line that separates content in lists or other containers.
+  Atributos principales: inset, inset-start, inset-end, vertical
+
+--------------------------------------------------------------------------------
+## Indicadores de Progreso y Estado (Progress & Indicators)
+--------------------------------------------------------------------------------
+• <m3e-circular-progress-indicator>
+  Descripción: A circular indicator of progress and activity.
+  Atributos principales: indeterminate, max, value, variant
+
+• <m3e-linear-progress-indicator>
+  Descripción: A horizontal bar for indicating progress and activity.
+  Atributos principales: buffer-value, max, mode, value, variant
+
+• <m3e-loading-indicator>
+  Descripción: Shows indeterminate progress for a short wait time.
+  Atributos principales: variant, pull-progress
+
+• <m3e-skeleton>
+  Descripción: A visual placeholder that mimics the layout of content while it's still loading.
+  Atributos principales: animation, shape, loaded
+
+• <m3e-badge>
+  Descripción: A visual indicator used to label content.
+  Atributos principales: size, position, for
+
+• <m3e-selection-indicator>
+  Descripción: Provides selection, focus, and hover state layer treatment for an interactive element that supports selection.
+  Atributos principales: bounce, centered, disabled, selected, for
+
+--------------------------------------------------------------------------------
+## Búsqueda (Search)
+--------------------------------------------------------------------------------
+• <m3e-search-bar>
+  Descripción: A bar that provides a prominent entry point for search.
+  Atributos principales: clearable, clear-label
+
+• <m3e-search-view>
+  Descripción: A surface that presents suggestions and results for a search.
+  Atributos principales: contained, mode, open, clear-label, close-label, hide-search-icon
+
+--------------------------------------------------------------------------------
+## Fundamentos Visuales y Tematización (Visual Foundations & Theming)
+--------------------------------------------------------------------------------
+• <m3e-avatar>
+  Descripción: An image, icon or textual initials representing a user or other identity.
+
+• <m3e-icon>
+  Descripción: A small symbol used to easily identify an action or category.
+  Atributos principales: filled, grade, optical-size, name, variant, weight
+
+• <m3e-heading>
+  Descripción: A heading to a page or section.
+  Atributos principales: emphasized, level, size, variant
+
+• <m3e-shape>
+  Descripción: A shape used to add emphasis and decorative flair.
+  Atributos principales: name
+
+• <m3e-ripple>
+  Descripción: Connects user input to screen reactions using ripples.
+  Atributos principales: centered, disabled, for, radius, unbounded
+
+• <m3e-elevation>
+  Descripción: Visually depicts elevation using a shadow.
+  Atributos principales: disabled, for, level
+
+• <m3e-focus-ring>
+  Descripción: A focus ring used to depict a strong focus indicator.
+  Atributos principales: disabled, inward, for
+
+• <m3e-focus-trap>
+  Descripción: A non-visual element used to trap focus within nested content.
+  Atributos principales: disabled
+
+• <m3e-theme>
+  Descripción: A non-visual element responsible for application-level theming.
+  Atributos principales: color, contrast, density, scheme, strong-focus, variant, motion
+
+• <m3e-theme-icon>
+  Descripción: An icon that visually presents a preview of a theme.
+  Atributos principales: color, scheme, variant
+
+--------------------------------------------------------------------------------
+## Reconocedores de Gestos (Gestures)
+--------------------------------------------------------------------------------
+• <m3e-pan-gesture>
+  Descripción: A non-visual element used to detect and interpret pan gestures from an input stream
+  Atributos principales: for, buttons, pointer-types, disabled, priority, pointers, activation-mode, min-displacement, lock-axis, axis-threshold, delta-threshold, max-press-interval
+
+• <m3e-rotate-gesture>
+  Descripción: A non-visual element used to detect and interpret rotate gestures from an input stream
+  Atributos principales: for, buttons, pointer-types, disabled, priority, activation-mode, pointers, min-displacement, max-press-interval
+
+• <m3e-scale-gesture>
+  Descripción: A non-visual element used to detect and interpret scale gestures from an input stream
+  Atributos principales: for, buttons, pointer-types, disabled, priority, pointers, min-displacement, max-press-interval
+
+• <m3e-repeat-gesture>
+  Descripción: A non-visual element used to detect and interpret repeated gestures from an input stream
+  Atributos principales: for, buttons, pointer-types, disabled, priority, max-interval, count
+
+• <m3e-sequence-gesture>
+  Descripción: A non-visual element used to detect and interpret a sequence of gestures from an input stream
+  Atributos principales: for, buttons, pointer-types, disabled, priority, max-interval
+
+• <m3e-long-press-gesture>
+  Descripción: A non-visual element used to detect and interpret long-press gestures from an input stream
+  Atributos principales: for, buttons, pointer-types, disabled, priority, discrete, pointers, max-displacement, min-duration, max-press-interval
+
+--------------------------------------------------------------------------------
+## Otros Componentes y Elementos Auxiliares
+--------------------------------------------------------------------------------
+• <m3e-state-layer>
+  Descripción: Provides focus and hover state layer treatment for an interactive element.
+  Atributos principales: disabled, disable-hover, enable-pressed, for
+
+• <m3e-slide>
+  Descripción: A carousel-like container used to horizontally cycle through slotted items.
+  Atributos principales: selected-index
+
+• <m3e-text-highlight>
+  Descripción: Highlights text which matches a given search term.
+  Atributos principales: case-sensitive, disabled, mode, term
+
+• <m3e-text-overflow>
+  Descripción: An inline container which presents an ellipsis when content overflows.
+
+• <m3e-tap-gesture>
+  Descripción: A non-visual element used to detect and interpret tap gestures from an input stream
+  Atributos principales: for, buttons, pointer-types, disabled, priority, pointers, max-displacement, max-duration, max-press-interval, max-release-interval
+
+• <m3e-swipe-gesture>
+  Descripción: A non-visual element used to detect and interpret swipe gestures from an input stream
+  Atributos principales: for, buttons, pointer-types, disabled, priority, pointers, start-threshold, min-displacement, min-velocity, direction-threshold, direction-grace-period, directions, max-press-interval

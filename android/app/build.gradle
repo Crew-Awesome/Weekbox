@@ -1,10 +1,10 @@
 apply plugin: 'com.android.application'
 
 android {
-    namespace = "com.crewawesome.weekbox"
+    namespace = "com.wbr.app"
     compileSdk = rootProject.ext.compileSdkVersion
     defaultConfig {
-        applicationId "com.crewawesome.weekbox"
+        applicationId "com.wbr.app"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 1
@@ -40,9 +40,6 @@ dependencies {
     androidTestImplementation "androidx.test.ext:junit:$androidxJunitVersion"
     androidTestImplementation "androidx.test.espresso:espresso-core:$androidxEspressoCoreVersion"
     implementation project(':capacitor-cordova-android-plugins')
-    implementation 'com.github.junrar:junrar:7.5.5'
-    implementation 'org.apache.commons:commons-compress:1.26.2'
-    implementation 'org.tukaani:xz:1.9'
 }
 
 apply from: 'capacitor.build.gradle'

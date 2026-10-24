@@ -1,0 +1,244 @@
+.cuki-svg {
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+.cuki-anim-home {
+  animation: cuki-home-bounce 0.65s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+  transform-box: fill-box;
+  transform-origin: center bottom;
+}
+
+@keyframes cuki-home-bounce {
+  0% { transform: scale(1) translateY(0); }
+  20% { transform: scale(1.22, 0.78) translateY(3px); }
+  45% { transform: scale(0.85, 1.22) translateY(-8px) rotate(-4deg); }
+  70% { transform: scale(1.1, 0.92) translateY(2px) rotate(2deg); }
+  85% { transform: scale(0.96, 1.03) translateY(-1px); }
+  100% { transform: scale(1) translateY(0) rotate(0); }
+}
+
+.cuki-home-puff {
+  animation: cuki-puff 0.7s ease-out forwards;
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+@keyframes cuki-puff {
+  0% { opacity: 0; transform: translateY(0) scale(0.2); }
+  30% { opacity: 0.9; transform: translateY(-30px) scale(1.1); }
+  100% { opacity: 0; transform: translateY(-70px) scale(0.3); }
+}
+
+.cuki-anim-library {
+  transform-box: fill-box;
+  transform-origin: center bottom;
+}
+
+.cuki-anim-lib-head {
+  animation: cuki-lib-head-nod 0.65s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+  transform-box: fill-box;
+  transform-origin: center bottom;
+}
+
+@keyframes cuki-lib-head-nod {
+  0% { transform: translateY(0) rotate(0deg); }
+  30% { transform: translateY(-12px) rotate(-10deg); }
+  60% { transform: translateY(3px) rotate(6deg); }
+  85% { transform: translateY(-2px) rotate(-2deg); }
+  100% { transform: translateY(0) rotate(0deg); }
+}
+
+.cuki-anim-lib-book {
+  animation: cuki-lib-book-flutter 0.65s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+  transform-box: fill-box;
+  transform-origin: center bottom;
+}
+
+@keyframes cuki-lib-book-flutter {
+  0% { transform: scale(1); }
+  25% { transform: scale(1.18, 0.85); }
+  50% { transform: scale(0.88, 1.15) translateY(-5px); }
+  75% { transform: scale(1.06, 0.95); }
+  100% { transform: scale(1) translateY(0); }
+}
+
+.cuki-anim-instances {
+  transform-box: fill-box;
+  transform-origin: center bottom;
+}
+
+.cuki-anim-layer-top {
+  animation: cuki-layer-top-pop 0.65s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+@keyframes cuki-layer-top-pop {
+  0% { transform: translateY(0) scale(1); }
+  35% { transform: translateY(-18px) scale(1.12); }
+  65% { transform: translateY(4px) scale(0.94); }
+  85% { transform: translateY(-3px) scale(1.02); }
+  100% { transform: translateY(0) scale(1); }
+}
+
+.cuki-anim-layer-bottom {
+  animation: cuki-layer-bottom-squish 0.65s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+@keyframes cuki-layer-bottom-squish {
+  0% { transform: translateY(0) scale(1); }
+  40% { transform: translateY(4px) scale(1.08, 0.92); }
+  70% { transform: translateY(-2px) scale(0.98, 1.02); }
+  100% { transform: translateY(0) scale(1); }
+}
+
+.cuki-anim-news-squash {
+  animation: cuki-news-squash 0.75s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+  transform-box: fill-box;
+  transform-origin: center bottom;
+}
+
+@keyframes cuki-news-squash {
+  0% { transform: scale(1) translateY(0) rotate(0deg); }
+  18% { transform: scale(1.24, 0.76) translateY(24px) rotate(-4deg); }
+  42% { transform: scale(0.84, 1.22) translateY(-32px) rotate(3deg); }
+  65% { transform: scale(1.1, 0.92) translateY(10px) rotate(-1.5deg); }
+  82% { transform: scale(0.96, 1.03) translateY(-4px) rotate(0.5deg); }
+  100% { transform: scale(1) translateY(0) rotate(0deg); }
+}
+
+.cuki-rect-header {
+  transform-origin: 480px -580px;
+  animation: cuki-rect-header-anim 0.75s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+@keyframes cuki-rect-header-anim {
+  0% { transform: translateY(-130px) scaleX(0.3) scaleY(1.4); opacity: 0; }
+  35% { opacity: 1; transform: translateY(-70px) scaleX(0.7); }
+  62% { transform: translateY(14px) scaleX(1.08) scaleY(0.9); }
+  80% { transform: translateY(-6px) scaleX(0.98); }
+  100% { transform: translateY(0) scale(1); opacity: 1; }
+}
+
+.cuki-rect-box {
+  transform-origin: 300px -320px;
+  animation: cuki-rect-box-anim 0.75s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+@keyframes cuki-rect-box-anim {
+  0% { transform: translateX(-140px) scale(0.4); opacity: 0; }
+  38% { opacity: 1; transform: translateX(-70px) scale(0.75); }
+  65% { transform: translateX(16px) scale(1.08, 0.92); }
+  82% { transform: translateX(-4px) scale(0.98, 1.02); }
+  100% { transform: translateX(0) scale(1); opacity: 1; }
+}
+
+.cuki-rect-line1 {
+  transform-origin: 660px -400px;
+  animation: cuki-rect-line1-anim 0.75s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+@keyframes cuki-rect-line1-anim {
+  0% { transform: translateX(150px) scaleX(0.2); opacity: 0; }
+  45% { opacity: 1; transform: translateX(60px) scaleX(0.7); }
+  70% { transform: translateX(-14px) scaleX(1.1); }
+  85% { transform: translateX(4px) scaleX(0.98); }
+  100% { transform: translateX(0) scale(1); opacity: 1; }
+}
+
+.cuki-rect-line2 {
+  transform-origin: 660px -240px;
+  animation: cuki-rect-line2-anim 0.75s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+@keyframes cuki-rect-line2-anim {
+  0% { transform: translateX(170px) scaleX(0.2); opacity: 0; }
+  50% { opacity: 1; transform: translateX(70px) scaleX(0.65); }
+  74% { transform: translateX(-14px) scaleX(1.1); }
+  88% { transform: translateX(4px) scaleX(0.98); }
+  100% { transform: translateX(0) scale(1); opacity: 1; }
+}
+
+.group:hover .cuki-hover-rect-header {
+  transform: translateY(-8px);
+  transition: transform 0.25s ease-out;
+}
+.group:hover .cuki-hover-rect-box {
+  transform: translateX(-8px) scale(1.05);
+  transition: transform 0.25s ease-out;
+}
+.group:hover .cuki-hover-rect-line1 {
+  transform: translateX(8px);
+  transition: transform 0.25s ease-out;
+}
+.group:hover .cuki-hover-rect-line2 {
+  transform: translateX(12px);
+  transition: transform 0.25s ease-out 0.05s;
+}
+
+.cuki-anim-settings {
+  animation: cuki-settings-spin 0.7s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+@keyframes cuki-settings-spin {
+  0% { transform: rotate(0deg) scale(1); }
+  40% { transform: rotate(150deg) scale(1.2); }
+  70% { transform: rotate(80deg) scale(0.94); }
+  85% { transform: rotate(95deg) scale(1.03); }
+  100% { transform: rotate(90deg) scale(1); }
+}
+
+.cuki-anim-info {
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+.cuki-anim-info-dot {
+  animation: cuki-info-dot-jump 0.65s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+@keyframes cuki-info-dot-jump {
+  0% { transform: translateY(0); }
+  30% { transform: translateY(-14px) scale(1.3); }
+  60% { transform: translateY(3px) scale(0.9, 1.15); }
+  85% { transform: translateY(-2px); }
+  100% { transform: translateY(0) scale(1); }
+}
+
+.cuki-anim-info-circle {
+  animation: cuki-info-circle-pulse 0.65s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+@keyframes cuki-info-circle-pulse {
+  0% { transform: scale(1); }
+  35% { transform: scale(1.12); }
+  70% { transform: scale(0.96); }
+  100% { transform: scale(1); }
+}
+
+.group:hover .cuki-hover-target {
+  animation: cuki-subtle-hover 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+  transform-box: fill-box;
+  transform-origin: center bottom;
+}
+
+.group:hover .cuki-hover-settings {
+  animation: cuki-settings-spin 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+@keyframes cuki-subtle-hover {
+  0% { transform: scale(1) translateY(0); }
+  50% { transform: scale(1.1) translateY(-2px); }
+  100% { transform: scale(1.06) translateY(-1px); }
+}
