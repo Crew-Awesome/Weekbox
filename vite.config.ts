@@ -681,9 +681,40 @@ function weekBoxHostPlugin(): Plugin {
               return res.end(JSON.stringify({ ok: true }))
             }
 
+            case 'writeBinaryFile': {
+              const targetPath = String(body.path || '')
+              const data = String(body.data || '')
+              if (!targetPath) {
+                res.statusCode = 400
+                return res.end(JSON.stringify({ ok: false, error: 'Missing path' }))
+              }
+              fs.mkdirSync(path.dirname(targetPath), { recursive: true })
+              fs.writeFileSync(targetPath, Buffer.from(data, 'base64'))
+              return res.end(JSON.stringify({ ok: true }))
+            }
+
             case 'createDirectory': {
               const targetPath = String(body.path || '')
               fs.mkdirSync(targetPath, { recursive: true })
+              return res.end(JSON.stringify({ ok: true }))
+            }
+
+            case 'move': {
+              const sourcePath = String(body.sourcePath || '')
+              const destinationPath = String(body.destinationPath || '')
+              if (!sourcePath || !destinationPath) {
+                res.statusCode = 400
+                return res.end(
+                  JSON.stringify({ ok: false, error: 'Missing sourcePath or destinationPath' }),
+                )
+              }
+              fs.mkdirSync(path.dirname(destinationPath), { recursive: true })
+              try {
+                fs.renameSync(sourcePath, destinationPath)
+              } catch {
+                fs.rmSync(destinationPath, { recursive: true, force: true })
+                fs.renameSync(sourcePath, destinationPath)
+              }
               return res.end(JSON.stringify({ ok: true }))
             }
 

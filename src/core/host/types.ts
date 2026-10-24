@@ -13,6 +13,7 @@ export interface FileSystemHost {
   readBinaryFile(path: string): Promise<ArrayBuffer>
   writeBinaryFile(path: string, data: ArrayBuffer | Uint8Array): Promise<void>
   createDirectory(path: string): Promise<void>
+  move(sourcePath: string, destinationPath: string): Promise<void>
   remove(path: string): Promise<void>
   readDirectory(path: string): Promise<FileEntry[]>
   exists(path: string): Promise<boolean>

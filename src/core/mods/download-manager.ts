@@ -28,6 +28,28 @@ let tasksSnapshot: Record<string, ModDownloadTask> = {}
 
 let activeModalModId: string | null = null
 
+async function verifyDownloadedArchive(
+  archivePath: string,
+  expectedSize: number,
+): Promise<void> {
+  const host = initHost()
+  const separator = archivePath.lastIndexOf('/')
+  const parentPath = separator > 0 ? archivePath.slice(0, separator) : '.'
+  const archiveName = archivePath.slice(separator + 1)
+  const entry = (await host.fs.readDirectory(parentPath)).find(
+    (item) => item.name === archiveName,
+  )
+
+  if (!entry || entry.isDirectory || entry.size === 0) {
+    throw new Error('The downloaded archive is missing or empty.')
+  }
+  if (expectedSize > 0 && entry.size !== undefined && entry.size !== expectedSize) {
+    throw new Error(
+      `The downloaded archive is incomplete (${entry.size} of ${expectedSize} bytes).`,
+    )
+  }
+}
+
 /**
  * Checks whether the download callout toast should be suppressed for a given mod:
  * 1. Suppressed if the user is currently inside the ModDetailsModal for this exact mod.
@@ -218,12 +240,13 @@ export async function startModDownload(
   const baseModId = extractBaseModId(mod.id)
   const taskKey = `${baseModId}:${fileId}`
 
-  // If already downloading this exact file, ignore duplicate trigger
-  const currentTask = tasksMap.get(taskKey)
-  if (
-    currentTask &&
-    (currentTask.status === 'downloading' || currentTask.status === 'extracting')
-  ) {
+  // A mod has one install transaction at a time; different files still share its registry/install state.
+  const activeTask = [...tasksMap.values()].find(
+    (task) =>
+      extractBaseModId(task.modId) === baseModId &&
+      (task.status === 'downloading' || task.status === 'extracting'),
+  )
+  if (activeTask) {
     return null
   }
 
@@ -274,15 +297,14 @@ export async function startModDownload(
   const host = initHost()
 
   let currentModInstallDir = ''
-  let wasAlreadyInstalled = false
+  let tempArchivePath = ''
 
   try {
     const existingRecord = await getInstalledModById(mod.id)
-    wasAlreadyInstalled = Boolean(existingRecord)
 
     const { compositeId, engineFolderName, folderName, modInstallDir } =
       await Promise.race([
-        resolveModInstallDirectory(mod.id, modTitle, existingRecord?.folderName),
+        resolveModInstallDirectory(mod.id, modTitle),
         new Promise<{
           libraryPaths: ReturnType<typeof getWeekBoxLibraryPaths>
           compositeId: string
@@ -291,8 +313,7 @@ export async function startModDownload(
           modInstallDir: string
         }>((resolve) => {
           setTimeout(() => {
-            const folder =
-              existingRecord?.folderName || toSafeModFolderName(mod.id, modTitle)
+            const folder = toSafeModFolderName(mod.id, modTitle)
             const parts = folder.split('--')
             const compId =
               parts.length >= 3
@@ -321,7 +342,7 @@ export async function startModDownload(
     }
 
     const ext = resolveArchiveExtension(fileName, downloadUrl)
-    const tempArchivePath = joinPaths(
+    tempArchivePath = joinPaths(
       modInstallDir,
       `.temp_archive_${fileId}${ext}`,
     )
@@ -380,6 +401,8 @@ export async function startModDownload(
     if (abortController.signal.aborted) {
       throw new DOMException('Download canceled', 'AbortError')
     }
+
+    await verifyDownloadedArchive(tempArchivePath, expectedSize)
 
     updateTask(taskKey, {
       progress: 99,
@@ -456,6 +479,21 @@ export async function startModDownload(
 
     const finalRecord = await registerInstalledMod(installedRecord)
 
+    if (
+      existingRecord?.installPath &&
+      existingRecord.installPath !== modInstallDir
+    ) {
+      try {
+        const previousExists = await host.fs.exists(existingRecord.installPath)
+        if (previousExists) await host.fs.remove(existingRecord.installPath)
+      } catch (cleanupError) {
+        console.warn(
+          '[WeekBox] New install is ready, but the previous install could not be removed:',
+          cleanupError,
+        )
+      }
+    }
+
     updateTask(taskKey, {
       progress: 100,
       status: 'completed',
@@ -481,18 +519,21 @@ export async function startModDownload(
     onComplete?.(finalRecord)
     return finalRecord
   } catch (err) {
-    if (!wasAlreadyInstalled && currentModInstallDir) {
+    if (currentModInstallDir) {
       try {
         const exists = await host.fs.exists(currentModInstallDir)
         if (exists) {
-          const entries = await host.fs.readDirectory(currentModInstallDir)
-          // Clean up if empty or only contains temporary download files
-          const meaningfulFiles = entries.filter(
-            (e) => !e.name.startsWith('.temp_archive'),
-          )
-          if (meaningfulFiles.length === 0) {
-            await host.fs.remove(currentModInstallDir)
-          }
+          await host.fs.remove(currentModInstallDir)
+        }
+      } catch {
+        // ignore cleanup error
+      }
+    }
+
+    if (tempArchivePath) {
+      try {
+        if (await host.fs.exists(tempArchivePath)) {
+          await host.fs.remove(tempArchivePath)
         }
       } catch {
         // ignore cleanup error

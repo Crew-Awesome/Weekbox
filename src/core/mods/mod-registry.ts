@@ -4,10 +4,20 @@ import { extractBaseModId } from './mod-filesystem'
 import type { InstalledModRecord } from './types'
 
 const FAVORITES_STORAGE_KEY = 'wbr:favorite_mods'
+let manifestMutationQueue: Promise<void> = Promise.resolve()
 
 export const MODS_CHANGED_EVENT = 'wb:mods-changed'
 export const BOOKMARKS_CHANGED_EVENT = 'wb:bookmarks-changed'
 export const FAVORITES_CHANGED_EVENT = 'wb:favorites-changed'
+
+function queueManifestMutation<T>(mutation: () => Promise<T>): Promise<T> {
+  const result = manifestMutationQueue.then(mutation)
+  manifestMutationQueue = result.then(
+    () => undefined,
+    () => undefined,
+  )
+  return result
+}
 
 function emitEvent(name: string, detail?: unknown): void {
   if (typeof window !== 'undefined') {
@@ -77,16 +87,50 @@ export async function getInstalledModById(
 /**
  * Saves the complete array of installed mods to `WeekBoxLibrary/data/installedmods.json`.
  */
-export async function saveInstalledMods(
+async function writeInstalledMods(
   records: InstalledModRecord[],
 ): Promise<void> {
   const host = initHost()
   const { paths } = await ensureWeekBoxLibrary()
-  await host.fs.writeTextFile(
-    paths.installedMods,
-    JSON.stringify(records, null, 2),
-  )
+  const tempPath = `${paths.installedMods}.tmp`
+  await host.fs.writeTextFile(tempPath, JSON.stringify(records, null, 2))
+  try {
+    await host.fs.move(tempPath, paths.installedMods)
+  } catch (moveError) {
+    try {
+      await host.fs.remove(paths.installedMods)
+      await host.fs.move(tempPath, paths.installedMods)
+    } catch {
+      try {
+        await host.fs.remove(tempPath)
+      } catch {
+        // ignore cleanup error
+      }
+      throw moveError
+    }
+  }
   emitEvent(MODS_CHANGED_EVENT, records)
+}
+
+export function saveInstalledMods(
+  records: InstalledModRecord[],
+): Promise<void> {
+  return queueManifestMutation(() => writeInstalledMods(records))
+}
+
+async function writeInstalledMetadata(
+  host: ReturnType<typeof initHost>,
+  record: InstalledModRecord,
+): Promise<void> {
+  if (!record.installPath) return
+  const dirExists = await host.fs.exists(record.installPath)
+  if (!dirExists) await host.fs.createDirectory(record.installPath)
+  if (record.downloadUrl) {
+    const modUrlPath = joinPaths(record.installPath, 'mod_url.txt')
+    await host.fs.writeTextFile(modUrlPath, record.downloadUrl)
+  }
+  const modJsonPath = joinPaths(record.installPath, 'mod.json')
+  await host.fs.writeTextFile(modJsonPath, JSON.stringify(record, null, 2))
 }
 
 /**
@@ -136,57 +180,37 @@ export async function cacheModCoverImage(
 export async function registerInstalledMod(
   record: InstalledModRecord,
 ): Promise<InstalledModRecord> {
-  const host = initHost()
-  const currentList = await getInstalledMods()
+  return queueManifestMutation(async () => {
+    const host = initHost()
+    const currentList = await getInstalledMods()
 
-  const cachedCover = await cacheModCoverImage(
-    record.id,
-    record.image || record.thumbnail,
-  )
-  const enrichedRecord: InstalledModRecord = {
-    ...record,
-    coverPath: cachedCover?.relativeCoverPath || record.coverPath,
-    localCoverPath: cachedCover?.fullPath || record.localCoverPath,
-  }
-
-  const existingIdx = currentList.findIndex((item) =>
-    matchesModId(item, record.id),
-  )
-  let nextList: InstalledModRecord[]
-  if (existingIdx >= 0) {
-    nextList = [...currentList]
-    nextList[existingIdx] = {
-      ...currentList[existingIdx],
-      ...enrichedRecord,
+    const cachedCover = await cacheModCoverImage(
+      record.id,
+      record.image || record.thumbnail,
+    )
+    const enrichedRecord: InstalledModRecord = {
+      ...record,
+      coverPath: cachedCover?.relativeCoverPath || record.coverPath,
+      localCoverPath: cachedCover?.fullPath || record.localCoverPath,
     }
-  } else {
-    nextList = [enrichedRecord, ...currentList]
-  }
 
-  await saveInstalledMods(nextList)
-
-  // Also persist `mod_url.txt` and `mod.json` inside WeekBoxLibrary/mods/<folderName>/
-  try {
-    if (enrichedRecord.installPath) {
-      const dirExists = await host.fs.exists(enrichedRecord.installPath)
-      if (!dirExists) {
-        await host.fs.createDirectory(enrichedRecord.installPath)
+    const existingIdx = currentList.findIndex((item) =>
+      matchesModId(item, record.id),
+    )
+    const nextList = [...currentList]
+    if (existingIdx >= 0) {
+      nextList[existingIdx] = {
+        ...currentList[existingIdx],
+        ...enrichedRecord,
       }
-      if (enrichedRecord.downloadUrl) {
-        const modUrlPath = joinPaths(enrichedRecord.installPath, 'mod_url.txt')
-        await host.fs.writeTextFile(modUrlPath, enrichedRecord.downloadUrl)
-      }
-      const modJsonPath = joinPaths(enrichedRecord.installPath, 'mod.json')
-      await host.fs.writeTextFile(
-        modJsonPath,
-        JSON.stringify(enrichedRecord, null, 2),
-      )
+    } else {
+      nextList.unshift(enrichedRecord)
     }
-  } catch (err) {
-    console.warn('[WeekBox] Could not write per-folder mod metadata:', err)
-  }
 
-  return enrichedRecord
+    await writeInstalledMetadata(host, enrichedRecord)
+    await writeInstalledMods(nextList)
+    return enrichedRecord
+  })
 }
 
 /**
@@ -196,33 +220,23 @@ export async function updateInstalledModMetadata(
   modId: string | number,
   updates: Partial<InstalledModRecord>,
 ): Promise<InstalledModRecord | null> {
-  const host = initHost()
-  const list = await getInstalledMods()
-  const index = list.findIndex((item) => matchesModId(item, modId))
+  return queueManifestMutation(async () => {
+    const host = initHost()
+    const list = await getInstalledMods()
+    const index = list.findIndex((item) => matchesModId(item, modId))
 
-  if (index === -1) return null
+    if (index === -1) return null
 
-  const updatedRecord: InstalledModRecord = {
-    ...list[index],
-    ...updates,
-  }
-  const nextList = [...list]
-  nextList[index] = updatedRecord
-  await saveInstalledMods(nextList)
-
-  try {
-    if (updatedRecord.installPath) {
-      const modJsonPath = joinPaths(updatedRecord.installPath, 'mod.json')
-      await host.fs.writeTextFile(
-        modJsonPath,
-        JSON.stringify(updatedRecord, null, 2),
-      )
+    const updatedRecord: InstalledModRecord = {
+      ...list[index],
+      ...updates,
     }
-  } catch {
-    // ignore
-  }
-
-  return updatedRecord
+    const nextList = [...list]
+    nextList[index] = updatedRecord
+    await writeInstalledMetadata(host, updatedRecord)
+    await writeInstalledMods(nextList)
+    return updatedRecord
+  })
 }
 
 /**
@@ -232,11 +246,12 @@ export async function updateInstalledModMetadata(
 export async function uninstallModById(
   modId: string | number,
 ): Promise<boolean> {
-  const host = initHost()
-  const list = await getInstalledMods()
-  const existing = list.find((item) => matchesModId(item, modId))
-  const { paths } = await ensureWeekBoxLibrary()
-  const baseId = extractBaseModId(modId)
+  return queueManifestMutation(async () => {
+    const host = initHost()
+    const list = await getInstalledMods()
+    const existing = list.find((item) => matchesModId(item, modId))
+    const { paths } = await ensureWeekBoxLibrary()
+    const baseId = extractBaseModId(modId)
 
   // 1. Remove mod installation directory on disk
   if (existing?.installPath) {
@@ -307,9 +322,10 @@ export async function uninstallModById(
   }
 
   // 3. Remove entry from installedmods.json
-  const nextList = list.filter((item) => !matchesModId(item, modId))
-  await saveInstalledMods(nextList)
-  return true
+    const nextList = list.filter((item) => !matchesModId(item, modId))
+    await writeInstalledMods(nextList)
+    return true
+  })
 }
 
 /**

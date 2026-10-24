@@ -85,6 +85,16 @@ const mobileFileSystem: FileSystemHost = {
     })
   },
 
+  async move(sourcePath: string, destinationPath: string): Promise<void> {
+    const source = parseMobilePath(sourcePath)
+    const destination = parseMobilePath(destinationPath)
+    await Filesystem.rename({
+      from: source.path,
+      to: destination.path,
+      directory: source.directory || destination.directory,
+    })
+  },
+
   async remove(path: string): Promise<void> {
     const opts = parseMobilePath(path)
     try {
@@ -183,12 +193,7 @@ export const mobileHost: HostAdapter = {
   },
 
   async extractArchive(options: ExtractArchiveOptions): Promise<void> {
-    const {
-      archivePath,
-      destinationDir,
-      removeArchive = true,
-      onProgress,
-    } = options
+    const { archivePath, onProgress } = options
 
     onProgress?.({
       progress: 99,
@@ -196,21 +201,8 @@ export const mobileHost: HostAdapter = {
       currentFile: archivePath.split('/').pop(),
     })
 
-    try {
-      const exists = await mobileFileSystem.exists(destinationDir)
-      if (!exists) {
-        await mobileFileSystem.createDirectory(destinationDir)
-      }
-    } catch {
-      // ignore
-    }
-
-    if (removeArchive) {
-      try {
-        await mobileFileSystem.remove(archivePath)
-      } catch {
-        // ignore
-      }
-    }
+    throw new Error(
+      `Archive extraction is not supported on mobile yet; the archive was kept at ${archivePath}.`,
+    )
   },
 }

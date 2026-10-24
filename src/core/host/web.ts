@@ -13,6 +13,15 @@ import type {
   SpawnProcessOptions,
 } from './types'
 
+function uint8ArrayToBase64(bytes: Uint8Array): string {
+  const chunkSize = 0x8000
+  const chunks: string[] = []
+  for (let i = 0; i < bytes.byteLength; i += chunkSize) {
+    chunks.push(String.fromCharCode(...bytes.subarray(i, i + chunkSize)))
+  }
+  return btoa(chunks.join(''))
+}
+
 const webFileSystem: FileSystemHost = {
   async readTextFile(path: string): Promise<string> {
     const bridgeRes = await callDevFsBridge<{ ok?: boolean; data?: string }>({
@@ -52,19 +61,36 @@ const webFileSystem: FileSystemHost = {
     path: string,
     data: ArrayBuffer | Uint8Array,
   ): Promise<void> {
-    try {
-      const bytes = data instanceof Uint8Array ? data : new Uint8Array(data)
-      if (bytes.byteLength < 512 * 1024) {
-        const text = new TextDecoder().decode(bytes)
-        localStorage.setItem(`fs:${path}`, text)
-      }
-    } catch {
-      // Ignore quota errors on web preview mock
-    }
+    const bytes = data instanceof Uint8Array ? data : new Uint8Array(data)
+    const bridgeRes = await callDevFsBridge<{ ok?: boolean }>({
+      action: 'writeBinaryFile',
+      path,
+      data: uint8ArrayToBase64(bytes),
+    })
+    if (bridgeRes?.ok) return
+    throw new Error(
+      'Persistent binary downloads require the local filesystem bridge in this web environment.',
+    )
   },
 
   async createDirectory(path: string): Promise<void> {
     await callDevFsBridge({ action: 'createDirectory', path })
+  },
+
+  async move(sourcePath: string, destinationPath: string): Promise<void> {
+    const bridgeRes = await callDevFsBridge<{ ok?: boolean }>({
+      action: 'move',
+      sourcePath,
+      destinationPath,
+    })
+    if (bridgeRes?.ok) return
+
+    const sourceKey = `fs:${sourcePath}`
+    const destinationKey = `fs:${destinationPath}`
+    const data = localStorage.getItem(sourceKey)
+    if (data === null) throw new Error(`[WebHost] File not found: ${sourcePath}`)
+    localStorage.setItem(destinationKey, data)
+    localStorage.removeItem(sourceKey)
   },
 
   async remove(path: string): Promise<void> {
@@ -165,12 +191,7 @@ export const webHost: HostAdapter = {
   },
 
   async extractArchive(options: ExtractArchiveOptions): Promise<void> {
-    const {
-      archivePath,
-      destinationDir,
-      removeArchive = true,
-      onProgress,
-    } = options
+    const { archivePath, destinationDir, onProgress } = options
 
     onProgress?.({
       progress: 99,
@@ -190,14 +211,8 @@ export const webHost: HostAdapter = {
     if (bridgeRes?.ok) {
       return
     }
-
-    // 2. Static web environment cleanup
-    if (removeArchive) {
-      try {
-        await webFileSystem.remove(archivePath)
-      } catch {
-        // ignore
-      }
-    }
+    throw new Error(
+      `Archive extraction is unavailable in this web environment; the archive was kept at ${archivePath} in ${destinationDir}.`,
+    )
   },
 }

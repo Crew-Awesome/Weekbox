@@ -112,6 +112,22 @@ const desktopFileSystem: FileSystemHost = {
     }
   },
 
+  async move(sourcePath: string, destinationPath: string): Promise<void> {
+    try {
+      await withTimeout(
+        Neutralino.filesystem.move(sourcePath, destinationPath),
+        60000,
+      )
+    } catch (err) {
+      const res = await callDevFsBridge<{ ok?: boolean }>({
+        action: 'move',
+        sourcePath,
+        destinationPath,
+      })
+      if (!res?.ok) throw err
+    }
+  },
+
   async remove(path: string): Promise<void> {
     try {
       await withTimeout(Neutralino.filesystem.remove(path))
@@ -131,6 +147,7 @@ const desktopFileSystem: FileSystemHost = {
           name: item.entry,
           path: `${path}/${item.entry}`.replace(/\/+/g, '/'),
           isDirectory: item.type === 'DIRECTORY',
+          size: Number((item as { size?: number }).size) || undefined,
         }))
     } catch {
       const res = await callDevFsBridge<{
@@ -234,7 +251,8 @@ async function downloadViaNativeCurl(
   let smoothedSpeed = 0
   let curlPercent = 0
 
-  await new Promise<void>((resolve, reject) => {
+  try {
+    await new Promise<void>((resolve, reject) => {
     let settled = false
     let pollTimer: ReturnType<typeof setInterval> | null = null
 
@@ -390,8 +408,16 @@ async function downloadViaNativeCurl(
       }
     }
 
-    Neutralino.events.on('spawnedProcess', onSpawnedProcessEvent)
-  })
+      Neutralino.events.on('spawnedProcess', onSpawnedProcessEvent)
+    })
+  } catch (err) {
+    try {
+      await desktopFileSystem.remove(destinationPath)
+    } catch {
+      // ignore cleanup error
+    }
+    throw err
+  }
 }
 
 async function flattenDesktopSubdirectory(targetDir: string): Promise<void> {
