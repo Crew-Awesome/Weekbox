@@ -1460,7 +1460,7 @@ export const engineManagerModal = {
             const targetPath = FS.getEnginePath(engineId, version);
             try {
               await Neutralino.os.open(targetPath);
-            } catch (e) {}
+            } catch {}
           });
 
         item

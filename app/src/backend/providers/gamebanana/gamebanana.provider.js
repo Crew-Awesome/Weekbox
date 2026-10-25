@@ -88,11 +88,15 @@ function isGoogleDriveHost(hostname) {
 async function getGoogleDriveFileDetails(url) {
   const fileId = getGoogleDriveFileId(url);
   if (!fileId) return null;
-  const size = await getRangeSupportedFileSize(
-    `https://drive.usercontent.google.com/download?id=${encodeURIComponent(fileId)}&export=download&confirm=t`,
-    (...args) => Neutralino.os.execCommand(...args),
-  );
-  return { filename: null, size: Number(size) || 0 };
+  try {
+    const size = await getRangeSupportedFileSize(
+      `https://drive.usercontent.google.com/download?id=${encodeURIComponent(fileId)}&export=download&confirm=t`,
+      (...args) => Neutralino.os.execCommand(...args),
+    );
+    return { filename: null, size: Number(size) || 0 };
+  } catch {
+    return { filename: null, size: 0 };
+  }
 }
 
 async function getMediaFireDownloadInfo(url) {
@@ -137,17 +141,8 @@ async function getExternalHeaderDetails(downloadUrl, pageSize) {
   };
 }
 
-function buildToolDetails(api, data, file, images) {
-  const id = `tool:${data._idRow}`;
+function buildToolTimingDetails(api, data) {
   return {
-    id,
-    dependencyId: id,
-    type: "tool",
-    title: data._sName || "Unknown Tool",
-    author: data._aSubmitter?._sName || "Unknown Creator",
-    description: data._sText || "<p>No description available.</p>",
-    likes: data._nLikeCount || 0,
-    views: data._nViewCount || 0,
     timeAgo: api.getTimeAgo(data._tsDateAdded),
     submittedTimeAgo: api.getTimeAgo(data._tsDateAdded),
     modifiedTimeAgo: data._tsDateModified
@@ -156,13 +151,16 @@ function buildToolDetails(api, data, file, images) {
     updatedTimeAgo: data._tsDateUpdated
       ? api.getTimeAgo(data._tsDateUpdated)
       : "",
-    images,
+  };
+}
+
+function buildToolDownloadDetails(api, data, file) {
+  return {
     downloadUrl: file?._sDownloadUrl || "",
     fileSize: Number(file?._nFilesize || 0),
     fileSizeStr: file
       ? api.formatBytes(file._nFilesize || 0)
       : "No download available",
-    thumbnail: images[0] || null,
     downloadOptions: file
       ? [
           {
@@ -175,6 +173,24 @@ function buildToolDetails(api, data, file, images) {
           },
         ]
       : [],
+  };
+}
+
+function buildToolDetails(api, data, file, images) {
+  const id = `tool:${data._idRow}`;
+  return {
+    id,
+    dependencyId: id,
+    type: "tool",
+    title: data._sName || "Unknown Tool",
+    author: data._aSubmitter?._sName || "Unknown Creator",
+    description: data._sText || "<p>No description available.</p>",
+    likes: data._nLikeCount || 0,
+    views: data._nViewCount || 0,
+    ...buildToolTimingDetails(api, data),
+    images,
+    ...buildToolDownloadDetails(api, data, file),
+    thumbnail: images[0] || null,
     gameBananaUrl: `https://gamebanana.com/tools/${data._idRow}`,
   };
 }
@@ -380,6 +396,141 @@ function appendRipeMods(api, feed, records, targetCategoryId) {
   }
 }
 
+async function fetchRipePage(api, sourcePage, signal) {
+  try {
+    const params = new URLSearchParams({
+      _sSort: "default",
+      _nPage: String(sourcePage),
+    });
+    const response = await nativeFetch(
+      `${api.subfeedBaseUrl}/Game/${api.gameId}/Subfeed?${params}`,
+      { signal },
+    );
+    if (!response.ok) throw new Error("Ripe Subfeed request failed");
+    return { records: api.getValidRecords(await response.json()) };
+  } catch (error) {
+    return { error };
+  }
+}
+
+async function loadRipeBatch(
+  api,
+  feed,
+  sourcePages,
+  targetCategoryId,
+  options,
+  requiredMods,
+  streamedMods,
+) {
+  const pageRequests = sourcePages.map((sourcePage) =>
+    fetchRipePage(api, sourcePage, options.signal),
+  );
+  let successfulPages = 0;
+  let firstPageError = null;
+  const failedPages = [];
+  let sawShortPage = false;
+  for (let index = 0; index < pageRequests.length; index += 1) {
+    const pageResult = await pageRequests[index];
+    if (pageResult.error) {
+      if (pageResult.error.name === "AbortError") throw pageResult.error;
+      firstPageError ||= pageResult.error;
+      failedPages.push(sourcePages[index]);
+      continue;
+    }
+    successfulPages += 1;
+    const records = pageResult.records;
+    if (!feed.complete) appendRipeMods(api, feed, records, targetCategoryId);
+    if (
+      Number(options.page || 1) === 1 &&
+      typeof options.onProgress === "function" &&
+      feed.mods.length > streamedMods
+    ) {
+      const chunk = feed.mods.slice(
+        streamedMods,
+        Math.min(requiredMods, feed.mods.length),
+      );
+      streamedMods += chunk.length;
+      if (chunk.length)
+        await options.onProgress(chunk.map((mod) => api.toGridMod(mod)));
+    }
+    if (records.length < 15) sawShortPage = true;
+  }
+  return {
+    successfulPages,
+    firstPageError,
+    failedPages,
+    sawShortPage,
+    streamedMods,
+  };
+}
+
+function getRipeFeedState(api, categoryId) {
+  const targetCategoryId = Number.isFinite(Number(categoryId))
+    ? Number(categoryId)
+    : null;
+  const cacheKey = targetCategoryId || "all";
+  const feed = api.ripeFeedCache.get(cacheKey) || {
+    sourcePage: 1,
+    mods: [],
+    modIds: new Set(),
+    complete: false,
+  };
+  setBoundedCache(api.ripeFeedCache, cacheKey, feed, 20);
+  return { feed, targetCategoryId };
+}
+
+async function fillRipeFeed(
+  api,
+  feed,
+  targetCategoryId,
+  page,
+  pageSize,
+  options,
+  streamedMods,
+) {
+  const requiredMods = Math.max(1, Number(page) || 1) * pageSize;
+  const streamFirstPage =
+    Number(page) === 1 && typeof options.onProgress === "function";
+  while (!feed.complete && feed.mods.length < requiredMods) {
+    const sourcePages = Array.from(
+      { length: 3 },
+      (_, index) => feed.sourcePage + index,
+    );
+    const batch = await loadRipeBatch(
+      api,
+      feed,
+      sourcePages,
+      targetCategoryId,
+      { ...options, page: streamFirstPage ? 1 : page },
+      requiredMods,
+      streamedMods,
+    );
+    streamedMods = batch.streamedMods;
+    if (!batch.successfulPages)
+      throw batch.firstPageError || new Error("Ripe Subfeed request failed");
+    if (batch.failedPages.length) {
+      feed.sourcePage = Math.min(...batch.failedPages);
+    } else {
+      feed.sourcePage += sourcePages.length;
+      if (batch.sawShortPage) feed.complete = true;
+    }
+  }
+  return streamedMods;
+}
+
+function formatRipeResult(api, feed, page, pageSize, streamedMods) {
+  const start = (Math.max(1, Number(page) || 1) - 1) * pageSize;
+  const result = feed.mods.slice(start, start + pageSize);
+  if (streamedMods) {
+    return {
+      mods: result.slice(Math.max(0, streamedMods - start)),
+      exhausted: feed.complete && start + pageSize >= feed.mods.length,
+      streamed: true,
+    };
+  }
+  return result.map((mod) => api.toGridMod(mod));
+}
+
 async function loadPsychOnlineBatch(
   api,
   state,
@@ -406,6 +557,10 @@ async function loadPsychOnlineBatch(
   state.snapshotId = Array.isArray(result)
     ? null
     : result.snapshotId || state.snapshotId;
+  if (sourceErrors.length && !batch.length) {
+    state.exhausted = false;
+    return { sourceErrors };
+  }
   state.gameBananaMods.push(...batch);
   state.gameBananaPage += 1;
   state.exhausted = Array.isArray(result)
@@ -603,7 +758,7 @@ export const gameBananaApi = {
             downloadUrl: url.href,
           });
         }
-      } catch (error) {}
+      } catch {}
     };
 
     const rawAlternateSources = data?._aAlternateFileSources;
@@ -643,7 +798,7 @@ export const gameBananaApi = {
         mediafire.downloadUrl,
         mediafire.pageSize,
       );
-    } catch (error) {
+    } catch {
       return null;
     }
   },
@@ -774,7 +929,7 @@ export const gameBananaApi = {
       const images = getImageUrls(data);
       if (!images.length) images.push("assets/img/placeholder-mini.jpg");
       return buildToolDetails(this, data, file, images);
-    } catch (error) {
+    } catch {
       return null;
     }
   },
@@ -905,7 +1060,7 @@ export const gameBananaApi = {
         }
       }
       return buildModDetails(this, data, images, downloadOptions, requirements);
-    } catch (error) {
+    } catch {
       return null;
     }
   },
@@ -1012,90 +1167,29 @@ export const gameBananaApi = {
   async getRipeMods(page = 1, categoryId = null, options = {}) {
     let streamedMods = 0;
     try {
-      const targetCategoryId = Number.isFinite(Number(categoryId))
-        ? Number(categoryId)
-        : null;
-      const cacheKey = targetCategoryId || "all";
-      const feed = this.ripeFeedCache.get(cacheKey) || {
-        sourcePage: 1,
-        mods: [],
-        modIds: new Set(),
-        complete: false,
-      };
-      setBoundedCache(this.ripeFeedCache, cacheKey, feed, 20);
-
       const pageSize = Math.max(1, Number(options.pageSize) || 12);
-      const requiredMods = Math.max(1, Number(page) || 1) * pageSize;
-      const streamFirstPage =
-        Number(page) === 1 && typeof options.onProgress === "function";
-      while (!feed.complete && feed.mods.length < requiredMods) {
-        const sourcePages = Array.from(
-          { length: 3 },
-          (_, index) => feed.sourcePage + index,
-        );
-        const pageRequests = sourcePages.map(async (sourcePage) => {
-          try {
-            const params = new URLSearchParams({
-              _sSort: "default",
-              _nPage: String(sourcePage),
-            });
-            const response = await nativeFetch(
-              `${this.subfeedBaseUrl}/Game/${this.gameId}/Subfeed?${params}`,
-              { signal: options.signal },
-            );
-            if (!response.ok) throw new Error("Ripe Subfeed request failed");
-            return { records: this.getValidRecords(await response.json()) };
-          } catch (error) {
-            return { error };
-          }
-        });
-
-        let successfulPages = 0;
-        let firstPageError = null;
-        for (const pageRequest of pageRequests) {
-          const pageResult = await pageRequest;
-          if (pageResult.error) {
-            if (pageResult.error.name === "AbortError") throw pageResult.error;
-            firstPageError ||= pageResult.error;
-            continue;
-          }
-          successfulPages += 1;
-          const records = pageResult.records;
-          if (!feed.complete)
-            appendRipeMods(this, feed, records, targetCategoryId);
-
-          if (streamFirstPage && feed.mods.length > streamedMods) {
-            const chunk = feed.mods.slice(
-              streamedMods,
-              Math.min(requiredMods, feed.mods.length),
-            );
-            streamedMods += chunk.length;
-            if (chunk.length)
-              await options.onProgress(chunk.map((mod) => this.toGridMod(mod)));
-          }
-
-          if (records.length < 15) feed.complete = true;
-        }
-        if (!successfulPages)
-          throw firstPageError || new Error("Ripe Subfeed request failed");
-        feed.sourcePage += sourcePages.length;
-      }
-
-      const start = (Math.max(1, Number(page) || 1) - 1) * pageSize;
-      const result = feed.mods.slice(start, start + pageSize);
-      if (streamedMods) {
-        return {
-          mods: result.slice(Math.max(0, streamedMods - start)),
-          exhausted: feed.complete && start + pageSize >= feed.mods.length,
-          streamed: true,
-        };
-      }
-      return result.map((mod) => this.toGridMod(mod));
+      const { feed, targetCategoryId } = getRipeFeedState(this, categoryId);
+      streamedMods = await fillRipeFeed(
+        this,
+        feed,
+        targetCategoryId,
+        page,
+        pageSize,
+        options,
+        streamedMods,
+      );
+      return formatRipeResult(this, feed, page, pageSize, streamedMods);
     } catch (error) {
       if (error?.name === "AbortError") return [];
       console.warn("Could not load GameBanana Ripe feed", error);
-      if (streamedMods) return { mods: [], exhausted: false, streamed: true };
-      return [];
+      if (streamedMods)
+        return {
+          mods: [],
+          exhausted: false,
+          streamed: true,
+          sourceErrors: [error],
+        };
+      return { mods: [], exhausted: false, sourceErrors: [error] };
     }
   },
 

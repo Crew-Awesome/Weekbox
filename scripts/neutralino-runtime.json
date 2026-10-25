@@ -2,6 +2,10 @@
   "version": "6.10.11",
   "releaseUrl": "https://github.com/Crew-Awesome/wb-nl-bin/releases/download/v6.10.11/neutralinojs-v6.10.11.zip",
   "clientVersion": "6.10.0",
+  "client": {
+    "app/neutralino.js": "3B435CF313FBB92A7FAAF18FB2DEC94571903885B506C5EC378612843DDF7351",
+    "app/neutralino.d.ts": "9B2CB3F14551C48944AE418B1222FC468F06DF0BE509DCD0466C67BACDA5D820"
+  },
   "binaries": [
     {
       "file": "bin/neutralino-linux_x64",

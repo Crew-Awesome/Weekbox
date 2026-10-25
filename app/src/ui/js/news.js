@@ -40,6 +40,11 @@ const NEWS_SOURCES = [
     name: "DirectMania",
     username: "DirectMania",
   },
+  {
+    name: "FunkCon",
+    username: "FunkCon24",
+    includeReposts: true,
+  },
 ];
 const NEWS_SEEN_KEY = "weekbox_news_seen_v1";
 const NEWS_HIDDEN_ACCOUNTS_KEY = "weekbox_news_hidden_accounts_v1";
@@ -85,19 +90,19 @@ function toSafeExternalUrl(value, baseUrl) {
 function isRetweet(post) {
   return Boolean(
     post?.isRetweet ||
-      post?.reposted_by ||
-      post?.repostedBy ||
-      /^RT(?:\s+by)?\s+@/i.test(String(post?.text || post?.title || "").trim()),
+    post?.reposted_by ||
+    post?.repostedBy ||
+    /^RT(?:\s+by)?\s+@/i.test(String(post?.text || post?.title || "").trim()),
   );
 }
 
 function hasNewsContent(post) {
   return Boolean(
     post?.id &&
-      (String(post.text || "").trim() || post.quote?.id) &&
-      post.link &&
-      post.publishedAt &&
-      !Number.isNaN(Date.parse(post.publishedAt)),
+    (String(post.text || "").trim() || post.quote?.id) &&
+    post.link &&
+    post.publishedAt &&
+    !Number.isNaN(Date.parse(post.publishedAt)),
   );
 }
 
@@ -141,10 +146,7 @@ function normalizeFxVideos(media) {
               return `${FX_TWITTER_VIDEO_HOST}${parsed.pathname}${parsed.search}`;
             });
           const transcodeUrl = toSafeExternalUrl(video?.transcode_url);
-          const sources = [
-            ...(transcodeUrl ? [transcodeUrl] : []),
-            ...formats,
-          ];
+          const sources = [...(transcodeUrl ? [transcodeUrl] : []), ...formats];
           return {
             thumbnailUrl: toSafeExternalUrl(video.thumbnail_url),
             url: sources[0] || "",
@@ -186,17 +188,20 @@ function normalizeNewsStats(status) {
 }
 
 function normalizeNewsStatus(status, source, nested = false) {
-  const author = status?.author || {};
+  const author =
+    !nested && source.includeReposts && status?.reposted_by
+      ? status.reposted_by
+      : status?.author || {};
+  const timestamp =
+    status?.created_timestamp != null
+      ? normalizePublishedAt(Number(status.created_timestamp) * 1000)
+      : "";
   const normalized = {
     id: String(status?.id || ""),
     text: String(status?.text || "").trim(),
     ...normalizeNewsMedia(status),
     link: normalizePostLink(status?.url),
-    publishedAt: normalizePublishedAt(
-      status?.created_timestamp != null
-        ? Number(status.created_timestamp) * 1000
-        : status?.created_at,
-    ),
+    publishedAt: timestamp || normalizePublishedAt(status?.created_at),
     ...normalizeNewsAuthor(author, source, nested),
     stats: normalizeNewsStats(status),
     quote: null,
@@ -217,7 +222,8 @@ function openNewsExternal(url) {
 }
 
 function appendPostText(root, value) {
-  const pattern = /((?:https?:\/\/|www\.)[^\s]+|(?:[\w-]+\.)+(?:com|org|net|io|video)\/[^\s]+|(?<![\w])@\/?[A-Za-z0-9_]{1,15})/gi;
+  const pattern =
+    /((?:https?:\/\/|www\.)[^\s]+|(?:[\w-]+\.)+(?:com|org|net|io|video)\/[^\s]+|(?<![\w])@\/?[A-Za-z0-9_]{1,15})/gi;
   let cursor = 0;
   for (const match of String(value || "").matchAll(pattern)) {
     const start = match.index;
@@ -347,7 +353,9 @@ function closeNewsMediaPreview() {
 }
 
 function openNewsMediaPreview(source, type, poster = "") {
-  const sources = Array.isArray(source) ? source.filter(Boolean) : [source].filter(Boolean);
+  const sources = Array.isArray(source)
+    ? source.filter(Boolean)
+    : [source].filter(Boolean);
   if (!sources.length) return;
   closeNewsMediaPreview();
   const overlay = document.createElement("div");
@@ -369,7 +377,8 @@ function openNewsMediaPreview(source, type, poster = "") {
     media.preload = "metadata";
     media.poster = poster;
     media.addEventListener("error", () => {
-      const nextSource = sources[sources.indexOf(media.currentSrc || media.src) + 1];
+      const nextSource =
+        sources[sources.indexOf(media.currentSrc || media.src) + 1];
       if (nextSource) {
         media.src = nextSource;
         media.load();
@@ -437,8 +446,11 @@ function createVideoThumbnail(thumbnailUrl, label, onClick) {
 
 function appendVideoMedia(container, media, post) {
   const frame = document.createElement("div");
-  frame.className = "news-detail-modal__media-cell news-detail-modal__video-frame";
-  const sources = [...new Set([media.url, ...(media.sources || [])].filter(Boolean))];
+  frame.className =
+    "news-detail-modal__media-cell news-detail-modal__video-frame";
+  const sources = [
+    ...new Set([media.url, ...(media.sources || [])].filter(Boolean)),
+  ];
   const showFallback = () => {
     if (media.thumbnailUrl) {
       const image = document.createElement("img");
@@ -460,10 +472,8 @@ function appendVideoMedia(container, media, post) {
   };
   if (media.thumbnailUrl && sources.length) {
     frame.appendChild(
-      createVideoThumbnail(
-        media.thumbnailUrl,
-        "Play video",
-        () => openNewsMediaPreview(sources, "video", media.thumbnailUrl),
+      createVideoThumbnail(media.thumbnailUrl, "Play video", () =>
+        openNewsMediaPreview(sources, "video", media.thumbnailUrl),
       ),
     );
   } else {
@@ -520,7 +530,10 @@ function mergePostDetails(post, detail) {
     : [];
   const videos = normalizeFxVideos(detail.media);
   const videoIdentities = new Set(
-    videos.map((media) => media.thumbnailUrl).filter(Boolean).map(mediaIdentity),
+    videos
+      .map((media) => media.thumbnailUrl)
+      .filter(Boolean)
+      .map(mediaIdentity),
   );
   const photos = uniqueMediaUrls(rawPhotos).filter(
     (url) => !videoIdentities.has(mediaIdentity(url)),
@@ -592,7 +605,11 @@ async function fetchNewsSource(source, signal, page = {}) {
       }
       const results = Array.isArray(payload?.results) ? payload.results : [];
       const posts = results
-        .filter((status) => status?.type === "status" && !isRetweet(status))
+        .filter(
+          (status) =>
+            status?.type === "status" &&
+            (source.includeReposts || !isRetweet(status)),
+        )
         .filter((status) => !status.replying_to)
         .map((status) => normalizeNewsStatus(status, source))
         .filter(hasNewsContent);
@@ -602,7 +619,10 @@ async function fetchNewsSource(source, signal, page = {}) {
       );
       return { cursor, posts };
     } catch (error) {
-      if (error?.name === "AbortError" || attempt === NEWS_SOURCE_MAX_ATTEMPTS - 1) {
+      if (
+        error?.name === "AbortError" ||
+        attempt === NEWS_SOURCE_MAX_ATTEMPTS - 1
+      ) {
         throw error;
       }
       console.warn(
@@ -622,7 +642,11 @@ async function fetchNewsPayload(signal, onPartial) {
   const availableSources = new Set();
   const sourcePages = new Map();
   const postsById = new Map();
-  for (let index = 0; index < NEWS_SOURCES.length; index += NEWS_SOURCE_CONCURRENCY) {
+  for (
+    let index = 0;
+    index < NEWS_SOURCES.length;
+    index += NEWS_SOURCE_CONCURRENCY
+  ) {
     const batch = NEWS_SOURCES.slice(index, index + NEWS_SOURCE_CONCURRENCY);
     const batchResults = await Promise.all(
       batch.map(async (source) => {
@@ -634,7 +658,10 @@ async function fetchNewsPayload(signal, onPartial) {
           };
         } catch (reason) {
           if (reason?.name === "AbortError") throw reason;
-          console.warn(`[WeekBox News] ${source.name} FxTwitter unavailable`, reason);
+          console.warn(
+            `[WeekBox News] ${source.name} FxTwitter unavailable`,
+            reason,
+          );
           return { source, status: "rejected", reason };
         }
       }),
@@ -671,7 +698,9 @@ async function fetchNewsPayload(signal, onPartial) {
     posts: uniquePosts,
     sourcePages,
     availableSources,
-    unavailable: !uniquePosts.length && results.every((result) => result.status === "rejected"),
+    unavailable:
+      !uniquePosts.length &&
+      results.every((result) => result.status === "rejected"),
   };
 }
 
@@ -698,10 +727,7 @@ function createNewsCard(post, index, openPost) {
       ) {
         return;
       }
-      if (event.target.closest("a")) {
-        event.preventDefault();
-        event.stopPropagation();
-      }
+      if (event.target.closest("a")) return;
       openPost(post);
     },
     true,
@@ -780,7 +806,9 @@ function createNewsCard(post, index, openPost) {
     body.appendChild(textWrap);
   }
   if (post.quote) {
-    body.appendChild(createQuotePreview(post.quote, false, () => openPost(post)));
+    body.appendChild(
+      createQuotePreview(post.quote, false, () => openPost(post)),
+    );
   }
   const videos = (post.videos || []).filter((video) => video.thumbnailUrl);
   const mediaCount = videos.length + post.images.length;
@@ -789,7 +817,9 @@ function createNewsCard(post, index, openPost) {
     media.className = `news-view__media news-view__media--${Math.min(mediaCount, 4)}`;
     videos.forEach((video) => {
       media.appendChild(
-        createVideoThumbnail(video.thumbnailUrl, "Open video details", () => openPost(post)),
+        createVideoThumbnail(video.thumbnailUrl, "Open video details", () =>
+          openPost(post),
+        ),
       );
     });
     post.images.forEach((src) => {
@@ -923,7 +953,9 @@ export const newsView = {
         this.toggleAccountVisibility(visibility.dataset.account);
         return;
       }
-      const reset = event.target.closest(".news-account-options .news-account-reset");
+      const reset = event.target.closest(
+        ".news-account-options .news-account-reset",
+      );
       if (reset) {
         event.preventDefault();
         event.stopPropagation();
@@ -940,7 +972,9 @@ export const newsView = {
       );
       if (!option) return;
       this.account =
-        this.account === option.dataset.account ? "" : option.dataset.account || "";
+        this.account === option.dataset.account
+          ? ""
+          : option.dataset.account || "";
       this.accountDropdownCtrl?.close();
       this.visibleCount = NEWS_PAGE_SIZE;
       this.loadMoreFailed = false;
@@ -957,7 +991,9 @@ export const newsView = {
         localStorage.getItem(NEWS_HIDDEN_ACCOUNTS_KEY) || "[]",
       );
       this.hiddenAccounts = new Set(
-        Array.isArray(saved) ? saved.filter((value) => typeof value === "string") : [],
+        Array.isArray(saved)
+          ? saved.filter((value) => typeof value === "string")
+          : [],
       );
     } catch {
       this.hiddenAccounts = new Set();
@@ -1017,7 +1053,10 @@ export const newsView = {
         const row = document.createElement("div");
         row.className = `news-account-option${this.account === account.username ? " selected" : ""}`;
         row.setAttribute("role", "option");
-        row.setAttribute("aria-selected", String(this.account === account.username));
+        row.setAttribute(
+          "aria-selected",
+          String(this.account === account.username),
+        );
         const select = document.createElement("button");
         select.className = "news-account-option__select";
         select.type = "button";
@@ -1041,7 +1080,10 @@ export const newsView = {
         visibility.type = "button";
         visibility.dataset.account = account.username;
         const visible = !this.hiddenAccounts.has(account.username);
-        visibility.setAttribute("aria-label", `${visible ? "Hide" : "Show"} ${account.name}`);
+        visibility.setAttribute(
+          "aria-label",
+          `${visible ? "Hide" : "Show"} ${account.name}`,
+        );
         visibility.setAttribute("aria-pressed", String(visible));
         visibility.innerHTML = `<i class="fa-solid fa-eye${visible ? "" : "-slash"}" aria-hidden="true"></i>`;
         row.append(select, visibility);
@@ -1054,7 +1096,8 @@ export const newsView = {
     const icon = trigger.querySelector(".news-account-trigger-icon");
     if (icon && selected?.avatarUrl) {
       const avatar = document.createElement("img");
-      icon.className = "filter-engine-icon news-account-trigger-icon news-account-current-avatar";
+      icon.className =
+        "filter-engine-icon news-account-trigger-icon news-account-current-avatar";
       avatar.src = selected.avatarUrl;
       avatar.alt = "";
       icon.replaceChildren(avatar);
@@ -1076,7 +1119,9 @@ export const newsView = {
         this.visibleCount + NEWS_PAGE_SIZE,
         filteredCount,
       );
-      console.info(`[WeekBox News] Loading more posts: ${this.visibleCount}/${filteredCount}`);
+      console.info(
+        `[WeekBox News] Loading more posts: ${this.visibleCount}/${filteredCount}`,
+      );
       this.renderVisiblePosts();
       return;
     }
@@ -1095,6 +1140,7 @@ export const newsView = {
     this.setLoadMoreIndicator(true, true);
     const controller = new AbortController();
     this.loadMoreRequest = controller;
+    const timeout = setTimeout(() => controller.abort(), NEWS_REQUEST_TIMEOUT);
     try {
       const olderPosts = [];
       for (const [username, page] of pages) {
@@ -1136,6 +1182,7 @@ export const newsView = {
         this.renderVisiblePosts();
       }
     } finally {
+      clearTimeout(timeout);
       this.loadingMore = false;
       if (this.loadMoreRequest === controller) this.loadMoreRequest = null;
     }
@@ -1263,7 +1310,8 @@ export const newsView = {
     const modal = this.ensureModal();
     if (!modal) return;
     this.bodyRequest?.abort();
-    this.bodyRequest = new AbortController();
+    const controller = new AbortController();
+    this.bodyRequest = controller;
     renderModalLoading(modal);
     modal.style.display = "flex";
     requestAnimationFrame(() => {
@@ -1275,9 +1323,14 @@ export const newsView = {
         () => this.closeModal(),
       );
     });
-    fetchPostDetails(post, this.bodyRequest.signal)
+    fetchPostDetails(post, controller.signal)
       .then((detail) => {
-        if (!detail || this.bodyRequest?.signal.aborted) return;
+        if (
+          !detail ||
+          controller.signal.aborted ||
+          this.bodyRequest !== controller
+        )
+          return;
         this.renderModalPost(modal, mergePostDetails(post, detail));
       })
       .catch((error) => {
@@ -1342,9 +1395,7 @@ export const newsView = {
       return;
     }
 
-    const unread = validPosts.findIndex(
-      (post) => String(post.id) === seenId,
-    );
+    const unread = validPosts.findIndex((post) => String(post.id) === seenId);
     const count = unread < 0 ? validPosts.length : unread;
     badge.textContent = count > 99 ? "99+" : String(count);
     badge.hidden = count === 0;
@@ -1393,10 +1444,9 @@ export const newsView = {
       if (!child.classList.contains("news-view__card")) child.remove();
     }
     const existing = new Map(
-      [...this.grid.querySelectorAll(":scope > .news-view__card")].map((card) => [
-        card.dataset.postId,
-        card,
-      ]),
+      [...this.grid.querySelectorAll(":scope > .news-view__card")].map(
+        (card) => [card.dataset.postId, card],
+      ),
     );
     const visibleIds = new Set(posts.map((post) => post.id));
     const hasOlderPages = [...this.sourcePages.entries()].some(
@@ -1419,7 +1469,8 @@ export const newsView = {
     let anchor = this.grid.firstElementChild;
     for (const [index, post] of posts.entries()) {
       const card =
-        existing.get(post.id) || createNewsCard(post, index, (selected) => this.open(selected));
+        existing.get(post.id) ||
+        createNewsCard(post, index, (selected) => this.open(selected));
       card.style.setProperty("--card-index", String(Math.min(index, 7)));
       if (card !== anchor) this.grid.insertBefore(card, anchor);
       anchor = card.nextElementSibling;
@@ -1428,7 +1479,9 @@ export const newsView = {
       if (!visibleIds.has(id)) card.remove();
     }
 
-    this.setLoadMoreIndicator(posts.length < filteredPosts.length || hasOlderPages);
+    this.setLoadMoreIndicator(
+      posts.length < filteredPosts.length || hasOlderPages,
+    );
   },
 
   setLoadMoreIndicator(visible = false, loading = false) {
@@ -1475,13 +1528,18 @@ export const newsView = {
       const payload = await fetchNewsPayload(controller.signal, (partial) => {
         if (this.request === controller) this.render(partial);
       });
+      if (this.request !== controller) return;
       this.sessionLoaded = !payload.unavailable;
       this.updateUnreadBadge(payload.posts);
       this.render(payload);
       this.markNewsRead(payload.posts);
-      this.setStatus(payload.unavailable ? t("news.unavailable") : "", payload.unavailable ? "error" : "");
+      this.setStatus(
+        payload.unavailable ? t("news.unavailable") : "",
+        payload.unavailable ? "error" : "",
+      );
       this.setControlsReady(this.availableSources.size > 0);
     } catch (error) {
+      if (this.request !== controller) return;
       handleNewsLoadError(this, error);
     } finally {
       clearTimeout(timeout);

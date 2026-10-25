@@ -61,7 +61,7 @@ export const downloadEngine = {
 
   async cleanupAll() {
     await Promise.all(
-      [...this.activeTasks.entries()].map(async ([key, task]) => {
+      [...this.activeTasks.values()].map(async (task) => {
         task.cancelled = true;
         await this.cleanupTask(task);
       }),

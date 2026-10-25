@@ -175,7 +175,13 @@ var _ExecutableService = class _ExecutableService {
     if (!dir) return null;
     const normalizedDir = String(dir).replace(/\\/g, "/").replace(/\/+$/, "");
     if (this.cache.has(normalizedDir)) {
-      return this.cache.get(normalizedDir);
+      const cached = this.cache.get(normalizedDir);
+      try {
+        await Neutralino.filesystem.getStats(cached);
+        return cached;
+      } catch {
+        this.cache.delete(normalizedDir);
+      }
     }
 
     this.lastError = null;
@@ -281,7 +287,7 @@ var _ExecutableService = class _ExecutableService {
         .toLowerCase();
       const sidecar = `data:${iconMimeTypes[extension]};base64,${window.btoa(binary)}`;
       return sidecar;
-    } catch (error) {
+    } catch {
       return "";
     }
   }

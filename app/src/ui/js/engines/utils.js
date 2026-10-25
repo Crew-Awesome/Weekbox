@@ -53,7 +53,7 @@ export function getTargetSize(versionData) {
 
 export function extractVersionFallback(url) {
   if (!url) return "Unknown";
-  const githubMatch = url.match(/\/download\/(v?([^\/]+))\//);
+  const githubMatch = url.match(/\/download\/(v?([^/]+))\//);
   if (githubMatch && githubMatch[2]) return githubMatch[2];
 
   const genericMatch = url.match(

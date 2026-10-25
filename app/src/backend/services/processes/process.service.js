@@ -1,4 +1,4 @@
-import { getOsProcessId, sameProcessId } from "./spawned-process.util.js";
+import { sameProcessId } from "./spawned-process.util.js";
 import {
   parseWindowsProcessTree,
   parsePosixProcessTree,
@@ -126,12 +126,32 @@ var _ProcessService = class _ProcessService {
       this.monitor(key, process.pid);
     }
   }
+  async matchesProcessIdentity(record) {
+    const executablePath = String(record?.executablePath || "").trim();
+    const safePid = Number.parseInt(record?.pid, 10);
+    if (!executablePath || !Number.isSafeInteger(safePid) || safePid <= 0)
+      return false;
+    const executableName = executablePath.split(/[\\/]/).pop().toLowerCase();
+    try {
+      const command =
+        window.NL_OS === "Windows"
+          ? `tasklist /FI "PID eq ${safePid}" /FO CSV /NH`
+          : `ps -p ${safePid} -o args=`;
+      const result = await Neutralino.os.execCommand(command);
+      return String(result.stdOut || "")
+        .toLowerCase()
+        .includes(executableName);
+    } catch {
+      return false;
+    }
+  }
   async restore() {
     const records = this.readPersistedProcesses();
     if (records.length === 0) return [];
     const spawned = await Neutralino.os.getSpawnedProcesses().catch(() => []);
     const restored = [];
     for (const record of records) {
+      if (!(await this.matchesProcessIdentity(record))) continue;
       const process = spawned.find(
         (item) => String(item.pid) === String(record.pid),
       );
@@ -338,7 +358,7 @@ var _ProcessService = class _ProcessService {
         await Neutralino.os.updateSpawnedProcess(process.id, "exit");
       }
       return true;
-    } catch (error) {
+    } catch {
       this.closingProcesses.delete(key);
       onStateChange?.("error");
       return false;
@@ -369,7 +389,7 @@ var _ProcessService = class _ProcessService {
         this.complete(key, onStateChange);
       }
       return true;
-    } catch (error) {
+    } catch {
       this.closingProcesses.delete(key);
       const waiters = this.exitWaiters.get(key) || [];
       this.exitWaiters.set(

@@ -12,11 +12,23 @@ import { homeCarousel } from "../carousel.js";
 import { getEngineLabel, i18n, t } from "../../i18n/index.js";
 import { setButtonLoading } from "../../hourglass.js";
 import { modBookmarks } from "../../../../backend/core/state/mod-bookmarks.service.js";
+import { sanitizeReleaseDom } from "../../engines/releaseNotes.js";
 
 const WEEKBOX_AVATAR = "assets/icons/launcher-icon.png";
 const MODAL_OPEN_GUARD_MS = 350;
 const modalHideTimers = new WeakMap();
 const modalShowFrames = new WeakMap();
+
+function safeExternalUrl(value) {
+  try {
+    const url = new URL(String(value || "").trim(), window.location.href);
+    return url.protocol === "https:" || url.protocol === "http:"
+      ? url.href
+      : "";
+  } catch {
+    return "";
+  }
+}
 
 function isFallbackAvatar(url) {
   return (
@@ -310,17 +322,9 @@ function linkifyDescriptionSubmissionUrls(content) {
 }
 
 function renderModalDescription(description, data) {
-  const doc = new DOMParser().parseFromString(
-    data.description || "",
-    "text/html",
-  );
-  doc.body
-    .querySelectorAll(
-      "img, picture, video, audio, iframe, embed, object, source",
-    )
-    .forEach((element) => element.remove());
-  linkifyDescriptionSubmissionUrls(doc.body);
-  description.replaceChildren(...doc.body.childNodes);
+  const body = sanitizeReleaseDom(data.description || "");
+  linkifyDescriptionSubmissionUrls(body);
+  description.replaceChildren(...body.childNodes);
   enhanceContentLinks(description, {
     onGameBanana: async (submission, reference) => {
       try {
@@ -366,11 +370,12 @@ function showProfileData(profile, mods) {
   if (profileName) profileName.textContent = profile.username;
   if (profileAvatar) setAvatarImage(profileAvatar, profile.avatar);
   if (profileLink) {
-    profileLink.href = profile.profileUrl;
-    profileLink.hidden = false;
+    const profileUrl = safeExternalUrl(profile.profileUrl);
+    profileLink.hidden = !profileUrl;
+    if (profileUrl) profileLink.href = profileUrl;
     profileLink.onclick = (event) => {
       event.preventDefault();
-      Neutralino.os.open(profile.profileUrl).catch(() => {});
+      if (profileUrl) Neutralino.os.open(profileUrl).catch(() => {});
     };
   }
   if (profileGrid) {
@@ -384,7 +389,9 @@ function showProfileData(profile, mods) {
 }
 
 function updateModalGameBananaLink(link, data) {
-  const sourceUrl = data.source === "peo" ? data.sourceUrl : data.gameBananaUrl;
+  const sourceUrl = safeExternalUrl(
+    data.source === "peo" ? data.sourceUrl : data.gameBananaUrl,
+  );
   if (sourceUrl) link.href = sourceUrl;
   else link.removeAttribute("href");
   link.hidden = !sourceUrl;
@@ -454,10 +461,11 @@ function updateModalContributors(data) {
       if (author.id) {
         name.type = "button";
         name.onclick = () => modModal.openAuthor(author.id);
-      } else if (author.url) {
+      } else if (safeExternalUrl(author.url)) {
+        const authorUrl = safeExternalUrl(author.url);
         const link = document.createElement("a");
         link.className = "modal-credit-link";
-        link.href = author.url;
+        link.href = authorUrl;
         link.target = "_blank";
         link.rel = "noreferrer";
         link.setAttribute("aria-label", t("common.openOnWebsite"));
@@ -465,7 +473,7 @@ function updateModalContributors(data) {
         link.innerHTML = '<i class="fa-solid fa-link" aria-hidden="true"></i>';
         link.onclick = (event) => {
           event.preventDefault();
-          Neutralino.os.open(author.url).catch(() => {});
+          Neutralino.os.open(authorUrl).catch(() => {});
         };
         nameRow.appendChild(link);
       }
@@ -495,15 +503,17 @@ function updateModalRequirements(data) {
     : [];
   section.hidden = requirements.length === 0;
   requirements.forEach((requirement) => {
+    const requirementUrl = safeExternalUrl(requirement.url);
+    if (!requirementUrl) return;
     const item = document.createElement("li");
     const link = document.createElement("a");
-    link.href = requirement.url;
+    link.href = requirementUrl;
     link.textContent = requirement.title;
     link.target = "_blank";
     link.rel = "noreferrer";
     link.onclick = (event) => {
       event.preventDefault();
-      Neutralino.os.open(requirement.url).catch(() => {});
+      Neutralino.os.open(requirementUrl).catch(() => {});
     };
     item.appendChild(link);
     list.appendChild(item);
@@ -613,8 +623,9 @@ function updateDownloadStatus(data, installedCount, onDownload) {
     button.onclick = null;
     setModalDownloadButton(button, "fa-solid fa-check", installedLabel, true);
   } else {
-    const sourceUrl =
-      data.source === "peo" ? data.sourceUrl : data.gameBananaUrl;
+    const sourceUrl = safeExternalUrl(
+      data.source === "peo" ? data.sourceUrl : data.gameBananaUrl,
+    );
     const isPsych = data.source === "peo";
     const label = isPsych
       ? t("modModal.openOnPsychOnline", { title: data.title || "" })

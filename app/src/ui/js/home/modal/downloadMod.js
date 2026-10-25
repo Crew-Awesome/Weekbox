@@ -133,9 +133,8 @@ async function prepareInstalledFolder(
   await new Promise((resolve) => setTimeout(resolve, 150));
   if (wrapper) {
     const wrapperPath = `${targetModFolder}/${wrapper.entry}`;
-    const wrapperEntries = await Neutralino.filesystem.readDirectory(
-      wrapperPath,
-    );
+    const wrapperEntries =
+      await Neutralino.filesystem.readDirectory(wrapperPath);
     await service.moveEntries(wrapperEntries, wrapperPath, finalModFolder);
     await FS.api.remove(wrapperPath);
   } else {

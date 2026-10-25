@@ -173,7 +173,7 @@ export const dependenciesRenderer = {
         try {
           await FS.removeInstalledMod(dependency.id);
           onDependencyRemoved(dependency.id);
-        } catch (error) {
+        } catch {
           remove.disabled = false;
         }
       });

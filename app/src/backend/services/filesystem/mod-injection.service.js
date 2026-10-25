@@ -113,6 +113,60 @@ async function removeEngineModLink({
   return true;
 }
 
+async function getExistingLinkConflict(
+  service,
+  mod,
+  engineId,
+  engineFolderName,
+) {
+  const storedMods = await service.modRepository.getAll();
+  const conflicts = (Array.isArray(storedMods) ? storedMods : []).filter(
+    (otherMod) =>
+      !sameId(otherMod.id, mod.id) &&
+      otherMod.engineId === engineId &&
+      !otherMod.hidden &&
+      usesAddonsDirectory(otherMod, engineId) ===
+        usesAddonsDirectory(mod, engineId) &&
+      normalizeFolderName(getEngineModFolderName(otherMod)) ===
+        normalizeFolderName(engineFolderName),
+  );
+  return conflicts[0] || null;
+}
+
+async function createEngineLink(service, mod, sourcePath, linkPath) {
+  const command =
+    window.NL_OS === "Windows"
+      ? `cmd /c mklink /J "${linkPath}" "${sourcePath}"`
+      : `ln -s "${sourcePath}" "${linkPath}"`;
+  const result = await Neutralino.os.execCommand(command, {
+    background: false,
+  });
+  if (result.exitCode === 0) return { linked: true, path: linkPath };
+  const output = String(result.stdErr || result.stdOut || "");
+  if (
+    window.NL_OS === "Windows" &&
+    /already exists|cannot create a file when that file already exists/i.test(
+      output,
+    ) &&
+    (await service.api.exists(linkPath))
+  ) {
+    return { linked: false, path: linkPath };
+  }
+  if (
+    window.NL_OS === "Windows" &&
+    /local ntfs volumes are required|not supported/i.test(output)
+  ) {
+    await Neutralino.filesystem.copy(sourcePath, linkPath, {
+      recursive: true,
+      overwrite: false,
+      skip: false,
+    });
+    await service.api.write(`${linkPath}/.weekbox-copy-link`, "1");
+    return { linked: true, copied: true, path: linkPath };
+  }
+  throw new Error(output || `Could not inject ${mod.name}`);
+}
+
 var _ModInjectionService = class _ModInjectionService {
   constructor({
     api,
@@ -254,58 +308,20 @@ var _ModInjectionService = class _ModInjectionService {
     }
     await this.api.ensureDir(modsPath);
     if (await this.api.exists(linkPath)) {
-      const storedMods = await this.modRepository.getAll();
-      const conflicts = (Array.isArray(storedMods) ? storedMods : []).filter(
-        (otherMod) =>
-          !sameId(otherMod.id, mod.id) &&
-          otherMod.engineId === engineId &&
-          !otherMod.hidden &&
-          usesAddonsDirectory(otherMod, engineId) ===
-            usesAddonsDirectory(mod, engineId) &&
-          normalizeFolderName(getEngineModFolderName(otherMod)) ===
-            normalizeFolderName(engineFolderName),
+      const conflict = await getExistingLinkConflict(
+        this,
+        mod,
+        engineId,
+        engineFolderName,
       );
-      if (conflicts.length) {
+      if (conflict) {
         throw new Error(
-          `Engine folder conflict: ${engineFolderName} is already used by ${conflicts[0].name}. Remove or hide it before launching ${mod.name}.`,
+          `Engine folder conflict: ${engineFolderName} is already used by ${conflict.name}. Remove or hide it before launching ${mod.name}.`,
         );
       }
       return { linked: false, path: linkPath };
     }
-    const command =
-      window.NL_OS === "Windows"
-        ? `cmd /c mklink /J "${linkPath}" "${sourcePath}"`
-        : `ln -s "${sourcePath}" "${linkPath}"`;
-    const result = await Neutralino.os.execCommand(command, {
-      background: false,
-    });
-    if (result.exitCode !== 0) {
-      if (
-        window.NL_OS === "Windows" &&
-        /already exists|cannot create a file when that file already exists/i.test(
-          String(result.stdErr || result.stdOut || ""),
-        ) &&
-        (await this.api.exists(linkPath))
-      ) {
-        return { linked: false, path: linkPath };
-      }
-      if (
-        window.NL_OS === "Windows" &&
-        /local ntfs volumes are required|not supported/i.test(
-          String(result.stdErr || ""),
-        )
-      ) {
-        await Neutralino.filesystem.copy(sourcePath, linkPath, {
-          recursive: true,
-          overwrite: false,
-          skip: false,
-        });
-        await this.api.write(`${linkPath}/.weekbox-copy-link`, "1");
-        return { linked: true, copied: true, path: linkPath };
-      }
-      throw new Error(result.stdErr || `Could not inject ${mod.name}`);
-    }
-    return { linked: true, path: linkPath };
+    return createEngineLink(this, mod, sourcePath, linkPath);
   }
   async injectOne(modId, engineId, version) {
     const storedMods = await this.modRepository.getAll();
@@ -415,15 +431,21 @@ var _ModInjectionService = class _ModInjectionService {
           (item) => item.entry !== "." && item.entry !== "..",
         )) {
           const linkPath = `${modsPath}/${entry.entry}`;
-          const command =
-            window.NL_OS === "Windows"
-              ? `cmd /c rmdir "${linkPath.replace(/\//g, "\\")}"`
-              : window.NL_OS === "Darwin"
-                ? `rm -f "${linkPath}"`
-                : `rm -rf "${linkPath}"`;
-          await Neutralino.os
-            .execCommand(command, { background: false })
-            .catch(() => {});
+          await removeEngineModLink({
+            api: this.api,
+            isEngineRunning: (...args) => this.isEngineRunning?.(...args),
+            mod: { name: entry.entry },
+            engineId,
+            version,
+            linkPath,
+          }).catch((error) => {
+            if (error?.message?.includes("Close the ")) throw error;
+            console.warn(
+              "Could not clean up a WeekBox mod link:",
+              linkPath,
+              error,
+            );
+          });
         }
       } catch (error) {
         console.warn("Could not clean up mods shortcuts", error);

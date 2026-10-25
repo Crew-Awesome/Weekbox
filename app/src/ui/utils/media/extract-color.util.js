@@ -150,7 +150,6 @@ function readDominantColor(img) {
 function applyDominantColor(img, targetElement, options = {}) {
   const {
     cssVar = "--card-color",
-    alpha = 0.5,
     fallback = "rgba(128, 128, 128, 0.3)",
     accentVar = "",
     accentFallback = "var(--primary)",

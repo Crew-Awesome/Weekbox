@@ -53,7 +53,7 @@ ${noDisplay ? "NoDisplay=true\n" : ""}`;
 function linuxPreloadSnippet(soPathShell) {
   return `if [ -f ${soPathShell} ]; then
   if [ -n "\${LD_PRELOAD:-}" ]; then
-    export LD_PRELOAD=${soPathShell}:\$LD_PRELOAD
+    export LD_PRELOAD=${soPathShell}:$LD_PRELOAD
   else
     export LD_PRELOAD=${soPathShell}
   fi

@@ -92,7 +92,12 @@ async function copyMoveFallback(api, source, destination, lastError) {
     skip: false,
   });
   if (await api.exists(destination)) {
-    await api.remove(source).catch(() => {});
+    await api.remove(source);
+    if (await api.exists(source)) {
+      throw new Error(
+        `WeekBox copied ${source} to ${destination} but could not remove the source.`,
+      );
+    }
     return true;
   }
   if (lastError) throw lastError;
@@ -105,7 +110,7 @@ var APIneuFileSystem = {
     try {
       await Neutralino.filesystem.getStats(path);
       return true;
-    } catch (error) {
+    } catch {
       return false;
     }
   },
@@ -234,7 +239,7 @@ var APIneuFileSystem = {
     try {
       await Neutralino.filesystem.remove(normalizedPath);
       if (!(await this.exists(normalizedPath))) return;
-    } catch (error) {
+    } catch {
       // Native remove can fail if path is a non-empty directory
     }
 

@@ -344,7 +344,9 @@ export const gridRender = {
       if (isInitial) {
         gridState.discoveryController?.abort();
         gridState.renderVersion++;
-        gridState.pendingInitialRender = true;
+        gridState.pendingInitialRender = false;
+        gridState.isLoading = false;
+        void this.renderGrid(true);
       }
       return;
     }

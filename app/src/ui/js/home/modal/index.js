@@ -54,7 +54,7 @@ const modModal = {
         () => this.close(),
         () => this.backToMod(),
       );
-    } catch (error) {}
+    } catch {}
   },
   async open(modId) {
     const requestId = ++this.requestId;

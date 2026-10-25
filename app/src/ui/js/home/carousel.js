@@ -191,7 +191,7 @@ export const homeCarousel = {
       this.setupMotionPause();
       this.updateDots();
       this.startAutoSlide();
-    } catch (error) {
+    } catch {
       if (loadToken !== this.loadToken) return;
       const slideCount = track.querySelectorAll(".carousel-slide").length;
       if (slideCount) {

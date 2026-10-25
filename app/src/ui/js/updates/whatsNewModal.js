@@ -33,7 +33,7 @@ function findRelease(markdown, version) {
   }
   if (start < 0) return null;
   const end = lines.findIndex(
-    (line, index) => index >= start && /^## \[/.test(line),
+    (line, index) => index >= start && line.startsWith("## ["),
   );
   return {
     date,

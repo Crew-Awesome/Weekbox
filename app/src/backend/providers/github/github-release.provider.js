@@ -188,7 +188,7 @@ function applyNightlyResults(version, results, source) {
     version[platform] =
       `https://nightly.link/${source.repository}/workflows/${workflow}/${branch}/${name}.zip`;
     version.nightlyInfo = {
-      ...(version.nightlyInfo || {}),
+      ...version.nightlyInfo,
       [platform]: {
         commit: run.head_sha,
         message: run.head_commit?.message?.split(/\r?\n/, 1)[0] || "",
@@ -362,7 +362,9 @@ export async function getEngineReleaseVersions(engineId) {
     return resolveVersions(versions);
   } catch (error) {
     if (cached?.versions?.length)
-      return resolveVersions(withLatestReleaseOption(cached.versions, engineId));
+      return resolveVersions(
+        withLatestReleaseOption(cached.versions, engineId),
+      );
     try {
       const latest = await getLatestRelease(source);
       return resolveVersions(latest ? [latest] : []);

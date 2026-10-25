@@ -13,7 +13,7 @@
   --card-shadow: 0 10px 24px rgb(0 0 0 / 0.18);
   --card-shadow-featured: 0 12px 28px rgb(0 0 0 / 0.22);
 
-  --font-primary: "Inter", sans-serif;
+  --font-primary: Inter, system-ui, -apple-system, "Segoe UI", sans-serif;
 
   --primary: hsl(var(--accent-hue) 68% 74%);
   --secondary: hsl(var(--accent-hue) 28% 78%);

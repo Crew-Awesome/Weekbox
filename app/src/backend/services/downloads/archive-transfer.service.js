@@ -106,7 +106,8 @@ function listenForProcess(process, getTask, onEvent) {
 }
 
 var MIN_SEGMENTED_DOWNLOAD_BYTES = 8 * 1024 * 1024;
-var MAX_DOWNLOAD_SEGMENTS = 4;
+// Google Drive returned quota HTML for a 512 MiB range in testing; keep each request below that limit.
+var MAX_RANGE_DOWNLOAD_BYTES = 128 * 1024 * 1024;
 var MAX_DOWNLOAD_ATTEMPTS = 4;
 var archiveFinalizations = new Map();
 var bundledArchiveToolsPromise = null;
@@ -152,7 +153,6 @@ function getUsefulProcessOutput(output) {
     String(output || "")
       .split(/\r?\n|\r/)
       // curl writes its progress meter with carriage returns. On some Windows
-
 
       .map((line) => line.trim().replace(/^[#=O\-\s\d.%]+(?=curl:\s*\()/i, ""))
       .filter((line) => line)
@@ -329,7 +329,6 @@ async function retryTransientDownload(
   cleanup,
   shouldRetry = isTransientDownloadError,
 ) {
-
   // becoming available. Give that recovery enough time instead of retrying
   // three times within a second and immediately surfacing a failure.
   let lastError;
@@ -410,8 +409,6 @@ async function verifyArchiveReadable(archivePath, archiveFormat) {
       const exitCode = Number(event.data);
       if (
         exitCode === 0 ||
-
-
         exitCode === 1 ||
         isNonFatalUnzipFilenameWarning(exitCode, processOutput)
       ) {
@@ -450,10 +447,7 @@ async function hasExtractedPayload(path) {
 }
 
 function getDownloadSegments(totalBytes, outPath) {
-  const count = Math.min(
-    MAX_DOWNLOAD_SEGMENTS,
-    Math.ceil(totalBytes / MIN_SEGMENTED_DOWNLOAD_BYTES),
-  );
+  const count = Math.max(1, Math.ceil(totalBytes / MAX_RANGE_DOWNLOAD_BYTES));
   const partSize = Math.ceil(totalBytes / count);
   return Array.from({ length: count }, (_, index) => {
     const start = index * partSize;
@@ -665,7 +659,7 @@ async function collectArchiveFiles(dir) {
     let entries;
     try {
       entries = await Neutralino.filesystem.readDirectory(current);
-    } catch (error) {
+    } catch {
       continue;
     }
     for (const entry of entries) {
@@ -747,10 +741,11 @@ async function extractOneNestedArchive(
     await Neutralino.filesystem.remove(archivePath).catch(() => {});
     return;
   } catch (error) {
+    let extractionError = error;
     let recovered = false;
     if (
       window.NL_OS === "Windows" &&
-      String(error).includes("resolve failed")
+      String(extractionError).includes("resolve failed")
     ) {
       const fallbackCommand = command.includes("tar.exe")
         ? command.replace("tar.exe -xf", "tar.exe --force-local -xf")
@@ -760,7 +755,7 @@ async function extractOneNestedArchive(
           await executeNested(fallbackCommand);
           recovered = true;
         } catch (retryError) {
-          error = retryError;
+          extractionError = retryError;
         }
       }
     }
@@ -775,13 +770,17 @@ async function extractOneNestedArchive(
         );
         recovered = true;
       } catch (psError) {
-        error = psError;
+        extractionError = psError;
       }
     }
     if (recovered) {
       await Neutralino.filesystem.remove(archivePath).catch(() => {});
     } else {
-      console.warn("Could not extract nested archive:", archivePath, error);
+      console.warn(
+        "Could not extract nested archive:",
+        archivePath,
+        extractionError,
+      );
     }
   }
 }
@@ -898,7 +897,7 @@ async function runCurlDownload(command, getTask, onProgress, getProgress) {
         isCheckingProgress = true;
         try {
           reportProgress(await getProgress());
-        } catch (error) {
+        } catch {
         } finally {
           isCheckingProgress = false;
         }
@@ -943,22 +942,6 @@ const GDRIVE_CURL_HEADERS = [
   `-H ${quoteCommandArgument("Referer: https://drive.usercontent.google.com/")}`,
 ].join(" ");
 
-async function downloadGoogleDriveFile({
-  url,
-  outPath,
-  cookiePath,
-  totalBytes,
-  getTask,
-  onProgress,
-}) {
-  await runCurlDownload(
-    `curl --globoff -# --fail --show-error ${GDRIVE_CURL_HEADERS} -b ${quoteCommandArgument(cookiePath)} -c ${quoteCommandArgument(cookiePath)} -L ${quoteCommandArgument(url)} -o ${quoteCommandArgument(outPath)}`,
-    getTask,
-    onProgress,
-    createFileProgressReader(outPath, totalBytes),
-  );
-}
-
 function logGoogleDriveDebug(stage, details = {}) {
   console.info(`[WeekBox Google Drive] ${stage}`, {
     timestamp: new Date().toISOString(),
@@ -975,10 +958,10 @@ function getContentRangeTotal(headers) {
   return Number(matches.at(-1)?.[1] || 0);
 }
 
-async function probeGoogleDriveArchive(fileId, cookiePath, probePath, getTask) {
+async function probeGoogleDriveArchive(fileId, probePath, getTask) {
   const initialUrl = `https://drive.usercontent.google.com/download?id=${encodeURIComponent(fileId)}&export=download`;
   await runCurlDownload(
-    `curl --globoff -s -L ${GDRIVE_CURL_HEADERS} -c ${quoteCommandArgument(cookiePath)} -b ${quoteCommandArgument(cookiePath)} ${quoteCommandArgument(initialUrl)} -o ${quoteCommandArgument(probePath)}`,
+    `curl --globoff -s -L ${GDRIVE_CURL_HEADERS} ${quoteCommandArgument(initialUrl)} -o ${quoteCommandArgument(probePath)}`,
     getTask,
     () => {},
   );
@@ -1024,7 +1007,7 @@ function getGoogleDriveFormUrl(fileId, htmlContent) {
   while ((match = inputRegex.exec(htmlContent)) !== null) {
     const name = match[1] || match[4];
     const value = match[2] || match[3] || "";
-    if (name && name !== "uuid") formParams.set(name, value);
+    if (name) formParams.set(name, value);
   }
   const atMatch =
     htmlContent.match(/name=["']at["']\s+value=["']([^"']+)["']/i) ||
@@ -1054,6 +1037,21 @@ function getGoogleDriveConfirmationUrl(fileId, htmlContent) {
     url: getGoogleDriveFormUrl(fileId, htmlContent),
     hasFormOrLink: isGoogleDriveConfirmationPage(htmlContent),
   };
+}
+
+async function getFreshGoogleDriveUrl(fileId, probePath, getTask) {
+  const probe = await probeGoogleDriveArchive(fileId, probePath, getTask);
+  if (!probe.isHtml) {
+    throw new Error("Google Drive did not return a confirmation page.");
+  }
+  const confirmation = getGoogleDriveConfirmationUrl(fileId, probe.htmlContent);
+  validateGoogleDriveConfirmation(
+    probe.htmlContent,
+    confirmation.hasFormOrLink,
+  );
+  logGoogleDriveConfirmation(confirmation.url, confirmation.hasFormOrLink);
+  await Neutralino.filesystem.remove(probePath).catch(() => {});
+  return confirmation.url;
 }
 
 function validateGoogleDriveConfirmation(htmlContent, hasFormOrLink) {
@@ -1088,34 +1086,68 @@ function validateGoogleDriveConfirmation(htmlContent, hasFormOrLink) {
 }
 
 function logGoogleDriveConfirmation(url, hasFormOrLink) {
-  let confirmedUrlDetails = {};
+  logGoogleDriveDebug("confirmation", {
+    hasFormOrLink,
+    ...describeGoogleDriveUrl(url),
+  });
+}
+
+function describeGoogleDriveUrl(url) {
+  let details = {};
   try {
     const confirmedUrl = new URL(url);
-    confirmedUrlDetails = {
+    details = {
       host: confirmedUrl.hostname,
       path: confirmedUrl.pathname,
       queryKeys: [...confirmedUrl.searchParams.keys()].sort(),
       hasUuid: confirmedUrl.searchParams.has("uuid"),
     };
   } catch {}
-  logGoogleDriveDebug("confirmation", {
-    hasFormOrLink,
-    ...confirmedUrlDetails,
-  });
+  return details;
+}
+
+async function getRangePartDiagnostics(part) {
+  let actualBytes = 0;
+  let sampleBytes = new Uint8Array();
+  try {
+    const stats = await Neutralino.filesystem.getStats(part.path);
+    actualBytes = Number(stats.size) || 0;
+    if (actualBytes > 0) {
+      sampleBytes = new Uint8Array(
+        await Neutralino.filesystem.readBinaryFile(part.path, {
+          pos: 0,
+          size: Math.min(actualBytes, 8192),
+        }),
+      );
+    }
+  } catch {}
+  const sample = new TextDecoder().decode(sampleBytes);
+  return {
+    expectedBytes: part.size,
+    actualBytes,
+    isHtml: looksLikeHtmlResponse(sample),
+    hasQuotaText: isGoogleDriveQuotaError(sample),
+    hasConfirmation: isGoogleDriveConfirmationPage(sample),
+    responseMessage: getHtmlResponseError(sample)?.message || null,
+    firstBytes: Array.from(sampleBytes.slice(0, 8))
+      .map((byte) => byte.toString(16).padStart(2, "0"))
+      .join(" "),
+  };
 }
 
 async function downloadGoogleDriveRangedArchive({
+  fileId,
   url,
   outPath,
+  probePath,
   rangeHeadersPath,
   rangeProbePath,
-  cookiePath,
   getTask,
   onProgress,
 }) {
   onProgress?.("Downloading mod from Google Drive...", 5);
   const rangeCheck = await Neutralino.os.execCommand(
-    `curl --globoff -sS -L --fail --show-error ${GDRIVE_CURL_HEADERS} -b ${quoteCommandArgument(cookiePath)} -c ${quoteCommandArgument(cookiePath)} --range 0-0 -D ${quoteCommandArgument(rangeHeadersPath)} ${quoteCommandArgument(url)} -o ${quoteCommandArgument(rangeProbePath)}`,
+    `curl --globoff -sS -L --fail --show-error ${GDRIVE_CURL_HEADERS} --range 0-0 -D ${quoteCommandArgument(rangeHeadersPath)} ${quoteCommandArgument(url)} -o ${quoteCommandArgument(rangeProbePath)}`,
     { background: false },
   );
   if (rangeCheck.exitCode !== 0)
@@ -1148,19 +1180,12 @@ async function downloadGoogleDriveRangedArchive({
       onProgress,
       curlOptions: GDRIVE_CURL_HEADERS,
       parallel: false,
+      getUrl: () => getFreshGoogleDriveUrl(fileId, probePath, getTask),
     });
   } catch (error) {
     if (getTask()?.cancelled) throw error;
     await Neutralino.filesystem.remove(outPath).catch(() => {});
-    onProgress?.("Ranged download failed. Retrying with one connection...", 2);
-    await downloadGoogleDriveFile({
-      url,
-      outPath,
-      cookiePath,
-      totalBytes: rangedTotalBytes,
-      getTask,
-      onProgress,
-    });
+    throw error;
   }
   await waitForDownloadedArchive(outPath);
   const downloadedStats = await verifyDownloadedArchiveContent(
@@ -1420,19 +1445,13 @@ async function downloadGoogleDriveArchive({
   getTask,
   onProgress,
 }) {
-  const cookiePath = `${outPath}.cookie`;
   const probePath = `${outPath}.probe`;
   const rangeHeadersPath = `${outPath}.range-headers`;
   const rangeProbePath = `${outPath}.range-probe`;
   try {
     logGoogleDriveDebug("start", { fileId, totalBytes });
-    onProgress?.("Authorizing Google Drive download...", 2);
-    const probe = await probeGoogleDriveArchive(
-      fileId,
-      cookiePath,
-      probePath,
-      getTask,
-    );
+    onProgress?.("Preparing Google Drive download...", 2);
+    const probe = await probeGoogleDriveArchive(fileId, probePath, getTask);
 
     logGoogleDriveDebug("probe", {
       bytes: probe.probeSize,
@@ -1457,10 +1476,10 @@ async function downloadGoogleDriveArchive({
       await downloadGoogleDriveRangedArchive({
         url: confirmation.url,
         outPath,
+        fileId,
         rangeHeadersPath,
         rangeProbePath,
-        cookiePath,
-        totalBytes,
+        probePath,
         getTask,
         onProgress,
       });
@@ -1472,10 +1491,10 @@ async function downloadGoogleDriveArchive({
     logGoogleDriveDebug("failed", {
       name: error?.name || "Error",
       message: error?.message || String(error),
+      rangeDiagnostics: error?.rangeDiagnostics || null,
     });
     throw error;
   } finally {
-    await Neutralino.filesystem.remove(cookiePath).catch(() => {});
     await Neutralino.filesystem.remove(probePath).catch(() => {});
     await Neutralino.filesystem.remove(rangeHeadersPath).catch(() => {});
     await Neutralino.filesystem.remove(rangeProbePath).catch(() => {});
@@ -1509,17 +1528,112 @@ async function downloadSingleArchive({
     }
   }
 
-
-
-
-
-
   await runCurlDownload(
     `curl --globoff -# -L --fail --show-error -A ${quoteCommandArgument(BROWSER_USER_AGENT)} -H "Accept-Language: en-US,en;q=0.9" --connect-timeout 15 --speed-time 60 --speed-limit 1024 ${quoteCommandArgument(url)} -o ${quoteCommandArgument(outPath)}`,
     getTask,
     onProgress,
     createFileProgressReader(outPath, totalBytes),
   );
+}
+
+async function downloadRangePart({
+  part,
+  index,
+  partCount,
+  url,
+  getUrl,
+  curlOptions,
+  getTask,
+  onProgress,
+  getProgress,
+}) {
+  const startedAt = Date.now();
+  try {
+    const partUrl = getUrl ? await getUrl(part, index) : url;
+    logGoogleDriveDebug("range-start", {
+      partIndex: index,
+      partCount,
+      start: part.start,
+      end: part.end,
+      bytes: part.size,
+      ...describeGoogleDriveUrl(partUrl),
+    });
+    await runCurlDownload(
+      `curl --globoff -# --fail --show-error ${curlOptions} -L --range ${part.start}-${part.end} -o ${quoteCommandArgument(part.path)} ${quoteCommandArgument(partUrl)}`,
+      getTask,
+      onProgress,
+      getProgress,
+    );
+  } catch (error) {
+    logGoogleDriveDebug("range-transport-failed", {
+      partIndex: index,
+      partCount,
+      start: part.start,
+      end: part.end,
+      bytes: part.size,
+      elapsedMs: Date.now() - startedAt,
+      errorName: error?.name || "Error",
+      errorMessage: String(error?.message || error).slice(0, 500),
+    });
+    throw error;
+  }
+  return validateRangePart(part, index, partCount);
+}
+
+async function validateRangePart(part, index, partCount) {
+  try {
+    const stats = await waitForDownloadedArchive(part.path, part.size);
+    logGoogleDriveDebug("range-complete", {
+      partIndex: index,
+      partCount,
+      start: part.start,
+      end: part.end,
+      expectedBytes: part.size,
+      actualBytes: Number(stats.size) || 0,
+    });
+    return stats;
+  } catch (error) {
+    const diagnostics = await getRangePartDiagnostics(part);
+    logGoogleDriveDebug("range-response-failed", {
+      partIndex: index,
+      partCount,
+      start: part.start,
+      end: part.end,
+      ...diagnostics,
+      errorName: error?.name || "Error",
+      errorMessage: String(error?.message || error).slice(0, 500),
+    });
+    if (error?.archiveDiagnostics) throw error;
+    const rangeError = new Error(
+      diagnostics.responseMessage ||
+        "Google Drive returned an incomplete ranged response.",
+    );
+    rangeError.cause = error;
+    rangeError.rangeDiagnostics = { partIndex: index, ...diagnostics };
+    rangeError.archiveDiagnostics = {
+      stage: "range-response",
+      retryable: false,
+    };
+    throw rangeError;
+  }
+}
+
+async function validateRangeParts(parts) {
+  const partStats = [];
+  try {
+    for (const [index, part] of parts.entries()) {
+      partStats.push(await validateRangePart(part, index, parts.length));
+    }
+  } catch (error) {
+    if (error?.archiveDiagnostics) throw error;
+    const incompleteError = new Error(
+      "Parallel download returned incomplete file parts",
+    );
+    incompleteError.cause = error;
+    incompleteError.rangeDiagnostics = error?.rangeDiagnostics;
+    throw incompleteError;
+  }
+  return partStats;
 }
 
 async function downloadSegmentedArchive({
@@ -1530,6 +1644,7 @@ async function downloadSegmentedArchive({
   onProgress,
   curlOptions = "",
   parallel = true,
+  getUrl,
 }) {
   const parts = getDownloadSegments(totalBytes, outPath);
   const getProgress = createPartsProgressReader(parts, totalBytes);
@@ -1541,13 +1656,7 @@ async function downloadSegmentedArchive({
         : "Opening ranged download connections...",
       2,
     );
-    const downloadPart = (part) =>
-      runCurlDownload(
-        `curl --globoff -# --fail --show-error ${curlOptions} -L --range ${part.start}-${part.end} -o ${quoteCommandArgument(part.path)} ${quoteCommandArgument(url)}`,
-        getTask,
-        onProgress,
-        getProgress,
-      );
+    let partStats;
     if (parallel) {
       const requests = parts
         .map(
@@ -1561,22 +1670,26 @@ async function downloadSegmentedArchive({
         onProgress,
         getProgress,
       );
+      partStats = await validateRangeParts(parts);
     } else {
-      for (const part of parts) await downloadPart(part);
+      partStats = [];
+      for (const [index, part] of parts.entries()) {
+        partStats.push(
+          await downloadRangePart({
+            part,
+            index,
+            partCount: parts.length,
+            url,
+            getUrl,
+            curlOptions,
+            getTask,
+            onProgress,
+            getProgress,
+          }),
+        );
+      }
     }
     if (getTask()?.cancelled) throw new Error("Cancelled");
-    let partStats;
-    try {
-      partStats = await Promise.all(
-        parts.map((part) => waitForDownloadedArchive(part.path, part.size)),
-      );
-    } catch (error) {
-      const incompleteError = new Error(
-        "Parallel download returned incomplete file parts",
-      );
-      incompleteError.cause = error;
-      throw incompleteError;
-    }
     const partSizes = partStats.map((stats) => stats.size);
     console.info("[WeekBox Google Drive] range-parts", {
       expected: parts.map((part) => part.size),
@@ -1584,13 +1697,21 @@ async function downloadSegmentedArchive({
       parallel,
     });
     if (!hasExpectedPartSizes(parts, partSizes)) {
-      throw new Error("Parallel download returned incomplete file parts");
+      throw new Error(
+        parallel
+          ? "Parallel download returned incomplete file parts"
+          : "Ranged download returned incomplete file parts",
+      );
     }
     await mergeParts(parts, outPath);
     const mergedBytes = (await waitForDownloadedArchive(outPath, totalBytes))
       .size;
     if (mergedBytes !== totalBytes) {
-      throw new Error("Parallel download merged to an incomplete archive");
+      throw new Error(
+        parallel
+          ? "Parallel download merged to an incomplete archive"
+          : "Ranged download merged to an incomplete archive",
+      );
     }
   } finally {
     await removeParts(parts);
@@ -1887,16 +2008,15 @@ async function downloadArchive({
   const isNightlyLink = /^https?:\/\/nightly\.link\//i.test(String(url));
 
   const useMultithreadDownloads = appSettings.get("multithreadDownloads");
-  let { remoteFileSize, verifiedRemoteFileSize } =
-    await getVerifiedRemoteSize({
-      url,
-      isGoogleDriveUrl,
-      useMultithreadDownloads,
-      expectedSize,
-      getTask,
-      onProgress,
-      onDiagnostic,
-    });
+  let { remoteFileSize, verifiedRemoteFileSize } = await getVerifiedRemoteSize({
+    url,
+    isGoogleDriveUrl,
+    useMultithreadDownloads,
+    expectedSize,
+    getTask,
+    onProgress,
+    onDiagnostic,
+  });
 
   const cleanupDownloadAttempt = async () => {
     await Promise.all([
@@ -1951,7 +2071,9 @@ async function downloadArchive({
       (error) =>
         isTransientDownloadError(error) ||
         (refreshUrl &&
-          [401, 403].includes(Number(error?.downloadDiagnostics?.httpStatus))) ||
+          [401, 403].includes(
+            Number(error?.downloadDiagnostics?.httpStatus),
+          )) ||
         (isNightlyLink &&
           Number(error?.downloadDiagnostics?.httpStatus) === 404) ||
         isRetryableArchiveValidationError(error),
@@ -2007,7 +2129,7 @@ async function validateSmallArchiveResponse(archivePath) {
     const titleMatch = sample.match(/<title[^>]*>([^<]+)<\/title>/i);
     const headingMatch = sample.match(/<h1[^>]*>([^<]+)<\/h1>/i);
     const pMatch = sample.match(
-      /<p[^>]*class="[^"]*error[^\"]*"[^>]*>([^<]+)<\/p>/i,
+      /<p[^>]*class="[^"]*error[^"]*"[^>]*>([^<]+)<\/p>/i,
     );
     const errorReason =
       pMatch?.[1]?.trim() ||

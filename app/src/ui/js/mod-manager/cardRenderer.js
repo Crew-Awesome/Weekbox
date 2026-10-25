@@ -192,7 +192,7 @@ function bindModManagerCardActions({
           detail: { source: "mod-manager", action: "deleted", modId: mod.id },
         }),
       );
-    } catch (error) {
+    } catch {
       deleteBtn.disabled = false;
       deleteBtn.innerHTML = modManagerTemplates.deleteIcon();
     }
@@ -235,7 +235,7 @@ function bindModManagerCardActions({
           detail: { source: "mod-manager", action: "hidden", modId: mod.id },
         }),
       );
-    } catch (error) {
+    } catch {
       mod.hidden = !isNowHidden;
       card.classList.toggle("is-hidden", mod.hidden);
       launchBtn.disabled = mod.hidden;
@@ -287,7 +287,6 @@ export const cardRenderer = {
         const mod = allMods.find(
           (item) => String(item.id) === card.dataset.modId,
         );
-
 
         if (!mod) return;
         const locked = FS.isModLockedForChanges(mod, allMods);

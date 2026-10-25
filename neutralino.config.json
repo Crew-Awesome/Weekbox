@@ -7,7 +7,7 @@
     "handoffFile": "/weekbox-deeplink.json"
   },
   "applicationIcon": "app/assets/icons/launcher-icon.png",
-  "version": "2.6.3",
+  "version": "2.6.4",
   "defaultMode": "window",
   "port": 0,
   "documentRoot": "/app/",

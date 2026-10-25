@@ -95,7 +95,7 @@ export function getEngineVersionName(engineId, version, fallback) {
 export function setEngineVersionName(engineId, version, name, fallback) {
   const preferences = readJsonSetting("engineVersionPreferences", {});
   const enginePreferences = preferences[engineId] || {};
-  const names = { ...(enginePreferences.names || {}) };
+  const names = { ...enginePreferences.names };
   const trimmedName = String(name || "")
     .trim()
     .slice(0, 80);

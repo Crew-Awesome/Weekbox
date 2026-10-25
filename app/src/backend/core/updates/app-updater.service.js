@@ -156,35 +156,12 @@ UPDATE_DIRECTORY = ".weekbox-update";
 appUpdater = {
   getCurrentVersion,
 
-
-
-
-
   async check() {
     const release = await fetchLatestRelease();
     const latestVersion = normalizeVersion(release.tag_name);
     const currentVersion = await getCurrentVersion();
     if (!latestVersion) {
       throw new Error("Could not determine the latest WeekBox version.");
-    }
-    const resourcesAsset = getResourcesAsset(release);
-    if (resourcesAsset) {
-      if (!/^sha256:[a-f0-9]{64}$/i.test(resourcesAsset.digest || "")) {
-        throw new Error(
-          "The latest WeekBox release has no valid SHA-256 digest.",
-        );
-      }
-      if (compareVersions(latestVersion, currentVersion) <= 0) {
-        return { status: "current", currentVersion, latestVersion };
-      }
-      return {
-        status: "available",
-        currentVersion,
-        latestVersion,
-        asset: resourcesAsset,
-        isResourcesUpdate: true,
-        releaseUrl: release.html_url || RELEASES_PAGE,
-      };
     }
     if (window.NL_OS === "Windows") {
       const packageAsset = getWindowsPackage(release);
@@ -206,46 +183,54 @@ appUpdater = {
           releaseUrl: release.html_url || RELEASES_PAGE,
         };
       }
+    } else {
+      const platform = getPlatformPackage();
+      if (platform) {
+        const asset = getReleaseAsset(release, platform);
+        if (asset) {
+          if (!/^sha256:[a-f0-9]{64}$/i.test(asset.digest || "")) {
+            throw new Error(
+              "The latest WeekBox release has no valid SHA-256 digest.",
+            );
+          }
+          if (compareVersions(latestVersion, currentVersion) <= 0) {
+            return { status: "current", currentVersion, latestVersion };
+          }
+          return {
+            status: "available",
+            currentVersion,
+            latestVersion,
+            asset,
+            releaseUrl: release.html_url || RELEASES_PAGE,
+          };
+        }
+      }
+    }
+    const resourcesAsset = getResourcesAsset(release);
+    if (resourcesAsset) {
+      if (!/^sha256:[a-f0-9]{64}$/i.test(resourcesAsset.digest || "")) {
+        throw new Error(
+          "The latest WeekBox release has no valid SHA-256 digest.",
+        );
+      }
+      if (compareVersions(latestVersion, currentVersion) <= 0) {
+        return { status: "current", currentVersion, latestVersion };
+      }
       return {
-        status: "unsupported",
-        message:
-          "Automatic updates are not available for this release yet. Download the latest version manually.",
+        status: "available",
+        currentVersion,
+        latestVersion,
+        asset: resourcesAsset,
+        isResourcesUpdate: true,
+        releaseUrl: release.html_url || RELEASES_PAGE,
       };
-    }
-    const platform = getPlatformPackage();
-    if (!platform) {
-      return {
-        status: "unsupported",
-        message: "Automatic updates are not available for this platform.",
-      };
-    }
-    const asset = getReleaseAsset(release, platform);
-    if (!asset) {
-      throw new Error(
-        `The latest WeekBox release has no update package for ${window.NL_OS}.`,
-      );
-    }
-    if (compareVersions(latestVersion, currentVersion) <= 0) {
-      return { status: "current", currentVersion, latestVersion };
-    }
-    if (!/^sha256:[a-f0-9]{64}$/i.test(asset.digest || "")) {
-      throw new Error(
-        "The latest WeekBox release has no valid SHA-256 digest.",
-      );
     }
     return {
-      status: "available",
-      currentVersion,
-      latestVersion,
-      asset,
-      releaseUrl: release.html_url || RELEASES_PAGE,
+      status: "unsupported",
+      message:
+        "Automatic updates are not available for this release yet. Download the latest version manually.",
     };
   },
-
-
-
-
-
 
   async install(update, onProgress = () => {}, onHandoff = () => {}) {
     if (update?.isResourcesUpdate) {
@@ -426,7 +411,9 @@ appUpdater = {
     const escapedStagingPath = quotePowerShellLiteral(staging);
     const escapedTargetExe = quotePowerShellLiteral(targetExe);
     const escapedNlPort = quotePowerShellLiteral(String(window.NL_PORT || ""));
-    const escapedNlToken = quotePowerShellLiteral(String(window.NL_TOKEN || ""));
+    const escapedNlToken = quotePowerShellLiteral(
+      String(window.NL_TOKEN || ""),
+    );
     const script = [
       "$ErrorActionPreference = 'Stop'",
       `$appPath = '${escapedAppPath}'`,

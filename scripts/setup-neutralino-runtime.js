@@ -11,9 +11,13 @@ const statePath = path.join(projectRoot, "bin", ".weekbox-runtime.json");
 
 function download(url, destination, redirects = 0) {
   return new Promise((resolve, reject) => {
-    https
+    const request = https
       .get(url, (response) => {
+        const timeout = setTimeout(() => {
+          request.destroy(new Error("Runtime download timed out."));
+        }, 30000);
         if ([301, 302, 303, 307, 308].includes(response.statusCode)) {
+          clearTimeout(timeout);
           if (redirects >= 5 || !response.headers.location) {
             reject(new Error("Too many download redirects."));
             return;
@@ -26,6 +30,7 @@ function download(url, destination, redirects = 0) {
         }
 
         if (response.statusCode !== 200) {
+          clearTimeout(timeout);
           response.resume();
           reject(
             new Error(
@@ -37,11 +42,32 @@ function download(url, destination, redirects = 0) {
 
         const file = fs.createWriteStream(destination);
         response.pipe(file);
-        file.on("finish", () => file.close(resolve));
-        file.on("error", reject);
+        file.on("finish", () => {
+          clearTimeout(timeout);
+          file.close(resolve);
+        });
+        file.on("error", (error) => {
+          clearTimeout(timeout);
+          reject(error);
+        });
       })
       .on("error", reject);
   });
+}
+
+async function downloadVerified(url, destination, expectedSha256) {
+  await download(url, destination);
+  const actualSha256 = crypto
+    .createHash("sha256")
+    .update(fs.readFileSync(destination))
+    .digest("hex")
+    .toUpperCase();
+  if (actualSha256 !== expectedSha256) {
+    throw new Error(
+      `Downloaded Neutralino client hash ${actualSha256} does not match the pinned manifest.`,
+    );
+  }
+  return actualSha256;
 }
 
 function powershellQuote(value) {
@@ -124,17 +150,33 @@ async function main() {
     }
 
     const clientBaseUrl = `https://github.com/neutralinojs/neutralino.js/releases/download/v${manifest.clientVersion}`;
-    await download(
+    const clientHashes = {};
+    clientHashes["app/neutralino.js"] = await downloadVerified(
       `${clientBaseUrl}/neutralino.js`,
       path.join(projectRoot, "app", "neutralino.js"),
+      manifest.client["app/neutralino.js"],
     );
-    await download(
+    clientHashes["app/neutralino.d.ts"] = await downloadVerified(
       `${clientBaseUrl}/neutralino.d.ts`,
       path.join(projectRoot, "app", "neutralino.d.ts"),
+      manifest.client["app/neutralino.d.ts"],
     );
     fs.writeFileSync(
       statePath,
-      `${JSON.stringify({ version: manifest.version, sha256: manifest.binaries.find((binary) => binary.file === "bin/neutralino-win_x64.exe").sha256 }, null, 2)}\n`,
+      `${JSON.stringify(
+        {
+          version: manifest.version,
+          binaries: Object.fromEntries(
+            validatedRuntimes.map(({ binary, sha256 }) => [
+              binary.file,
+              sha256,
+            ]),
+          ),
+          client: clientHashes,
+        },
+        null,
+        2,
+      )}\n`,
     );
     console.log(
       `[weekbox] Installed and recorded Neutralino ${manifest.version}.`,

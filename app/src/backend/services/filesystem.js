@@ -52,6 +52,14 @@ function trimPath(path) {
 const STORAGE_MOVE_PARTIAL_SUFFIX = ".weekbox-partial";
 const STORAGE_MOVE_CHUNK_SIZE = 4 * 1024 * 1024;
 const STORAGE_FOLDER_NAME = "WeekBoxLibrary";
+const STORAGE_LAYOUT_DIRECTORIES = new Set([
+  "config",
+  "data",
+  "state",
+  "runtime",
+  "engines",
+  "mods",
+]);
 
 function getStorageMoveMarkerPaths(path) {
   const paths = getStoragePaths(path);
@@ -242,6 +250,59 @@ async function removeEmptyStorageDirectories(directories) {
   }
 }
 
+async function hasStorageIdentity(service, root) {
+  const paths = getStoragePaths(root);
+  const identityPaths = [
+    paths.storageManifestFile,
+    paths.settingsFile,
+    paths.legacySettingsFile,
+    paths.legacyDataSettingsFile,
+  ];
+  for (const path of identityPaths) {
+    if (!(await service.api.exists(path))) continue;
+    if (path !== paths.storageManifestFile) return true;
+    try {
+      if (Number(JSON.parse(await service.api.read(path))?.version) > 0)
+        return true;
+    } catch {}
+  }
+  return false;
+}
+
+async function isEmptyDirectory(path) {
+  const rawEntries = await Neutralino.filesystem
+    .readDirectory(path)
+    .catch(() => null);
+  if (!Array.isArray(rawEntries)) return false;
+  return getRealEntries(rawEntries).length === 0;
+}
+
+async function isEmptyStorageScaffold(path, entries = null) {
+  let rootEntries = entries;
+  if (rootEntries === null) {
+    const rawEntries = await Neutralino.filesystem
+      .readDirectory(path)
+      .catch(() => null);
+    if (!Array.isArray(rawEntries)) return false;
+    rootEntries = getRealEntries(rawEntries);
+  }
+  if (!rootEntries.length) return true;
+  if (
+    rootEntries.some(
+      (entry) =>
+        entry.type !== "DIRECTORY" ||
+        !STORAGE_LAYOUT_DIRECTORIES.has(
+          String(entry.entry).toLocaleLowerCase(),
+        ),
+    )
+  ) {
+    return false;
+  }
+  return Promise.all(
+    rootEntries.map((entry) => isEmptyDirectory(`${path}/${entry.entry}`)),
+  ).then((results) => results.every(Boolean));
+}
+
 async function copyStorageChunks(service, file, partialPath, state, report) {
   if (!file.size) {
     storageMoveCancelled(service);
@@ -304,20 +365,6 @@ async function moveStorageFile(
   const existingStats = await Neutralino.filesystem
     .getStats(destinationPath)
     .catch(() => null);
-  if (existingStats && Number(existingStats.size) === file.size) {
-    const sourceStats = await Neutralino.filesystem.getStats(file.path);
-    if (Number(sourceStats.size) !== file.size) {
-      throw new Error(`The source changed while moving ${file.relativePath}.`);
-    }
-    if (await service.api.exists(partialPath)) {
-      await Neutralino.filesystem.remove(partialPath);
-    }
-    await Neutralino.filesystem.remove(file.path);
-    state.bytesMoved += file.size;
-    state.copiedFiles += 1;
-    report({ ...state, currentFile: file.relativePath });
-    return;
-  }
   if (existingStats) await Neutralino.filesystem.remove(destinationPath);
   if (await service.api.exists(partialPath)) {
     await Neutralino.filesystem.remove(partialPath);
@@ -467,14 +514,7 @@ async function prepareStorageDestination(service, destinationPath, marker) {
         destinationPath,
       ),
   );
-  if (!entries.length) {
-    return;
-  }
-  if (await isStorageBootstrapFolder(service, destinationPath, entries)) {
-    const settingsDirectory = String(entries[0].entry).toLocaleLowerCase();
-    await service.api.remove(
-      `${destinationPath}/${settingsDirectory}/settings.json`,
-    );
+  if (await isEmptyStorageScaffold(destinationPath, entries)) {
     return;
   }
   if (
@@ -486,28 +526,6 @@ async function prepareStorageDestination(service, destinationPath, marker) {
       "The selected storage folder must be empty. Use the existing WeekBox library directly instead.",
     );
   }
-}
-
-async function isStorageBootstrapFolder(service, destinationPath, entries) {
-  if (
-    entries.length !== 1 ||
-    entries[0].type !== "DIRECTORY" ||
-    !["config", "data"].includes(String(entries[0].entry).toLocaleLowerCase())
-  ) {
-    return false;
-  }
-  const directory = String(entries[0].entry).toLocaleLowerCase();
-  const dataEntries = getRealEntries(
-    await Neutralino.filesystem.readDirectory(
-      `${destinationPath}/${directory}`,
-    ),
-  );
-  return (
-    dataEntries.length === 1 &&
-    dataEntries[0].type === "FILE" &&
-    String(dataEntries[0].entry).toLocaleLowerCase() === "settings.json" &&
-    (await service.api.exists(`${service.basePath}/${directory}/settings.json`))
-  );
 }
 
 async function getStorageMovePlan(
@@ -579,11 +597,18 @@ async function restoreStorageMoveState(
   appSettings.path = settingsPath;
   appSettings.document = settingsDocument;
   appSettings.set("storagePath", storagePath, { persist: false });
-  await Promise.all(
+  const results = await Promise.allSettled(
     mods.map((mod) =>
       service.injection.injectIntoInstalledEngines(mod.id, engines),
     ),
-  ).catch(() => {});
+  );
+  const failures = results.filter((result) => result.status === "rejected");
+  if (failures.length) {
+    return new Error(
+      `Restored storage, but ${failures.length} installed mod(s) could not be linked back into engines.`,
+    );
+  }
+  return null;
 }
 
 async function prepareLocalModImport(
@@ -734,6 +759,65 @@ async function copyCustomEngineInstall(
     await service.api.remove(destinationPath).catch(() => {});
     throw error;
   }
+}
+
+function assertCustomEngineSourceAllowed(service, source, allowLibrarySource) {
+  const isLibraryModSource =
+    pathsOverlap(source, service.modsPath) &&
+    normalizeComparablePath(source) !==
+      normalizeComparablePath(service.modsPath);
+  if (
+    pathsOverlap(source, service.basePath) &&
+    (!allowLibrarySource || !isLibraryModSource)
+  )
+    throw new Error("Choose an engine folder outside your WeekBox library.");
+}
+
+async function prepareCustomEngineFamily(
+  service,
+  { source, engineId, name, version, executable, details },
+) {
+  const normalizedName = String(name || details.name).trim();
+  const normalizedVersion = sanitizePathSegment(version) || "Local";
+  const resolvedId = engineId || `custom-${crypto.randomUUID()}`;
+  const existingEngine = service.customEngines.get(resolvedId);
+  const executablePath = `${source}/${String(
+    executable || details.executable || "",
+  )
+    .replace(/\\/g, "/")
+    .replace(/^\/+/, "")}`;
+  const detectedIcon =
+    !existingEngine || !existingEngine.icon || existingEngine.icon === "exe.png"
+      ? await service.executables.getIconDataUrl(executablePath)
+      : "";
+  const engine = existingEngine || {
+    id: resolvedId,
+    name: normalizedName,
+    icon: detectedIcon || "exe.png",
+    createdAt: new Date().toISOString(),
+    versions: [],
+  };
+  if (!existingEngine) engine.name = normalizedName || engine.name;
+  if (existingEngine && detectedIcon) engine.icon = detectedIcon;
+  return { engine, normalizedVersion, resolvedId };
+}
+
+async function removeMissingCustomVersion(service, engine, version) {
+  const existing = engine.versions.find(
+    (candidate) => candidate.version === version,
+  );
+  if (!existing) return null;
+  if (
+    await service.api.exists(
+      `${service.enginesPath}/${engine.id}/${existing.installId}`,
+    )
+  )
+    return existing;
+  engine.versions = engine.versions.filter(
+    (candidate) => candidate !== existing,
+  );
+  await service.customEngines.upsert(engine);
+  return null;
 }
 
 async function importCustomEngineContent(service, install, engineId, version) {
@@ -1085,7 +1169,7 @@ var _FileSystemService = class _FileSystemService {
     );
     return (
       await Promise.all(requiredPaths.map((item) => this.api.exists(item)))
-    ).every(Boolean);
+    ).every(Boolean) && (await hasStorageIdentity(this, root));
   }
   getStorageDestinationPath(path) {
     const selectedPath = trimPath(path);
@@ -1291,16 +1375,9 @@ var _FileSystemService = class _FileSystemService {
     const entries = await Neutralino.filesystem
       .readDirectory(destinationPath)
       .catch(() => []);
-    if (
-      await isStorageBootstrapFolder(
-        this,
-        destinationPath,
-        getRealEntries(entries),
-      )
-    ) {
-      return false;
-    }
-    return getRealEntries(entries).length > 0;
+    const realEntries = getRealEntries(entries);
+    if (await this.isCompleteStorage(destinationPath)) return true;
+    return !(await isEmptyStorageScaffold(destinationPath, realEntries));
   }
 
   async removeExistingStorage(basePath) {
@@ -1460,27 +1537,38 @@ var _FileSystemService = class _FileSystemService {
       return this.weekboxPath;
     } catch (error) {
       const cancelled = error?.code === "STORAGE_MOVE_CANCELLED";
-      await restoreStorageMoveState(this, {
-        basePath: previousBasePath,
-        settingsPath: previousSettingsPath,
-        settingsDocument: previousSettingsDocument,
-        storagePath: previousStoragePath,
-        mods,
-        engines,
-      });
+      let restoreError = null;
+      try {
+        restoreError = await restoreStorageMoveState(this, {
+          basePath: previousBasePath,
+          settingsPath: previousSettingsPath,
+          settingsDocument: previousSettingsDocument,
+          storagePath: previousStoragePath,
+          mods,
+          engines,
+        });
+      } catch (stateError) {
+        restoreError = stateError;
+      }
       if (cancelled) {
         report({ ...lastProgress, phase: "CANCELLED" });
         console.info("[WeekBox] Storage move cancelled");
         throw error;
       }
+      const failureMessage = [
+        error?.message || String(error),
+        restoreError?.message && `Recovery warning: ${restoreError.message}`,
+      ]
+        .filter(Boolean)
+        .join("\n\n");
       report({
         ...lastProgress,
         phase: "FAILED",
-        error: error?.message || String(error),
+        error: failureMessage,
       });
-      console.error("[WeekBox] Storage move failed", error);
+      console.error("[WeekBox] Storage move failed", error, restoreError);
       throw new Error(
-        `Could not move the WeekBox library. The files already transferred are safe. You can retry the move to continue where it stopped.\n\nReason: ${error?.message || error}`,
+        `Could not move the WeekBox library. The files already transferred are safe. You can retry the move to continue where it stopped.\n\nReason: ${failureMessage}`,
       );
     } finally {
       this.isStorageMoveInProgress = false;
@@ -1730,55 +1818,22 @@ var _FileSystemService = class _FileSystemService {
     if (!this.isInitialized) throw new Error("WeekBox storage is not ready");
     const source = trimPath(sourcePath);
     if (!source) throw new Error("Choose an engine folder first");
-    const isLibraryModSource =
-      pathsOverlap(source, this.modsPath) &&
-      normalizeComparablePath(source) !==
-        normalizeComparablePath(this.modsPath);
-    if (
-      pathsOverlap(source, this.basePath) &&
-      (!allowLibrarySource || !isLibraryModSource)
-    )
-      throw new Error("Choose an engine folder outside your WeekBox library.");
+    assertCustomEngineSourceAllowed(this, source, allowLibrarySource);
     const details = await this.inspectCustomEngine(source);
-    const normalizedName = String(name || details.name).trim();
-    const normalizedVersion = sanitizePathSegment(version) || "Local";
-    const resolvedId = engineId || `custom-${crypto.randomUUID()}`;
-    const existingEngine = this.customEngines.get(resolvedId);
-    const executablePath = `${source}/${String(
-      executable || details.executable || "",
-    )
-      .replace(/\\/g, "/")
-      .replace(/^\/+/, "")}`;
-    const detectedIcon =
-      !existingEngine ||
-      !existingEngine.icon ||
-      existingEngine.icon === "exe.png"
-        ? await this.executables.getIconDataUrl(executablePath)
-        : "";
-    const engine = existingEngine || {
-      id: resolvedId,
-      name: normalizedName,
-      icon: detectedIcon || "exe.png",
-      createdAt: new Date().toISOString(),
-      versions: [],
-    };
-    if (!existingEngine) engine.name = normalizedName || engine.name;
-    if (existingEngine && detectedIcon) engine.icon = detectedIcon;
-    let existing = engine.versions.find(
-      (candidate) => candidate.version === normalizedVersion,
+    const { engine, normalizedVersion, resolvedId } =
+      await prepareCustomEngineFamily(this, {
+        source,
+        engineId,
+        name,
+        version,
+        executable,
+        details,
+      });
+    const existing = await removeMissingCustomVersion(
+      this,
+      engine,
+      normalizedVersion,
     );
-    if (
-      existing &&
-      !(await this.api.exists(
-        `${this.enginesPath}/${resolvedId}/${existing.installId}`,
-      ))
-    ) {
-      engine.versions = engine.versions.filter(
-        (candidate) => candidate !== existing,
-      );
-      await this.customEngines.upsert(engine);
-      existing = null;
-    }
     if (existing)
       throw new Error(`Version ${normalizedVersion} is already imported.`);
     const install = await copyCustomEngineInstall(this, {

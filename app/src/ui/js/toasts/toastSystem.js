@@ -7,6 +7,45 @@ function isStartupActive() {
   return Boolean(el && !el.classList.contains("startup-loading--complete"));
 }
 
+function isSafeMediaSource(value) {
+  try {
+    const url = new URL(String(value || "").trim(), document.baseURI);
+    return (
+      url.protocol === "http:" ||
+      url.protocol === "https:" ||
+      url.protocol === "blob:" ||
+      (url.protocol === "data:" && url.pathname.startsWith("image/"))
+    );
+  } catch {
+    return false;
+  }
+}
+
+function appendSafeMarkup(parent, markup, allowedTags) {
+  const template = document.createElement("template");
+  template.innerHTML = String(markup || "");
+  template.content.querySelectorAll("*").forEach((element) => {
+    const tagName = element.tagName.toLowerCase();
+    if (!allowedTags.has(tagName)) {
+      element.remove();
+      return;
+    }
+    [...element.attributes].forEach((attribute) => {
+      const name = attribute.name.toLowerCase();
+      const allowed =
+        tagName === "img"
+          ? new Set(["alt", "class", "src"])
+          : new Set(["aria-hidden", "class"]);
+      if (!allowed.has(name)) element.removeAttribute(attribute.name);
+    });
+    if (tagName === "img") {
+      const source = element.getAttribute("src");
+      if (!isSafeMediaSource(source)) element.remove();
+    }
+  });
+  parent.append(...template.content.childNodes);
+}
+
 function bindToastEvents(system, toast, id, onSelect, onCancel) {
   toast
     .querySelector(".toast-system-cancel")
@@ -149,13 +188,13 @@ export const toastSystem = {
     toast.setAttribute("role", onSelect ? "button" : "status");
     if (onSelect) toast.tabIndex = 0;
     toast.innerHTML = `
-      <div class="engine-update-toast-icon"><span class="toast-system-media">${mediaHtml || ""}</span><span class="toast-system-status-badge">${badgeHtml || ""}</span></div>
+      <div class="engine-update-toast-icon"><span class="toast-system-media"></span><span class="toast-system-status-badge"></span></div>
       <div class="engine-update-toast-body">
         <div class="toast-system-heading">
-          <strong>${title || ""}</strong>${showPercent ? '<em class="toast-system-percent">0%</em>' : ""}
+          <strong></strong>${showPercent ? '<em class="toast-system-percent">0%</em>' : ""}
           ${onCancel ? `<span class="toast-system-controls"><button type="button" class="toast-system-control toast-system-cancel" aria-label="${t("toast.cancelDownload")}" title="${t("toast.cancelDownload")}"><i class="fa-solid fa-xmark" aria-hidden="true"></i></button><button type="button" class="toast-system-control toast-system-collapse" aria-label="${t("toast.showOnlyProgress")}" title="${t("toast.showOnlyProgress")}"><i class="fa-solid fa-compress" aria-hidden="true"></i></button></span>` : ""}
         </div>
-        <span>${message || ""}</span>
+        <span></span>
         <div class="engine-update-toast-track" ${showProgress ? "" : "hidden"}><i></i></div>
       </div>
     `;
@@ -169,6 +208,18 @@ export const toastSystem = {
       progress: toast.querySelector(".engine-update-toast-track i"),
       percent: toast.querySelector(".toast-system-percent"),
     };
+    entry.title.textContent = title || "";
+    entry.message.textContent = message || "";
+    appendSafeMarkup(
+      toast.querySelector(".toast-system-media"),
+      mediaHtml,
+      new Set(["i", "img"]),
+    );
+    appendSafeMarkup(
+      toast.querySelector(".toast-system-status-badge"),
+      badgeHtml,
+      new Set(["i"]),
+    );
     if (entry.percent) entry.percent.hidden = indeterminate;
     this.toasts.set(id, entry);
     this.ensureContainer().appendChild(toast);
@@ -221,7 +272,10 @@ export const toastSystem = {
     if (!entry) return;
     entry.toast.classList.remove(...TOAST_STATES);
     if (state) entry.toast.classList.add(state);
-    if (badgeHtml && entry.badge) entry.badge.innerHTML = badgeHtml;
+    if (badgeHtml && entry.badge) {
+      entry.badge.replaceChildren();
+      appendSafeMarkup(entry.badge, badgeHtml, new Set(["i"]));
+    }
     if (showProgress !== undefined && entry.track)
       entry.track.hidden = !showProgress;
   },

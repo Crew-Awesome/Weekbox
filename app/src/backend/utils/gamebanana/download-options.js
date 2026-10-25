@@ -11,15 +11,16 @@ export function getDownloadFiles(data) {
 }
 
 export function isInstallableDownloadFile(file) {
-  const placeholderText = `${file?._sFile || ""} ${file?._sDescription || ""}`
-    .replaceAll("_", " ")
-    .toLowerCase();
+  const placeholderText =
+    `${file?._sFile || ""} ${file?._sDescription || ""} ${file?._sVersion || ""}`
+      .replaceAll("_", " ")
+      .toLowerCase();
   return (
     !file?._bIsArchived &&
     file?._bHasContents !== false &&
     Boolean(file?._sDownloadUrl) &&
     Number(file?._nFilesize || 0) >= MIN_INSTALLABLE_FILE_SIZE &&
-    !/\b(?:placeholder|use\s+(?:mediafire|drive|external)|download\s+(?:from|on)\s+(?:mediafire|drive))\b/.test(
+    !/\b(?:placeholder|use\s+(?:the\s+)?(?:(?:google\s+)?drive|mediafire|external)|download\s+(?:from|on)\s+(?:(?:google\s+)?drive|mediafire|external))\b/.test(
       placeholderText,
     )
   );
@@ -54,4 +55,3 @@ export function getPreferredDownloadOption(options) {
     null
   );
 }
-

@@ -155,12 +155,12 @@ async function ensureSingleInstance() {
     processId = process.id;
     timeoutHandle = setTimeout(() => {
       console.warn("The WeekBox single-instance guard did not respond in time");
-      finish(true);
+      finish(false);
     }, 5000);
     pendingEvents.splice(0).forEach(handleEvent);
   } catch (error) {
     console.warn("Could not start the WeekBox single-instance guard", error);
-    finish(true);
+    finish(false);
   }
   return guardResult;
 }
@@ -478,53 +478,140 @@ function initializeNeutralino() {
   window.Neutralino.init();
 }
 
+function createStartupDeepLinkState() {
+  let ready = false;
+  let queued = null;
+  let lastLink = null;
+  let lastLinkAt = 0;
+  let primary = false;
+  let checkingHandoff = false;
+  const handle = (link) => {
+    if (!parseWeekboxLink(link)) return;
+    const now = Date.now();
+    if (link === lastLink && now - lastLinkAt < 2000) return;
+    lastLink = link;
+    lastLinkAt = now;
+    if (!ready) {
+      queued = link;
+      return;
+    }
+    void focusWeekBoxWindow();
+    void openWeekboxLink(link).catch((error) =>
+      console.warn("Could not open the WeekBox link", error),
+    );
+  };
+  const checkPendingHandoff = async () => {
+    if (!primary || checkingHandoff) return;
+    checkingHandoff = true;
+    const pendingHandoff = await readPendingHandoff();
+    checkingHandoff = false;
+    const isFresh =
+      pendingHandoff?.timestamp &&
+      Date.now() - Number(pendingHandoff.timestamp) < 10000;
+    if (isFresh && pendingHandoff.link) handle(pendingHandoff.link);
+    else if (isFresh) void focusWeekBoxWindow();
+  };
+  return {
+    handle,
+    checkPendingHandoff,
+    setPrimary: () => {
+      primary = true;
+    },
+    markReady: () => {
+      ready = true;
+      const link = queued;
+      queued = null;
+      return link;
+    },
+  };
+}
+
+function registerAppLifecycle(cleanupAppState) {
+  let allowAppExit = false;
+  let appExitStarted = false;
+  const handleAppExit = async () => {
+    if (appExitStarted) return;
+    appExitStarted = true;
+    engineUpdateService.stopScheduledChecks();
+    let timeoutHandle;
+    try {
+      await Promise.race([
+        cleanupAppState(),
+        new Promise((resolve) => {
+          timeoutHandle = setTimeout(resolve, 10000);
+        }),
+      ]);
+    } catch {
+    } finally {
+      if (timeoutHandle) clearTimeout(timeoutHandle);
+    }
+    try {
+      await Neutralino.app.exit();
+    } catch {}
+  };
+
+  if (supportsSystemTray()) {
+    Neutralino.events.on("trayMenuItemClicked", async (event) => {
+      const id = event.detail?.id;
+      if (id === "weekbox-show") {
+        await focusWeekBoxWindow();
+        return;
+      }
+      if (id === "weekbox-quit") {
+        allowAppExit = true;
+        await handleAppExit();
+      }
+    });
+  }
+  window.addEventListener("beforeunload", () => {
+    engineUpdateService.stopScheduledChecks();
+    void cleanupAppState();
+  });
+  Neutralino.events.on("windowClose", async () => {
+    if (
+      !allowAppExit &&
+      supportsSystemTray() &&
+      appSettings.get("closeToTray")
+    ) {
+      await Neutralino.window.hide();
+      return;
+    }
+    await handleAppExit();
+  });
+}
+
+async function applyCachedAppearanceSettings() {
+  const cachedTheme = getCachedTheme();
+  const cachedHue = getCachedHue();
+  let repairedSettings = false;
+  if (cachedTheme !== null && cachedTheme !== appSettings.get("darkMode")) {
+    appSettings.set("darkMode", cachedTheme);
+    repairedSettings = true;
+  }
+  if (cachedHue !== null && cachedHue !== appSettings.get("accentHue")) {
+    appSettings.set("accentHue", cachedHue);
+    repairedSettings = true;
+  }
+  if (repairedSettings) await appSettings.write();
+  setTheme(cachedTheme ?? appSettings.get("darkMode"), {
+    animate: false,
+    hue: cachedHue ?? appSettings.get("accentHue"),
+  });
+}
+
 async function startApp() {
   let startupStep = "starting native services";
   try {
     startupLoader.setPhase(t("startup.startingServices"), 8);
     initializeNeutralino();
     patchNeutralinoMessageBox();
-    let deepLinkReady = false;
-    let queuedDeepLink = null;
-    let lastIncomingLink = null;
-    let lastIncomingLinkAt = 0;
-    let primaryInstance = false;
-    let pendingHandoffCheck = false;
-    const handleIncomingLink = (link) => {
-      if (!parseWeekboxLink(link)) return;
-      const now = Date.now();
-      if (link === lastIncomingLink && now - lastIncomingLinkAt < 2000) return;
-      lastIncomingLink = link;
-      lastIncomingLinkAt = now;
-      if (!deepLinkReady) {
-        queuedDeepLink = link;
-        return;
-      }
-      void focusWeekBoxWindow();
-      void openWeekboxLink(link).catch((error) =>
-        console.warn("Could not open the WeekBox link", error),
-      );
-    };
+    const deepLinkState = createStartupDeepLinkState();
     await Neutralino.events.on("weekbox:deep-link", (event) => {
       const detail = event?.detail;
-      handleIncomingLink(
+      deepLinkState.handle(
         typeof detail === "string" ? detail : detail?.link || detail?.url,
       );
     });
-    const checkPendingHandoff = async () => {
-      if (!primaryInstance || pendingHandoffCheck) return;
-      pendingHandoffCheck = true;
-      const pendingHandoff = await readPendingHandoff();
-      pendingHandoffCheck = false;
-      const isFresh =
-        pendingHandoff?.timestamp &&
-        Date.now() - Number(pendingHandoff.timestamp) < 10000;
-      if (isFresh && pendingHandoff.link) {
-        handleIncomingLink(pendingHandoff.link);
-      } else if (isFresh) {
-        void focusWeekBoxWindow();
-      }
-    };
     await Neutralino.events.on(
       "weekbox:focus",
       () => void focusWeekBoxWindow(),
@@ -533,71 +620,25 @@ async function startApp() {
       await handoffToPrimaryInstance();
       return;
     }
-    primaryInstance = true;
-    setInterval(() => void checkPendingHandoff(), 250);
+    deepLinkState.setPrimary();
+    setInterval(() => void deepLinkState.checkPendingHandoff(), 250);
     void startupLoader.initVersion();
     networkStatus.init();
     await focusWeekBoxWindow();
     disableProductionRefreshShortcuts();
 
-    const handleAppExit = async () => {
-      if (appExitStarted) return;
-      appExitStarted = true;
-      engineUpdateService.stopScheduledChecks();
-      let timeoutHandle;
-      try {
-        await Promise.race([
-          Promise.allSettled([
-            downloadEngine.cleanupAll?.(),
-            downloadMod.cleanupAll?.(),
-            appSettings.writeQueue,
-          ]),
-          new Promise((resolve) => {
-            timeoutHandle = setTimeout(resolve, 1500);
-          }),
+    let appCleanupPromise = null;
+    const cleanupAppState = () => {
+      if (!appCleanupPromise) {
+        appCleanupPromise = Promise.allSettled([
+          downloadEngine.cleanupAll?.(),
+          downloadMod.cleanupAll?.(),
+          appSettings.writeQueue,
         ]);
-      } catch {
-      } finally {
-        if (timeoutHandle) clearTimeout(timeoutHandle);
       }
-      try {
-        await Neutralino.app.exit();
-      } catch {}
+      return appCleanupPromise;
     };
-
-    let allowAppExit = false;
-    let appExitStarted = false;
-    if (supportsSystemTray()) {
-      Neutralino.events.on("trayMenuItemClicked", async (event) => {
-        const id = event.detail?.id;
-        if (id === "weekbox-show") {
-          await focusWeekBoxWindow();
-          return;
-        }
-        if (id === "weekbox-quit") {
-          allowAppExit = true;
-          await handleAppExit();
-        }
-      });
-    }
-
-    window.addEventListener("beforeunload", () => {
-      engineUpdateService.stopScheduledChecks();
-      downloadEngine.cleanupAll?.().catch(() => {});
-      downloadMod.cleanupAll?.().catch(() => {});
-    });
-
-    Neutralino.events.on("windowClose", async () => {
-      if (
-        !allowAppExit &&
-        supportsSystemTray() &&
-        appSettings.get("closeToTray")
-      ) {
-        await Neutralino.window.hide();
-        return;
-      }
-      await handleAppExit();
-    });
+    registerAppLifecycle(cleanupAppState);
     startupLoader.setPhase(t("startup.loadingPreferences"), 20);
     startupStep = "restoring preferences";
     startupStep = "finding the default storage location";
@@ -634,22 +675,7 @@ async function startApp() {
     await FS.init({ deferMaintenance: true });
     await appSettings.setDataPath(FS.configPath);
     await modBookmarks.init();
-    const cachedTheme = getCachedTheme();
-    const cachedHue = getCachedHue();
-    let repairedSettings = false;
-    if (cachedTheme !== null && cachedTheme !== appSettings.get("darkMode")) {
-      appSettings.set("darkMode", cachedTheme);
-      repairedSettings = true;
-    }
-    if (cachedHue !== null && cachedHue !== appSettings.get("accentHue")) {
-      appSettings.set("accentHue", cachedHue);
-      repairedSettings = true;
-    }
-    if (repairedSettings) await appSettings.write();
-    setTheme(cachedTheme ?? appSettings.get("darkMode"), {
-      animate: false,
-      hue: cachedHue ?? appSettings.get("accentHue"),
-    });
+    await applyCachedAppearanceSettings();
     await resumeInterruptedStorageMove();
     try {
       await completeFirstRunStorageSetup(defaultStoragePath, hadSettings);
@@ -689,10 +715,9 @@ async function startApp() {
     await openLaunchDeepLink().catch((error) =>
       console.warn("Could not open the WeekBox launch link", error),
     );
-    deepLinkReady = true;
+    const queuedDeepLink = deepLinkState.markReady();
     if (queuedDeepLink) {
       const link = queuedDeepLink;
-      queuedDeepLink = null;
       await focusWeekBoxWindow();
       await openWeekboxLink(link).catch((error) =>
         console.warn("Could not open the WeekBox link", error),

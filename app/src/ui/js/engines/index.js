@@ -101,7 +101,6 @@ export const enginesView = {
     const dlText = document.getElementById("dl-text");
     const dlTextSizer = document.getElementById("dl-text-sizer");
     const dlTrackTextSizer = document.getElementById("dl-track-text-sizer");
-    const dlActiveLayer = document.getElementById("dl-active-layer");
     const downloadActions = document.getElementById("engine-download-actions");
     if (!launchBtn) return;
     const activeTask = downloadEngine.getActiveTask(
@@ -200,7 +199,6 @@ export const enginesView = {
           this.currentVersion,
         );
 
-
         if (appSettings.get("hideOnLaunch")) {
           Neutralino.window.hide();
         }
@@ -216,7 +214,6 @@ export const enginesView = {
               state === "error" ||
               state === "not_found"
             ) {
-
               if (appSettings.get("hideOnLaunch")) {
                 Neutralino.window.show();
                 Neutralino.window.focus();
@@ -322,7 +319,6 @@ export const enginesView = {
           await this.updateButtonState();
 
           document.dispatchEvent(new CustomEvent("mods-updated"));
-
 
           if (appSettings.get("autoStartAfterDownload")) {
             setTimeout(() => {

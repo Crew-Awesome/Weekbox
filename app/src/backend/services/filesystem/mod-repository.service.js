@@ -32,7 +32,7 @@ var _ModRepository = class _ModRepository {
     try {
       const mods = JSON.parse(await this.api.read(this.filePath));
       return Array.isArray(mods) ? mods : [];
-    } catch (error) {
+    } catch {
       return [];
     }
   }

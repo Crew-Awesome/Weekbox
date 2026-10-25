@@ -1,6 +1,5 @@
 import { ENGINE_DETAILS } from "../../config/engines.config.js";
 import { isValidEngineVersion } from "./engine-version.service.js";
-import { ModRepository } from "./mod-repository.service.js";
 import {
   getRealEntries,
   getModFolderName,
@@ -349,10 +348,7 @@ var _LibraryMaintenanceService = class _LibraryMaintenanceService {
         if (engineRoot.type !== "DIRECTORY") continue;
         const rootPath = `${enginesPath}/${engineRoot.entry}`;
         const customEngine = this.getCustomEngine?.(engineRoot.entry);
-        if (
-          !ENGINE_DETAILS[engineRoot.entry] &&
-          !customEngine
-        ) {
+        if (!ENGINE_DETAILS[engineRoot.entry] && !customEngine) {
           await this.api.remove(rootPath);
           continue;
         }
@@ -387,7 +383,13 @@ var _LibraryMaintenanceService = class _LibraryMaintenanceService {
   }
   async hasModFiles(mod) {
     const folderName = getModFolderName(mod);
-    if (!folderName || /[\\/]/.test(folderName)) return false;
+    if (
+      !folderName ||
+      /[\\/]/.test(folderName) ||
+      folderName === "." ||
+      folderName === ".."
+    )
+      return false;
     const hasFilesIn = async (path) => {
       const entries = getRealEntries(
         await Neutralino.filesystem.readDirectory(path),
@@ -413,7 +415,12 @@ var _LibraryMaintenanceService = class _LibraryMaintenanceService {
     for (const mod of await this.mods.getAll()) {
       if (await this.hasModFiles(mod)) continue;
       const folderName = getModFolderName(mod);
-      if (folderName && !/[\\/]/.test(folderName)) {
+      if (
+        folderName &&
+        !/[\\/]/.test(folderName) &&
+        folderName !== "." &&
+        folderName !== ".."
+      ) {
         await this.api
           .remove(`${this.getModsPath()}/${folderName}`)
           .catch(() => {});

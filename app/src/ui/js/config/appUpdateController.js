@@ -65,7 +65,7 @@ export class AppUpdateController {
       }
       if (update.status === "available" && this.showAvailable(update)) return;
       throw new Error("WeekBox returned an incomplete update result.");
-    } catch (error) {
+    } catch {
       status.textContent = t("updates.checkFailed");
       button.textContent = t("updates.tryAgain");
       button.disabled = false;
@@ -83,7 +83,7 @@ export class AppUpdateController {
       await this.appUpdater.install(this.pendingUpdate, (message) => {
         status.textContent = localizeUpdateStatus(message);
       });
-    } catch (error) {
+    } catch {
       status.textContent = t("updates.installFailed");
       button.textContent = t("updates.tryAgain");
       this.pendingUpdate = null;

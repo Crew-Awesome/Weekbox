@@ -7,11 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.6.4] - 2026-10-25
+
+### Added
+
+- Added FunkCon24 to the News feed.
+
 ### Changed
 
-- Centralized metadata in `config`, `data`, `state`, and `runtime`.
-- Refined the library delete dialog.
-- Removed its initial chooser copy.
+- Changed library folders to separate config, data, state, and runtime folders.
+
+### Fixed
+
+- Improved Google Drive downloads.
+- Fixed storage moves misidentifying empty libraries and restoring engine links.
+- Fixed duplicate WeekBox links.
+- Fixed stale Home and News updates.
+- Fixed News pagination, detail views, and media fallbacks.
 
 ## [2.6.3] - 2026-10-22
 
@@ -1357,7 +1369,8 @@ This is the Last content update I will do in a long while :)
 - Downloads for Windows, Linux, and macOS.
 - Packages for x64, ARM64, ARMHF, and Universal Macs where available.
 
-[unreleased]: https://github.com/Crew-Awesome/Weekbox/compare/v2.6.3...HEAD
+[unreleased]: https://github.com/Crew-Awesome/Weekbox/compare/v2.6.4...HEAD
+[2.6.4]: https://github.com/Crew-Awesome/Weekbox/compare/v2.6.3...v2.6.4
 [2.6.3]: https://github.com/Crew-Awesome/Weekbox/compare/v2.6.2...v2.6.3
 [2.6.2]: https://github.com/Crew-Awesome/Weekbox/compare/v2.6.1...v2.6.2
 [2.6.1]: https://github.com/Crew-Awesome/Weekbox/compare/v2.6.0...v2.6.1

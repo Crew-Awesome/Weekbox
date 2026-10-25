@@ -16,7 +16,7 @@ export class FeaturedService {
       const mods = this.flatten(featured);
       if (mods.length === 0) throw new Error("No featured mods");
       return mods;
-    } catch (error) {
+    } catch {
       return [];
     }
   }
