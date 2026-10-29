@@ -1,29 +1,6 @@
 @import "tailwindcss";
 @import "./variables.css";
 
-@theme {
-  --color-primary: var(--md-sys-color-primary);
-  --color-on-primary: var(--md-sys-color-on-primary);
-  --color-primary-container: var(--md-sys-color-primary-container);
-  --color-on-primary-container: var(--md-sys-color-on-primary-container);
-  --color-secondary: var(--md-sys-color-secondary);
-  --color-on-secondary: var(--md-sys-color-on-secondary);
-  --color-secondary-container: var(--md-sys-color-secondary-container);
-  --color-on-secondary-container: var(--md-sys-color-on-secondary-container);
-  --color-tertiary: var(--md-sys-color-tertiary);
-  --color-on-tertiary: var(--md-sys-color-on-tertiary);
-  --color-surface: var(--md-sys-color-surface);
-  --color-on-surface: var(--md-sys-color-on-surface);
-  --color-surface-variant: var(--md-sys-color-surface-variant);
-  --color-on-surface-variant: var(--md-sys-color-on-surface-variant);
-  --color-background: var(--md-sys-color-background);
-  --color-on-background: var(--md-sys-color-on-background);
-  --color-error: var(--md-sys-color-error);
-  --color-on-error: var(--md-sys-color-on-error);
-  --color-outline: var(--md-sys-color-outline);
-  --color-outline-variant: var(--md-sys-color-outline-variant);
-}
-
 html,
 body {
   margin: 0;
@@ -50,50 +27,3 @@ m3e-tooltip {
   --m3e-tooltip-supporting-text-font-size: 11.5px;
   --m3e-tooltip-supporting-text-font-weight: 500;
 }
-
-@keyframes startup-loading-background-reveal {
-  from {
-    filter: blur(14px) brightness(0.42) saturate(1);
-    transform: scale(1.12);
-  }
-  to {
-    filter: blur(0) brightness(1) saturate(1);
-    transform: scale(1);
-  }
-}
-
-@keyframes startup-loading-overlay-reveal {
-  from {
-    opacity: 1;
-  }
-  to {
-    opacity: 0;
-  }
-}
-
-@keyframes calloutEnter {
-  0% {
-    opacity: 0;
-    transform: translate3d(36px, 16px, 0) scale(0.92);
-  }
-  65% {
-    opacity: 1;
-    transform: translate3d(-3px, -2px, 0) scale(1.01);
-  }
-  100% {
-    opacity: 1;
-    transform: translate3d(0, 0, 0) scale(1);
-  }
-}
-
-@keyframes calloutExit {
-  0% {
-    opacity: 1;
-    transform: translate3d(0, 0, 0) scale(1);
-  }
-  100% {
-    opacity: 0;
-    transform: translate3d(48px, 0, 0) scale(0.88);
-  }
-}
-
