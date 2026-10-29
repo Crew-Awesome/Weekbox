@@ -1,0 +1,25 @@
+@keyframes calloutEnter {
+  0% {
+    opacity: 0;
+    transform: translate3d(36px, 16px, 0) scale(0.92);
+  }
+  65% {
+    opacity: 1;
+    transform: translate3d(-3px, -2px, 0) scale(1.01);
+  }
+  100% {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+}
+
+@keyframes calloutExit {
+  0% {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translate3d(48px, 0, 0) scale(0.88);
+  }
+}

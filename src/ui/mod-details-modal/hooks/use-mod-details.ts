@@ -9,10 +9,6 @@ import { useModInlineEdit } from './use-mod-inline-edit'
 import { useModBookmarks } from './use-mod-bookmarks'
 import { useModDownloadActions } from './use-mod-download-actions'
 
-/**
- * Coordinates interactive state for the Mod Details view by composing focused sub-hooks
- * for installation state, inline editing, bookmarks/favorites, and WeekBoxLibrary downloads.
- */
 export function useModDetails({
   displayCard,
   isInstalled: isInstalledProp = false,
@@ -92,6 +88,12 @@ export function useModDetails({
 
   const bookmarks = useModBookmarks(displayCard?.id)
 
+  const [isEngineDropdownOpen, setIsEngineDropdownOpen] = useState(false)
+  const [isVersionDropdownOpen, setIsVersionDropdownOpen] = useState(false)
+  const [selectedVersion, setSelectedVersion] = useState('latest')
+  const [isInstallingEngine, setIsInstallingEngine] = useState(false)
+  const installedEngineVersions = ['0.7.3', '0.7.2', 'latest']
+
   const downloadActions = useModDownloadActions({
     displayCard,
     validFiles,
@@ -99,13 +101,8 @@ export function useModDetails({
     setInstalledRecord,
     setIsInstalled,
     onUpdateMod,
+    selectedVersion,
   })
-
-  const [isEngineDropdownOpen, setIsEngineDropdownOpen] = useState(false)
-  const [isVersionDropdownOpen, setIsVersionDropdownOpen] = useState(false)
-  const [selectedVersion, setSelectedVersion] = useState('latest')
-  const [isInstallingEngine, setIsInstallingEngine] = useState(false)
-  const installedEngineVersions = ['0.7.3', '0.7.2', 'latest']
 
   const modId = displayCard?.id
 

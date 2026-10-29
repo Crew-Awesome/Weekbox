@@ -39,6 +39,8 @@ export interface ModItem {
   installedFileId?: string | number
   files?: GameBananaFile[] | Record<string, GameBananaFile>
   downloadUrl?: string
+  coverPath?: string
+  localCoverPath?: string
 }
 
 export interface ModalViewProps {

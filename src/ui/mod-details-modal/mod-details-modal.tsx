@@ -7,10 +7,6 @@ import { ENGINE_CATEGORIES } from './constants'
 import { ModDetailsView } from './mod-details-view'
 import type { ModItem, ModDetailsModalProps } from './types'
 
-/**
- * Container for the Mod Details Modal. Coordinates media carousel auto-play,
- * responsive 16:9 desktop sizing, and delegates layout rendering to ModDetailsView.
- */
 export const ModDetailsModal: React.FC<ModDetailsModalProps> = ({
   selectedCard,
   isOpen = Boolean(selectedCard),
@@ -60,7 +56,15 @@ export const ModDetailsModal: React.FC<ModDetailsModalProps> = ({
     return {
       ...baseCard,
       name: baseCard.name || baseCard.title || 'Unknown Mod',
-      img: baseCard.img || baseCard.image || baseCard.thumbnail || '',
+      img:
+        baseCard.img ||
+        baseCard.image ||
+        baseCard.thumbnail ||
+        (baseCard.coverPath
+          ? baseCard.coverPath.startsWith('mod-covers/')
+            ? `/${baseCard.coverPath}`
+            : baseCard.coverPath
+          : ''),
       previewMedia:
         baseCard.previewMedia && baseCard.previewMedia.length > 0
           ? baseCard.previewMedia
@@ -68,7 +72,13 @@ export const ModDetailsModal: React.FC<ModDetailsModalProps> = ({
             ? [baseCard.img]
             : baseCard.image
               ? [baseCard.image]
-              : [],
+              : baseCard.coverPath
+                ? [
+                    baseCard.coverPath.startsWith('mod-covers/')
+                      ? `/${baseCard.coverPath}`
+                      : baseCard.coverPath,
+                  ]
+                : [],
       defaultEngineId:
         baseCard.defaultEngineId || baseCard.originalEngineId || baseCard.engineId,
       ...customCardData,

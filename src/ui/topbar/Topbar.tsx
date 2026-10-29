@@ -6,21 +6,20 @@ export interface TopbarProps {
   leading?: React.ReactNode
   trailing?: React.ReactNode
   children?: React.ReactNode
+  underlay?: React.ReactNode
   className?: string
   style?: React.CSSProperties
   sticky?: boolean
   autoHideOnScroll?: boolean
 }
 
-/**
- * Sticky feature header that automatically hides on downward scroll and reappears on upward scroll.
- */
 export const Topbar: React.FC<TopbarProps> = ({
   title,
   subtitle,
   leading,
   trailing,
   children,
+  underlay,
   className = '',
   style,
   sticky = true,
@@ -59,8 +58,10 @@ export const Topbar: React.FC<TopbarProps> = ({
           const currentY = scrollContainer.scrollTop
           const diff = currentY - lastScrollY.current
 
-          // Do not hide Topbar if user is interacting with an input or search view inside it
-          if (header.contains(document.activeElement) || header.matches(':focus-within')) {
+          if (
+            header.contains(document.activeElement) ||
+            header.matches(':focus-within')
+          ) {
             setIsHidden(false)
             lastScrollY.current = currentY
             ticking = false
@@ -87,14 +88,15 @@ export const Topbar: React.FC<TopbarProps> = ({
   }, [sticky, autoHideOnScroll])
 
   const hasLeadingOrTitle = Boolean(leading || title || subtitle)
+  const effectiveIsHidden = sticky && autoHideOnScroll ? isHidden : false
 
   return (
     <header
       ref={headerRef}
       className={`w-full ${
         sticky ? 'sticky top-0 z-30' : 'relative'
-      } flex items-center justify-between min-h-[56px] sm:min-h-[64px] px-4 sm:px-8 py-2.5 select-none transition-all duration-300 ease-in-out ${
-        isHidden ? '-translate-y-full opacity-0' : 'translate-y-0 opacity-100'
+      } relative overflow-hidden flex items-center justify-between min-h-[56px] sm:min-h-[64px] px-4 sm:px-8 py-2.5 select-none transition-all duration-300 ease-in-out ${
+        effectiveIsHidden ? '-translate-y-full opacity-0' : 'translate-y-0 opacity-100'
       } ${className}`}
       style={{
         backgroundColor:
@@ -109,8 +111,10 @@ export const Topbar: React.FC<TopbarProps> = ({
         ...style,
       }}
     >
+      {underlay}
+
       {hasLeadingOrTitle && (
-        <div className="flex items-center gap-3 min-w-0">
+        <div className="relative z-10 flex items-center gap-3 min-w-0">
           {leading && <div className="shrink-0 flex items-center">{leading}</div>}
           {(title || subtitle) && (
             <div className="flex flex-col min-w-0">
@@ -130,13 +134,13 @@ export const Topbar: React.FC<TopbarProps> = ({
       )}
 
       {children && (
-        <div className="flex-1 flex items-center justify-center min-w-0">
+        <div className="relative z-10 flex-1 flex items-center min-w-0">
           {children}
         </div>
       )}
 
       {trailing && (
-        <div className="flex items-center gap-2 shrink-0">
+        <div className="relative z-10 flex items-center gap-2 shrink-0 ml-auto">
           {trailing}
         </div>
       )}

@@ -1,19 +1,9 @@
 import type { ReactNode } from 'react'
 
-/**
- * Visual appearance variants supported by m3e-callout:
- * - secondary (default): Balanced visual emphasis suitable for general informational content.
- * - primary: Stronger emphasis highlighting information of higher importance.
- * - tertiary: Alternative emphasis for category-specific or complementary information.
- * - error: Reserved for critical or blocking information.
- * - surface: Neutral presentation aligned with the surrounding layout.
- */
 export type CalloutVariant = 'secondary' | 'primary' | 'tertiary' | 'error' | 'surface'
 
-/** Corner shape for the callout container */
 export type CalloutShape = 'rounded' | 'square'
 
-/** Screen placement position for toasts */
 export type CalloutPosition =
   | 'top-right'
   | 'top-left'
@@ -28,7 +18,7 @@ export interface CalloutAction {
 }
 
 export interface CalloutDownloadInfo {
-  progress: number // 0 to 100
+  progress: number
   speed?: string
   downloaded?: string
   total?: string
@@ -49,31 +39,18 @@ export interface CalloutDownloadOptions extends Omit<CalloutToastOptions, 'messa
 }
 
 export interface CalloutToastOptions {
-  /** Unique identifier; if omitted, an auto-generated ID is used */
   id?: string
-  /** The M3E appearance variant */
   variant?: CalloutVariant
-  /** Title / heading displayed in slot="label" */
   title?: string
-  /** Message content displayed in the callout body */
   message: string | ReactNode
-  /** Material Symbols icon name, or null to omit */
   icon?: string | null
-  /** Corner shape: 'rounded' (default) or 'square' */
   shape?: CalloutShape
-  /** Auto-dismiss duration in milliseconds. Set to 0 to make it persistent */
   duration?: number
-  /** Whether the callout can be minimized. Defaults to true */
   canMinimize?: boolean
-  /** Initial minimized state. Defaults to false */
   minimized?: boolean
-  /** Whether to show a permanent close button. Defaults to false (toasts minimize rather than close) */
   allowClose?: boolean
-  /** Optional interactive action button */
   action?: CalloutAction
-  /** Screen position. Defaults to 'bottom-right' on desktop */
   position?: CalloutPosition
-  /** Download progress information (enables morphing shape progress indicator) */
   download?: CalloutDownloadInfo
 }
 

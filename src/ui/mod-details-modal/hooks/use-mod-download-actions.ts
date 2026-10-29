@@ -4,6 +4,7 @@ import {
   uninstallModById,
   openFolderInExplorer,
   resolveModInstallDirectory,
+  launchMod,
   type InstalledModRecord,
 } from '@/core/mods'
 import type { ModItem, GameBananaFile } from '../types'
@@ -17,12 +18,9 @@ interface UseModDownloadActionsParams {
   >
   setIsInstalled: React.Dispatch<React.SetStateAction<boolean>>
   onUpdateMod?: (updates: Partial<ModItem>) => Promise<void>
+  selectedVersion?: string
 }
 
-/**
- * Handles mod download, extraction, update, cancellation, uninstallation, and folder opening
- * inside the configured `WeekBoxLibrary/mods` directory.
- */
 export function useModDownloadActions({
   displayCard,
   validFiles,
@@ -30,6 +28,7 @@ export function useModDownloadActions({
   setInstalledRecord,
   setIsInstalled,
   onUpdateMod,
+  selectedVersion,
 }: UseModDownloadActionsParams) {
   const {
     tasksByFileId,
@@ -140,9 +139,49 @@ export function useModDownloadActions({
     )
   }, [displayCard, validFiles, handleDownload])
 
-  const handleManage = useCallback(() => {
-    setPlayStatus((prev) => (prev === 'running' ? 'play' : 'running'))
-  }, [])
+  const handleManage = useCallback(async () => {
+    const targetMod = installedRecord || displayCard
+    if (!targetMod) return
+
+    try {
+      const result = await launchMod(targetMod, selectedVersion)
+      if (!result.success) {
+        setPlayStatus('play')
+        if (typeof window !== 'undefined' && window.callout) {
+          if (result.reason === 'engine_not_installed') {
+            window.callout.error(
+              `The engine "${result.engineName || 'required'}" is not installed. Please install it in Instances to play this mod.`,
+              'Engine Not Installed',
+            )
+          } else {
+            window.callout.error(
+              result.error || 'Failed to launch mod.',
+              'Launch Error',
+            )
+          }
+        }
+      } else {
+        setPlayStatus('running')
+        if (typeof window !== 'undefined' && window.callout) {
+          window.callout.primary(
+            result.isExecutable
+              ? `Launching "${targetMod.name || targetMod.title}" directly...`
+              : `Running "${targetMod.name || targetMod.title}" with ${result.engineName || 'Engine'}...`,
+            'Game Launched',
+            { duration: 4000 },
+          )
+        }
+      }
+    } catch (err) {
+      setPlayStatus('play')
+      if (typeof window !== 'undefined' && window.callout) {
+        window.callout.error(
+          err instanceof Error ? err.message : String(err),
+          'Launch Error',
+        )
+      }
+    }
+  }, [displayCard, installedRecord, selectedVersion])
 
   const handleStop = useCallback(() => {
     setPlayStatus('play')

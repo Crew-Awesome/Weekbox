@@ -2,6 +2,8 @@ import type { CalloutVariant } from './types'
 
 export const DEFAULT_CALLOUT_DURATION = 5000
 
+export const MAX_CALLOUT_TOASTS = 12
+
 export const VARIANT_DEFAULTS: Record<
   CalloutVariant,
   {
@@ -13,32 +15,27 @@ export const VARIANT_DEFAULTS: Record<
   secondary: {
     title: 'Info',
     icon: 'info',
-    description:
-      'Balanced visual emphasis suitable for general informational content.',
+    description: 'Information update',
   },
   primary: {
     title: 'Notice',
     icon: 'campaign',
-    description:
-      'Stronger emphasis highlighting information of higher importance.',
+    description: 'Action completed',
   },
   tertiary: {
     title: 'Tip',
     icon: 'lightbulb',
-    description:
-      'Alternative emphasis for category-specific or complementary information.',
+    description: 'Helpful note',
   },
   error: {
     title: 'Error',
     icon: 'error',
-    description:
-      'Reserved for critical or blocking information requiring immediate attention.',
+    description: 'An issue occurred',
   },
   surface: {
     title: 'System',
     icon: 'notifications',
-    description:
-      'Neutral presentation aligned with the surrounding layout.',
+    description: 'System notification',
   },
 }
 

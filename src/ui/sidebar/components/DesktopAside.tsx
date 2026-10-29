@@ -11,9 +11,6 @@ export interface DesktopAsideProps {
   isSettingsOpen?: boolean
 }
 
-/**
- * Background action strip hosting the Info and Settings triggers behind the main curve.
- */
 const AsideBackgroundActions: React.FC<{
   onOpenInfo: () => void
   onOpenSettings: () => void
@@ -23,7 +20,7 @@ const AsideBackgroundActions: React.FC<{
   <div
     className="absolute inset-y-0 left-0 w-[68px] rounded-tr-[16px] rounded-br-[16px] z-10 flex flex-col justify-end items-end pb-6 pr-1 shadow-inner"
     style={{
-      backgroundColor: 'var(--md-sys-color-surface-container-high)',
+      backgroundColor: 'var(--md-sys-color-surface-container-low)',
     }}
   >
     <div className="flex flex-col space-y-3 items-center w-[38px]">
@@ -54,9 +51,6 @@ const AsideBackgroundActions: React.FC<{
   </div>
 )
 
-/**
- * Bezier curve transition joining the wide nav tab (92px) to the narrow lower stem (20px).
- */
 const AsideCurveTransition: React.FC = () => (
   <div className="w-[92px] h-14 pointer-events-auto relative -mt-[1px]">
     <svg
@@ -73,9 +67,6 @@ const AsideCurveTransition: React.FC = () => (
   </div>
 )
 
-/**
- * Desktop aside navigation drawer with M3 Expressive curved tab layout.
- */
 export const DesktopAside: React.FC<DesktopAsideProps> = ({
   activePath,
   onNavigate,

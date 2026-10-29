@@ -1,6 +1,5 @@
-export {
-  SystemDialog,
-  DialogProvider,
-} from './SystemDialog'
+export { SystemDialog } from './SystemDialog'
+export { DialogProvider } from './DialogProvider'
+export { DialogModal } from './DialogModal'
 export { useSystemDialog } from './context'
 export type { SystemDialogOptions, DialogType } from './context'

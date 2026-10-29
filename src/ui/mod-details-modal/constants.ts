@@ -1,3 +1,5 @@
+import React from 'react'
+
 export interface EngineCategory {
   id: string
   name: string
@@ -40,3 +42,29 @@ export const ENGINE_CATEGORIES: Record<string, EngineCategory> = {
 
 export const getSupportedEngineCategories = (): EngineCategory[] =>
   Object.values(ENGINE_CATEGORIES)
+
+export const M3E_MENU_STYLE: React.CSSProperties = {
+  '--m3e-menu-container-color':
+    'var(--md-sys-color-surface-container, var(--wb-surface-container-highest))',
+  '--m3e-menu-container-shape': '16px',
+  '--m3e-menu-container-min-width': '230px',
+  '--m3e-menu-item-color':
+    'var(--md-sys-color-on-surface, var(--wb-on-surface))',
+  '--m3e-menu-item-icon-size': '20px',
+  '--m3e-menu-item-container-height': '46px',
+  boxShadow:
+    '0 12px 32px color-mix(in srgb, var(--md-sys-color-scrim, #000) 25%, transparent)',
+  border:
+    '1px solid color-mix(in srgb, var(--md-sys-color-outline-variant, #444) 50%, transparent)',
+  zIndex: 100,
+} as React.CSSProperties
+
+export const M3E_ENGINE_TRIGGER_STYLE: React.CSSProperties = {
+  '--m3e-button-outlined-container-shape': '18px',
+  '--m3e-button-outlined-outline-color':
+    'color-mix(in srgb, var(--md-sys-color-outline-variant) 60%, transparent)',
+  '--m3e-button-outlined-label-text-color':
+    'var(--md-sys-color-on-surface)',
+  cursor: 'pointer',
+} as React.CSSProperties
+
