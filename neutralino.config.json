@@ -3,6 +3,7 @@
   "applicationId": "com.weekbox.app",
   "version": "1.0.0",
   "defaultMode": "window",
+  "storageLocation": "system",
   "port": 0,
   "documentRoot": "/dist/",
   "url": "http://localhost:5173",

@@ -27,5 +27,6 @@ dist-ssr
 # Neutralino
 .tmp/
 *.log
+neutralinojs.log
 neutralino.log
-
+WeekBoxLibrary/
