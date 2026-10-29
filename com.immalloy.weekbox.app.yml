@@ -1,0 +1,76 @@
+app-id: com.immalloy.weekbox.app
+runtime: org.gnome.Platform
+runtime-version: "51"
+sdk: org.gnome.Sdk
+sdk-extensions:
+  - org.freedesktop.Sdk.Extension.node24
+  - org.freedesktop.Sdk.Extension.rust-stable
+command: weekbox
+
+build-options:
+  no-debuginfo: true
+  append-path: /usr/lib/sdk/node24/bin
+
+finish-args:
+  - --share=ipc
+  - --share=network
+  - --socket=wayland
+  - --socket=fallback-x11
+  - --device=dri
+  - --filesystem=home
+  - --talk-name=org.freedesktop.Notifications
+  - --talk-name=org.kde.StatusNotifierWatcher
+  - --talk-name=org.freedesktop.Flatpak
+
+cleanup:
+  - /include
+  - /lib/cmake
+  - /lib/pkgconfig
+  - /share/man
+  - "*.a"
+  - "*.la"
+
+modules:
+  - name: weekbox
+    buildsystem: simple
+    build-options:
+      build-args:
+        - --share=network
+      env:
+        HOME: /run/build/weekbox
+        CI: "true"
+        PATH: /run/build/weekbox/.local/bin:/usr/lib/sdk/node24/bin:/usr/bin:/bin
+    sources:
+      - type: dir
+        path: .
+      - type: file
+        path: com.immalloy.weekbox.app.manifest.xml
+
+    build-commands:
+      - rm -rf node_modules
+      - npm install -g pnpm@10 --prefix "$HOME/.local"
+      - pnpm install --frozen-lockfile
+      - npm run build
+      - npm run package:linux
+
+      - dpkg-deb --build --root-owner-group dist/packages/WeekBox-deb "dist/release-assets/WeekBox-linux-amd64.deb"
+
+      - mkdir -p deb-extract
+      - cd dist/release-assets/ && ar x *.deb --output . && cd -
+      - tar -C deb-extract -xf dist/release-assets/data.tar.*
+
+      - install -Dm755 deb-extract/usr/bin/weekbox /app/bin/weekbox
+
+      - sed -i 's/^Icon=.*/Icon=com.immalloy.weekbox.app/' deb-extract/usr/share/applications/weekbox.desktop
+      - sed -i 's/^Categories=.*/Categories=Utility;Development;/' deb-extract/usr/share/applications/weekbox.desktop
+      - install -Dm644 deb-extract/usr/share/applications/weekbox.desktop /app/share/applications/com.immalloy.weekbox.app.desktop
+
+      - |
+        for size in 32x32 128x128 128x128@2 256x256 512x512; do
+          src="deb-extract/usr/share/icons/hicolor/$size/apps/weekbox.png"
+          if [ -f "$src" ]; then
+            install -Dm644 "$src" "/app/share/icons/hicolor/$size/apps/com.immalloy.weekbox.app.png"
+          fi
+        done
+
+      - install -Dm644 com.immalloy.weekbox.app.manifest.xml /app/share/metainfo/com.immalloy.weekbox.app.manifest.xml

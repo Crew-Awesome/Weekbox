@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component type="desktop-application">
+    <id>com.immalloy.weekbox.app</id>
+    <launchable type="desktop-id">com.immalloy.weekbox.app.desktop</launchable>
+    <name>Weekbox</name>
+    <developer id="com.immalloy.me">
+        <name>ImMalloy</name>
+    </developer>
+    <content_rating type="oars-1.1">
+    </content_rating>
+    <keywords>
+        <keyword>fnf</keyword>
+        <keyword>launcher</keyword>
+        <keyword>friday night funkin</keyword>
+        <keyword>weekbox</keyword>
+    </keywords>
+    <branding>
+        <color type="primary" scheme_preference="light">#5FE7F9</color>
+        <color type="primary" scheme_preference="dark">#3214B5</color>
+    </branding>
+    <recommends>
+        <display_length compare="ge">360</display_length>
+    </recommends>
+    <summary>A launcher for Friday Night Funkin' instances.</summary>
+
+    <metadata_license>MIT</metadata_license>
+    <project_license>MIT</project_license>
+    <url type="homepage">https://weekbox.immalloy.com/</url>
+
+    <supports>
+        <control>pointing</control>
+        <control>keyboard</control>
+        <control>touch</control>
+    </supports>
+
+    <description>
+        <p>
+            A Re-Imagined Original FNF Mod Launcher
+        </p>
+    </description>
+    <screenshots>
+        <screenshot type="default">
+            <image>https://github.com/Crew-Awesome/Weekbox/raw/main/docs/screenshots/home.png</image>
+            <caption>Home: browse mods.</caption>
+        </screenshot>
+        <screenshot type="default">
+            <image>https://github.com/Crew-Awesome/Weekbox/raw/main/docs/screenshots/mod-details.png</image>
+            <caption>Mods: mod details.</caption>
+        </screenshot>
+        <screenshot type="default">
+            <image>https://github.com/Crew-Awesome/Weekbox/raw/main/docs/screenshots/engine-release-notes.png</image>
+            <caption>Engines: read release notes and launch an engine.</caption>
+        </screenshot>
+        <screenshot type="default">
+            <image>https://github.com/Crew-Awesome/Weekbox/raw/main/docs/screenshots/newsletter.png</image>
+            <caption>Newsletter: read WeekBox news and updates.</caption>
+        </screenshot>
+    </screenshots>
+    <releases>
+        <release version="2.6.4" date="2026-10-25" >
+            <description>
+            <ul>
+                <li>...</li>
+            </ul>
+            </description>
+        </release>
+    </releases>
+    <update_contact>...</update_contact>
+</component>
