@@ -2,9 +2,6 @@ import { useState, useEffect, useCallback } from 'react'
 
 let cachedBgColors: number[][] | null = null
 
-/**
- * Resolves surface background colors from CSS custom properties for contrast checks.
- */
 const getBgColors = (): number[][] => {
   if (cachedBgColors) return cachedBgColors
   if (typeof document === 'undefined') return [[14, 20, 21]]
@@ -52,9 +49,6 @@ const EXTRACT_COLOR_STORAGE_KEY = 'wb_extract_color_active'
 type ExtractColorListener = (active: boolean) => void
 const listeners = new Set<ExtractColorListener>()
 
-/**
- * Returns whether dynamic image color extraction is enabled.
- */
 export function isExtractColorActive(): boolean {
   if (typeof window === 'undefined') return true
   try {
@@ -66,15 +60,11 @@ export function isExtractColorActive(): boolean {
   }
 }
 
-/**
- * Updates and persists the dynamic color extraction preference.
- */
 export function setExtractColorActive(active: boolean): void {
   if (typeof window === 'undefined') return
   try {
     localStorage.setItem(EXTRACT_COLOR_STORAGE_KEY, String(active))
   } catch {
-    // Ignore storage errors in restricted environments
   }
   listeners.forEach((fn) => fn(active))
   window.dispatchEvent(
@@ -89,9 +79,6 @@ export function subscribeExtractColor(listener: ExtractColorListener): () => voi
   }
 }
 
-/**
- * Hook to read and toggle the global color extraction setting.
- */
 export function useExtractColor() {
   const [isExtractActive, setIsExtractActive] = useState<boolean>(isExtractColorActive)
 
@@ -108,29 +95,50 @@ export function useExtractColor() {
   }
 }
 
+function isRemoteHttpUrl(url: string): boolean {
+  if (!url || typeof url !== 'string') return false
+  const trimmed = url.trim()
+  if (!trimmed.startsWith('http://') && !trimmed.startsWith('https://')) {
+    return false
+  }
+  if (
+    trimmed.includes('localhost') ||
+    trimmed.includes('127.0.0.1') ||
+    trimmed.startsWith('/api/') ||
+    trimmed.startsWith('/mod-covers')
+  ) {
+    return false
+  }
+  return true
+}
+
 function getCORSFriendlyImageUrl(url: string): string {
   if (typeof window === 'undefined' || !url) return url
-  if (typeof (window as unknown as { NL_PORT?: unknown }).NL_PORT !== 'undefined') {
-    return url
+  let cleanUrl = url.trim().replace(/\\/g, '/')
+  if (cleanUrl.startsWith('mod-covers/')) {
+    cleanUrl = `/${cleanUrl}`
+  } else if (cleanUrl.includes('/mod-covers/')) {
+    cleanUrl = `/mod-covers/${cleanUrl.split('/mod-covers/').pop()}`
   }
-  if (!url.startsWith('http://') && !url.startsWith('https://')) return url
-  if (url.startsWith('/api/proxy-image') || url.includes('wsrv.nl')) return url
+
+  if (typeof (window as unknown as { NL_PORT?: unknown }).NL_PORT !== 'undefined') {
+    return cleanUrl
+  }
+  if (!isRemoteHttpUrl(cleanUrl)) return cleanUrl
+  if (cleanUrl.startsWith('/api/proxy-image') || cleanUrl.includes('wsrv.nl')) return cleanUrl
 
   const hostname = window.location ? window.location.hostname : ''
   if (hostname === 'localhost' || hostname === '127.0.0.1') {
-    return `/api/proxy-image?url=${encodeURIComponent(url)}`
+    return `/api/proxy-image?url=${encodeURIComponent(cleanUrl)}`
   }
-  return `https://wsrv.nl/?url=${encodeURIComponent(url)}&output=webp&w=120`
+  return `https://wsrv.nl/?url=${encodeURIComponent(cleanUrl)}&output=webp&w=120`
 }
 
 function getFallbackProxyUrl(url: string): string {
-  if (url.includes('wsrv.nl')) return url
+  if (!isRemoteHttpUrl(url) || url.includes('wsrv.nl')) return url
   return `https://wsrv.nl/?url=${encodeURIComponent(url)}&output=webp&w=120`
 }
 
-/**
- * Resolves the fallback hover color from theme CSS variables.
- */
 export const getFallbackHoverColor = (opacity?: number): string => {
   if (typeof document === 'undefined') return 'rgba(54, 60, 255, 0.25)'
   const styles = getComputedStyle(document.documentElement)
@@ -163,9 +171,6 @@ export const getFallbackHoverColor = (opacity?: number): string => {
     : 'var(--wb-card-hover-bg)'
 }
 
-/**
- * Extracts the dominant contrasting color from an image URL using an offscreen canvas.
- */
 export const extractColor = (
   imageUrl: string,
   opacity?: number,
@@ -291,6 +296,8 @@ export const extractColor = (
     }
 
     const initialUrl = getCORSFriendlyImageUrl(imageUrl)
-    loadImageAndExtract(initialUrl, initialUrl !== getFallbackProxyUrl(imageUrl))
+    const canRetry =
+      isRemoteHttpUrl(imageUrl) && initialUrl !== getFallbackProxyUrl(imageUrl)
+    loadImageAndExtract(initialUrl, canRetry)
   })
 }
