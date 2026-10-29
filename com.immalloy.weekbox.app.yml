@@ -4,7 +4,6 @@ runtime-version: "51"
 sdk: org.gnome.Sdk
 sdk-extensions:
   - org.freedesktop.Sdk.Extension.node24
-  - org.freedesktop.Sdk.Extension.rust-stable
 command: weekbox
 
 build-options:

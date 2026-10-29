@@ -183,7 +183,6 @@ jobs:
               org.gnome.Platform//51 \
               org.gnome.Sdk//51 \
               org.freedesktop.Sdk.Extension.node24//26.08 \
-              org.freedesktop.Sdk.Extension.rust-stable//26.08 \
               --noninteractive --user
 
       - name: Build Linux packages
