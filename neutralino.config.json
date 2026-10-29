@@ -29,6 +29,7 @@
   "modes": {
     "window": {
       "title": "WeekBox",
+      "icon": "/imgs/icons/app/launcher-icon.png",
       "width": 1000,
       "height": 700,
       "minWidth": 600,
