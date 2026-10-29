@@ -120,7 +120,6 @@ jobs:
               org.gnome.Platform//51 \
               org.gnome.Sdk//51 \
               org.freedesktop.Sdk.Extension.node24//26.08 \
-              org.freedesktop.Sdk.Extension.rust-stable//26.08 \
               --noninteractive --user
 
       - name: Install RPM tooling
@@ -142,7 +141,6 @@ jobs:
           dpkg-deb --build --root-owner-group dist/packages/WeekBox-deb "dist/release-assets/WeekBox-$version-linux-amd64.deb"
 
       - name: Build and Bundle for Flatpak
-        if: matrix.platform == 'ubuntu-latest'
         run: |
             flatpak-builder --force-clean --user --disable-cache --repo flatpak-repo flatpak-build com.immalloy.weekbox.app.yml
             flatpak build-bundle $(pwd)/flatpak-repo $(pwd)/dist/release-assets/weekbox.flatpak com.immalloy.weekbox.app.yml

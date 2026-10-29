@@ -216,7 +216,6 @@ jobs:
           dpkg-deb --build --root-owner-group dist/packages/WeekBox-deb "dist/release-assets/WeekBox-$version-linux-amd64.deb"
 
       - name: Build and Bundle for Flatpak
-        if: matrix.platform == 'ubuntu-latest'
         run: |
             flatpak-builder --force-clean --user --disable-cache --repo flatpak-repo flatpak-build com.immalloy.weekbox.app.yml
             flatpak build-bundle $(pwd)/dist/release-assets/flatpak-repo $(pwd)/dist/release-assets/weekbox.flatpak com.immalloy.weekbox.app.yml
