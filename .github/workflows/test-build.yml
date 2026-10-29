@@ -112,6 +112,17 @@ jobs:
       - name: Restore Neutralino runtime
         run: npm run runtime:setup
 
+      - name: Setup Flatpak
+        run: |
+            sudo apt install flatpak flatpak-builder
+            flatpak remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo --user
+            flatpak install flathub \
+              org.gnome.Platform//51 \
+              org.gnome.Sdk//51 \
+              org.freedesktop.Sdk.Extension.node24//26.08 \
+              org.freedesktop.Sdk.Extension.rust-stable//26.08 \
+              --noninteractive --user
+
       - name: Install RPM tooling
         run: sudo apt-get update && sudo apt-get install -y rpm gcc
 
@@ -129,6 +140,12 @@ jobs:
           mkdir -p dist/release-assets
           "$RUNNER_TEMP/appimagetool" --appimage-extract-and-run dist/packages/WeekBox.AppDir "dist/release-assets/WeekBox-$version-linux-x86_64.AppImage"
           dpkg-deb --build --root-owner-group dist/packages/WeekBox-deb "dist/release-assets/WeekBox-$version-linux-amd64.deb"
+
+      - name: Build and Bundle for Flatpak
+        if: matrix.platform == 'ubuntu-latest'
+        run: |
+            flatpak-builder --force-clean --user --disable-cache --repo flatpak-repo flatpak-build com.immalloy.weekbox.app.yml
+            flatpak build-bundle $(pwd)/flatpak-repo $(pwd)/dist/release-assets/weekbox.flatpak com.immalloy.weekbox.app.yml
 
       - name: Upload Linux package artifacts
         uses: actions/upload-artifact@v4
