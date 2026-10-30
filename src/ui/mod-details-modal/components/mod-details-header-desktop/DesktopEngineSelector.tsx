@@ -74,6 +74,7 @@ export const DesktopEngineSelector: React.FC<DesktopEngineSelectorProps> = ({
                 key={cat.id}
                 checked={isSelected}
                 onClick={() => handleSelectEngine(cat)}
+                style={{ margin: '3px 0' }}
               >
                 <img
                   slot="icon"

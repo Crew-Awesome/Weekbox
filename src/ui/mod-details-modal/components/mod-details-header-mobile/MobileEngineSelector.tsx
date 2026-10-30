@@ -74,6 +74,7 @@ export const MobileEngineSelector: React.FC<MobileEngineSelectorProps> = ({
                 key={cat.id}
                 checked={isSelected}
                 onClick={() => handleSelectEngine(cat)}
+                style={{ margin: '3px 0' }}
               >
                 <img
                   slot="icon"

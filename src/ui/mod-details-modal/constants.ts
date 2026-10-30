@@ -50,8 +50,11 @@ export const M3E_MENU_STYLE: React.CSSProperties = {
   '--m3e-menu-container-min-width': '230px',
   '--m3e-menu-item-color':
     'var(--md-sys-color-on-surface, var(--wb-on-surface))',
-  '--m3e-menu-item-icon-size': '20px',
-  '--m3e-menu-item-container-height': '46px',
+  '--m3e-menu-item-icon-size': '18px',
+  '--m3e-menu-item-icon-label-space': '8px',
+  '--m3e-menu-item-padding-start': '10px',
+  '--m3e-menu-item-padding-end': '10px',
+  '--m3e-menu-item-container-height': '38px',
   boxShadow:
     '0 12px 32px color-mix(in srgb, var(--md-sys-color-scrim, #000) 25%, transparent)',
   border:
