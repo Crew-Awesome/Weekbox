@@ -1,7 +1,9 @@
 import { useState, useEffect, useCallback } from 'react'
 
+// cache for parsed background colors from css custom properties
 let cachedBgColors: number[][] | null = null
 
+// parses background colors from css variables to evaluate contrast
 const getBgColors = (): number[][] => {
   if (cachedBgColors) return cachedBgColors
   if (typeof document === 'undefined') return [[14, 20, 21]]
@@ -43,12 +45,14 @@ const getBgColors = (): number[][] => {
   return cachedBgColors
 }
 
+// in-memory cache for extracted colors and preference storage
 const colorCache = new Map<string, string>()
 const EXTRACT_COLOR_STORAGE_KEY = 'wb_extract_color_active'
 
 type ExtractColorListener = (active: boolean) => void
 const listeners = new Set<ExtractColorListener>()
 
+// checks if dynamic color extraction is enabled in local storage
 export function isExtractColorActive(): boolean {
   if (typeof window === 'undefined') return true
   try {
@@ -60,6 +64,7 @@ export function isExtractColorActive(): boolean {
   }
 }
 
+// updates and broadcasts color extraction preference
 export function setExtractColorActive(active: boolean): void {
   if (typeof window === 'undefined') return
   try {
@@ -72,6 +77,7 @@ export function setExtractColorActive(active: boolean): void {
   )
 }
 
+// subscribes listener to color extraction preference changes
 export function subscribeExtractColor(listener: ExtractColorListener): () => void {
   listeners.add(listener)
   return () => {
@@ -79,6 +85,7 @@ export function subscribeExtractColor(listener: ExtractColorListener): () => voi
   }
 }
 
+// hook to read and toggle color extraction preference
 export function useExtractColor() {
   const [isExtractActive, setIsExtractActive] = useState<boolean>(isExtractColorActive)
 
@@ -95,6 +102,7 @@ export function useExtractColor() {
   }
 }
 
+// checks if url is an external remote http/https resource
 function isRemoteHttpUrl(url: string): boolean {
   if (!url || typeof url !== 'string') return false
   const trimmed = url.trim()
@@ -112,6 +120,7 @@ function isRemoteHttpUrl(url: string): boolean {
   return true
 }
 
+// formats image url for cors handling and proxying when needed
 function getCORSFriendlyImageUrl(url: string): string {
   if (typeof window === 'undefined' || !url) return url
   let cleanUrl = url.trim().replace(/\\/g, '/')
@@ -134,11 +143,13 @@ function getCORSFriendlyImageUrl(url: string): string {
   return `https://wsrv.nl/?url=${encodeURIComponent(cleanUrl)}&output=webp&w=120`
 }
 
+// fallback proxy url for remote images when direct load fails
 function getFallbackProxyUrl(url: string): string {
   if (!isRemoteHttpUrl(url) || url.includes('wsrv.nl')) return url
   return `https://wsrv.nl/?url=${encodeURIComponent(url)}&output=webp&w=120`
 }
 
+// resolves fallback hover color from css variables
 export const getFallbackHoverColor = (opacity?: number): string => {
   if (typeof document === 'undefined') return 'rgba(54, 60, 255, 0.25)'
   const styles = getComputedStyle(document.documentElement)
@@ -171,6 +182,7 @@ export const getFallbackHoverColor = (opacity?: number): string => {
     : 'var(--wb-card-hover-bg)'
 }
 
+// extracts contrasting dominant color from image using canvas
 export const extractColor = (
   imageUrl: string,
   opacity?: number,
@@ -227,6 +239,7 @@ export const extractColor = (
           const { data } = ctx.getImageData(0, 0, width, height)
           const colorCounts: Record<string, { count: number; rgb: number[] }> = {}
 
+          // sample pixels and quantize colors into buckets
           for (let i = 0; i < data.length; i += 16) {
             const a = data[i + 3]
             if (a < 128) continue
@@ -242,6 +255,7 @@ export const extractColor = (
             colorCounts[rgbStr].count += 1
           }
 
+          // find color with sufficient distance from theme backgrounds
           const bgs = [...getBgColors(), [255, 255, 255], [240, 240, 240]]
           const sortedColors = Object.values(colorCounts).sort(
             (a, b) => b.count - a.count,
