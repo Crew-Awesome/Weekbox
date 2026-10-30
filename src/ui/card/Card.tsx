@@ -1,6 +1,8 @@
 import React, { useState, useRef, useId, useLayoutEffect } from 'react'
-import { NotchCornerOverlay } from './NotchCornerOverlay'
 import { useSurfaceHoverColor } from '@/utils/hooks/use-surface-hover-color'
+import { getThumbnailNotchPath, getCardNotchPath } from './card-notch'
+import { CardThumbnail } from './CardThumbnail'
+import { CardContent } from './CardContent'
 
 const PLACEHOLDER_IMG = '/imgs/images/placeholder-mini.webp'
 
@@ -23,79 +25,11 @@ export interface CardProps {
   thumbnailOverlay?: React.ReactNode
   isDimmed?: boolean
   isFavorite?: boolean
+  isBookmarked?: boolean
   author?: string
   authorAvatar?: string
 }
 
-/**
- * Generates an SVG path for clipping the top-left corner of the card thumbnail.
- */
-function getThumbnailNotchPath(
-  w: number,
-  h: number,
-  nw = 72,
-  nh = 72,
-  r = 10,
-  f = 10,
-  cr = 16,
-): string {
-  if (w <= 0 || h <= 0) return ''
-  const actualNw = Math.min(nw, w * 0.45)
-  const actualNh = Math.min(nh, h * 0.48)
-  const actualCr = Math.min(cr, w * 0.1, h * 0.1)
-
-  return (
-    `M ${actualNw + f} 0 ` +
-    `L ${w - actualCr} 0 ` +
-    `A ${actualCr} ${actualCr} 0 0 1 ${w} ${actualCr} ` +
-    `L ${w} ${h} ` +
-    `L 0 ${h} ` +
-    `L 0 ${actualNh + f} ` +
-    `A ${f} ${f} 0 0 1 ${f} ${actualNh} ` +
-    `L ${actualNw - r} ${actualNh} ` +
-    `A ${r} ${r} 0 0 0 ${actualNw} ${actualNh - r} ` +
-    `L ${actualNw} ${f} ` +
-    `A ${f} ${f} 0 0 1 ${actualNw + f} 0 Z`
-  )
-}
-
-/**
- * Generates an SVG path for clipping the full card hover background around the top-left notch.
- */
-function getCardNotchPath(
-  w: number,
-  h: number,
-  nw = 72,
-  nh = 72,
-  r = 10,
-  f = 10,
-  cr = 16,
-): string {
-  if (w <= 0 || h <= 0) return ''
-  const actualNw = Math.min(nw, w * 0.45)
-  const actualNh = Math.min(nh, h * 0.48)
-  const actualCr = Math.min(cr, w * 0.1, h * 0.1)
-
-  return (
-    `M ${actualNw + f} 0 ` +
-    `L ${w - actualCr} 0 ` +
-    `A ${actualCr} ${actualCr} 0 0 1 ${w} ${actualCr} ` +
-    `L ${w} ${h - actualCr} ` +
-    `A ${actualCr} ${actualCr} 0 0 1 ${w - actualCr} ${h} ` +
-    `L ${actualCr} ${h} ` +
-    `A ${actualCr} ${actualCr} 0 0 1 0 ${h - actualCr} ` +
-    `L 0 ${actualNh + f} ` +
-    `A ${f} ${f} 0 0 1 ${f} ${actualNh} ` +
-    `L ${actualNw - r} ${actualNh} ` +
-    `A ${r} ${r} 0 0 0 ${actualNw} ${actualNh - r} ` +
-    `L ${actualNw} ${f} ` +
-    `A ${f} ${f} 0 0 1 ${actualNw + f} 0 Z`
-  )
-}
-
-/**
- * Card component with SVG corner cutout for engine icons and GSAP hover color extraction.
- */
 export const Card: React.FC<CardProps> = ({
   title,
   description,
@@ -115,11 +49,18 @@ export const Card: React.FC<CardProps> = ({
   thumbnailOverlay,
   isDimmed = false,
   isFavorite = false,
+  isBookmarked = false,
   author,
   authorAvatar,
 }) => {
-  const displayThumbnail = thumbnail || (showThumbnail ? PLACEHOLDER_IMG : undefined)
-  const [thumbnailLoaded, setThumbnailLoaded] = useState(false)
+  const rawThumbnail = thumbnail || (showThumbnail ? PLACEHOLDER_IMG : undefined)
+  const displayThumbnail = rawThumbnail
+    ? rawThumbnail.replace(/\\/g, '/').startsWith('mod-covers/')
+      ? `/${rawThumbnail.replace(/\\/g, '/')}`
+      : rawThumbnail.replace(/\\/g, '/').includes('/mod-covers/')
+        ? `/mod-covers/${rawThumbnail.replace(/\\/g, '/').split('/mod-covers/').pop()}`
+        : rawThumbnail
+    : undefined
 
   const thumbContainerRef = useRef<HTMLDivElement>(null)
   const [thumbSize, setThumbSize] = useState({ w: 0, h: 0 })
@@ -238,168 +179,43 @@ export const Card: React.FC<CardProps> = ({
       />
 
       {displayThumbnail && (
-        <div className="relative w-full">
-          <div
-            ref={thumbContainerRef}
-            className={`relative overflow-hidden w-full aspect-[16/9] isolate ${
-              !thumbClipPath
-                ? shouldRenderIcon
-                  ? 'rounded-tr-2xl rounded-tl-none'
-                  : 'rounded-t-2xl'
-                : ''
-            } ${isThumbnailClickable ? 'cursor-pointer' : ''}`}
-            style={
-              thumbClipPath
-                ? {
-                    clipPath: `url(#${thumbClipId})`,
-                    WebkitClipPath: `url(#${thumbClipId})`,
-                  }
-                : undefined
-            }
-            onClick={
-              isThumbnailClickable && !isWholeCardClickable ? onClick : undefined
-            }
-            onMouseEnter={
-              isThumbnailClickable && !isWholeCardClickable
-                ? handleMouseEnter
-                : undefined
-            }
-            onMouseLeave={
-              isThumbnailClickable && !isWholeCardClickable
-                ? handleMouseLeave
-                : undefined
-            }
-          >
-            <div className="absolute inset-0 isolate">
-              <div ref={thumbnailRef} className="absolute inset-0">
-                {(!thumbnailLoaded || isLoading) && (
-                  <div className="absolute inset-0 block w-full h-full bg-[var(--md-sys-color-surface-container-highest)] animate-pulse" />
-                )}
-                {!isLoading && (
-                  <img
-                    className={`w-full h-full object-cover block transition-opacity duration-300 ${
-                      isDimmed
-                        ? 'brightness-75 opacity-60'
-                        : thumbnailLoaded
-                          ? 'opacity-100'
-                          : 'opacity-0'
-                    }`}
-                    src={displayThumbnail}
-                    alt={title}
-                    loading={lazyLoad ? 'lazy' : 'eager'}
-                    decoding="async"
-                    draggable={false}
-                    onLoad={() => setThumbnailLoaded(true)}
-                    onError={(e) => {
-                      if (e.currentTarget.src !== PLACEHOLDER_IMG) {
-                        e.currentTarget.src = PLACEHOLDER_IMG
-                        setThumbnailLoaded(true)
-                      }
-                    }}
-                    style={{
-                      WebkitMaskImage:
-                        'linear-gradient(to bottom, black 60%, transparent 100%)',
-                      maskImage:
-                        'linear-gradient(to bottom, black 60%, transparent 100%)',
-                    }}
-                  />
-                )}
-              </div>
-              {thumbnailOverlay && (
-                <div className="absolute inset-0 z-20 pointer-events-none overflow-hidden">
-                  {thumbnailOverlay}
-                </div>
-              )}
-              {isFavorite && (
-                <div
-                  className="absolute right-2.5 top-2.5 z-30 pointer-events-none w-6 h-6 rounded-full bg-black/70 flex items-center justify-center text-red-500 shadow-md border border-white/10"
-                  title="Favorite mod"
-                >
-                  <span
-                    className="material-symbols-rounded text-xs leading-none"
-                    style={{ fontVariationSettings: "'FILL' 1" }}
-                  >
-                    favorite
-                  </span>
-                </div>
-              )}
-            </div>
-          </div>
-
-          {shouldRenderIcon && (
-            <NotchCornerOverlay
-              icon={icon}
-              iconTooltip={iconTooltip}
-              isLoading={isLoading}
-              isDimmed={isDimmed}
-              notchOverlayRef={notchOverlayRef}
-              notchSvg1Ref={notchSvg1Ref}
-              notchSvg2Ref={notchSvg2Ref}
-            />
-          )}
-        </div>
+        <CardThumbnail
+          displayThumbnail={displayThumbnail}
+          title={title}
+          shouldRenderIcon={shouldRenderIcon}
+          thumbClipPath={thumbClipPath}
+          thumbClipId={thumbClipId}
+          isThumbnailClickable={isThumbnailClickable}
+          isWholeCardClickable={isWholeCardClickable}
+          thumbnailRef={thumbnailRef}
+          thumbContainerRef={thumbContainerRef}
+          isLoading={isLoading}
+          isDimmed={isDimmed}
+          lazyLoad={lazyLoad}
+          thumbnailOverlay={thumbnailOverlay}
+          isFavorite={isFavorite}
+          isBookmarked={isBookmarked}
+          icon={icon}
+          iconTooltip={iconTooltip}
+          notchOverlayRef={notchOverlayRef}
+          notchSvg1Ref={notchSvg1Ref}
+          notchSvg2Ref={notchSvg2Ref}
+          onClick={onClick}
+          onMouseEnter={handleMouseEnter}
+          onMouseLeave={handleMouseLeave}
+        />
       )}
 
-      <div className="p-4 pb-3 flex flex-col gap-1.5">
-        {isLoading ? (
-          <>
-            <div className="h-5 w-3/4 rounded-md bg-[var(--md-sys-color-surface-container-highest)] animate-pulse" />
-            {description !== undefined && (
-              <div className="h-3.5 w-1/2 rounded-md bg-[var(--md-sys-color-surface-container-highest)] animate-pulse mt-0.5" />
-            )}
-            <div className="h-4 w-1/3 rounded-full bg-[var(--md-sys-color-surface-container-highest)] animate-pulse pt-0.5" />
-          </>
-        ) : (
-          <>
-            <div className="flex items-start justify-between gap-1.5">
-              <strong
-                className="font-bold leading-snug line-clamp-2 select-text text-[var(--md-sys-color-on-surface)] text-sm sm:text-base"
-                title={title}
-              >
-                <span>{title}</span>
-              </strong>
-              {isNsfw && (
-                <span className="shrink-0 mt-0.5 px-1.5 py-0.5 rounded text-[10px] font-bold bg-red-500/20 text-red-500 dark:text-red-400 border border-red-500/30">
-                  NSFW
-                </span>
-              )}
-            </div>
-            {description && (
-              <p className="text-[var(--md-sys-color-on-surface-variant)] text-xs line-clamp-2 leading-snug opacity-90">
-                {description}
-              </p>
-            )}
-
-            {(author || authorAvatar) && (
-              <div className="flex items-center gap-1.5 pt-0.5">
-                {authorAvatar ? (
-                  <img
-                    src={authorAvatar}
-                    alt={author || 'Creator'}
-                    className="w-5 h-5 rounded-full object-cover border border-[var(--md-sys-color-outline-variant)]/30 shrink-0 shadow-sm"
-                    loading="lazy"
-                    decoding="async"
-                    onError={(e) => {
-                      e.currentTarget.style.display = 'none'
-                    }}
-                  />
-                ) : (
-                  <div className="w-5 h-5 rounded-full bg-[var(--md-sys-color-surface-container-highest)] flex items-center justify-center shrink-0 border border-[var(--md-sys-color-outline-variant)]/20">
-                    <span className="material-symbols-rounded text-xs text-[var(--md-sys-color-on-surface-variant)] opacity-90">
-                      person
-                    </span>
-                  </div>
-                )}
-                <span className="text-xs font-semibold text-[var(--md-sys-color-on-surface)] truncate">
-                  {author || 'Unknown Creator'}
-                </span>
-              </div>
-            )}
-
-            {children && <div className="pt-0.5">{children}</div>}
-          </>
-        )}
-      </div>
+      <CardContent
+        title={title}
+        description={description}
+        isLoading={isLoading}
+        isNsfw={isNsfw}
+        author={author}
+        authorAvatar={authorAvatar}
+      >
+        {children}
+      </CardContent>
     </div>
   )
 }

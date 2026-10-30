@@ -1,3 +1,6 @@
 export * from './Card'
 export * from './NotchCornerOverlay'
+export * from './CardThumbnail'
+export * from './CardContent'
+export * from './card-notch'
 export { default } from './Card'
