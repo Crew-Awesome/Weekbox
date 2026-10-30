@@ -2,6 +2,7 @@ import {
   callDevFsBridge,
   downloadViaDevBridge,
   downloadViaFetchStream,
+  extractViaDevBridge,
 } from './download-helper'
 import type {
   DownloadFileOptions,
@@ -180,35 +181,60 @@ export const webHost: HostAdapter = {
   },
 
   async downloadFile(options: DownloadFileOptions): Promise<void> {
-    // 1. Try local dev bridge to write directly to WeekBoxLibrary on disk
     const handledByBridge = await downloadViaDevBridge(options)
     if (handledByBridge) return
 
-    // 2. Fallback to browser Fetch ReadableStream
     await downloadViaFetchStream(options, async (destPath, bytes) => {
       await webFileSystem.writeBinaryFile(destPath, bytes)
     })
   },
 
   async extractArchive(options: ExtractArchiveOptions): Promise<void> {
-    const { archivePath, destinationDir, onProgress } = options
+    const {
+      archivePath,
+      destinationDir,
+      removeArchive = true,
+      flattenSingleRoot = true,
+      onProgress,
+    } = options
 
     onProgress?.({
-      progress: 99,
-      statusText: 'Extracting archive...',
-      currentFile: archivePath.split('/').pop(),
+      progress: 1,
+      statusText: 'Preparing extraction...',
+      currentFile: archivePath.split(/[\\/]/).pop(),
     })
 
-    // 1. Try local dev bridge extraction if running on local dev server
+    const handledByStream = await extractViaDevBridge(
+      archivePath,
+      destinationDir,
+      (progress) => onProgress?.(progress),
+      { removeArchive, flattenSingleRoot },
+    )
+    if (handledByStream) {
+      onProgress?.({
+        progress: 100,
+        statusText: 'Extraction complete',
+        currentFile: '',
+      })
+      return
+    }
+
     const bridgeRes = await callDevFsBridge<{ ok?: boolean; error?: string }>(
       {
         action: 'extractArchive',
         archivePath,
         destDir: destinationDir,
+        removeArchive,
+        flattenSingleRoot,
       },
       300000,
     )
     if (bridgeRes?.ok) {
+      onProgress?.({
+        progress: 100,
+        statusText: 'Extraction complete',
+        currentFile: '',
+      })
       return
     }
     throw new Error(
