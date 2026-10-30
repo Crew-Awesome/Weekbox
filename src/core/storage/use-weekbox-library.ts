@@ -4,13 +4,9 @@ import {
   resolveActiveLibraryPath,
   setSavedCustomLibraryPath,
 } from './weekbox-library'
+import { WEEKBOX_LIBRARY_DIR_NAME } from './constants'
 import type { WeekBoxLibraryPaths, UseWeekBoxLibraryResult } from './types'
 
-/**
- * React hook that initializes and monitors the WeekBoxLibrary structure.
- * Automatically verifies and creates required directories and files on mount.
- * Allows updating the active library path in the future based on user preferences.
- */
 export function useWeekBoxLibrary(): UseWeekBoxLibraryResult {
   const [libraryPath, setLibraryPath] = useState<string | null>(null)
   const [paths, setPaths] = useState<WeekBoxLibraryPaths | null>(null)
@@ -48,8 +44,16 @@ export function useWeekBoxLibrary(): UseWeekBoxLibraryResult {
   useEffect(() => {
     let isCancelled = false
 
-    resolveActiveLibraryPath()
-      .then((activePath) => ensureWeekBoxLibrary(activePath))
+    const initLibrary = async () => {
+      let activePath = await resolveActiveLibraryPath()
+      if (activePath === WEEKBOX_LIBRARY_DIR_NAME) {
+        await new Promise((r) => setTimeout(r, 600))
+        activePath = await resolveActiveLibraryPath()
+      }
+      return await ensureWeekBoxLibrary(activePath)
+    }
+
+    initLibrary()
       .then((result) => {
         if (!isCancelled) {
           setLibraryPath(result.basePath)

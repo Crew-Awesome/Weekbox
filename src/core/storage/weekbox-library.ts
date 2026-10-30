@@ -1,4 +1,4 @@
-import { initHost } from '@/core/host'
+import { initHost, callDevFsBridge } from '@/core/host'
 import {
   WEEKBOX_LIBRARY_DIR_NAME,
   WEEKBOX_CUSTOM_PATH_STORAGE_KEY,
@@ -10,9 +10,12 @@ import type { WeekBoxLibraryPaths, LibraryInitializeResult } from './types'
 let cachedDefaultDataPath: string | null = null
 const ensuredLibraryCache = new Map<string, LibraryInitializeResult>()
 
-/**
- * Joins path segments into a clean path with forward slashes.
- */
+export function isAbsolutePath(p: string | null | undefined): boolean {
+  if (!p || typeof p !== 'string') return false
+  const clean = p.replace(/\\/g, '/').trim()
+  return /^[a-zA-Z]:\//i.test(clean) || clean.startsWith('/')
+}
+
 export function joinPaths(base: string, ...parts: string[]): string {
   let result = base.replace(/[/\\]+$/, '')
   for (const part of parts) {
@@ -24,28 +27,33 @@ export function joinPaths(base: string, ...parts: string[]): string {
   return result.replace(/\/+/g, '/')
 }
 
-/**
- * Retrieves the currently saved custom library path from localStorage, if any.
- */
 export function getSavedCustomLibraryPath(): string | null {
   try {
     if (typeof window !== 'undefined') {
       const saved = localStorage.getItem(WEEKBOX_CUSTOM_PATH_STORAGE_KEY)
-      return saved && saved.trim().length > 0 ? saved.trim() : null
+      if (!saved || !saved.trim()) return null
+      const clean = saved.trim().replace(/\\/g, '/')
+
+      if (
+        !isAbsolutePath(clean) ||
+        clean === WEEKBOX_LIBRARY_DIR_NAME ||
+        clean.includes('/wb-rew')
+      ) {
+        console.warn('[WeekBox] Purging invalid custom library path from localStorage:', saved)
+        localStorage.removeItem(WEEKBOX_CUSTOM_PATH_STORAGE_KEY)
+        return null
+      }
+      return clean
     }
   } catch {
-    // ignore
   }
   return null
 }
 
-/**
- * Saves or removes the custom library path in localStorage.
- */
 export function setSavedCustomLibraryPath(path: string | null): void {
   try {
     if (typeof window !== 'undefined') {
-      if (path && path.trim().length > 0) {
+      if (path && path.trim().length > 0 && isAbsolutePath(path.trim())) {
         localStorage.setItem(WEEKBOX_CUSTOM_PATH_STORAGE_KEY, path.trim())
       } else {
         localStorage.removeItem(WEEKBOX_CUSTOM_PATH_STORAGE_KEY)
@@ -56,48 +64,58 @@ export function setSavedCustomLibraryPath(path: string | null): void {
   }
 }
 
-/**
- * Resolves the default base library path:
- * Uses hostAdapter.getDataPath() (Neutralino %LOCALAPPDATA% on desktop, Capacitor Directory.Data on mobile).
- * Returns `${dataPath}/${WEEKBOX_LIBRARY_DIR_NAME}`, or fallback WEEKBOX_LIBRARY_DIR_NAME.
- */
 export async function resolveDefaultLibraryPath(): Promise<string> {
-  if (cachedDefaultDataPath) {
+  if (cachedDefaultDataPath && isAbsolutePath(cachedDefaultDataPath)) {
     return joinPaths(cachedDefaultDataPath, WEEKBOX_LIBRARY_DIR_NAME)
+  }
+
+  try {
+    const bridgeRes = await callDevFsBridge<{ dataPath?: string }>(
+      { action: 'getDataPath' },
+      500,
+    )
+    if (bridgeRes?.dataPath && isAbsolutePath(bridgeRes.dataPath)) {
+      cachedDefaultDataPath = bridgeRes.dataPath.trim().replace(/\\/g, '/')
+      return joinPaths(cachedDefaultDataPath, WEEKBOX_LIBRARY_DIR_NAME)
+    }
+  } catch {
   }
 
   const hostAdapter = initHost()
   try {
     const dataPath = await Promise.race([
       hostAdapter.getDataPath(),
-      new Promise<string>((resolve) => setTimeout(() => resolve(''), 3000)),
+      new Promise<string>((resolve) => setTimeout(() => resolve(''), 2000)),
     ])
-    if (dataPath && dataPath.trim()) {
-      cachedDefaultDataPath = dataPath.trim()
+    if (dataPath && isAbsolutePath(dataPath)) {
+      cachedDefaultDataPath = dataPath.trim().replace(/\\/g, '/')
       return joinPaths(cachedDefaultDataPath, WEEKBOX_LIBRARY_DIR_NAME)
     }
   } catch (err) {
     console.warn('[WeekBox] hostAdapter.getDataPath() failed:', err)
   }
 
-  return WEEKBOX_LIBRARY_DIR_NAME
+  const nlData =
+    typeof window !== 'undefined'
+      ? (window as unknown as { NL_DATAPATH?: string }).NL_DATAPATH
+      : undefined
+  if (nlData && isAbsolutePath(nlData)) {
+    return joinPaths(nlData.trim().replace(/\\/g, '/'), WEEKBOX_LIBRARY_DIR_NAME)
+  }
+
+  return cachedDefaultDataPath
+    ? joinPaths(cachedDefaultDataPath, WEEKBOX_LIBRARY_DIR_NAME)
+    : ''
 }
 
-/**
- * Resolves the active library base path.
- * Prioritizes custom user-configured path, falling back to default %LOCALAPPDATA%/WeekBoxLibrary.
- */
 export async function resolveActiveLibraryPath(): Promise<string> {
   const custom = getSavedCustomLibraryPath()
-  if (custom) {
+  if (custom && isAbsolutePath(custom)) {
     return custom.replace(/\\/g, '/')
   }
   return await resolveDefaultLibraryPath()
 }
 
-/**
- * Generates an object with all absolute/full paths inside the library given a base path.
- */
 export function getWeekBoxLibraryPaths(basePath: string): WeekBoxLibraryPaths {
   return {
     root: basePath,
@@ -109,36 +127,50 @@ export function getWeekBoxLibraryPaths(basePath: string): WeekBoxLibraryPaths {
     modCoversDir: joinPaths(basePath, 'data/mod-covers'),
     bookmarks: joinPaths(basePath, 'data/bookmarks.json'),
     engineUpdateState: joinPaths(basePath, 'data/engineupdatestate.json'),
+    playtimeDatabase: joinPaths(basePath, 'data/playtime.json'),
     installedMods: joinPaths(basePath, 'data/installedmods.json'),
     dataSettings: joinPaths(basePath, 'data/settings.json'),
   }
 }
 
-/**
- * Ensures that the complete WeekBoxLibrary directory and file structure exists.
- * Creates folders and files only if they do not already exist.
- */
 export async function ensureWeekBoxLibrary(
   targetBasePath?: string,
 ): Promise<LibraryInitializeResult> {
   const hostAdapter = initHost()
-  const basePath = (
+  let basePath = (
     targetBasePath || (await resolveActiveLibraryPath())
   ).replace(/\\/g, '/')
 
+  if (!basePath || !isAbsolutePath(basePath) || basePath === WEEKBOX_LIBRARY_DIR_NAME) {
+    basePath = await resolveDefaultLibraryPath()
+  }
+
   const cached = ensuredLibraryCache.get(basePath)
-  if (cached && basePath !== WEEKBOX_LIBRARY_DIR_NAME) {
+  if (cached && isAbsolutePath(basePath)) {
     return cached
   }
 
   const paths = getWeekBoxLibraryPaths(basePath)
+
+  if (!isAbsolutePath(basePath) || basePath === WEEKBOX_LIBRARY_DIR_NAME || basePath === '.') {
+    console.warn(
+      '[WeekBox] Library base path is relative or not yet resolved to AppData. Skipping local directory creation.',
+    )
+    return {
+      basePath,
+      paths,
+      createdDirectories: [],
+      existingDirectories: [],
+      createdFiles: [],
+      existingFiles: [],
+    }
+  }
 
   const createdDirectories: string[] = []
   const existingDirectories: string[] = []
   const createdFiles: string[] = []
   const existingFiles: string[] = []
 
-  // 1. Ensure all directories exist in hierarchical order
   for (const relativeDir of DEFAULT_LIBRARY_DIRECTORIES) {
     const fullDirPath = relativeDir
       ? joinPaths(basePath, relativeDir)
@@ -159,7 +191,6 @@ export async function ensureWeekBoxLibrary(
     }
   }
 
-  // 2. Ensure all default JSON files exist
   for (const [relativeFilePath, defaultData] of Object.entries(
     DEFAULT_LIBRARY_FILE_CONTENTS,
   )) {
@@ -190,7 +221,7 @@ export async function ensureWeekBoxLibrary(
     existingFiles,
   }
 
-  if (basePath !== WEEKBOX_LIBRARY_DIR_NAME) {
+  if (isAbsolutePath(basePath) && basePath !== WEEKBOX_LIBRARY_DIR_NAME) {
     ensuredLibraryCache.set(basePath, result)
   }
 

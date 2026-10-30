@@ -22,6 +22,7 @@ export const WEEKBOX_LIBRARY_STRUCTURE = {
   modCovers: 'data/mod-covers',
   bookmarks: 'data/bookmarks.json',
   engineUpdateState: 'data/engineupdatestate.json',
+  playtime: 'data/playtime.json',
   installedMods: 'data/installedmods.json',
   dataSettings: 'data/settings.json',
 } as const
@@ -58,6 +59,14 @@ export const DEFAULT_LIBRARY_FILE_CONTENTS: Record<string, unknown> = {
   'data/engineupdatestate.json': {
     lastChecked: null,
     engines: {},
+  },
+  'data/playtime.json': {
+    schemaVersion: 1,
+    lastUpdated: Date.now(),
+    totalSecondsAllEngines: 0,
+    engines: {},
+    days: {},
+    sessions: [],
   },
   'data/installedmods.json': [],
   'data/settings.json': {

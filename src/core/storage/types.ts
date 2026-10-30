@@ -17,6 +17,8 @@ export interface WeekBoxLibraryPaths {
   bookmarks: string
   /** Engine update state file (WeekBoxLibrary/data/engineupdatestate.json) */
   engineUpdateState: string
+  /** Playtime database file (WeekBoxLibrary/data/playtime.json) */
+  playtimeDatabase: string
   /** Installed mods manifest (WeekBoxLibrary/data/installedmods.json) */
   installedMods: string
   /** Data settings file (WeekBoxLibrary/data/settings.json) */
