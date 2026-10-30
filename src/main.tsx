@@ -12,6 +12,10 @@ import '@m3e/web/search'
 import '@m3e/web/list'
 import '@m3e/web/callout'
 import '@m3e/web/snackbar'
+import '@m3e/web/menu'
+import '@m3e/web/chips'
+import '@m3e/web/card'
+import '@m3e/web/slider'
 import '@/ui/overflow'
 import { registerCalloutDevTools } from '@/ui/callout'
 import { ensureNeutralinoInit } from '@/core/host'
@@ -39,7 +43,6 @@ if (typeof customElements !== 'undefined') {
       addController: (controller: M3eController) => void
     }
 
-    // Neutralize ScrollLockController and InertController for docked search view to prevent scroll disruption
     const origAddController = proto.addController
     proto.addController = function (this: M3eSearchViewElementInternal, controller: M3eController) {
       if (
@@ -59,6 +62,23 @@ if (typeof customElements !== 'undefined') {
       }
     }
   }
+}
+
+if (typeof localStorage !== 'undefined') {
+  try {
+    const savedEngine =
+      localStorage.getItem('weekbox:instances:selected_engine') || 'psych'
+    const savedVer =
+      localStorage.getItem(
+        `weekbox:instances:selected_version:${savedEngine}`,
+      ) ||
+      localStorage.getItem('weekbox:instances:selected_version') ||
+      ''
+    document.documentElement.setAttribute('data-engine', savedEngine)
+    document.documentElement.setAttribute('data-version', savedVer)
+    document.documentElement.dataset.engine = savedEngine
+    document.documentElement.dataset.version = savedVer
+  } catch {}
 }
 
 initSavedTheme()

@@ -1,12 +1,9 @@
 import React, { useEffect, lazy, Suspense } from 'react'
-import {
-  HashRouter,
-  Routes,
-  Route,
-  Navigate,
-} from 'react-router-dom'
+import { HashRouter, Routes,Route, Navigate, useLocation } from 'react-router-dom'
 import { initHost } from '@/core/host'
 import { useWeekBoxLibrary } from '@/core/storage'
+import { syncActiveCallouts } from '@/core/mods'
+import { syncEngineActiveCallouts } from '@/core/engines/engine-download-manager'
 import { DialogProvider } from '@/ui/dialog'
 import { CalloutProvider } from '@/ui/callout'
 import { LoadingProvider } from '@/core/loading'
@@ -25,20 +22,52 @@ const NewsView = lazy(() =>
   import('@/features/news').then((m) => ({ default: m.NewsView })),
 )
 
+const TAB_CONFIGS = [
+  { path: '/home', Component: HomeView },
+  { path: '/library', Component: LibraryView },
+  { path: '/instances', Component: InstancesView },
+  { path: '/news', Component: NewsView },
+] as const
+
 const AppShell: React.FC = () => {
   const { isInitialized, libraryPath } = useWeekBoxLibrary()
+  const location = useLocation()
+
+  const normalizedPath =
+    location.pathname === '/' ||
+    !TAB_CONFIGS.some((t) => t.path === location.pathname)
+      ? '/home'
+      : location.pathname
+
+  const [visitedTabs, setVisitedTabs] = React.useState<Set<string>>(
+    () => new Set([normalizedPath]),
+  )
+
+  useEffect(() => {
+    setVisitedTabs((prev) => {
+      if (prev.has(normalizedPath)) return prev
+      const next = new Set(prev)
+      next.add(normalizedPath)
+      return next
+    })
+  }, [normalizedPath])
+
+  useEffect(() => {
+    syncActiveCallouts()
+    syncEngineActiveCallouts()
+  }, [location.pathname])
 
   useEffect(() => {
     const hostAdapter = initHost()
     console.log(
-      '[WeekBox] Current execution environment (host):',
+      'Current Platform:',
       hostAdapter.platform,
     )
   }, [])
 
   useEffect(() => {
     if (isInitialized && libraryPath) {
-      console.log('[WeekBox] Storage library initialized at:', libraryPath)
+      console.log('Library Path:', libraryPath)
     }
   }, [isInitialized, libraryPath])
 
@@ -60,14 +89,27 @@ const AppShell: React.FC = () => {
       >
         <m3e-overflow direction="vertical" className="w-full h-full">
           <Suspense fallback={null}>
-            <Routes>
-              <Route path="/" element={<Navigate to="/home" replace />} />
-              <Route path="/home" element={<HomeView />} />
-              <Route path="/library" element={<LibraryView />} />
-              <Route path="/instances" element={<InstancesView />} />
-              <Route path="/news" element={<NewsView />} />
-              <Route path="*" element={<Navigate to="/home" replace />} />
-            </Routes>
+            {location.pathname !== normalizedPath && (
+              <Routes>
+                <Route path="*" element={<Navigate to={normalizedPath} replace />} />
+              </Routes>
+            )}
+            {TAB_CONFIGS.map(({ path, Component }) => {
+              if (!visitedTabs.has(path)) return null
+              const isCurrent = normalizedPath === path
+              return (
+                <div
+                  key={path}
+                  id={`tab-panel-${path.slice(1)}`}
+                  className="w-full min-h-full"
+                  style={{
+                    display: isCurrent ? 'block' : 'none',
+                  }}
+                >
+                  <Component />
+                </div>
+              )
+            })}
           </Suspense>
         </m3e-overflow>
       </main>
