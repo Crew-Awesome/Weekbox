@@ -14,3 +14,7 @@ node_modules/
 resources.neu
 .weekbox-update/
 pnpm-workspace.yaml
+
+# flatpak
+/flatpak-build
+/flatpak-repo

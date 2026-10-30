@@ -52,21 +52,15 @@ modules:
       - npm run build
       - npm run package:linux
 
-      - dpkg-deb --build --root-owner-group dist/packages/WeekBox-deb "dist/release-assets/WeekBox-linux-amd64.deb"
+      - install -Dm755 dist/packages/WeekBox-deb/usr/bin/weekbox /app/bin/weekbox
 
-      - mkdir -p deb-extract
-      - cd dist/release-assets/ && ar x *.deb --output . && cd -
-      - tar -C deb-extract -xf dist/release-assets/data.tar.*
-
-      - install -Dm755 deb-extract/usr/bin/weekbox /app/bin/weekbox
-
-      - sed -i 's/^Icon=.*/Icon=com.immalloy.weekbox.app/' deb-extract/usr/share/applications/weekbox.desktop
-      - sed -i 's/^Categories=.*/Categories=Utility;Development;/' deb-extract/usr/share/applications/weekbox.desktop
-      - install -Dm644 deb-extract/usr/share/applications/weekbox.desktop /app/share/applications/com.immalloy.weekbox.app.desktop
+      - sed -i 's/^Icon=.*/Icon=com.immalloy.weekbox.app/' dist/packages/WeekBox-deb/usr/share/applications/weekbox.desktop
+      - sed -i 's/^Categories=.*/Categories=Utility;Development;/' dist/packages/WeekBox-deb/usr/share/applications/weekbox.desktop
+      - install -Dm644 dist/packages/WeekBox-deb/usr/share/applications/weekbox.desktop /app/share/applications/com.immalloy.weekbox.app.desktop
 
       - |
         for size in 32x32 128x128 128x128@2 256x256 512x512; do
-          src="deb-extract/usr/share/icons/hicolor/$size/apps/weekbox.png"
+          src="dist/packages/WeekBox-deb/usr/share/icons/hicolor/$size/apps/weekbox.png"
           if [ -f "$src" ]; then
             install -Dm644 "$src" "/app/share/icons/hicolor/$size/apps/com.immalloy.weekbox.app.png"
           fi

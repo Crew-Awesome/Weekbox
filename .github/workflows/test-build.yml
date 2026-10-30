@@ -143,7 +143,7 @@ jobs:
       - name: Build and Bundle for Flatpak
         run: |
             flatpak-builder --force-clean --user --disable-cache --repo flatpak-repo flatpak-build com.immalloy.weekbox.app.yml
-            flatpak build-bundle $(pwd)/flatpak-repo $(pwd)/dist/release-assets/weekbox.flatpak com.immalloy.weekbox.app.yml
+            flatpak build-bundle $(pwd)/flatpak-repo $(pwd)/dist/release-assets/weekbox.flatpak com.immalloy.weekbox.app
 
       - name: Upload Linux package artifacts
         uses: actions/upload-artifact@v4
