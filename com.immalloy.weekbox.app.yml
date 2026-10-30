@@ -52,9 +52,13 @@ modules:
       - npm run build
       - npm run package:linux
 
+      - install -d /app/lib/weekbox
+      - cp -a dist/packages/WeekBox-deb/usr/lib/weekbox/. /app/lib/weekbox/
       - install -Dm755 dist/packages/WeekBox-deb/usr/bin/weekbox /app/bin/weekbox
+      - sed -i 's#/usr/lib/weekbox#/app/lib/weekbox#g' /app/bin/weekbox
 
       - sed -i 's/^Icon=.*/Icon=com.immalloy.weekbox.app/' dist/packages/WeekBox-deb/usr/share/applications/weekbox.desktop
+      - sed -i 's#^Exec=.*#Exec=weekbox %u#' dist/packages/WeekBox-deb/usr/share/applications/weekbox.desktop
       - sed -i 's/^Categories=.*/Categories=Utility;Development;/' dist/packages/WeekBox-deb/usr/share/applications/weekbox.desktop
       - install -Dm644 dist/packages/WeekBox-deb/usr/share/applications/weekbox.desktop /app/share/applications/com.immalloy.weekbox.app.desktop
 
