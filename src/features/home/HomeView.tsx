@@ -11,6 +11,7 @@ import {
   HomeSearchBar,
   FeaturedModsSection,
   ModsGridSection,
+  HomeFilterMenu,
 } from "./components";
 
 const ModDetailsModal = lazy(() =>
@@ -19,9 +20,6 @@ const ModDetailsModal = lazy(() =>
   })),
 );
 
-/**
- * Primary discovery view displaying the featured mods carousel and an infinite grid of most-liked (ripe) mods.
- */
 export const HomeView: React.FC = () => {
   const [searchParams] = useSearchParams();
   const activeQuery = searchParams.get("q") || "";
@@ -30,6 +28,9 @@ export const HomeView: React.FC = () => {
 
   const { isFavorite, toggleFavorite } = useHomeFavorites();
 
+  const [filter, setFilter] = React.useState<import("@/services/gamebanana").ModFilter>("ripe");
+  const [engineFilter, setEngineFilter] = React.useState<string | string[]>("all");
+
   const {
     modsList,
     modItems,
@@ -37,7 +38,7 @@ export const HomeView: React.FC = () => {
     isLoadingMore,
     hasMore,
     loadNextChunk,
-  } = useHomeMods(activeQuery);
+  } = useHomeMods(activeQuery, filter, engineFilter);
 
   const {
     searchQuery,
@@ -53,11 +54,21 @@ export const HomeView: React.FC = () => {
   return (
     <div className="w-full min-h-full flex flex-col">
       <Topbar>
-        <HomeSearchBar
-          initialQuery={searchQuery}
-          onSelectMod={handleOpenMod}
-          onSearch={handleSearch}
-        />
+        <div className="w-full max-w-2xl mx-auto flex items-center gap-2.5">
+          <HomeFilterMenu
+            filter={filter}
+            onSelectFilter={setFilter}
+            engineFilter={engineFilter}
+            onSelectEngine={setEngineFilter}
+          />
+          <div className="flex-1 min-w-0">
+            <HomeSearchBar
+              initialQuery={searchQuery}
+              onSelectMod={handleOpenMod}
+              onSearch={handleSearch}
+            />
+          </div>
+        </div>
       </Topbar>
 
       <div className="w-full flex flex-col gap-6 p-4 sm:p-8">
@@ -79,6 +90,7 @@ export const HomeView: React.FC = () => {
           onSelectMod={handleOpenMod}
           isFavorite={isFavorite}
           onToggleFavorite={toggleFavorite}
+          filter={filter}
         />
 
         {Boolean(selectedModData) && (

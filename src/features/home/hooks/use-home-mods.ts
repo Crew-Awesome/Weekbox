@@ -1,34 +1,54 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
-import { getMods, type GameBananaMod } from '@/services/gamebanana'
+import { getMods, type GameBananaMod, type ModFilter } from '@/services/gamebanana'
 import type { ModItem } from '@/ui/mod-details-modal'
 import { mapToModItem } from '../utils'
 
 const CHUNK_SIZE = 16
 
-/**
- * Fetches paginated popular (ripe) or search-filtered mods from GameBanana.
- */
-export function useHomeMods(searchQuery: string) {
+export function useHomeMods(
+  searchQuery: string,
+  filter: ModFilter = 'ripe',
+  engineFilter: string | string[] = 'all',
+) {
   const [modsList, setModsList] = useState<GameBananaMod[]>([])
   const [isInitialLoading, setIsInitialLoading] = useState(true)
   const [isLoadingMore, setIsLoadingMore] = useState(false)
   const [hasMore, setHasMore] = useState(true)
 
   const pageRef = useRef(1)
-  const [syncedSearchQuery, setSyncedSearchQuery] = useState(searchQuery)
 
-  if (syncedSearchQuery !== searchQuery) {
-    setSyncedSearchQuery(searchQuery)
+  const engineKey = useMemo(() => {
+    if (!engineFilter) return 'all'
+    if (Array.isArray(engineFilter)) {
+      const clean = engineFilter.filter((id) => id && id !== 'all').sort()
+      return clean.length === 0 ? 'all' : clean.join(',')
+    }
+    return engineFilter
+  }, [engineFilter])
+
+  const syncKey = `${searchQuery}|${filter}|${engineKey}`
+  const [syncedKey, setSyncedKey] = useState(syncKey)
+
+  if (syncedKey !== syncKey) {
+    setSyncedKey(syncKey)
     setIsInitialLoading(true)
     setHasMore(true)
     setModsList([])
   }
 
+  const activeEngines = useMemo(() => {
+    if (engineKey === 'all') return null
+    if (Array.isArray(engineFilter)) {
+      return engineFilter.filter((id) => id && id !== 'all')
+    }
+    return engineFilter
+  }, [engineKey, engineFilter])
+
   useEffect(() => {
     let isMounted = true
     pageRef.current = 1
 
-    getMods('ripe', 1, CHUNK_SIZE, null, searchQuery)
+    getMods(filter, 1, CHUNK_SIZE, activeEngines, searchQuery)
       .then((mods) => {
         if (!isMounted) return
         setModsList(mods || [])
@@ -38,7 +58,7 @@ export function useHomeMods(searchQuery: string) {
         }
       })
       .catch((err) => {
-        console.error('Failed to load GameBanana ripe mods:', err)
+        console.error('Failed to load GameBanana mods:', err)
         if (isMounted) setModsList([])
       })
       .finally(() => {
@@ -48,7 +68,7 @@ export function useHomeMods(searchQuery: string) {
     return () => {
       isMounted = false
     }
-  }, [searchQuery])
+  }, [searchQuery, filter, engineKey, activeEngines])
 
   const loadNextChunk = useCallback(async () => {
     if (isLoadingMore || !hasMore || isInitialLoading) return
@@ -58,10 +78,10 @@ export function useHomeMods(searchQuery: string) {
 
     try {
       const nextMods = await getMods(
-        'ripe',
+        filter,
         nextPage,
         CHUNK_SIZE,
-        null,
+        activeEngines,
         searchQuery,
       )
       if (!nextMods || nextMods.length === 0) {
@@ -86,7 +106,7 @@ export function useHomeMods(searchQuery: string) {
     } finally {
       setIsLoadingMore(false)
     }
-  }, [isLoadingMore, hasMore, isInitialLoading, searchQuery])
+  }, [isLoadingMore, hasMore, isInitialLoading, filter, activeEngines, searchQuery])
 
   const modItems = useMemo<ModItem[]>(() => {
     return modsList.map(mapToModItem)

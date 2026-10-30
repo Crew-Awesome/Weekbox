@@ -2,6 +2,7 @@ import React, { useRef } from 'react'
 import { Title } from '@/ui/title'
 import type { ModItem } from '@/ui/mod-details-modal'
 import { useInfiniteScroll } from '@/utils'
+import type { ModFilter } from '@/services/gamebanana'
 import { ModsGridSkeleton } from './ModsGridSkeleton'
 import { ModsEmptyState } from './ModsEmptyState'
 import { ModsPaginationFooter } from './ModsPaginationFooter'
@@ -17,11 +18,9 @@ export interface ModsGridSectionProps {
   onSelectMod: (mod: ModItem) => void
   isFavorite: (id: number | string) => boolean
   onToggleFavorite: (id: number | string) => void
+  filter?: ModFilter
 }
 
-/**
- * Displays the popular/search mods grid section with infinite scroll pagination.
- */
 export const ModsGridSection: React.FC<ModsGridSectionProps> = ({
   searchQuery,
   items,
@@ -32,6 +31,7 @@ export const ModsGridSection: React.FC<ModsGridSectionProps> = ({
   onSelectMod,
   isFavorite,
   onToggleFavorite,
+  filter = 'ripe',
 }) => {
   const sentinelRef = useRef<HTMLDivElement>(null)
 
@@ -41,16 +41,25 @@ export const ModsGridSection: React.FC<ModsGridSectionProps> = ({
     onLoadMore,
   })
 
+  const getSectionTitle = () => {
+    if (searchQuery) return `Search Results for "${searchQuery}"`
+    switch (filter) {
+      case 'ripe':
+        return 'Popular - Most Liked Mods'
+      case 'popular':
+        return 'Trending Mods'
+      case 'new':
+        return 'Newest Releases'
+      case 'updated':
+        return 'Recently Updated Mods'
+      default:
+        return 'Mods'
+    }
+  }
+
   return (
     <>
-      <Title
-        title={
-          searchQuery
-            ? `Search Results for "${searchQuery}"`
-            : 'Popular - Most Liked Mods'
-        }
-        align="left"
-      />
+      <Title title={getSectionTitle()} align="left" />
 
       {isInitialLoading && items.length === 0 ? (
         <ModsGridSkeleton count={8} className="pb-12" />
