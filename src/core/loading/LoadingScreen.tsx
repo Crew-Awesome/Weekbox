@@ -6,6 +6,7 @@ import React, {
   useCallback,
 } from 'react'
 import { createPortal } from 'react-dom'
+import './loading.css'
 import { host } from '@/core/host'
 import {
   LoadingContext,
@@ -37,9 +38,6 @@ export interface LoadingScreenProps {
   message?: string
 }
 
-/**
- * Full-screen splash and loading overlay with M3 shape morphing progress indicator.
- */
 export const LoadingScreen: React.FC<LoadingScreenProps> = ({
   visible = true,
   isFadingOut = false,
@@ -156,7 +154,11 @@ export const LoadingScreen: React.FC<LoadingScreenProps> = ({
           >
             <span
               className="font-mono font-bold text-xs select-none tracking-tight flex items-center justify-center w-full h-full text-center drop-shadow-sm"
-              style={{ color: 'var(--md-sys-color-on-primary)' }}
+              style={{
+                position: 'absolute',
+                inset: 0,
+                color: 'var(--md-sys-color-on-primary)',
+              }}
             >
               {Math.round(displayProgress)}%
             </span>

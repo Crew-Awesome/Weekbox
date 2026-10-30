@@ -1,0 +1,19 @@
+@keyframes startup-loading-background-reveal {
+  from {
+    filter: blur(14px) brightness(0.42) saturate(1);
+    transform: scale(1.12);
+  }
+  to {
+    filter: blur(0) brightness(1) saturate(1);
+    transform: scale(1);
+  }
+}
+
+@keyframes startup-loading-overlay-reveal {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
