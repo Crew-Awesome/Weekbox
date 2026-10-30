@@ -2,9 +2,6 @@ import { initHost, callDevFsBridge } from '@/core/host'
 import { ensureWeekBoxLibrary, joinPaths } from '@/core/storage'
 import type { WeekBoxLibraryPaths } from '@/core/storage'
 
-/**
- * Generates an uppercase alphanumeric engine folder slug (e.g. "Sky: REBORN" -> "SKYREBORN").
- */
 export function toEngineFolderName(modTitle?: string): string {
   const cleaned = (modTitle || 'MOD')
     .normalize('NFD')
@@ -15,9 +12,6 @@ export function toEngineFolderName(modTitle?: string): string {
   return cleaned || 'MOD'
 }
 
-/**
- * Generates a v4 UUID for composite mod instance IDs.
- */
 export function generateModInstanceUuid(): string {
   if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
     return crypto.randomUUID()
@@ -29,19 +23,12 @@ export function generateModInstanceUuid(): string {
   })
 }
 
-/**
- * Extracts the base numeric/string GameBanana mod ID from a composite ID (`602414--uuid` -> `602414`).
- */
 export function extractBaseModId(id: string | number): string {
   const str = String(id)
   const parts = str.split('--')
   return parts[0] || str
 }
 
-/**
- * Generates a filesystem-safe folder name for a mod inside `WeekBoxLibrary/mods`
- * following the `<ENGINEFOLDERNAME>--<modId>--<uuid>` convention.
- */
 export function toSafeModFolderName(
   modId: string | number,
   modTitle?: string,
@@ -53,9 +40,6 @@ export function toSafeModFolderName(
   return `${engineFolder}--${baseId}--${uuid}`
 }
 
-/**
- * Infers the archive extension from a file name or download URL.
- */
 export function resolveArchiveExtension(
   fileName?: string,
   downloadUrl?: string,
@@ -68,10 +52,6 @@ export function resolveArchiveExtension(
   return '.zip'
 }
 
-/**
- * Ensures the active WeekBoxLibrary structure exists and resolves the target installation directory
- * for the given mod inside `WeekBoxLibrary/mods/<folderName>`.
- */
 export async function resolveModInstallDirectory(
   modId: string | number,
   modTitle?: string,
@@ -108,10 +88,6 @@ export async function resolveModInstallDirectory(
   }
 }
 
-/**
- * If an extracted archive created a single root wrapper directory inside `targetDir`,
- * moves its contents up one level into `targetDir` and removes the redundant wrapper directory.
- */
 export async function flattenSingleRootSubdirectory(
   targetDir: string,
 ): Promise<void> {
@@ -154,9 +130,6 @@ export async function flattenSingleRootSubdirectory(
   }
 }
 
-/**
- * Inspects the extracted mod directory up to 2 levels deep to auto-detect its engine type.
- */
 export async function detectModEngineFromFiles(
   modDir: string,
   fallbackEngineId?: string,
@@ -200,14 +173,13 @@ export async function detectModEngineFromFiles(
         }
       }
     } catch {
-      // ignore unreadable subdirs
     }
   }
 
   await scanLevel(modDir, 0)
 
   if (hasExe) {
-    return { engineId: 'exe', isExecutable: true }
+    return { engineId: 'executable', isExecutable: true }
   }
   if (hasPolymodMeta) {
     return { engineId: 'vslice', isExecutable: false }
@@ -221,17 +193,13 @@ export async function detectModEngineFromFiles(
 
   return {
     engineId: defaultId,
-    isExecutable: defaultId === 'exe',
+    isExecutable: defaultId === 'exe' || defaultId === 'executable',
   }
 }
 
-/**
- * Opens a local directory in the operating system's native file explorer.
- */
 export async function openFolderInExplorer(folderPath: string): Promise<boolean> {
   if (!folderPath) return false
 
-  // 1. Try local dev bridge first
   const bridgeRes = await callDevFsBridge<{ ok?: boolean }>({
     action: 'openFolder',
     path: folderPath,

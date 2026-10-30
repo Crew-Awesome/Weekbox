@@ -1,13 +1,11 @@
 import { initHost } from '@/core/host'
-import { joinPaths, getWeekBoxLibraryPaths } from '@/core/storage'
+import { joinPaths } from '@/core/storage'
 import { formatFileSize } from '@/utils/formatters'
 import { ENGINE_CATEGORIES } from '@/services/gamebanana'
 import {
   resolveModInstallDirectory,
   resolveArchiveExtension,
   detectModEngineFromFiles,
-  toSafeModFolderName,
-  toEngineFolderName,
   extractBaseModId,
 } from './mod-filesystem'
 import { downloadModArchive, extractModArchive } from './mod-downloader'
@@ -50,11 +48,6 @@ async function verifyDownloadedArchive(
   }
 }
 
-/**
- * Checks whether the download callout toast should be suppressed for a given mod:
- * 1. Suppressed if the user is currently inside the ModDetailsModal for this exact mod.
- * 2. Suppressed if the user is inside the `/instances` tab.
- */
 export function isCalloutSuppressedForMod(modId: string | number): boolean {
   if (typeof window === 'undefined') return false
   const targetBase = extractBaseModId(modId)
@@ -63,66 +56,60 @@ export function isCalloutSuppressedForMod(modId: string | number): boolean {
     return true
   }
 
-  if (
-    typeof window.location !== 'undefined' &&
-    window.location.pathname.startsWith('/instances')
-  ) {
-    return true
+  if (typeof window.location !== 'undefined') {
+    const { pathname, hash } = window.location
+    const route = hash.startsWith('#') ? hash.slice(1) : pathname
+    if (route.startsWith('/instances')) return true
   }
 
   return false
 }
 
-/**
- * Synchronizes the visibility of active download callout toasts according to modal and route state.
- */
+function getTaskCalloutId(task: ModDownloadTask): string {
+  return task.calloutId || `mod-dl-${task.taskKey}`
+}
+
+function syncTaskCallout(task: ModDownloadTask): void {
+  if (typeof window === 'undefined' || !window.callout) return
+  if (task.status !== 'downloading' && task.status !== 'extracting') return
+
+  const calloutId = getTaskCalloutId(task)
+
+  if (isCalloutSuppressedForMod(task.modId)) {
+    window.callout.dismiss(calloutId)
+    return
+  }
+
+  window.callout.download({
+    id: calloutId,
+    title:
+      task.status === 'extracting'
+        ? `Installing ${task.modTitle}`
+        : `Downloading ${task.modTitle}`,
+    progress: task.progress,
+    downloaded: formatFileSize(task.downloaded),
+    total: task.total > 0 ? formatFileSize(task.total) : 'Unknown',
+    speed: task.speed,
+    status: 'downloading',
+    onCancel: () => {
+      cancelModDownload(task.modId, task.fileId)
+    },
+  })
+}
+
 export function syncActiveCallouts(): void {
   if (typeof window === 'undefined' || !window.callout) return
 
   for (const task of tasksMap.values()) {
-    if (task.status !== 'downloading' && task.status !== 'extracting') continue
-    const calloutId = task.calloutId || `mod-dl-${task.taskKey}`
-
-    if (isCalloutSuppressedForMod(task.modId)) {
-      window.callout.dismiss(calloutId)
-    } else {
-      const exists = window.callout.toasts.some((t) => t.id === calloutId)
-      if (!exists) {
-        window.callout.download({
-          id: calloutId,
-          title: `Downloading ${task.modTitle}`,
-          filename: task.fileName,
-          progress: task.progress,
-          downloaded: formatFileSize(task.downloaded),
-          total: task.total > 0 ? formatFileSize(task.total) : 'Unknown',
-          speed: task.speed,
-          status: 'downloading',
-          onCancel: () => {
-            cancelModDownload(task.modId, task.fileId)
-          },
-        })
-      } else {
-        window.callout.updateDownload(calloutId, {
-          progress: task.progress,
-          downloaded: formatFileSize(task.downloaded),
-          total: task.total > 0 ? formatFileSize(task.total) : undefined,
-          speed: task.speed,
-          status: 'downloading',
-        })
-      }
-    }
+    syncTaskCallout(task)
   }
 }
 
-/**
- * Sets the ID of the mod currently displayed in the ModDetailsModal (or null if modal is closed).
- */
 export function setActiveModalModId(modId: string | number | null): void {
   activeModalModId = modId !== null && modId !== undefined ? String(modId) : null
   syncActiveCallouts()
 }
 
-// Listen to popstate for route changes to sync callouts
 if (typeof window !== 'undefined') {
   window.addEventListener('popstate', () => {
     syncActiveCallouts()
@@ -154,9 +141,38 @@ function removeTask(taskKey: string): void {
   notifyListeners()
 }
 
-/**
- * Resolves the target GameBananaFile to download when either an explicit URL/fileId or default single file is used.
- */
+async function removePathWithRetry(path: string, attempts = 3): Promise<void> {
+  if (!path) return
+  const host = initHost()
+
+  for (let attempt = 0; attempt < attempts; attempt += 1) {
+    try {
+      if (!(await host.fs.exists(path))) return
+      await host.fs.remove(path)
+      return
+    } catch {
+      if (attempt < attempts - 1) {
+        await new Promise((resolve) =>
+          setTimeout(resolve, 250 * (attempt + 1)),
+        )
+      }
+    }
+  }
+}
+
+async function cleanupInstallArtifacts(
+  installDir: string,
+  archivePath: string,
+  removeInstallDir: boolean,
+): Promise<void> {
+  if (archivePath) {
+    await removePathWithRetry(archivePath)
+  }
+  if (installDir && removeInstallDir) {
+    await removePathWithRetry(installDir)
+  }
+}
+
 export function resolveTargetModFile(
   files: GameBananaFile[] | Record<string, GameBananaFile> | undefined,
   explicitFile?: GameBananaFile,
@@ -213,9 +229,6 @@ export function resolveTargetModFile(
   }
 }
 
-/**
- * Starts downloading and installing a mod into the active `WeekBoxLibrary/mods` directory.
- */
 export async function startModDownload(
   params: StartModDownloadParams,
 ): Promise<InstalledModRecord | null> {
@@ -240,7 +253,6 @@ export async function startModDownload(
   const baseModId = extractBaseModId(mod.id)
   const taskKey = `${baseModId}:${fileId}`
 
-  // A mod has one install transaction at a time; different files still share its registry/install state.
   const activeTask = [...tasksMap.values()].find(
     (task) =>
       extractBaseModId(task.modId) === baseModId &&
@@ -276,59 +288,19 @@ export async function startModDownload(
   tasksMap.set(taskKey, initialTask)
   notifyListeners()
 
-  if (typeof window !== 'undefined' && window.callout) {
-    if (!isCalloutSuppressedForMod(mod.id)) {
-      window.callout.download({
-        id: calloutId,
-        title: `Downloading ${modTitle}`,
-        filename: fileName,
-        progress: 0,
-        downloaded: '0 B',
-        total: expectedSize > 0 ? formatFileSize(expectedSize) : 'Unknown',
-        speed: 'Starting...',
-        status: 'downloading',
-        onCancel: () => {
-          cancelModDownload(mod.id, fileId)
-        },
-      })
-    }
-  }
+  syncTaskCallout(initialTask)
 
   const host = initHost()
 
   let currentModInstallDir = ''
   let tempArchivePath = ''
+  let installDirCreated = false
 
   try {
     const existingRecord = await getInstalledModById(mod.id)
 
     const { compositeId, engineFolderName, folderName, modInstallDir } =
-      await Promise.race([
-        resolveModInstallDirectory(mod.id, modTitle),
-        new Promise<{
-          libraryPaths: ReturnType<typeof getWeekBoxLibraryPaths>
-          compositeId: string
-          engineFolderName: string
-          folderName: string
-          modInstallDir: string
-        }>((resolve) => {
-          setTimeout(() => {
-            const folder = toSafeModFolderName(mod.id, modTitle)
-            const parts = folder.split('--')
-            const compId =
-              parts.length >= 3
-                ? `${parts[1]}--${parts.slice(2).join('--')}`
-                : String(mod.id)
-            resolve({
-              libraryPaths: getWeekBoxLibraryPaths('WeekBoxLibrary'),
-              compositeId: compId,
-              engineFolderName: toEngineFolderName(modTitle),
-              folderName: folder,
-              modInstallDir: `WeekBoxLibrary/mods/${folder}`,
-            })
-          }, 4000)
-        }),
-      ])
+      await resolveModInstallDirectory(mod.id, modTitle)
 
     currentModInstallDir = modInstallDir
 
@@ -336,9 +308,9 @@ export async function startModDownload(
       const dirExists = await host.fs.exists(modInstallDir)
       if (!dirExists) {
         await host.fs.createDirectory(modInstallDir)
+        installDirCreated = true
       }
     } catch {
-      // ignore
     }
 
     const ext = resolveArchiveExtension(fileName, downloadUrl)
@@ -362,35 +334,17 @@ export async function startModDownload(
         })
 
         if (typeof window !== 'undefined' && window.callout) {
-          if (!isCalloutSuppressedForMod(mod.id)) {
-            const exists = window.callout.toasts.some((t) => t.id === calloutId)
-            if (!exists) {
-              window.callout.download({
-                id: calloutId,
-                title: `Downloading ${modTitle}`,
-                filename: fileName,
-                progress: details.progress,
-                downloaded: formatFileSize(details.downloaded),
-                total:
-                  details.total > 0 ? formatFileSize(details.total) : undefined,
-                speed: details.speed,
-                status: 'downloading',
-                onCancel: () => {
-                  cancelModDownload(mod.id, fileId)
-                },
-              })
-            } else {
-              window.callout.updateDownload(calloutId, {
-                progress: details.progress,
-                downloaded: formatFileSize(details.downloaded),
-                total:
-                  details.total > 0 ? formatFileSize(details.total) : undefined,
-                speed: details.speed,
-                status: 'downloading',
-              })
-            }
-          } else {
+          if (isCalloutSuppressedForMod(mod.id)) {
             window.callout.dismiss(calloutId)
+          } else {
+            window.callout.updateDownload(calloutId, {
+              progress: details.progress,
+              downloaded: formatFileSize(details.downloaded),
+              total:
+                details.total > 0 ? formatFileSize(details.total) : undefined,
+              speed: details.speed,
+              status: 'downloading',
+            })
           }
         }
       },
@@ -412,8 +366,11 @@ export async function startModDownload(
     })
 
     if (typeof window !== 'undefined' && window.callout) {
-      if (!isCalloutSuppressedForMod(mod.id)) {
+      if (isCalloutSuppressedForMod(mod.id)) {
+        window.callout.dismiss(calloutId)
+      } else {
         window.callout.updateDownload(calloutId, {
+          title: `Installing ${modTitle}`,
           progress: 99,
           speed: 'Extracting...',
           status: 'downloading',
@@ -428,16 +385,54 @@ export async function startModDownload(
         statusText: extractUpdate.statusText || 'Extracting archive...',
         currentFile: extractUpdate.currentFile || fileName,
       })
+
+      if (typeof window !== 'undefined' && window.callout) {
+        if (isCalloutSuppressedForMod(mod.id)) {
+          window.callout.dismiss(calloutId)
+        } else {
+          window.callout.updateDownload(calloutId, {
+            title: `Installing ${modTitle}`,
+            filename: extractUpdate.currentFile || fileName,
+            speed: 'Extracting...',
+            status: 'downloading',
+          })
+        }
+      }
     })
+
+    if (abortController.signal.aborted) {
+      throw new DOMException('Download canceled', 'AbortError')
+    }
 
     const detected = await detectModEngineFromFiles(
       modInstallDir,
       mod.engineId,
     )
-    const matchedEntry = Object.entries(ENGINE_CATEGORIES).find(
-      ([, cat]) => cat.id === detected.engineId,
+
+    const isExe = detected.isExecutable || detected.engineId === 'executable' || detected.engineId === 'exe'
+    const finalEngineId = isExe ? 'executable' : detected.engineId
+
+    const defaultEngineId =
+      mod.engineId && mod.engineId !== 'executable' && mod.engineId !== 'exe'
+        ? mod.engineId
+        : detected.engineId !== 'executable' && detected.engineId !== 'exe'
+          ? detected.engineId
+          : 'vslice'
+
+    const defaultCatEntry = Object.values(ENGINE_CATEGORIES).find(
+      (c) => c.id === defaultEngineId,
     )
-    const matchedCategoryId = matchedEntry ? Number(matchedEntry[0]) : 3827
+    const defaultEngineName =
+      defaultCatEntry?.name || mod.engineName || 'V-Slice Engine'
+
+    const matchedEntry = Object.entries(ENGINE_CATEGORIES).find(
+      ([, cat]) => cat.id === finalEngineId,
+    )
+    const matchedCategoryId = matchedEntry
+      ? Number(matchedEntry[0])
+      : isExe
+        ? 3827
+        : 28367
     const matchedEngineCat = matchedEntry?.[1]
 
     const now = Date.now()
@@ -453,15 +448,28 @@ export async function startModDownload(
       sourceUrl: `https://gamebanana.com/mods/${baseModId}`,
       downloadUrl,
       engineLocked: false,
-      engineId: detected.engineId,
-      engineName: matchedEngineCat?.name || mod.engineName || 'Psych Engine',
+      engineId: finalEngineId,
+      engineName: isExe ? 'Executable Mods' : (matchedEngineCat?.name || defaultEngineName),
+      defaultEngineId,
+      defaultEngineName,
       engineFolderName,
       description: mod.description,
       htmlBody: mod.htmlBody,
       author: mod.author,
-      userPfp: mod.userPfp,
-      image: mod.img || mod.image || mod.thumbnail,
-      thumbnail: mod.thumbnail || mod.img || mod.image,
+      image:
+        (mod.image?.startsWith('http') ? mod.image : undefined) ||
+        (mod.thumbnail?.startsWith('http') ? mod.thumbnail : undefined) ||
+        (mod.img?.startsWith('http') ? mod.img : undefined) ||
+        mod.image ||
+        mod.thumbnail ||
+        mod.img,
+      thumbnail:
+        (mod.thumbnail?.startsWith('http') ? mod.thumbnail : undefined) ||
+        (mod.image?.startsWith('http') ? mod.image : undefined) ||
+        (mod.img?.startsWith('http') ? mod.img : undefined) ||
+        mod.thumbnail ||
+        mod.image ||
+        mod.img,
       previewMedia: mod.previewMedia,
       icon: matchedEngineCat?.icon || mod.icon || mod.engineIcon,
       categoryName: mod.categoryName,
@@ -474,7 +482,7 @@ export async function startModDownload(
       installedFileId: fileId,
       fileName,
       fileSize: expectedSize,
-      isExecutable: detected.isExecutable,
+      isExecutable: isExe,
     }
 
     const finalRecord = await registerInstalledMod(installedRecord)
@@ -502,12 +510,21 @@ export async function startModDownload(
     })
 
     if (typeof window !== 'undefined' && window.callout) {
-      if (!isCalloutSuppressedForMod(mod.id)) {
-        window.callout.updateDownload(calloutId, {
+      if (isCalloutSuppressedForMod(mod.id)) {
+        window.callout.dismiss(calloutId)
+      } else {
+        window.callout.download({
+          id: calloutId,
+          variant: 'tertiary',
           title: `${modTitle} Installed`,
+          message: 'Ready to install or play.',
+          filename: fileName,
           progress: 100,
-          status: 'completed',
+          downloaded: formatFileSize(expectedSize),
+          total: expectedSize > 0 ? formatFileSize(expectedSize) : undefined,
           speed: 'Ready to play',
+          status: 'completed',
+          duration: 8000,
         })
       }
     }
@@ -519,30 +536,15 @@ export async function startModDownload(
     onComplete?.(finalRecord)
     return finalRecord
   } catch (err) {
-    if (currentModInstallDir) {
-      try {
-        const exists = await host.fs.exists(currentModInstallDir)
-        if (exists) {
-          await host.fs.remove(currentModInstallDir)
-        }
-      } catch {
-        // ignore cleanup error
-      }
-    }
-
-    if (tempArchivePath) {
-      try {
-        if (await host.fs.exists(tempArchivePath)) {
-          await host.fs.remove(tempArchivePath)
-        }
-      } catch {
-        // ignore cleanup error
-      }
-    }
-
     const isAborted =
       (err instanceof DOMException && err.name === 'AbortError') ||
       abortController.signal.aborted
+
+    void cleanupInstallArtifacts(
+      currentModInstallDir,
+      tempArchivePath,
+      installDirCreated,
+    )
 
     if (isAborted) {
       updateTask(taskKey, {
@@ -552,17 +554,10 @@ export async function startModDownload(
       })
       if (typeof window !== 'undefined' && window.callout) {
         window.callout.dismiss(calloutId)
-        if (!isCalloutSuppressedForMod(mod.id)) {
-          window.callout.secondary(
-            `Download canceled for "${modTitle}".`,
-            'Download Canceled',
-            { duration: 3000 },
-          )
-        }
       }
       setTimeout(() => {
         removeTask(taskKey)
-      }, 600)
+      }, 300)
       return null
     }
 
@@ -593,9 +588,6 @@ export async function startModDownload(
   }
 }
 
-/**
- * Cancels an active download for a specific mod (and optional fileId).
- */
 export function cancelModDownload(
   modId: string | number,
   fileId?: string,
@@ -603,20 +595,44 @@ export function cancelModDownload(
   const baseId = extractBaseModId(modId)
   const prefix = `${baseId}:`
   for (const [key, controller] of abortControllers.entries()) {
-    if (fileId ? key === `${prefix}${fileId}` : key.startsWith(prefix)) {
-      updateTask(key, {
-        progress: -1,
-        status: 'canceling',
-        statusText: 'Canceling...',
-      })
-      controller.abort()
+    if (fileId ? key !== `${prefix}${fileId}` : !key.startsWith(prefix)) {
+      continue
     }
+
+    const task = tasksMap.get(key)
+    if (
+      !task ||
+      (task.status !== 'downloading' &&
+        task.status !== 'extracting' &&
+        task.status !== 'canceling')
+    ) {
+      continue
+    }
+
+    const calloutId = getTaskCalloutId(task)
+
+    updateTask(key, {
+      progress: task.progress,
+      status: 'canceling',
+      statusText: 'Canceling...',
+      speed: 'Canceling...',
+    })
+
+    if (typeof window !== 'undefined' && window.callout) {
+      window.callout.dismiss(calloutId)
+      if (!isCalloutSuppressedForMod(task.modId)) {
+        window.callout.secondary(
+          `Download canceled for "${task.modTitle}".`,
+          'Download Canceled',
+          { duration: 3000 },
+        )
+      }
+    }
+
+    controller.abort()
   }
 }
 
-/**
- * Subscribe & snapshot functions for `useSyncExternalStore`.
- */
 export function subscribeModDownloads(listener: Listener): () => void {
   listeners.add(listener)
   return () => {

@@ -31,6 +31,8 @@ export interface InstalledModRecord {
   engineLocked?: boolean
   engineId?: string
   engineName?: string
+  defaultEngineId?: string
+  defaultEngineName?: string
   engineFolderName?: string
   coverPath?: string
   localCoverPath?: string
@@ -53,6 +55,9 @@ export interface InstalledModRecord {
   fileName?: string
   fileSize?: number
   isExecutable?: boolean
+  views?: number
+  likes?: number
+  downloads?: number
 }
 
 export interface ModDownloadTask {
