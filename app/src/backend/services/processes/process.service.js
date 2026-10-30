@@ -288,6 +288,33 @@ var _ProcessService = class _ProcessService {
       null
     );
   }
+
+  async isFlatpak() {
+    try {
+      await Neutralino.filesystem.getStats("/.flatpak-info");
+      console.log("Flatpak sandboxed");
+      return true;
+    } catch {
+      console.log("NOT Flatpak sandboxed");
+      return false;
+    }
+  }
+
+    wrapFlatpakCMD(path, file_exec, args=[]) {
+        /*
+         * hi daveberry the flatpak coder guy
+         * so let me explain why we have to do `cd {path} && ./{file}`
+         *
+         * flatpak is really really shit at executing commands, and
+         * doing the command I just said above bypasses it and launches
+         * the game on the host's computer so it isn't sandboxed
+         *
+         * if you want a reference, check this code;
+         *     https://github.com/Team-SolarEngine/solar-lanucher/blob/main/src-tauri/src/apps.rs#L184
+         */
+        return `cd ${path} && flatpak-spawn --host ${file_exec} ${args.join(" ")}`
+    }
+
   async launch(key, executablePath, onStateChange, args = [], metadata = {}) {
     if (this.activeProcesses.has(key)) {
       onStateChange?.("already_running");
@@ -304,15 +331,44 @@ var _ProcessService = class _ProcessService {
           onStateChange?.("error");
           return false;
         }
-        command = [
-          `${quoteShellArgument(wineCommand)} ${quoteShellArgument(executablePath)}`,
-          ...args.map((arg) => quoteShellArgument(arg)),
-        ].join(" ");
+
+        if (await isFlatpak()) {
+            const lastSlash = executablePath.lastIndexOf("/");
+            const folderPath = executablePath.slice(0, lastSlash + 1);
+            const filePath = executablePath.slice(lastSlash + 1);
+  
+            command = [
+                this.wrapFlatpakCMD(
+                    quoteShellArgument(folderPath),
+                    `./${quoteShellArgument(wineCommand)} ${quoteShellArgument(executablePath)}`,
+                    args.map((arg) => quoteShellArgument(arg))
+                )
+            ].join(" ");
+        } else {
+          command = [
+            `${quoteShellArgument(wineCommand)} ${quoteShellArgument(executablePath)}`,
+            ...args.map((arg) => quoteShellArgument(arg)),
+          ].join(" ");
+        }
       } else {
-        command = [
-          quoteShellArgument(executablePath),
-          ...args.map((arg) => quoteShellArgument(arg)),
-        ].join(" ");
+        if (await isFlatpak()) {
+          const lastSlash = executablePath.lastIndexOf("/");
+          const folderPath = executablePath.slice(0, lastSlash + 1);
+          const filePath = executablePath.slice(lastSlash + 1);
+
+          command = [
+              this.wrapFlatpakCMD(
+                  quoteShellArgument(folderPath),
+                  `./${quoteShellArgument(filePath)}`,
+                  args.map((arg) => quoteShellArgument(arg))
+              )
+          ].join(" ");
+        } else {
+          command = [
+            quoteShellArgument(executablePath),
+            ...args.map((arg) => quoteShellArgument(arg)),
+          ].join(" ");
+        }
       }
       const process = await Neutralino.os.spawnProcess(command, {
         cwd: this.executables.getDirectory(executablePath),
