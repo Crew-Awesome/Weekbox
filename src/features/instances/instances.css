@@ -1,0 +1,140 @@
+.engine-markdown {
+  color: var(--md-sys-color-on-surface-variant);
+  font-size: 0.95rem;
+  line-height: 1.75;
+  overflow-wrap: anywhere;
+}
+
+.engine-markdown > :first-child {
+  margin-top: 0;
+}
+
+.engine-markdown > :last-child {
+  margin-bottom: 0;
+}
+
+.engine-markdown :is(h2, h3, h4) {
+  color: var(--md-sys-color-on-surface);
+  font-weight: 700;
+  line-height: 1.25;
+}
+
+.engine-markdown h2 {
+  font-size: 1.2rem;
+  margin: 2rem 0 0.75rem;
+  padding-bottom: 0.4rem;
+  border-bottom: 1px solid
+    color-mix(in srgb, var(--md-sys-color-outline-variant) 55%, transparent);
+}
+
+.engine-markdown h3 {
+  font-size: 1.02rem;
+  margin: 1.5rem 0 0.5rem;
+}
+
+.engine-markdown h4 {
+  font-size: 0.95rem;
+  margin: 1.25rem 0 0.4rem;
+}
+
+.engine-markdown p {
+  margin: 0.7rem 0;
+}
+
+.engine-markdown :is(ul, ol) {
+  margin: 0.7rem 0;
+  padding-left: 1.35rem;
+}
+
+.engine-markdown ul {
+  list-style: disc;
+}
+
+.engine-markdown ol {
+  list-style: decimal;
+}
+
+.engine-markdown li {
+  margin: 0.3rem 0;
+  padding-left: 0.15rem;
+}
+
+.engine-markdown li::marker {
+  color: var(--md-sys-color-primary);
+}
+
+.engine-markdown a {
+  color: var(--md-sys-color-primary);
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 2px;
+}
+
+.engine-markdown a:hover {
+  opacity: 0.8;
+}
+
+.engine-markdown strong {
+  color: var(--md-sys-color-on-surface);
+  font-weight: 650;
+}
+
+.engine-markdown code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.85em;
+  background-color: var(--md-sys-color-surface-container-highest);
+  color: var(--md-sys-color-on-surface);
+  padding: 0.1em 0.4em;
+  border-radius: 6px;
+}
+
+.engine-markdown pre {
+  margin: 1rem 0;
+  padding: 1rem;
+  overflow-x: auto;
+  border-radius: 14px;
+  background-color: var(--md-sys-color-surface-container-highest);
+}
+
+.engine-markdown pre code {
+  padding: 0;
+  background: transparent;
+  font-size: 0.85rem;
+}
+
+.engine-markdown blockquote {
+  margin: 1rem 0;
+  padding: 0.25rem 0 0.25rem 1rem;
+  border-left: 3px solid var(--md-sys-color-primary);
+  color: var(--md-sys-color-on-surface-variant);
+}
+
+.engine-markdown hr {
+  margin: 1.5rem 0;
+  border: 0;
+  border-top: 1px solid var(--md-sys-color-outline-variant);
+}
+
+.engine-markdown table {
+  width: 100%;
+  margin: 1rem 0;
+  border-collapse: collapse;
+  font-size: 0.875rem;
+}
+
+.engine-markdown :is(th, td) {
+  padding: 0.5rem 0.65rem;
+  border: 1px solid var(--md-sys-color-outline-variant);
+  text-align: left;
+}
+
+.engine-markdown th {
+  background-color: var(--md-sys-color-surface-container-high);
+  color: var(--md-sys-color-on-surface);
+  font-weight: 600;
+}
+
+.engine-markdown img {
+  max-width: 100%;
+  border-radius: 12px;
+}
