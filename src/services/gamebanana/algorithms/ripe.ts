@@ -13,9 +13,6 @@ const ripeCache = new Map<
 >()
 const MAX_CACHE_SIZE = 20
 
-/**
- * Fetches and caches most-liked ("ripe") records with LRU eviction.
- */
 export async function fetchRipeRecords(
   targetEngineIds: string[] | null = null,
   maxPages = 4,
@@ -55,14 +52,11 @@ export async function fetchRipeRecords(
 
   let categoryIds = Object.keys(ENGINE_CATEGORIES).map(Number)
   if (!isAll) {
-    categoryIds = targetEngineIds
-      .map((id) => {
-        const match = Object.entries(ENGINE_CATEGORIES).find(
-          ([, cat]) => cat.id === id,
-        )
-        return match ? Number(match[0]) : -1
-      })
-      .filter((id) => id !== -1)
+    categoryIds = targetEngineIds.flatMap((id) =>
+      Object.entries(ENGINE_CATEGORIES)
+        .filter(([, cat]) => cat.id === id)
+        .map(([k]) => Number(k)),
+    )
   }
 
   while (

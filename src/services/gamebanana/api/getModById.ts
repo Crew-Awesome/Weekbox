@@ -18,9 +18,6 @@ import { sanitizeHtml, htmlToPlainText } from '../sanitize'
 const modProfileCache = new Map<number, { data: GameBananaMod; timestamp: number }>()
 const CACHE_TTL_MS = 60 * 1000
 
-/**
- * Fetches full mod profile details by GameBanana ID with a 60s in-memory cache.
- */
 export async function getModById(
   modId: number,
   forceFresh = false,
@@ -75,6 +72,7 @@ export async function getModById(
       externalLinks: raw._aExternalLinks || raw._aAlternateFileSources || [],
       studio: raw._aStudio?._sName || undefined,
       categoryName: raw._aCategory?._sName || undefined,
+      categoryId: raw._aCategory?._idRow || raw._aRootCategory?._idRow || undefined,
     }
 
     modProfileCache.set(modId, { data: result, timestamp: Date.now() })

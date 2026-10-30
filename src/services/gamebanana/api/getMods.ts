@@ -29,9 +29,6 @@ function isMobile(): boolean {
   return window.innerWidth < 768
 }
 
-/**
- * Fetches a paginated list of mods filtered by sort type, engine categories, or search query.
- */
 export async function getMods(
   filter: ModFilter = 'ripe',
   page = 1,
@@ -93,14 +90,11 @@ export async function getMods(
   } else if (filter === 'new' || filter === 'updated') {
     let categoryIds = Object.keys(ENGINE_CATEGORIES).map(Number)
     if (!isAll) {
-      categoryIds = enginesArray
-        .map((id) => {
-          const match = Object.entries(ENGINE_CATEGORIES).find(
-            ([, cat]) => cat.id === id,
-          )
-          return match ? Number(match[0]) : -1
-        })
-        .filter((id) => id !== -1)
+      categoryIds = enginesArray.flatMap((id) =>
+        Object.entries(ENGINE_CATEGORIES)
+          .filter(([, cat]) => cat.id === id)
+          .map(([k]) => Number(k)),
+      )
     }
 
     const sortStr =

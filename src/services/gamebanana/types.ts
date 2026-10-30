@@ -106,6 +106,8 @@ export interface GameBananaItem {
 export interface GameBananaMod extends GameBananaItem {
   engineId?: string
   engineIcon?: string
+  engineName?: string
+  categoryId?: number
   __featuredLabel?: string
   __featuredCategoryId?: number
   __isCommunityPick?: boolean

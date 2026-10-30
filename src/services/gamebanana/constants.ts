@@ -1,6 +1,3 @@
-/**
- * Official GameBanana game ID for Friday Night Funkin'.
- */
 export const FNF_GAME_ID = 8694
 
 export interface EngineCategoryInfo {
@@ -9,13 +6,15 @@ export interface EngineCategoryInfo {
   icon: string
 }
 
-/**
- * Supported GameBanana engine categories mapped by their numeric category ID.
- */
 export const ENGINE_CATEGORIES: Record<number, EngineCategoryInfo> = {
   29202: {
     id: 'vslice',
-    name: 'V-Slice Engine',
+    name: 'V-Slice / Base Game',
+    icon: '/imgs/icons/categories/vslice.png',
+  },
+  43777: {
+    id: 'vslice',
+    name: 'V-Slice / Base Game',
     icon: '/imgs/icons/categories/vslice.png',
   },
   28367: {
@@ -50,24 +49,12 @@ export const ENGINE_CATEGORIES: Record<number, EngineCategoryInfo> = {
   },
 }
 
-/**
- * Excluded GameBanana category IDs.
- */
 export const EXCLUDED_CATEGORIES = new Set([43772, 3833, 44037])
 
-/**
- * Toggle to allow or filter out NSFW content.
- */
 export const ALLOW_NSFW = true
 
-/**
- * Base URL for GameBanana API v11 endpoints.
- */
 export const GB_BASE_URL = 'https://gamebanana.com/apiv11'
 
-/**
- * Returns the engine categories supported on the active platform.
- */
 export function getSupportedEngineCategories(isMobileOverride?: boolean): Array<{
   key: number
   id: string
@@ -80,8 +67,11 @@ export function getSupportedEngineCategories(isMobileOverride?: boolean): Array<
       ? isMobileOverride
       : typeof window !== 'undefined' && window.innerWidth < 768
 
+  const seenIds = new Set<string>()
   return Object.entries(ENGINE_CATEGORIES)
     .filter(([, cat]) => {
+      if (seenIds.has(cat.id)) return false
+      seenIds.add(cat.id)
       if (isMobile) {
         return cat.id === 'pslice' || cat.id === 'codename' || cat.id === 'vslice'
       }

@@ -12,9 +12,6 @@ import type {
 
 export type { ModCreditAuthor, ModCreditGroup }
 
-/**
- * Converts a Unix timestamp (seconds) into a relative time string (e.g., "5m ago").
- */
 export function getTimeAgo(timestamp?: number): string {
   if (!timestamp) return 'Unknown'
   const seconds = Math.floor(Date.now() / 1000) - timestamp
@@ -31,9 +28,6 @@ export function getTimeAgo(timestamp?: number): string {
   return `${years}y ago`
 }
 
-/**
- * Resolves the engine ID from a GameBanana record's category hierarchy or metadata.
- */
 export function getEngineId(record?: GameBananaRawRecord | null): string {
   if (!record) return 'unknown'
 
@@ -80,7 +74,19 @@ export function getEngineId(record?: GameBananaRawRecord | null): string {
     .map((s) => s.toLowerCase())
 
   for (const name of names) {
-    if (name.includes('v-slice') || name.includes('vslice')) return 'vslice'
+    if (
+      name.includes('v-slice') ||
+      name.includes('vslice') ||
+      name.includes('base game') ||
+      name.includes('basegame') ||
+      name.includes('juego base') ||
+      name.includes('(base)') ||
+      name.includes('base /') ||
+      name.includes('/ base') ||
+      name.split(/\s+/).includes('base')
+    ) {
+      return 'vslice'
+    }
     if (name.includes('psych online')) return 'psychonline'
     if (name.includes('psych')) return 'psych'
     if (name.includes('codename')) return 'codename'
@@ -92,17 +98,11 @@ export function getEngineId(record?: GameBananaRawRecord | null): string {
   return 'unknown'
 }
 
-/**
- * Retrieves the icon asset path for a given engine ID.
- */
 export function getEngineIcon(engineId: string): string | undefined {
   const match = Object.values(ENGINE_CATEGORIES).find((c) => c.id === engineId)
   return match?.icon
 }
 
-/**
- * Checks if a GameBanana record is flagged as NSFW.
- */
 export function checkIsNsfw(record: GameBananaRawRecord): boolean {
   if (record._bIsNsfw || record._bContainsNsfw) return true
 
@@ -115,9 +115,6 @@ export function checkIsNsfw(record: GameBananaRawRecord): boolean {
   return ids.includes(43772)
 }
 
-/**
- * Checks if a GameBanana record belongs to an excluded category.
- */
 export function isExcluded(record: GameBananaRawRecord): boolean {
   if (!ALLOW_NSFW && checkIsNsfw(record)) return true
 
@@ -136,9 +133,6 @@ export function isExcluded(record: GameBananaRawRecord): boolean {
   return false
 }
 
-/**
- * Extracts a deduplicated list of contributor names from raw credit groups.
- */
 export function extractAuthors(metaCredits: unknown): string[] {
   const authors: string[] = []
   if (metaCredits && typeof metaCredits === 'object') {
@@ -155,9 +149,6 @@ export function extractAuthors(metaCredits: unknown): string[] {
   return Array.from(new Set(authors))
 }
 
-/**
- * Normalizes heterogeneous GameBanana credit structures into structured groups.
- */
 export function extractCreditGroups(rawCredits: unknown): ModCreditGroup[] {
   if (!rawCredits) return []
   const groups: ModCreditGroup[] = []
@@ -257,17 +248,11 @@ export function extractCreditGroups(rawCredits: unknown): ModCreditGroup[] {
   return groups
 }
 
-/**
- * Upgrades 220px GameBanana thumbnail URLs to 800px high-resolution variants.
- */
 export function upgradeGameBananaImageUrl(url?: string): string {
   if (!url) return ''
   return url.replace(/_220\.(webp|png|jpe?g)$/i, '_800.$1')
 }
 
-/**
- * Extracts preview media image URLs from a GameBanana record.
- */
 export function extractPreviewMedia(record?: GameBananaRawRecord | null): string[] {
   if (!record) return []
 
@@ -296,9 +281,6 @@ export function extractPreviewMedia(record?: GameBananaRawRecord | null): string
   return []
 }
 
-/**
- * Extracts the primary thumbnail URL or falls back to the placeholder image.
- */
 export function extractThumbnail(record?: GameBananaRawRecord | null): string {
   const images = record?._aPreviewMedia?._aImages
   if (Array.isArray(images) && images.length > 0) {
