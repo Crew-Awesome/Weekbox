@@ -190,6 +190,66 @@ export const SidebarIcon: React.FC<SidebarIconProps> = ({
           </g>
         )
 
+      case 'filter':
+        return (
+          <g className={isActive ? 'cuki-anim-filter' : 'cuki-hover-target'}>
+            <path
+              d={
+                isActive
+                  ? 'M440-160q-17 0-28.5-11.5T400-200v-240L168-736q-15-20-4.5-42t36.5-22h560q26 0 36.5 22t-4.5 42L560-440v240q0 17-11.5 28.5T520-160h-80Z'
+                  : 'M440-160q-17 0-28.5-11.5T400-200v-240L168-736q-15-20-4.5-42t36.5-22h560q26 0 36.5 22t-4.5 42L560-440v240q0 17-11.5 28.5T520-160h-80Zm40-308 198-252H282l198 252Zm0 0Z'
+              }
+              fill="currentColor"
+            />
+            <rect
+              className={isActive ? 'cuki-filter-bar1' : 'cuki-hover-filter-bar1'}
+              x="260"
+              y="-700"
+              width="440"
+              height="44"
+              rx="22"
+              fill={isActive ? 'var(--md-sys-color-surface, #ffffff)' : 'currentColor'}
+              opacity={isActive ? 0.95 : 0.6}
+            />
+            <rect
+              className={isActive ? 'cuki-filter-bar2' : 'cuki-hover-filter-bar2'}
+              x="330"
+              y="-585"
+              width="300"
+              height="44"
+              rx="22"
+              fill={isActive ? 'var(--md-sys-color-surface, #ffffff)' : 'currentColor'}
+              opacity={isActive ? 0.95 : 0.6}
+            />
+            <rect
+              className={isActive ? 'cuki-filter-bar3' : 'cuki-hover-filter-bar3'}
+              x="400"
+              y="-470"
+              width="160"
+              height="44"
+              rx="22"
+              fill={isActive ? 'var(--md-sys-color-surface, #ffffff)' : 'currentColor'}
+              opacity={isActive ? 0.95 : 0.6}
+            />
+            {isActive && (
+              <>
+                <circle
+                  className="cuki-filter-droplet"
+                  cx="480"
+                  cy="-160"
+                  r="42"
+                  fill="currentColor"
+                />
+                <path
+                  className="cuki-filter-spark"
+                  d="M740-740l18 36 36 18-36 18-18 36-18-36-36-18 36-18z"
+                  fill="currentColor"
+                />
+              </>
+            )}
+          </g>
+        )
+
       default:
         return null
     }

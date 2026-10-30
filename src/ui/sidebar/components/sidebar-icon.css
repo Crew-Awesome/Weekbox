@@ -242,3 +242,94 @@
   50% { transform: scale(1.1) translateY(-2px); }
   100% { transform: scale(1.06) translateY(-1px); }
 }
+
+/* Sophisticated Filter Icon Animations */
+.cuki-anim-filter {
+  transform-box: fill-box;
+  transform-origin: center bottom;
+  animation: cuki-filter-bounce 0.7s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+@keyframes cuki-filter-bounce {
+  0% { transform: scale(1) translateY(0); }
+  20% { transform: scale(1.22, 0.78) translateY(18px); }
+  45% { transform: scale(0.85, 1.22) translateY(-26px) rotate(-6deg); }
+  68% { transform: scale(1.08, 0.94) translateY(8px) rotate(3deg); }
+  85% { transform: scale(0.97, 1.02) translateY(-3px) rotate(-1deg); }
+  100% { transform: scale(1) translateY(0) rotate(0deg); }
+}
+
+.cuki-filter-bar1 {
+  transform-origin: 240px -700px;
+  animation: cuki-filter-bar1-anim 0.7s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+@keyframes cuki-filter-bar1-anim {
+  0% { transform: translateX(-160px) scaleX(0.2); opacity: 0; }
+  45% { opacity: 1; transform: translateX(20px) scaleX(1.1); }
+  75% { transform: translateX(-6px) scaleX(0.98); }
+  100% { transform: translateX(0) scale(1); opacity: 1; }
+}
+
+.cuki-filter-bar2 {
+  transform-origin: 640px -580px;
+  animation: cuki-filter-bar2-anim 0.7s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+@keyframes cuki-filter-bar2-anim {
+  0% { transform: translateX(160px) scaleX(0.2); opacity: 0; }
+  50% { opacity: 1; transform: translateX(-20px) scaleX(1.1); }
+  78% { transform: translateX(6px) scaleX(0.98); }
+  100% { transform: translateX(0) scale(1); opacity: 1; }
+}
+
+.cuki-filter-bar3 {
+  transform-origin: 480px -460px;
+  animation: cuki-filter-bar3-anim 0.7s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+@keyframes cuki-filter-bar3-anim {
+  0% { transform: scale(0.2); opacity: 0; }
+  55% { opacity: 1; transform: scale(1.3); }
+  80% { transform: scale(0.95); }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+.cuki-filter-droplet {
+  transform-origin: 480px -160px;
+  animation: cuki-filter-drip-sidebar 0.75s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+@keyframes cuki-filter-drip-sidebar {
+  0% { transform: translateY(-40px) scale(0.2); opacity: 0; }
+  35% { opacity: 1; transform: translateY(20px) scale(1.3, 0.8); }
+  65% { opacity: 0.95; transform: translateY(90px) scale(0.8, 1.3); }
+  85% { opacity: 0.7; transform: translateY(140px) scale(1.2, 0.7); }
+  100% { opacity: 0; transform: translateY(170px) scale(0.3); }
+}
+
+.cuki-filter-spark {
+  transform-origin: 740px -740px;
+  animation: cuki-filter-sparkle 0.65s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+@keyframes cuki-filter-sparkle {
+  0% { transform: scale(0) rotate(0deg); opacity: 0; }
+  45% { transform: scale(1.35) rotate(90deg); opacity: 1; }
+  100% { transform: scale(0) rotate(180deg); opacity: 0; }
+}
+
+.group:hover .cuki-hover-filter-bar1 {
+  transform: translateX(18px);
+  transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.group:hover .cuki-hover-filter-bar2 {
+  transform: translateX(-18px);
+  transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.group:hover .cuki-hover-filter-bar3 {
+  transform: scale(1.25);
+  transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
