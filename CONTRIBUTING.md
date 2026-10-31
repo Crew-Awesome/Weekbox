@@ -62,7 +62,7 @@ them to. Maintainers decide when a release is made and what version it gets.
 
 ### Release checklist
 
-**Before tagging a release, update all six items below:**
+**Before tagging a release, update all seven items below:**
 
 - `package.json`
 - `package-lock.json`: update the root version and `packages[""].version`
@@ -70,6 +70,7 @@ them to. Maintainers decide when a release is made and what version it gets.
 - `installer/weekbox.iss`
 - `packaging/rpm/weekbox.spec`
 - `CHANGELOG.md`: move `Unreleased` to the dated release and update compare links
+- `com.immalloy.weekbox.app.manifest.xml`: update `version=`
 
 Run these checks before tagging:
 
