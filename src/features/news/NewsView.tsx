@@ -99,7 +99,10 @@ export const NewsView: React.FC = () => {
         {/* Error State */}
         {!isLoading && error && posts.length === 0 && (
           <div className="flex flex-col items-center justify-center p-8 rounded-[24px] border border-dashed text-center min-h-[260px] border-[var(--md-sys-color-outline-variant)]">
-            <span className="material-symbols-rounded text-4xl mb-2 text-rose-500 opacity-80">
+            <span
+              className="material-symbols-rounded text-4xl mb-2 opacity-80"
+              style={{ color: 'var(--md-sys-color-error)' }}
+            >
               error_outline
             </span>
             <h2 className="text-base font-semibold text-[var(--md-sys-color-on-surface)]">

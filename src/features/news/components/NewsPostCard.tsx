@@ -145,7 +145,10 @@ export const NewsPostCard: React.FC<NewsPostCardProps> = ({
           <div className="flex items-center gap-3 sm:gap-4 flex-wrap">
             {post.stats.likes != null && (
               <span className="flex items-center gap-1 hover:text-[var(--md-sys-color-primary)] transition-colors">
-                <span className="material-symbols-rounded text-sm leading-none text-rose-500">
+                <span
+                  className="material-symbols-rounded text-sm leading-none"
+                  style={{ color: 'var(--md-sys-color-error)' }}
+                >
                   favorite
                 </span>
                 <span>{formatCount(post.stats.likes)}</span>
@@ -154,7 +157,10 @@ export const NewsPostCard: React.FC<NewsPostCardProps> = ({
 
             {post.stats.reposts != null && (
               <span className="flex items-center gap-1 hover:text-[var(--md-sys-color-primary)] transition-colors">
-                <span className="material-symbols-rounded text-sm leading-none text-emerald-500">
+                <span
+                  className="material-symbols-rounded text-sm leading-none"
+                  style={{ color: 'var(--md-sys-color-tertiary)' }}
+                >
                   repeat
                 </span>
                 <span>{formatCount(post.stats.reposts)}</span>
@@ -163,7 +169,10 @@ export const NewsPostCard: React.FC<NewsPostCardProps> = ({
 
             {post.stats.replies != null && (
               <span className="flex items-center gap-1 hover:text-[var(--md-sys-color-primary)] transition-colors">
-                <span className="material-symbols-rounded text-sm leading-none text-blue-500">
+                <span
+                  className="material-symbols-rounded text-sm leading-none"
+                  style={{ color: 'var(--md-sys-color-primary)' }}
+                >
                   chat_bubble
                 </span>
                 <span>{formatCount(post.stats.replies)}</span>
@@ -172,7 +181,10 @@ export const NewsPostCard: React.FC<NewsPostCardProps> = ({
 
             {post.stats.views != null && (
               <span className="flex items-center gap-1 hover:text-[var(--md-sys-color-primary)] transition-colors">
-                <span className="material-symbols-rounded text-sm leading-none text-purple-400">
+                <span
+                  className="material-symbols-rounded text-sm leading-none"
+                  style={{ color: 'var(--md-sys-color-secondary)' }}
+                >
                   bar_chart
                 </span>
                 <span>{formatCount(post.stats.views)}</span>
