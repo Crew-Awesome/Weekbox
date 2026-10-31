@@ -27,3 +27,26 @@ m3e-tooltip {
   --m3e-tooltip-supporting-text-font-size: 11.5px;
   --m3e-tooltip-supporting-text-font-weight: 500;
 }
+
+m3e-filter-chip,
+m3e-assist-chip,
+m3e-suggestion-chip,
+m3e-chip {
+  --m3e-chip-container-shape: 16px;
+  --m3e-outlined-chip-outline-color: var(--md-sys-color-outline-variant);
+  --m3e-outlined-chip-container-color: var(--md-sys-color-surface-container-low);
+  --m3e-chip-label-text-color: var(--md-sys-color-on-surface-variant);
+  --m3e-chip-icon-color: var(--md-sys-color-primary);
+  --m3e-chip-selected-container-color: var(--md-sys-color-secondary-container);
+  --m3e-chip-selected-label-text-color: var(--md-sys-color-on-secondary-container);
+  --m3e-chip-selected-leading-icon-color: var(--md-sys-color-on-secondary-container);
+  --m3e-chip-selected-outline-thickness: 0px;
+  --m3e-chip-unselected-label-text-color: var(--md-sys-color-on-surface-variant);
+  --m3e-chip-unselected-leading-icon-color: var(--md-sys-color-primary);
+}
+
+m3e-menu {
+  --m3e-menu-container-color: var(--md-sys-color-surface-container);
+  --m3e-menu-container-shape: 16px;
+  --m3e-menu-item-color: var(--md-sys-color-on-surface);
+}
