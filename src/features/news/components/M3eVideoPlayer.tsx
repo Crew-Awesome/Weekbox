@@ -125,8 +125,9 @@ export const M3eVideoPlayer: React.FC<M3eVideoPlayerProps> = ({
       ref={containerRef}
       onMouseMove={scheduleControlsHide}
       onClick={scheduleControlsHide}
-      className={`relative w-full overflow-hidden bg-black flex items-center justify-center select-none rounded-[28px] border border-[var(--md-sys-color-outline-variant)] shadow-2xl ${className}`}
+      className={`relative w-full overflow-hidden flex items-center justify-center select-none rounded-[28px] border border-[var(--md-sys-color-outline-variant)] shadow-2xl ${className}`}
       style={{
+        backgroundColor: 'var(--md-sys-color-scrim)',
         aspectRatio: '16/9',
         maxHeight: '85vh',
       }}
@@ -166,7 +167,7 @@ export const M3eVideoPlayer: React.FC<M3eVideoPlayerProps> = ({
 
       {/* Buffering Indicator */}
       {isBuffering && (
-        <div className="absolute inset-0 flex items-center justify-center bg-black/40 pointer-events-none z-20">
+        <div className="absolute inset-0 flex items-center justify-center bg-[color-mix(in_srgb,var(--md-sys-color-scrim)_40%,transparent)] pointer-events-none z-20">
           <m3e-circular-progress-indicator
             indeterminate
             style={
@@ -211,8 +212,9 @@ export const M3eVideoPlayer: React.FC<M3eVideoPlayerProps> = ({
             style={
               {
                 cursor: 'pointer',
-                '--m3e-icon-button-container-color': 'rgba(0, 0, 0, 0.65)',
-                '--m3e-icon-button-icon-color': '#ffffff',
+                '--m3e-icon-button-container-color':
+                  'color-mix(in srgb, var(--md-sys-color-scrim) 65%, transparent)',
+                '--m3e-icon-button-icon-color': 'var(--md-sys-color-on-primary)',
               } as React.CSSProperties
             }
           >
@@ -233,7 +235,7 @@ export const M3eVideoPlayer: React.FC<M3eVideoPlayerProps> = ({
         style={{
           backgroundColor: 'color-mix(in srgb, var(--md-sys-color-surface-container) 85%, transparent)',
           border: '1px solid color-mix(in srgb, var(--md-sys-color-outline-variant) 40%, transparent)',
-          boxShadow: '0 8px 32px rgba(0, 0, 0, 0.36)',
+          boxShadow: '0 8px 32px color-mix(in srgb, var(--md-sys-color-scrim) 36%, transparent)',
         }}
       >
         {/* Progress Bar / Scrubber */}

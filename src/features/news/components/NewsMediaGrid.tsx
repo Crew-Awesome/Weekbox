@@ -58,7 +58,7 @@ export const NewsMediaGrid: React.FC<NewsMediaGridProps> = ({
         return (
           <div
             key={`media-${index}-${item.url}`}
-            className={`relative group overflow-hidden bg-black/20 cursor-pointer ${
+            className={`relative group overflow-hidden bg-[color-mix(in_srgb,var(--md-sys-color-scrim)_20%,transparent)] cursor-pointer ${
               isThirdOfThree ? 'col-span-2' : ''
             } ${displayCount === 1 ? 'max-h-[460px] aspect-auto' : 'aspect-video'}`}
             onClick={(e) => {
@@ -91,7 +91,7 @@ export const NewsMediaGrid: React.FC<NewsMediaGridProps> = ({
             />
 
             {isVideo && (
-              <div className="absolute inset-0 flex items-center justify-center bg-black/30 group-hover:bg-black/45 transition-colors">
+              <div className="absolute inset-0 flex items-center justify-center bg-[color-mix(in_srgb,var(--md-sys-color-scrim)_30%,transparent)] group-hover:bg-[color-mix(in_srgb,var(--md-sys-color-scrim)_45%,transparent)] transition-colors">
                 <div
                   className="w-12 h-12 rounded-full flex items-center justify-center shadow-xl transition-transform group-hover:scale-110"
                   style={{
@@ -107,7 +107,13 @@ export const NewsMediaGrid: React.FC<NewsMediaGridProps> = ({
             )}
 
             {index === 3 && allItems.length > 4 && (
-              <div className="absolute inset-0 bg-black/60 flex items-center justify-center text-white font-bold text-lg">
+              <div
+                className="absolute inset-0 flex items-center justify-center font-bold text-lg"
+                style={{
+                  backgroundColor: 'color-mix(in srgb, var(--md-sys-color-scrim) 60%, transparent)',
+                  color: 'var(--md-sys-color-on-primary)',
+                }}
+              >
                 +{allItems.length - 4}
               </div>
             )}

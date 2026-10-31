@@ -29,11 +29,17 @@ export const NewsMediaModal: React.FC<NewsMediaModalProps> = ({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-black/80 backdrop-blur-md animate-fade-in"
+      className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 backdrop-blur-md animate-fade-in"
+      style={{
+        backgroundColor: 'color-mix(in srgb, var(--md-sys-color-scrim) 80%, transparent)',
+      }}
       onClick={onClose}
     >
       <div
-        className="relative max-w-4xl max-h-[92vh] w-full flex items-center justify-center overflow-hidden rounded-[28px] bg-black/40 shadow-2xl"
+        className="relative max-w-4xl max-h-[92vh] w-full flex items-center justify-center overflow-hidden rounded-[28px] shadow-2xl"
+        style={{
+          backgroundColor: 'color-mix(in srgb, var(--md-sys-color-scrim) 40%, transparent)',
+        }}
         onClick={(e) => e.stopPropagation()}
       >
         {media.type === 'video' ? (
@@ -51,8 +57,9 @@ export const NewsMediaModal: React.FC<NewsMediaModalProps> = ({
                 style={
                   {
                     cursor: 'pointer',
-                    '--m3e-icon-button-container-color': 'rgba(0, 0, 0, 0.65)',
-                    '--m3e-icon-button-icon-color': '#ffffff',
+                    '--m3e-icon-button-container-color':
+                      'color-mix(in srgb, var(--md-sys-color-scrim) 65%, transparent)',
+                    '--m3e-icon-button-icon-color': 'var(--md-sys-color-on-primary)',
                   } as React.CSSProperties
                 }
               >
