@@ -112,6 +112,21 @@ export function createFsBridgeMiddleware() {
           return res.end(JSON.stringify({ ok: true }))
         }
 
+        case 'unlink': {
+          const targetPath = resolveSafeBridgePath(String(body.path || ''))
+          if (targetPath) {
+            try {
+              fs.unlinkSync(targetPath)
+            } catch {
+              try {
+                fs.rmdirSync(targetPath)
+              } catch {
+              }
+            }
+          }
+          return res.end(JSON.stringify({ ok: true }))
+        }
+
         case 'readDirectory': {
           const targetPath = resolveSafeBridgePath(String(body.path || ''))
           if (!targetPath || !fs.existsSync(targetPath)) {

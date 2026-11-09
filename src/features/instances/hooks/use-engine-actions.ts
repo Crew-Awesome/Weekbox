@@ -4,12 +4,12 @@ import {
   setActiveEngineVersion,
   deleteInstalledEngineVersion,
   openEngineDirectory,
-  launchEngineVersion,
   type EngineId,
   type EngineDefinition,
   type GitHubRelease,
   type GitHubReleaseAsset,
 } from '@/core/engines'
+import { launchEngineWithAllMods } from '@/core/mods'
 import { useSystemDialog } from '@/ui/dialog'
 
 interface UseEngineActionsParams {
@@ -68,7 +68,7 @@ export function useEngineActions({
 
   const handleLaunch = async (version: string) => {
     const host = initHost()
-    const launched = await launchEngineVersion(selectedEngineId, version)
+    const launched = await launchEngineWithAllMods(selectedEngineId, version)
     if (!launched && typeof window !== 'undefined' && window.callout) {
       if (host.platform !== 'desktop') {
         window.callout.error(

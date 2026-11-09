@@ -8,6 +8,7 @@ import {
   type EngineId,
   type InstalledEngineVersion,
 } from '@/core/engines'
+import { getInstalledMods, matchesModId } from './mod-registry'
 import type { InstalledModRecord } from './types'
 import type { ModItem } from '@/ui/mod-details-modal/types'
 
@@ -53,12 +54,7 @@ export async function createDirectoryJunction(
 
   if (await host.fs.exists(linkPath)) {
     try {
-      if (isWin) {
-        const winLink = linkPath.replace(/\//g, '\\')
-        await host.process.execute(`cmd.exe /c rmdir "${winLink}"`)
-      } else {
-        await host.process.execute(`rm -rf "${linkPath}"`)
-      }
+      await removeDirectoryJunction(linkPath)
     } catch {
     }
   }
@@ -96,6 +92,220 @@ export async function createDirectoryJunction(
   }
 
   return await host.fs.exists(linkPath)
+}
+
+export async function removeDirectoryJunction(
+  linkPath: string,
+): Promise<boolean> {
+  const host = initHost()
+  const isWin = isWindowsPlatform()
+
+  try {
+    const bridgeRes = await callDevFsBridge<{ ok?: boolean }>({
+      action: 'unlink',
+      path: linkPath,
+    })
+    if (bridgeRes?.ok) {
+      return true
+    }
+  } catch {
+  }
+
+  try {
+    if (isWin) {
+      const winLink = linkPath.replace(/\//g, '\\')
+      await host.process.execute(`cmd.exe /c rmdir "${winLink}"`)
+    } else {
+      await host.process.execute(`unlink "${linkPath}" || rm -f "${linkPath}"`)
+    }
+  } catch {
+  }
+
+  return true
+}
+
+export type LaunchableMod = Partial<InstalledModRecord> & Partial<ModItem>
+
+export function resolveModEngineId(
+  mod: LaunchableMod,
+): EngineId {
+  let raw = String(mod.engineId || mod.defaultEngineId || 'psych').trim().toLowerCase()
+  if (raw === 'executable' || raw === 'exe') {
+    raw = String(mod.defaultEngineId || 'psych').trim().toLowerCase()
+  }
+
+  if (
+    raw === 'base' ||
+    raw === 'basegame' ||
+    raw === 'base game' ||
+    raw === 'juego base' ||
+    raw === 'v-slice' ||
+    raw === 'vslice'
+  ) {
+    return 'vslice'
+  }
+
+  if (raw in ENGINE_DEFINITIONS) {
+    return raw as EngineId
+  }
+
+  if (raw.includes('codename')) return 'codename'
+  if (raw.includes('pslice') || raw.includes('p-slice')) return 'pslice'
+  if (raw.includes('psychonline') || raw.includes('online')) return 'psychonline'
+  if (raw.includes('fpsplus') || raw.includes('fps plus')) return 'fpsplus'
+  if (raw.includes('vslice') || raw.includes('v-slice')) return 'vslice'
+
+  return 'psych'
+}
+
+export function isModCompatibleWithEngine(
+  mod: LaunchableMod,
+  targetEngineId: EngineId,
+): boolean {
+  if (
+    mod.isExecutable ||
+    mod.engineId === 'executable' ||
+    mod.engineId === 'exe'
+  ) {
+    return false
+  }
+
+  const resolved = resolveModEngineId(mod)
+  return resolved === targetEngineId
+}
+
+export async function syncEngineMods(
+  engineId: EngineId,
+  engineInstallPath: string,
+  options: {
+    singleMod?: LaunchableMod
+    allMods?: boolean
+  } = {},
+): Promise<void> {
+  const host = initHost()
+  const engineModsDir = joinPaths(engineInstallPath, 'mods')
+  if (!(await host.fs.exists(engineModsDir))) {
+    try {
+      await host.fs.createDirectory(engineModsDir)
+    } catch (err) {
+      console.warn(`[WeekBox] Failed to create mods folder in ${engineInstallPath}:`, err)
+    }
+  }
+
+  const { paths } = await ensureWeekBoxLibrary()
+  const allInstalled = await getInstalledMods()
+
+  const knownModNames = new Set<string>()
+  for (const m of allInstalled) {
+    if (m.folderName) knownModNames.add(m.folderName)
+    if (m.name) knownModNames.add(m.name)
+    if (m.title) knownModNames.add(m.title)
+  }
+
+  if (options.singleMod) {
+    const single = options.singleMod
+    const singleInstallPath =
+      single.installPath ||
+      (single.folderName ? joinPaths(paths.modsDir, single.folderName) : null)
+    const singleFolderName =
+      single.folderName ||
+      (singleInstallPath && singleInstallPath.includes('/')
+        ? singleInstallPath.substring(singleInstallPath.lastIndexOf('/') + 1)
+        : single.name || 'mod')
+
+    for (const record of allInstalled) {
+      const isTarget =
+        (single.id !== undefined && matchesModId(record, single.id)) ||
+        record.folderName === singleFolderName
+
+      if (!isTarget) {
+        if (record.folderName) {
+          await removeDirectoryJunction(joinPaths(engineModsDir, record.folderName))
+        }
+        if (record.name && record.name !== singleFolderName) {
+          await removeDirectoryJunction(joinPaths(engineModsDir, record.name))
+        }
+        if (record.title && record.title !== singleFolderName) {
+          await removeDirectoryJunction(joinPaths(engineModsDir, record.title))
+        }
+      }
+    }
+
+    try {
+      const entries = await host.fs.readDirectory(engineModsDir)
+      for (const entry of entries) {
+        if (entry.name !== singleFolderName && knownModNames.has(entry.name)) {
+          await removeDirectoryJunction(joinPaths(engineModsDir, entry.name))
+        }
+      }
+    } catch {
+    }
+
+    if (singleInstallPath) {
+      const destLink = joinPaths(engineModsDir, singleFolderName)
+      await createDirectoryJunction(destLink, singleInstallPath)
+    }
+  } else if (options.allMods) {
+    for (const record of allInstalled) {
+      const folder = record.folderName || record.name
+      if (!folder) continue
+
+      const modPath = record.installPath || joinPaths(paths.modsDir, folder)
+      const linkPath = joinPaths(engineModsDir, folder)
+
+      if (isModCompatibleWithEngine(record, engineId)) {
+        if (await host.fs.exists(modPath)) {
+          await createDirectoryJunction(linkPath, modPath)
+        }
+      } else {
+        await removeDirectoryJunction(linkPath)
+        if (record.name && record.name !== folder) {
+          await removeDirectoryJunction(joinPaths(engineModsDir, record.name))
+        }
+        if (record.title && record.title !== folder) {
+          await removeDirectoryJunction(joinPaths(engineModsDir, record.title))
+        }
+      }
+    }
+
+    try {
+      const entries = await host.fs.readDirectory(engineModsDir)
+      for (const entry of entries) {
+        const matchingMod = allInstalled.find(
+          (m) => m.folderName === entry.name || m.name === entry.name || m.title === entry.name,
+        )
+        if (matchingMod && !isModCompatibleWithEngine(matchingMod, engineId)) {
+          await removeDirectoryJunction(joinPaths(engineModsDir, entry.name))
+        }
+      }
+    } catch {
+    }
+  }
+}
+
+export async function launchEngineWithAllMods(
+  engineId: EngineId,
+  version?: string,
+): Promise<boolean> {
+  const versions = await getInstalledEngineVersions(engineId)
+  if (!versions || versions.length === 0) {
+    return false
+  }
+
+  let chosenVersion: InstalledEngineVersion | undefined
+  if (version && version !== 'any' && version !== 'latest') {
+    chosenVersion = versions.find((v) => v.version === version)
+  }
+  if (!chosenVersion) {
+    chosenVersion = versions.find((v) => v.isDefault) || versions[0]
+  }
+
+  if (!chosenVersion || !chosenVersion.installPath) {
+    return false
+  }
+
+  await syncEngineMods(engineId, chosenVersion.installPath, { allMods: true })
+  return await launchEngineVersion(engineId, chosenVersion.version)
 }
 
 export async function findModExecutable(
@@ -240,23 +450,7 @@ export async function launchMod(
     }
   }
 
-  let rawEngine = String(anyMod.engineId || anyMod.defaultEngineId || 'psych')
-  if (rawEngine === 'executable' || rawEngine === 'exe') {
-    rawEngine = String(anyMod.defaultEngineId || 'psych')
-  }
-  const lowerEngine = rawEngine.toLowerCase()
-  if (
-    lowerEngine === 'base' ||
-    lowerEngine === 'basegame' ||
-    lowerEngine === 'base game' ||
-    lowerEngine === 'juego base' ||
-    lowerEngine === 'v-slice' ||
-    lowerEngine === 'vslice'
-  ) {
-    rawEngine = 'vslice'
-  }
-  const engineId = rawEngine as EngineId
-
+  const engineId = resolveModEngineId(anyMod)
   const engineDef = ENGINE_DEFINITIONS[engineId]
   const engineName = engineDef?.name || anyMod.engineName || engineId
 
@@ -296,26 +490,19 @@ export async function launchMod(
     }
   }
 
-  const engineModsDir = joinPaths(engineInstallPath, 'mods')
-  if (!(await host.fs.exists(engineModsDir))) {
-    try {
-      await host.fs.createDirectory(engineModsDir)
-    } catch (err) {
-      console.warn(
-        `[WeekBox] Failed to create mods folder in ${engineInstallPath}:`,
-        err,
-      )
-    }
-  }
-
   const modFolderName =
     anyMod.folderName ||
     (modInstallPath.includes('/')
       ? modInstallPath.substring(modInstallPath.lastIndexOf('/') + 1)
       : anyMod.name || 'mod')
 
-  const destinationLinkPath = joinPaths(engineModsDir, modFolderName)
-  await createDirectoryJunction(destinationLinkPath, modInstallPath)
+  await syncEngineMods(engineId, engineInstallPath, {
+    singleMod: {
+      ...anyMod,
+      folderName: modFolderName,
+      installPath: modInstallPath,
+    },
+  })
 
   const launched = await launchEngineVersion(engineId, chosenVersion.version)
   if (!launched) {
