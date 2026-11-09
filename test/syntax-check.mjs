@@ -1,9 +1,10 @@
 import { execSync } from 'node:child_process'
 
 try {
-  const output = execSync('npx oxlint', {
+  const output = execSync('npm run lint', {
     encoding: 'utf-8',
     stdio: 'pipe',
+    shell: true,
   })
   console.log('Syntax check passed cleanly')
   if (output.trim()) {

@@ -26,10 +26,25 @@ const M3E_BUTTON_STYLE: React.CSSProperties = {
   '--m3e-button-outlined-outline-color':
     'color-mix(in srgb, var(--md-sys-color-outline-variant) 60%, transparent)',
   '--m3e-button-outlined-label-text-color': 'var(--md-sys-color-on-surface)',
-  '--m3e-button-container-height': '42px',
+  '--m3e-button-container-height': '46px',
   '--m3e-button-icon-size': '22px',
   '--m3e-button-icon-label-space': '8px',
   cursor: 'pointer',
+} as React.CSSProperties
+
+const COMPACT_BUTTON_BASE: React.CSSProperties = {
+  ...M3E_BUTTON_STYLE,
+  width: '46px',
+  height: '46px',
+  minWidth: '46px',
+  maxWidth: '46px',
+  padding: 0,
+  borderRadius: '16px',
+  '--m3e-button-leading-space': '0px',
+  '--m3e-button-trailing-space': '0px',
+  '--m3e-button-icon-label-space': '0px',
+  transition:
+    'transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1), background-color 0.25s ease, border-color 0.25s ease',
 } as React.CSSProperties
 
 const SORT_NAMES: Record<LibrarySortOption, string> = {
@@ -67,13 +82,9 @@ export const LibraryFiltersBar: React.FC<LibraryFiltersBarProps> = ({
   const isAllEngines = selectedEngines.length === 0
 
   const handleToggleEngine = (id: string) => {
-    const isSelected = selectedEngines.some(
-      (e) => e.toLowerCase() === id.toLowerCase(),
-    )
+    const isSelected = selectedEngines.some((e) => e.toLowerCase() === id.toLowerCase())
     if (isSelected) {
-      const next = selectedEngines.filter(
-        (e) => e.toLowerCase() !== id.toLowerCase(),
-      )
+      const next = selectedEngines.filter((e) => e.toLowerCase() !== id.toLowerCase())
       onSelectEngine(next.length === 0 ? 'all' : next)
     } else {
       onSelectEngine([...selectedEngines, id])
@@ -83,10 +94,9 @@ export const LibraryFiltersBar: React.FC<LibraryFiltersBarProps> = ({
   const currentEngineLabel = useMemo(() => {
     if (isAllEngines) return 'All Engines'
     if (selectedEngines.length === 1) {
+      const target = selectedEngines[0].toLowerCase()
       const match = engineSummaries.find(
-        (e) =>
-          e.id.toLowerCase() === selectedEngines[0].toLowerCase() ||
-          e.name.toLowerCase() === selectedEngines[0].toLowerCase(),
+        (e) => e.id.toLowerCase() === target || e.name.toLowerCase() === target,
       )
       return match ? match.name : selectedEngines[0]
     }
@@ -108,37 +118,57 @@ export const LibraryFiltersBar: React.FC<LibraryFiltersBarProps> = ({
   const [isOpen, setIsOpen] = useState(false)
 
   useEffect(() => {
-    const menuEl = document.getElementById('library-criteria-menu')
-    if (!menuEl) return
+    const ids = [
+      'library-criteria-menu',
+      'library-filter-sort-menu',
+      'library-filter-by-menu',
+      'library-filter-engine-menu',
+    ]
 
-    const updateState = () => {
-      const open =
-        menuEl.matches?.(':popover-open') ||
-        menuEl.classList.contains('open') ||
-        (menuEl as unknown as { isOpen?: boolean }).isOpen === true ||
-        menuEl.getAttribute('aria-hidden') === 'false'
-      setIsOpen(Boolean(open))
+    const checkAnyOpen = () => {
+      const anyOpen = ids.some((id) => {
+        const el = document.getElementById(id)
+        if (!el) return false
+        return (
+          el.matches?.(':popover-open') ||
+          el.classList.contains('open') ||
+          (el as unknown as { isOpen?: boolean }).isOpen === true ||
+          el.getAttribute('aria-hidden') === 'false'
+        )
+      })
+      setIsOpen(anyOpen)
     }
 
-    const handleToggle = (e: Event) => {
-      const popoverEvent = e as ToggleEvent
-      if (popoverEvent.newState) {
-        setIsOpen(popoverEvent.newState === 'open')
-      } else {
-        updateState()
+    const listeners: Array<{ el: HTMLElement; handler: (e: Event) => void }> = []
+    const observers: MutationObserver[] = []
+
+    ids.forEach((id) => {
+      const el = document.getElementById(id)
+      if (!el) return
+      const handler = (e: Event) => {
+        const popoverEvent = e as ToggleEvent
+        if (popoverEvent.newState === 'open') {
+          setIsOpen(true)
+        } else {
+          checkAnyOpen()
+        }
       }
-    }
+      el.addEventListener('toggle', handler)
+      listeners.push({ el, handler })
 
-    menuEl.addEventListener('toggle', handleToggle)
-    const observer = new MutationObserver(updateState)
-    observer.observe(menuEl, {
-      attributes: true,
-      attributeFilter: ['style', 'class', 'open', 'aria-hidden'],
+      const obs = new MutationObserver(checkAnyOpen)
+      obs.observe(el, {
+        attributes: true,
+        attributeFilter: ['style', 'class', 'open', 'aria-hidden'],
+      })
+      observers.push(obs)
     })
 
     return () => {
-      menuEl.removeEventListener('toggle', handleToggle)
-      observer.disconnect()
+      listeners.forEach(({ el, handler }) => {
+        el.removeEventListener('toggle', handler)
+      })
+      observers.forEach((obs) => obs.disconnect())
     }
   }, [])
 
@@ -183,24 +213,11 @@ export const LibraryFiltersBar: React.FC<LibraryFiltersBarProps> = ({
         <m3e-button
           variant={isCriteriaFiltered ? 'filled-tonal' : 'outlined'}
           className="group"
-          style={
-            {
-              ...M3E_BUTTON_STYLE,
-              width: '42px',
-              height: '42px',
-              minWidth: '42px',
-              maxWidth: '42px',
-              padding: 0,
-              borderRadius: '16px',
-              '--m3e-button-leading-space': '0px',
-              '--m3e-button-trailing-space': '0px',
-              '--m3e-button-icon-label-space': '0px',
-              transition:
-                'transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1), background-color 0.25s ease, border-color 0.25s ease',
-              transform: isOpen ? 'scale(0.95)' : 'scale(1)',
-              ...tonalOverride,
-            } as React.CSSProperties
-          }
+          style={{
+            ...COMPACT_BUTTON_BASE,
+            transform: isOpen ? 'scale(0.95)' : 'scale(1)',
+            ...tonalOverride,
+          }}
           title="Filter and Sort"
           aria-label="Filter and Sort"
         >
@@ -225,15 +242,12 @@ export const LibraryFiltersBar: React.FC<LibraryFiltersBarProps> = ({
           <m3e-button
             variant={isCriteriaFiltered ? 'filled-tonal' : 'outlined'}
             className="group"
-            style={
-              {
-                ...M3E_BUTTON_STYLE,
-                transition:
-                  'transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1), background-color 0.25s ease, border-color 0.25s ease',
-                transform: isOpen ? 'scale(0.97)' : 'scale(1)',
-                ...tonalOverride,
-              } as React.CSSProperties
-            }
+            style={{
+              ...M3E_BUTTON_STYLE,
+              transition: 'transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1), background-color 0.25s ease, border-color 0.25s ease',
+              transform: isOpen ? 'scale(0.97)' : 'scale(1)',
+              ...tonalOverride,
+            }}
           >
             <m3e-menu-trigger for="library-criteria-menu"></m3e-menu-trigger>
             <FilterIcon
