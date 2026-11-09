@@ -442,6 +442,7 @@ export async function startModDownload(
       name: modTitle,
       title: modTitle,
       hidden: false,
+      visible: true,
       kind: 'mod',
       categoryId: matchedCategoryId,
       source: 'gamebanana',

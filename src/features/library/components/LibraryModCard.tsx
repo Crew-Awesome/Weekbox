@@ -10,6 +10,7 @@ export interface LibraryModCardProps {
   isBookmarked?: boolean
   onSelect: (mod: InstalledModRecord) => void
   onToggleFavorite: (id: string | number) => void
+  onToggleVisibility?: (mod: InstalledModRecord) => void
   onOpenFolder: (mod: InstalledModRecord) => void
   onUninstall: (mod: InstalledModRecord) => void
   onPlay?: (mod: InstalledModRecord) => void
@@ -21,6 +22,7 @@ export const LibraryModCard: React.FC<LibraryModCardProps> = ({
   isBookmarked = false,
   onSelect,
   onToggleFavorite,
+  onToggleVisibility,
   onOpenFolder,
   onUninstall,
   onPlay,
@@ -29,6 +31,7 @@ export const LibraryModCard: React.FC<LibraryModCardProps> = ({
   const displayThumbnail = resolveModThumbnail(mod)
   const displayEngine = mod.engineName || mod.engineId || 'Default'
   const isInstalled = Boolean(mod.installPath)
+  const isVisible = mod.visible !== false && !mod.hidden
 
   return (
     <Card
@@ -41,6 +44,7 @@ export const LibraryModCard: React.FC<LibraryModCardProps> = ({
       warningTooltip={mod.engineWarningMessage}
       extractColor={true}
       lazyLoad={true}
+      isDimmed={!isVisible}
       isFavorite={isFavorite}
       isBookmarked={isBookmarked}
       author={mod.author}
@@ -170,6 +174,41 @@ export const LibraryModCard: React.FC<LibraryModCardProps> = ({
             </span>
             <span>{isInstalled ? 'Play' : 'Install'}</span>
           </button>
+
+          {isInstalled && onToggleVisibility && (
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation()
+                onToggleVisibility(mod)
+              }}
+              className={`p-1.5 rounded-xl transition-all duration-200 cursor-pointer border active:scale-90 ${
+                isVisible
+                  ? 'text-[var(--md-sys-color-primary)] border-[var(--md-sys-color-primary)]/30 bg-[var(--md-sys-color-primary)]/10 hover:bg-[var(--md-sys-color-primary)]/20'
+                  : 'text-[var(--md-sys-color-on-surface-variant)] opacity-50 hover:opacity-90'
+              }`}
+              style={
+                !isVisible
+                  ? {
+                      backgroundColor:
+                        'color-mix(in srgb, var(--md-sys-color-surface-container-high) 70%, transparent)',
+                      borderColor:
+                        'color-mix(in srgb, var(--md-sys-color-outline-variant) 30%, transparent)',
+                    }
+                  : undefined
+              }
+              title={
+                isVisible
+                  ? 'Mod is visible in engine (click to hide)'
+                  : 'Mod is hidden from engine (click to show)'
+              }
+              aria-label={isVisible ? 'Hide mod from engine' : 'Show mod in engine'}
+            >
+              <span className="material-symbols-rounded text-base">
+                {isVisible ? 'visibility' : 'visibility_off'}
+              </span>
+            </button>
+          )}
 
           {isInstalled && (
             <button

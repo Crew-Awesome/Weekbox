@@ -12,6 +12,7 @@ import {
   matchesModId,
   registerInstalledMod,
   extractBaseModId,
+  toggleModVisibility,
   type InstalledModRecord,
 } from '@/core/mods'
 import { openFolderInExplorer, resolveModInstallDirectory } from '@/core/mods/mod-filesystem'
@@ -281,6 +282,14 @@ export function useInstalledMods() {
     setFavoriteIds(getFavoriteModIds())
   }, [])
 
+  const toggleVisibility = useCallback(async (id: string | number) => {
+    try {
+      await toggleModVisibility(id)
+    } catch (err) {
+      console.error('[WeekBox] Failed to toggle mod visibility:', err)
+    }
+  }, [])
+
   const toggleBookmark = useCallback((id: string | number) => {
     void toggleModBookmark(id).then(() => {
       void getBookmarkedMods().then((list) => {
@@ -519,6 +528,7 @@ export function useInstalledMods() {
     isFavorite,
     isBookmarked,
     toggleFavorite,
+    toggleVisibility,
     toggleBookmark,
     toggleFavoritesFilter,
     toggleBookmarksFilter,

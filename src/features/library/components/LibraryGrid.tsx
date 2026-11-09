@@ -11,6 +11,7 @@ export interface LibraryGridProps {
   isFavorite: (id: string | number) => boolean
   isBookmarked?: (id: string | number) => boolean
   onToggleFavorite: (id: string | number) => void
+  onToggleVisibility?: (mod: InstalledModRecord) => void
   onSelectMod: (mod: InstalledModRecord) => void
   onOpenFolder: (mod: InstalledModRecord) => void
   onUninstall: (mod: InstalledModRecord) => void
@@ -27,6 +28,7 @@ export const LibraryGrid: React.FC<LibraryGridProps> = ({
   isFavorite,
   isBookmarked,
   onToggleFavorite,
+  onToggleVisibility,
   onSelectMod,
   onOpenFolder,
   onUninstall,
@@ -76,6 +78,7 @@ export const LibraryGrid: React.FC<LibraryGridProps> = ({
           isBookmarked={isBookmarked ? (isBookmarked(mod.id) || (mod.modId !== undefined && isBookmarked(mod.modId))) : false}
           onSelect={onSelectMod}
           onToggleFavorite={onToggleFavorite}
+          onToggleVisibility={onToggleVisibility}
           onOpenFolder={onOpenFolder}
           onUninstall={onUninstall}
           onPlay={onPlay}

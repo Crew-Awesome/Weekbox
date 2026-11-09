@@ -505,6 +505,19 @@ export async function updateInstalledModMetadata(
   })
 }
 
+export async function toggleModVisibility(
+  modId: string | number,
+): Promise<InstalledModRecord | null> {
+  const mod = await getInstalledModById(modId)
+  if (!mod) return null
+  const currentVisible = mod.visible !== false && !mod.hidden
+  const nextVisible = !currentVisible
+  return updateInstalledModMetadata(modId, {
+    visible: nextVisible,
+    hidden: !nextVisible,
+  })
+}
+
 export async function uninstallModById(
   modId: string | number,
 ): Promise<boolean> {

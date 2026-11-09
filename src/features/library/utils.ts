@@ -85,6 +85,8 @@ export function installedRecordToModItem(record: InstalledModRecord): ModItem {
     coverPath: record.coverPath,
     localCoverPath: record.localCoverPath,
     isInstalled: Boolean(record.installPath),
+    visible: record.visible,
+    hidden: record.hidden,
   }
 }
 

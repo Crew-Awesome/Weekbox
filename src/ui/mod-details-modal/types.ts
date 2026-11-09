@@ -43,6 +43,8 @@ export interface ModItem {
   localCoverPath?: string
   hasEngineWarning?: boolean
   engineWarningMessage?: string
+  visible?: boolean
+  hidden?: boolean
 }
 
 export interface ModalViewProps {

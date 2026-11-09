@@ -23,6 +23,7 @@ export interface InstalledModRecord {
   name: string
   title?: string
   hidden?: boolean
+  visible?: boolean
   kind?: 'mod' | 'engine' | string
   categoryId?: number
   source?: string

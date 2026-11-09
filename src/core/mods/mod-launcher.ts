@@ -253,7 +253,9 @@ export async function syncEngineMods(
       const modPath = record.installPath || joinPaths(paths.modsDir, folder)
       const linkPath = joinPaths(engineModsDir, folder)
 
-      if (isModCompatibleWithEngine(record, engineId)) {
+      const isVisible = record.visible !== false && !record.hidden
+
+      if (isModCompatibleWithEngine(record, engineId) && isVisible) {
         if (await host.fs.exists(modPath)) {
           await createDirectoryJunction(linkPath, modPath)
         }
@@ -274,7 +276,10 @@ export async function syncEngineMods(
         const matchingMod = allInstalled.find(
           (m) => m.folderName === entry.name || m.name === entry.name || m.title === entry.name,
         )
-        if (matchingMod && !isModCompatibleWithEngine(matchingMod, engineId)) {
+        const isMatchingModVisible = matchingMod
+          ? matchingMod.visible !== false && !matchingMod.hidden
+          : false
+        if (matchingMod && (!isModCompatibleWithEngine(matchingMod, engineId) || !isMatchingModVisible)) {
           await removeDirectoryJunction(joinPaths(engineModsDir, entry.name))
         }
       }

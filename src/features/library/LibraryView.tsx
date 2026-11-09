@@ -24,6 +24,7 @@ export const LibraryView: React.FC = () => {
     isFavorite,
     isBookmarked,
     toggleFavorite,
+    toggleVisibility,
     toggleFavoritesFilter,
     toggleBookmarksFilter,
     clearFilters,
@@ -186,6 +187,7 @@ export const LibraryView: React.FC = () => {
           isFavorite={isFavorite}
           isBookmarked={isBookmarked}
           onToggleFavorite={toggleFavorite}
+          onToggleVisibility={(mod) => void toggleVisibility(mod.id)}
           onSelectMod={handleSelectMod}
           onOpenFolder={(mod) => void handleOpenModFolder(mod)}
           onUninstall={handleRequestUninstall}
