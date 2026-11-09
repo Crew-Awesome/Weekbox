@@ -17,6 +17,8 @@ export const AboutModal: React.FC<AboutModalProps> = ({ isOpen, onClose }) => {
       isOpen={isOpen}
       onClose={onClose}
       title="About WeekBox"
+      widthClass="w-[min(92vw,440px)]"
+      heightClass="h-auto max-h-[85dvh]"
       actions={
         <m3e-button variant="filled" onClick={onClose}>
           Close

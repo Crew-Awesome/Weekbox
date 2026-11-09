@@ -5,11 +5,13 @@ import { getActiveTheme, applyTheme, type ThemeMode } from '@/utils/theme'
 export interface SettingsModalProps {
   isOpen: boolean
   onClose: () => void
+  onOpenAbout?: () => void
 }
 
 export const SettingsModal: React.FC<SettingsModalProps> = ({
   isOpen,
   onClose,
+  onOpenAbout,
 }) => {
   const [activeTheme, setActiveTheme] = useState<ThemeMode>(getActiveTheme)
 
@@ -23,6 +25,8 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
       isOpen={isOpen}
       onClose={onClose}
       title="Settings"
+      widthClass="w-[min(92vw,460px)]"
+      heightClass="h-auto max-h-[85dvh]"
       actions={
         <m3e-button variant="filled" onClick={onClose}>
           Save & Close
@@ -71,6 +75,30 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
           </div>
           <m3e-switch checked disabled />
         </div>
+
+        {onOpenAbout && (
+          <>
+            <div
+              className="h-[1px] w-full"
+              style={{ backgroundColor: 'var(--md-sys-color-outline-variant)' }}
+            />
+
+            <div className="flex items-center justify-between">
+              <div>
+                <span className="text-sm font-medium">About WeekBox</span>
+                <p
+                  className="text-xs"
+                  style={{ color: 'var(--md-sys-color-on-surface-variant)' }}
+                >
+                  App version, architecture, and platform info
+                </p>
+              </div>
+              <m3e-button variant="tonal" onClick={onOpenAbout}>
+                View Info
+              </m3e-button>
+            </div>
+          </>
+        )}
       </div>
     </Modal>
   )

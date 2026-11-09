@@ -26,6 +26,22 @@ export const Sidebar: React.FC<SidebarProps> = ({ onNavigate }) => {
   const [showSettings, setShowSettings] = useState(false)
 
   const handleNavigate = (path: string) => {
+    const isCurrent =
+      location.pathname === path ||
+      (path === '/home' && (location.pathname === '/' || location.pathname === '/home'))
+
+    if (isCurrent) {
+      const tabId = path === '/' ? 'home' : path.slice(1)
+      const overflowEl = document.querySelector(
+        `#tab-panel-${tabId} m3e-overflow`,
+      ) as (HTMLElement & { viewport?: HTMLElement }) | null
+      const scrollTarget = overflowEl?.viewport || overflowEl
+      if (scrollTarget && typeof scrollTarget.scrollTo === 'function') {
+        scrollTarget.scrollTo({ top: 0, behavior: 'smooth' })
+      }
+      return
+    }
+
     if (onNavigate) {
       onNavigate(path)
     } else {
@@ -65,6 +81,10 @@ export const Sidebar: React.FC<SidebarProps> = ({ onNavigate }) => {
           <SettingsModal
             isOpen={showSettings}
             onClose={() => setShowSettings(false)}
+            onOpenAbout={() => {
+              setShowSettings(false)
+              setShowInfo(true)
+            }}
           />
         </Suspense>
       )}
