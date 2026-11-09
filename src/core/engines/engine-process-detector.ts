@@ -24,7 +24,8 @@ export interface EngineProcessInfo {
 
 let cachedProcesses: RunningProcessItem[] = []
 let lastProcessFetchTime = 0
-const PROCESS_CACHE_TTL = 1500
+const PROCESS_CACHE_TTL = 3500
+let inFlightProcessFetch: Promise<RunningProcessItem[]> | null = null
 
 export async function fetchRunningProcesses(): Promise<RunningProcessItem[]> {
   const host = initHost()
@@ -35,58 +36,68 @@ export async function fetchRunningProcesses(): Promise<RunningProcessItem[]> {
     return cachedProcesses
   }
 
-  try {
-    const isWindows =
-      typeof navigator !== 'undefined'
-        ? navigator.userAgent.toLowerCase().includes('win')
-        : true
+  if (inFlightProcessFetch) {
+    return inFlightProcessFetch
+  }
 
-    if (isWindows) {
-      const res = await host.process.execute('tasklist /FO CSV /NH')
-      if (res.exitCode === 0 && res.stdOut) {
-        const lines = res.stdOut.split(/\r?\n/)
-        const list: RunningProcessItem[] = []
-        for (const line of lines) {
-          if (!line.trim()) continue
-          const match = line.match(/^"([^"]+)","(\d+)"/)
-          if (match) {
-            list.push({
-              name: match[1],
-              pid: Number(match[2]),
-            })
-          }
-        }
-        cachedProcesses = list
-        lastProcessFetchTime = now
-        return list
-      }
-    } else {
-      const res = await host.process.execute('ps -eo pid,comm')
-      if (res.exitCode === 0 && res.stdOut) {
-        const lines = res.stdOut.split(/\r?\n/)
-        const list: RunningProcessItem[] = []
-        for (const line of lines) {
-          const parts = line.trim().split(/\s+/)
-          if (parts.length >= 2) {
-            const pid = Number(parts[0])
-            if (!Number.isNaN(pid)) {
+  inFlightProcessFetch = (async () => {
+    try {
+      const isWindows =
+        typeof navigator !== 'undefined'
+          ? navigator.userAgent.toLowerCase().includes('win')
+          : true
+
+      if (isWindows) {
+        const res = await host.process.execute('tasklist /FO CSV /NH')
+        if (res.exitCode === 0 && res.stdOut) {
+          const lines = res.stdOut.split(/\r?\n/)
+          const list: RunningProcessItem[] = []
+          for (const line of lines) {
+            if (!line.trim()) continue
+            const match = line.match(/^"([^"]+)","(\d+)"/)
+            if (match) {
               list.push({
-                name: parts.slice(1).join(' '),
-                pid,
+                name: match[1],
+                pid: Number(match[2]),
               })
             }
           }
+          cachedProcesses = list
+          lastProcessFetchTime = Date.now()
+          return list
         }
-        cachedProcesses = list
-        lastProcessFetchTime = now
-        return list
+      } else {
+        const res = await host.process.execute('ps -eo pid,comm')
+        if (res.exitCode === 0 && res.stdOut) {
+          const lines = res.stdOut.split(/\r?\n/)
+          const list: RunningProcessItem[] = []
+          for (const line of lines) {
+            const parts = line.trim().split(/\s+/)
+            if (parts.length >= 2) {
+              const pid = Number(parts[0])
+              if (!Number.isNaN(pid)) {
+                list.push({
+                  name: parts.slice(1).join(' '),
+                  pid,
+                })
+              }
+            }
+          }
+          cachedProcesses = list
+          lastProcessFetchTime = Date.now()
+          return list
+        }
       }
+    } catch (err) {
+      console.warn('[WeekBox] Error querying running processes:', err)
+    } finally {
+      inFlightProcessFetch = null
     }
-  } catch (err) {
-    console.warn('[WeekBox] Error querying running processes:', err)
-  }
 
-  return cachedProcesses
+    return cachedProcesses
+  })()
+
+  return inFlightProcessFetch
 }
 
 export function getEngineCandidateExes(
@@ -275,9 +286,11 @@ export function useEngineProcessState(
   const [sessionSeconds, setSessionSeconds] = useState(0)
 
   const isMountedRef = useRef(true)
+  const isCheckingRef = useRef(false)
 
   const checkStatus = useCallback(async () => {
-    if (!isMountedRef.current) return
+    if (!isMountedRef.current || isCheckingRef.current) return
+    isCheckingRef.current = true
     try {
       const versions = await getInstalledEngineVersions(engineId)
       const res = await detectEngineProcess(engineId, versions)
@@ -307,6 +320,8 @@ export function useEngineProcessState(
         setSessionSeconds(0)
       }
     } catch {
+    } finally {
+      isCheckingRef.current = false
     }
   }, [engineId, selectedVersion])
 
@@ -316,7 +331,7 @@ export function useEngineProcessState(
 
     const intervalId = window.setInterval(() => {
       void checkStatus()
-    }, 2500)
+    }, 4000)
 
     const timerIntervalId = window.setInterval(() => {
       const session = activeEngineSessions.get(engineId)
