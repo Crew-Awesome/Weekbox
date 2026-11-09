@@ -45,19 +45,22 @@ export function useHomeMods(
   filter: ModFilter = 'ripe',
   engineFilter: string | string[] = 'all',
 ) {
-  const initialCache = isMatchingCache(
-    globalHomeModsCache,
-    searchQuery,
-    filter,
-    getEngineKey(engineFilter),
-  )
-    ? globalHomeModsCache
-    : null
+  const initialCache =
+    isMatchingCache(
+      globalHomeModsCache,
+      searchQuery,
+      filter,
+      getEngineKey(engineFilter),
+    ) && (globalHomeModsCache?.mods.length ?? 0) > 0
+      ? globalHomeModsCache
+      : null
 
   const [modsList, setModsList] = useState<GameBananaMod[]>(() => initialCache?.mods ?? [])
   const [isInitialLoading, setIsInitialLoading] = useState(() => !initialCache)
   const [isLoadingMore, setIsLoadingMore] = useState(false)
   const [hasMore, setHasMore] = useState(() => initialCache?.hasMore ?? true)
+  const [isError, setIsError] = useState(false)
+  const [retryTrigger, setRetryTrigger] = useState(0)
 
   const pageRef = useRef(initialCache?.page ?? 1)
   const busyRef = useRef(!initialCache)
@@ -66,6 +69,7 @@ export function useHomeMods(
     new Set(initialCache?.mods.map((m) => m.id) ?? []),
   )
   const generationRef = useRef(0)
+  const autoRetryDoneRef = useRef(false)
 
   const engineKey = useMemo(() => {
     return getEngineKey(engineFilter)
@@ -93,6 +97,7 @@ export function useHomeMods(
     seenIdsRef.current = new Set()
     setIsInitialLoading(true)
     setIsLoadingMore(false)
+    setIsError(false)
     setHasMore(true)
     setModsList([])
 
@@ -106,24 +111,35 @@ export function useHomeMods(
         hasMoreRef.current = hasMoreMods
         setHasMore(hasMoreMods)
 
-        globalHomeModsCache = {
-          searchQuery,
-          filter,
-          engineKey,
-          mods: list,
-          page: 1,
-          hasMore: hasMoreMods,
+        if (list.length > 0) {
+          globalHomeModsCache = {
+            searchQuery,
+            filter,
+            engineKey,
+            mods: list,
+            page: 1,
+            hasMore: hasMoreMods,
+          }
         }
       })
       .catch((err) => {
         console.error('Failed to load GameBanana mods:', err)
+        if (generation === generationRef.current) {
+          setIsError(true)
+          if (!autoRetryDoneRef.current && !searchQuery) {
+            autoRetryDoneRef.current = true
+            setTimeout(() => {
+              setRetryTrigger((prev) => prev + 1)
+            }, 1200)
+          }
+        }
       })
       .finally(() => {
         if (generation !== generationRef.current) return
         busyRef.current = false
         setIsInitialLoading(false)
       })
-  }, [searchQuery, filter, activeEngines, engineKey])
+  }, [searchQuery, filter, activeEngines, engineKey, retryTrigger])
 
   const loadNextChunk = useCallback(async () => {
     if (busyRef.current || !hasMoreRef.current) return
@@ -182,6 +198,12 @@ export function useHomeMods(
     }
   }, [filter, activeEngines, searchQuery, engineKey])
 
+  const reload = useCallback(() => {
+    globalHomeModsCache = null
+    autoRetryDoneRef.current = false
+    setRetryTrigger((prev) => prev + 1)
+  }, [])
+
   const modItems = useMemo<ModItem[]>(() => {
     return modsList.map(mapToModItem)
   }, [modsList])
@@ -192,6 +214,8 @@ export function useHomeMods(
     isInitialLoading,
     isLoadingMore,
     hasMore,
+    isError,
     loadNextChunk,
+    reload,
   }
 }

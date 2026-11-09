@@ -19,6 +19,8 @@ export interface ModsGridSectionProps {
   isFavorite: (id: number | string) => boolean
   onToggleFavorite: (id: number | string) => void
   filter?: ModFilter
+  isError?: boolean
+  onRetry?: () => void
 }
 
 export const ModsGridSection: React.FC<ModsGridSectionProps> = ({
@@ -32,6 +34,8 @@ export const ModsGridSection: React.FC<ModsGridSectionProps> = ({
   isFavorite,
   onToggleFavorite,
   filter = 'ripe',
+  isError = false,
+  onRetry,
 }) => {
   const sentinelRef = useInfiniteScroll({
     hasMore,
@@ -63,7 +67,11 @@ export const ModsGridSection: React.FC<ModsGridSectionProps> = ({
       {isInitialLoading && items.length === 0 ? (
         <ModsGridSkeleton count={8} className="pb-12" />
       ) : items.length === 0 ? (
-        <ModsEmptyState searchQuery={searchQuery} />
+        <ModsEmptyState
+          searchQuery={searchQuery}
+          isError={isError}
+          onRetry={onRetry}
+        />
       ) : (
         <div className="flex flex-col w-full pb-12">
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-3.5 sm:gap-4.5 lg:gap-5 w-full">

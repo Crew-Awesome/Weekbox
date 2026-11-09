@@ -12,6 +12,7 @@ const ripeCache = new Map<
   }
 >()
 const MAX_CACHE_SIZE = 20
+const inFlightRipe = new Map<string, Promise<GameBananaRawRecord[]>>()
 
 export async function fetchRipeRecords(
   targetEngineIds: string[] | null = null,
@@ -23,98 +24,118 @@ export async function fetchRipeRecords(
     targetEngineIds.length === 0 ||
     (targetEngineIds.length === 1 && targetEngineIds[0] === 'all')
   const cacheKey = isAll ? 'all' : targetEngineIds.slice().sort().join(',')
+  const flightKey = `${cacheKey}:${maxRecords}`
 
-  if (!ripeCache.has(cacheKey)) {
-    if (ripeCache.size >= MAX_CACHE_SIZE) {
-      const oldestKey = ripeCache.keys().next().value
-      if (oldestKey) ripeCache.delete(oldestKey)
+  const existingFlight = inFlightRipe.get(flightKey)
+  if (existingFlight) return existingFlight
+
+  const fetchPromise = (async () => {
+    if (!ripeCache.has(cacheKey)) {
+      if (ripeCache.size >= MAX_CACHE_SIZE) {
+        const oldestKey = ripeCache.keys().next().value
+        if (oldestKey) ripeCache.delete(oldestKey)
+      }
+
+      ripeCache.set(cacheKey, {
+        records: [],
+        sourcePage: 1,
+        modIds: new Set(),
+        isComplete: false,
+      })
+    } else {
+      const val = ripeCache.get(cacheKey)!
+      ripeCache.delete(cacheKey)
+      ripeCache.set(cacheKey, val)
     }
 
-    ripeCache.set(cacheKey, {
-      records: [],
-      sourcePage: 1,
-      modIds: new Set(),
-      isComplete: false,
-    })
-  } else {
-    const val = ripeCache.get(cacheKey)!
-    ripeCache.delete(cacheKey)
-    ripeCache.set(cacheKey, val)
-  }
+    const state = ripeCache.get(cacheKey)!
 
-  const state = ripeCache.get(cacheKey)!
+    if (state.records.length >= maxRecords || (state.isComplete && state.records.length > 0)) {
+      return state.records.slice(0, maxRecords)
+    }
 
-  if (state.records.length >= maxRecords || state.isComplete) {
-    return state.records.slice(0, maxRecords)
-  }
+    const indexUrl = `${GB_BASE_URL}/Mod/Index`
 
-  const indexUrl = `${GB_BASE_URL}/Mod/Index`
+    let categoryIds = Object.keys(ENGINE_CATEGORIES).map(Number)
+    if (!isAll) {
+      categoryIds = targetEngineIds.flatMap((id) =>
+        Object.entries(ENGINE_CATEGORIES)
+          .filter(([, cat]) => cat.id === id)
+          .map(([k]) => Number(k)),
+      )
+    }
 
-  let categoryIds = Object.keys(ENGINE_CATEGORIES).map(Number)
-  if (!isAll) {
-    categoryIds = targetEngineIds.flatMap((id) =>
-      Object.entries(ENGINE_CATEGORIES)
-        .filter(([, cat]) => cat.id === id)
-        .map(([k]) => Number(k)),
-    )
-  }
+    while (
+      !state.isComplete &&
+      state.records.length < maxRecords &&
+      state.sourcePage <= maxPages
+    ) {
+      try {
+        let allFetched: GameBananaRawRecord[] = []
+        let hasError = false
 
-  while (
-    !state.isComplete &&
-    state.records.length < maxRecords &&
-    state.sourcePage <= maxPages
-  ) {
-    try {
-      let allFetched: GameBananaRawRecord[] = []
-
-      if (isAll) {
-        const perPageToFetch = Math.max(15, Math.min(30, maxRecords))
-        const url = `${indexUrl}?_aFilters[Generic_Game]=${FNF_GAME_ID}&_sSort=Generic_MostLiked&_nPerpage=${perPageToFetch}&_nPage=${state.sourcePage}`
-        try {
-          const res = await http.fetchJson<{ _aRecords?: GameBananaRawRecord[] }>(url)
-          allFetched = res?._aRecords || []
-        } catch (err) {
-          console.warn('fetchRipeRecords failed for all engines:', err)
-          allFetched = []
-        }
-      } else {
-        const perCatPerPage = Math.max(10, Math.ceil(maxRecords / categoryIds.length))
-        const requests = categoryIds.map(async (catId) => {
-          const url = `${indexUrl}?_aFilters[Generic_Game]=${FNF_GAME_ID}&_aFilters[Generic_Category]=${catId}&_sSort=Generic_MostLiked&_nPerpage=${perCatPerPage}&_nPage=${state.sourcePage}`
+        if (isAll) {
+          const perPageToFetch = Math.max(15, Math.min(30, maxRecords))
+          const url = `${indexUrl}?_aFilters[Generic_Game]=${FNF_GAME_ID}&_sSort=Generic_MostLiked&_nPerpage=${perPageToFetch}&_nPage=${state.sourcePage}`
           try {
             const res = await http.fetchJson<{ _aRecords?: GameBananaRawRecord[] }>(url)
-            const records = res?._aRecords || []
-            return records.map((r) => ({
-              ...r,
-              __resolvedEngineId: ENGINE_CATEGORIES[catId]?.id,
-            }))
-          } catch {
-            return []
+            allFetched = res?._aRecords || []
+          } catch (err) {
+            console.warn('fetchRipeRecords failed for all engines:', err)
+            hasError = true
+            allFetched = []
           }
-        })
+        } else {
+          const perCatPerPage = Math.max(10, Math.ceil(maxRecords / categoryIds.length))
+          const requests = categoryIds.map(async (catId) => {
+            const url = `${indexUrl}?_aFilters[Generic_Game]=${FNF_GAME_ID}&_aFilters[Generic_Category]=${catId}&_sSort=Generic_MostLiked&_nPerpage=${perCatPerPage}&_nPage=${state.sourcePage}`
+            try {
+              const res = await http.fetchJson<{ _aRecords?: GameBananaRawRecord[] }>(url)
+              const records = res?._aRecords || []
+              return records.map((r) => ({
+                ...r,
+                __resolvedEngineId: ENGINE_CATEGORIES[catId]?.id,
+              }))
+            } catch {
+              return []
+            }
+          })
 
-        const results = await Promise.all(requests)
-        allFetched = results.flat()
-      }
+          const results = await Promise.all(requests)
+          allFetched = results.flat()
+        }
 
-      if (allFetched.length === 0) {
-        state.isComplete = true
+        if (hasError) {
+          if (state.records.length === 0) {
+            ripeCache.delete(cacheKey)
+          }
+          break
+        }
+
+        if (allFetched.length === 0) {
+          state.isComplete = true
+          break
+        }
+
+        for (const rec of allFetched) {
+          if (!state.modIds.has(rec._idRow)) {
+            state.modIds.add(rec._idRow)
+            state.records.push(rec)
+          }
+        }
+
+        state.sourcePage++
+      } catch (err) {
+        console.warn('fetchRipeRecords batch error:', err)
         break
       }
-
-      for (const rec of allFetched) {
-        if (!state.modIds.has(rec._idRow)) {
-          state.modIds.add(rec._idRow)
-          state.records.push(rec)
-        }
-      }
-
-      state.sourcePage++
-    } catch (err) {
-      console.warn('fetchRipeRecords batch error:', err)
-      break
     }
-  }
 
-  return state.records.slice(0, maxRecords)
+    return state.records.slice(0, maxRecords)
+  })().finally(() => {
+    inFlightRipe.delete(flightKey)
+  })
+
+  inFlightRipe.set(flightKey, fetchPromise)
+  return fetchPromise
 }

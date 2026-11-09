@@ -37,7 +37,9 @@ export const HomeView: React.FC = () => {
     isInitialLoading,
     isLoadingMore,
     hasMore,
+    isError,
     loadNextChunk,
+    reload,
   } = useHomeMods(activeQuery, filter, engineFilter);
 
   const {
@@ -86,7 +88,9 @@ export const HomeView: React.FC = () => {
           isInitialLoading={isInitialLoading}
           isLoadingMore={isLoadingMore}
           hasMore={hasMore}
+          isError={isError}
           onLoadMore={loadNextChunk}
+          onRetry={reload}
           onSelectMod={handleOpenMod}
           isFavorite={isFavorite}
           onToggleFavorite={toggleFavorite}
