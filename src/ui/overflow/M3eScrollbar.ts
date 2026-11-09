@@ -1,6 +1,8 @@
-/**
- * Custom element (`m3e-scrollbar`) rendering an SVG interrupted track line and draggable pill thumb.
- */
+import {
+  SCROLLBAR_SHADOW_STYLES,
+  updateScrollbarGeometry,
+} from './scrollbar-geometry'
+
 export class M3eScrollbarElement extends HTMLElement {
   static get observedAttributes() {
     return [
@@ -30,64 +32,7 @@ export class M3eScrollbarElement extends HTMLElement {
     const shadow = this.attachShadow({ mode: 'open' })
 
     const style = document.createElement('style')
-    style.textContent = `
-      :host {
-        display: block;
-        position: relative;
-        user-select: none;
-        -webkit-user-select: none;
-        touch-action: none;
-        z-index: 20;
-        opacity: 0;
-        pointer-events: none;
-        transition: opacity 0.2s ease;
-      }
-      @media (max-width: 767px) {
-        :host {
-          display: none !important;
-        }
-      }
-      :host([hidden]) {
-        display: none !important;
-      }
-      :host([direction="vertical"]), :host(:not([direction="horizontal"])) {
-        width: var(--m3e-overflow-thumb-thickness, var(--m3e-overflow-thickness, 8px));
-        height: 100%;
-      }
-      :host([direction="horizontal"]) {
-        height: var(--m3e-overflow-thumb-thickness, var(--m3e-overflow-thickness, 8px));
-        width: 100%;
-      }
-      .track-svg {
-        position: absolute;
-        inset: 0;
-        width: 100%;
-        height: 100%;
-        overflow: visible;
-        cursor: pointer;
-      }
-      .track-line {
-        stroke: var(--m3e-overflow-track-color, var(--md-sys-color-outline-variant, #C7C5D0));
-        stroke-width: var(--m3e-overflow-thumb-thickness, var(--m3e-overflow-track-thickness, var(--m3e-overflow-thickness, 8px)));
-        stroke-linecap: round;
-        transition: stroke 0.2s ease;
-      }
-      .thumb {
-        position: absolute;
-        cursor: grab;
-        border-radius: var(--m3e-overflow-thumb-shape, 9999px);
-        background-color: var(--m3e-overflow-thumb-color, var(--md-sys-color-primary, #363CFF));
-        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
-        transition: background-color 0.2s ease, filter 0.15s ease;
-      }
-      .thumb:hover {
-        filter: brightness(1.1);
-      }
-      .thumb.dragging, .thumb:active {
-        cursor: grabbing;
-        filter: brightness(0.95);
-      }
-    `
+    style.textContent = SCROLLBAR_SHADOW_STYLES
 
     this._svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg')
     this._svg.setAttribute('class', 'track-svg')
@@ -215,141 +160,26 @@ export class M3eScrollbarElement extends HTMLElement {
       return
     }
 
-    const isH = this._direction === 'horizontal'
-    const rect = this.getBoundingClientRect()
     const thickness =
       this._getComputedNumber('--m3e-overflow-thickness', 0) ||
       this._getComputedNumber('--m3e-overflow-thumb-thickness', 0) ||
       this._getComputedNumber('--m3e-overflow-track-thickness', 8)
-    const trackThickness = thickness
-    const thumbThickness = thickness
     const gap = this._getComputedNumber('--m3e-overflow-thumb-gap', 16)
     const minLength = this._getComputedNumber('--m3e-overflow-thumb-min-length', 36)
-    const targetStyle = getComputedStyle(target)
+    const inset = this._getComputedNumber('--m3e-overflow-inset', 4)
 
-    if (isH) {
-      if (
-        targetStyle.overflowX === 'hidden' ||
-        targetStyle.overflowX === 'clip'
-      ) {
-        this.style.opacity = '0'
-        this.style.pointerEvents = 'none'
-        return
-      }
-
-      const containerW = (this.parentElement as HTMLElement)?.clientWidth || target.clientWidth
-      const inset = this._getComputedNumber('--m3e-overflow-inset', 4)
-      const W = rect.width > 0 ? rect.width : Math.max(0, containerW - inset * 2)
-      const H = rect.height > 0 ? rect.height : thumbThickness
-      const maxScroll = target.scrollWidth - target.clientWidth
-
-      if (maxScroll <= 1 || W <= 0) {
-        this.style.opacity = '0'
-        this.style.pointerEvents = 'none'
-        return
-      }
-      this.style.opacity = '1'
-      this.style.pointerEvents = 'auto'
-
-      const scrollRatio = Math.max(0, Math.min(1, target.scrollLeft / maxScroll))
-      const visibleRatio = Math.min(1, target.clientWidth / target.scrollWidth)
-      const thumbWidth = Math.max(minLength, Math.min(W, visibleRatio * W))
-      const availableTravel = W - thumbWidth
-      const thumbLeft = scrollRatio * availableTravel
-      const thumbRight = thumbLeft + thumbWidth
-
-      // Interrupted SVG line: Part 1 before thumb, Part 2 after thumb
-      const line1End = Math.max(0, thumbLeft - gap)
-      const line2Start = Math.min(W, thumbRight + gap)
-      const cy = H / 2
-
-      if (line1End > trackThickness) {
-        this._lineStart.setAttribute('x1', '0')
-        this._lineStart.setAttribute('y1', String(cy))
-        this._lineStart.setAttribute('x2', String(line1End))
-        this._lineStart.setAttribute('y2', String(cy))
-        this._lineStart.style.display = 'block'
-      } else {
-        this._lineStart.style.display = 'none'
-      }
-
-      if (W - line2Start > trackThickness) {
-        this._lineEnd.setAttribute('x1', String(line2Start))
-        this._lineEnd.setAttribute('y1', String(cy))
-        this._lineEnd.setAttribute('x2', String(W))
-        this._lineEnd.setAttribute('y2', String(cy))
-        this._lineEnd.style.display = 'block'
-      } else {
-        this._lineEnd.style.display = 'none'
-      }
-
-      // Thumb pill geometry
-      this._thumb.style.left = `${thumbLeft.toFixed(1)}px`
-      this._thumb.style.top = `${((H - thumbThickness) / 2).toFixed(1)}px`
-      this._thumb.style.width = `${thumbWidth.toFixed(1)}px`
-      this._thumb.style.height = `${thumbThickness}px`
-    } else {
-      if (
-        targetStyle.overflowY === 'hidden' ||
-        targetStyle.overflowY === 'clip'
-      ) {
-        this.style.opacity = '0'
-        this.style.pointerEvents = 'none'
-        return
-      }
-
-      const containerH = (this.parentElement as HTMLElement)?.clientHeight || target.clientHeight
-      const inset = this._getComputedNumber('--m3e-overflow-inset', 4)
-      const H = rect.height > 0 ? rect.height : Math.max(0, containerH - inset * 2)
-      const W = rect.width > 0 ? rect.width : thumbThickness
-      const maxScroll = target.scrollHeight - target.clientHeight
-
-      if (maxScroll <= 1 || H <= 0) {
-        this.style.opacity = '0'
-        this.style.pointerEvents = 'none'
-        return
-      }
-      this.style.opacity = '1'
-      this.style.pointerEvents = 'auto'
-
-      const scrollRatio = Math.max(0, Math.min(1, target.scrollTop / maxScroll))
-      const visibleRatio = Math.min(1, target.clientHeight / target.scrollHeight)
-      const thumbHeight = Math.max(minLength, Math.min(H, visibleRatio * H))
-      const availableTravel = H - thumbHeight
-      const thumbTop = scrollRatio * availableTravel
-      const thumbBottom = thumbTop + thumbHeight
-
-      // Interrupted SVG line: Part 1 before thumb, Part 2 after thumb
-      const line1End = Math.max(0, thumbTop - gap)
-      const line2Start = Math.min(H, thumbBottom + gap)
-      const cx = W / 2
-
-      if (line1End > trackThickness) {
-        this._lineStart.setAttribute('x1', String(cx))
-        this._lineStart.setAttribute('y1', '0')
-        this._lineStart.setAttribute('x2', String(cx))
-        this._lineStart.setAttribute('y2', String(line1End))
-        this._lineStart.style.display = 'block'
-      } else {
-        this._lineStart.style.display = 'none'
-      }
-
-      if (H - line2Start > trackThickness) {
-        this._lineEnd.setAttribute('x1', String(cx))
-        this._lineEnd.setAttribute('y1', String(line2Start))
-        this._lineEnd.setAttribute('x2', String(cx))
-        this._lineEnd.setAttribute('y2', String(H))
-        this._lineEnd.style.display = 'block'
-      } else {
-        this._lineEnd.style.display = 'none'
-      }
-
-      // Thumb pill geometry
-      this._thumb.style.top = `${thumbTop.toFixed(1)}px`
-      this._thumb.style.left = `${((W - thumbThickness) / 2).toFixed(1)}px`
-      this._thumb.style.width = `${thumbThickness}px`
-      this._thumb.style.height = `${thumbHeight.toFixed(1)}px`
-    }
+    updateScrollbarGeometry({
+      host: this,
+      target,
+      isHorizontal: this._direction === 'horizontal',
+      lineStart: this._lineStart,
+      lineEnd: this._lineEnd,
+      thumb: this._thumb,
+      thickness,
+      gap,
+      minLength,
+      inset,
+    })
   }
 
   private _onScroll() {
@@ -382,12 +212,12 @@ export class M3eScrollbarElement extends HTMLElement {
     const isH = this._direction === 'horizontal'
     const rect = this.getBoundingClientRect()
     const minLength = this._getComputedNumber('--m3e-overflow-thumb-min-length', 36)
+    const inset = this._getComputedNumber('--m3e-overflow-inset', 4)
 
     if (isH) {
       const maxScroll = this._target.scrollWidth - this._target.clientWidth
       if (maxScroll <= 0) return
       const containerW = (this.parentElement as HTMLElement)?.clientWidth || this._target.clientWidth
-      const inset = this._getComputedNumber('--m3e-overflow-inset', 4)
       const W = rect.width > 0 ? rect.width : Math.max(0, containerW - inset * 2)
       const visibleRatio = Math.min(1, this._target.clientWidth / this._target.scrollWidth)
       const thumbWidth = Math.max(minLength, Math.min(W, visibleRatio * W))
@@ -395,13 +225,11 @@ export class M3eScrollbarElement extends HTMLElement {
       if (availableTravel <= 0) return
 
       const delta = e.clientX - this._dragStartPointer
-      const scrollDelta = (delta / availableTravel) * maxScroll
-      this._target.scrollLeft = this._dragStartScroll + scrollDelta
+      this._target.scrollLeft = this._dragStartScroll + (delta / availableTravel) * maxScroll
     } else {
       const maxScroll = this._target.scrollHeight - this._target.clientHeight
       if (maxScroll <= 0) return
       const containerH = (this.parentElement as HTMLElement)?.clientHeight || this._target.clientHeight
-      const inset = this._getComputedNumber('--m3e-overflow-inset', 4)
       const H = rect.height > 0 ? rect.height : Math.max(0, containerH - inset * 2)
       const visibleRatio = Math.min(1, this._target.clientHeight / this._target.scrollHeight)
       const thumbHeight = Math.max(minLength, Math.min(H, visibleRatio * H))
@@ -409,8 +237,7 @@ export class M3eScrollbarElement extends HTMLElement {
       if (availableTravel <= 0) return
 
       const delta = e.clientY - this._dragStartPointer
-      const scrollDelta = (delta / availableTravel) * maxScroll
-      this._target.scrollTop = this._dragStartScroll + scrollDelta
+      this._target.scrollTop = this._dragStartScroll + (delta / availableTravel) * maxScroll
     }
     this.update()
   }
@@ -422,7 +249,6 @@ export class M3eScrollbarElement extends HTMLElement {
     try {
       this._thumb.releasePointerCapture(e.pointerId)
     } catch {
-      // ignore
     }
     window.removeEventListener('pointermove', this._onPointerMove)
     window.removeEventListener('pointerup', this._onPointerUp)
@@ -434,34 +260,31 @@ export class M3eScrollbarElement extends HTMLElement {
     const isH = this._direction === 'horizontal'
     const rect = this.getBoundingClientRect()
     const minLength = this._getComputedNumber('--m3e-overflow-thumb-min-length', 36)
+    const inset = this._getComputedNumber('--m3e-overflow-inset', 4)
 
     if (isH) {
       const clickX = e.clientX - rect.left
       const maxScroll = this._target.scrollWidth - this._target.clientWidth
       const containerW = (this.parentElement as HTMLElement)?.clientWidth || this._target.clientWidth
-      const inset = this._getComputedNumber('--m3e-overflow-inset', 4)
       const W = rect.width > 0 ? rect.width : Math.max(0, containerW - inset * 2)
       const visibleRatio = Math.min(1, this._target.clientWidth / this._target.scrollWidth)
       const thumbWidth = Math.max(minLength, Math.min(W, visibleRatio * W))
       const availableTravel = W - thumbWidth
       if (availableTravel <= 0) return
 
-      const targetThumbLeft = clickX - thumbWidth / 2
-      const targetRatio = Math.max(0, Math.min(1, targetThumbLeft / availableTravel))
+      const targetRatio = Math.max(0, Math.min(1, (clickX - thumbWidth / 2) / availableTravel))
       this._target.scrollLeft = targetRatio * maxScroll
     } else {
       const clickY = e.clientY - rect.top
       const maxScroll = this._target.scrollHeight - this._target.clientHeight
       const containerH = (this.parentElement as HTMLElement)?.clientHeight || this._target.clientHeight
-      const inset = this._getComputedNumber('--m3e-overflow-inset', 4)
       const H = rect.height > 0 ? rect.height : Math.max(0, containerH - inset * 2)
       const visibleRatio = Math.min(1, this._target.clientHeight / this._target.scrollHeight)
       const thumbHeight = Math.max(minLength, Math.min(H, visibleRatio * H))
       const availableTravel = H - thumbHeight
       if (availableTravel <= 0) return
 
-      const targetThumbTop = clickY - thumbHeight / 2
-      const targetRatio = Math.max(0, Math.min(1, targetThumbTop / availableTravel))
+      const targetRatio = Math.max(0, Math.min(1, (clickY - thumbHeight / 2) / availableTravel))
       this._target.scrollTop = targetRatio * maxScroll
     }
     this.update()

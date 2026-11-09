@@ -9,13 +9,15 @@ import {
 } from 'react'
 import type { PointerEvent } from 'react'
 import gsap from 'gsap'
-import { calculateVisuals } from './carouselMath'
+import {
+  applyCarouselLayouts,
+  handleCarouselPointerDown,
+  animateCarouselScroll,
+  type CarouselDragState,
+} from './carousel-pointer'
 import type { CarouselProps, CarouselAPI } from './types'
 import { isCapacitor } from '@/core/host'
 
-/**
- * Manages carousel state, GSAP transitions, infinite scroll wrapping, and pointer/touch gestures.
- */
 export function useCarousel(props: CarouselProps) {
   const {
     children,
@@ -35,13 +37,11 @@ export function useCarousel(props: CarouselProps) {
   const checkIsMobile = useCallback((): boolean => {
     if (isMobileProp !== undefined) return isMobileProp
     if (typeof window === 'undefined') return false
-
     if (isCapacitor()) return true
-
     return window.innerWidth < 768
   }, [isMobileProp])
 
-  const dragState = useRef({
+  const dragState = useRef<CarouselDragState>({
     isDown: false,
     startX: 0,
     scrollLeft: 0,
@@ -96,7 +96,6 @@ export function useCarousel(props: CarouselProps) {
         ? Math.floor(25 / totalItems) * totalItems
         : 0
 
-    // If clientWidth changed without user dragging or animating, pin scrollLeft to activeIndex
     if (
       lastClientWidthRef.current > 0 &&
       currentWidth !== lastClientWidthRef.current &&
@@ -113,39 +112,12 @@ export function useCarousel(props: CarouselProps) {
     const progress = scrollPos / currentWidth
     const isMobile = checkIsMobile()
 
-    const layouts = calculateVisuals(
+    applyCarouselLayouts({
       totalItems,
       progress,
-      !isInfinite,
+      isInfinite,
       isMobile,
-    )
-
-    layouts.forEach((layout, index) => {
-      const item = visualRefs.current[index]
-      if (!item) return
-
-      item.style.width = `${layout.w.toFixed(2)}%`
-      item.style.left = `${layout.x.toFixed(2)}%`
-      item.style.transform = 'translateZ(0)'
-      item.style.zIndex = layout.w > 40 ? '10' : '1'
-
-      if (layout.display === 'none') {
-        item.style.visibility = 'hidden'
-      } else {
-        item.style.visibility = 'visible'
-        const content = item.querySelector('.m3-card-content') as HTMLElement | null
-        const badge = item.querySelector('.m3-card-badge') as HTMLElement | null
-
-        if (isMobile) {
-          const opacity = Math.max(0, (layout.w - 20) / 70).toFixed(2)
-          if (content) content.style.opacity = opacity
-          if (badge) badge.style.opacity = opacity
-        } else {
-          const opacity = Math.max(0, (layout.w - 15) / 65).toFixed(2)
-          if (content) content.style.opacity = opacity
-          if (badge) badge.style.opacity = opacity
-        }
-      }
+      visualRefs: visualRefs.current,
     })
 
     const currentIndex = Math.round(progress)
@@ -181,37 +153,16 @@ export function useCarousel(props: CarouselProps) {
 
   const smoothScrollToIndex = useCallback(
     (targetIndex: number, duration: number = 0.6) => {
-      const scroller = scrollerRef.current
-      if (!scroller) return
-
-      pauseAuto()
-      dragState.current.isAnimating = true
-
-      scroller.style.scrollSnapType = 'none'
-
-      const targetScrollLeft = targetIndex * scroller.clientWidth
-
-      const proxy = { x: scroller.scrollLeft }
-      gsap.to(proxy, {
-        x: targetScrollLeft,
-        duration: duration,
-        ease: 'power3.inOut',
-        onUpdate: () => {
-          scroller.scrollLeft = proxy.x
-          updateVisuals()
-        },
-        onComplete: () => {
-          dragState.current.isAnimating = false
-          scroller.style.scrollSnapType = ''
-
-          if (isInfinite) {
-            handleInfiniteScrollWrap()
-            updateVisuals()
-          }
-          if (!dragState.current.isDown) {
-            playAutoRef.current()
-          }
-        },
+      animateCarouselScroll({
+        scroller: scrollerRef.current,
+        targetIndex,
+        duration,
+        isInfinite,
+        dragState: dragState.current,
+        pauseAuto,
+        updateVisuals,
+        handleInfiniteScrollWrap,
+        playAuto: () => playAutoRef.current(),
       })
     },
     [isInfinite, updateVisuals, handleInfiniteScrollWrap, pauseAuto],
@@ -266,8 +217,7 @@ export function useCarousel(props: CarouselProps) {
     pauseAuto()
     dragState.current.hasDragged = false
     const currentIndexFloat = scroller.scrollLeft / scroller.clientWidth
-    const targetIndex = Math.round(currentIndexFloat) - 1
-    smoothScrollToIndex(targetIndex, 0.45)
+    smoothScrollToIndex(Math.round(currentIndexFloat) - 1, 0.45)
   }, [smoothScrollToIndex, pauseAuto])
 
   const next = useCallback(() => {
@@ -276,8 +226,7 @@ export function useCarousel(props: CarouselProps) {
     pauseAuto()
     dragState.current.hasDragged = false
     const currentIndexFloat = scroller.scrollLeft / scroller.clientWidth
-    const targetIndex = Math.round(currentIndexFloat) + 1
-    smoothScrollToIndex(targetIndex, 0.45)
+    smoothScrollToIndex(Math.round(currentIndexFloat) + 1, 0.45)
   }, [smoothScrollToIndex, pauseAuto])
 
   const goToLogicalIndex = useCallback(
@@ -305,8 +254,7 @@ export function useCarousel(props: CarouselProps) {
         if (diff < -uniqueCount / 2) diff += uniqueCount
       }
 
-      const targetIndex = currentIndex + diff
-      smoothScrollToIndex(targetIndex, 0.6)
+      smoothScrollToIndex(currentIndex + diff, 0.6)
     },
     [
       isInfinite,
@@ -318,96 +266,21 @@ export function useCarousel(props: CarouselProps) {
   )
 
   const onPointerDown = (e: PointerEvent<HTMLDivElement>) => {
-    const scroller = scrollerRef.current
-    if (!scroller) return
-
-    pauseAuto()
-    dragState.current.isDown = true
-    dragState.current.hasDragged = false
-
-    if (dragState.current.isAnimating) {
-      dragState.current.isAnimating = false
-      gsap.killTweensOf(scroller)
-      scroller.style.scrollSnapType = ''
-    }
-
-    dragState.current.startX = e.pageX
-    const startY = e.pageY
-    dragState.current.scrollLeft = scroller.scrollLeft
-
-    let isHorizontalSwipe: boolean | null = null
-
-    const onPointerMove = (moveEvent: globalThis.PointerEvent) => {
-      if (!dragState.current.isDown) return
-
-      const dx = Math.abs(moveEvent.pageX - dragState.current.startX)
-      const dy = Math.abs(moveEvent.pageY - startY)
-
-      if (dx > 5 || dy > 5) {
-        dragState.current.hasDragged = true
-      }
-
-      if (isHorizontalSwipe === null && (dx > 5 || dy > 5)) {
-        isHorizontalSwipe = dx > dy
-      }
-
-      if (isHorizontalSwipe) {
-        if (moveEvent.cancelable) {
-          moveEvent.preventDefault()
-        }
-        const walk = (dragState.current.startX - moveEvent.pageX) * 1.5
-        scroller.scrollLeft = dragState.current.scrollLeft + walk
-        updateVisuals()
-      }
-    }
-
-    const onPointerUp = (upEvent: globalThis.PointerEvent) => {
-      if (!dragState.current.isDown) return
-      dragState.current.isDown = false
-
-      window.removeEventListener('pointermove', onPointerMove)
-      window.removeEventListener('pointerup', onPointerUp)
-      window.removeEventListener('pointercancel', onPointerUp)
-
-      if (isInfinite) {
-        handleInfiniteScrollWrap()
-      }
-
-      const dx = dragState.current.startX - upEvent.pageX
-      const currentIndexFloat = scroller.scrollLeft / scroller.clientWidth
-
-      let snapIndex = Math.round(currentIndexFloat)
-      const startIndex = Math.round(
-        dragState.current.scrollLeft / scroller.clientWidth,
-      )
-
-      if (isHorizontalSwipe) {
-        if (dx > 40)
-          snapIndex = Math.max(startIndex + 1, Math.round(currentIndexFloat))
-        else if (dx < -40)
-          snapIndex = Math.min(startIndex - 1, Math.round(currentIndexFloat))
-        else snapIndex = startIndex
-      }
-
-      setTimeout(() => {
-        dragState.current.hasDragged = false
-      }, 50)
-
-      if (Math.abs(snapIndex - currentIndexFloat) > 0.001) {
-        smoothScrollToIndex(snapIndex, 0.4)
-      } else {
-        playAuto()
-      }
-    }
-
-    window.addEventListener('pointermove', onPointerMove, { passive: false })
-    window.addEventListener('pointerup', onPointerUp)
-    window.addEventListener('pointercancel', onPointerUp)
+    handleCarouselPointerDown({
+      e,
+      scroller: scrollerRef.current,
+      dragState: dragState.current,
+      isInfinite,
+      pauseAuto,
+      updateVisuals,
+      handleInfiniteScrollWrap,
+      smoothScrollToIndex,
+      playAuto,
+    })
   }
 
   const onScroll = () => {
     if (dragState.current.isDown || dragState.current.isAnimating) return
-
     if (
       isInfinite &&
       scrollerRef.current &&
