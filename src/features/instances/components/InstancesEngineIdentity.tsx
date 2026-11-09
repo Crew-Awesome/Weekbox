@@ -29,13 +29,13 @@ export const InstancesEngineIdentity: React.FC<InstancesEngineIdentityProps> = (
       <img
         src={engine.icon}
         alt={engine.name}
-        className="w-14 h-14 sm:w-16 sm:h-16 object-contain shrink-0 drop-shadow aspect-square"
+        className="w-12 h-12 sm:w-16 sm:h-16 object-contain shrink-0 drop-shadow aspect-square"
         style={{ aspectRatio: '1 / 1' }}
       />
 
       <div className="min-w-0 flex-1">
         <h2
-          className="text-2xl sm:text-3xl font-black tracking-tight truncate"
+          className="text-xl sm:text-3xl font-black tracking-tight truncate"
           style={{ color: 'var(--md-sys-color-on-surface)' }}
         >
           {engine.name}

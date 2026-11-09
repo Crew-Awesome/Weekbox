@@ -104,7 +104,7 @@ export const InstancesActionFooter: React.FC<InstancesActionFooterProps> = ({
 
   return (
     <footer
-      className="fixed inset-x-0 bottom-[calc(86px+env(safe-area-inset-bottom))] md:bottom-0 z-30 border-t"
+      className="fixed inset-x-0 bottom-[calc(4.25rem+env(safe-area-inset-bottom,0px))] md:bottom-0 z-30 border-t"
       style={{
         backgroundColor:
           'color-mix(in srgb, var(--md-sys-color-surface-container) 86%, transparent)',
@@ -155,15 +155,15 @@ export const InstancesActionFooter: React.FC<InstancesActionFooterProps> = ({
       )}
 
       <div className="relative md:pl-[92px]">
-        <div className="max-w-7xl mx-auto w-full px-4 sm:px-8 py-2.5 flex items-center justify-between gap-3">
-          <div className="flex items-center gap-2 min-w-0">
-            <m3e-button variant="text" style={VERSION_TRIGGER_STYLE}>
+        <div className="max-w-7xl mx-auto w-full px-2.5 sm:px-6 md:px-8 py-2 sm:py-2.5 flex items-center justify-between gap-2 sm:gap-3">
+          <div className="flex items-center gap-1.5 sm:gap-2 min-w-0 flex-1">
+            <m3e-button variant="text" style={VERSION_TRIGGER_STYLE} className="min-w-0 max-w-full">
               <m3e-menu-trigger for="instances-version-menu"></m3e-menu-trigger>
               <img
                 slot="icon"
                 src={currentEngine.icon}
                 alt=""
-                className="w-6 h-6 rounded-md object-contain shrink-0 aspect-square"
+                className="w-5 h-5 sm:w-6 sm:h-6 rounded-md object-contain shrink-0 aspect-square"
                 style={{
                   width: '24px',
                   height: '24px',
@@ -175,14 +175,14 @@ export const InstancesActionFooter: React.FC<InstancesActionFooterProps> = ({
               />
               <span className="flex flex-col items-start leading-tight min-w-0">
                 <span
-                  className="text-[10px] uppercase tracking-wider font-semibold"
+                  className="text-[9px] sm:text-[10px] uppercase tracking-wider font-semibold"
                   style={{
                     color: 'var(--md-sys-color-on-surface-variant)',
                   }}
                 >
                   Version
                 </span>
-                <span className="text-sm font-bold truncate max-w-[8rem] sm:max-w-[14rem]">
+                <span className="text-xs sm:text-sm font-bold truncate max-w-[5.5rem] min-[400px]:max-w-[8.5rem] sm:max-w-[14rem]">
                   {selectedVersion ?? 'Select a version'}
                 </span>
               </span>
@@ -404,18 +404,20 @@ export const InstancesActionFooter: React.FC<InstancesActionFooterProps> = ({
             selectedTask.status !== 'error' &&
             !isInstallStarting ? (
               <>
-                <EngineInstallVisual
-                  phase={busyPhase}
-                  progress={smoothProgress}
-                  size={42}
-                  showRing={false}
-                  tone="primary"
-                />
+                <span className="hidden sm:inline-flex">
+                  <EngineInstallVisual
+                    phase={busyPhase}
+                    progress={smoothProgress}
+                    size={42}
+                    showRing={false}
+                    tone="primary"
+                  />
+                </span>
 
                 <div
                   role="status"
                   aria-live="polite"
-                  className="inline-flex flex-col items-center justify-center w-52 h-[42px] px-3.5 py-1 rounded-2xl shadow-sm overflow-hidden shrink-0"
+                  className="inline-flex flex-col items-center justify-center w-28 min-[400px]:w-40 sm:w-52 h-[38px] sm:h-[42px] px-2 sm:px-3.5 py-1 rounded-2xl shadow-sm overflow-hidden shrink-0"
                   style={{
                     backgroundColor:
                       selectedTask.status === 'canceling'
@@ -445,12 +447,12 @@ export const InstancesActionFooter: React.FC<InstancesActionFooterProps> = ({
                       if (selectedVersion) onCancelDownload(selectedVersion)
                     }}
                     disabled={selectedTask.status === 'canceling'}
-                    className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold transition cursor-pointer hover:bg-rose-500/20 text-rose-500 border border-rose-500/40 disabled:opacity-50 disabled:cursor-default"
+                    className="inline-flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-3.5 py-1.5 sm:py-2 rounded-xl text-xs font-bold transition cursor-pointer hover:bg-rose-500/20 text-rose-500 border border-rose-500/40 disabled:opacity-50 disabled:cursor-default"
                   >
-                    <span className="material-symbols-rounded text-base">
+                    <span className="material-symbols-rounded text-sm sm:text-base">
                       close
                     </span>
-                    <span>
+                    <span className="hidden min-[400px]:inline">
                       {selectedTask.status === 'canceling'
                         ? 'Canceling...'
                         : 'Cancel'}
@@ -462,7 +464,7 @@ export const InstancesActionFooter: React.FC<InstancesActionFooterProps> = ({
               <>
                 {isEngineRunning && (
                   <div
-                    className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-bold border shrink-0 animate-in fade-in duration-300"
+                    className="hidden min-[400px]:inline-flex items-center gap-1.5 sm:gap-2 px-2 sm:px-3 py-1 sm:py-1.5 rounded-xl text-[11px] sm:text-xs font-bold border shrink-0 animate-in fade-in duration-300"
                     style={{
                       backgroundColor:
                         'color-mix(in srgb, var(--md-sys-color-primary) 12%, transparent)',
@@ -476,7 +478,9 @@ export const InstancesActionFooter: React.FC<InstancesActionFooterProps> = ({
                       <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
                       <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
                     </span>
-                    <span>Running ({formattedSessionDuration || '00:00'})</span>
+                    <span>
+                      <span className="hidden sm:inline">Running </span>({formattedSessionDuration || '00:00'})
+                    </span>
                   </div>
                 )}
 
@@ -486,9 +490,9 @@ export const InstancesActionFooter: React.FC<InstancesActionFooterProps> = ({
                     onClick={() => {
                       void onStopEngine()
                     }}
-                    className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs sm:text-sm font-bold transition cursor-pointer hover:bg-rose-500/20 text-rose-500 border border-rose-500/40 active:scale-95 shadow-sm"
+                    className="inline-flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-3.5 py-1.5 sm:py-2 rounded-xl text-xs sm:text-sm font-bold transition cursor-pointer hover:bg-rose-500/20 text-rose-500 border border-rose-500/40 active:scale-95 shadow-sm"
                   >
-                    <span className="material-symbols-rounded text-base">
+                    <span className="material-symbols-rounded text-sm sm:text-base">
                       stop
                     </span>
                     <span>Stop</span>
@@ -518,13 +522,13 @@ export const InstancesActionFooter: React.FC<InstancesActionFooterProps> = ({
                 <button
                   type="button"
                   onClick={onLaunchSelected}
-                  className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition cursor-pointer hover:brightness-110 active:scale-95 shadow-sm"
+                  className="inline-flex items-center gap-1 sm:gap-1.5 px-3 sm:px-4 py-1.5 sm:py-2 rounded-xl text-xs sm:text-sm font-bold transition cursor-pointer hover:brightness-110 active:scale-95 shadow-sm"
                   style={{
                     backgroundColor: 'var(--md-sys-color-primary)',
                     color: 'var(--md-sys-color-on-primary)',
                   }}
                 >
-                  <span className="material-symbols-rounded text-base">
+                  <span className="material-symbols-rounded text-sm sm:text-base">
                     play_arrow
                   </span>
                   <span>{isEngineRunning ? 'Relaunch' : 'Run'}</span>
@@ -534,9 +538,9 @@ export const InstancesActionFooter: React.FC<InstancesActionFooterProps> = ({
                   <button
                     type="button"
                     onClick={onUninstallSelected}
-                    className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold transition cursor-pointer hover:bg-rose-500/20 text-rose-500 border border-rose-500/40"
+                    className="inline-flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-3.5 py-1.5 sm:py-2 rounded-xl text-xs font-bold transition cursor-pointer hover:bg-rose-500/20 text-rose-500 border border-rose-500/40"
                   >
-                    <span className="material-symbols-rounded text-base">
+                    <span className="material-symbols-rounded text-sm sm:text-base">
                       delete
                     </span>
                     <span className="hidden sm:inline">Uninstall</span>
@@ -548,7 +552,7 @@ export const InstancesActionFooter: React.FC<InstancesActionFooterProps> = ({
                 {isEngineRunning && (
                   <>
                     <div
-                      className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-bold border shrink-0 animate-in fade-in duration-300"
+                      className="hidden min-[400px]:inline-flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-bold border shrink-0 animate-in fade-in duration-300"
                       style={{
                         backgroundColor:
                           'color-mix(in srgb, var(--md-sys-color-primary) 12%, transparent)',
@@ -571,9 +575,9 @@ export const InstancesActionFooter: React.FC<InstancesActionFooterProps> = ({
                         onClick={() => {
                           void onStopEngine()
                         }}
-                        className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs sm:text-sm font-bold transition cursor-pointer hover:bg-rose-500/20 text-rose-500 border border-rose-500/40 active:scale-95 shadow-sm"
+                        className="inline-flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-3.5 py-1.5 sm:py-2 rounded-xl text-xs sm:text-sm font-bold transition cursor-pointer hover:bg-rose-500/20 text-rose-500 border border-rose-500/40 active:scale-95 shadow-sm"
                       >
-                        <span className="material-symbols-rounded text-base">
+                        <span className="material-symbols-rounded text-sm sm:text-base">
                           stop
                         </span>
                         <span>Stop</span>
@@ -586,7 +590,7 @@ export const InstancesActionFooter: React.FC<InstancesActionFooterProps> = ({
                   type="button"
                   onClick={onInstallSelected}
                   disabled={isInstallStarting || !recommendedAsset}
-                  className="inline-flex items-center justify-center gap-2.5 px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition cursor-pointer hover:brightness-110 active:scale-95 shadow-sm disabled:opacity-50 disabled:cursor-default disabled:hover:brightness-100"
+                  className="inline-flex items-center justify-center gap-2 sm:gap-2.5 px-3 sm:px-4 py-1.5 sm:py-2 rounded-xl text-xs sm:text-sm font-bold transition cursor-pointer hover:brightness-110 active:scale-95 shadow-sm disabled:opacity-50 disabled:cursor-default disabled:hover:brightness-100"
                   style={{
                     backgroundColor: 'var(--md-sys-color-primary)',
                     color: 'var(--md-sys-color-on-primary)',
@@ -595,14 +599,14 @@ export const InstancesActionFooter: React.FC<InstancesActionFooterProps> = ({
                   <EngineInstallVisual
                     phase={isInstallStarting ? 'starting' : 'idle'}
                     progress={0}
-                    size={26}
+                    size={24}
                   />
                   <div className="flex flex-col items-start leading-tight">
                     <span className="text-xs sm:text-sm font-bold">
                       {isInstallStarting ? 'Starting...' : 'Install'}
                     </span>
                     {recommendedAsset && (
-                      <span className="text-[10px] font-mono font-normal opacity-85 leading-tight">
+                      <span className="text-[9px] sm:text-[10px] font-mono font-normal opacity-85 leading-tight">
                         {formatFileSize(recommendedAsset.size)}
                       </span>
                     )}

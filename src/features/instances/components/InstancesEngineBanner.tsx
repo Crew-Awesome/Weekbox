@@ -16,7 +16,7 @@ export const InstancesEngineBanner: React.FC<InstancesEngineBannerProps> = ({
     <section
       ref={sectionRef}
       aria-label={`${engine.name} banner`}
-      className="relative w-full aspect-[21/9] rounded-t-3xl rounded-b-none overflow-hidden select-none pointer-events-none"
+      className="relative w-full aspect-[16/9] sm:aspect-[21/9] rounded-t-2xl sm:rounded-t-3xl rounded-b-none overflow-hidden select-none pointer-events-none"
       style={{
         opacity: 1 - bannerProgress * 0.65,
         transform: `translateY(${-bannerProgress * 8}px)`,

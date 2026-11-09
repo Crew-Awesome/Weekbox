@@ -112,7 +112,7 @@ export const InstancesView: React.FC = () => {
             onSelectEngine={selectEngine}
           />
         }
-        subtitle={versionsSubtitle}
+        subtitle={<span className="hidden sm:inline">{versionsSubtitle}</span>}
         autoHideOnScroll={false}
         underlay={
           <InstancesTopbarUnderlay
@@ -122,7 +122,7 @@ export const InstancesView: React.FC = () => {
         }
       />
 
-      <div className="flex-1 flex flex-col gap-5 sm:gap-6 px-4 sm:px-8 pt-4 pb-[calc(10.5rem+env(safe-area-inset-bottom))] md:pb-36 max-w-7xl mx-auto w-full">
+      <div className="flex-1 flex flex-col gap-4 sm:gap-6 px-3 sm:px-8 pt-3 sm:pt-4 pb-[calc(8.5rem+env(safe-area-inset-bottom,0px))] md:pb-36 max-w-7xl mx-auto w-full min-w-0">
         <InstancesEngineBanner
           engine={currentEngine}
           bannerProgress={bannerProgress}

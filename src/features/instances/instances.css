@@ -136,5 +136,34 @@
 
 .engine-markdown img {
   max-width: 100%;
+  height: auto;
   border-radius: 12px;
+}
+
+@media (max-width: 639px) {
+  .engine-markdown {
+    font-size: 0.9rem;
+    line-height: 1.65;
+  }
+
+  .engine-markdown h2 {
+    font-size: 1.08rem;
+    margin-top: 1.5rem;
+  }
+
+  .engine-markdown table {
+    display: block;
+    max-width: 100%;
+    overflow-x: auto;
+    white-space: nowrap;
+  }
+
+  .engine-markdown pre {
+    padding: 0.75rem;
+    border-radius: 12px;
+  }
+
+  .engine-markdown :is(ul, ol) {
+    padding-left: 1.1rem;
+  }
 }

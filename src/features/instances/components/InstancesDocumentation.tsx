@@ -32,13 +32,13 @@ export const InstancesDocumentation: React.FC<InstancesDocumentationProps> = ({
 }) => {
   return (
     <article
-      className="rounded-3xl border p-5 sm:p-7"
+      className="rounded-2xl sm:rounded-3xl border p-4 sm:p-7 min-w-0"
       style={{
         backgroundColor: 'var(--md-sys-color-surface-container)',
         borderColor: 'var(--md-sys-color-outline-variant)',
       }}
     >
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-5">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4 sm:mb-5">
         <header className="flex items-center gap-2.5 min-w-0">
           <span
             className="material-symbols-rounded text-[20px] shrink-0"
@@ -54,7 +54,7 @@ export const InstancesDocumentation: React.FC<InstancesDocumentationProps> = ({
           </h2>
         </header>
 
-        <div className="flex items-center gap-2 w-full sm:w-auto sm:min-w-[340px]">
+        <div className="flex items-center gap-2 w-full sm:w-auto">
           <m3e-icon-button
             variant="filled"
             size="small"
@@ -90,7 +90,8 @@ export const InstancesDocumentation: React.FC<InstancesDocumentationProps> = ({
               >
                 menu_book
               </span>
-              <span className="truncate">General description</span>
+              <span className="truncate sm:hidden">General</span>
+              <span className="truncate hidden sm:inline">General description</span>
             </m3e-button>
             <m3e-button
               variant="tonal"
@@ -106,7 +107,8 @@ export const InstancesDocumentation: React.FC<InstancesDocumentationProps> = ({
               >
                 notes
               </span>
-              <span className="truncate">Version description</span>
+              <span className="truncate sm:hidden">Version</span>
+              <span className="truncate hidden sm:inline">Version description</span>
             </m3e-button>
           </m3e-button-group>
         </div>
