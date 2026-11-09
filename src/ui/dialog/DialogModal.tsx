@@ -57,7 +57,7 @@ export const DialogModal: React.FC<DialogModalProps> = ({
       }}
     >
       <div
-        className="relative flex flex-col w-full max-w-[560px] min-w-[280px] bg-[var(--md-sys-color-surface-container-high)] text-[var(--md-sys-color-on-surface)] rounded-[28px] shadow-2xl border border-white/10 p-6 overflow-hidden"
+        className="relative flex flex-col w-full max-w-[min(560px,calc(100vw-32px))] bg-[var(--md-sys-color-surface-container-high)] text-[var(--md-sys-color-on-surface)] rounded-[24px] sm:rounded-[28px] shadow-2xl border border-white/10 p-4.5 sm:p-6 overflow-hidden"
         onClick={(e) => e.stopPropagation()}
         style={{
           transformOrigin: 'top center',

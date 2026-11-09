@@ -9,6 +9,7 @@ body {
   color: var(--md-sys-color-on-background);
   font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   min-height: 100vh;
+  min-height: 100dvh;
 }
 
 m3e-card {

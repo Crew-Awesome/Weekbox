@@ -23,18 +23,18 @@ export const CalloutContainer: React.FC<CalloutContainerProps> = ({
   const getPositionClasses = (pos: CalloutPosition) => {
     switch (pos) {
       case 'top-left':
-        return 'top-4 left-4 sm:top-5 sm:left-5 items-start'
+        return 'top-[max(1rem,env(safe-area-inset-top,0px))] left-3 sm:left-5 items-start'
       case 'top-center':
-        return 'top-4 left-1/2 -translate-x-1/2 items-center'
+        return 'top-[max(1rem,env(safe-area-inset-top,0px))] left-1/2 -translate-x-1/2 items-center'
       case 'top-right':
       default:
-        return 'top-4 right-4 sm:top-5 sm:right-5 items-end'
+        return 'top-[max(1rem,env(safe-area-inset-top,0px))] right-3 sm:right-5 items-end'
       case 'bottom-left':
-        return 'bottom-4 left-4 sm:bottom-5 sm:left-5 items-start'
+        return 'bottom-[max(1rem,calc(env(safe-area-inset-bottom,0px)+4.5rem))] md:bottom-5 left-3 sm:left-5 items-start'
       case 'bottom-center':
-        return 'bottom-4 left-1/2 -translate-x-1/2 items-center'
+        return 'bottom-[max(1rem,calc(env(safe-area-inset-bottom,0px)+4.5rem))] md:bottom-5 left-1/2 -translate-x-1/2 items-center'
       case 'bottom-right':
-        return 'bottom-4 right-4 sm:bottom-5 sm:right-5 items-end'
+        return 'bottom-[max(1rem,calc(env(safe-area-inset-bottom,0px)+4.5rem))] md:bottom-5 right-3 sm:right-5 items-end'
     }
   }
 

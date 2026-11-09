@@ -73,7 +73,7 @@ const AppShell: React.FC = () => {
 
   return (
     <div
-      className="h-screen w-screen overflow-hidden flex flex-col md:flex-row select-none"
+      className="h-screen h-dvh min-h-dvh w-screen overflow-hidden flex flex-col md:flex-row select-none"
       style={{
         backgroundColor: 'var(--md-sys-color-background)',
         color: 'var(--md-sys-color-on-background)',
@@ -82,36 +82,36 @@ const AppShell: React.FC = () => {
       <Sidebar />
 
       <main
-        className="flex-1 h-full overflow-hidden flex flex-col pb-16 md:pb-0"
+        className="flex-1 h-full overflow-hidden flex flex-col pb-[calc(4.25rem+env(safe-area-inset-bottom,0px))] md:pb-0"
         style={{
           backgroundColor: 'var(--md-sys-color-background)',
         }}
       >
-        <m3e-overflow direction="vertical" className="w-full h-full">
-          <Suspense fallback={null}>
-            {location.pathname !== normalizedPath && (
-              <Routes>
-                <Route path="*" element={<Navigate to={normalizedPath} replace />} />
-              </Routes>
-            )}
-            {TAB_CONFIGS.map(({ path, Component }) => {
-              if (!visitedTabs.has(path)) return null
-              const isCurrent = normalizedPath === path
-              return (
-                <div
-                  key={path}
-                  id={`tab-panel-${path.slice(1)}`}
-                  className="w-full min-h-full"
-                  style={{
-                    display: isCurrent ? 'block' : 'none',
-                  }}
-                >
+        <Suspense fallback={null}>
+          {location.pathname !== normalizedPath && (
+            <Routes>
+              <Route path="*" element={<Navigate to={normalizedPath} replace />} />
+            </Routes>
+          )}
+          {TAB_CONFIGS.map(({ path, Component }) => {
+            if (!visitedTabs.has(path)) return null
+            const isCurrent = normalizedPath === path
+            return (
+              <div
+                key={path}
+                id={`tab-panel-${path.slice(1)}`}
+                className="w-full h-full min-h-0"
+                style={{
+                  display: isCurrent ? 'block' : 'none',
+                }}
+              >
+                <m3e-overflow direction="vertical" className="w-full h-full">
                   <Component />
-                </div>
-              )
-            })}
-          </Suspense>
-        </m3e-overflow>
+                </m3e-overflow>
+              </div>
+            )
+          })}
+        </Suspense>
       </main>
     </div>
   )

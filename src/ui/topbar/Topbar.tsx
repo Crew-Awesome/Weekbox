@@ -95,7 +95,7 @@ export const Topbar: React.FC<TopbarProps> = ({
       ref={headerRef}
       className={`w-full ${
         sticky ? 'sticky top-0 z-30' : 'relative'
-      } relative overflow-hidden flex items-center justify-between min-h-[56px] sm:min-h-[64px] px-4 sm:px-8 py-2.5 select-none transition-all duration-300 ease-in-out ${
+      } relative overflow-hidden flex items-center justify-between min-h-[56px] sm:min-h-[64px] px-3 sm:px-6 md:px-8 pt-[max(0.625rem,env(safe-area-inset-top,0px))] pb-2.5 select-none transition-all duration-300 ease-in-out ${
         effectiveIsHidden ? '-translate-y-full opacity-0' : 'translate-y-0 opacity-100'
       } ${className}`}
       style={{
