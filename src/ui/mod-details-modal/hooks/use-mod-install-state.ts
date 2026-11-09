@@ -60,6 +60,12 @@ export function useModInstallState({
           if (record.engineId) patch.engineId = record.engineId
           if (record.engineName) patch.engineName = record.engineName
           if (record.icon) patch.icon = record.icon
+          if (record.hasEngineWarning !== undefined) {
+            patch.hasEngineWarning = record.hasEngineWarning
+          }
+          if (record.engineWarningMessage) {
+            patch.engineWarningMessage = record.engineWarningMessage
+          }
           if (record.name) patch.name = record.name
           if (record.title) patch.title = record.title
           if (record.description !== undefined) {

@@ -10,9 +10,6 @@ export interface ModGridCardProps {
   onToggleFavorite: (id: number | string) => void
 }
 
-/**
- * Renders a single mod card in the discovery grid with views, favorite toggle, and downloads metrics.
- */
 export const ModGridCard: React.FC<ModGridCardProps> = ({
   mod,
   isFavorite,
@@ -26,6 +23,8 @@ export const ModGridCard: React.FC<ModGridCardProps> = ({
       thumbnail={mod.image || mod.img || mod.thumbnail}
       icon={mod.icon || mod.engineIcon}
       iconTooltip={mod.engineName}
+      hasWarning={mod.hasEngineWarning}
+      warningTooltip={mod.engineWarningMessage}
       extractColor={true}
       lazyLoad={true}
       isFavorite={isFavorite}

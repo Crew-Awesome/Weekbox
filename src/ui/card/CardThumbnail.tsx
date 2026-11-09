@@ -21,6 +21,8 @@ export interface CardThumbnailProps {
   isBookmarked?: boolean
   icon?: string
   iconTooltip?: string
+  hasWarning?: boolean
+  warningTooltip?: string
   notchOverlayRef?: React.RefObject<HTMLDivElement | null>
   notchSvg1Ref?: React.RefObject<SVGSVGElement | null>
   notchSvg2Ref?: React.RefObject<SVGSVGElement | null>
@@ -47,6 +49,8 @@ export const CardThumbnail: React.FC<CardThumbnailProps> = ({
   isBookmarked,
   icon,
   iconTooltip,
+  hasWarning = false,
+  warningTooltip,
   notchOverlayRef,
   notchSvg1Ref,
   notchSvg2Ref,
@@ -158,6 +162,8 @@ export const CardThumbnail: React.FC<CardThumbnailProps> = ({
         <NotchCornerOverlay
           icon={icon}
           iconTooltip={iconTooltip}
+          hasWarning={hasWarning}
+          warningTooltip={warningTooltip}
           isLoading={isLoading}
           isDimmed={isDimmed}
           notchOverlayRef={notchOverlayRef}

@@ -483,6 +483,13 @@ export async function startModDownload(
       fileName,
       fileSize: expectedSize,
       isExecutable: isExe,
+      hasEngineWarning: detected.hasEngineWarning,
+      engineWarningMessage: detected.engineWarningMessage,
+      meta: {
+        link: downloadUrl,
+        downloadUrl,
+        sourceUrl: `https://gamebanana.com/mods/${baseModId}`,
+      },
     }
 
     const finalRecord = await registerInstalledMod(installedRecord)

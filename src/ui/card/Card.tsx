@@ -13,6 +13,8 @@ export interface CardProps {
   showThumbnail?: boolean
   icon?: string
   iconTooltip?: string
+  hasWarning?: boolean
+  warningTooltip?: string
   showIcon?: boolean
   onClick?: (e: React.MouseEvent) => void
   clickableArea?: 'whole-card' | 'thumbnail' | 'none'
@@ -37,6 +39,8 @@ export const Card: React.FC<CardProps> = ({
   showThumbnail = false,
   icon,
   iconTooltip,
+  hasWarning = false,
+  warningTooltip,
   showIcon,
   onClick,
   clickableArea = 'whole-card',
@@ -197,6 +201,8 @@ export const Card: React.FC<CardProps> = ({
           isBookmarked={isBookmarked}
           icon={icon}
           iconTooltip={iconTooltip}
+          hasWarning={hasWarning}
+          warningTooltip={warningTooltip}
           notchOverlayRef={notchOverlayRef}
           notchSvg1Ref={notchSvg1Ref}
           notchSvg2Ref={notchSvg2Ref}

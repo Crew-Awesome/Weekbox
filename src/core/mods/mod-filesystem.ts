@@ -130,10 +130,20 @@ export async function flattenSingleRootSubdirectory(
   }
 }
 
+export interface DetectedEngineResult {
+  engineId: string
+  isExecutable: boolean
+  hasEngineWarning?: boolean
+  engineWarningMessage?: string
+}
+
+export const UNDETECTED_ENGINE_WARNING_MSG =
+  'Cannot detect engine. This mod contains no reference files (_polymod_meta.json, pack.json, or executable) to index its engine. Check the folder to verify if it is a playable mod.'
+
 export async function detectModEngineFromFiles(
   modDir: string,
   fallbackEngineId?: string,
-): Promise<{ engineId: string; isExecutable: boolean }> {
+): Promise<DetectedEngineResult> {
   const host = initHost()
   const defaultId =
     fallbackEngineId && fallbackEngineId !== 'unknown'
@@ -178,22 +188,47 @@ export async function detectModEngineFromFiles(
 
   await scanLevel(modDir, 0)
 
+  const isVsliceFallback =
+    defaultId === 'vslice' ||
+    fallbackEngineId === 'vslice' ||
+    fallbackEngineId === 'base' ||
+    fallbackEngineId === 'basegame'
+
+  if (isVsliceFallback) {
+    if (hasPolymodMeta) {
+      return { engineId: 'vslice', isExecutable: false, hasEngineWarning: false }
+    }
+    if (hasPackJson) {
+      return { engineId: 'psych', isExecutable: false, hasEngineWarning: false }
+    }
+    if (hasExe) {
+      return { engineId: 'executable', isExecutable: true, hasEngineWarning: false }
+    }
+    return {
+      engineId: 'vslice',
+      isExecutable: false,
+      hasEngineWarning: true,
+      engineWarningMessage: UNDETECTED_ENGINE_WARNING_MSG,
+    }
+  }
+
   if (hasExe) {
-    return { engineId: 'executable', isExecutable: true }
+    return { engineId: 'executable', isExecutable: true, hasEngineWarning: false }
   }
   if (hasPolymodMeta) {
-    return { engineId: 'vslice', isExecutable: false }
+    return { engineId: 'vslice', isExecutable: false, hasEngineWarning: false }
   }
   if (hasCodenameMeta && fallbackEngineId === 'codename') {
-    return { engineId: 'codename', isExecutable: false }
+    return { engineId: 'codename', isExecutable: false, hasEngineWarning: false }
   }
   if (hasPackJson) {
-    return { engineId: 'psych', isExecutable: false }
+    return { engineId: 'psych', isExecutable: false, hasEngineWarning: false }
   }
 
   return {
     engineId: defaultId,
     isExecutable: defaultId === 'exe' || defaultId === 'executable',
+    hasEngineWarning: false,
   }
 }
 

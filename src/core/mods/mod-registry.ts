@@ -1,6 +1,6 @@
 import { initHost, callDevFsBridge } from '@/core/host'
 import { ensureWeekBoxLibrary, joinPaths } from '@/core/storage'
-import { extractBaseModId } from './mod-filesystem'
+import { extractBaseModId, detectModEngineFromFiles } from './mod-filesystem'
 import type { InstalledModRecord } from './types'
 
 const FAVORITES_STORAGE_KEY = 'wbr:favorite_mods'
@@ -112,19 +112,74 @@ export async function getInstalledMods(): Promise<InstalledModRecord[]> {
                 const key = String(item.id || item.modId || item.folderName || '')
                 if (key && !recordsMap.has(key)) {
                   const engineNorm = normalizeEngineFields(item)
+                  let warning = item.hasEngineWarning
+                  let warningMsg = item.engineWarningMessage
+                  let resolvedEngineId = engineNorm.engineId
+                  let resolvedEngineName = engineNorm.engineName
+                  let resolvedIsExe = engineNorm.isExecutable
+
+                  const installPath =
+                    item.installPath ||
+                    (item.folderName ? joinPaths(paths.modsDir, item.folderName) : '')
+
+                  if (warning === undefined && installPath) {
+                    try {
+                      const dirExists = await host.fs.exists(installPath)
+                      if (dirExists) {
+                        const isVslice =
+                          resolvedEngineId === 'vslice' ||
+                          item.defaultEngineId === 'vslice'
+                        if (isVslice) {
+                          const hasPoly = await host.fs.exists(
+                            joinPaths(installPath, '_polymod_meta.json'),
+                          )
+                          if (!hasPoly) {
+                            const hasPack = await host.fs.exists(
+                              joinPaths(installPath, 'pack.json'),
+                            )
+                            if (hasPack) {
+                              resolvedEngineId = 'psych'
+                              resolvedEngineName = 'Psych Engine'
+                              resolvedIsExe = false
+                              warning = false
+                            } else {
+                              const detected = await detectModEngineFromFiles(
+                                installPath,
+                                'vslice',
+                              )
+                              resolvedEngineId = detected.engineId
+                              resolvedEngineName =
+                                detected.engineId === 'executable'
+                                  ? 'Executable Mods'
+                                  : engineNorm.engineName
+                              resolvedIsExe = detected.isExecutable
+                              warning = detected.hasEngineWarning
+                              warningMsg = detected.engineWarningMessage
+                            }
+                          }
+                        }
+                      }
+                    } catch {
+                    }
+                  }
 
                   recordsMap.set(key, {
                     ...item,
                     title: item.title || item.name,
-                    engineId: engineNorm.engineId,
-                    engineName: engineNorm.engineName,
-                    isExecutable: engineNorm.isExecutable,
+                    engineId: resolvedEngineId,
+                    engineName: resolvedEngineName,
+                    isExecutable: resolvedIsExe,
                     defaultEngineId: engineNorm.defaultEngineId,
                     defaultEngineName: engineNorm.defaultEngineName,
                     icon: engineNorm.icon || item.icon,
-                    installPath:
-                      item.installPath ||
-                      (item.folderName ? joinPaths(paths.modsDir, item.folderName) : ''),
+                    hasEngineWarning: warning,
+                    engineWarningMessage: warningMsg,
+                    meta: {
+                      ...item.meta,
+                      link: item.downloadUrl || item.meta?.link,
+                      downloadUrl: item.downloadUrl || item.meta?.link,
+                    },
+                    installPath,
                   })
                 }
               }
@@ -238,14 +293,19 @@ async function writeInstalledMetadata(
   record: InstalledModRecord,
 ): Promise<void> {
   if (!record.installPath) return
-  const dirExists = await host.fs.exists(record.installPath)
-  if (!dirExists) await host.fs.createDirectory(record.installPath)
-  if (record.downloadUrl) {
-    const modUrlPath = joinPaths(record.installPath, 'mod_url.txt')
-    await host.fs.writeTextFile(modUrlPath, record.downloadUrl)
+  try {
+    const legacyFiles = [
+      joinPaths(record.installPath, 'mod.json'),
+      joinPaths(record.installPath, 'mod_url.txt'),
+      joinPaths(record.installPath, 'link.txt'),
+    ]
+    for (const file of legacyFiles) {
+      if (await host.fs.exists(file)) {
+        await host.fs.remove(file)
+      }
+    }
+  } catch {
   }
-  const modJsonPath = joinPaths(record.installPath, 'mod.json')
-  await host.fs.writeTextFile(modJsonPath, JSON.stringify(record, null, 2))
 }
 
 export async function cacheModCoverImage(
@@ -376,11 +436,22 @@ export async function registerInstalledMod(
       defaultEngineId: engineNorm.defaultEngineId,
       defaultEngineName: engineNorm.defaultEngineName,
       icon: engineNorm.icon || record.icon,
+      hasEngineWarning: record.hasEngineWarning,
+      engineWarningMessage: record.engineWarningMessage,
+      meta: {
+        ...record.meta,
+        link: record.downloadUrl || record.meta?.link,
+        downloadUrl: record.downloadUrl || record.meta?.link,
+        sourceUrl:
+          record.sourceUrl ||
+          (baseId ? `https://gamebanana.com/mods/${baseId}` : undefined),
+      },
       modId: record.modId || baseId,
       source: record.source || 'gamebanana',
       sourceUrl:
         record.sourceUrl ||
         (baseId ? `https://gamebanana.com/mods/${baseId}` : undefined),
+      downloadUrl: record.downloadUrl || record.meta?.link,
       thumbnail: remoteThumbnail || record.thumbnail,
       image: remoteThumbnail || record.image,
       previewMedia: previewMedia || record.previewMedia,

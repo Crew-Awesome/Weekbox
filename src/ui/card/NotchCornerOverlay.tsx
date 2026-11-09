@@ -3,6 +3,8 @@ import React, { useState, useId } from 'react'
 export interface NotchCornerOverlayProps {
   icon?: string
   iconTooltip?: string
+  hasWarning?: boolean
+  warningTooltip?: string
   isLoading?: boolean
   isDimmed?: boolean
   containerClassName?: string
@@ -11,12 +13,11 @@ export interface NotchCornerOverlayProps {
   notchSvg2Ref?: React.RefObject<SVGSVGElement | null>
 }
 
-/**
- * Renders the top-left corner engine icon inside the card's SVG cutout with an M3E tooltip.
- */
 export const NotchCornerOverlay: React.FC<NotchCornerOverlayProps> = ({
   icon,
   iconTooltip,
+  hasWarning = false,
+  warningTooltip,
   isLoading = false,
   isDimmed = false,
   containerClassName = 'absolute left-0 top-0 w-[72px] h-[72px] z-20 pointer-events-auto flex items-center justify-center',
@@ -26,7 +27,9 @@ export const NotchCornerOverlay: React.FC<NotchCornerOverlayProps> = ({
 }) => {
   const [iconLoaded, setIconLoaded] = useState(false)
   const rawId = useId()
-  const anchorId = `engine-icon-${rawId.replace(/:/g, '-')}`
+  const cleanId = rawId.replace(/:/g, '-')
+  const anchorId = `engine-icon-${cleanId}`
+  const warningAnchorId = `engine-warning-${cleanId}`
 
   return (
     <div className={containerClassName}>
@@ -64,7 +67,29 @@ export const NotchCornerOverlay: React.FC<NotchCornerOverlayProps> = ({
             )}
           </>
         )}
+
+        {hasWarning && (
+          <div
+            id={warningAnchorId}
+            className="absolute -top-1 -right-1 z-30 flex items-center justify-center w-5 h-5 rounded-full bg-amber-500 text-black shadow-md cursor-help pointer-events-auto"
+            onClick={(e) => e.stopPropagation()}
+            aria-label="Engine warning"
+          >
+            <span
+              className="material-symbols-rounded text-xs font-bold leading-none select-none"
+              style={{ fontVariationSettings: "'FILL' 1" }}
+            >
+              warning
+            </span>
+          </div>
+        )}
       </div>
+
+      {hasWarning && warningTooltip && (
+        <m3e-tooltip for={warningAnchorId} position="below">
+          {warningTooltip}
+        </m3e-tooltip>
+      )}
 
       {iconTooltip && (
         <m3e-tooltip for={anchorId} position="below">

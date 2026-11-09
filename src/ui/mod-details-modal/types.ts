@@ -41,6 +41,8 @@ export interface ModItem {
   downloadUrl?: string
   coverPath?: string
   localCoverPath?: string
+  hasEngineWarning?: boolean
+  engineWarningMessage?: string
 }
 
 export interface ModalViewProps {

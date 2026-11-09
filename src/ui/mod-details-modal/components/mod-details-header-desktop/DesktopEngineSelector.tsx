@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useId } from 'react'
 import {
   getSupportedEngineCategories,
   type EngineCategory,
@@ -24,6 +24,12 @@ export const DesktopEngineSelector: React.FC<DesktopEngineSelectorProps> = ({
   engineMenuId,
   handleSelectEngine,
 }) => {
+  const rawId = useId()
+  const warningId = `desktop-warning-${rawId.replace(/:/g, '-')}`
+  const warningText =
+    displayCard.engineWarningMessage ||
+    'Cannot detect engine. This mod contains no reference files (_polymod_meta.json, pack.json, or executable) to index its engine. Check the folder to verify if it is a playable mod.'
+
   if (!displayCard.icon) return null
 
   if (isInstalled) {
@@ -36,11 +42,27 @@ export const DesktopEngineSelector: React.FC<DesktopEngineSelectorProps> = ({
         >
           <m3e-menu-trigger for={engineMenuId}>
             <span className="flex items-center gap-2">
-              <img
-                src={displayCard.icon}
-                alt=""
-                className="w-4 h-4 object-contain brightness-125 shrink-0"
-              />
+              <span className="relative inline-flex items-center justify-center shrink-0">
+                <img
+                  src={displayCard.icon}
+                  alt=""
+                  className="w-4 h-4 object-contain brightness-125 shrink-0"
+                />
+                {displayCard.hasEngineWarning && (
+                  <span
+                    id={warningId}
+                    className="absolute -top-1 -right-1 flex items-center justify-center w-3 h-3 rounded-full bg-amber-500 text-black shadow pointer-events-auto cursor-help"
+                    aria-label="Engine warning"
+                  >
+                    <span
+                      className="material-symbols-rounded text-[9px] font-bold leading-none select-none"
+                      style={{ fontVariationSettings: "'FILL' 1" }}
+                    >
+                      warning
+                    </span>
+                  </span>
+                )}
+              </span>
               <span className="text-xs md:text-sm font-semibold truncate max-w-[120px]">
                 {engineName}
               </span>
@@ -50,6 +72,12 @@ export const DesktopEngineSelector: React.FC<DesktopEngineSelectorProps> = ({
             </span>
           </m3e-menu-trigger>
         </m3e-button>
+
+        {displayCard.hasEngineWarning && (
+          <m3e-tooltip for={warningId} position="below">
+            {warningText}
+          </m3e-tooltip>
+        )}
 
         <m3e-menu
           id={engineMenuId}
@@ -107,22 +135,46 @@ export const DesktopEngineSelector: React.FC<DesktopEngineSelectorProps> = ({
   }
 
   return (
-    <m3e-button
-      variant="outlined"
-      style={{ ...M3E_ENGINE_TRIGGER_STYLE, cursor: 'default' }}
-      title={engineName}
-    >
-      <span className="flex items-center gap-2">
-        <img
-          src={displayCard.icon}
-          alt=""
-          className="w-4 h-4 object-contain brightness-125 shrink-0"
-        />
-        <span className="text-xs md:text-sm font-semibold truncate max-w-[120px]">
-          {engineName}
+    <>
+      <m3e-button
+        variant="outlined"
+        style={{ ...M3E_ENGINE_TRIGGER_STYLE, cursor: 'default' }}
+        title={engineName}
+      >
+        <span className="flex items-center gap-2">
+          <span className="relative inline-flex items-center justify-center shrink-0">
+            <img
+              src={displayCard.icon}
+              alt=""
+              className="w-4 h-4 object-contain brightness-125 shrink-0"
+            />
+            {displayCard.hasEngineWarning && (
+              <span
+                id={warningId}
+                className="absolute -top-1 -right-1 flex items-center justify-center w-3 h-3 rounded-full bg-amber-500 text-black shadow pointer-events-auto cursor-help"
+                aria-label="Engine warning"
+              >
+                <span
+                  className="material-symbols-rounded text-[9px] font-bold leading-none select-none"
+                  style={{ fontVariationSettings: "'FILL' 1" }}
+                >
+                  warning
+                </span>
+              </span>
+            )}
+          </span>
+          <span className="text-xs md:text-sm font-semibold truncate max-w-[120px]">
+            {engineName}
+          </span>
         </span>
-      </span>
-    </m3e-button>
+      </m3e-button>
+
+      {displayCard.hasEngineWarning && (
+        <m3e-tooltip for={warningId} position="below">
+          {warningText}
+        </m3e-tooltip>
+      )}
+    </>
   )
 }
 

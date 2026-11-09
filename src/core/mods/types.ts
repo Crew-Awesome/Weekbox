@@ -55,6 +55,12 @@ export interface InstalledModRecord {
   fileName?: string
   fileSize?: number
   isExecutable?: boolean
+  hasEngineWarning?: boolean
+  engineWarningMessage?: string
+  meta?: {
+    link?: string
+    [key: string]: unknown
+  }
   views?: number
   likes?: number
   downloads?: number

@@ -114,6 +114,7 @@ export function useModDetails({
           engineId: cat.id,
           engineName: cat.name,
           icon: cat.icon,
+          hasEngineWarning: false,
         })
       }
       if (isInstalled && modId !== undefined) {
@@ -121,6 +122,7 @@ export function useModDetails({
           engineId: cat.id,
           engineName: cat.name,
           icon: cat.icon,
+          hasEngineWarning: false,
         })
       }
     },
