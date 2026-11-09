@@ -1,6 +1,7 @@
 import React, { useMemo, useState, useEffect } from 'react'
 import type { LibraryEngineSummary, LibrarySortOption } from '../types'
 import { FilterIcon } from '@/ui/icons'
+import { LibraryCriteriaMenu } from './LibraryCriteriaMenu'
 
 export interface LibraryFiltersBarProps {
   selectedEngine: string | string[]
@@ -19,26 +20,6 @@ export interface LibraryFiltersBarProps {
   compact?: boolean
   className?: string
 }
-
-const M3E_MENU_STYLE: React.CSSProperties = {
-  '--m3e-menu-container-color': 'var(--md-sys-color-surface-container)',
-  '--m3e-menu-container-shape': '16px',
-  '--m3e-menu-container-min-width': '240px',
-  '--m3e-menu-container-max-height': 'none',
-  '--m3e-menu-item-color': 'var(--md-sys-color-on-surface)',
-  '--m3e-menu-item-icon-size': '18px',
-  '--m3e-menu-item-icon-label-space': '8px',
-  '--m3e-menu-item-padding-start': '10px',
-  '--m3e-menu-item-padding-end': '10px',
-  '--m3e-menu-item-container-height': '38px',
-  boxShadow:
-    '0 12px 32px color-mix(in srgb, var(--md-sys-color-scrim) 20%, transparent)',
-  border:
-    '1px solid color-mix(in srgb, var(--md-sys-color-outline-variant) 50%, transparent)',
-  width: 'min(280px, calc(100vw - 24px))',
-  maxHeight: 'none',
-  overflow: 'hidden',
-} as React.CSSProperties
 
 const M3E_BUTTON_STYLE: React.CSSProperties = {
   '--m3e-button-outlined-container-shape': '16px',
@@ -184,316 +165,24 @@ export const LibraryFiltersBar: React.FC<LibraryFiltersBarProps> = ({
     }
   }, [])
 
-  const renderMenu = () => (
-    <m3e-menu
-      id="library-criteria-menu"
-      position-x="after"
-      position-y="below"
-      style={M3E_MENU_STYLE}
-    >
-      <m3e-overflow
-        direction="vertical"
-        style={{
-          width: '100%',
-          height: 'min(420px, calc(100vh - 140px))',
-        }}
-        thumb-color="var(--md-sys-color-primary)"
-        track-color="var(--md-sys-color-outline-variant)"
-      >
-        <div
-          style={{
-            display: 'flex',
-            flexDirection: 'column',
-            gap: '4px',
-            paddingBlock: '6px',
-            paddingInline: '2px 14px',
-            width: '100%',
-            boxSizing: 'border-box',
-          }}
-        >
-          <div className="px-3.5 pt-2 pb-1 text-[10px] font-bold uppercase tracking-wider text-[var(--md-sys-color-primary)] opacity-85 select-none">
-            Sort By
-          </div>
-
-          <m3e-menu-item
-            checked={sortBy === 'recent'}
-            onClick={() => onSortChange('recent')}
-            style={{ margin: '3px 0' }}
-          >
-            <span slot="icon" className="material-symbols-rounded text-lg">
-              schedule
-            </span>
-            <span className="text-xs sm:text-sm font-semibold">
-              Recently Installed
-            </span>
-            {sortBy === 'recent' && (
-              <span
-                slot="trailing-icon"
-                className="material-symbols-rounded text-base text-[var(--md-sys-color-primary)]"
-              >
-                check
-              </span>
-            )}
-          </m3e-menu-item>
-
-          <m3e-menu-item
-            checked={sortBy === 'name'}
-            onClick={() => onSortChange('name')}
-            style={{ margin: '3px 0' }}
-          >
-            <span slot="icon" className="material-symbols-rounded text-lg">
-              sort_by_alpha
-            </span>
-            <span className="text-xs sm:text-sm font-semibold">
-              Name (A-Z)
-            </span>
-            {sortBy === 'name' && (
-              <span
-                slot="trailing-icon"
-                className="material-symbols-rounded text-base text-[var(--md-sys-color-primary)]"
-              >
-                check
-              </span>
-            )}
-          </m3e-menu-item>
-
-          <m3e-menu-item
-            checked={sortBy === 'size'}
-            onClick={() => onSortChange('size')}
-            style={{ margin: '3px 0' }}
-          >
-            <span slot="icon" className="material-symbols-rounded text-lg">
-              hard_drive
-            </span>
-            <span className="text-xs sm:text-sm font-semibold">
-              Size (Largest)
-            </span>
-            {sortBy === 'size' && (
-              <span
-                slot="trailing-icon"
-                className="material-symbols-rounded text-base text-[var(--md-sys-color-primary)]"
-              >
-                check
-              </span>
-            )}
-          </m3e-menu-item>
-
-          <m3e-menu-item
-            checked={sortBy === 'engine'}
-            onClick={() => onSortChange('engine')}
-            style={{ margin: '3px 0' }}
-          >
-            <span slot="icon" className="material-symbols-rounded text-lg">
-              category
-            </span>
-            <span className="text-xs sm:text-sm font-semibold">
-              Engine (A-Z)
-            </span>
-            {sortBy === 'engine' && (
-              <span
-                slot="trailing-icon"
-                className="material-symbols-rounded text-base text-[var(--md-sys-color-primary)]"
-              >
-                check
-              </span>
-            )}
-          </m3e-menu-item>
-
-          <m3e-divider
-            style={{
-              margin: '6px 0',
-              borderColor:
-                'color-mix(in srgb, var(--md-sys-color-outline-variant) 40%, transparent)',
-            }}
-          ></m3e-divider>
-
-          <div className="px-3.5 pt-1.5 pb-1 text-[10px] font-bold uppercase tracking-wider text-[var(--md-sys-color-primary)] opacity-85 select-none">
-            Filter By
-          </div>
-
-          <m3e-menu-item
-            checked={filterFavorites}
-            onClick={onToggleFavorites}
-            style={{ margin: '3px 0' }}
-          >
-            <span
-              slot="icon"
-              className={`material-symbols-rounded text-lg ${
-                filterFavorites ? 'text-red-500' : ''
-              }`}
-              style={
-                filterFavorites
-                  ? { fontVariationSettings: "'FILL' 1" }
-                  : undefined
-              }
-            >
-              favorite
-            </span>
-            <span className="text-xs sm:text-sm font-semibold">
-              Favorites ({favoritesCount})
-            </span>
-            {filterFavorites && (
-              <span
-                slot="trailing-icon"
-                className="material-symbols-rounded text-base text-[var(--md-sys-color-primary)]"
-              >
-                check
-              </span>
-            )}
-          </m3e-menu-item>
-
-          <m3e-menu-item
-            checked={filterBookmarks}
-            onClick={onToggleBookmarks}
-            style={{ margin: '3px 0' }}
-          >
-            <span
-              slot="icon"
-              className={`material-symbols-rounded text-lg ${
-                filterBookmarks ? 'text-amber-400' : ''
-              }`}
-              style={
-                filterBookmarks
-                  ? { fontVariationSettings: "'FILL' 1" }
-                  : undefined
-              }
-            >
-              bookmark
-            </span>
-            <span className="text-xs sm:text-sm font-semibold">
-              Bookmarks ({bookmarksCount})
-            </span>
-            {filterBookmarks && (
-              <span
-                slot="trailing-icon"
-                className="material-symbols-rounded text-base text-[var(--md-sys-color-primary)]"
-              >
-                check
-              </span>
-            )}
-          </m3e-menu-item>
-
-          {engineSummaries.length > 0 && (
-            <>
-              <m3e-divider
-                style={{
-                  margin: '6px 0',
-                  borderColor:
-                    'color-mix(in srgb, var(--md-sys-color-outline-variant) 40%, transparent)',
-                }}
-              ></m3e-divider>
-              <div className="px-3.5 pt-1.5 pb-1 text-[10px] font-bold uppercase tracking-wider text-[var(--md-sys-color-primary)] opacity-85 select-none">
-                Engine
-              </div>
-              <m3e-menu-item
-                checked={isAllEngines}
-                onClick={handleSelectAllEngines}
-                style={{ margin: '3px 0' }}
-              >
-                <span slot="icon" className="material-symbols-rounded text-lg">
-                  apps
-                </span>
-                <span className="text-xs sm:text-sm font-semibold">
-                  All Engines
-                </span>
-                {isAllEngines && (
-                  <span
-                    slot="trailing-icon"
-                    className="material-symbols-rounded text-base text-[var(--md-sys-color-primary)]"
-                  >
-                    check
-                  </span>
-                )}
-              </m3e-menu-item>
-              {engineSummaries.map((eng) => {
-                const isSelected = selectedEngines.some(
-                  (e) =>
-                    e.toLowerCase() === eng.id.toLowerCase() ||
-                    e.toLowerCase() === eng.name.toLowerCase(),
-                )
-
-                return (
-                  <m3e-menu-item
-                    key={eng.id}
-                    checked={isSelected}
-                    onClick={() => handleToggleEngine(eng.id)}
-                    style={{ margin: '3px 0' }}
-                  >
-                    {eng.icon ? (
-                      <img
-                        slot="icon"
-                        src={eng.icon}
-                        alt=""
-                        className="w-5 h-5 rounded object-contain shrink-0 aspect-square"
-                        style={{
-                          width: '20px',
-                          height: '20px',
-                          minWidth: '20px',
-                          minHeight: '20px',
-                          aspectRatio: '1 / 1',
-                          objectFit: 'contain',
-                          borderRadius: '4px',
-                        }}
-                      />
-                    ) : (
-                      <span
-                        slot="icon"
-                        className="material-symbols-rounded text-lg flex items-center justify-center shrink-0"
-                        style={{
-                          width: '20px',
-                          height: '20px',
-                          minWidth: '20px',
-                          minHeight: '20px',
-                          fontSize: '20px',
-                          lineHeight: '20px',
-                          aspectRatio: '1 / 1',
-                        }}
-                      >
-                        layers
-                      </span>
-                    )}
-                    <span className="text-xs sm:text-sm font-semibold truncate">
-                      {eng.name} ({eng.count})
-                    </span>
-                    {isSelected && (
-                      <span
-                        slot="trailing-icon"
-                        className="material-symbols-rounded text-base text-[var(--md-sys-color-primary)]"
-                      >
-                        check
-                      </span>
-                    )}
-                  </m3e-menu-item>
-                )
-              })}
-            </>
-          )}
-
-          {hasActiveFilters && (
-            <>
-              <m3e-divider
-                style={{
-                  margin: '6px 0',
-                  borderColor:
-                    'color-mix(in srgb, var(--md-sys-color-outline-variant) 40%, transparent)',
-                }}
-              ></m3e-divider>
-              <m3e-menu-item onClick={onClearFilters} style={{ margin: '3px 0' }}>
-                <span
-                  slot="icon"
-                  className="material-symbols-rounded text-lg text-red-500"
-                >
-                  filter_alt_off
-                </span>
-                <span className="text-xs sm:text-sm font-semibold text-red-500">
-                  Clear Filters
-                </span>
-              </m3e-menu-item>
-            </>
-          )}
-        </div>
-      </m3e-overflow>
-    </m3e-menu>
+  const menuNode = (
+    <LibraryCriteriaMenu
+      sortBy={sortBy}
+      onSortChange={onSortChange}
+      filterFavorites={filterFavorites}
+      onToggleFavorites={onToggleFavorites}
+      favoritesCount={favoritesCount}
+      filterBookmarks={filterBookmarks}
+      onToggleBookmarks={onToggleBookmarks}
+      bookmarksCount={bookmarksCount}
+      engineSummaries={engineSummaries}
+      selectedEngines={selectedEngines}
+      isAllEngines={isAllEngines}
+      onSelectAllEngines={handleSelectAllEngines}
+      onToggleEngine={handleToggleEngine}
+      hasActiveFilters={hasActiveFilters}
+      onClearFilters={onClearFilters}
+    />
   )
 
   if (compact) {
@@ -546,7 +235,7 @@ export const LibraryFiltersBar: React.FC<LibraryFiltersBarProps> = ({
           </span>
         )}
 
-        {renderMenu()}
+        {menuNode}
       </div>
     )
   }
@@ -609,7 +298,7 @@ export const LibraryFiltersBar: React.FC<LibraryFiltersBarProps> = ({
             </span>
           )}
 
-          {renderMenu()}
+          {menuNode}
         </div>
       </div>
 
