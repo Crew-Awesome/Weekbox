@@ -187,6 +187,7 @@ export function useModDetails({
     hasMultipleFiles: validFiles.length > 1,
     singleFileProgress: downloadActions.singleFileProgress,
     singleFileStatus: downloadActions.singleFileStatus,
+    singleFileStatusText: downloadActions.singleFileStatusText,
     singleFileCurrentFile: downloadActions.singleFileCurrentFile,
     singleFileDownloaded: downloadActions.singleFileDownloaded,
     singleFileTotal: downloadActions.singleFileTotal,

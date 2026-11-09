@@ -1,5 +1,110 @@
-import React from 'react'
+import React, { useState } from 'react'
 import { formatFileSize, type ModItem, type GameBananaFile } from '../../types'
+
+interface FileDownloadButtonProps {
+  file: GameBananaFile
+  task?: { progress?: number; status?: string }
+  onDownloadFile: (url: string, id: string) => void
+  onCancelDownload?: (id: string) => void
+}
+
+const FileDownloadButton: React.FC<FileDownloadButtonProps> = ({
+  file,
+  task,
+  onDownloadFile,
+  onCancelDownload,
+}) => {
+  const [isHovered, setIsHovered] = useState(false)
+  const prog = task?.progress ?? 0
+  const isExtracting = task?.status === 'extracting'
+  const isDownloading =
+    task?.status === 'downloading' ||
+    (task?.progress !== undefined &&
+      task.progress >= 0 &&
+      task.progress < 100 &&
+      !isExtracting)
+  const isActive = isDownloading || isExtracting
+  const showCancel = isHovered && isActive && Boolean(onCancelDownload)
+
+  const buttonStyle: React.CSSProperties = (showCancel
+    ? {
+        '--m3e-button-filled-container-color': '#dc2626',
+        '--m3e-button-filled-label-text-color': '#ffffff',
+      }
+    : {}) as React.CSSProperties
+
+  return (
+    <m3e-button
+      variant="filled"
+      onClick={() => {
+        if (isActive && onCancelDownload) {
+          onCancelDownload(String(file._idRow))
+        } else {
+          onDownloadFile(file._sDownloadUrl!, String(file._idRow))
+        }
+      }}
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+      className="shrink-0 text-xs font-bold transition-all"
+      style={buttonStyle}
+      title={
+        isActive
+          ? 'Click to cancel download'
+          : 'Download file'
+      }
+    >
+      {isActive ? (
+        showCancel ? (
+          <>
+            <span className="material-symbols-rounded text-sm shrink-0 leading-none">
+              close
+            </span>
+            <span>Cancel</span>
+          </>
+        ) : (
+          <>
+            <m3e-circular-progress-indicator
+              variant="wavy"
+              value={prog > 1 ? prog : undefined}
+              indeterminate={prog <= 1}
+              style={
+                {
+                  '--m3e-circular-wavy-progress-indicator-diameter': '16px',
+                  '--m3e-circular-flat-progress-indicator-diameter': '16px',
+                  '--m3e-circular-progress-indicator-thickness': '2.5px',
+                  '--m3e-circular-wavy-progress-indicator-amplitude': '1.2px',
+                  '--m3e-circular-wavy-progress-indicator-wavelength': '8px',
+                  '--m3e-progress-indicator-color':
+                    'var(--md-sys-color-on-primary)',
+                  '--m3e-progress-indicator-track-color':
+                    prog > 1
+                      ? 'rgba(255, 255, 255, 0.25)'
+                      : 'transparent',
+                } as React.CSSProperties
+              }
+            />
+            <span>
+              {isExtracting
+                ? prog > 1
+                  ? `Extracting ${prog}%`
+                  : 'Extracting...'
+                : prog <= 1
+                  ? 'Starting...'
+                  : `${prog}%`}
+            </span>
+          </>
+        )
+      ) : (
+        <>
+          <span className="material-symbols-rounded text-sm shrink-0">
+            download
+          </span>
+          <span>Download</span>
+        </>
+      )}
+    </m3e-button>
+  )
+}
 
 interface ModDownloadListProps {
   displayCard: ModItem
@@ -53,8 +158,12 @@ export const ModDownloadList: React.FC<ModDownloadListProps> = ({
           {files.map((file, idx) => {
             const task = downloadTasks[String(file._idRow)]
             const prog = task?.progress
-            const isDownloading = prog !== undefined && prog >= 0 && prog < 100
-            const isCompleted = prog === 100
+            const isExtracting = task?.status === 'extracting'
+            const isDownloading =
+              task?.status === 'downloading' ||
+              (prog !== undefined && prog >= 0 && prog < 100 && !isExtracting)
+            const isActive = isDownloading || isExtracting
+            const isCompleted = prog === 100 || task?.status === 'completed'
             const installedTime = getFileTimestamp(displayCard.installedAt)
             const fileTime = getFileTimestamp(
               file._tsDateAdded || file.date || file._tsDateModified,
@@ -98,20 +207,50 @@ export const ModDownloadList: React.FC<ModDownloadListProps> = ({
                                 String(file._idRow),
                               )
                             }
-                            disabled={isDownloading}
+                            disabled={isActive}
                             className={`flex items-center gap-1 text-xs font-bold ${
-                              isDownloading
+                              isActive
                                 ? 'bg-amber-500/20 text-amber-300 cursor-wait'
                                 : 'bg-amber-500 hover:bg-amber-400 text-black cursor-pointer shadow-sm'
                             }`}
                             title="Update to this version"
                           >
-                            {isDownloading ? (
+                            {isActive ? (
                               <>
-                                <span className="material-symbols-rounded text-sm animate-spin shrink-0">
-                                  progress_activity
+                                <m3e-circular-progress-indicator
+                                  variant="wavy"
+                                  value={prog && prog > 1 ? prog : undefined}
+                                  indeterminate={!prog || prog <= 1}
+                                  style={
+                                    {
+                                      '--m3e-circular-wavy-progress-indicator-diameter':
+                                        '14px',
+                                      '--m3e-circular-flat-progress-indicator-diameter':
+                                        '14px',
+                                      '--m3e-circular-progress-indicator-thickness':
+                                        '2px',
+                                      '--m3e-circular-wavy-progress-indicator-amplitude':
+                                        '1px',
+                                      '--m3e-circular-wavy-progress-indicator-wavelength':
+                                        '6px',
+                                      '--m3e-progress-indicator-color':
+                                        'currentColor',
+                                      '--m3e-progress-indicator-track-color':
+                                        prog && prog > 1
+                                          ? 'rgba(0, 0, 0, 0.2)'
+                                          : 'transparent',
+                                    } as React.CSSProperties
+                                  }
+                                />
+                                <span>
+                                  {isExtracting
+                                    ? prog && prog > 1
+                                      ? `Extracting ${prog}%`
+                                      : 'Extracting...'
+                                    : prog && prog > 1
+                                      ? `${prog}%`
+                                      : 'Starting...'}
                                 </span>
-                                <span>{prog}%</span>
                               </>
                             ) : (
                               <>
@@ -135,65 +274,12 @@ export const ModDownloadList: React.FC<ModDownloadListProps> = ({
                         </m3e-button>
                       </div>
                     ) : onDownloadFile ? (
-                      <m3e-button
-                        variant="filled"
-                        onClick={() => {
-                          if (isDownloading && onCancelDownload) {
-                            onCancelDownload(String(file._idRow))
-                          } else {
-                            onDownloadFile(
-                              file._sDownloadUrl!,
-                              String(file._idRow),
-                            )
-                          }
-                        }}
-                        className="shrink-0 text-xs font-bold"
-                        title={
-                          isDownloading
-                            ? 'Click to cancel download'
-                            : 'Download file'
-                        }
-                      >
-                        {isDownloading ? (
-                          prog <= 1 ? (
-                            <>
-                              <m3e-circular-progress-indicator
-                                variant="wavy"
-                                indeterminate
-                                style={
-                                  {
-                                    '--m3e-circular-wavy-progress-indicator-diameter':
-                                      '16px',
-                                    '--m3e-circular-progress-indicator-thickness':
-                                      '2.5px',
-                                    '--m3e-circular-wavy-progress-indicator-amplitude':
-                                      '1.2px',
-                                    '--m3e-circular-wavy-progress-indicator-wavelength':
-                                      '8px',
-                                    '--m3e-progress-indicator-color':
-                                      'var(--md-sys-color-on-primary)',
-                                  } as React.CSSProperties
-                                }
-                              />
-                              <span>Starting...</span>
-                            </>
-                          ) : (
-                            <>
-                              <span className="material-symbols-rounded text-sm animate-spin shrink-0">
-                                progress_activity
-                              </span>
-                              <span>{prog}%</span>
-                            </>
-                          )
-                        ) : (
-                          <>
-                            <span className="material-symbols-rounded text-sm shrink-0">
-                              download
-                            </span>
-                            <span>Download</span>
-                          </>
-                        )}
-                      </m3e-button>
+                      <FileDownloadButton
+                        file={file}
+                        task={task}
+                        onDownloadFile={onDownloadFile}
+                        onCancelDownload={onCancelDownload}
+                      />
                     ) : null)}
                 </div>
 

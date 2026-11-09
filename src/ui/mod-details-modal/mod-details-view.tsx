@@ -14,9 +14,6 @@ export interface ModDetailsViewProps extends ModalViewProps {
   isDesktop?: boolean
 }
 
-/**
- * Responsive layout for Mod Details Modal (mobile stacked sheet vs desktop 16:9 split view).
- */
 export const ModDetailsView: React.FC<ModDetailsViewProps> = ({
   displayCard,
   engineName,
@@ -179,6 +176,7 @@ export const ModDetailsView: React.FC<ModDetailsViewProps> = ({
               handleCancelDownload={details.handleCancelDownload}
               singleFileProgress={details.singleFileProgress}
               singleFileStatus={details.singleFileStatus}
+              singleFileStatusText={details.singleFileStatusText}
               singleFileCurrentFile={details.singleFileCurrentFile}
               singleFileDownloaded={details.singleFileDownloaded}
               singleFileTotal={details.singleFileTotal}
@@ -332,6 +330,7 @@ export const ModDetailsView: React.FC<ModDetailsViewProps> = ({
                     handleCancelDownload={details.handleCancelDownload}
                     singleFileProgress={details.singleFileProgress}
                     singleFileStatus={details.singleFileStatus}
+                    singleFileStatusText={details.singleFileStatusText}
                     singleFileCurrentFile={details.singleFileCurrentFile}
                     singleFileDownloaded={details.singleFileDownloaded}
                     singleFileTotal={details.singleFileTotal}

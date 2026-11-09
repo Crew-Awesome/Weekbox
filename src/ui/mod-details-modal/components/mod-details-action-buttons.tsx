@@ -42,6 +42,7 @@ export interface ModDetailsActionButtonsProps {
   handleCancelDownload?: () => void
   singleFileProgress: number
   singleFileStatus: string
+  singleFileStatusText?: string
   singleFileCurrentFile?: string
   singleFileDownloaded: number
   singleFileTotal: number
@@ -49,9 +50,6 @@ export interface ModDetailsActionButtonsProps {
   isDropdownOpen: boolean
 }
 
-/**
- * Renders the primary action bar for a mod (Download, Multiple Files, Extracting, Play, Update, Uninstall).
- */
 export const ModDetailsActionButtons: React.FC<ModDetailsActionButtonsProps> = ({
   variant = 'desktop',
   isInstalled,
@@ -74,6 +72,7 @@ export const ModDetailsActionButtons: React.FC<ModDetailsActionButtonsProps> = (
   handleCancelDownload,
   singleFileProgress,
   singleFileStatus,
+  singleFileStatusText,
   singleFileCurrentFile,
   singleFileDownloaded,
   singleFileTotal,
@@ -113,27 +112,19 @@ export const ModDetailsActionButtons: React.FC<ModDetailsActionButtonsProps> = (
     '--m3e-button-tonal-label-text-color': 'var(--md-sys-color-on-surface)',
   } as React.CSSProperties
 
-  const isDownloadingOrStarting =
-    singleFileStatus === 'downloading' ||
-    singleFileStatus === 'starting' ||
-    singleFileStatus === 'Starting download...' ||
-    (singleFileProgress !== undefined &&
-      singleFileProgress >= 0 &&
-      singleFileProgress < 99 &&
-      singleFileStatus !== 'download' &&
-      singleFileStatus !== 'ready')
-
-  const isExtracting =
-    singleFileStatus === 'extracting' ||
-    singleFileProgress === 99
+  const isDownloading = singleFileStatus === 'downloading'
+  const isExtracting = singleFileStatus === 'extracting'
+  const isCanceling =
+    singleFileProgress === -1 || singleFileStatus === 'canceling'
+  const isCompleted = singleFileStatus === 'completed'
 
   const actionState: ModActionState = useMemo(() => {
     if (isLoading) return 'loading'
-    if (isInstalled) return 'play'
-    if (singleFileProgress === -1 || singleFileStatus === 'canceling') return 'canceling'
-    if (singleFileProgress === 100 || singleFileStatus === 'completed') return 'completed'
+    if (isCanceling) return 'canceling'
     if (isExtracting) return 'extracting'
-    if (isDownloadingOrStarting) return 'downloading'
+    if (isDownloading) return 'downloading'
+    if (isInstalled) return 'play'
+    if (isCompleted) return 'completed'
     if (hasMultipleFiles || validFiles.length > 1) {
       return 'multiplefiles'
     }
@@ -143,11 +134,11 @@ export const ModDetailsActionButtons: React.FC<ModDetailsActionButtonsProps> = (
     return 'download'
   }, [
     isLoading,
-    isInstalled,
-    singleFileProgress,
-    singleFileStatus,
+    isCanceling,
     isExtracting,
-    isDownloadingOrStarting,
+    isDownloading,
+    isInstalled,
+    isCompleted,
     hasMultipleFiles,
     validFiles.length,
     hasNoFiles,
@@ -156,11 +147,13 @@ export const ModDetailsActionButtons: React.FC<ModDetailsActionButtonsProps> = (
   const cancelIconRef = useRef<CancelAnimatedIconHandle>(null)
   const [isCancelInitiated, setIsCancelInitiated] = useState(false)
   const [prevActionState, setPrevActionState] = useState(actionState)
+  const [isHovered, setIsHovered] = useState(false)
 
   if (prevActionState !== actionState) {
     setPrevActionState(actionState)
     if (actionState !== 'downloading' && actionState !== 'canceling') {
       setIsCancelInitiated(false)
+      setIsHovered(false)
     }
   }
 
@@ -351,75 +344,109 @@ export const ModDetailsActionButtons: React.FC<ModDetailsActionButtonsProps> = (
   if (actionState === 'extracting') {
     return (
       <m3e-button
-        variant="tonal"
-        disabled
-        className="w-full flex items-center justify-center cursor-wait"
-        style={tonalButtonStyle}
-      >
-        <span
-          slot="icon"
-          className="material-symbols-rounded animate-spin text-xl shrink-0 leading-none"
-        >
-          progress_activity
-        </span>
-        <span className="flex flex-col items-center leading-tight min-w-0 max-w-full overflow-hidden py-0.5">
-          <span className="text-[14px] md:text-[15px] font-semibold truncate max-w-full leading-tight text-[var(--md-sys-color-on-surface)]">
-            {singleFileStatus &&
-            singleFileStatus !== 'download' &&
-            singleFileStatus !== 'ready' &&
-            singleFileStatus !== 'downloading'
-              ? singleFileStatus
-              : 'Extracting archive...'}
-          </span>
-          {singleFileCurrentFile ? (
-            <span className="text-[11px] font-normal opacity-75 truncate max-w-[260px] md:max-w-[340px] leading-none mt-1 text-[var(--md-sys-color-on-surface-variant)]">
-              {singleFileCurrentFile}
-            </span>
-          ) : null}
-        </span>
-      </m3e-button>
-    )
-  }
-
-  if (actionState === 'downloading') {
-    const isStarting =
-      singleFileProgress <= 1 ||
-      singleFileStatus === 'starting' ||
-      singleFileStatus === 'Starting download...'
-
-    return (
-      <m3e-button
         variant="filled"
-        onClick={handleCancelClick}
-        className="w-full relative overflow-hidden select-none group transition-all duration-300 shadow-md cursor-pointer"
+        disabled
+        className="w-full relative overflow-hidden select-none transition-all duration-300 shadow-md cursor-wait"
         style={primaryButtonStyle}
-        title="Click to cancel download"
       >
-        {!isStarting && (
+        {singleFileProgress > 1 && (
           <div
             className="absolute left-0 top-0 bottom-0 bg-[var(--md-sys-color-primary-container)]/40 transition-all duration-300 ease-out z-0 pointer-events-none"
             style={{ width: `${Math.max(0, Math.min(100, singleFileProgress))}%` }}
           />
         )}
 
-        <div
-          className={`absolute inset-0 bg-red-600 flex items-center justify-center gap-2.5 transition-opacity duration-200 z-20 cursor-pointer text-white ${
-            isCancelInitiated ? 'opacity-100 pointer-events-none' : 'opacity-0 group-hover:opacity-100'
-          }`}
-          onClick={handleCancelClick}
-        >
-          <CancelAnimatedIcon
-            ref={cancelIconRef}
-            isCanceling={isCancelInitiated}
-            size={isDesktop ? 22 : 20}
-            color="#ffffff"
+        <div className="flex items-center justify-center gap-2.5 z-10 py-0.5 min-w-0 max-w-full px-2">
+          <m3e-circular-progress-indicator
+            variant="wavy"
+            value={singleFileProgress > 1 ? singleFileProgress : undefined}
+            indeterminate={singleFileProgress <= 1}
+            style={
+              {
+                '--m3e-circular-wavy-progress-indicator-diameter': isDesktop
+                  ? '24px'
+                  : '22px',
+                '--m3e-circular-flat-progress-indicator-diameter': isDesktop
+                  ? '24px'
+                  : '22px',
+                '--m3e-circular-progress-indicator-thickness': '3px',
+                '--m3e-circular-wavy-progress-indicator-amplitude': '1.8px',
+                '--m3e-circular-wavy-progress-indicator-wavelength': '12px',
+                '--m3e-progress-indicator-color':
+                  'var(--md-sys-color-on-primary)',
+                '--m3e-progress-indicator-track-color':
+                  singleFileProgress > 1
+                    ? 'rgba(255, 255, 255, 0.25)'
+                    : 'transparent',
+              } as React.CSSProperties
+            }
           />
-          <span className="font-bold text-[15px] md:text-[16px] tracking-wide">
-            {isCancelInitiated ? 'Canceling...' : 'Cancel Download'}
-          </span>
+          <div className="flex flex-col items-center leading-tight min-w-0 max-w-full">
+            <span className="text-[15px] md:text-[16px] font-bold tracking-[0.15px] text-[var(--md-sys-color-on-primary)] leading-tight truncate max-w-full">
+              {singleFileProgress > 1
+                ? `Extracting... ${singleFileProgress}%`
+                : singleFileStatusText || 'Extracting...'}
+            </span>
+            {singleFileCurrentFile ? (
+              <span className="text-[11px] font-medium opacity-85 leading-none mt-1 text-[var(--md-sys-color-on-primary)] truncate max-w-[240px] md:max-w-[340px]">
+                {singleFileCurrentFile}
+              </span>
+            ) : singleFileDownloaded > 0 ? (
+              <span className="text-[11px] font-medium opacity-85 leading-none mt-1 text-[var(--md-sys-color-on-primary)]">
+                {formatFileSize(singleFileDownloaded)}{' '}
+                {singleFileTotal > 0
+                  ? `/ ${formatFileSize(singleFileTotal)}`
+                  : ''}
+              </span>
+            ) : null}
+          </div>
         </div>
+      </m3e-button>
+    )
+  }
 
-        {isStarting ? (
+  if (actionState === 'downloading') {
+    const isStarting = singleFileProgress <= 1
+    const showCancelState = isHovered || isCancelInitiated
+
+    const dynamicButtonStyle: React.CSSProperties = (showCancelState
+      ? {
+          ...primaryButtonStyle,
+          '--m3e-button-filled-container-color': '#dc2626',
+          '--m3e-button-filled-label-text-color': '#ffffff',
+        }
+      : primaryButtonStyle) as React.CSSProperties
+
+    return (
+      <m3e-button
+        variant="filled"
+        onClick={handleCancelClick}
+        onMouseEnter={() => setIsHovered(true)}
+        onMouseLeave={() => setIsHovered(false)}
+        className="w-full relative overflow-hidden select-none transition-all duration-300 shadow-md cursor-pointer"
+        style={dynamicButtonStyle}
+        title="Click to cancel download"
+      >
+        {!isStarting && !showCancelState && (
+          <div
+            className="absolute left-0 top-0 bottom-0 bg-[var(--md-sys-color-primary-container)]/40 transition-all duration-300 ease-out z-0 pointer-events-none"
+            style={{ width: `${Math.max(0, Math.min(100, singleFileProgress))}%` }}
+          />
+        )}
+
+        {showCancelState ? (
+          <div className="flex items-center justify-center gap-2.5 z-10 py-0.5 text-white">
+            <CancelAnimatedIcon
+              ref={cancelIconRef}
+              isCanceling={isCancelInitiated}
+              size={isDesktop ? 22 : 20}
+              color="#ffffff"
+            />
+            <span className="font-bold text-[15px] md:text-[16px] tracking-wide">
+              {isCancelInitiated ? 'Canceling...' : 'Cancel Download'}
+            </span>
+          </div>
+        ) : isStarting ? (
           <div className="flex items-center justify-center gap-2.5 z-10 py-0.5">
             <m3e-circular-progress-indicator
               variant="wavy"
@@ -427,6 +454,9 @@ export const ModDetailsActionButtons: React.FC<ModDetailsActionButtonsProps> = (
               style={
                 {
                   '--m3e-circular-wavy-progress-indicator-diameter': isDesktop
+                    ? '24px'
+                    : '22px',
+                  '--m3e-circular-flat-progress-indicator-diameter': isDesktop
                     ? '24px'
                     : '22px',
                   '--m3e-circular-progress-indicator-thickness': '3px',
@@ -444,11 +474,28 @@ export const ModDetailsActionButtons: React.FC<ModDetailsActionButtonsProps> = (
           </div>
         ) : (
           <div className="flex items-center justify-center gap-2.5 z-10 py-0.5 min-w-0">
-            <span
-              className="material-symbols-rounded animate-spin text-xl shrink-0 leading-none text-[var(--md-sys-color-on-primary)]"
-            >
-              progress_activity
-            </span>
+            <m3e-circular-progress-indicator
+              variant="wavy"
+              value={singleFileProgress}
+              max="100"
+              style={
+                {
+                  '--m3e-circular-wavy-progress-indicator-diameter': isDesktop
+                    ? '24px'
+                    : '22px',
+                  '--m3e-circular-flat-progress-indicator-diameter': isDesktop
+                    ? '24px'
+                    : '22px',
+                  '--m3e-circular-progress-indicator-thickness': '3px',
+                  '--m3e-circular-wavy-progress-indicator-amplitude': '1.8px',
+                  '--m3e-circular-wavy-progress-indicator-wavelength': '12px',
+                  '--m3e-progress-indicator-color':
+                    'var(--md-sys-color-on-primary)',
+                  '--m3e-progress-indicator-track-color':
+                    'rgba(255, 255, 255, 0.25)',
+                } as React.CSSProperties
+              }
+            />
             <div className="flex flex-col items-center leading-tight min-w-0">
               <span className="text-[15px] md:text-[16px] font-bold tracking-[0.15px] text-[var(--md-sys-color-on-primary)] leading-tight">
                 Downloading... {singleFileProgress}%

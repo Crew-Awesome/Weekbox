@@ -248,8 +248,8 @@ export function useModDownloadActions({
   }, [displayCard, installedRecord?.installPath])
 
   const singleFileProgress = primaryTask?.progress ?? 0
-  const singleFileStatus =
-    primaryTask?.statusText || primaryTask?.status || 'download'
+  const singleFileStatus = primaryTask?.status || 'download'
+  const singleFileStatusText = primaryTask?.statusText || ''
   const singleFileCurrentFile = primaryTask?.currentFile
   const singleFileDownloaded = primaryTask?.downloaded ?? 0
   const singleFileTotal = primaryTask?.total ?? 0
@@ -267,6 +267,7 @@ export function useModDownloadActions({
     updateProgress,
     singleFileProgress,
     singleFileStatus,
+    singleFileStatusText,
     singleFileCurrentFile,
     singleFileDownloaded,
     singleFileTotal,
