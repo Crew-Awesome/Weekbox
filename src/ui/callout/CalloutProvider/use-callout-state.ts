@@ -51,152 +51,94 @@ export function useCalloutState() {
     setToasts((prev) => prev.map((t) => ({ ...t, minimized: false })))
   }, [])
 
-  const show = useCallback(
-    (options: CalloutToastOptions | string): string => {
-      const opts: CalloutToastOptions =
-        typeof options === 'string' ? { message: options } : options
+  const show = useCallback((options: CalloutToastOptions | string): string => {
+    const opts: CalloutToastOptions =
+      typeof options === 'string' ? { message: options } : options
+    const variant: CalloutVariant = opts.variant || 'secondary'
+    const variantDefault = VARIANT_DEFAULTS[variant]
+    const hasExplicitId = typeof opts.id === 'string' && opts.id.length > 0
+    const id = hasExplicitId
+      ? (opts.id as string)
+      : `callout-${Date.now()}-${++toastCounter}`
 
-      const variant: CalloutVariant = opts.variant || 'secondary'
-      const variantDefault = VARIANT_DEFAULTS[variant]
-      const hasExplicitId = typeof opts.id === 'string' && opts.id.length > 0
-      const id = hasExplicitId
-        ? (opts.id as string)
-        : `callout-${Date.now()}-${++toastCounter}`
+    setToasts((prev) => {
+      const index = prev.findIndex((t) => t.id === id)
+      const existing = index >= 0 ? prev[index] : undefined
 
-      setToasts((prev) => {
-        const index = prev.findIndex((t) => t.id === id)
-        const existing = index >= 0 ? prev[index] : undefined
+      const newItem: CalloutToastItem = {
+        id,
+        variant,
+        title:
+          opts.title !== undefined
+            ? opts.title
+            : (existing?.title ?? variantDefault.title),
+        message: opts.message,
+        icon:
+          opts.icon !== undefined
+            ? opts.icon
+            : (existing?.icon ?? variantDefault.icon),
+        shape: opts.shape || existing?.shape || 'rounded',
+        duration:
+          opts.duration !== undefined
+            ? opts.duration
+            : (existing?.duration ?? DEFAULT_CALLOUT_DURATION),
+        canMinimize:
+          opts.canMinimize !== undefined
+            ? opts.canMinimize
+            : (existing?.canMinimize ?? true),
+        minimized:
+          opts.minimized !== undefined
+            ? opts.minimized
+            : (existing?.minimized ?? false),
+        allowClose:
+          opts.allowClose !== undefined
+            ? opts.allowClose
+            : (existing?.allowClose ?? false),
+        action: opts.action !== undefined ? opts.action : existing?.action,
+        position: opts.position || existing?.position || 'top-right',
+        download:
+          opts.download !== undefined ? opts.download : existing?.download,
+        createdAt: existing?.createdAt ?? Date.now(),
+      }
 
-        const newItem: CalloutToastItem = {
-          id,
-          variant,
-          title:
-            opts.title !== undefined
-              ? opts.title
-              : (existing?.title ?? variantDefault.title),
-          message: opts.message,
-          icon:
-            opts.icon !== undefined
-              ? opts.icon
-              : (existing?.icon ?? variantDefault.icon),
-          shape: opts.shape || existing?.shape || 'rounded',
-          duration:
-            opts.duration !== undefined
-              ? opts.duration
-              : (existing?.duration ?? DEFAULT_CALLOUT_DURATION),
-          canMinimize:
-            opts.canMinimize !== undefined
-              ? opts.canMinimize
-              : (existing?.canMinimize ?? true),
-          minimized:
-            opts.minimized !== undefined
-              ? opts.minimized
-              : (existing?.minimized ?? false),
-          allowClose:
-            opts.allowClose !== undefined
-              ? opts.allowClose
-              : (existing?.allowClose ?? false),
-          action: opts.action !== undefined ? opts.action : existing?.action,
-          position: opts.position || existing?.position || 'top-right',
-          download:
-            opts.download !== undefined ? opts.download : existing?.download,
-          createdAt: existing?.createdAt ?? Date.now(),
-        }
+      if (existing) {
+        const next = prev.slice()
+        next[index] = newItem
+        return next
+      }
 
-        if (existing) {
-          const next = prev.slice()
-          next[index] = newItem
-          return next
-        }
+      const next = [...prev, newItem]
+      return next.length > MAX_CALLOUT_TOASTS
+        ? next.slice(next.length - MAX_CALLOUT_TOASTS)
+        : next
+    })
 
-        const next = [...prev, newItem]
-        return next.length > MAX_CALLOUT_TOASTS
-          ? next.slice(next.length - MAX_CALLOUT_TOASTS)
-          : next
-      })
-
-      return id
-    },
-    [],
-  )
+    return id
+  }, [])
 
   const secondary = useCallback(
-    (
-      message: string | ReactNode,
-      title?: string,
-      options?: Partial<CalloutToastOptions>,
-    ) => {
-      return show({
-        ...options,
-        variant: 'secondary',
-        title: title !== undefined ? title : VARIANT_DEFAULTS.secondary.title,
-        message,
-      })
-    },
+    (message: string | ReactNode, title?: string, options?: Partial<CalloutToastOptions>) =>
+      show({ ...options, variant: 'secondary', title: title ?? VARIANT_DEFAULTS.secondary.title, message }),
     [show],
   )
-
   const primary = useCallback(
-    (
-      message: string | ReactNode,
-      title?: string,
-      options?: Partial<CalloutToastOptions>,
-    ) => {
-      return show({
-        ...options,
-        variant: 'primary',
-        title: title !== undefined ? title : VARIANT_DEFAULTS.primary.title,
-        message,
-      })
-    },
+    (message: string | ReactNode, title?: string, options?: Partial<CalloutToastOptions>) =>
+      show({ ...options, variant: 'primary', title: title ?? VARIANT_DEFAULTS.primary.title, message }),
     [show],
   )
-
   const tertiary = useCallback(
-    (
-      message: string | ReactNode,
-      title?: string,
-      options?: Partial<CalloutToastOptions>,
-    ) => {
-      return show({
-        ...options,
-        variant: 'tertiary',
-        title: title !== undefined ? title : VARIANT_DEFAULTS.tertiary.title,
-        message,
-      })
-    },
+    (message: string | ReactNode, title?: string, options?: Partial<CalloutToastOptions>) =>
+      show({ ...options, variant: 'tertiary', title: title ?? VARIANT_DEFAULTS.tertiary.title, message }),
     [show],
   )
-
   const error = useCallback(
-    (
-      message: string | ReactNode,
-      title?: string,
-      options?: Partial<CalloutToastOptions>,
-    ) => {
-      return show({
-        ...options,
-        variant: 'error',
-        title: title !== undefined ? title : VARIANT_DEFAULTS.error.title,
-        message,
-      })
-    },
+    (message: string | ReactNode, title?: string, options?: Partial<CalloutToastOptions>) =>
+      show({ ...options, variant: 'error', title: title ?? VARIANT_DEFAULTS.error.title, message }),
     [show],
   )
-
   const surface = useCallback(
-    (
-      message: string | ReactNode,
-      title?: string,
-      options?: Partial<CalloutToastOptions>,
-    ) => {
-      return show({
-        ...options,
-        variant: 'surface',
-        title: title !== undefined ? title : VARIANT_DEFAULTS.surface.title,
-        message,
-      })
-    },
+    (message: string | ReactNode, title?: string, options?: Partial<CalloutToastOptions>) =>
+      show({ ...options, variant: 'surface', title: title ?? VARIANT_DEFAULTS.surface.title, message }),
     [show],
   )
 
@@ -244,19 +186,14 @@ export function useCalloutState() {
           if (t.id !== id || !t.download) return t
 
           const newProgress =
-            update.progress !== undefined
-              ? update.progress
-              : t.download.progress
-          const isCompleted =
-            newProgress >= 100 || update.status === 'completed'
+            update.progress !== undefined ? update.progress : t.download.progress
+          const isCompleted = newProgress >= 100 || update.status === 'completed'
 
           const updatedDownload: CalloutDownloadInfo = {
             ...t.download,
             ...update,
             progress: newProgress,
-            status: isCompleted
-              ? 'completed'
-              : update.status || t.download.status,
+            status: isCompleted ? 'completed' : update.status || t.download.status,
           }
 
           return {
@@ -302,4 +239,3 @@ export function useCalloutState() {
     restoreAll,
   }
 }
-

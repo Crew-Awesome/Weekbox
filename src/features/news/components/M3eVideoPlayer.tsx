@@ -40,23 +40,17 @@ export const M3eVideoPlayer: React.FC<M3eVideoPlayerProps> = ({
 
   const handleSourceError = useCallback(() => {
     if (currentSourceIndex + 1 < sources.length) {
-      console.warn(
-        `[WeekBox News] Video source failed: ${currentSrc}. Trying next source: ${sources[currentSourceIndex + 1]}`,
-      )
       setCurrentSourceIndex((prev) => prev + 1)
     } else {
       setIsBuffering(false)
-      console.error('[WeekBox News] All video sources failed.')
     }
-  }, [currentSourceIndex, sources, currentSrc])
+  }, [currentSourceIndex, sources.length])
 
   const scheduleControlsHide = useCallback(() => {
     if (controlsTimeoutRef.current) clearTimeout(controlsTimeoutRef.current)
     setShowControls(true)
     controlsTimeoutRef.current = setTimeout(() => {
-      if (videoRef.current && !videoRef.current.paused) {
-        setShowControls(false)
-      }
+      if (videoRef.current && !videoRef.current.paused) setShowControls(false)
     }, 2800)
   }, [])
 
@@ -94,9 +88,7 @@ export const M3eVideoPlayer: React.FC<M3eVideoPlayerProps> = ({
   const handleSeek = (e: React.ChangeEvent<HTMLInputElement>) => {
     const time = parseFloat(e.target.value)
     setCurrentTime(time)
-    if (videoRef.current) {
-      videoRef.current.currentTime = time
-    }
+    if (videoRef.current) videoRef.current.currentTime = time
   }
 
   const toggleFullscreen = () => {
@@ -110,9 +102,7 @@ export const M3eVideoPlayer: React.FC<M3eVideoPlayerProps> = ({
   }
 
   useEffect(() => {
-    const handleFsChange = () => {
-      setIsFullscreen(Boolean(document.fullscreenElement))
-    }
+    const handleFsChange = () => setIsFullscreen(Boolean(document.fullscreenElement))
     document.addEventListener('fullscreenchange', handleFsChange)
     return () => {
       document.removeEventListener('fullscreenchange', handleFsChange)
@@ -149,9 +139,7 @@ export const M3eVideoPlayer: React.FC<M3eVideoPlayerProps> = ({
           setShowControls(true)
         }}
         onTimeUpdate={() => {
-          if (videoRef.current) {
-            setCurrentTime(videoRef.current.currentTime)
-          }
+          if (videoRef.current) setCurrentTime(videoRef.current.currentTime)
         }}
         onLoadedMetadata={() => {
           if (videoRef.current) {
@@ -165,7 +153,6 @@ export const M3eVideoPlayer: React.FC<M3eVideoPlayerProps> = ({
         className="w-full h-full object-contain cursor-pointer"
       />
 
-      {/* Buffering Indicator */}
       {isBuffering && (
         <div className="absolute inset-0 flex items-center justify-center bg-[color-mix(in_srgb,var(--md-sys-color-scrim)_40%,transparent)] pointer-events-none z-20">
           <m3e-circular-progress-indicator
@@ -181,7 +168,6 @@ export const M3eVideoPlayer: React.FC<M3eVideoPlayerProps> = ({
         </div>
       )}
 
-      {/* Center Big Play Button when paused */}
       {!isPlaying && !isBuffering && (
         <button
           type="button"
@@ -199,7 +185,6 @@ export const M3eVideoPlayer: React.FC<M3eVideoPlayerProps> = ({
         </button>
       )}
 
-      {/* Close button in top-right corner if modal */}
       {onClose && (
         <div
           className={`absolute top-4 right-4 z-30 transition-opacity duration-300 ${
@@ -218,14 +203,11 @@ export const M3eVideoPlayer: React.FC<M3eVideoPlayerProps> = ({
               } as React.CSSProperties
             }
           >
-            <span className="material-symbols-rounded text-xl leading-none">
-              close
-            </span>
+            <span className="material-symbols-rounded text-xl leading-none">close</span>
           </m3e-icon-button>
         </div>
       )}
 
-      {/* Bottom M3E Controls Pill */}
       <div
         className={`absolute bottom-3 left-3 right-3 sm:left-4 sm:right-4 z-30 flex flex-col gap-1.5 px-3 sm:px-4 py-2 sm:py-2.5 rounded-[20px] sm:rounded-[22px] transition-all duration-300 backdrop-blur-xl ${
           showControls || !isPlaying
@@ -233,12 +215,14 @@ export const M3eVideoPlayer: React.FC<M3eVideoPlayerProps> = ({
             : 'opacity-0 translate-y-2 pointer-events-none'
         }`}
         style={{
-          backgroundColor: 'color-mix(in srgb, var(--md-sys-color-surface-container) 85%, transparent)',
-          border: '1px solid color-mix(in srgb, var(--md-sys-color-outline-variant) 40%, transparent)',
-          boxShadow: '0 8px 32px color-mix(in srgb, var(--md-sys-color-scrim) 36%, transparent)',
+          backgroundColor:
+            'color-mix(in srgb, var(--md-sys-color-surface-container) 85%, transparent)',
+          border:
+            '1px solid color-mix(in srgb, var(--md-sys-color-outline-variant) 40%, transparent)',
+          boxShadow:
+            '0 8px 32px color-mix(in srgb, var(--md-sys-color-scrim) 36%, transparent)',
         }}
       >
-        {/* Progress Bar / Scrubber */}
         <div className="w-full flex items-center gap-2">
           <input
             type="range"
@@ -248,13 +232,10 @@ export const M3eVideoPlayer: React.FC<M3eVideoPlayerProps> = ({
             value={currentTime}
             onChange={handleSeek}
             className="w-full h-1.5 rounded-lg appearance-none cursor-pointer accent-[var(--md-sys-color-primary)] bg-[color-mix(in_srgb,var(--md-sys-color-on-surface)_25%,transparent)] transition-all"
-            style={{
-              accentColor: 'var(--md-sys-color-primary)',
-            }}
+            style={{ accentColor: 'var(--md-sys-color-primary)' }}
           />
         </div>
 
-        {/* Action Controls Row */}
         <div className="w-full flex items-center justify-between text-xs text-[var(--md-sys-color-on-surface)]">
           <div className="flex items-center gap-2">
             <m3e-icon-button
@@ -266,7 +247,6 @@ export const M3eVideoPlayer: React.FC<M3eVideoPlayerProps> = ({
                 {isPlaying ? 'pause' : 'play_arrow'}
               </span>
             </m3e-icon-button>
-
             <div className="flex items-center gap-1 font-mono text-[11px] text-[var(--md-sys-color-on-surface-variant)] select-none">
               <span>{formatTime(currentTime)}</span>
               <span>/</span>
@@ -293,9 +273,7 @@ export const M3eVideoPlayer: React.FC<M3eVideoPlayerProps> = ({
               value={isMuted ? 0 : volume}
               onChange={handleVolumeChange}
               className="hidden sm:block w-16 h-1 rounded-lg appearance-none cursor-pointer accent-[var(--md-sys-color-primary)] bg-[color-mix(in_srgb,var(--md-sys-color-on-surface)_25%,transparent)]"
-              style={{
-                accentColor: 'var(--md-sys-color-primary)',
-              }}
+              style={{ accentColor: 'var(--md-sys-color-primary)' }}
             />
 
             <m3e-icon-button
@@ -313,4 +291,3 @@ export const M3eVideoPlayer: React.FC<M3eVideoPlayerProps> = ({
     </div>
   )
 }
-

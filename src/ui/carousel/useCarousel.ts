@@ -65,15 +65,10 @@ export function useCarousel(props: CarouselProps) {
   const handleInfiniteScrollWrap = useCallback(() => {
     const scroller = scrollerRef.current
     if (!scroller || !isInfinite || scroller.clientWidth === 0) return
-
     const shiftDist = scroller.clientWidth
     const p = scroller.scrollLeft / shiftDist
-
-    if (p > 40) {
-      scroller.scrollLeft -= totalItems * shiftDist
-    } else if (p < 10) {
-      scroller.scrollLeft += totalItems * shiftDist
-    }
+    if (p > 40) scroller.scrollLeft -= totalItems * shiftDist
+    else if (p < 10) scroller.scrollLeft += totalItems * shiftDist
   }, [isInfinite, totalItems])
 
   const [activeIndex, setActiveIndex] = useState(0)
@@ -81,7 +76,6 @@ export function useCarousel(props: CarouselProps) {
   const autoTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const progressTweenRef = useRef<gsap.core.Tween | null>(null)
   const progressRefs = useRef<(HTMLDivElement | null)[]>([])
-
   const exactIndexRef = useRef(0)
   const lastClientWidthRef = useRef(0)
   const playAutoRef = useRef<() => void>(() => {})
@@ -108,15 +102,12 @@ export function useCarousel(props: CarouselProps) {
     }
     lastClientWidthRef.current = currentWidth
 
-    const scrollPos = scroller.scrollLeft
-    const progress = scrollPos / currentWidth
-    const isMobile = checkIsMobile()
-
+    const progress = scroller.scrollLeft / currentWidth
     applyCarouselLayouts({
       totalItems,
       progress,
       isInfinite,
-      isMobile,
+      isMobile: checkIsMobile(),
       visualRefs: visualRefs.current,
     })
 
@@ -129,12 +120,7 @@ export function useCarousel(props: CarouselProps) {
     if (activeIndexRef.current !== originalIndex) {
       activeIndexRef.current = originalIndex
       setActiveIndex(originalIndex)
-
-      if (
-        !dragState.current.isAnimating &&
-        !dragState.current.isDown &&
-        isAuto
-      ) {
+      if (!dragState.current.isAnimating && !dragState.current.isDown && isAuto) {
         setTimeout(() => playAutoRef.current(), 0)
       }
     }
@@ -171,11 +157,8 @@ export function useCarousel(props: CarouselProps) {
   const playAuto = useCallback(() => {
     if (!isAuto) return
     pauseAuto()
-
     progressRefs.current.forEach((bar, i) => {
-      if (bar && i !== activeIndexRef.current) {
-        gsap.set(bar, { scaleX: 0 })
-      }
+      if (bar && i !== activeIndexRef.current) gsap.set(bar, { scaleX: 0 })
     })
 
     const activeBar = progressRefs.current[activeIndexRef.current]
@@ -190,20 +173,13 @@ export function useCarousel(props: CarouselProps) {
     autoTimerRef.current = setTimeout(() => {
       const scroller = scrollerRef.current
       if (!scroller) return
-
       if (!isInfinite) {
         const maxScroll = scroller.scrollWidth - scroller.clientWidth
-        if (scroller.scrollLeft >= maxScroll - 5) {
-          dragState.current.direction = -1
-        } else if (scroller.scrollLeft <= 5) {
-          dragState.current.direction = 1
-        }
+        if (scroller.scrollLeft >= maxScroll - 5) dragState.current.direction = -1
+        else if (scroller.scrollLeft <= 5) dragState.current.direction = 1
       }
-
       const currentIndexFloat = scroller.scrollLeft / scroller.clientWidth
-      const targetIndex =
-        Math.round(currentIndexFloat) + dragState.current.direction
-      smoothScrollToIndex(targetIndex)
+      smoothScrollToIndex(Math.round(currentIndexFloat) + dragState.current.direction)
     }, autoInterval)
   }, [isAuto, isInfinite, autoInterval, smoothScrollToIndex, pauseAuto])
 
@@ -211,58 +187,45 @@ export function useCarousel(props: CarouselProps) {
     playAutoRef.current = playAuto
   }, [playAuto])
 
-  const prev = useCallback(() => {
-    const scroller = scrollerRef.current
-    if (!scroller || scroller.clientWidth === 0) return
-    pauseAuto()
-    dragState.current.hasDragged = false
-    const currentIndexFloat = scroller.scrollLeft / scroller.clientWidth
-    smoothScrollToIndex(Math.round(currentIndexFloat) - 1, 0.45)
-  }, [smoothScrollToIndex, pauseAuto])
+  const stepBy = useCallback(
+    (delta: number) => {
+      const scroller = scrollerRef.current
+      if (!scroller || scroller.clientWidth === 0) return
+      pauseAuto()
+      dragState.current.hasDragged = false
+      const currentIndexFloat = scroller.scrollLeft / scroller.clientWidth
+      smoothScrollToIndex(Math.round(currentIndexFloat) + delta, 0.45)
+    },
+    [smoothScrollToIndex, pauseAuto],
+  )
 
-  const next = useCallback(() => {
-    const scroller = scrollerRef.current
-    if (!scroller || scroller.clientWidth === 0) return
-    pauseAuto()
-    dragState.current.hasDragged = false
-    const currentIndexFloat = scroller.scrollLeft / scroller.clientWidth
-    smoothScrollToIndex(Math.round(currentIndexFloat) + 1, 0.45)
-  }, [smoothScrollToIndex, pauseAuto])
+  const prev = useCallback(() => stepBy(-1), [stepBy])
+  const next = useCallback(() => stepBy(1), [stepBy])
 
   const goToLogicalIndex = useCallback(
     (targetUniqueIndex: number) => {
       if (dragState.current.isDown || dragState.current.hasDragged) return
-
       const scroller = scrollerRef.current
       if (!scroller || scroller.clientWidth === 0 || totalItems === 0) return
 
-      const currentIndexFloat = scroller.scrollLeft / scroller.clientWidth
-      const currentIndex = Math.round(currentIndexFloat)
+      const currentIndex = Math.round(scroller.scrollLeft / scroller.clientWidth)
       const currentLogicalIndex =
         ((currentIndex % totalItems) + totalItems) % totalItems
       const currentUniqueIndex = currentLogicalIndex % childrenArray.length
 
       let diff = targetUniqueIndex - currentUniqueIndex
       if (diff === 0) {
-        if (onItemClick) onItemClick(targetUniqueIndex)
+        onItemClick?.(targetUniqueIndex)
         return
       }
-
       if (isInfinite) {
         const uniqueCount = childrenArray.length
         if (diff > uniqueCount / 2) diff -= uniqueCount
         if (diff < -uniqueCount / 2) diff += uniqueCount
       }
-
       smoothScrollToIndex(currentIndex + diff, 0.6)
     },
-    [
-      isInfinite,
-      totalItems,
-      childrenArray.length,
-      smoothScrollToIndex,
-      onItemClick,
-    ],
+    [isInfinite, totalItems, childrenArray.length, smoothScrollToIndex, onItemClick],
   )
 
   const onPointerDown = (e: PointerEvent<HTMLDivElement>) => {
@@ -281,18 +244,10 @@ export function useCarousel(props: CarouselProps) {
 
   const onScroll = () => {
     if (dragState.current.isDown || dragState.current.isAnimating) return
-    if (
-      isInfinite &&
-      scrollerRef.current &&
-      scrollerRef.current.clientWidth > 0
-    ) {
+    if (isInfinite && scrollerRef.current && scrollerRef.current.clientWidth > 0) {
       handleInfiniteScrollWrap()
     }
     updateVisuals()
-  }
-
-  const onTouchEnd = () => {
-    playAuto()
   }
 
   useEffect(() => {
@@ -330,7 +285,7 @@ export function useCarousel(props: CarouselProps) {
     api,
     onPointerDown,
     onScroll,
-    onTouchEnd,
+    onTouchEnd: playAuto,
     updateVisuals,
     dragState,
     totalItems,

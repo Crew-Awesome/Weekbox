@@ -1,13 +1,5 @@
-.cuki-svg {
-  transform-box: fill-box;
-  transform-origin: center;
-}
-
-.cuki-anim-home {
-  animation: cuki-home-bounce 0.65s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
-  transform-box: fill-box;
-  transform-origin: center bottom;
-}
+.cuki-svg { transform-box: fill-box; transform-origin: center; }
+.cuki-anim-home { animation: cuki-home-bounce 0.65s cubic-bezier(0.34, 1.56, 0.64, 1) forwards; transform-box: fill-box; transform-origin: center bottom; }
 
 @keyframes cuki-home-bounce {
   0% { transform: scale(1) translateY(0); }
@@ -18,11 +10,7 @@
   100% { transform: scale(1) translateY(0) rotate(0); }
 }
 
-.cuki-home-puff {
-  animation: cuki-puff 0.7s ease-out forwards;
-  transform-box: fill-box;
-  transform-origin: center;
-}
+.cuki-home-puff { animation: cuki-puff 0.7s ease-out forwards; transform-box: fill-box; transform-origin: center; }
 
 @keyframes cuki-puff {
   0% { opacity: 0; transform: translateY(0) scale(0.2); }
@@ -30,16 +18,8 @@
   100% { opacity: 0; transform: translateY(-70px) scale(0.3); }
 }
 
-.cuki-anim-library {
-  transform-box: fill-box;
-  transform-origin: center bottom;
-}
-
-.cuki-anim-lib-head {
-  animation: cuki-lib-head-nod 0.65s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
-  transform-box: fill-box;
-  transform-origin: center bottom;
-}
+.cuki-anim-library { transform-box: fill-box; transform-origin: center bottom; }
+.cuki-anim-lib-head { animation: cuki-lib-head-nod 0.65s cubic-bezier(0.34, 1.56, 0.64, 1) forwards; transform-box: fill-box; transform-origin: center bottom; }
 
 @keyframes cuki-lib-head-nod {
   0% { transform: translateY(0) rotate(0deg); }
@@ -49,11 +29,7 @@
   100% { transform: translateY(0) rotate(0deg); }
 }
 
-.cuki-anim-lib-book {
-  animation: cuki-lib-book-flutter 0.65s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
-  transform-box: fill-box;
-  transform-origin: center bottom;
-}
+.cuki-anim-lib-book { animation: cuki-lib-book-flutter 0.65s cubic-bezier(0.34, 1.56, 0.64, 1) forwards; transform-box: fill-box; transform-origin: center bottom; }
 
 @keyframes cuki-lib-book-flutter {
   0% { transform: scale(1); }
@@ -63,16 +39,8 @@
   100% { transform: scale(1) translateY(0); }
 }
 
-.cuki-anim-instances {
-  transform-box: fill-box;
-  transform-origin: center bottom;
-}
-
-.cuki-anim-layer-top {
-  animation: cuki-layer-top-pop 0.65s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
-  transform-box: fill-box;
-  transform-origin: center;
-}
+.cuki-anim-instances { transform-box: fill-box; transform-origin: center bottom; }
+.cuki-anim-layer-top { animation: cuki-layer-top-pop 0.65s cubic-bezier(0.34, 1.56, 0.64, 1) forwards; transform-box: fill-box; transform-origin: center; }
 
 @keyframes cuki-layer-top-pop {
   0% { transform: translateY(0) scale(1); }
@@ -82,11 +50,7 @@
   100% { transform: translateY(0) scale(1); }
 }
 
-.cuki-anim-layer-bottom {
-  animation: cuki-layer-bottom-squish 0.65s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
-  transform-box: fill-box;
-  transform-origin: center;
-}
+.cuki-anim-layer-bottom { animation: cuki-layer-bottom-squish 0.65s cubic-bezier(0.34, 1.56, 0.64, 1) forwards; transform-box: fill-box; transform-origin: center; }
 
 @keyframes cuki-layer-bottom-squish {
   0% { transform: translateY(0) scale(1); }
@@ -95,11 +59,7 @@
   100% { transform: translateY(0) scale(1); }
 }
 
-.cuki-anim-news-squash {
-  animation: cuki-news-squash 0.75s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
-  transform-box: fill-box;
-  transform-origin: center bottom;
-}
+.cuki-anim-news-squash { animation: cuki-news-squash 0.75s cubic-bezier(0.34, 1.56, 0.64, 1) forwards; transform-box: fill-box; transform-origin: center bottom; }
 
 @keyframes cuki-news-squash {
   0% { transform: scale(1) translateY(0) rotate(0deg); }
@@ -110,10 +70,7 @@
   100% { transform: scale(1) translateY(0) rotate(0deg); }
 }
 
-.cuki-rect-header {
-  transform-origin: 480px -580px;
-  animation: cuki-rect-header-anim 0.75s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
-}
+.cuki-rect-header { transform-origin: 480px -580px; animation: cuki-rect-header-anim 0.75s cubic-bezier(0.34, 1.56, 0.64, 1) forwards; }
 
 @keyframes cuki-rect-header-anim {
   0% { transform: translateY(-130px) scaleX(0.3) scaleY(1.4); opacity: 0; }
@@ -123,10 +80,7 @@
   100% { transform: translateY(0) scale(1); opacity: 1; }
 }
 
-.cuki-rect-box {
-  transform-origin: 300px -320px;
-  animation: cuki-rect-box-anim 0.75s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
-}
+.cuki-rect-box { transform-origin: 300px -320px; animation: cuki-rect-box-anim 0.75s cubic-bezier(0.34, 1.56, 0.64, 1) forwards; }
 
 @keyframes cuki-rect-box-anim {
   0% { transform: translateX(-140px) scale(0.4); opacity: 0; }
@@ -136,10 +90,7 @@
   100% { transform: translateX(0) scale(1); opacity: 1; }
 }
 
-.cuki-rect-line1 {
-  transform-origin: 660px -400px;
-  animation: cuki-rect-line1-anim 0.75s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
-}
+.cuki-rect-line1 { transform-origin: 660px -400px; animation: cuki-rect-line1-anim 0.75s cubic-bezier(0.34, 1.56, 0.64, 1) forwards; }
 
 @keyframes cuki-rect-line1-anim {
   0% { transform: translateX(150px) scaleX(0.2); opacity: 0; }
@@ -149,10 +100,7 @@
   100% { transform: translateX(0) scale(1); opacity: 1; }
 }
 
-.cuki-rect-line2 {
-  transform-origin: 660px -240px;
-  animation: cuki-rect-line2-anim 0.75s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
-}
+.cuki-rect-line2 { transform-origin: 660px -240px; animation: cuki-rect-line2-anim 0.75s cubic-bezier(0.34, 1.56, 0.64, 1) forwards; }
 
 @keyframes cuki-rect-line2-anim {
   0% { transform: translateX(170px) scaleX(0.2); opacity: 0; }
@@ -162,28 +110,12 @@
   100% { transform: translateX(0) scale(1); opacity: 1; }
 }
 
-.group:hover .cuki-hover-rect-header {
-  transform: translateY(-8px);
-  transition: transform 0.25s ease-out;
-}
-.group:hover .cuki-hover-rect-box {
-  transform: translateX(-8px) scale(1.05);
-  transition: transform 0.25s ease-out;
-}
-.group:hover .cuki-hover-rect-line1 {
-  transform: translateX(8px);
-  transition: transform 0.25s ease-out;
-}
-.group:hover .cuki-hover-rect-line2 {
-  transform: translateX(12px);
-  transition: transform 0.25s ease-out 0.05s;
-}
+.group:hover .cuki-hover-rect-header { transform: translateY(-8px); transition: transform 0.25s ease-out; }
+.group:hover .cuki-hover-rect-box { transform: translateX(-8px) scale(1.05); transition: transform 0.25s ease-out; }
+.group:hover .cuki-hover-rect-line1 { transform: translateX(8px); transition: transform 0.25s ease-out; }
+.group:hover .cuki-hover-rect-line2 { transform: translateX(12px); transition: transform 0.25s ease-out 0.05s; }
 
-.cuki-anim-settings {
-  animation: cuki-settings-spin 0.7s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
-  transform-box: fill-box;
-  transform-origin: center;
-}
+.cuki-anim-settings { animation: cuki-settings-spin 0.7s cubic-bezier(0.34, 1.56, 0.64, 1) forwards; transform-box: fill-box; transform-origin: center; }
 
 @keyframes cuki-settings-spin {
   0% { transform: rotate(0deg) scale(1); }
@@ -193,16 +125,8 @@
   100% { transform: rotate(90deg) scale(1); }
 }
 
-.cuki-anim-info {
-  transform-box: fill-box;
-  transform-origin: center;
-}
-
-.cuki-anim-info-dot {
-  animation: cuki-info-dot-jump 0.65s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
-  transform-box: fill-box;
-  transform-origin: center;
-}
+.cuki-anim-info { transform-box: fill-box; transform-origin: center; }
+.cuki-anim-info-dot { animation: cuki-info-dot-jump 0.65s cubic-bezier(0.34, 1.56, 0.64, 1) forwards; transform-box: fill-box; transform-origin: center; }
 
 @keyframes cuki-info-dot-jump {
   0% { transform: translateY(0); }
@@ -212,11 +136,7 @@
   100% { transform: translateY(0) scale(1); }
 }
 
-.cuki-anim-info-circle {
-  animation: cuki-info-circle-pulse 0.65s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
-  transform-box: fill-box;
-  transform-origin: center;
-}
+.cuki-anim-info-circle { animation: cuki-info-circle-pulse 0.65s cubic-bezier(0.34, 1.56, 0.64, 1) forwards; transform-box: fill-box; transform-origin: center; }
 
 @keyframes cuki-info-circle-pulse {
   0% { transform: scale(1); }
@@ -225,17 +145,8 @@
   100% { transform: scale(1); }
 }
 
-.group:hover .cuki-hover-target {
-  animation: cuki-subtle-hover 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
-  transform-box: fill-box;
-  transform-origin: center bottom;
-}
-
-.group:hover .cuki-hover-settings {
-  animation: cuki-settings-spin 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
-  transform-box: fill-box;
-  transform-origin: center;
-}
+.group:hover .cuki-hover-target { animation: cuki-subtle-hover 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) forwards; transform-box: fill-box; transform-origin: center bottom; }
+.group:hover .cuki-hover-settings { animation: cuki-settings-spin 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) forwards; transform-box: fill-box; transform-origin: center; }
 
 @keyframes cuki-subtle-hover {
   0% { transform: scale(1) translateY(0); }
@@ -243,12 +154,7 @@
   100% { transform: scale(1.06) translateY(-1px); }
 }
 
-/* Sophisticated Filter Icon Animations */
-.cuki-anim-filter {
-  transform-box: fill-box;
-  transform-origin: center bottom;
-  animation: cuki-filter-bounce 0.7s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
-}
+.cuki-anim-filter { transform-box: fill-box; transform-origin: center bottom; animation: cuki-filter-bounce 0.7s cubic-bezier(0.34, 1.56, 0.64, 1) forwards; }
 
 @keyframes cuki-filter-bounce {
   0% { transform: scale(1) translateY(0); }
@@ -259,10 +165,7 @@
   100% { transform: scale(1) translateY(0) rotate(0deg); }
 }
 
-.cuki-filter-bar1 {
-  transform-origin: 240px -700px;
-  animation: cuki-filter-bar1-anim 0.7s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
-}
+.cuki-filter-bar1 { transform-origin: 240px -700px; animation: cuki-filter-bar1-anim 0.7s cubic-bezier(0.34, 1.56, 0.64, 1) forwards; }
 
 @keyframes cuki-filter-bar1-anim {
   0% { transform: translateX(-160px) scaleX(0.2); opacity: 0; }
@@ -271,10 +174,7 @@
   100% { transform: translateX(0) scale(1); opacity: 1; }
 }
 
-.cuki-filter-bar2 {
-  transform-origin: 640px -580px;
-  animation: cuki-filter-bar2-anim 0.7s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
-}
+.cuki-filter-bar2 { transform-origin: 640px -580px; animation: cuki-filter-bar2-anim 0.7s cubic-bezier(0.34, 1.56, 0.64, 1) forwards; }
 
 @keyframes cuki-filter-bar2-anim {
   0% { transform: translateX(160px) scaleX(0.2); opacity: 0; }
@@ -283,10 +183,7 @@
   100% { transform: translateX(0) scale(1); opacity: 1; }
 }
 
-.cuki-filter-bar3 {
-  transform-origin: 480px -460px;
-  animation: cuki-filter-bar3-anim 0.7s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
-}
+.cuki-filter-bar3 { transform-origin: 480px -460px; animation: cuki-filter-bar3-anim 0.7s cubic-bezier(0.34, 1.56, 0.64, 1) forwards; }
 
 @keyframes cuki-filter-bar3-anim {
   0% { transform: scale(0.2); opacity: 0; }
@@ -295,10 +192,7 @@
   100% { transform: scale(1); opacity: 1; }
 }
 
-.cuki-filter-droplet {
-  transform-origin: 480px -160px;
-  animation: cuki-filter-drip-sidebar 0.75s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
-}
+.cuki-filter-droplet { transform-origin: 480px -160px; animation: cuki-filter-drip-sidebar 0.75s cubic-bezier(0.34, 1.56, 0.64, 1) forwards; }
 
 @keyframes cuki-filter-drip-sidebar {
   0% { transform: translateY(-40px) scale(0.2); opacity: 0; }
@@ -308,10 +202,7 @@
   100% { opacity: 0; transform: translateY(170px) scale(0.3); }
 }
 
-.cuki-filter-spark {
-  transform-origin: 740px -740px;
-  animation: cuki-filter-sparkle 0.65s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
-}
+.cuki-filter-spark { transform-origin: 740px -740px; animation: cuki-filter-sparkle 0.65s cubic-bezier(0.34, 1.56, 0.64, 1) forwards; }
 
 @keyframes cuki-filter-sparkle {
   0% { transform: scale(0) rotate(0deg); opacity: 0; }
@@ -319,17 +210,6 @@
   100% { transform: scale(0) rotate(180deg); opacity: 0; }
 }
 
-.group:hover .cuki-hover-filter-bar1 {
-  transform: translateX(18px);
-  transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
-}
-
-.group:hover .cuki-hover-filter-bar2 {
-  transform: translateX(-18px);
-  transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
-}
-
-.group:hover .cuki-hover-filter-bar3 {
-  transform: scale(1.25);
-  transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
-}
+.group:hover .cuki-hover-filter-bar1 { transform: translateX(18px); transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1); }
+.group:hover .cuki-hover-filter-bar2 { transform: translateX(-18px); transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1); }
+.group:hover .cuki-hover-filter-bar3 { transform: scale(1.25); transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1); }

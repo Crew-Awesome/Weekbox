@@ -21,6 +21,12 @@ const M3E_MENU_STYLE: React.CSSProperties = {
   overflow: 'hidden',
 } as React.CSSProperties
 
+const DIVIDER_STYLE: React.CSSProperties = {
+  margin: '6px 0',
+  borderColor:
+    'color-mix(in srgb, var(--md-sys-color-outline-variant) 40%, transparent)',
+}
+
 const SORT_OPTIONS: Array<{ id: LibrarySortOption; label: string; icon: string }> = [
   { id: 'recent', label: 'Recently Installed', icon: 'schedule' },
   { id: 'name', label: 'Name (A-Z)', icon: 'sort_by_alpha' },
@@ -72,10 +78,7 @@ export const LibraryCriteriaMenu: React.FC<LibraryCriteriaMenuProps> = ({
     >
       <m3e-overflow
         direction="vertical"
-        style={{
-          width: '100%',
-          height: 'min(420px, calc(100vh - 140px))',
-        }}
+        style={{ width: '100%', height: 'min(420px, calc(100vh - 140px))' }}
         thumb-color="var(--md-sys-color-primary)"
         track-color="var(--md-sys-color-outline-variant)"
       >
@@ -104,9 +107,7 @@ export const LibraryCriteriaMenu: React.FC<LibraryCriteriaMenuProps> = ({
               <span slot="icon" className="material-symbols-rounded text-lg">
                 {opt.icon}
               </span>
-              <span className="text-xs sm:text-sm font-semibold">
-                {opt.label}
-              </span>
+              <span className="text-xs sm:text-sm font-semibold">{opt.label}</span>
               {sortBy === opt.id && (
                 <span
                   slot="trailing-icon"
@@ -118,13 +119,7 @@ export const LibraryCriteriaMenu: React.FC<LibraryCriteriaMenuProps> = ({
             </m3e-menu-item>
           ))}
 
-          <m3e-divider
-            style={{
-              margin: '6px 0',
-              borderColor:
-                'color-mix(in srgb, var(--md-sys-color-outline-variant) 40%, transparent)',
-            }}
-          ></m3e-divider>
+          <m3e-divider style={DIVIDER_STYLE}></m3e-divider>
 
           <div className="px-3.5 pt-1.5 pb-1 text-[10px] font-bold uppercase tracking-wider text-[var(--md-sys-color-primary)] opacity-85 select-none">
             Filter By
@@ -137,14 +132,8 @@ export const LibraryCriteriaMenu: React.FC<LibraryCriteriaMenuProps> = ({
           >
             <span
               slot="icon"
-              className={`material-symbols-rounded text-lg ${
-                filterFavorites ? 'text-red-500' : ''
-              }`}
-              style={
-                filterFavorites
-                  ? { fontVariationSettings: "'FILL' 1" }
-                  : undefined
-              }
+              className={`material-symbols-rounded text-lg ${filterFavorites ? 'text-red-500' : ''}`}
+              style={filterFavorites ? { fontVariationSettings: "'FILL' 1" } : undefined}
             >
               favorite
             </span>
@@ -168,14 +157,8 @@ export const LibraryCriteriaMenu: React.FC<LibraryCriteriaMenuProps> = ({
           >
             <span
               slot="icon"
-              className={`material-symbols-rounded text-lg ${
-                filterBookmarks ? 'text-amber-400' : ''
-              }`}
-              style={
-                filterBookmarks
-                  ? { fontVariationSettings: "'FILL' 1" }
-                  : undefined
-              }
+              className={`material-symbols-rounded text-lg ${filterBookmarks ? 'text-amber-400' : ''}`}
+              style={filterBookmarks ? { fontVariationSettings: "'FILL' 1" } : undefined}
             >
               bookmark
             </span>
@@ -194,13 +177,7 @@ export const LibraryCriteriaMenu: React.FC<LibraryCriteriaMenuProps> = ({
 
           {engineSummaries.length > 0 && (
             <>
-              <m3e-divider
-                style={{
-                  margin: '6px 0',
-                  borderColor:
-                    'color-mix(in srgb, var(--md-sys-color-outline-variant) 40%, transparent)',
-                }}
-              ></m3e-divider>
+              <m3e-divider style={DIVIDER_STYLE}></m3e-divider>
               <div className="px-3.5 pt-1.5 pb-1 text-[10px] font-bold uppercase tracking-wider text-[var(--md-sys-color-primary)] opacity-85 select-none">
                 Engine
               </div>
@@ -212,9 +189,7 @@ export const LibraryCriteriaMenu: React.FC<LibraryCriteriaMenuProps> = ({
                 <span slot="icon" className="material-symbols-rounded text-lg">
                   apps
                 </span>
-                <span className="text-xs sm:text-sm font-semibold">
-                  All Engines
-                </span>
+                <span className="text-xs sm:text-sm font-semibold">All Engines</span>
                 {isAllEngines && (
                   <span
                     slot="trailing-icon"
@@ -230,7 +205,6 @@ export const LibraryCriteriaMenu: React.FC<LibraryCriteriaMenuProps> = ({
                     e.toLowerCase() === eng.id.toLowerCase() ||
                     e.toLowerCase() === eng.name.toLowerCase(),
                 )
-
                 return (
                   <m3e-menu-item
                     key={eng.id}
@@ -244,29 +218,13 @@ export const LibraryCriteriaMenu: React.FC<LibraryCriteriaMenuProps> = ({
                         src={eng.icon}
                         alt=""
                         className="w-5 h-5 rounded object-contain shrink-0 aspect-square"
-                        style={{
-                          width: '20px',
-                          height: '20px',
-                          minWidth: '20px',
-                          minHeight: '20px',
-                          aspectRatio: '1 / 1',
-                          objectFit: 'contain',
-                          borderRadius: '4px',
-                        }}
+                        style={{ width: '20px', height: '20px', minWidth: '20px', minHeight: '20px', aspectRatio: '1 / 1', objectFit: 'contain', borderRadius: '4px' }}
                       />
                     ) : (
                       <span
                         slot="icon"
                         className="material-symbols-rounded text-lg flex items-center justify-center shrink-0"
-                        style={{
-                          width: '20px',
-                          height: '20px',
-                          minWidth: '20px',
-                          minHeight: '20px',
-                          fontSize: '20px',
-                          lineHeight: '20px',
-                          aspectRatio: '1 / 1',
-                        }}
+                        style={{ width: '20px', height: '20px', minWidth: '20px', minHeight: '20px', fontSize: '20px', lineHeight: '20px', aspectRatio: '1 / 1' }}
                       >
                         layers
                       </span>
@@ -290,18 +248,9 @@ export const LibraryCriteriaMenu: React.FC<LibraryCriteriaMenuProps> = ({
 
           {hasActiveFilters && (
             <>
-              <m3e-divider
-                style={{
-                  margin: '6px 0',
-                  borderColor:
-                    'color-mix(in srgb, var(--md-sys-color-outline-variant) 40%, transparent)',
-                }}
-              ></m3e-divider>
+              <m3e-divider style={DIVIDER_STYLE}></m3e-divider>
               <m3e-menu-item onClick={onClearFilters} style={{ margin: '3px 0' }}>
-                <span
-                  slot="icon"
-                  className="material-symbols-rounded text-lg text-red-500"
-                >
+                <span slot="icon" className="material-symbols-rounded text-lg text-red-500">
                   filter_alt_off
                 </span>
                 <span className="text-xs sm:text-sm font-semibold text-red-500">

@@ -4,11 +4,15 @@ import {
   NEWS_HIDDEN_ACCOUNTS_KEY,
   NEWS_CACHED_POSTS_KEY,
   NEWS_PAGE_SIZE,
+} from '@/services/twitter/constants'
+import {
   fetchTwitterNewsFeed,
   fetchNewsSource,
-  type TwitterNewsPost,
-  type TwitterNewsSource,
-} from '@/services/twitter'
+} from '@/services/twitter/twitter-api'
+import type {
+  TwitterNewsPost,
+  TwitterNewsSource,
+} from '@/services/twitter/types'
 import { initHost } from '@/core/host'
 
 function readPersistedCachedPosts(): TwitterNewsPost[] {
@@ -22,10 +26,23 @@ function readPersistedCachedPosts(): TwitterNewsPost[] {
         }
       }
     }
-  } catch {
-    // fallback
-  }
+  } catch {}
   return []
+}
+
+function readPersistedHiddenAccounts(): Set<string> {
+  try {
+    if (typeof window !== 'undefined') {
+      const raw = localStorage.getItem(NEWS_HIDDEN_ACCOUNTS_KEY)
+      if (raw) {
+        const parsed = JSON.parse(raw)
+        if (Array.isArray(parsed)) {
+          return new Set(parsed.filter((item) => typeof item === 'string'))
+        }
+      }
+    }
+  } catch {}
+  return new Set<string>()
 }
 
 let globalCachedPosts: TwitterNewsPost[] = readPersistedCachedPosts()
@@ -60,22 +77,9 @@ export function useTwitterNews(): UseTwitterNewsResult {
     globalCachedAvailableSources,
   )
   const [selectedAccount, setSelectedAccountState] = useState<string>('')
-  const [hiddenAccounts, setHiddenAccounts] = useState<Set<string>>(() => {
-    try {
-      if (typeof window !== 'undefined') {
-        const raw = localStorage.getItem(NEWS_HIDDEN_ACCOUNTS_KEY)
-        if (raw) {
-          const parsed = JSON.parse(raw)
-          if (Array.isArray(parsed)) {
-            return new Set(parsed.filter((item) => typeof item === 'string'))
-          }
-        }
-      }
-    } catch {
-      // fallback to empty set
-    }
-    return new Set<string>()
-  })
+  const [hiddenAccounts, setHiddenAccounts] = useState<Set<string>>(
+    readPersistedHiddenAccounts,
+  )
 
   const [isLoading, setIsLoading] = useState<boolean>(globalCachedPosts.length === 0)
   const [isRefreshing, setIsRefreshing] = useState<boolean>(false)
@@ -87,35 +91,20 @@ export function useTwitterNews(): UseTwitterNewsResult {
     globalCachedSourcePages,
   )
 
-  const writeHiddenAccounts = useCallback((newSet: Set<string>) => {
-    try {
-      if (typeof window !== 'undefined') {
-        localStorage.setItem(
-          NEWS_HIDDEN_ACCOUNTS_KEY,
-          JSON.stringify([...newSet]),
-        )
-      }
-    } catch {
-      // ignore
-    }
-  }, [])
-
-  const toggleAccountVisibility = useCallback(
-    (username: string) => {
-      if (!username) return
-      setHiddenAccounts((prev) => {
-        const next = new Set(prev)
-        if (next.has(username)) {
-          next.delete(username)
-        } else {
-          next.add(username)
+  const toggleAccountVisibility = useCallback((username: string) => {
+    if (!username) return
+    setHiddenAccounts((prev) => {
+      const next = new Set(prev)
+      if (next.has(username)) next.delete(username)
+      else next.add(username)
+      try {
+        if (typeof window !== 'undefined') {
+          localStorage.setItem(NEWS_HIDDEN_ACCOUNTS_KEY, JSON.stringify([...next]))
         }
-        writeHiddenAccounts(next)
-        return next
-      })
-    },
-    [writeHiddenAccounts],
-  )
+      } catch {}
+      return next
+    })
+  }, [])
 
   const setSelectedAccount = useCallback((username: string) => {
     setSelectedAccountState(username)
@@ -138,11 +127,8 @@ export function useTwitterNews(): UseTwitterNewsResult {
     if (isCurrentlyFetching) return
     isCurrentlyFetching = true
 
-    if (isRefresh) {
-      setIsRefreshing(true)
-    } else if (globalCachedPosts.length === 0) {
-      setIsLoading(true)
-    }
+    if (isRefresh) setIsRefreshing(true)
+    else if (globalCachedPosts.length === 0) setIsLoading(true)
     setError(null)
 
     try {
@@ -162,7 +148,6 @@ export function useTwitterNews(): UseTwitterNewsResult {
         setAllLoadedPosts(res.posts)
         setAvailableSources(res.availableSources)
         sourcePagesRef.current = res.sourcePages
-
         globalCachedPosts = res.posts
         globalCachedAvailableSources = res.availableSources
         globalCachedSourcePages = res.sourcePages
@@ -174,18 +159,13 @@ export function useTwitterNews(): UseTwitterNewsResult {
               JSON.stringify(res.posts.slice(0, 60)),
             )
           }
-        } catch {
-          // ignore localStorage quota
-        }
+        } catch {}
       } else if (globalCachedPosts.length === 0) {
         setError('No posts could be retrieved from Twitter / X at this moment')
       }
     } catch (err: unknown) {
-      console.warn('[WeekBox News] Error fetching news feed:', err)
       if (globalCachedPosts.length === 0) {
-        setError(
-          err instanceof Error ? err.message : 'Failed to load Twitter news feed',
-        )
+        setError(err instanceof Error ? err.message : 'Failed to load Twitter news feed')
       }
     } finally {
       isCurrentlyFetching = false
@@ -214,34 +194,32 @@ export function useTwitterNews(): UseTwitterNewsResult {
     })
   }, [allLoadedPosts, selectedAccount, hiddenAccounts])
 
-  const visiblePosts = useMemo(() => {
-    return filteredPosts.slice(0, visibleCount)
-  }, [filteredPosts, visibleCount])
-
-  const hasMore = visiblePosts.length < filteredPosts.length || Boolean(
-    [...sourcePagesRef.current.values()].some((p) => Boolean(p.cursor)),
+  const visiblePosts = useMemo(
+    () => filteredPosts.slice(0, visibleCount),
+    [filteredPosts, visibleCount],
   )
+
+  const hasMore =
+    visiblePosts.length < filteredPosts.length ||
+    Boolean([...sourcePagesRef.current.values()].some((p) => Boolean(p.cursor)))
 
   const loadMore = useCallback(async () => {
     if (isLoadingMore) return
-
     if (visibleCount < filteredPosts.length) {
       setVisibleCount((prev) => prev + NEWS_PAGE_SIZE)
       return
     }
 
-    const activeSources = DEFAULT_TWITTER_NEWS_SOURCES.filter((s) => {
-      if (selectedAccount) {
-        return s.username.toLowerCase() === selectedAccount.toLowerCase()
-      }
-      return !hiddenAccounts.has(s.username)
-    })
+    const activeSources = DEFAULT_TWITTER_NEWS_SOURCES.filter((s) =>
+      selectedAccount
+        ? s.username.toLowerCase() === selectedAccount.toLowerCase()
+        : !hiddenAccounts.has(s.username),
+    )
 
     const sourcesWithCursor = activeSources.filter((s) => {
       const pageInfo = sourcePagesRef.current.get(s.username)
       return pageInfo?.cursor && (pageInfo.page || 1) < 5
     })
-
     if (sourcesWithCursor.length === 0) return
 
     setIsLoadingMore(true)
@@ -266,9 +244,7 @@ export function useTwitterNews(): UseTwitterNewsResult {
 
       const flattened: TwitterNewsPost[] = []
       for (const res of moreResults) {
-        if (res.status === 'fulfilled') {
-          flattened.push(...res.value)
-        }
+        if (res.status === 'fulfilled') flattened.push(...res.value)
       }
 
       if (flattened.length > 0) {

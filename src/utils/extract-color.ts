@@ -1,9 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 
-// cache for parsed background colors from css custom properties
 let cachedBgColors: number[][] | null = null
 
-// parses background colors from css variables to evaluate contrast
 const getBgColors = (): number[][] => {
   if (cachedBgColors) return cachedBgColors
   if (typeof document === 'undefined') return [[14, 20, 21]]
@@ -45,14 +43,12 @@ const getBgColors = (): number[][] => {
   return cachedBgColors
 }
 
-// in-memory cache for extracted colors and preference storage
 const colorCache = new Map<string, string>()
 const EXTRACT_COLOR_STORAGE_KEY = 'wb_extract_color_active'
 
 type ExtractColorListener = (active: boolean) => void
 const listeners = new Set<ExtractColorListener>()
 
-// checks if dynamic color extraction is enabled in local storage
 export function isExtractColorActive(): boolean {
   if (typeof window === 'undefined') return true
   try {
@@ -64,20 +60,17 @@ export function isExtractColorActive(): boolean {
   }
 }
 
-// updates and broadcasts color extraction preference
 export function setExtractColorActive(active: boolean): void {
   if (typeof window === 'undefined') return
   try {
     localStorage.setItem(EXTRACT_COLOR_STORAGE_KEY, String(active))
-  } catch {
-  }
+  } catch {}
   listeners.forEach((fn) => fn(active))
   window.dispatchEvent(
     new CustomEvent('wb:extract-color-changed', { detail: { active } }),
   )
 }
 
-// subscribes listener to color extraction preference changes
 export function subscribeExtractColor(listener: ExtractColorListener): () => void {
   listeners.add(listener)
   return () => {
@@ -85,7 +78,6 @@ export function subscribeExtractColor(listener: ExtractColorListener): () => voi
   }
 }
 
-// hook to read and toggle color extraction preference
 export function useExtractColor() {
   const [isExtractActive, setIsExtractActive] = useState<boolean>(isExtractColorActive)
 
@@ -102,25 +94,20 @@ export function useExtractColor() {
   }
 }
 
-// checks if url is an external remote http/https resource
 function isRemoteHttpUrl(url: string): boolean {
   if (!url || typeof url !== 'string') return false
   const trimmed = url.trim()
   if (!trimmed.startsWith('http://') && !trimmed.startsWith('https://')) {
     return false
   }
-  if (
+  return !(
     trimmed.includes('localhost') ||
     trimmed.includes('127.0.0.1') ||
     trimmed.startsWith('/api/') ||
     trimmed.startsWith('/mod-covers')
-  ) {
-    return false
-  }
-  return true
+  )
 }
 
-// formats image url for cors handling and proxying when needed
 function getCORSFriendlyImageUrl(url: string): string {
   if (typeof window === 'undefined' || !url) return url
   let cleanUrl = url.trim().replace(/\\/g, '/')
@@ -143,13 +130,11 @@ function getCORSFriendlyImageUrl(url: string): string {
   return `https://wsrv.nl/?url=${encodeURIComponent(cleanUrl)}&output=webp&w=120`
 }
 
-// fallback proxy url for remote images when direct load fails
 function getFallbackProxyUrl(url: string): string {
   if (!isRemoteHttpUrl(url) || url.includes('wsrv.nl')) return url
   return `https://wsrv.nl/?url=${encodeURIComponent(url)}&output=webp&w=120`
 }
 
-// resolves fallback hover color from css variables
 export const getFallbackHoverColor = (opacity?: number): string => {
   if (typeof document === 'undefined') {
     return 'color-mix(in srgb, var(--md-sys-color-primary, #363cff) 8%, var(--md-sys-color-surface-container-high, #2A292F))'
@@ -171,7 +156,6 @@ export const getFallbackHoverColor = (opacity?: number): string => {
     : 'var(--wb-card-hover-bg)'
 }
 
-// extracts contrasting dominant color from image using canvas
 export const extractColor = (
   imageUrl: string,
   opacity?: number,
@@ -196,8 +180,7 @@ export const extractColor = (
         try {
           const canvas = document.createElement('canvas')
           const ctx = canvas.getContext('2d', { willReadFrequently: true })
-
-          if (!ctx) {
+          if (!ctx || img.width <= 0 || img.height <= 0) {
             resolve(getFallbackHoverColor(opacity))
             return
           }
@@ -205,12 +188,6 @@ export const extractColor = (
           const maxDim = 24
           let width = img.width
           let height = img.height
-
-          if (width <= 0 || height <= 0) {
-            resolve(getFallbackHoverColor(opacity))
-            return
-          }
-
           if (width > height) {
             if (width > maxDim) {
               height = Math.round((height * maxDim) / width)
@@ -228,23 +205,18 @@ export const extractColor = (
           const { data } = ctx.getImageData(0, 0, width, height)
           const colorCounts: Record<string, { count: number; rgb: number[] }> = {}
 
-          // sample pixels and quantize colors into buckets
           for (let i = 0; i < data.length; i += 16) {
-            const a = data[i + 3]
-            if (a < 128) continue
-
+            if (data[i + 3] < 128) continue
             const finalR = Math.min(255, Math.round(data[i] / 16) * 16)
             const finalG = Math.min(255, Math.round(data[i + 1] / 16) * 16)
             const finalB = Math.min(255, Math.round(data[i + 2] / 16) * 16)
             const rgbStr = `rgb(${finalR}, ${finalG}, ${finalB})`
-
             if (!colorCounts[rgbStr]) {
               colorCounts[rgbStr] = { count: 0, rgb: [finalR, finalG, finalB] }
             }
             colorCounts[rgbStr].count += 1
           }
 
-          // find color with sufficient distance from theme backgrounds
           const bgs = [...getBgColors(), [255, 255, 255], [240, 240, 240]]
           const sortedColors = Object.values(colorCounts).sort(
             (a, b) => b.count - a.count,
@@ -253,18 +225,14 @@ export const extractColor = (
             sortedColors.length > 0 ? sortedColors[0].rgb : [255, 255, 255]
 
           for (const candidate of sortedColors) {
-            let isDifferent = true
-            for (const bg of bgs) {
-              const dist = Math.hypot(
-                candidate.rgb[0] - bg[0],
-                candidate.rgb[1] - bg[1],
-                candidate.rgb[2] - bg[2],
-              )
-              if (dist < 50) {
-                isDifferent = false
-                break
-              }
-            }
+            const isDifferent = bgs.every(
+              (bg) =>
+                Math.hypot(
+                  candidate.rgb[0] - bg[0],
+                  candidate.rgb[1] - bg[1],
+                  candidate.rgb[2] - bg[2],
+                ) >= 50,
+            )
             if (isDifferent) {
               bestColor = candidate.rgb
               break
@@ -279,20 +247,14 @@ export const extractColor = (
           colorCache.set(cacheKey, finalResult)
           resolve(finalResult)
         } catch {
-          if (canRetry) {
-            loadImageAndExtract(getFallbackProxyUrl(imageUrl), false)
-          } else {
-            resolve(getFallbackHoverColor(opacity))
-          }
+          if (canRetry) loadImageAndExtract(getFallbackProxyUrl(imageUrl), false)
+          else resolve(getFallbackHoverColor(opacity))
         }
       }
 
       img.onerror = () => {
-        if (canRetry) {
-          loadImageAndExtract(getFallbackProxyUrl(imageUrl), false)
-        } else {
-          resolve(getFallbackHoverColor(opacity))
-        }
+        if (canRetry) loadImageAndExtract(getFallbackProxyUrl(imageUrl), false)
+        else resolve(getFallbackHoverColor(opacity))
       }
 
       img.src = srcToLoad

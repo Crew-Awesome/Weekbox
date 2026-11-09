@@ -1,7 +1,9 @@
 export {
   LoadingScreen,
-  LoadingProvider,
+  type LoadingScreenProps,
 } from './LoadingScreen'
-export { useLoading } from './context'
-export type { LoadingScreenProps } from './LoadingScreen'
-export type { LoadingContextType } from './context'
+export { LoadingProvider } from './LoadingProvider'
+export {
+  useLoading,
+  type LoadingContextType,
+} from './context'

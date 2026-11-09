@@ -84,30 +84,27 @@ export const ModDetailsActionButtons: React.FC<ModDetailsActionButtonsProps> = (
   const heightPx = isDesktop ? '48px' : '44px'
   const labelFontSize = isDesktop ? '15px' : '14px'
 
-  const primaryButtonStyle: React.CSSProperties = {
+  const baseButtonStyle: React.CSSProperties = {
     '--m3e-button-container-height': heightPx,
     '--m3e-button-shape-round': '14px',
     '--m3e-button-label-text-font-size': labelFontSize,
-    '--m3e-button-label-text-font-weight': '700',
     '--m3e-button-label-text-tracking': '0.15px',
     '--m3e-button-icon-size': '20px',
     '--m3e-button-icon-label-space': '8px',
     '--m3e-button-leading-space': '18px',
     '--m3e-button-trailing-space': '18px',
+  } as React.CSSProperties
+
+  const primaryButtonStyle: React.CSSProperties = {
+    ...baseButtonStyle,
+    '--m3e-button-label-text-font-weight': '700',
     '--m3e-button-filled-container-color': 'var(--md-sys-color-primary)',
     '--m3e-button-filled-label-text-color': 'var(--md-sys-color-on-primary)',
   } as React.CSSProperties
 
   const tonalButtonStyle: React.CSSProperties = {
-    '--m3e-button-container-height': heightPx,
-    '--m3e-button-shape-round': '14px',
-    '--m3e-button-label-text-font-size': labelFontSize,
+    ...baseButtonStyle,
     '--m3e-button-label-text-font-weight': '600',
-    '--m3e-button-label-text-tracking': '0.15px',
-    '--m3e-button-icon-size': '20px',
-    '--m3e-button-icon-label-space': '8px',
-    '--m3e-button-leading-space': '18px',
-    '--m3e-button-trailing-space': '18px',
     '--m3e-button-tonal-container-color': 'var(--md-sys-color-surface-container-highest)',
     '--m3e-button-tonal-label-text-color': 'var(--md-sys-color-on-surface)',
   } as React.CSSProperties

@@ -34,14 +34,20 @@ function getInitialEngine(fallback: EngineId): EngineId {
 function getInitialVersion(engineId: EngineId): string | null {
   if (typeof localStorage === 'undefined') return null
   try {
-    const savedForEngine = localStorage.getItem(
-      getInstancesEngineVersionStorageKey(engineId),
+    return (
+      localStorage.getItem(getInstancesEngineVersionStorageKey(engineId)) ||
+      localStorage.getItem(INSTANCES_VERSION_STORAGE_KEY) ||
+      null
     )
-    if (savedForEngine) return savedForEngine
-    const globalSaved = localStorage.getItem(INSTANCES_VERSION_STORAGE_KEY)
-    if (globalSaved) return globalSaved
   } catch {}
   return null
+}
+
+function persistSelectedVersion(engineId: EngineId, version: string) {
+  try {
+    localStorage.setItem(getInstancesEngineVersionStorageKey(engineId), version)
+    localStorage.setItem(INSTANCES_VERSION_STORAGE_KEY, version)
+  } catch {}
 }
 
 export interface EngineVersionOption {
@@ -100,24 +106,12 @@ export function useEngineManagement(initialEngineId: EngineId = 'psych') {
     if (latestReleaseTag) return latestReleaseTag
     if (installedVersions.length > 0) return installedVersions[0].version
     return null
-  }, [
-    versionSelection,
-    selectedEngineId,
-    activeVersion,
-    latestReleaseTag,
-    installedVersions,
-  ])
+  }, [versionSelection, selectedEngineId, activeVersion, latestReleaseTag, installedVersions])
 
   const selectVersion = useCallback(
     (version: string) => {
       setVersionSelection({ engineId: selectedEngineId, version })
-      try {
-        localStorage.setItem(
-          getInstancesEngineVersionStorageKey(selectedEngineId),
-          version,
-        )
-        localStorage.setItem(INSTANCES_VERSION_STORAGE_KEY, version)
-      } catch {}
+      persistSelectedVersion(selectedEngineId, version)
     },
     [selectedEngineId],
   )
@@ -125,7 +119,6 @@ export function useEngineManagement(initialEngineId: EngineId = 'psych') {
   const versionOptions = useMemo<EngineVersionOption[]>(() => {
     const options: EngineVersionOption[] = []
     const seen = new Set<string>()
-
     const sortedInstalled = [...installedVersions].sort((a, b) => {
       if (a.version === activeVersion) return -1
       if (b.version === activeVersion) return 1
@@ -140,9 +133,7 @@ export function useEngineManagement(initialEngineId: EngineId = 'psych') {
         version: installed.version,
         installed,
         release,
-        asset: release
-          ? getCompatibleAsset(release.assets, platform)
-          : undefined,
+        asset: release ? getCompatibleAsset(release.assets, platform) : undefined,
         isActive: installed.version === activeVersion,
       })
     }
@@ -179,13 +170,7 @@ export function useEngineManagement(initialEngineId: EngineId = 'psych') {
     cancelDownload,
     onSelectDownloadingVersion: (version) => {
       setVersionSelection({ engineId: selectedEngineId, version })
-      try {
-        localStorage.setItem(
-          getInstancesEngineVersionStorageKey(selectedEngineId),
-          version,
-        )
-        localStorage.setItem(INSTANCES_VERSION_STORAGE_KEY, version)
-      } catch {}
+      persistSelectedVersion(selectedEngineId, version)
     },
   })
 
@@ -195,11 +180,7 @@ export function useEngineManagement(initialEngineId: EngineId = 'psych') {
     clearReleases()
     clearInstalled()
     const savedVer = getInitialVersion(engineId)
-    if (savedVer) {
-      setVersionSelection({ engineId, version: savedVer })
-    } else {
-      setVersionSelection(null)
-    }
+    setVersionSelection(savedVer ? { engineId, version: savedVer } : null)
     try {
       localStorage.setItem(INSTANCES_ENGINE_STORAGE_KEY, engineId)
     } catch {}
@@ -208,52 +189,33 @@ export function useEngineManagement(initialEngineId: EngineId = 'psych') {
   useEffect(() => {
     try {
       localStorage.setItem(INSTANCES_ENGINE_STORAGE_KEY, selectedEngineId)
-      if (selectedVersion) {
-        localStorage.setItem(
-          getInstancesEngineVersionStorageKey(selectedEngineId),
-          selectedVersion,
-        )
-        localStorage.setItem(INSTANCES_VERSION_STORAGE_KEY, selectedVersion)
-      }
+      if (selectedVersion) persistSelectedVersion(selectedEngineId, selectedVersion)
     } catch {}
   }, [selectedEngineId, selectedVersion])
 
   useEffect(() => {
     if (isLoadingReleases || versionOptions.length === 0) return
     if (versionSelection && versionSelection.engineId === selectedEngineId) {
-      const exists = versionOptions.some(
-        (opt) => opt.version === versionSelection.version,
-      )
-      if (!exists) {
-        setVersionSelection(null)
-      }
+      const exists = versionOptions.some((opt) => opt.version === versionSelection.version)
+      if (!exists) setVersionSelection(null)
     }
   }, [isLoadingReleases, versionOptions, versionSelection, selectedEngineId])
 
   const selectedRelease = useMemo(
-    () =>
-      selectedVersion
-        ? releases.find((release) => release.tagName === selectedVersion)
-        : undefined,
+    () => (selectedVersion ? releases.find((r) => r.tagName === selectedVersion) : undefined),
     [releases, selectedVersion],
   )
-
   const selectedInstalledVersion = selectedVersion
     ? installedVersionMap.get(selectedVersion)
     : undefined
-
-  const selectedTask = selectedVersion
-    ? tasksByVersion[selectedVersion]
-    : undefined
+  const selectedTask = selectedVersion ? tasksByVersion[selectedVersion] : undefined
 
   const handleInstallSelected = async () => {
     if (!selectedVersion) return
-    const release = selectedRelease
-    const asset = release
-      ? getCompatibleAsset(release.assets, platform)
+    const asset = selectedRelease
+      ? getCompatibleAsset(selectedRelease.assets, platform)
       : undefined
-
-    if (!release || !asset) {
+    if (!selectedRelease || !asset) {
       if (typeof window !== 'undefined' && window.callout) {
         window.callout.error(
           `No compatible download was found for ${currentEngine.name} ${selectedVersion} on this platform.`,
@@ -262,26 +224,7 @@ export function useEngineManagement(initialEngineId: EngineId = 'psych') {
       }
       return
     }
-
-    await handleDownload(release, asset)
-  }
-
-  const handleUninstallSelected = () => {
-    if (selectedVersion) {
-      handleDelete(selectedVersion)
-    }
-  }
-
-  const handleLaunchSelected = () => {
-    if (selectedVersion) {
-      void handleLaunch(selectedVersion)
-    }
-  }
-
-  const handleSetSelectedAsDefault = async () => {
-    if (selectedVersion) {
-      await handleSetDefault(selectedVersion)
-    }
+    await handleDownload(selectedRelease, asset)
   }
 
   return {
@@ -317,9 +260,15 @@ export function useEngineManagement(initialEngineId: EngineId = 'psych') {
     cancelDownload: handleCancelDownload,
     openGitHub: handleOpenGitHub,
     installSelectedVersion: handleInstallSelected,
-    uninstallSelectedVersion: handleUninstallSelected,
+    uninstallSelectedVersion: () => {
+      if (selectedVersion) handleDelete(selectedVersion)
+    },
     isUninstalling,
-    launchSelectedVersion: handleLaunchSelected,
-    setSelectedAsDefault: handleSetSelectedAsDefault,
+    launchSelectedVersion: () => {
+      if (selectedVersion) void handleLaunch(selectedVersion)
+    },
+    setSelectedAsDefault: async () => {
+      if (selectedVersion) await handleSetDefault(selectedVersion)
+    },
   }
 }

@@ -1,6 +1,6 @@
 import React, { useMemo, useState, useEffect } from 'react'
 import type { LibraryEngineSummary, LibrarySortOption } from '../types'
-import { FilterIcon } from '@/ui/icons'
+import { FilterIcon } from '@/ui/icons/FilterIcon'
 import { LibraryCriteriaMenu } from './LibraryCriteriaMenu'
 
 export interface LibraryFiltersBarProps {
@@ -25,13 +25,19 @@ const M3E_BUTTON_STYLE: React.CSSProperties = {
   '--m3e-button-outlined-container-shape': '16px',
   '--m3e-button-outlined-outline-color':
     'color-mix(in srgb, var(--md-sys-color-outline-variant) 60%, transparent)',
-  '--m3e-button-outlined-label-text-color':
-    'var(--md-sys-color-on-surface)',
+  '--m3e-button-outlined-label-text-color': 'var(--md-sys-color-on-surface)',
   '--m3e-button-container-height': '42px',
   '--m3e-button-icon-size': '22px',
   '--m3e-button-icon-label-space': '8px',
   cursor: 'pointer',
 } as React.CSSProperties
+
+const SORT_NAMES: Record<LibrarySortOption, string> = {
+  recent: 'Recently Installed',
+  name: 'Name (A-Z)',
+  size: 'Size',
+  engine: 'Engine',
+}
 
 export const LibraryFiltersBar: React.FC<LibraryFiltersBarProps> = ({
   selectedEngine,
@@ -74,10 +80,6 @@ export const LibraryFiltersBar: React.FC<LibraryFiltersBarProps> = ({
     }
   }
 
-  const handleSelectAllEngines = () => {
-    onSelectEngine('all')
-  }
-
   const currentEngineLabel = useMemo(() => {
     if (isAllEngines) return 'All Engines'
     if (selectedEngines.length === 1) {
@@ -92,41 +94,16 @@ export const LibraryFiltersBar: React.FC<LibraryFiltersBarProps> = ({
   }, [isAllEngines, selectedEngines, engineSummaries])
 
   const currentCriteriaLabel = useMemo(() => {
-    let sortName = 'Recently Installed'
-    switch (sortBy) {
-      case 'name':
-        sortName = 'Name (A-Z)'
-        break
-      case 'size':
-        sortName = 'Size'
-        break
-      case 'engine':
-        sortName = 'Engine'
-        break
-      default:
-        sortName = 'Recently Installed'
-        break
-    }
-
-    const parts = [sortName]
-    if (!isAllEngines) {
-      parts.push(currentEngineLabel)
-    }
-    if (filterFavorites && filterBookmarks) {
-      parts.push('Favs + Bookmarks')
-    } else if (filterFavorites) {
-      parts.push('Favorites')
-    } else if (filterBookmarks) {
-      parts.push('Bookmarks')
-    }
+    const parts = [SORT_NAMES[sortBy] || 'Recently Installed']
+    if (!isAllEngines) parts.push(currentEngineLabel)
+    if (filterFavorites && filterBookmarks) parts.push('Favs + Bookmarks')
+    else if (filterFavorites) parts.push('Favorites')
+    else if (filterBookmarks) parts.push('Bookmarks')
     return parts.join(' • ')
   }, [sortBy, isAllEngines, currentEngineLabel, filterFavorites, filterBookmarks])
 
   const isCriteriaFiltered =
-    filterFavorites ||
-    filterBookmarks ||
-    !isAllEngines ||
-    sortBy !== 'recent'
+    filterFavorites || filterBookmarks || !isAllEngines || sortBy !== 'recent'
 
   const [isOpen, setIsOpen] = useState(false)
 
@@ -178,11 +155,26 @@ export const LibraryFiltersBar: React.FC<LibraryFiltersBarProps> = ({
       engineSummaries={engineSummaries}
       selectedEngines={selectedEngines}
       isAllEngines={isAllEngines}
-      onSelectAllEngines={handleSelectAllEngines}
+      onSelectAllEngines={() => onSelectEngine('all')}
       onToggleEngine={handleToggleEngine}
       hasActiveFilters={hasActiveFilters}
       onClearFilters={onClearFilters}
     />
+  )
+
+  const tonalOverride = isCriteriaFiltered
+    ? {
+        '--m3e-button-tonal-container-color':
+          'color-mix(in srgb, var(--md-sys-color-primary) 14%, transparent)',
+        '--m3e-button-tonal-label-text-color': 'var(--md-sys-color-primary)',
+      }
+    : {}
+
+  const activeBadge = isCriteriaFiltered && (
+    <span className="absolute -top-1 -right-1 flex h-3.5 w-3.5 pointer-events-none items-center justify-center">
+      <span className="cuki-filter-indicator-ping absolute inline-flex h-full w-full rounded-full bg-[var(--md-sys-color-primary)] opacity-75"></span>
+      <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-[var(--md-sys-color-primary)] ring-2 ring-[var(--md-sys-color-surface)] shadow-[0_0_8px_var(--md-sys-color-primary)]"></span>
+    </span>
   )
 
   if (compact) {
@@ -206,14 +198,7 @@ export const LibraryFiltersBar: React.FC<LibraryFiltersBarProps> = ({
               transition:
                 'transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1), background-color 0.25s ease, border-color 0.25s ease',
               transform: isOpen ? 'scale(0.95)' : 'scale(1)',
-              ...(isCriteriaFiltered
-                ? {
-                    '--m3e-button-tonal-container-color':
-                      'color-mix(in srgb, var(--md-sys-color-primary) 14%, transparent)',
-                    '--m3e-button-tonal-label-text-color':
-                      'var(--md-sys-color-primary)',
-                  }
-                : {}),
+              ...tonalOverride,
             } as React.CSSProperties
           }
           title="Filter and Sort"
@@ -227,23 +212,14 @@ export const LibraryFiltersBar: React.FC<LibraryFiltersBarProps> = ({
             size={22}
           />
         </m3e-button>
-
-        {isCriteriaFiltered && (
-          <span className="absolute -top-1 -right-1 flex h-3.5 w-3.5 pointer-events-none items-center justify-center">
-            <span className="cuki-filter-indicator-ping absolute inline-flex h-full w-full rounded-full bg-[var(--md-sys-color-primary)] opacity-75"></span>
-            <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-[var(--md-sys-color-primary)] ring-2 ring-[var(--md-sys-color-surface)] shadow-[0_0_8px_var(--md-sys-color-primary)]"></span>
-          </span>
-        )}
-
+        {activeBadge}
         {menuNode}
       </div>
     )
   }
 
   return (
-    <div
-      className={`flex flex-wrap items-center justify-between gap-3 pt-1 ${className}`}
-    >
+    <div className={`flex flex-wrap items-center justify-between gap-3 pt-1 ${className}`}>
       <div className="flex flex-wrap items-center gap-2.5">
         <div className="relative">
           <m3e-button
@@ -255,14 +231,7 @@ export const LibraryFiltersBar: React.FC<LibraryFiltersBarProps> = ({
                 transition:
                   'transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1), background-color 0.25s ease, border-color 0.25s ease',
                 transform: isOpen ? 'scale(0.97)' : 'scale(1)',
-                ...(isCriteriaFiltered
-                  ? {
-                      '--m3e-button-tonal-container-color':
-                        'color-mix(in srgb, var(--md-sys-color-primary) 14%, transparent)',
-                      '--m3e-button-tonal-label-text-color':
-                        'var(--md-sys-color-primary)',
-                    }
-                  : {}),
+                ...tonalOverride,
               } as React.CSSProperties
             }
           >
@@ -290,14 +259,7 @@ export const LibraryFiltersBar: React.FC<LibraryFiltersBarProps> = ({
               arrow_drop_down
             </span>
           </m3e-button>
-
-          {isCriteriaFiltered && (
-            <span className="absolute -top-1 -right-1 flex h-3.5 w-3.5 pointer-events-none items-center justify-center">
-              <span className="cuki-filter-indicator-ping absolute inline-flex h-full w-full rounded-full bg-[var(--md-sys-color-primary)] opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-[var(--md-sys-color-primary)] ring-2 ring-[var(--md-sys-color-surface)] shadow-[0_0_8px_var(--md-sys-color-primary)]"></span>
-            </span>
-          )}
-
+          {activeBadge}
           {menuNode}
         </div>
       </div>
