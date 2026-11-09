@@ -110,8 +110,8 @@ export async function fetchRipeRecords(
       }
 
       state.sourcePage++
-    } catch {
-      state.isComplete = true
+    } catch (err) {
+      console.warn('fetchRipeRecords batch error:', err)
       break
     }
   }

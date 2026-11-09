@@ -3,110 +3,184 @@ import { getMods, type GameBananaMod, type ModFilter } from '@/services/gamebana
 import type { ModItem } from '@/ui/mod-details-modal'
 import { mapToModItem } from '../utils'
 
-const CHUNK_SIZE = 16
+const CHUNK_SIZE = 30
+const MAX_EMPTY_PAGE_RETRIES = 3
+
+interface HomeModsCache {
+  searchQuery: string
+  filter: ModFilter
+  engineKey: string
+  mods: GameBananaMod[]
+  page: number
+  hasMore: boolean
+}
+
+let globalHomeModsCache: HomeModsCache | null = null
+
+function isMatchingCache(
+  cache: HomeModsCache | null,
+  searchQuery: string,
+  filter: ModFilter,
+  engineKey: string,
+): cache is HomeModsCache {
+  return (
+    cache !== null &&
+    cache.searchQuery === searchQuery &&
+    cache.filter === filter &&
+    cache.engineKey === engineKey
+  )
+}
+
+function getEngineKey(engineFilter: string | string[] = 'all'): string {
+  if (!engineFilter) return 'all'
+  if (Array.isArray(engineFilter)) {
+    const clean = engineFilter.filter((id) => id && id !== 'all').sort()
+    return clean.length === 0 ? 'all' : clean.join(',')
+  }
+  return engineFilter
+}
 
 export function useHomeMods(
   searchQuery: string,
   filter: ModFilter = 'ripe',
   engineFilter: string | string[] = 'all',
 ) {
-  const [modsList, setModsList] = useState<GameBananaMod[]>([])
-  const [isInitialLoading, setIsInitialLoading] = useState(true)
-  const [isLoadingMore, setIsLoadingMore] = useState(false)
-  const [hasMore, setHasMore] = useState(true)
+  const initialCache = isMatchingCache(
+    globalHomeModsCache,
+    searchQuery,
+    filter,
+    getEngineKey(engineFilter),
+  )
+    ? globalHomeModsCache
+    : null
 
-  const pageRef = useRef(1)
+  const [modsList, setModsList] = useState<GameBananaMod[]>(() => initialCache?.mods ?? [])
+  const [isInitialLoading, setIsInitialLoading] = useState(() => !initialCache)
+  const [isLoadingMore, setIsLoadingMore] = useState(false)
+  const [hasMore, setHasMore] = useState(() => initialCache?.hasMore ?? true)
+
+  const pageRef = useRef(initialCache?.page ?? 1)
+  const busyRef = useRef(!initialCache)
+  const hasMoreRef = useRef(initialCache?.hasMore ?? true)
+  const seenIdsRef = useRef<Set<number | string>>(
+    new Set(initialCache?.mods.map((m) => m.id) ?? []),
+  )
+  const generationRef = useRef(0)
 
   const engineKey = useMemo(() => {
-    if (!engineFilter) return 'all'
-    if (Array.isArray(engineFilter)) {
-      const clean = engineFilter.filter((id) => id && id !== 'all').sort()
-      return clean.length === 0 ? 'all' : clean.join(',')
-    }
-    return engineFilter
+    return getEngineKey(engineFilter)
   }, [engineFilter])
-
-  const syncKey = `${searchQuery}|${filter}|${engineKey}`
-  const [syncedKey, setSyncedKey] = useState(syncKey)
-
-  if (syncedKey !== syncKey) {
-    setSyncedKey(syncKey)
-    setIsInitialLoading(true)
-    setHasMore(true)
-    setModsList([])
-  }
 
   const activeEngines = useMemo(() => {
     if (engineKey === 'all') return null
-    if (Array.isArray(engineFilter)) {
-      return engineFilter.filter((id) => id && id !== 'all')
-    }
-    return engineFilter
-  }, [engineKey, engineFilter])
+    return engineKey.split(',')
+  }, [engineKey])
 
   useEffect(() => {
-    let isMounted = true
+    if (
+      isMatchingCache(globalHomeModsCache, searchQuery, filter, engineKey) &&
+      modsList.length > 0 &&
+      modsList === globalHomeModsCache?.mods
+    ) {
+      busyRef.current = false
+      return
+    }
+
+    const generation = ++generationRef.current
     pageRef.current = 1
+    busyRef.current = true
+    hasMoreRef.current = true
+    seenIdsRef.current = new Set()
+    setIsInitialLoading(true)
+    setIsLoadingMore(false)
+    setHasMore(true)
+    setModsList([])
 
     getMods(filter, 1, CHUNK_SIZE, activeEngines, searchQuery)
       .then((mods) => {
-        if (!isMounted) return
-        setModsList(mods || [])
-        pageRef.current = 1
-        if (!mods || mods.length === 0) {
-          setHasMore(false)
+        if (generation !== generationRef.current) return
+        const list = mods || []
+        seenIdsRef.current = new Set(list.map((m) => m.id))
+        setModsList(list)
+        const hasMoreMods = list.length > 0
+        hasMoreRef.current = hasMoreMods
+        setHasMore(hasMoreMods)
+
+        globalHomeModsCache = {
+          searchQuery,
+          filter,
+          engineKey,
+          mods: list,
+          page: 1,
+          hasMore: hasMoreMods,
         }
       })
       .catch((err) => {
         console.error('Failed to load GameBanana mods:', err)
-        if (isMounted) setModsList([])
       })
       .finally(() => {
-        if (isMounted) setIsInitialLoading(false)
+        if (generation !== generationRef.current) return
+        busyRef.current = false
+        setIsInitialLoading(false)
       })
-
-    return () => {
-      isMounted = false
-    }
-  }, [searchQuery, filter, engineKey, activeEngines])
+  }, [searchQuery, filter, activeEngines, engineKey])
 
   const loadNextChunk = useCallback(async () => {
-    if (isLoadingMore || !hasMore || isInitialLoading) return
+    if (busyRef.current || !hasMoreRef.current) return
 
+    const generation = generationRef.current
+    busyRef.current = true
     setIsLoadingMore(true)
-    const nextPage = pageRef.current + 1
 
     try {
-      const nextMods = await getMods(
-        filter,
-        nextPage,
-        CHUNK_SIZE,
-        activeEngines,
-        searchQuery,
-      )
-      if (!nextMods || nextMods.length === 0) {
-        setHasMore(false)
-      } else {
-        setModsList((prev) => {
-          const existingIds = new Set(prev.map((m) => m.id))
-          const uniqueNew = nextMods.filter((m) => !existingIds.has(m.id))
-          if (uniqueNew.length === 0) {
-            setHasMore(false)
-            return prev
-          }
-          return [...prev, ...uniqueNew]
-        })
-        pageRef.current = nextPage
-        if (nextMods.length < 15) {
+      for (let attempt = 0; attempt < MAX_EMPTY_PAGE_RETRIES; attempt++) {
+        const targetPage = pageRef.current + 1
+        const nextMods = await getMods(
+          filter,
+          targetPage,
+          CHUNK_SIZE,
+          activeEngines,
+          searchQuery,
+        )
+        if (generation !== generationRef.current) return
+
+        if (!nextMods || nextMods.length === 0) {
+          hasMoreRef.current = false
           setHasMore(false)
+          if (globalHomeModsCache && isMatchingCache(globalHomeModsCache, searchQuery, filter, engineKey)) {
+            globalHomeModsCache.hasMore = false
+          }
+          return
+        }
+
+        pageRef.current = targetPage
+        const uniqueNew = nextMods.filter((m) => !seenIdsRef.current.has(m.id))
+        if (uniqueNew.length > 0) {
+          for (const m of uniqueNew) seenIdsRef.current.add(m.id)
+          setModsList((prev) => {
+            const nextList = [...prev, ...uniqueNew]
+            globalHomeModsCache = {
+              searchQuery,
+              filter,
+              engineKey,
+              mods: nextList,
+              page: targetPage,
+              hasMore: true,
+            }
+            return nextList
+          })
+          return
         }
       }
     } catch (err) {
       console.error('Failed to load next mods chunk:', err)
     } finally {
-      setIsLoadingMore(false)
+      if (generation === generationRef.current) {
+        busyRef.current = false
+        setIsLoadingMore(false)
+      }
     }
-  }, [isLoadingMore, hasMore, isInitialLoading, filter, activeEngines, searchQuery])
+  }, [filter, activeEngines, searchQuery, engineKey])
 
   const modItems = useMemo<ModItem[]>(() => {
     return modsList.map(mapToModItem)

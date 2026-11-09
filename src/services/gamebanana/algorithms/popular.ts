@@ -110,8 +110,8 @@ export async function fetchPopularRecords(
       }
 
       state.sourcePage++
-    } catch {
-      state.isComplete = true
+    } catch (err) {
+      console.warn('fetchPopularRecords batch error:', err)
       break
     }
   }

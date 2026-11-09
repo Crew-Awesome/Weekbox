@@ -32,7 +32,7 @@ function isMobile(): boolean {
 export async function getMods(
   filter: ModFilter = 'ripe',
   page = 1,
-  perPage = 16,
+  perPage = 30,
   engineIds: string[] | string | null = null,
   searchQuery = '',
 ): Promise<GameBananaMod[]> {
