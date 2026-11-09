@@ -7,6 +7,8 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "lint": "oxlint",
+    "test": "node test/syntax-check.mjs",
+    "test:syntax": "node test/syntax-check.mjs",
     "preview": "vite preview",
     "preneu:dev": "node -e \"const fs=require('fs'); const c=JSON.parse(fs.readFileSync('neutralino.config.json')); c.url='http://localhost:5173'; fs.writeFileSync('neutralino.config.json', JSON.stringify(c, null, 2));\"",
     "neu:dev": "npm run preneu:dev && concurrently -k \"npm run dev\" \"neu run\"",
