@@ -56,19 +56,19 @@ export function useSurfaceHoverColor({
   }, [lazyLoad])
 
   const getDefaultHoverColor = useCallback(() => {
-    if (typeof window === 'undefined') return 'rgba(54, 60, 255, 0.15)'
+    if (typeof window === 'undefined') return 'var(--wb-card-hover-bg)'
     const style = getComputedStyle(rootRef.current || document.documentElement)
     const val =
       style.getPropertyValue('--wb-card-hover-bg').trim() ||
-      style.getPropertyValue('--md-sys-color-surface-container-high').trim() ||
-      style.getPropertyValue('--wb-card-hover-default').trim()
-    return val || getFallbackHoverColor(0.2)
+      style.getPropertyValue('--wb-card-hover-default').trim() ||
+      style.getPropertyValue('--md-sys-color-surface-container-high').trim()
+    return val || getFallbackHoverColor()
   }, [])
 
   useEffect(() => {
     let isMounted = true
     if (shouldExtract && imageUrl) {
-      extractColor(imageUrl, 0.25)
+      extractColor(imageUrl, 0.15)
         .then((color: string | null) => {
           if (isMounted) {
             setExtractedColor(color || null)
@@ -86,12 +86,11 @@ export function useSurfaceHoverColor({
     const thumbnailEl = thumbnailRef.current
 
     if (hoverBgEl) {
-      const paddingPixels = 28
       gsap.set(hoverBgEl, {
-        top: paddingPixels,
-        left: paddingPixels,
-        right: paddingPixels,
-        bottom: paddingPixels,
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
         opacity: 0,
       })
     }
@@ -104,12 +103,7 @@ export function useSurfaceHoverColor({
 
   useEffect(() => {
     if (isHoveredRef.current && hoverColor && hoverBgRef.current) {
-      gsap.to(hoverBgRef.current, {
-        backgroundColor: hoverColor,
-        duration: 0.3,
-        ease: 'power2.out',
-        overwrite: 'auto',
-      })
+      hoverBgRef.current.style.backgroundColor = hoverColor
     }
   }, [hoverColor])
 
@@ -126,17 +120,14 @@ export function useSurfaceHoverColor({
         overwrite: true,
       })
     }
+
     const finalColor = hoverColor || getDefaultHoverColor()
     if (hoverBgRef.current) {
+      hoverBgRef.current.style.backgroundColor = finalColor
       gsap.killTweensOf(hoverBgRef.current)
       gsap.to(hoverBgRef.current, {
-        top: 0,
-        left: 0,
-        right: 0,
-        bottom: 0,
         opacity: 1,
-        backgroundColor: finalColor,
-        duration: 0.35,
+        duration: 0.25,
         ease: 'power2.out',
         overwrite: true,
       })
@@ -151,23 +142,18 @@ export function useSurfaceHoverColor({
       gsap.killTweensOf(thumbnailRef.current)
       gsap.to(thumbnailRef.current, {
         scale: 1,
-        duration: 0.25,
+        duration: 0.2,
         ease: 'power2.out',
         overwrite: true,
       })
     }
+
     if (hoverBgRef.current) {
-      const paddingPixels = 28
       gsap.killTweensOf(hoverBgRef.current)
       gsap.to(hoverBgRef.current, {
-        top: paddingPixels,
-        left: paddingPixels,
-        right: paddingPixels,
-        bottom: paddingPixels,
         opacity: 0,
-        backgroundColor: 'transparent',
         duration: 0.25,
-        ease: 'power2.inOut',
+        ease: 'power2.out',
         overwrite: true,
       })
     }

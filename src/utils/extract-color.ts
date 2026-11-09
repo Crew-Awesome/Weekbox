@@ -151,34 +151,23 @@ function getFallbackProxyUrl(url: string): string {
 
 // resolves fallback hover color from css variables
 export const getFallbackHoverColor = (opacity?: number): string => {
-  if (typeof document === 'undefined') return 'rgba(54, 60, 255, 0.25)'
+  if (typeof document === 'undefined') {
+    return 'color-mix(in srgb, var(--md-sys-color-primary, #363cff) 8%, var(--md-sys-color-surface-container-high, #2A292F))'
+  }
   const styles = getComputedStyle(document.documentElement)
-  const primaryVar =
-    styles.getPropertyValue('--wb-card-hover-default').trim() ||
-    styles.getPropertyValue('--md-sys-color-primary').trim()
+  const hoverBg = styles.getPropertyValue('--wb-card-hover-bg').trim()
+  if (hoverBg) return hoverBg
 
-  if (primaryVar) {
-    if (opacity !== undefined) {
-      if (primaryVar.startsWith('#')) {
-        let hex = primaryVar.replace('#', '')
-        if (hex.length === 3) {
-          hex = hex
-            .split('')
-            .map((c) => c + c)
-            .join('')
-        }
-        const num = parseInt(hex, 16)
-        if (!isNaN(num)) {
-          return `rgba(${num >> 16}, ${(num >> 8) & 255}, ${num & 255}, ${opacity})`
-        }
-      }
-      return `color-mix(in srgb, var(--wb-card-hover-default, var(--md-sys-color-primary)) ${Math.round(opacity * 100)}%, transparent)`
-    }
-    return 'var(--wb-card-hover-bg, var(--md-sys-color-primary-container))'
+  const hoverDefault = styles.getPropertyValue('--wb-card-hover-default').trim()
+  if (hoverDefault) return hoverDefault
+
+  const containerHigh = styles.getPropertyValue('--md-sys-color-surface-container-high').trim()
+  if (containerHigh) {
+    return `color-mix(in srgb, var(--md-sys-color-primary) 8%, ${containerHigh})`
   }
 
   return opacity !== undefined
-    ? `rgba(54, 60, 255, ${opacity})`
+    ? `rgba(255, 255, 255, ${opacity})`
     : 'var(--wb-card-hover-bg)'
 }
 
@@ -284,7 +273,7 @@ export const extractColor = (
 
           const finalResult =
             opacity !== undefined
-              ? `rgba(${bestColor[0]}, ${bestColor[1]}, ${bestColor[2]}, ${opacity})`
+              ? `color-mix(in srgb, rgb(${bestColor[0]}, ${bestColor[1]}, ${bestColor[2]}) ${Math.round(opacity * 100)}%, var(--md-sys-color-surface-container-high))`
               : `rgb(${bestColor[0]}, ${bestColor[1]}, ${bestColor[2]})`
 
           colorCache.set(cacheKey, finalResult)

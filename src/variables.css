@@ -86,11 +86,13 @@
   --wb-surface-container-lowest: var(--md-sys-color-surface-container-lowest);
   --wb-outline: var(--md-sys-color-outline);
   --wb-outline-variant: var(--md-sys-color-outline-variant);
-  --wb-card-hover-default: var(--md-sys-color-primary);
-  --wb-card-hover-bg: var(--md-sys-color-primary-container);
+  --wb-card-hover-default: color-mix(in srgb, var(--md-sys-color-primary) 7%, var(--md-sys-color-surface-container-high));
+  --wb-card-hover-bg: color-mix(in srgb, var(--md-sys-color-primary) 7%, var(--md-sys-color-surface-container-high));
 }
 
 [data-theme="dark"] {
+  --wb-card-hover-default: color-mix(in srgb, var(--md-sys-color-primary) 10%, var(--md-sys-color-surface-container-high));
+  --wb-card-hover-bg: color-mix(in srgb, var(--md-sys-color-primary) 10%, var(--md-sys-color-surface-container-high));
   --md-sys-color-primary: #BFC2FF;
   --md-sys-color-on-primary: #0300AC;
   --md-sys-color-primary-container: #0800EE;
@@ -167,6 +169,8 @@
     --md-sys-color-surface-container-low: #1B1B21;
     --md-sys-color-surface-container-lowest: #0E0E13;
     --md-sys-color-surface-dim: #131318;
+    --wb-card-hover-default: color-mix(in srgb, var(--md-sys-color-primary) 10%, var(--md-sys-color-surface-container-high));
+    --wb-card-hover-bg: color-mix(in srgb, var(--md-sys-color-primary) 10%, var(--md-sys-color-surface-container-high));
   }
 }
 
