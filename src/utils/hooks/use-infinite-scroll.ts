@@ -1,67 +1,71 @@
-import { useEffect, type RefObject } from 'react'
-import { findScrollableParent } from '../scroll'
+import { useCallback, useEffect, useRef, useState } from 'react'
 
 export interface UseInfiniteScrollOptions {
-  sentinelRef: RefObject<HTMLElement | null>
   hasMore: boolean
+  isLoading?: boolean
   onLoadMore: () => void
   rootMargin?: string
-  scrollThresholdPx?: number
 }
 
-/**
- * Observes a sentinel element via IntersectionObserver and attaches a fallback scroll listener
- * on the nearest scrollable parent / `m3e-overflow` viewport to trigger infinite pagination.
- */
+const USER_INTENT_EVENTS = ['wheel', 'touchmove', 'keydown', 'pointerdown'] as const
+
+const isElementVisible = (el: HTMLElement | null): boolean => {
+  if (!el || !el.isConnected) return false
+  if (el.offsetParent === null && el.getClientRects().length === 0) return false
+  return true
+}
+
 export function useInfiniteScroll({
-  sentinelRef,
   hasMore,
+  isLoading = false,
   onLoadMore,
   rootMargin = '600px',
-  scrollThresholdPx = 650,
-}: UseInfiniteScrollOptions): void {
+}: UseInfiniteScrollOptions): (node: HTMLElement | null) => void {
+  const [sentinel, setSentinel] = useState<HTMLElement | null>(null)
+  const [armed, setArmed] = useState(true)
+  const onLoadMoreRef = useRef(onLoadMore)
+  const sentinelRef = useRef<HTMLElement | null>(null)
+  sentinelRef.current = sentinel
+
   useEffect(() => {
-    const sentinel = sentinelRef.current
-    if (!sentinel || !hasMore) return
+    onLoadMoreRef.current = onLoadMore
+  }, [onLoadMore])
+
+  useEffect(() => {
+    if (armed) return
+    const rearm = () => {
+      if (isElementVisible(sentinelRef.current)) {
+        setArmed(true)
+      }
+    }
+    for (const evt of USER_INTENT_EVENTS) {
+      window.addEventListener(evt, rearm, { capture: true, passive: true, once: true })
+    }
+    return () => {
+      for (const evt of USER_INTENT_EVENTS) {
+        window.removeEventListener(evt, rearm, { capture: true })
+      }
+    }
+  }, [armed])
+
+  useEffect(() => {
+    if (!sentinel || !hasMore || isLoading || !armed) return
 
     const observer = new IntersectionObserver(
       (entries) => {
-        if (entries[0]?.isIntersecting) {
-          onLoadMore()
+        if (entries.some((entry) => entry.isIntersecting)) {
+          if (!isElementVisible(sentinel)) return
+          observer.disconnect()
+          setArmed(false)
+          onLoadMoreRef.current()
         }
       },
-      {
-        rootMargin,
-        threshold: 0.05,
-      },
+      { root: null, rootMargin, threshold: 0 },
     )
 
     observer.observe(sentinel)
+    return () => observer.disconnect()
+  }, [sentinel, hasMore, isLoading, armed, rootMargin])
 
-    const scrollContainer = findScrollableParent(sentinel)
-    let ticking = false
-
-    const handleScroll = () => {
-      if (!ticking) {
-        window.requestAnimationFrame(() => {
-          if (!scrollContainer) return
-          const { scrollTop, clientHeight, scrollHeight } = scrollContainer
-          if (scrollTop + clientHeight >= scrollHeight - scrollThresholdPx) {
-            onLoadMore()
-          }
-          ticking = false
-        })
-        ticking = true
-      }
-    }
-
-    if (scrollContainer) {
-      scrollContainer.addEventListener('scroll', handleScroll, { passive: true })
-    }
-
-    return () => {
-      observer.disconnect()
-      scrollContainer?.removeEventListener('scroll', handleScroll)
-    }
-  }, [sentinelRef, hasMore, onLoadMore, rootMargin, scrollThresholdPx])
+  return useCallback((node: HTMLElement | null) => setSentinel(node), [])
 }
