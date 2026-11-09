@@ -91,7 +91,7 @@ export const LibraryView: React.FC = () => {
     <div className="w-full min-h-full flex flex-col">
       <Topbar
         trailing={
-          <div className="flex items-center gap-1 shrink-0 absolute right-4 sm:right-8 z-20">
+          <div className="flex items-center gap-1 sm:gap-1.5 shrink-0 z-10">
             <m3e-icon-button
               onClick={() => void reload()}
               title="Refresh"
@@ -105,6 +105,7 @@ export const LibraryView: React.FC = () => {
             <m3e-icon-button
               onClick={() => void handleOpenAllModsFolder()}
               title="Open mods folder in File Explorer"
+              className="hidden sm:inline-flex"
               style={{ cursor: 'pointer' }}
             >
               <span className="material-symbols-rounded text-xl leading-none">
@@ -128,7 +129,7 @@ export const LibraryView: React.FC = () => {
           </div>
         }
       >
-        <div className="w-full max-w-2xl mx-auto flex items-center gap-2.5">
+        <div className="w-full max-w-2xl mx-auto flex items-center gap-2 sm:gap-2.5">
           <LibraryFiltersBar
             compact
             selectedEngine={filters.engineFilter}

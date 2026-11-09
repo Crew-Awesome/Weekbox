@@ -36,7 +36,7 @@ export const LibraryGrid: React.FC<LibraryGridProps> = ({
 }) => {
   if (isLoading) {
     return (
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-5 sm:gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-3.5 sm:gap-5 lg:gap-6">
         {Array.from({ length: 6 }).map((_, idx) => (
           <div
             key={idx}
@@ -67,7 +67,7 @@ export const LibraryGrid: React.FC<LibraryGridProps> = ({
   }
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-5 sm:gap-6">
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-3.5 sm:gap-5 lg:gap-6">
       {mods.map((mod) => (
         <LibraryModCard
           key={mod.id}
