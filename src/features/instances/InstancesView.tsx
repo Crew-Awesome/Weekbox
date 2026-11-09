@@ -1,5 +1,5 @@
 import React from 'react'
-import { Topbar } from '@/ui/topbar'
+import { Topbar } from '@/ui/topbar/Topbar'
 import { useEnginePlaytime, useEngineProcessState } from '@/core/engines'
 import { useEngineManagement } from './hooks/use-engine-management'
 import { useBannerProgress } from './hooks/use-banner-progress'

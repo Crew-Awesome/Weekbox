@@ -1,5 +1,5 @@
 import React from 'react'
-import type { TwitterNewsPost } from '@/services/twitter'
+import type { TwitterNewsPost } from '@/services/twitter/types'
 import { NewsPostText } from './NewsPostText'
 import { NewsMediaGrid } from './NewsMediaGrid'
 import { NewsQuoteCard } from './NewsQuoteCard'
@@ -64,7 +64,6 @@ export const NewsPostCard: React.FC<NewsPostCardProps> = ({
       }
     >
       <div className="flex flex-col p-4 sm:p-5 w-full">
-        {/* Header */}
         <header className="flex items-center justify-between gap-3 mb-3">
           <div className="flex items-center gap-3 min-w-0">
             {post.avatarUrl && !avatarError ? (
@@ -114,7 +113,6 @@ export const NewsPostCard: React.FC<NewsPostCardProps> = ({
           )}
         </header>
 
-        {/* Post Text */}
         {post.text && (
           <NewsPostText
             text={post.text}
@@ -122,7 +120,6 @@ export const NewsPostCard: React.FC<NewsPostCardProps> = ({
           />
         )}
 
-        {/* Media Grid */}
         {(post.images.length > 0 || post.videos.length > 0) && (
           <NewsMediaGrid
             images={post.images}
@@ -131,7 +128,6 @@ export const NewsPostCard: React.FC<NewsPostCardProps> = ({
           />
         )}
 
-        {/* Quote Tweet */}
         {post.quote && (
           <NewsQuoteCard
             quote={post.quote}
@@ -140,7 +136,6 @@ export const NewsPostCard: React.FC<NewsPostCardProps> = ({
           />
         )}
 
-        {/* Footer / Stats */}
         <footer className="flex items-center justify-between gap-2 mt-4 pt-3 border-t border-[color-mix(in_srgb,var(--md-sys-color-outline-variant)_40%,transparent)] text-xs text-[var(--md-sys-color-on-surface-variant)]">
           <div className="flex items-center gap-3 sm:gap-4 flex-wrap">
             {post.stats.likes != null && (
@@ -215,4 +210,3 @@ export const NewsPostCard: React.FC<NewsPostCardProps> = ({
     </m3e-card>
   )
 }
-

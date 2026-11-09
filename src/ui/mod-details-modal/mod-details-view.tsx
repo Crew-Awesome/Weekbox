@@ -1,8 +1,8 @@
 import React from 'react'
 import type { ModalViewProps } from './types'
 import { ModMediaCarousel, ModThumbnailStrip } from './components/mod-media-carousel'
-import { ModDetailsHeaderDesktop } from './components/mod-details-header-desktop'
-import { ModDetailsInfoSection } from './components/mod-details-info-section'
+import { ModDetailsHeaderDesktop } from './components/mod-details-header-desktop/ModDetailsHeaderDesktop'
+import { ModDetailsInfoSection } from './components/mod-details-info-section/ModDetailsInfoSection'
 import { ModDetailsActionButtons } from './components/mod-details-action-buttons'
 import { useModDetails } from './hooks/use-mod-details'
 import {

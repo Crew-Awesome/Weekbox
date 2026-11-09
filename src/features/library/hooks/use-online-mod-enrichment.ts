@@ -7,7 +7,7 @@ import {
   type InstalledModRecord,
 } from '@/core/mods'
 import { openFolderInExplorer, resolveModInstallDirectory } from '@/core/mods/mod-filesystem'
-import { ensureWeekBoxLibrary } from '@/core/storage'
+import { ensureWeekBoxLibrary } from '@/core/storage/weekbox-library'
 import { getModById, ENGINE_CATEGORIES } from '@/services/gamebanana'
 import type { LibraryEngineSummary, LibraryStats } from '../types'
 

@@ -1,7 +1,7 @@
 import React, { useRef } from 'react'
-import { Carousel, type CarouselAPI } from '@/ui/carousel'
-import { Title } from '@/ui/title'
-import type { ModItem } from '@/ui/mod-details-modal'
+import { Carousel, type CarouselAPI } from '@/ui/carousel/Carousel'
+import { Title } from '@/ui/title/Title'
+import type { ModItem } from '@/ui/mod-details-modal/types'
 import { FeaturedModsSkeleton } from './FeaturedModsSkeleton'
 import { FeaturedCarouselIndicators } from './FeaturedCarouselIndicators'
 import { FeaturedModSlide } from './FeaturedModSlide'
@@ -12,9 +12,6 @@ export interface FeaturedModsSectionProps {
   onSelectMod: (mod: ModItem) => void
 }
 
-/**
- * Displays the "Featured Mods" title and either the loading skeleton or the interactive Carousel.
- */
 export const FeaturedModsSection: React.FC<FeaturedModsSectionProps> = ({
   items,
   isLoading,

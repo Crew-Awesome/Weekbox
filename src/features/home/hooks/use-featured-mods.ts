@@ -1,11 +1,8 @@
 import { useState, useEffect, useMemo } from 'react'
 import { getFeaturedMods, type GameBananaMod } from '@/services/gamebanana'
-import type { ModItem } from '@/ui/mod-details-modal'
+import type { ModItem } from '@/ui/mod-details-modal/types'
 import { mapToModItem } from '../utils'
 
-/**
- * Fetches and normalizes featured mods from GameBanana for the Home carousel.
- */
 export function useFeaturedMods() {
   const [featuredList, setFeaturedList] = useState<GameBananaMod[]>([])
   const [isFeaturedLoading, setIsFeaturedLoading] = useState(true)

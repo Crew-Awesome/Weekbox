@@ -1,5 +1,5 @@
 import { initHost } from '@/core/host'
-import { ensureWeekBoxLibrary } from '@/core/storage'
+import { ensureWeekBoxLibrary } from '@/core/storage/weekbox-library'
 import type { EngineUpdateStateData } from './types'
 
 export interface PlaytimeSessionEntity {

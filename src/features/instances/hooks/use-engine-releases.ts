@@ -5,7 +5,7 @@ import {
   type EngineDefinition,
   type EnginePlatform,
 } from '@/core/engines'
-import { fetchEngineReleases, type GitHubRelease } from '@/services/github'
+import { fetchEngineReleases, type GitHubRelease } from '@/services/github/github-engines'
 
 export function useEngineReleases(currentEngine: EngineDefinition | undefined) {
   const [releases, setReleases] = useState<GitHubRelease[]>([])

@@ -1,15 +1,12 @@
 import React from 'react'
-import type { CarouselAPI } from '@/ui/carousel'
-import type { ModItem } from '@/ui/mod-details-modal'
+import type { CarouselAPI } from '@/ui/carousel/Carousel'
+import type { ModItem } from '@/ui/mod-details-modal/types'
 
 interface FeaturedCarouselIndicatorsProps {
   api: CarouselAPI
   items: ModItem[]
 }
 
-/**
- * Renders navigation chevrons and animated progress pill indicators for the Featured Mods carousel.
- */
 export const FeaturedCarouselIndicators: React.FC<
   FeaturedCarouselIndicatorsProps
 > = ({ api, items }) => {

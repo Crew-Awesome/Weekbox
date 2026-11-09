@@ -1,5 +1,5 @@
 import { initHost } from '@/core/host'
-import { joinPaths } from '@/core/storage'
+import { joinPaths } from '@/core/storage/weekbox-library'
 import {
   resolveModInstallDirectory,
   resolveArchiveExtension,

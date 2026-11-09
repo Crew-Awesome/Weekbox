@@ -1,25 +1,25 @@
 import React, { useEffect, lazy, Suspense } from 'react'
 import { HashRouter, Routes,Route, Navigate, useLocation } from 'react-router-dom'
 import { initHost } from '@/core/host'
-import { useWeekBoxLibrary } from '@/core/storage'
+import { useWeekBoxLibrary } from '@/core/storage/use-weekbox-library'
 import { syncActiveCallouts } from '@/core/mods'
 import { syncEngineActiveCallouts } from '@/core/engines/engine-download-manager'
-import { DialogProvider } from '@/ui/dialog'
+import { DialogProvider } from '@/ui/dialog/DialogProvider'
 import { CalloutProvider } from '@/ui/callout'
 import { LoadingProvider } from '@/core/loading'
-import { Sidebar } from '@/ui/sidebar'
+import { Sidebar } from '@/ui/sidebar/Sidebar'
 
 const HomeView = lazy(() =>
-  import('@/features/home').then((m) => ({ default: m.HomeView })),
+  import('@/features/home/HomeView').then((m) => ({ default: m.HomeView })),
 )
 const LibraryView = lazy(() =>
-  import('@/features/library').then((m) => ({ default: m.LibraryView })),
+  import('@/features/library/LibraryView').then((m) => ({ default: m.LibraryView })),
 )
 const InstancesView = lazy(() =>
-  import('@/features/instances').then((m) => ({ default: m.InstancesView })),
+  import('@/features/instances/InstancesView').then((m) => ({ default: m.InstancesView })),
 )
 const NewsView = lazy(() =>
-  import('@/features/news').then((m) => ({ default: m.NewsView })),
+  import('@/features/news/NewsView').then((m) => ({ default: m.NewsView })),
 )
 
 const TAB_CONFIGS = [

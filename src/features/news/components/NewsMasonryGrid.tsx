@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react'
-import type { TwitterNewsPost } from '@/services/twitter'
+import type { TwitterNewsPost } from '@/services/twitter/types'
 import { NewsPostCard } from './NewsPostCard'
 
 interface NewsMasonryGridProps {

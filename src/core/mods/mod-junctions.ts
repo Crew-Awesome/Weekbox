@@ -1,5 +1,5 @@
 import { initHost, callDevFsBridge } from '@/core/host'
-import { ensureWeekBoxLibrary, joinPaths } from '@/core/storage'
+import { ensureWeekBoxLibrary, joinPaths } from '@/core/storage/weekbox-library'
 import { ENGINE_DEFINITIONS, type EngineId } from '@/core/engines'
 import { getInstalledMods, matchesModId } from './mod-registry'
 import type { InstalledModRecord } from './types'

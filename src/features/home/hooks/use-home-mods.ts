@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import { getMods, type GameBananaMod, type ModFilter } from '@/services/gamebanana'
-import type { ModItem } from '@/ui/mod-details-modal'
+import type { ModItem } from '@/ui/mod-details-modal/types'
 import { mapToModItem } from '../utils'
 
 const CHUNK_SIZE = 30

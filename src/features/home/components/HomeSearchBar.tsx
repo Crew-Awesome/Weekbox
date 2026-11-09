@@ -1,17 +1,15 @@
 import React, { useCallback } from 'react'
-import type { ModItem } from '@/ui/mod-details-modal'
+import type { ModItem } from '@/ui/mod-details-modal/types'
 import { useAnimatedPlaceholder } from '@/utils'
 import {
   useRecentSearches,
   useGameBananaSearch,
   useM3eSearchView,
 } from '../hooks'
-import {
-  SEARCH_PHRASES,
-  SearchLoadingState,
-  SearchResultsList,
-  RecentSearchesList,
-} from './SearchBar'
+import { SEARCH_PHRASES } from './SearchBar/constants'
+import { SearchLoadingState } from './SearchBar/SearchLoadingState'
+import { SearchResultsList } from './SearchBar/SearchResultsList'
+import { RecentSearchesList } from './SearchBar/RecentSearchesList'
 
 export interface HomeSearchBarProps {
   initialQuery?: string
@@ -19,10 +17,6 @@ export interface HomeSearchBarProps {
   onSearch?: (query: string) => void
 }
 
-/**
- * Material Design 3 docked search view with animated typewriter placeholder,
- * persistent recent searches, M3E vertical overflow, and direct GameBanana search.
- */
 export const HomeSearchBar: React.FC<HomeSearchBarProps> = ({
   initialQuery = '',
   onSelectMod,

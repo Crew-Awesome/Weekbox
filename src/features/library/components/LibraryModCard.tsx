@@ -1,5 +1,5 @@
 import React from 'react'
-import { Card } from '@/ui/card'
+import { Card } from '@/ui/card/Card'
 import type { InstalledModRecord } from '@/core/mods'
 import { formatDate, formatFileSize, formatCompactNumber } from '@/utils/formatters'
 import { resolveModThumbnail } from '../utils'

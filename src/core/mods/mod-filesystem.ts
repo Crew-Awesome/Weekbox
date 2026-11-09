@@ -1,6 +1,5 @@
 import { initHost, callDevFsBridge } from '@/core/host'
-import { ensureWeekBoxLibrary, joinPaths } from '@/core/storage'
-import type { WeekBoxLibraryPaths } from '@/core/storage'
+import { ensureWeekBoxLibrary, joinPaths, type WeekBoxLibraryPaths } from '@/core/storage/weekbox-library'
 
 export function toEngineFolderName(modTitle?: string): string {
   const cleaned = (modTitle || 'MOD')

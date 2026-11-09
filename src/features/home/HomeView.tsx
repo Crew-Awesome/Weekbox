@@ -1,21 +1,19 @@
 import React, { lazy, Suspense } from "react";
 import { useSearchParams } from "react-router-dom";
-import { Topbar } from "@/ui/topbar";
+import { Topbar } from "@/ui/topbar/Topbar";
 import {
   useFeaturedMods,
   useHomeMods,
   useHomeModSelection,
   useHomeFavorites,
 } from "./hooks";
-import {
-  HomeSearchBar,
-  FeaturedModsSection,
-  ModsGridSection,
-  HomeFilterMenu,
-} from "./components";
+import { HomeSearchBar } from "./components/HomeSearchBar";
+import { FeaturedModsSection } from "./components/FeaturedMods/FeaturedModsSection";
+import { ModsGridSection } from "./components/ModsGrid/ModsGridSection";
+import { HomeFilterMenu } from "./components/HomeFilterMenu";
 
 const ModDetailsModal = lazy(() =>
-  import("@/ui/mod-details-modal").then((m) => ({
+  import("@/ui/mod-details-modal/mod-details-modal").then((m) => ({
     default: m.ModDetailsModal,
   })),
 );

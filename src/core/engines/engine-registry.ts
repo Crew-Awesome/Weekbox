@@ -1,5 +1,5 @@
 import { initHost } from '@/core/host'
-import { ensureWeekBoxLibrary, joinPaths } from '@/core/storage'
+import { ensureWeekBoxLibrary, joinPaths } from '@/core/storage/weekbox-library'
 import { openFolderInExplorer } from '@/core/mods/mod-filesystem'
 import { trackEngineSession } from './engine-playtime'
 export { findEngineExecutable, scanLocalEnginesDirectory } from './engine-scanner'

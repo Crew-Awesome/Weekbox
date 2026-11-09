@@ -1,8 +1,8 @@
 import React from 'react'
 import type { ModItem } from './types'
 import { ModMediaCarousel, ModThumbnailStrip } from './components/mod-media-carousel'
-import { ModDetailsHeaderMobile } from './components/mod-details-header-mobile'
-import { ModDetailsInfoSection } from './components/mod-details-info-section'
+import { ModDetailsHeaderMobile } from './components/mod-details-header-mobile/ModDetailsHeaderMobile'
+import { ModDetailsInfoSection } from './components/mod-details-info-section/ModDetailsInfoSection'
 import { ModDetailsActionButtons } from './components/mod-details-action-buttons'
 import type { useModDetails } from './hooks/use-mod-details'
 

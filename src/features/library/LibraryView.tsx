@@ -1,13 +1,15 @@
 import React, { lazy, Suspense } from 'react'
-import { Topbar } from '@/ui/topbar'
-import { useSystemDialog } from '@/ui/dialog'
+import { Topbar } from '@/ui/topbar/Topbar'
+import { useSystemDialog } from '@/ui/dialog/context'
 import { formatFileSize } from '@/utils/formatters'
-import { useInstalledMods } from './hooks'
-import { LibraryFiltersBar, LibraryGrid, LibrarySearchBar } from './components'
+import { useInstalledMods } from './hooks/use-installed-mods'
+import { LibraryFiltersBar } from './components/LibraryFiltersBar'
+import { LibraryGrid } from './components/LibraryGrid'
+import { LibrarySearchBar } from './components/LibrarySearchBar'
 import { launchMod, type InstalledModRecord } from '@/core/mods'
 
 const ModDetailsModal = lazy(() =>
-  import('@/ui/mod-details-modal').then((m) => ({
+  import('@/ui/mod-details-modal/mod-details-modal').then((m) => ({
     default: m.ModDetailsModal,
   })),
 )

@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { getModById, type GameBananaMod } from '@/services/gamebanana'
-import type { ModItem } from '@/ui/mod-details-modal'
+import type { ModItem } from '@/ui/mod-details-modal/types'
 import { mapToModItem } from '../utils'
 
 interface UseHomeModSelectionParams {
@@ -9,9 +9,6 @@ interface UseHomeModSelectionParams {
   modsList: GameBananaMod[]
 }
 
-/**
- * Synchronizes URL search parameters (`?q=` and `?mod=`) with the selected ModDetailsModal state.
- */
 export function useHomeModSelection({
   featuredList,
   modsList,

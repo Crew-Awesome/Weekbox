@@ -1,5 +1,5 @@
 import { initHost } from '@/core/host'
-import { ensureWeekBoxLibrary, joinPaths } from '@/core/storage'
+import { ensureWeekBoxLibrary, joinPaths } from '@/core/storage/weekbox-library'
 import { extractBaseModId } from './mod-filesystem'
 import {
   MODS_CHANGED_EVENT,

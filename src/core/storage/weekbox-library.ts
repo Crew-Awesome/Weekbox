@@ -7,6 +7,9 @@ import {
 } from './constants'
 import type { WeekBoxLibraryPaths, LibraryInitializeResult } from './types'
 
+export * from './constants'
+export * from './types'
+
 let cachedDefaultDataPath: string | null = null
 const ensuredLibraryCache = new Map<string, LibraryInitializeResult>()
 

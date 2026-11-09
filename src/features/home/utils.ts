@@ -1,4 +1,4 @@
-import type { ModItem } from '@/ui/mod-details-modal'
+import type { ModItem } from '@/ui/mod-details-modal/types'
 import {
   getEngineIcon,
   upgradeGameBananaImageUrl,
@@ -7,9 +7,6 @@ import {
 } from '@/services/gamebanana'
 import { normalizeTimestamp } from '@/utils'
 
-/**
- * Maps a raw `GameBananaMod` payload into a normalized `ModItem` for UI cards and modals.
- */
 export function mapToModItem(mod: GameBananaMod): ModItem {
   const engineCategory = Object.values(ENGINE_CATEGORIES).find(
     (c) => c.id === mod.engineId,

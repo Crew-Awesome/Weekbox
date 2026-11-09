@@ -1,5 +1,5 @@
 import React from 'react'
-import type { TwitterNewsPost } from '@/services/twitter'
+import type { TwitterNewsPost } from '@/services/twitter/types'
 import { NewsPostText } from './NewsPostText'
 import { NewsMediaGrid } from './NewsMediaGrid'
 

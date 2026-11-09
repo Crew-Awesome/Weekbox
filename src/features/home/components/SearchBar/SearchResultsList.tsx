@@ -1,5 +1,5 @@
 import React from 'react'
-import type { ModItem } from '@/ui/mod-details-modal'
+import type { ModItem } from '@/ui/mod-details-modal/types'
 import { formatCompactNumber } from '@/utils'
 
 interface SearchResultsListProps {
@@ -7,9 +7,6 @@ interface SearchResultsListProps {
   onSelectMod: (mod: ModItem) => void
 }
 
-/**
- * Renders the list of GameBanana mod matches inside the docked search dropdown.
- */
 export const SearchResultsList: React.FC<SearchResultsListProps> = ({
   results,
   onSelectMod,

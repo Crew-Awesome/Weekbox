@@ -1,5 +1,5 @@
 import React from 'react'
-import { Carousel, type CarouselAPI } from '@/ui/carousel'
+import { Carousel, type CarouselAPI } from '@/ui/carousel/Carousel'
 import { useViewport } from '@/utils/hooks/use-viewport'
 import {
   PLACEHOLDER_IMG,

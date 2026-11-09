@@ -1,9 +1,9 @@
 import { M3eScrollbarElement } from './M3eScrollbar'
 import type { OverflowDirection } from './types'
 
-/**
- * Custom element (`m3e-overflow`) that wraps content and renders Material 3 Expressive cutout scrollbars.
- */
+export * from './M3eScrollbar'
+export type * from './types'
+
 export class M3eOverflowElement extends HTMLElement {
   static get observedAttributes() {
     return ['direction', 'track-thickness', 'thumb-thickness', 'thumb-gap', 'thumb-color', 'track-color']

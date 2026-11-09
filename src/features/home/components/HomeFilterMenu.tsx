@@ -1,6 +1,6 @@
 import React, { useMemo, useState, useEffect } from 'react'
 import type { ModFilter } from '@/services/gamebanana'
-import { FilterIcon } from '@/ui/icons'
+import { FilterIcon } from '@/ui/icons/FilterIcon'
 import {
   M3E_BUTTON_STYLE,
   HomeFilterSubmenus,

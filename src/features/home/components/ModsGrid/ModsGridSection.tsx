@@ -1,6 +1,6 @@
 import React from 'react'
-import { Title } from '@/ui/title'
-import type { ModItem } from '@/ui/mod-details-modal'
+import { Title } from '@/ui/title/Title'
+import type { ModItem } from '@/ui/mod-details-modal/types'
 import { useInfiniteScroll } from '@/utils'
 import type { ModFilter } from '@/services/gamebanana'
 import { ModsGridSkeleton } from './ModsGridSkeleton'

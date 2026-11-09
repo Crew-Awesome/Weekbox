@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
-import type { TwitterNewsSource } from '@/services/twitter'
-import { FilterIcon } from '@/ui/icons'
+import type { TwitterNewsSource } from '@/services/twitter/types'
+import { FilterIcon } from '@/ui/icons/FilterIcon'
 
 export interface NewsFilterMenuProps {
   sources: TwitterNewsSource[]

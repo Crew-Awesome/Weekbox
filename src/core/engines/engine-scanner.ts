@@ -1,5 +1,5 @@
 import { initHost } from '@/core/host'
-import { ensureWeekBoxLibrary } from '@/core/storage'
+import { ensureWeekBoxLibrary } from '@/core/storage/weekbox-library'
 import { ENGINE_DEFINITIONS } from './constants'
 import { getEngineUpdateState, saveEngineUpdateState } from './engine-registry'
 import type { EngineId, EngineRecord } from './types'

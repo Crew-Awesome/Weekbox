@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { Modal } from '@/ui/modal'
+import { Modal } from '@/ui/modal/Modal'
 import { getActiveTheme, applyTheme, type ThemeMode } from '@/utils/theme'
 
 export interface SettingsModalProps {

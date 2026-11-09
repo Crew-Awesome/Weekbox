@@ -10,7 +10,7 @@ import {
   type GitHubReleaseAsset,
 } from '@/core/engines'
 import { launchEngineWithAllMods } from '@/core/mods'
-import { useSystemDialog } from '@/ui/dialog'
+import { useSystemDialog } from '@/ui/dialog/context'
 
 interface UseEngineActionsParams {
   selectedEngineId: EngineId

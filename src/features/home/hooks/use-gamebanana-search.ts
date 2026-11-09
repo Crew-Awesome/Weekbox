@@ -1,5 +1,5 @@
 import { useState, useRef, useCallback } from 'react'
-import type { ModItem } from '@/ui/mod-details-modal'
+import type { ModItem } from '@/ui/mod-details-modal/types'
 import { getModById, getMods } from '@/services/gamebanana'
 import { mapToModItem } from '../utils'
 
@@ -8,9 +8,6 @@ interface UseGameBananaSearchParams {
   onOpenDropdown?: () => void
 }
 
-/**
- * Handles debounced and immediate GameBanana searches (by numeric mod ID or text query).
- */
 export function useGameBananaSearch({
   initialQuery = '',
   onOpenDropdown,

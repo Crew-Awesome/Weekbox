@@ -1,6 +1,6 @@
 import React from 'react'
-import { Card } from '@/ui/card'
-import type { ModItem } from '@/ui/mod-details-modal'
+import { Card } from '@/ui/card/Card'
+import type { ModItem } from '@/ui/mod-details-modal/types'
 import { formatCompactNumber } from '@/utils'
 
 export interface ModGridCardProps {

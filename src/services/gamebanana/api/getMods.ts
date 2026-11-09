@@ -15,11 +15,9 @@ import {
   checkIsNsfw,
 } from '../utils'
 import { sanitizeHtml, htmlToPlainText } from '../sanitize'
-import {
-  fetchRipeRecords,
-  fetchPopularRecords,
-  fetchSearchRecords,
-} from '../algorithms'
+import { fetchRipeRecords } from '../algorithms/ripe'
+import { fetchPopularRecords } from '../algorithms/popular'
+import { fetchSearchRecords } from '../algorithms/search'
 import { getModById } from './getModById'
 
 export type ModFilter = 'popular' | 'new' | 'ripe' | 'updated'

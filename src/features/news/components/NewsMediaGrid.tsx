@@ -1,5 +1,5 @@
 import React from 'react'
-import type { TwitterMediaVideo } from '@/services/twitter'
+import type { TwitterMediaVideo } from '@/services/twitter/types'
 
 interface NewsMediaGridProps {
   images: string[]

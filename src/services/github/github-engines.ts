@@ -1,5 +1,7 @@
 import type { GitHubRelease, GitHubReleaseAsset, GitHubCacheEntry } from './types'
 
+export type * from './types'
+
 const GITHUB_CACHE_PREFIX = 'wbr:gh_releases:'
 const CACHE_TTL_MS = 20 * 60 * 1000
 

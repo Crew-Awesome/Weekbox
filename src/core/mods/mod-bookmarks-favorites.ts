@@ -1,5 +1,5 @@
 import { initHost } from '@/core/host'
-import { ensureWeekBoxLibrary } from '@/core/storage'
+import { ensureWeekBoxLibrary } from '@/core/storage/weekbox-library'
 import {
   BOOKMARKS_CHANGED_EVENT,
   FAVORITES_CHANGED_EVENT,

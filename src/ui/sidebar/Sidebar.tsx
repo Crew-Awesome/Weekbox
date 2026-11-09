@@ -1,7 +1,6 @@
 import React, { useState, lazy, Suspense } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import type { SidebarProps, SidebarNavItem } from './types'
-import { SIDEBAR_NAV_ITEMS } from './constants'
 import { DesktopAside } from './components/DesktopAside'
 import { MobileBottomNav } from './components/MobileBottomNav'
 
@@ -12,12 +11,8 @@ const SettingsModal = lazy(() =>
   import('./components/SettingsModal').then((m) => ({ default: m.SettingsModal })),
 )
 
-export { SIDEBAR_NAV_ITEMS }
 export type { SidebarNavItem, SidebarProps }
 
-/**
- * Responsive application navigation shell rendering the desktop drawer and mobile bottom bar.
- */
 export const Sidebar: React.FC<SidebarProps> = ({ onNavigate }) => {
   const location = useLocation()
   const navigate = useNavigate()

@@ -1,10 +1,9 @@
 import React, { useLayoutEffect } from 'react'
-import type { CarouselProps } from './types'
+import type { CarouselProps, CarouselAPI } from './types'
 import { useCarousel } from './useCarousel'
 
-/**
- * Material 3 multi-browse hero carousel with continuous scroll and GSAP auto-play.
- */
+export type { CarouselProps, CarouselAPI }
+
 export const Carousel: React.FC<CarouselProps> = (props) => {
   const {
     className = '',

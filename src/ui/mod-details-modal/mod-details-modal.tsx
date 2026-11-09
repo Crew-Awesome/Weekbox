@@ -1,11 +1,13 @@
 import React, { useRef, useState, useEffect, useCallback, useMemo } from 'react'
-import { Modal } from '@/ui/modal'
+import { Modal } from '@/ui/modal/Modal'
 import { formatDate, formatFullDate } from '@/utils/formatters'
 import { useViewport } from '@/utils/hooks/use-viewport'
 import { setActiveModalModId } from '@/core/mods'
 import { ENGINE_CATEGORIES } from './constants'
 import { ModDetailsView } from './mod-details-view'
 import type { ModItem, ModDetailsModalProps } from './types'
+
+export type { ModItem, ModDetailsModalProps }
 
 export const ModDetailsModal: React.FC<ModDetailsModalProps> = ({
   selectedCard,

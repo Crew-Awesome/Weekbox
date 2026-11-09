@@ -1,13 +1,10 @@
 import React from 'react'
-import type { ModItem } from '@/ui/mod-details-modal'
+import type { ModItem } from '@/ui/mod-details-modal/types'
 
 interface FeaturedModSlideProps {
   item: ModItem
 }
 
-/**
- * Individual hero card slide rendered inside the Featured Mods carousel.
- */
 export const FeaturedModSlide: React.FC<FeaturedModSlideProps> = ({ item }) => {
   return (
     <div className="w-full h-full p-1.5 sm:p-3 md:p-4">

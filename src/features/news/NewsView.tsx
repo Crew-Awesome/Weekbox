@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react'
-import { Topbar } from '@/ui/topbar'
+import { Topbar } from '@/ui/topbar/Topbar'
 import { useTwitterNews } from './hooks/use-twitter-news'
 import {
   NewsFilterMenu,
@@ -88,8 +88,6 @@ export const NewsView: React.FC = () => {
       />
 
       <div className="w-full max-w-7xl mx-auto flex flex-col gap-5 p-4 sm:p-6 lg:p-8">
-
-        {/* Loading Skeleton */}
         {isLoading && posts.length === 0 && (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 animate-pulse">
             {[260, 380, 220, 340, 300, 240, 360, 280].map((height, idx) => (
@@ -102,7 +100,6 @@ export const NewsView: React.FC = () => {
           </div>
         )}
 
-        {/* Error State */}
         {!isLoading && error && posts.length === 0 && (
           <div className="flex flex-col items-center justify-center p-8 rounded-[24px] border border-dashed text-center min-h-[260px] border-[var(--md-sys-color-outline-variant)]">
             <span
@@ -131,7 +128,6 @@ export const NewsView: React.FC = () => {
           </div>
         )}
 
-        {/* Posts Pinterest Masonry Grid */}
         {posts.length > 0 && (
           <NewsMasonryGrid
             posts={posts}
@@ -140,7 +136,6 @@ export const NewsView: React.FC = () => {
           />
         )}
 
-        {/* Empty Filter State */}
         {!isLoading && posts.length === 0 && !error && (
           <div className="flex flex-col items-center justify-center p-8 rounded-[24px] border border-dashed text-center min-h-[240px] border-[var(--md-sys-color-outline-variant)]">
             <span className="material-symbols-rounded text-4xl mb-2 opacity-50 text-[var(--md-sys-color-on-surface-variant)]">
@@ -157,7 +152,6 @@ export const NewsView: React.FC = () => {
           </div>
         )}
 
-        {/* Infinite Scroll Automatic Trigger Sentinel */}
         {hasMore && posts.length > 0 && (
           <div
             ref={sentinelRef}
@@ -177,7 +171,6 @@ export const NewsView: React.FC = () => {
         )}
       </div>
 
-      {/* Media Lightbox / Video Modal */}
       <NewsMediaModal
         media={selectedMedia}
         onClose={() => setSelectedMedia(null)}
