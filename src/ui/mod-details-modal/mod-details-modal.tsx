@@ -121,11 +121,12 @@ export const ModDetailsModal: React.FC<ModDetailsModalProps> = ({
     return () => clearInterval(intervalId)
   }, [selectedCard, isCarouselHovered, mediaCount])
 
-  const { width: viewportW, height: viewportH, isDesktop } = useViewport()
+  const { width: viewportW, height: viewportH } = useViewport()
+  const isDesktop = viewportW >= 1024 && viewportH >= 600
 
   const { desktopWidth, desktopHeight } = useMemo(() => {
     if (!isDesktop) {
-      return { desktopWidth: 'min(95vw, 100vw)', desktopHeight: 'auto' }
+      return { desktopWidth: 'min(95vw, 680px)', desktopHeight: '92dvh' }
     }
     const maxAllowedWidth = Math.min(1240, viewportW * 0.92)
     const maxAllowedHeight = viewportH * 0.88
@@ -187,17 +188,22 @@ export const ModDetailsModal: React.FC<ModDetailsModalProps> = ({
         displayCard.image ||
         (displayCard.previewMedia && displayCard.previewMedia[0])
       }
-      contentClassName="flex flex-col flex-1 overflow-y-auto md:overflow-hidden p-0"
+      contentClassName={`flex flex-col flex-1 ${isDesktop ? 'overflow-hidden' : 'overflow-y-auto'} p-0`}
       hideCloseButtonMobile={true}
       edgeSpacing={{
         isStaticSize: true,
-        mobile: ['min(95vw, 100vw)', '92dvh'],
+        mobile: ['min(95vw, 680px)', '92dvh'],
         desktop: [desktopWidth, desktopHeight],
       }}
-      modalClassName="flex flex-col md:aspect-[16/9] max-h-[92dvh] md:max-h-full h-[92dvh] md:h-full rounded-2xl md:rounded-3xl overflow-hidden bg-[var(--wb-surface-container)] md:bg-transparent shadow-none"
+      modalClassName={`flex flex-col ${
+        isDesktop
+          ? 'aspect-[16/9] max-h-full h-full rounded-3xl bg-transparent'
+          : 'max-h-[92dvh] h-[92dvh] rounded-2xl bg-[var(--wb-surface-container)]'
+      } overflow-hidden shadow-none`}
     >
       <ModDetailsView
         onClose={onClose}
+        isDesktop={isDesktop}
         displayCard={displayCard}
         engineName={engineName}
         formatDate={formatDate}

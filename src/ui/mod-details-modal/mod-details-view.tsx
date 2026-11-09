@@ -11,6 +11,7 @@ export interface ModDetailsViewProps extends ModalViewProps {
   carouselRef?: React.RefObject<HTMLDivElement | null>
   thumbnailsRef?: React.RefObject<HTMLDivElement | null>
   onClose?: () => void
+  isDesktop?: boolean
 }
 
 /**
@@ -38,6 +39,7 @@ export const ModDetailsView: React.FC<ModDetailsViewProps> = ({
   isInstalled: isInstalledProp = false,
   onUpdateMod,
   onClose,
+  isDesktop = false,
 }) => {
   const mobileContainerRef = React.useRef<HTMLDivElement>(null)
   const engineDropdownRef = React.useRef<HTMLDivElement>(null)
@@ -57,10 +59,11 @@ export const ModDetailsView: React.FC<ModDetailsViewProps> = ({
 
   return (
     <>
-      <div
-        ref={mobileContainerRef}
-        className="flex md:hidden flex-col w-full h-full max-h-[92dvh] p-4 pointer-events-auto overflow-hidden"
-      >
+      {!isDesktop ? (
+        <div
+          ref={mobileContainerRef}
+          className="flex flex-col w-full h-full max-h-[92dvh] p-3 sm:p-5 pointer-events-auto overflow-hidden"
+        >
         <ModDetailsHeaderMobile
           displayCard={displayCard}
           engineName={engineName}
@@ -152,7 +155,7 @@ export const ModDetailsView: React.FC<ModDetailsViewProps> = ({
           </div>
         </m3e-overflow>
 
-        <div className="mt-auto shrink-0 pt-2 pb-2 bg-[var(--wb-surface-container)] -mx-4 px-4 border-t border-white/5">
+        <div className="mt-auto shrink-0 pt-2 pb-[max(0.6rem,env(safe-area-inset-bottom,0px))] bg-[var(--wb-surface-container)] -mx-3 sm:-mx-5 px-3 sm:px-5 border-t border-white/5">
           <div className="relative w-full">
             <ModDetailsActionButtons
               variant="mobile"
@@ -185,8 +188,8 @@ export const ModDetailsView: React.FC<ModDetailsViewProps> = ({
           </div>
         </div>
       </div>
-
-      <div className="hidden md:block w-full h-full relative">
+      ) : (
+      <div className="block w-full h-full relative">
         <div className="flex flex-col h-full overflow-hidden text-[var(--wb-on-surface)] w-full relative z-10 pointer-events-none">
           <ModDetailsHeaderDesktop
             displayCard={displayCard}
@@ -341,6 +344,7 @@ export const ModDetailsView: React.FC<ModDetailsViewProps> = ({
           </div>
         </div>
       </div>
+      )}
 
       {details.isUninstallConfirmOpen && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
