@@ -1,4 +1,4 @@
-import React, { useRef } from 'react'
+import React from 'react'
 import { Title } from '@/ui/title'
 import type { ModItem } from '@/ui/mod-details-modal'
 import { useInfiniteScroll } from '@/utils'
@@ -33,12 +33,11 @@ export const ModsGridSection: React.FC<ModsGridSectionProps> = ({
   onToggleFavorite,
   filter = 'ripe',
 }) => {
-  const sentinelRef = useRef<HTMLDivElement>(null)
-
-  useInfiniteScroll({
-    sentinelRef,
+  const sentinelRef = useInfiniteScroll({
     hasMore,
+    isLoading: isLoadingMore || isInitialLoading,
     onLoadMore,
+    rootMargin: '800px',
   })
 
   const getSectionTitle = () => {
@@ -67,7 +66,7 @@ export const ModsGridSection: React.FC<ModsGridSectionProps> = ({
         <ModsEmptyState searchQuery={searchQuery} />
       ) : (
         <div className="flex flex-col w-full pb-12">
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-3.5 sm:gap-4 w-full">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-3.5 sm:gap-4.5 lg:gap-5 w-full">
             {items.map((mod) => (
               <ModGridCard
                 key={`ripe-card-${mod.id}`}
@@ -79,7 +78,11 @@ export const ModsGridSection: React.FC<ModsGridSectionProps> = ({
             ))}
           </div>
 
-          {isLoadingMore && <ModsGridSkeleton count={4} className="mt-4" />}
+          {isLoadingMore && (
+            <div style={{ overflowAnchor: 'none' }}>
+              <ModsGridSkeleton count={5} className="mt-4" />
+            </div>
+          )}
 
           <ModsPaginationFooter
             sentinelRef={sentinelRef}

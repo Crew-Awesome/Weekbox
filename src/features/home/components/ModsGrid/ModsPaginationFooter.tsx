@@ -1,7 +1,7 @@
-import React, { type RefObject } from 'react'
+import React from 'react'
 
 interface ModsPaginationFooterProps {
-  sentinelRef: RefObject<HTMLDivElement | null>
+  sentinelRef: React.Ref<HTMLDivElement>
   isLoadingMore: boolean
   hasMore: boolean
 }
@@ -17,6 +17,7 @@ export const ModsPaginationFooter: React.FC<ModsPaginationFooterProps> = ({
   return (
     <div
       ref={sentinelRef}
+      style={{ overflowAnchor: 'none' }}
       className="w-full py-6 flex flex-col items-center justify-center gap-2 select-none"
     >
       {isLoadingMore ? (
