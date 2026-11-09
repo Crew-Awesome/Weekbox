@@ -29,14 +29,14 @@ export const NewsMediaModal: React.FC<NewsMediaModalProps> = ({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 backdrop-blur-md animate-fade-in"
+      className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 pt-[max(0.75rem,env(safe-area-inset-top,0px))] pb-[max(0.75rem,env(safe-area-inset-bottom,0px))] backdrop-blur-md animate-fade-in"
       style={{
         backgroundColor: 'color-mix(in srgb, var(--md-sys-color-scrim) 80%, transparent)',
       }}
       onClick={onClose}
     >
       <div
-        className="relative max-w-4xl max-h-[92vh] w-full flex items-center justify-center overflow-hidden rounded-[28px] shadow-2xl"
+        className="relative max-w-4xl max-h-[92dvh] w-full flex items-center justify-center overflow-hidden rounded-[24px] sm:rounded-[28px] shadow-2xl"
         style={{
           backgroundColor: 'color-mix(in srgb, var(--md-sys-color-scrim) 40%, transparent)',
         }}

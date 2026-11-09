@@ -227,7 +227,7 @@ export const M3eVideoPlayer: React.FC<M3eVideoPlayerProps> = ({
 
       {/* Bottom M3E Controls Pill */}
       <div
-        className={`absolute bottom-3 left-4 right-4 z-30 flex flex-col gap-1.5 px-4 py-2.5 rounded-[22px] transition-all duration-300 backdrop-blur-xl ${
+        className={`absolute bottom-3 left-3 right-3 sm:left-4 sm:right-4 z-30 flex flex-col gap-1.5 px-3 sm:px-4 py-2 sm:py-2.5 rounded-[20px] sm:rounded-[22px] transition-all duration-300 backdrop-blur-xl ${
           showControls || !isPlaying
             ? 'opacity-100 translate-y-0'
             : 'opacity-0 translate-y-2 pointer-events-none'
@@ -292,7 +292,7 @@ export const M3eVideoPlayer: React.FC<M3eVideoPlayerProps> = ({
               step={0.05}
               value={isMuted ? 0 : volume}
               onChange={handleVolumeChange}
-              className="w-16 h-1 rounded-lg appearance-none cursor-pointer accent-[var(--md-sys-color-primary)] bg-[color-mix(in_srgb,var(--md-sys-color-on-surface)_25%,transparent)]"
+              className="hidden sm:block w-16 h-1 rounded-lg appearance-none cursor-pointer accent-[var(--md-sys-color-primary)] bg-[color-mix(in_srgb,var(--md-sys-color-on-surface)_25%,transparent)]"
               style={{
                 accentColor: 'var(--md-sys-color-primary)',
               }}

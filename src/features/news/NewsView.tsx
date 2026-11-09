@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from 'react'
 import { Topbar } from '@/ui/topbar'
 import { useTwitterNews } from './hooks/use-twitter-news'
 import {
-  NewsFilterChips,
+  NewsFilterMenu,
   NewsMasonryGrid,
   NewsMediaModal,
 } from './components'
@@ -40,6 +40,9 @@ export const NewsView: React.FC = () => {
     const observer = new IntersectionObserver(
       (entries) => {
         if (entries.some((entry) => entry.isIntersecting)) {
+          if (!el.isConnected || (el.offsetParent === null && el.getClientRects().length === 0)) {
+            return
+          }
           void loadMore()
         }
       },
@@ -54,9 +57,19 @@ export const NewsView: React.FC = () => {
     <div className="w-full min-h-full flex flex-col">
       <Topbar
         title="News"
-        subtitle="Latest updates and announcements from the FNF community"
+        subtitle={
+          selectedAccount
+            ? `Showing posts from @${selectedAccount}`
+            : 'Latest updates and announcements from the FNF community'
+        }
         trailing={
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5 sm:gap-2">
+            <NewsFilterMenu
+              sources={sources}
+              selectedAccount={selectedAccount}
+              availableSources={availableSources}
+              onSelectAccount={setSelectedAccount}
+            />
             <m3e-icon-button
               onClick={() => void reload()}
               title="Refresh feeds"
@@ -75,13 +88,6 @@ export const NewsView: React.FC = () => {
       />
 
       <div className="w-full max-w-7xl mx-auto flex flex-col gap-5 p-4 sm:p-6 lg:p-8">
-        {/* Account Filter Chips */}
-        <NewsFilterChips
-          sources={sources}
-          selectedAccount={selectedAccount}
-          availableSources={availableSources}
-          onSelectAccount={setSelectedAccount}
-        />
 
         {/* Loading Skeleton */}
         {isLoading && posts.length === 0 && (
