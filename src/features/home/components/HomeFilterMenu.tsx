@@ -133,7 +133,45 @@ export const HomeFilterMenu: React.FC<HomeFilterMenuProps> = ({
 
   const handleSelectAllEngines = () => {
     onSelectEngine('all')
+    const mainMenu = document.getElementById('home-filter-menu') as unknown as {
+      hideAll?: (restoreFocus?: boolean) => void
+    }
+    mainMenu?.hideAll?.(true)
   }
+
+  useEffect(() => {
+    const engineMenuEl = document.getElementById('home-filter-engine-menu')
+    if (!engineMenuEl) return
+
+    const handleEngineClickCapture = (e: MouseEvent) => {
+      const target = e.target as HTMLElement | null
+      const item = target?.closest('m3e-menu-item-checkbox')
+      if (!item) return
+      const engineId = item.getAttribute('data-engine-id')
+      if (engineId === 'all') {
+        return
+      }
+      e.preventDefault()
+    }
+
+    const handleEngineMouseLeave = (e: MouseEvent) => {
+      const related = e.relatedTarget as Node | null
+      const triggerItem = document.getElementById('engine-menu-item')
+      if (triggerItem && related && triggerItem.contains(related)) {
+        return
+      }
+      const menu = engineMenuEl as unknown as { hide?: () => void }
+      menu?.hide?.()
+    }
+
+    engineMenuEl.addEventListener('click', handleEngineClickCapture, { capture: true })
+    engineMenuEl.addEventListener('mouseleave', handleEngineMouseLeave)
+
+    return () => {
+      engineMenuEl.removeEventListener('click', handleEngineClickCapture, { capture: true })
+      engineMenuEl.removeEventListener('mouseleave', handleEngineMouseLeave)
+    }
+  }, [])
 
   useEffect(() => {
     const ids = [
@@ -264,7 +302,7 @@ export const HomeFilterMenu: React.FC<HomeFilterMenuProps> = ({
             </m3e-menu-trigger>
           </m3e-menu-item>
 
-          <m3e-menu-item style={{ margin: '2px 0' }}>
+          <m3e-menu-item id="engine-menu-item" style={{ margin: '2px 0' }}>
             <span
               slot="icon"
               className="material-symbols-rounded text-lg text-[var(--md-sys-color-primary)]"
@@ -351,11 +389,9 @@ export const HomeFilterMenu: React.FC<HomeFilterMenuProps> = ({
             }}
           >
             <m3e-menu-item-checkbox
+              data-engine-id="all"
               checked={isAllEngines}
-              onClick={(e: React.MouseEvent) => {
-                e.preventDefault()
-                handleSelectAllEngines()
-              }}
+              onClick={handleSelectAllEngines}
               style={{ margin: '2px 0' }}
             >
               <span
@@ -374,11 +410,9 @@ export const HomeFilterMenu: React.FC<HomeFilterMenuProps> = ({
               return (
                 <m3e-menu-item-checkbox
                   key={eng.id}
+                  data-engine-id={eng.id}
                   checked={isSelected}
-                  onClick={(e: React.MouseEvent) => {
-                    e.preventDefault()
-                    handleToggleEngine(eng.id)
-                  }}
+                  onClick={() => handleToggleEngine(eng.id)}
                   style={{ margin: '2px 0' }}
                 >
                   <img
