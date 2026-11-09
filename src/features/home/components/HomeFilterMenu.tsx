@@ -1,6 +1,5 @@
 import React, { useMemo, useState, useEffect } from 'react'
 import type { ModFilter } from '@/services/gamebanana'
-import { getSupportedEngineCategories } from '@/services/gamebanana'
 import { FilterIcon } from '@/ui/icons'
 
 export interface HomeFilterMenuProps {
@@ -11,12 +10,59 @@ export interface HomeFilterMenuProps {
   className?: string
 }
 
+const SORT_ITEMS: Array<{
+  id: ModFilter
+  name: string
+  icon: string
+}> = [
+  { id: 'ripe', name: 'Ripe', icon: 'favorite' },
+  { id: 'popular', name: 'Popular', icon: 'trending_up' },
+  { id: 'new', name: 'New', icon: 'new_releases' },
+  { id: 'updated', name: 'Updated', icon: 'update' },
+]
+
+const ENGINE_ITEMS = [
+  {
+    id: 'executable',
+    name: 'Executable',
+    icon: '/imgs/icons/categories/exe.png',
+  },
+  {
+    id: 'psych',
+    name: 'Psych',
+    icon: '/imgs/icons/categories/psych.png',
+  },
+  {
+    id: 'vslice',
+    name: 'V-Slice',
+    icon: '/imgs/icons/categories/vslice.png',
+  },
+  {
+    id: 'psychonline',
+    name: 'Psych Online',
+    icon: '/imgs/icons/categories/psychonline.png',
+  },
+  {
+    id: 'pslice',
+    name: 'P-Slice',
+    icon: '/imgs/icons/categories/pslice.png',
+  },
+  {
+    id: 'fpsplus',
+    name: 'FPS Plus',
+    icon: '/imgs/icons/categories/fpsplus.png',
+  },
+]
+
 const M3E_MENU_STYLE: React.CSSProperties = {
   '--m3e-menu-container-color': 'var(--md-sys-color-surface-container)',
   '--m3e-menu-container-shape': '16px',
-  '--m3e-menu-container-min-width': '240px',
+  '--m3e-menu-container-min-width': '190px',
   '--m3e-menu-container-max-height': 'none',
   '--m3e-menu-item-color': 'var(--md-sys-color-on-surface)',
+  '--m3e-menu-item-selected-color': 'var(--md-sys-color-primary)',
+  '--m3e-menu-item-selected-container-color':
+    'color-mix(in srgb, var(--md-sys-color-primary) 12%, transparent)',
   '--m3e-menu-item-icon-size': '18px',
   '--m3e-menu-item-icon-label-space': '8px',
   '--m3e-menu-item-padding-start': '10px',
@@ -26,9 +72,15 @@ const M3E_MENU_STYLE: React.CSSProperties = {
     '0 12px 32px color-mix(in srgb, var(--md-sys-color-scrim) 20%, transparent)',
   border:
     '1px solid color-mix(in srgb, var(--md-sys-color-outline-variant) 50%, transparent)',
-  width: 'min(270px, calc(100vw - 24px))',
+  width: 'min(210px, calc(100vw - 24px))',
   maxHeight: 'none',
   overflow: 'hidden',
+} as React.CSSProperties
+
+const M3E_SUBMENU_STYLE: React.CSSProperties = {
+  ...M3E_MENU_STYLE,
+  '--m3e-menu-container-min-width': '220px',
+  width: 'min(240px, calc(100vw - 24px))',
 } as React.CSSProperties
 
 const M3E_BUTTON_STYLE: React.CSSProperties = {
@@ -53,14 +105,13 @@ export const HomeFilterMenu: React.FC<HomeFilterMenuProps> = ({
   className = '',
 }) => {
   const [isOpen, setIsOpen] = useState(false)
-  const engineCategories = useMemo(() => getSupportedEngineCategories(), [])
 
   const selectedEngines = useMemo<string[]>(() => {
     if (!engineFilter) return []
     if (Array.isArray(engineFilter)) {
-      return engineFilter.filter((id) => id && id !== 'all')
+      return engineFilter.filter((id) => id && id.toLowerCase() !== 'all')
     }
-    return engineFilter === 'all' ? [] : [engineFilter]
+    return engineFilter.toLowerCase() === 'all' ? [] : [engineFilter]
   }, [engineFilter])
 
   const isAllEngines = selectedEngines.length === 0
@@ -85,37 +136,57 @@ export const HomeFilterMenu: React.FC<HomeFilterMenuProps> = ({
   }
 
   useEffect(() => {
-    const menuEl = document.getElementById('home-filter-menu')
-    if (!menuEl) return
+    const ids = [
+      'home-filter-menu',
+      'home-filter-sort-menu',
+      'home-filter-engine-menu',
+      'home-filter-provider-menu',
+    ]
 
-    const updateState = () => {
-      const open =
-        menuEl.matches?.(':popover-open') ||
-        menuEl.classList.contains('open') ||
-        (menuEl as unknown as { isOpen?: boolean }).isOpen === true ||
-        menuEl.getAttribute('aria-hidden') === 'false'
-      setIsOpen(Boolean(open))
+    const checkAnyOpen = () => {
+      const anyOpen = ids.some((id) => {
+        const el = document.getElementById(id)
+        if (!el) return false
+        return (
+          el.matches?.(':popover-open') ||
+          el.classList.contains('open') ||
+          (el as unknown as { isOpen?: boolean }).isOpen === true ||
+          el.getAttribute('aria-hidden') === 'false'
+        )
+      })
+      setIsOpen(anyOpen)
     }
 
-    const handleToggle = (e: Event) => {
-      const popoverEvent = e as ToggleEvent
-      if (popoverEvent.newState) {
-        setIsOpen(popoverEvent.newState === 'open')
-      } else {
-        updateState()
+    const listeners: Array<{ el: HTMLElement; handler: (e: Event) => void }> = []
+    const observers: MutationObserver[] = []
+
+    ids.forEach((id) => {
+      const el = document.getElementById(id)
+      if (!el) return
+      const handler = (e: Event) => {
+        const popoverEvent = e as ToggleEvent
+        if (popoverEvent.newState === 'open') {
+          setIsOpen(true)
+        } else {
+          checkAnyOpen()
+        }
       }
-    }
+      el.addEventListener('toggle', handler)
+      listeners.push({ el, handler })
 
-    menuEl.addEventListener('toggle', handleToggle)
-    const observer = new MutationObserver(updateState)
-    observer.observe(menuEl, {
-      attributes: true,
-      attributeFilter: ['style', 'class', 'open', 'aria-hidden'],
+      const obs = new MutationObserver(checkAnyOpen)
+      obs.observe(el, {
+        attributes: true,
+        attributeFilter: ['style', 'class', 'open', 'aria-hidden'],
+      })
+      observers.push(obs)
     })
 
     return () => {
-      menuEl.removeEventListener('toggle', handleToggle)
-      observer.disconnect()
+      listeners.forEach(({ el, handler }) => {
+        el.removeEventListener('toggle', handler)
+      })
+      observers.forEach((obs) => obs.disconnect())
     }
   }, [])
 
@@ -171,11 +242,100 @@ export const HomeFilterMenu: React.FC<HomeFilterMenuProps> = ({
         position-y="below"
         style={M3E_MENU_STYLE}
       >
+        <div
+          style={{
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '2px',
+            padding: '6px',
+            width: '100%',
+            boxSizing: 'border-box',
+          }}
+        >
+          <m3e-menu-item style={{ margin: '2px 0' }}>
+            <span
+              slot="icon"
+              className="material-symbols-rounded text-lg text-[var(--md-sys-color-primary)]"
+            >
+              sort
+            </span>
+            <m3e-menu-trigger for="home-filter-sort-menu">
+              <span className="text-xs sm:text-sm font-semibold">Sort</span>
+            </m3e-menu-trigger>
+          </m3e-menu-item>
+
+          <m3e-menu-item style={{ margin: '2px 0' }}>
+            <span
+              slot="icon"
+              className="material-symbols-rounded text-lg text-[var(--md-sys-color-primary)]"
+            >
+              tune
+            </span>
+            <m3e-menu-trigger for="home-filter-engine-menu">
+              <span className="text-xs sm:text-sm font-semibold">Engine</span>
+            </m3e-menu-trigger>
+          </m3e-menu-item>
+
+          <m3e-menu-item style={{ margin: '2px 0' }}>
+            <span
+              slot="icon"
+              className="material-symbols-rounded text-lg text-[var(--md-sys-color-primary)]"
+            >
+              hub
+            </span>
+            <m3e-menu-trigger for="home-filter-provider-menu">
+              <span className="text-xs sm:text-sm font-semibold">Provider</span>
+            </m3e-menu-trigger>
+          </m3e-menu-item>
+        </div>
+      </m3e-menu>
+
+      <m3e-menu
+        id="home-filter-sort-menu"
+        position-x="after"
+        style={M3E_SUBMENU_STYLE}
+      >
+        <div
+          style={{
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '2px',
+            padding: '6px',
+            width: '100%',
+            boxSizing: 'border-box',
+          }}
+        >
+          {SORT_ITEMS.map((item) => (
+            <m3e-menu-item-radio
+              key={item.id}
+              checked={filter === item.id}
+              onClick={() => onSelectFilter(item.id)}
+              style={{ margin: '2px 0' }}
+            >
+              <span
+                slot="icon"
+                className="material-symbols-rounded text-lg text-[var(--md-sys-color-primary)]"
+              >
+                {item.icon}
+              </span>
+              <span className="text-xs sm:text-sm font-semibold">
+                {item.name}
+              </span>
+            </m3e-menu-item-radio>
+          ))}
+        </div>
+      </m3e-menu>
+
+      <m3e-menu
+        id="home-filter-engine-menu"
+        position-x="after"
+        style={M3E_SUBMENU_STYLE}
+      >
         <m3e-overflow
           direction="vertical"
           style={{
             width: '100%',
-            height: 'min(420px, calc(100vh - 120px))',
+            maxHeight: 'min(360px, calc(100vh - 80px))',
           }}
           thumb-color="var(--md-sys-color-primary)"
           track-color="var(--md-sys-color-outline-variant)"
@@ -184,242 +344,108 @@ export const HomeFilterMenu: React.FC<HomeFilterMenuProps> = ({
             style={{
               display: 'flex',
               flexDirection: 'column',
-              gap: '4px',
-              paddingBlock: '6px',
-              paddingInline: '2px 14px',
+              gap: '2px',
+              padding: '6px',
               width: '100%',
               boxSizing: 'border-box',
             }}
           >
-            <div className="px-3.5 pt-2 pb-1 text-[10px] font-bold uppercase tracking-wider text-[var(--md-sys-color-primary)] opacity-85 select-none">
-              Sort / Category
-            </div>
-
-            <m3e-menu-item
-              checked={filter === 'ripe'}
-              onClick={() => onSelectFilter('ripe')}
-              style={{ margin: '3px 0' }}
-            >
-              <span
-                slot="icon"
-                className="material-symbols-rounded text-lg"
-                style={{
-                  color:
-                    filter === 'ripe'
-                      ? 'var(--md-sys-color-primary)'
-                      : 'var(--md-sys-color-on-surface-variant)',
-                }}
-              >
-                favorite
-              </span>
-              <span className="text-xs sm:text-sm font-semibold">
-                Most Liked (Ripe)
-              </span>
-              {filter === 'ripe' && (
-                <span
-                  slot="trailing-icon"
-                  className="material-symbols-rounded text-base text-[var(--md-sys-color-primary)]"
-                >
-                  check
-                </span>
-              )}
-            </m3e-menu-item>
-
-            <m3e-menu-item
-              checked={filter === 'popular'}
-              onClick={() => onSelectFilter('popular')}
-              style={{ margin: '3px 0' }}
-            >
-              <span
-                slot="icon"
-                className="material-symbols-rounded text-lg"
-                style={{
-                  color:
-                    filter === 'popular'
-                      ? 'var(--md-sys-color-primary)'
-                      : 'var(--md-sys-color-on-surface-variant)',
-                }}
-              >
-                trending_up
-              </span>
-              <span className="text-xs sm:text-sm font-semibold">
-                Trending (Popular)
-              </span>
-              {filter === 'popular' && (
-                <span
-                  slot="trailing-icon"
-                  className="material-symbols-rounded text-base text-[var(--md-sys-color-primary)]"
-                >
-                  check
-                </span>
-              )}
-            </m3e-menu-item>
-
-            <m3e-menu-item
-              checked={filter === 'new'}
-              onClick={() => onSelectFilter('new')}
-              style={{ margin: '3px 0' }}
-            >
-              <span
-                slot="icon"
-                className="material-symbols-rounded text-lg"
-                style={{
-                  color:
-                    filter === 'new'
-                      ? 'var(--md-sys-color-primary)'
-                      : 'var(--md-sys-color-on-surface-variant)',
-                }}
-              >
-                new_releases
-              </span>
-              <span className="text-xs sm:text-sm font-semibold">
-                Newest Releases
-              </span>
-              {filter === 'new' && (
-                <span
-                  slot="trailing-icon"
-                  className="material-symbols-rounded text-base text-[var(--md-sys-color-primary)]"
-                >
-                  check
-                </span>
-              )}
-            </m3e-menu-item>
-
-            <m3e-menu-item
-              checked={filter === 'updated'}
-              onClick={() => onSelectFilter('updated')}
-              style={{ margin: '3px 0' }}
-            >
-              <span
-                slot="icon"
-                className="material-symbols-rounded text-lg"
-                style={{
-                  color:
-                    filter === 'updated'
-                      ? 'var(--md-sys-color-primary)'
-                      : 'var(--md-sys-color-on-surface-variant)',
-                }}
-              >
-                update
-              </span>
-              <span className="text-xs sm:text-sm font-semibold">
-                Recently Updated
-              </span>
-              {filter === 'updated' && (
-                <span
-                  slot="trailing-icon"
-                  className="material-symbols-rounded text-base text-[var(--md-sys-color-primary)]"
-                >
-                  check
-                </span>
-              )}
-            </m3e-menu-item>
-
-            <m3e-divider
-              style={{
-                margin: '6px 0',
-                borderColor:
-                  'color-mix(in srgb, var(--md-sys-color-outline-variant) 40%, transparent)',
-              }}
-            ></m3e-divider>
-
-            <div className="px-3.5 pt-1.5 pb-1 text-[10px] font-bold uppercase tracking-wider text-[var(--md-sys-color-primary)] opacity-85 select-none">
-              Engine / Game
-            </div>
-
-            <m3e-menu-item
+            <m3e-menu-item-checkbox
               checked={isAllEngines}
-              onClick={handleSelectAllEngines}
-              style={{ margin: '3px 0' }}
+              onClick={(e: React.MouseEvent) => {
+                e.preventDefault()
+                handleSelectAllEngines()
+              }}
+              style={{ margin: '2px 0' }}
             >
               <span
                 slot="icon"
-                className="material-symbols-rounded text-lg"
-                style={{
-                  color:
-                    isAllEngines
-                      ? 'var(--md-sys-color-primary)'
-                      : 'var(--md-sys-color-on-surface-variant)',
-                }}
+                className="material-symbols-rounded text-lg text-[var(--md-sys-color-primary)]"
               >
                 apps
               </span>
-              <span className="text-xs sm:text-sm font-semibold">
-                All Engines
-              </span>
-              {isAllEngines && (
-                <span
-                  slot="trailing-icon"
-                  className="material-symbols-rounded text-base text-[var(--md-sys-color-primary)]"
-                >
-                  check
-                </span>
-              )}
-            </m3e-menu-item>
+              <span className="text-xs sm:text-sm font-semibold">All</span>
+            </m3e-menu-item-checkbox>
 
-            {engineCategories.map((eng) => {
+            {ENGINE_ITEMS.map((eng) => {
               const isSelected = selectedEngines.some(
                 (e) => e.toLowerCase() === eng.id.toLowerCase(),
               )
               return (
-                <m3e-menu-item
+                <m3e-menu-item-checkbox
                   key={eng.id}
                   checked={isSelected}
-                  onClick={() => handleToggleEngine(eng.id)}
-                  style={{ margin: '3px 0' }}
+                  onClick={(e: React.MouseEvent) => {
+                    e.preventDefault()
+                    handleToggleEngine(eng.id)
+                  }}
+                  style={{ margin: '2px 0' }}
                 >
-                  {eng.icon ? (
-                    <img
-                      slot="icon"
-                      src={eng.icon}
-                      alt=""
-                      className="w-5 h-5 rounded object-contain shrink-0 aspect-square"
-                      style={{
-                        width: '20px',
-                        height: '20px',
-                        minWidth: '20px',
-                        minHeight: '20px',
-                        aspectRatio: '1 / 1',
-                        objectFit: 'contain',
-                        borderRadius: '4px',
-                      }}
-                    />
-                  ) : (
-                    <span
-                      slot="icon"
-                      className="material-symbols-rounded text-lg flex items-center justify-center shrink-0"
-                      style={{
-                        width: '20px',
-                        height: '20px',
-                        minWidth: '20px',
-                        minHeight: '20px',
-                        fontSize: '20px',
-                        lineHeight: '20px',
-                        aspectRatio: '1 / 1',
-                        color: isSelected
-                          ? 'var(--md-sys-color-primary)'
-                          : 'var(--md-sys-color-on-surface-variant)',
-                      }}
-                    >
-                      layers
-                    </span>
-                  )}
+                  <img
+                    slot="icon"
+                    src={eng.icon}
+                    alt=""
+                    className="w-5 h-5 rounded object-contain shrink-0 aspect-square"
+                    style={{
+                      width: '20px',
+                      height: '20px',
+                      minWidth: '20px',
+                      minHeight: '20px',
+                      aspectRatio: '1 / 1',
+                      objectFit: 'contain',
+                      borderRadius: '4px',
+                    }}
+                  />
                   <span className="text-xs sm:text-sm font-semibold truncate">
                     {eng.name}
                   </span>
-                  {isSelected && (
-                    <span
-                      slot="trailing-icon"
-                      className="material-symbols-rounded text-base text-[var(--md-sys-color-primary)]"
-                    >
-                      check
-                    </span>
-                  )}
-                </m3e-menu-item>
+                </m3e-menu-item-checkbox>
               )
             })}
           </div>
         </m3e-overflow>
+      </m3e-menu>
+
+      <m3e-menu
+        id="home-filter-provider-menu"
+        position-x="after"
+        style={M3E_SUBMENU_STYLE}
+      >
+        <div
+          style={{
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '2px',
+            padding: '6px',
+            width: '100%',
+            boxSizing: 'border-box',
+          }}
+        >
+          <m3e-menu-item-checkbox
+            checked={true}
+            onClick={(e: React.MouseEvent) => {
+              e.preventDefault()
+            }}
+            style={{ margin: '2px 0' }}
+          >
+            <img
+              slot="icon"
+              src="/imgs/icons/app/gamebanana.webp"
+              alt=""
+              className="w-5 h-5 rounded object-contain shrink-0 aspect-square"
+              style={{
+                width: '20px',
+                height: '20px',
+                minWidth: '20px',
+                minHeight: '20px',
+                aspectRatio: '1 / 1',
+                objectFit: 'contain',
+                borderRadius: '4px',
+              }}
+            />
+            <span className="text-xs sm:text-sm font-semibold">Gamebanana</span>
+          </m3e-menu-item-checkbox>
+        </div>
       </m3e-menu>
     </div>
   )
