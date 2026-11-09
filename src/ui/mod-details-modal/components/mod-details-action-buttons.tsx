@@ -345,11 +345,13 @@ export const ModDetailsActionButtons: React.FC<ModDetailsActionButtonsProps> = (
     return (
       <m3e-button
         variant="filled"
-        disabled
-        className="w-full relative overflow-hidden select-none transition-all duration-300 shadow-md cursor-wait"
+        aria-busy="true"
+        onClick={(e: React.MouseEvent) => e.preventDefault()}
+        className="w-full relative overflow-hidden select-none transition-all duration-300 shadow-md cursor-default"
         style={primaryButtonStyle}
+        title="Extracting"
       >
-        {singleFileProgress > 1 && (
+        {singleFileProgress > 0 && (
           <div
             className="absolute left-0 top-0 bottom-0 bg-[var(--md-sys-color-primary-container)]/40 transition-all duration-300 ease-out z-0 pointer-events-none"
             style={{ width: `${Math.max(0, Math.min(100, singleFileProgress))}%` }}
@@ -359,8 +361,8 @@ export const ModDetailsActionButtons: React.FC<ModDetailsActionButtonsProps> = (
         <div className="flex items-center justify-center gap-2.5 z-10 py-0.5 min-w-0 max-w-full px-2">
           <m3e-circular-progress-indicator
             variant="wavy"
-            value={singleFileProgress > 1 ? singleFileProgress : undefined}
-            indeterminate={singleFileProgress <= 1}
+            indeterminate
+            title="Extracting"
             style={
               {
                 '--m3e-circular-wavy-progress-indicator-diameter': isDesktop
@@ -374,10 +376,7 @@ export const ModDetailsActionButtons: React.FC<ModDetailsActionButtonsProps> = (
                 '--m3e-circular-wavy-progress-indicator-wavelength': '12px',
                 '--m3e-progress-indicator-color':
                   'var(--md-sys-color-on-primary)',
-                '--m3e-progress-indicator-track-color':
-                  singleFileProgress > 1
-                    ? 'rgba(255, 255, 255, 0.25)'
-                    : 'transparent',
+                '--m3e-progress-indicator-track-color': 'transparent',
               } as React.CSSProperties
             }
           />

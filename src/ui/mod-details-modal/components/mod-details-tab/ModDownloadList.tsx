@@ -24,19 +24,26 @@ const FileDownloadButton: React.FC<FileDownloadButtonProps> = ({
       task.progress < 100 &&
       !isExtracting)
   const isActive = isDownloading || isExtracting
-  const showCancel = isHovered && isActive && Boolean(onCancelDownload)
+  const showCancel = isHovered && isDownloading && !isExtracting && Boolean(onCancelDownload)
 
   const buttonStyle: React.CSSProperties = (showCancel
     ? {
         '--m3e-button-filled-container-color': '#dc2626',
         '--m3e-button-filled-label-text-color': '#ffffff',
       }
-    : {}) as React.CSSProperties
+    : {
+        '--m3e-button-filled-container-color': 'var(--md-sys-color-primary)',
+        '--m3e-button-filled-label-text-color': 'var(--md-sys-color-on-primary)',
+      }) as React.CSSProperties
 
   return (
     <m3e-button
       variant="filled"
-      onClick={() => {
+      onClick={(e: React.MouseEvent) => {
+        if (isExtracting) {
+          e.preventDefault()
+          return
+        }
         if (isActive && onCancelDownload) {
           onCancelDownload(String(file._idRow))
         } else {
@@ -45,12 +52,18 @@ const FileDownloadButton: React.FC<FileDownloadButtonProps> = ({
       }}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
-      className="shrink-0 text-xs font-bold transition-all"
+      className={`shrink-0 text-xs font-bold transition-all ${
+        isExtracting ? 'cursor-default' : 'cursor-pointer'
+      }`}
       style={buttonStyle}
       title={
-        isActive
-          ? 'Click to cancel download'
-          : 'Download file'
+        isExtracting
+          ? 'Extracting'
+          : showCancel
+            ? 'Click to cancel download'
+            : isActive
+              ? 'Downloading'
+              : 'Download file'
       }
     >
       {isActive ? (
@@ -65,8 +78,9 @@ const FileDownloadButton: React.FC<FileDownloadButtonProps> = ({
           <>
             <m3e-circular-progress-indicator
               variant="wavy"
-              value={prog > 1 ? prog : undefined}
-              indeterminate={prog <= 1}
+              value={!isExtracting && prog > 1 ? prog : undefined}
+              indeterminate={isExtracting || prog <= 1}
+              title={isExtracting ? 'Extracting' : undefined}
               style={
                 {
                   '--m3e-circular-wavy-progress-indicator-diameter': '16px',
@@ -77,7 +91,7 @@ const FileDownloadButton: React.FC<FileDownloadButtonProps> = ({
                   '--m3e-progress-indicator-color':
                     'var(--md-sys-color-on-primary)',
                   '--m3e-progress-indicator-track-color':
-                    prog > 1
+                    !isExtracting && prog > 1
                       ? 'rgba(255, 255, 255, 0.25)'
                       : 'transparent',
                 } as React.CSSProperties
@@ -201,26 +215,32 @@ export const ModDownloadList: React.FC<ModDownloadListProps> = ({
                         {fileHasUpdate && onDownloadFile && (
                           <m3e-button
                             variant="tonal"
-                            onClick={() =>
+                            onClick={(e: React.MouseEvent) => {
+                              if (isExtracting) {
+                                e.preventDefault()
+                                return
+                              }
                               onDownloadFile(
                                 file._sDownloadUrl!,
                                 String(file._idRow),
                               )
-                            }
-                            disabled={isActive}
+                            }}
                             className={`flex items-center gap-1 text-xs font-bold ${
                               isActive
-                                ? 'bg-amber-500/20 text-amber-300 cursor-wait'
+                                ? isExtracting
+                                  ? 'bg-amber-500/20 text-amber-300 cursor-default'
+                                  : 'bg-amber-500/20 text-amber-300 cursor-wait'
                                 : 'bg-amber-500 hover:bg-amber-400 text-black cursor-pointer shadow-sm'
                             }`}
-                            title="Update to this version"
+                            title={isExtracting ? 'Extracting' : 'Update to this version'}
                           >
                             {isActive ? (
                               <>
                                 <m3e-circular-progress-indicator
                                   variant="wavy"
-                                  value={prog && prog > 1 ? prog : undefined}
-                                  indeterminate={!prog || prog <= 1}
+                                  value={!isExtracting && prog && prog > 1 ? prog : undefined}
+                                  indeterminate={isExtracting || !prog || prog <= 1}
+                                  title={isExtracting ? 'Extracting' : undefined}
                                   style={
                                     {
                                       '--m3e-circular-wavy-progress-indicator-diameter':
