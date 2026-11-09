@@ -38,6 +38,11 @@ const ENGINE_ITEMS = [
     icon: '/imgs/icons/categories/vslice.png',
   },
   {
+    id: 'codename',
+    name: 'Codename Engine',
+    icon: '/imgs/icons/categories/codename.png',
+  },
+  {
     id: 'psychonline',
     name: 'Psych Online',
     icon: '/imgs/icons/categories/psychonline.png',
