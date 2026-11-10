@@ -3,7 +3,10 @@ import { Topbar } from '@/ui/topbar/Topbar'
 import { useSystemDialog } from '@/ui/dialog/context'
 import { formatFileSize } from '@/utils/formatters'
 import { useInstalledMods } from './hooks/use-installed-mods'
+import { useModProfiles } from './hooks/use-mod-profiles'
 import { LibraryFiltersBar } from './components/LibraryFiltersBar'
+import { LibraryProfilesBar } from './components/LibraryProfilesBar'
+import { LibraryProfileSidebar } from './components/LibraryProfileSidebar'
 import { LibraryGrid } from './components/LibraryGrid'
 import { LibrarySearchBar } from './components/LibrarySearchBar'
 import { launchMod, type InstalledModRecord } from '@/core/mods'
@@ -41,6 +44,18 @@ export const LibraryView: React.FC = () => {
     handleUninstall,
     reload,
   } = useInstalledMods()
+
+  const {
+    profiles,
+    activeProfile,
+    activeProfileId,
+    setActiveProfileId,
+    createProfile,
+    updateProfile,
+    deleteProfile,
+    addMod,
+    removeMod,
+  } = useModProfiles()
 
   const { openDialog } = useSystemDialog()
 
@@ -162,6 +177,15 @@ export const LibraryView: React.FC = () => {
       </Topbar>
 
       <div className="flex-1 flex flex-col gap-5 p-4 sm:p-8">
+        <LibraryProfilesBar
+          profiles={profiles}
+          activeProfileId={activeProfileId}
+          onSelectProfile={(id) => setActiveProfileId(id)}
+          onCreateProfile={(name) => void createProfile(name)}
+          onDeleteProfile={(id) => void deleteProfile(id)}
+          onRenameProfile={(id, name) => void updateProfile(id, { name })}
+        />
+
         {hasActiveFilters && (
           <div className="flex items-center justify-between pb-1">
             <div className="text-xs font-medium text-[var(--md-sys-color-on-surface-variant)] flex items-center gap-2">
@@ -207,6 +231,22 @@ export const LibraryView: React.FC = () => {
             />
           </Suspense>
         )}
+
+        <LibraryProfileSidebar
+          profile={activeProfile}
+          allMods={allMods}
+          isOpen={Boolean(activeProfile)}
+          onClose={() => setActiveProfileId(null)}
+          onAddMod={(modId) => void addMod(activeProfile?.id || '', modId)}
+          onRemoveMod={(modId) => void removeMod(activeProfile?.id || '', modId)}
+          onPlayMod={handlePlayMod}
+          onSelectMod={handleSelectMod}
+          onDeleteProfile={(id) => {
+            void deleteProfile(id)
+            setActiveProfileId(null)
+          }}
+          onRenameProfile={(id, name) => void updateProfile(id, { name })}
+        />
       </div>
     </div>
   )
