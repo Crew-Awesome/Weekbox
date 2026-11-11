@@ -48,6 +48,15 @@ export const M3E_MENU_STYLE: React.CSSProperties = {
   '--m3e-menu-container-shape': '16px',
   '--m3e-menu-container-min-width': '230px',
   '--m3e-menu-item-color': 'var(--md-sys-color-on-surface)',
+  '--m3e-menu-item-selected-color': 'var(--md-sys-color-inverse-primary)',
+  '--m3e-menu-item-selected-container-color':
+    'color-mix(in srgb, var(--md-sys-color-inverse-primary) 16%, transparent)',
+  '--m3e-menu-item-selected-container-hover-color':
+    'color-mix(in srgb, var(--md-sys-color-inverse-primary) 24%, transparent)',
+  '--m3e-menu-item-selected-container-focus-color':
+    'color-mix(in srgb, var(--md-sys-color-inverse-primary) 24%, transparent)',
+  '--m3e-menu-item-selected-ripple-color':
+    'var(--md-sys-color-inverse-primary)',
   '--m3e-menu-item-icon-size': '18px',
   '--m3e-menu-item-icon-label-space': '8px',
   '--m3e-menu-item-padding-start': '10px',

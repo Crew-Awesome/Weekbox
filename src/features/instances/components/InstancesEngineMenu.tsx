@@ -105,7 +105,14 @@ export const InstancesEngineMenu: React.FC<InstancesEngineMenuProps> = ({
                     }}
                   />
                   <span className="flex flex-col items-start leading-tight min-w-0">
-                    <span className="text-sm font-semibold truncate">
+                    <span
+                      className="text-sm font-semibold truncate"
+                      style={{
+                        color: isSelected
+                          ? 'var(--md-sys-color-inverse-primary)'
+                          : undefined,
+                      }}
+                    >
                       {definition.name}
                     </span>
                     <span className="text-[11px] opacity-70 truncate">
@@ -118,6 +125,7 @@ export const InstancesEngineMenu: React.FC<InstancesEngineMenuProps> = ({
                     <span
                       slot="trailing-icon"
                       className="material-symbols-rounded"
+                      style={{ color: 'var(--md-sys-color-inverse-primary)' }}
                     >
                       check
                     </span>

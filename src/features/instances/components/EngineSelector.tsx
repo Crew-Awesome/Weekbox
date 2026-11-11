@@ -38,7 +38,7 @@ export const EngineSelector: React.FC<EngineSelectorProps> = ({
                   ? 'var(--md-sys-color-secondary-container)'
                   : 'var(--md-sys-color-surface-container)',
                 borderColor: isSelected
-                  ? 'var(--md-sys-color-primary)'
+                  ? 'var(--md-sys-color-inverse-primary)'
                   : 'var(--md-sys-color-outline-variant)',
                 color: isSelected
                   ? 'var(--md-sys-color-on-secondary-container)'
@@ -95,7 +95,7 @@ export const EngineSelector: React.FC<EngineSelectorProps> = ({
               {isSelected && (
                 <span
                   className="material-symbols-rounded text-base ml-1"
-                  style={{ color: 'var(--md-sys-color-primary)' }}
+                  style={{ color: 'var(--md-sys-color-inverse-primary)' }}
                 >
                   check_circle
                 </span>

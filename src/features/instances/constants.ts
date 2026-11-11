@@ -35,15 +35,15 @@ export const ENGINE_MENU_STYLE = {
   '--m3e-menu-item-container-focus-color': 'var(--md-sys-color-on-surface)',
   '--m3e-menu-item-ripple-color': 'var(--md-sys-color-on-surface)',
   '--m3e-menu-item-selected-color':
-    'var(--md-sys-color-on-primary-container)',
+    'var(--md-sys-color-inverse-primary)',
   '--m3e-menu-item-selected-container-color':
-    'var(--md-sys-color-primary-container)',
+    'color-mix(in srgb, var(--md-sys-color-inverse-primary) 16%, transparent)',
   '--m3e-menu-item-selected-container-hover-color':
-    'var(--md-sys-color-on-primary-container)',
+    'color-mix(in srgb, var(--md-sys-color-inverse-primary) 24%, transparent)',
   '--m3e-menu-item-selected-container-focus-color':
-    'var(--md-sys-color-on-primary-container)',
+    'color-mix(in srgb, var(--md-sys-color-inverse-primary) 24%, transparent)',
   '--m3e-menu-item-selected-ripple-color':
-    'var(--md-sys-color-on-primary-container)',
+    'var(--md-sys-color-inverse-primary)',
   '--m3e-menu-item-icon-size': '20px',
   '--m3e-menu-item-icon-label-space': '8px',
   '--m3e-menu-item-padding-start': '10px',

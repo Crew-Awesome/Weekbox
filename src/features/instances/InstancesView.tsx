@@ -1,6 +1,6 @@
 import React from 'react'
 import { Topbar } from '@/ui/topbar/Topbar'
-import { useEnginePlaytime, useEngineProcessState } from '@/core/engines'
+import { useEngineProcessState } from '@/core/engines'
 import { useEngineManagement } from './hooks/use-engine-management'
 import { useBannerProgress } from './hooks/use-banner-progress'
 import { useInstancesViewState } from './hooks/use-instances-view-state'
@@ -81,18 +81,11 @@ export const InstancesView: React.FC = () => {
     void installSelectedVersion()
   }
 
-  const { formattedPlaytime } = useEnginePlaytime(selectedEngineId)
   const {
     isRunning: isEngineRunning,
     formattedSessionDuration,
     stopEngine,
   } = useEngineProcessState(selectedEngineId, selectedVersion ?? undefined)
-
-  const versionsSubtitle = `${installedVersions.length} version${
-    installedVersions.length === 1 ? '' : 's'
-  } installed · ${formattedPlaytime} played${
-    isEngineRunning ? ` · Playing now (${formattedSessionDuration})` : ''
-  }${activeVersion ? ` · Default ${activeVersion}` : ''}`
 
   return (
     <div
@@ -112,7 +105,6 @@ export const InstancesView: React.FC = () => {
             onSelectEngine={selectEngine}
           />
         }
-        subtitle={<span className="hidden sm:inline">{versionsSubtitle}</span>}
         autoHideOnScroll={false}
         underlay={
           <InstancesTopbarUnderlay

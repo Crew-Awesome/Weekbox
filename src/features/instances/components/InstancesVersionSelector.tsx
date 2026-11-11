@@ -58,21 +58,12 @@ export const InstancesVersionSelector: React.FC<InstancesVersionSelectorProps> =
           src={currentEngine.icon}
           alt=""
           className="w-5 h-5 sm:w-6 sm:h-6 rounded-md object-contain shrink-0 aspect-square"
-          style={{
-            width: '24px',
-            height: '24px',
-            minWidth: '24px',
-            minHeight: '24px',
-            aspectRatio: '1 / 1',
-            objectFit: 'contain',
-          }}
+          style={{ width: '24px', height: '24px', minWidth: '24px', minHeight: '24px', aspectRatio: '1 / 1', objectFit: 'contain' }}
         />
         <span className="flex flex-col items-start leading-tight min-w-0">
           <span
             className="text-[9px] sm:text-[10px] uppercase tracking-wider font-semibold"
-            style={{
-              color: 'var(--md-sys-color-on-surface-variant)',
-            }}
+            style={{ color: 'var(--md-sys-color-on-surface-variant)' }}
           >
             Version
           </span>
@@ -83,13 +74,7 @@ export const InstancesVersionSelector: React.FC<InstancesVersionSelectorProps> =
         <span
           slot="trailing-icon"
           className="material-symbols-rounded text-[18px] shrink-0"
-          style={{
-            color: 'var(--md-sys-color-on-surface-variant)',
-            fontSize: '18px',
-            width: '18px',
-            height: '18px',
-            lineHeight: '18px',
-          }}
+          style={{ color: 'var(--md-sys-color-on-surface-variant)', fontSize: '18px', width: '18px', height: '18px', lineHeight: '18px' }}
         >
           expand_less
         </span>
@@ -174,7 +159,10 @@ export const InstancesVersionSelector: React.FC<InstancesVersionSelectorProps> =
                       ) : (
                         <span
                           className="material-symbols-rounded"
-                          style={{ fontSize: '18px' }}
+                          style={{
+                            fontSize: '18px',
+                            color: isSelected ? 'var(--md-sys-color-inverse-primary)' : undefined,
+                          }}
                         >
                           {option.isActive
                             ? 'check_circle'
@@ -185,7 +173,12 @@ export const InstancesVersionSelector: React.FC<InstancesVersionSelectorProps> =
                       )}
                     </span>
                     <span className="inline-flex flex-col items-start leading-tight min-w-0 align-middle">
-                      <span className="text-sm font-semibold truncate">
+                      <span
+                        className="text-sm font-semibold truncate"
+                        style={{
+                          color: isSelected ? 'var(--md-sys-color-inverse-primary)' : undefined,
+                        }}
+                      >
                         {option.version}
                       </span>
                       <span className="text-[11px] opacity-70 truncate">
@@ -198,6 +191,15 @@ export const InstancesVersionSelector: React.FC<InstancesVersionSelectorProps> =
                             }`}
                       </span>
                     </span>
+                    {isSelected && (
+                      <span
+                        slot="trailing-icon"
+                        className="material-symbols-rounded"
+                        style={{ color: 'var(--md-sys-color-inverse-primary)' }}
+                      >
+                        check
+                      </span>
+                    )}
                     {option.installed && (
                       <m3e-menu-trigger
                         for={actionsMenuId}
@@ -230,22 +232,16 @@ export const InstancesVersionSelector: React.FC<InstancesVersionSelectorProps> =
             style={ACTIONS_MENU_STYLE}
           >
             <m3e-menu-item
-              onClick={() => {
-                void onOpenFolder(option.version)
-              }}
+              onClick={() => void onOpenFolder(option.version)}
               style={{ margin: '3px 0' }}
             >
-              <span slot="icon" className="material-symbols-rounded">
-                folder_open
-              </span>
+              <span slot="icon" className="material-symbols-rounded">folder_open</span>
               <span className="text-sm">Open folder</span>
             </m3e-menu-item>
             <m3e-menu-item
               disabled={option.isActive}
               onClick={() => {
-                if (!option.isActive) {
-                  void onSetDefault(option.version)
-                }
+                if (!option.isActive) void onSetDefault(option.version)
               }}
               style={{ margin: '3px 0' }}
             >
@@ -253,31 +249,21 @@ export const InstancesVersionSelector: React.FC<InstancesVersionSelectorProps> =
                 {option.isActive ? 'check_circle' : 'star'}
               </span>
               <span className="text-sm">
-                {option.isActive
-                  ? 'Already selected as default'
-                  : 'Set default'}
+                {option.isActive ? 'Already selected as default' : 'Set default'}
               </span>
             </m3e-menu-item>
             <m3e-menu-item
-              onClick={() => {
-                onDeleteVersion(option.version)
-              }}
+              onClick={() => onDeleteVersion(option.version)}
               style={{ margin: '3px 0' }}
             >
-              <span slot="icon" className="material-symbols-rounded">
-                delete
-              </span>
+              <span slot="icon" className="material-symbols-rounded">delete</span>
               <span className="text-sm">Uninstall</span>
             </m3e-menu-item>
             <m3e-menu-item
-              onClick={() => {
-                void onLaunchVersion(option.version)
-              }}
+              onClick={() => void onLaunchVersion(option.version)}
               style={{ margin: '3px 0' }}
             >
-              <span slot="icon" className="material-symbols-rounded">
-                play_arrow
-              </span>
+              <span slot="icon" className="material-symbols-rounded">play_arrow</span>
               <span className="text-sm">Quick launch</span>
             </m3e-menu-item>
           </m3e-menu>

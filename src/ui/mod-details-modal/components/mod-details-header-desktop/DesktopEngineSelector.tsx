@@ -115,7 +115,7 @@ export const DesktopEngineSelector: React.FC<DesktopEngineSelectorProps> = ({
                   alt=""
                   className="w-5 h-5 object-contain brightness-125 rounded shrink-0"
                 />
-                <span className="text-xs sm:text-sm font-semibold flex-1 truncate">
+                <span className={`text-xs sm:text-sm font-semibold flex-1 truncate ${isSelected ? 'text-[var(--md-sys-color-inverse-primary)]' : ''}`}>
                   {cat.name}
                 </span>
                 {isDefault && (
@@ -126,7 +126,7 @@ export const DesktopEngineSelector: React.FC<DesktopEngineSelectorProps> = ({
                 {isSelected && (
                   <span
                     slot="trailing-icon"
-                    className="material-symbols-rounded text-base text-[var(--md-sys-color-primary)]"
+                    className="material-symbols-rounded text-base text-[var(--md-sys-color-inverse-primary)]"
                   >
                     check
                   </span>
