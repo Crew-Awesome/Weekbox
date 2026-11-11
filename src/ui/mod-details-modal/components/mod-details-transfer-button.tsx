@@ -42,13 +42,13 @@ export const ModDetailsTransferButton: React.FC<ModDetailsTransferButtonProps> =
         variant="filled"
         aria-busy="true"
         onClick={(e: React.MouseEvent) => e.preventDefault()}
-        className="w-full relative overflow-hidden select-none transition-all duration-300 shadow-md cursor-default"
-        style={primaryButtonStyle}
+        className="w-full relative overflow-hidden select-none transition-all duration-300 shadow-md cursor-default rounded-[14px]"
+        style={{ ...primaryButtonStyle, borderRadius: '14px' }}
         title="Extracting"
       >
         {singleFileProgress > 0 && (
           <div
-            className="absolute left-0 top-0 bottom-0 bg-[var(--md-sys-color-primary-container)]/40 transition-all duration-300 ease-out z-0 pointer-events-none"
+            className="absolute left-0 top-0 bottom-0 bg-[var(--md-sys-color-primary-container)]/40 transition-all duration-300 ease-out z-0 pointer-events-none rounded-[14px]"
             style={{ width: `${Math.max(0, Math.min(100, singleFileProgress))}%` }}
           />
         )}
@@ -117,10 +117,14 @@ export const ModDetailsTransferButton: React.FC<ModDetailsTransferButtonProps> =
         '--m3e-filled-button-hover-state-layer-color': 'var(--md-sys-color-on-error)',
         '--m3e-button-filled-container-color': 'var(--md-sys-color-error)',
         '--m3e-button-filled-label-text-color': 'var(--md-sys-color-on-error)',
-        backgroundColor: 'var(--md-sys-color-error)',
-        color: 'var(--md-sys-color-on-error)',
+        '--m3e-button-shape-round': '14px',
+        borderRadius: '14px',
       }
-    : primaryButtonStyle) as React.CSSProperties
+    : {
+        ...primaryButtonStyle,
+        '--m3e-button-shape-round': '14px',
+        borderRadius: '14px',
+      }) as React.CSSProperties
 
   return (
     <m3e-button
@@ -128,13 +132,17 @@ export const ModDetailsTransferButton: React.FC<ModDetailsTransferButtonProps> =
       onClick={onCancelClick}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
-      className="w-full relative overflow-hidden select-none transition-all duration-300 shadow-md cursor-pointer"
+      className="w-full relative overflow-hidden select-none transition-all duration-300 shadow-md cursor-pointer rounded-[14px]"
       style={dynamicButtonStyle}
       title="Click to cancel download"
     >
-      {!isStarting && !showCancelState && (
+      {!isStarting && (
         <div
-          className="absolute left-0 top-0 bottom-0 bg-[var(--md-sys-color-primary-container)]/40 transition-all duration-300 ease-out z-0 pointer-events-none"
+          className={`absolute left-0 top-0 bottom-0 transition-all duration-300 ease-out z-0 pointer-events-none rounded-[14px] ${
+            showCancelState
+              ? 'bg-[var(--md-sys-color-error-container)]/40'
+              : 'bg-[var(--md-sys-color-primary-container)]/40'
+          }`}
           style={{ width: `${Math.max(0, Math.min(100, singleFileProgress))}%` }}
         />
       )}

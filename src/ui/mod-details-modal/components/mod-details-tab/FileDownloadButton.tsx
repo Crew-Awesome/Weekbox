@@ -40,8 +40,8 @@ export const FileDownloadButton: React.FC<FileDownloadButtonProps> = ({
         '--m3e-filled-button-hover-state-layer-color': 'var(--md-sys-color-on-error)',
         '--m3e-button-filled-container-color': 'var(--md-sys-color-error)',
         '--m3e-button-filled-label-text-color': 'var(--md-sys-color-on-error)',
-        backgroundColor: 'var(--md-sys-color-error)',
-        color: 'var(--md-sys-color-on-error)',
+        '--m3e-button-shape-round': '12px',
+        borderRadius: '12px',
       }
     : {
         '--m3e-button-container-color': 'var(--md-sys-color-primary)',
@@ -50,6 +50,8 @@ export const FileDownloadButton: React.FC<FileDownloadButtonProps> = ({
         '--m3e-filled-button-label-text-color': 'var(--md-sys-color-on-primary)',
         '--m3e-button-filled-container-color': 'var(--md-sys-color-primary)',
         '--m3e-button-filled-label-text-color': 'var(--md-sys-color-on-primary)',
+        '--m3e-button-shape-round': '12px',
+        borderRadius: '12px',
       }) as React.CSSProperties
 
   return (
@@ -68,7 +70,7 @@ export const FileDownloadButton: React.FC<FileDownloadButtonProps> = ({
       }}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
-      className={`shrink-0 text-xs font-bold transition-all ${
+      className={`shrink-0 text-xs font-bold transition-all rounded-[12px] overflow-hidden ${
         isExtracting ? 'cursor-default' : 'cursor-pointer'
       }`}
       style={buttonStyle}

@@ -87,6 +87,7 @@ export const ModDetailsActionButtons: React.FC<ModDetailsActionButtonsProps> = (
   const baseButtonStyle: React.CSSProperties = {
     '--m3e-button-container-height': heightPx,
     '--m3e-button-shape-round': '14px',
+    borderRadius: '14px',
     '--m3e-button-label-text-font-size': labelFontSize,
     '--m3e-button-label-text-tracking': '0.15px',
     '--m3e-button-icon-size': '20px',
