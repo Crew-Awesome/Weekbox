@@ -31,7 +31,7 @@ export const FeaturedModsSection: React.FC<FeaturedModsSectionProps> = ({
             isInfinite={items.length > 2}
             isAuto
             autoInterval={4500}
-            className="h-[360px] sm:h-[400px] md:h-[440px] lg:h-[490px]"
+            className="h-[360px] sm:h-[400px] md:h-[460px] lg:h-[560px] xl:h-[620px]"
             apiRef={carouselApiRef}
             onItemClick={(idx) => {
               const item = items[idx]

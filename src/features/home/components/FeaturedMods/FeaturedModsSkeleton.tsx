@@ -6,7 +6,7 @@ import React from 'react'
 export const FeaturedModsSkeleton: React.FC = () => {
   return (
     <div
-      className="w-full h-[360px] sm:h-[400px] md:h-[440px] lg:h-[490px] rounded-[24px] sm:rounded-[32px] border flex flex-col items-center justify-center animate-pulse gap-3"
+      className="w-full h-[360px] sm:h-[400px] md:h-[460px] lg:h-[560px] xl:h-[620px] rounded-[24px] sm:rounded-[32px] border flex flex-col items-center justify-center animate-pulse gap-3"
       style={{
         backgroundColor: 'var(--md-sys-color-surface-container)',
         borderColor: 'var(--md-sys-color-outline-variant)',
