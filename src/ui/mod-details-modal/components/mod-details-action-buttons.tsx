@@ -220,12 +220,12 @@ export const ModDetailsActionButtons: React.FC<ModDetailsActionButtonsProps> = (
         style={primaryButtonStyle}
         title="View all files and download options in Details"
       >
-        <span slot="icon" className="material-symbols-rounded text-xl shrink-0 leading-none">
-          format_list_bulleted
-        </span>
         <span className="flex flex-col items-center justify-center leading-tight py-0.5 min-w-0">
-          <span className="text-[15px] md:text-[16px] font-bold tracking-[0.15px] text-[var(--md-sys-color-on-primary)] leading-tight">
-            Multiple Files
+          <span className="flex items-center justify-center gap-1.5 text-[15px] md:text-[16px] font-bold tracking-[0.15px] text-[var(--md-sys-color-on-primary)] leading-tight">
+            <span className="material-symbols-rounded text-xl shrink-0 leading-none">
+              format_list_bulleted
+            </span>
+            <span>Multiple Files</span>
           </span>
           {activeDownloadsCount > 0 ? (
             <span className="flex items-center gap-1.5 text-[11px] font-semibold text-[var(--md-sys-color-on-primary)] opacity-95 mt-0.5 leading-none">
@@ -264,15 +264,12 @@ export const ModDetailsActionButtons: React.FC<ModDetailsActionButtonsProps> = (
       style={primaryButtonStyle}
       title="Download mod"
     >
-      <span
-        slot="icon"
-        className="material-symbols-rounded filled text-xl shrink-0 leading-none"
-      >
-        download
-      </span>
       <span className="flex flex-col items-center justify-center leading-tight py-0.5 min-w-0">
-        <span className="text-[15px] md:text-[16px] font-bold tracking-[0.15px] text-[var(--md-sys-color-on-primary)] leading-tight">
-          Download
+        <span className="flex items-center justify-center gap-1.5 text-[15px] md:text-[16px] font-bold tracking-[0.15px] text-[var(--md-sys-color-on-primary)] leading-tight">
+          <span className="material-symbols-rounded filled text-xl shrink-0 leading-none">
+            download
+          </span>
+          <span>Download</span>
         </span>
         {validFiles[0]?._nFilesize ? (
           <span className="text-[11px] font-medium text-[var(--md-sys-color-on-primary)]/85 tracking-normal mt-0.5 leading-none">

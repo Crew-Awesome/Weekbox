@@ -53,47 +53,48 @@ export const ModDetailsTransferButton: React.FC<ModDetailsTransferButtonProps> =
           />
         )}
 
-        <div className="flex items-center justify-center gap-2.5 z-10 py-0.5 min-w-0 max-w-full px-2">
-          <m3e-circular-progress-indicator
-            variant="wavy"
-            indeterminate
-            title="Extracting"
-            style={
-              {
-                '--m3e-circular-wavy-progress-indicator-diameter': isDesktop
-                  ? '24px'
-                  : '22px',
-                '--m3e-circular-flat-progress-indicator-diameter': isDesktop
-                  ? '24px'
-                  : '22px',
-                '--m3e-circular-progress-indicator-thickness': '3px',
-                '--m3e-circular-wavy-progress-indicator-amplitude': '1.8px',
-                '--m3e-circular-wavy-progress-indicator-wavelength': '12px',
-                '--m3e-progress-indicator-color':
-                  'var(--md-sys-color-on-primary)',
-                '--m3e-progress-indicator-track-color': 'transparent',
-              } as React.CSSProperties
-            }
-          />
-          <div className="flex flex-col items-center leading-tight min-w-0 max-w-full">
-            <span className="text-[15px] md:text-[16px] font-bold tracking-[0.15px] text-[var(--md-sys-color-on-primary)] leading-tight truncate max-w-full">
+        <div className="flex flex-col items-center justify-center leading-tight z-10 py-0.5 min-w-0 max-w-full px-2">
+          <div className="flex items-center justify-center gap-2 min-w-0 max-w-full">
+            <m3e-circular-progress-indicator
+              variant="wavy"
+              indeterminate
+              title="Extracting"
+              className="shrink-0"
+              style={
+                {
+                  '--m3e-circular-wavy-progress-indicator-diameter': isDesktop
+                    ? '20px'
+                    : '18px',
+                  '--m3e-circular-flat-progress-indicator-diameter': isDesktop
+                    ? '20px'
+                    : '18px',
+                  '--m3e-circular-progress-indicator-thickness': '2.5px',
+                  '--m3e-circular-wavy-progress-indicator-amplitude': '1.5px',
+                  '--m3e-circular-wavy-progress-indicator-wavelength': '10px',
+                  '--m3e-progress-indicator-color':
+                    'var(--md-sys-color-on-primary)',
+                  '--m3e-progress-indicator-track-color': 'transparent',
+                } as React.CSSProperties
+              }
+            />
+            <span className="text-[15px] md:text-[16px] font-bold tracking-[0.15px] text-[var(--md-sys-color-on-primary)] leading-tight truncate">
               {singleFileProgress > 1
                 ? `Extracting... ${singleFileProgress}%`
                 : singleFileStatusText || 'Extracting...'}
             </span>
-            {singleFileCurrentFile ? (
-              <span className="text-[11px] font-medium opacity-85 leading-none mt-1 text-[var(--md-sys-color-on-primary)] truncate max-w-[240px] md:max-w-[340px]">
-                {singleFileCurrentFile}
-              </span>
-            ) : singleFileDownloaded > 0 ? (
-              <span className="text-[11px] font-medium opacity-85 leading-none mt-1 text-[var(--md-sys-color-on-primary)]">
-                {formatFileSize(singleFileDownloaded)}{' '}
-                {singleFileTotal > 0
-                  ? `/ ${formatFileSize(singleFileTotal)}`
-                  : ''}
-              </span>
-            ) : null}
           </div>
+          {singleFileCurrentFile ? (
+            <span className="text-[11px] font-medium opacity-85 leading-none mt-1 text-[var(--md-sys-color-on-primary)] truncate max-w-[240px] md:max-w-[340px]">
+              {singleFileCurrentFile}
+            </span>
+          ) : singleFileDownloaded > 0 ? (
+            <span className="text-[11px] font-medium opacity-85 leading-none mt-1 text-[var(--md-sys-color-on-primary)]">
+              {formatFileSize(singleFileDownloaded)}{' '}
+              {singleFileTotal > 0
+                ? `/ ${formatFileSize(singleFileTotal)}`
+                : ''}
+            </span>
+          ) : null}
         </div>
       </m3e-button>
     )
@@ -148,11 +149,12 @@ export const ModDetailsTransferButton: React.FC<ModDetailsTransferButtonProps> =
       )}
 
       {showCancelState ? (
-        <div className="flex items-center justify-center gap-2.5 z-10 py-0.5 text-[var(--md-sys-color-on-error)]">
+        <div className="flex items-center justify-center gap-2 z-10 py-0.5 text-[var(--md-sys-color-on-error)]">
           <CancelAnimatedIcon
             ref={cancelIconRef}
             isCanceling={isCancelInitiated}
-            size={isDesktop ? 22 : 20}
+            size={isDesktop ? 20 : 18}
+            className="shrink-0"
             color="var(--md-sys-color-on-error)"
           />
           <span className="font-bold text-[15px] md:text-[16px] tracking-wide text-[var(--md-sys-color-on-error)]">
@@ -160,21 +162,22 @@ export const ModDetailsTransferButton: React.FC<ModDetailsTransferButtonProps> =
           </span>
         </div>
       ) : isStarting ? (
-        <div className="flex items-center justify-center gap-2.5 z-10 py-0.5">
+        <div className="flex items-center justify-center gap-2 z-10 py-0.5">
           <m3e-circular-progress-indicator
             variant="wavy"
             indeterminate
+            className="shrink-0"
             style={
               {
                 '--m3e-circular-wavy-progress-indicator-diameter': isDesktop
-                  ? '24px'
-                  : '22px',
+                  ? '20px'
+                  : '18px',
                 '--m3e-circular-flat-progress-indicator-diameter': isDesktop
-                  ? '24px'
-                  : '22px',
-                '--m3e-circular-progress-indicator-thickness': '3px',
-                '--m3e-circular-wavy-progress-indicator-amplitude': '1.8px',
-                '--m3e-circular-wavy-progress-indicator-wavelength': '12px',
+                  ? '20px'
+                  : '18px',
+                '--m3e-circular-progress-indicator-thickness': '2.5px',
+                '--m3e-circular-wavy-progress-indicator-amplitude': '1.5px',
+                '--m3e-circular-wavy-progress-indicator-wavelength': '10px',
                 '--m3e-progress-indicator-color':
                   'var(--md-sys-color-on-primary)',
                 '--m3e-progress-indicator-track-color': 'transparent',
@@ -186,42 +189,43 @@ export const ModDetailsTransferButton: React.FC<ModDetailsTransferButtonProps> =
           </span>
         </div>
       ) : (
-        <div className="flex items-center justify-center gap-2.5 z-10 py-0.5 min-w-0">
-          <m3e-circular-progress-indicator
-            variant="wavy"
-            value={singleFileProgress}
-            max="100"
-            style={
-              {
-                '--m3e-circular-wavy-progress-indicator-diameter': isDesktop
-                  ? '24px'
-                  : '22px',
-                '--m3e-circular-flat-progress-indicator-diameter': isDesktop
-                  ? '24px'
-                  : '22px',
-                '--m3e-circular-progress-indicator-thickness': '3px',
-                '--m3e-circular-wavy-progress-indicator-amplitude': '1.8px',
-                '--m3e-circular-wavy-progress-indicator-wavelength': '12px',
-                '--m3e-progress-indicator-color':
-                  'var(--md-sys-color-on-primary)',
-                '--m3e-progress-indicator-track-color':
-                  'rgba(255, 255, 255, 0.25)',
-              } as React.CSSProperties
-            }
-          />
-          <div className="flex flex-col items-center leading-tight min-w-0">
+        <div className="flex flex-col items-center justify-center leading-tight z-10 py-0.5 min-w-0">
+          <div className="flex items-center justify-center gap-2 min-w-0">
+            <m3e-circular-progress-indicator
+              variant="wavy"
+              value={singleFileProgress}
+              max="100"
+              className="shrink-0"
+              style={
+                {
+                  '--m3e-circular-wavy-progress-indicator-diameter': isDesktop
+                    ? '20px'
+                    : '18px',
+                  '--m3e-circular-flat-progress-indicator-diameter': isDesktop
+                    ? '20px'
+                    : '18px',
+                  '--m3e-circular-progress-indicator-thickness': '2.5px',
+                  '--m3e-circular-wavy-progress-indicator-amplitude': '1.5px',
+                  '--m3e-circular-wavy-progress-indicator-wavelength': '10px',
+                  '--m3e-progress-indicator-color':
+                    'var(--md-sys-color-on-primary)',
+                  '--m3e-progress-indicator-track-color':
+                    'rgba(255, 255, 255, 0.25)',
+                } as React.CSSProperties
+              }
+            />
             <span className="text-[15px] md:text-[16px] font-bold tracking-[0.15px] text-[var(--md-sys-color-on-primary)] leading-tight">
               Downloading... {singleFileProgress}%
             </span>
-            {singleFileDownloaded > 0 ? (
-              <span className="text-[11px] font-medium opacity-85 leading-none mt-1 text-[var(--md-sys-color-on-primary)]">
-                {formatFileSize(singleFileDownloaded)}{' '}
-                {singleFileTotal > 0
-                  ? `/ ${formatFileSize(singleFileTotal)}`
-                  : ''}
-              </span>
-            ) : null}
           </div>
+          {singleFileDownloaded > 0 ? (
+            <span className="text-[11px] font-medium opacity-85 leading-none mt-1 text-[var(--md-sys-color-on-primary)]">
+              {formatFileSize(singleFileDownloaded)}{' '}
+              {singleFileTotal > 0
+                ? `/ ${formatFileSize(singleFileTotal)}`
+                : ''}
+            </span>
+          ) : null}
         </div>
       )}
     </m3e-button>
