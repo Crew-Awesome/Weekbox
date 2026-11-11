@@ -107,23 +107,47 @@ export const ModDownloadList: React.FC<ModDownloadListProps> = ({
                                 String(file._idRow),
                               )
                             }}
-                            className={`flex items-center gap-1 text-xs font-bold ${
+                            className={`text-xs font-bold rounded-[12px] overflow-hidden ${
                               isActive
                                 ? isExtracting
-                                  ? 'bg-amber-500/20 text-amber-300 cursor-default'
-                                  : 'bg-amber-500/20 text-amber-300 cursor-wait'
-                                : 'bg-amber-500 hover:bg-amber-400 text-black cursor-pointer shadow-sm'
+                                  ? 'cursor-default'
+                                  : 'cursor-wait'
+                                : 'cursor-pointer'
                             }`}
+                            style={
+                              {
+                                '--m3e-button-shape-round': '12px',
+                                '--m3e-button-icon-size': '14px',
+                                '--m3e-button-icon-label-space': '6px',
+                                '--m3e-button-leading-space': '12px',
+                                '--m3e-button-trailing-space': '12px',
+                                '--m3e-button-container-height': '32px',
+                                '--m3e-button-label-text-font-size': '12px',
+                                '--m3e-button-label-text-font-weight': '700',
+                                '--m3e-button-label-text-line-height': '1',
+                                '--m3e-button-tonal-container-color': isActive
+                                  ? 'rgba(245, 158, 11, 0.2)'
+                                  : 'rgb(245, 158, 11)',
+                                '--m3e-button-tonal-label-text-color': isActive
+                                  ? 'rgb(252, 211, 77)'
+                                  : 'rgb(0, 0, 0)',
+                                '--m3e-button-hover-label-text-color': isActive
+                                  ? 'rgb(252, 211, 77)'
+                                  : 'rgb(0, 0, 0)',
+                                borderRadius: '12px',
+                              } as React.CSSProperties
+                            }
                             title={isExtracting ? 'Extracting' : 'Update to this version'}
                           >
                             {isActive ? (
-                              <span className="inline-flex items-center justify-center gap-1.5 leading-none">
+                              <>
                                 <m3e-circular-progress-indicator
+                                  slot="icon"
                                   variant="wavy"
                                   value={!isExtracting && prog && prog > 1 ? prog : undefined}
                                   indeterminate={isExtracting || !prog || prog <= 1}
                                   title={isExtracting ? 'Extracting' : undefined}
-                                  className="shrink-0"
+                                  className="shrink-0 flex items-center justify-center"
                                   style={
                                     {
                                       '--m3e-circular-wavy-progress-indicator-diameter':
@@ -142,10 +166,12 @@ export const ModDownloadList: React.FC<ModDownloadListProps> = ({
                                         prog && prog > 1
                                           ? 'rgba(0, 0, 0, 0.2)'
                                           : 'transparent',
+                                      width: '14px',
+                                      height: '14px',
                                     } as React.CSSProperties
                                   }
                                 />
-                                <span>
+                                <span className="leading-none flex items-center">
                                   {isExtracting
                                     ? prog && prog > 1
                                       ? `Extracting ${prog}%`
@@ -154,29 +180,46 @@ export const ModDownloadList: React.FC<ModDownloadListProps> = ({
                                       ? `${prog}%`
                                       : 'Starting...'}
                                 </span>
-                              </span>
+                              </>
                             ) : (
-                              <span className="inline-flex items-center justify-center gap-1.5 leading-none">
-                                <span className="material-symbols-rounded text-sm shrink-0 leading-none">
+                              <>
+                                <span
+                                  slot="icon"
+                                  className="material-symbols-rounded text-sm shrink-0 leading-none flex items-center justify-center"
+                                >
                                   refresh
                                 </span>
-                                <span>Update</span>
-                              </span>
+                                <span className="leading-none flex items-center">Update</span>
+                              </>
                             )}
                           </m3e-button>
                         )}
                         <m3e-button
                           variant="filled"
                           onClick={() => onManageFile?.(file)}
-                          className="text-xs font-bold rounded-[12px] overflow-hidden"
-                          style={{ '--m3e-button-shape-round': '12px', borderRadius: '12px' } as React.CSSProperties}
+                          className="text-xs font-bold rounded-[12px] overflow-hidden cursor-pointer"
+                          style={
+                            {
+                              '--m3e-button-shape-round': '12px',
+                              '--m3e-button-icon-size': '14px',
+                              '--m3e-button-icon-label-space': '6px',
+                              '--m3e-button-leading-space': '12px',
+                              '--m3e-button-trailing-space': '12px',
+                              '--m3e-button-container-height': '32px',
+                              '--m3e-button-label-text-font-size': '12px',
+                              '--m3e-button-label-text-font-weight': '700',
+                              '--m3e-button-label-text-line-height': '1',
+                              borderRadius: '12px',
+                            } as React.CSSProperties
+                          }
                         >
-                          <span className="inline-flex items-center justify-center gap-1.5 leading-none">
-                            <span className="material-symbols-rounded text-sm shrink-0 leading-none">
-                              play_arrow
-                            </span>
-                            <span>Play</span>
+                          <span
+                            slot="icon"
+                            className="material-symbols-rounded text-sm shrink-0 leading-none flex items-center justify-center"
+                          >
+                            play_arrow
                           </span>
+                          <span className="leading-none flex items-center">Play</span>
                         </m3e-button>
                       </div>
                     ) : onDownloadFile ? (

@@ -26,8 +26,22 @@ export const FileDownloadButton: React.FC<FileDownloadButtonProps> = ({
   const isActive = isDownloading || isExtracting
   const showCancel = isHovered && isDownloading && !isExtracting && Boolean(onCancelDownload)
 
+  const commonTokens: React.CSSProperties = {
+    '--m3e-button-shape-round': '12px',
+    '--m3e-button-icon-size': '14px',
+    '--m3e-button-icon-label-space': '6px',
+    '--m3e-button-leading-space': '12px',
+    '--m3e-button-trailing-space': '12px',
+    '--m3e-button-container-height': '32px',
+    '--m3e-button-label-text-font-size': '12px',
+    '--m3e-button-label-text-font-weight': '700',
+    '--m3e-button-label-text-line-height': '1',
+    borderRadius: '12px',
+  }
+
   const buttonStyle: React.CSSProperties = (showCancel
     ? {
+        ...commonTokens,
         '--m3e-button-container-color': 'var(--md-sys-color-error)',
         '--m3e-filled-button-container-color': 'var(--md-sys-color-error)',
         '--m3e-button-label-text-color': 'var(--md-sys-color-on-error)',
@@ -40,18 +54,15 @@ export const FileDownloadButton: React.FC<FileDownloadButtonProps> = ({
         '--m3e-filled-button-hover-state-layer-color': 'var(--md-sys-color-on-error)',
         '--m3e-button-filled-container-color': 'var(--md-sys-color-error)',
         '--m3e-button-filled-label-text-color': 'var(--md-sys-color-on-error)',
-        '--m3e-button-shape-round': '12px',
-        borderRadius: '12px',
       }
     : {
+        ...commonTokens,
         '--m3e-button-container-color': 'var(--md-sys-color-primary)',
         '--m3e-filled-button-container-color': 'var(--md-sys-color-primary)',
         '--m3e-button-label-text-color': 'var(--md-sys-color-on-primary)',
         '--m3e-filled-button-label-text-color': 'var(--md-sys-color-on-primary)',
         '--m3e-button-filled-container-color': 'var(--md-sys-color-primary)',
         '--m3e-button-filled-label-text-color': 'var(--md-sys-color-on-primary)',
-        '--m3e-button-shape-round': '12px',
-        borderRadius: '12px',
       }) as React.CSSProperties
 
   return (
@@ -86,20 +97,24 @@ export const FileDownloadButton: React.FC<FileDownloadButtonProps> = ({
     >
       {isActive ? (
         showCancel ? (
-          <span className="inline-flex items-center justify-center gap-1.5 leading-none">
-            <span className="material-symbols-rounded text-sm shrink-0 leading-none">
+          <>
+            <span
+              slot="icon"
+              className="material-symbols-rounded text-sm shrink-0 leading-none flex items-center justify-center"
+            >
               close
             </span>
-            <span>Cancel</span>
-          </span>
+            <span className="leading-none flex items-center">Cancel</span>
+          </>
         ) : (
-          <span className="inline-flex items-center justify-center gap-1.5 leading-none">
+          <>
             <m3e-circular-progress-indicator
+              slot="icon"
               variant="wavy"
               value={!isExtracting && prog > 1 ? prog : undefined}
               indeterminate={isExtracting || prog <= 1}
               title={isExtracting ? 'Extracting' : undefined}
-              className="shrink-0"
+              className="shrink-0 flex items-center justify-center"
               style={
                 {
                   '--m3e-circular-wavy-progress-indicator-diameter': '14px',
@@ -113,10 +128,12 @@ export const FileDownloadButton: React.FC<FileDownloadButtonProps> = ({
                     !isExtracting && prog > 1
                       ? 'rgba(255, 255, 255, 0.25)'
                       : 'transparent',
+                  width: '14px',
+                  height: '14px',
                 } as React.CSSProperties
               }
             />
-            <span>
+            <span className="leading-none flex items-center">
               {isExtracting
                 ? prog > 1
                   ? `Extracting ${prog}%`
@@ -125,15 +142,18 @@ export const FileDownloadButton: React.FC<FileDownloadButtonProps> = ({
                   ? 'Starting...'
                   : `${prog}%`}
             </span>
-          </span>
+          </>
         )
       ) : (
-        <span className="inline-flex items-center justify-center gap-1.5 leading-none">
-          <span className="material-symbols-rounded text-sm shrink-0 leading-none">
+        <>
+          <span
+            slot="icon"
+            className="material-symbols-rounded text-sm shrink-0 leading-none flex items-center justify-center"
+          >
             download
           </span>
-          <span>Download</span>
-        </span>
+          <span className="leading-none flex items-center">Download</span>
+        </>
       )}
     </m3e-button>
   )
