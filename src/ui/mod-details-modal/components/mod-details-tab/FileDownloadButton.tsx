@@ -86,26 +86,27 @@ export const FileDownloadButton: React.FC<FileDownloadButtonProps> = ({
     >
       {isActive ? (
         showCancel ? (
-          <>
+          <span className="inline-flex items-center justify-center gap-1.5 leading-none">
             <span className="material-symbols-rounded text-sm shrink-0 leading-none">
               close
             </span>
             <span>Cancel</span>
-          </>
+          </span>
         ) : (
-          <>
+          <span className="inline-flex items-center justify-center gap-1.5 leading-none">
             <m3e-circular-progress-indicator
               variant="wavy"
               value={!isExtracting && prog > 1 ? prog : undefined}
               indeterminate={isExtracting || prog <= 1}
               title={isExtracting ? 'Extracting' : undefined}
+              className="shrink-0"
               style={
                 {
-                  '--m3e-circular-wavy-progress-indicator-diameter': '16px',
-                  '--m3e-circular-flat-progress-indicator-diameter': '16px',
-                  '--m3e-circular-progress-indicator-thickness': '2.5px',
+                  '--m3e-circular-wavy-progress-indicator-diameter': '14px',
+                  '--m3e-circular-flat-progress-indicator-diameter': '14px',
+                  '--m3e-circular-progress-indicator-thickness': '2px',
                   '--m3e-circular-wavy-progress-indicator-amplitude': '1.2px',
-                  '--m3e-circular-wavy-progress-indicator-wavelength': '8px',
+                  '--m3e-circular-wavy-progress-indicator-wavelength': '7px',
                   '--m3e-progress-indicator-color':
                     'var(--md-sys-color-on-primary)',
                   '--m3e-progress-indicator-track-color':
@@ -124,15 +125,15 @@ export const FileDownloadButton: React.FC<FileDownloadButtonProps> = ({
                   ? 'Starting...'
                   : `${prog}%`}
             </span>
-          </>
+          </span>
         )
       ) : (
-        <>
-          <span className="material-symbols-rounded text-sm shrink-0">
+        <span className="inline-flex items-center justify-center gap-1.5 leading-none">
+          <span className="material-symbols-rounded text-sm shrink-0 leading-none">
             download
           </span>
           <span>Download</span>
-        </>
+        </span>
       )}
     </m3e-button>
   )

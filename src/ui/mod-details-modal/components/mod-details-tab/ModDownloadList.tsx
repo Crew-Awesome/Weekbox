@@ -117,12 +117,13 @@ export const ModDownloadList: React.FC<ModDownloadListProps> = ({
                             title={isExtracting ? 'Extracting' : 'Update to this version'}
                           >
                             {isActive ? (
-                              <>
+                              <span className="inline-flex items-center justify-center gap-1.5 leading-none">
                                 <m3e-circular-progress-indicator
                                   variant="wavy"
                                   value={!isExtracting && prog && prog > 1 ? prog : undefined}
                                   indeterminate={isExtracting || !prog || prog <= 1}
                                   title={isExtracting ? 'Extracting' : undefined}
+                                  className="shrink-0"
                                   style={
                                     {
                                       '--m3e-circular-wavy-progress-indicator-diameter':
@@ -153,26 +154,29 @@ export const ModDownloadList: React.FC<ModDownloadListProps> = ({
                                       ? `${prog}%`
                                       : 'Starting...'}
                                 </span>
-                              </>
+                              </span>
                             ) : (
-                              <>
-                                <span className="material-symbols-rounded text-sm shrink-0">
+                              <span className="inline-flex items-center justify-center gap-1.5 leading-none">
+                                <span className="material-symbols-rounded text-sm shrink-0 leading-none">
                                   refresh
                                 </span>
                                 <span>Update</span>
-                              </>
+                              </span>
                             )}
                           </m3e-button>
                         )}
                         <m3e-button
                           variant="filled"
                           onClick={() => onManageFile?.(file)}
-                          className="text-xs font-bold"
+                          className="text-xs font-bold rounded-[12px] overflow-hidden"
+                          style={{ '--m3e-button-shape-round': '12px', borderRadius: '12px' } as React.CSSProperties}
                         >
-                          <span className="material-symbols-rounded text-sm shrink-0">
-                            play_arrow
+                          <span className="inline-flex items-center justify-center gap-1.5 leading-none">
+                            <span className="material-symbols-rounded text-sm shrink-0 leading-none">
+                              play_arrow
+                            </span>
+                            <span>Play</span>
                           </span>
-                          <span>Play</span>
                         </m3e-button>
                       </div>
                     ) : onDownloadFile ? (
@@ -196,16 +200,6 @@ export const ModDownloadList: React.FC<ModDownloadListProps> = ({
                   </span>
                   {file._tsDateAdded && (
                     <span>Added {formatDate(file._tsDateAdded)}</span>
-                  )}
-                  {file._sAnalysisState && (
-                    <span className="flex items-center gap-1 text-emerald-400 font-medium">
-                      <span className="material-symbols-rounded text-xs shrink-0">
-                        verified_user
-                      </span>
-                      {file._sAnalysisState === 'passed'
-                        ? 'Clean / Verified'
-                        : file._sAnalysisState}
-                    </span>
                   )}
                 </div>
               </div>
