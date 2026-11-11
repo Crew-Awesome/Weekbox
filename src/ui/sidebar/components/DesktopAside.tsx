@@ -18,9 +18,9 @@ const AsideBackgroundActions: React.FC<{
   isSettingsOpen?: boolean
 }> = ({ onOpenInfo, onOpenSettings, isInfoOpen = false, isSettingsOpen = false }) => (
   <div
-    className="absolute inset-y-0 left-0 w-[68px] rounded-tr-[16px] rounded-br-[16px] z-10 flex flex-col justify-end items-end pb-6 pr-1 shadow-inner"
+    className="absolute inset-y-0 left-0 w-[68px] rounded-tr-[16px] rounded-br-[16px] z-10 flex flex-col justify-end items-end pb-6 pr-1"
     style={{
-      backgroundColor: 'var(--md-sys-color-surface-container-low)',
+      backgroundColor: 'var(--md-sys-color-surface-container-high)',
     }}
   >
     <div className="flex flex-col space-y-3 items-center w-[38px]">
