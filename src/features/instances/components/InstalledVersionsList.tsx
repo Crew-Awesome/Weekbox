@@ -127,7 +127,7 @@ export const InstalledVersionsList: React.FC<InstalledVersionsListProps> = ({
                   </span>
 
                   {isActive && (
-                    <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-500/20 text-emerald-500 border border-emerald-500/30 flex items-center gap-1">
+                    <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-[var(--md-sys-color-primary)]/20 text-[var(--md-sys-color-primary)] border border-[var(--md-sys-color-primary)]/30 flex items-center gap-1">
                       <span className="material-symbols-rounded text-xs">
                         verified
                       </span>
@@ -212,7 +212,7 @@ export const InstalledVersionsList: React.FC<InstalledVersionsListProps> = ({
                   color: 'var(--md-sys-color-error)',
                 }}
               >
-                <span className="material-symbols-rounded text-base flex items-center justify-center leading-none text-rose-500">
+                <span className="material-symbols-rounded text-base flex items-center justify-center leading-none text-[var(--md-sys-color-error)]">
                   delete
                 </span>
               </m3e-icon-button>

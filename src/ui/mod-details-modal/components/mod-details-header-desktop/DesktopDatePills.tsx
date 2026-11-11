@@ -24,15 +24,15 @@ export const DesktopDatePills: React.FC<DesktopDatePillsProps> = ({
 }) => {
   return (
     <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 flex items-center justify-center pointer-events-auto z-10 max-w-[calc(100%-360px)] min-w-0">
-      <div className="inline-flex items-center rounded-full bg-[var(--wb-surface-bright)] border border-[var(--wb-outline-variant)]/30 overflow-hidden shadow-xs divide-x divide-[var(--wb-outline-variant)]/20 min-w-0 max-w-full">
+      <div className="inline-flex items-center rounded-full bg-[var(--md-sys-color-surface-bright)] border border-[var(--md-sys-color-outline-variant)]/30 overflow-hidden shadow-xs divide-x divide-[var(--md-sys-color-outline-variant)]/20 min-w-0 max-w-full">
         {displayCard.submittedAt && (
           <div
             id={submittedPillId}
             tabIndex={0}
-            className="flex items-center gap-1.5 px-3 py-1 text-xs font-medium text-[var(--wb-on-surface-variant)] hover:text-[var(--wb-on-surface)] hover:bg-[var(--wb-surface-container-highest)]/60 transition-colors select-none cursor-default min-w-0 shrink-0 outline-none focus-visible:bg-[var(--wb-surface-container-highest)]"
+            className="flex items-center gap-1.5 px-3 py-1 text-xs font-medium text-[var(--md-sys-color-on-surface-variant)] hover:text-[var(--md-sys-color-on-surface)] hover:bg-[var(--md-sys-color-surface-container-highest)]/60 transition-colors select-none cursor-default min-w-0 shrink-0 outline-none focus-visible:bg-[var(--md-sys-color-surface-container-highest)]"
             aria-label={`Submitted: ${formatDate(displayCard.submittedAt)}`}
           >
-            <span className="material-symbols-rounded text-sm shrink-0 leading-none text-[var(--wb-primary)]">
+            <span className="material-symbols-rounded text-sm shrink-0 leading-none text-[var(--md-sys-color-primary)]">
               add
             </span>
             <span className="truncate">{formatDate(displayCard.submittedAt)}</span>
@@ -44,10 +44,10 @@ export const DesktopDatePills: React.FC<DesktopDatePillsProps> = ({
             <div
               id={updatedPillId}
               tabIndex={0}
-              className="flex items-center gap-1.5 px-3 py-1 text-xs font-medium text-[var(--wb-on-surface-variant)] hover:text-[var(--wb-on-surface)] hover:bg-[var(--wb-surface-container-highest)]/60 transition-colors select-none cursor-default min-w-0 shrink-0 outline-none focus-visible:bg-[var(--wb-surface-container-highest)]"
+              className="flex items-center gap-1.5 px-3 py-1 text-xs font-medium text-[var(--md-sys-color-on-surface-variant)] hover:text-[var(--md-sys-color-on-surface)] hover:bg-[var(--md-sys-color-surface-container-highest)]/60 transition-colors select-none cursor-default min-w-0 shrink-0 outline-none focus-visible:bg-[var(--md-sys-color-surface-container-highest)]"
               aria-label={`Updated: ${formatDate(displayCard.updatedAt)}`}
             >
-              <span className="material-symbols-rounded text-sm shrink-0 leading-none text-[var(--wb-primary)]">
+              <span className="material-symbols-rounded text-sm shrink-0 leading-none text-[var(--md-sys-color-primary)]">
                 refresh
               </span>
               <span className="truncate">{formatDate(displayCard.updatedAt)}</span>
@@ -58,10 +58,10 @@ export const DesktopDatePills: React.FC<DesktopDatePillsProps> = ({
           <div
             id={installedPillId}
             tabIndex={0}
-            className="flex items-center gap-1.5 px-3 py-1 text-xs font-medium text-[var(--wb-on-surface-variant)] hover:text-[var(--wb-on-surface)] hover:bg-[var(--wb-surface-container-highest)]/60 transition-colors select-none cursor-default min-w-0 shrink-0 outline-none focus-visible:bg-[var(--wb-surface-container-highest)]"
+            className="flex items-center gap-1.5 px-3 py-1 text-xs font-medium text-[var(--md-sys-color-on-surface-variant)] hover:text-[var(--md-sys-color-on-surface)] hover:bg-[var(--md-sys-color-surface-container-highest)]/60 transition-colors select-none cursor-default min-w-0 shrink-0 outline-none focus-visible:bg-[var(--md-sys-color-surface-container-highest)]"
             aria-label={`Installed: ${formatDate(localInstalledAt)}`}
           >
-            <span className="material-symbols-rounded text-sm shrink-0 leading-none text-[var(--wb-primary)]">
+            <span className="material-symbols-rounded text-sm shrink-0 leading-none text-[var(--md-sys-color-primary)]">
               folder
             </span>
             <span className="truncate">{formatDate(localInstalledAt)}</span>

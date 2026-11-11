@@ -129,11 +129,11 @@ export const InstancesActionFooter: React.FC<InstancesActionFooterProps> = ({
                 '--m3e-linear-wavy-progress-indicator-wavelength': '18px',
                 '--m3e-progress-indicator-color':
                   isUninstalling || selectedTask?.status === 'canceling'
-                    ? 'var(--md-sys-color-error, #ba1a1a)'
+                    ? 'var(--md-sys-color-error)'
                     : 'var(--md-sys-color-primary)',
                 '--m3e-progress-indicator-track-color':
                   isUninstalling || selectedTask?.status === 'canceling'
-                    ? 'color-mix(in srgb, var(--md-sys-color-error, #ba1a1a) 20%, transparent)'
+                    ? 'color-mix(in srgb, var(--md-sys-color-error) 20%, transparent)'
                     : 'color-mix(in srgb, var(--md-sys-color-primary) 18%, transparent)',
               } as React.CSSProperties
             }

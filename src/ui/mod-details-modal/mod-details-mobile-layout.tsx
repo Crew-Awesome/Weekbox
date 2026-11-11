@@ -151,7 +151,7 @@ export const ModDetailsMobileLayout: React.FC<ModDetailsMobileLayoutProps> = ({
         </div>
       </m3e-overflow>
 
-      <div className="mt-auto shrink-0 pt-2 pb-[max(0.6rem,env(safe-area-inset-bottom,0px))] bg-[var(--wb-surface-container)] -mx-3 sm:-mx-5 px-3 sm:px-5 border-t border-white/5">
+      <div className="mt-auto shrink-0 pt-2 pb-[max(0.6rem,env(safe-area-inset-bottom,0px))] bg-[var(--md-sys-color-surface-container)] -mx-3 sm:-mx-5 px-3 sm:px-5 border-t border-[var(--md-sys-color-outline-variant)]/20">
         <div className="relative w-full">
           <ModDetailsActionButtons
             variant="mobile"
@@ -199,12 +199,12 @@ export const ModUninstallConfirmModal: React.FC<ModUninstallConfirmModalProps> =
   onCancel,
   onConfirm,
 }) => (
-  <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-    <div className="bg-[var(--wb-surface-container)] border border-white/10 rounded-2xl p-6 max-w-md w-full shadow-2xl flex flex-col gap-4">
-      <h3 className="text-lg font-bold text-[var(--wb-on-surface)]">
+  <div className="fixed inset-0 z-[100] flex items-center justify-center bg-[var(--md-sys-color-scrim)]/60 backdrop-blur-sm p-4">
+    <div className="bg-[var(--md-sys-color-surface-container)] border border-[var(--md-sys-color-outline-variant)]/30 rounded-2xl p-6 max-w-md w-full shadow-2xl flex flex-col gap-4">
+      <h3 className="text-lg font-bold text-[var(--md-sys-color-on-surface)]">
         Uninstall Mod
       </h3>
-      <p className="text-sm text-[var(--wb-on-surface-variant)]">
+      <p className="text-sm text-[var(--md-sys-color-on-surface-variant)]">
         Are you sure you want to uninstall &quot;{modTitle}&quot;? All files for
         this mod will be permanently removed.
       </p>
@@ -214,8 +214,12 @@ export const ModUninstallConfirmModal: React.FC<ModUninstallConfirmModalProps> =
         </m3e-button>
         <m3e-button
           variant="filled"
-          className="bg-red-600 text-white"
           onClick={onConfirm}
+          style={{
+            '--m3e-button-filled-container-color': 'var(--md-sys-color-error)',
+            '--m3e-button-filled-label-text-color': 'var(--md-sys-color-on-error)',
+            cursor: 'pointer',
+          } as React.CSSProperties}
         >
           LET&apos;S GO!
         </m3e-button>

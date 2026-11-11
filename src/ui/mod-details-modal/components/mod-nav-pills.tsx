@@ -89,13 +89,13 @@ export const ModNavPills: React.FC<ModNavPillsProps> = ({
               '--m3e-button-label-text-font-size': fontSize,
               '--m3e-button-extra-small-label-text-font-size': '11px',
               '--m3e-button-small-label-text-font-size': fontSize,
-              '--m3e-button-selected-container-color': 'var(--wb-primary)',
-              '--m3e-button-selected-label-text-color': 'var(--wb-on-primary)',
-              '--m3e-button-selected-icon-color': 'var(--wb-on-primary)',
-              '--m3e-button-unselected-container-color': 'var(--wb-surface-bright)',
+              '--m3e-button-selected-container-color': 'var(--md-sys-color-primary)',
+              '--m3e-button-selected-label-text-color': 'var(--md-sys-color-on-primary)',
+              '--m3e-button-selected-icon-color': 'var(--md-sys-color-on-primary)',
+              '--m3e-button-unselected-container-color': 'var(--md-sys-color-surface-bright)',
               '--m3e-button-unselected-label-text-color':
-                'var(--wb-on-surface-variant)',
-              '--m3e-button-unselected-icon-color': 'var(--wb-on-surface-variant)',
+                'var(--md-sys-color-on-surface-variant)',
+              '--m3e-button-unselected-icon-color': 'var(--md-sys-color-on-surface-variant)',
             } as React.CSSProperties
           }
         >
@@ -153,12 +153,12 @@ export const ModNavPills: React.FC<ModNavPillsProps> = ({
                 style={{
                   color:
                     activeTab === 'contributors'
-                      ? 'var(--wb-on-primary)'
-                      : 'var(--wb-on-surface-variant)',
+                      ? 'var(--md-sys-color-on-primary)'
+                      : 'var(--md-sys-color-on-surface-variant)',
                   backgroundColor:
                     activeTab === 'contributors'
-                      ? 'color-mix(in srgb, var(--wb-on-primary) 22%, transparent)'
-                      : 'color-mix(in srgb, var(--wb-on-surface-variant) 18%, transparent)',
+                      ? 'color-mix(in srgb, var(--md-sys-color-on-primary) 22%, transparent)'
+                      : 'color-mix(in srgb, var(--md-sys-color-on-surface-variant) 18%, transparent)',
                 }}
               >
                 {contributorsCount}
@@ -205,12 +205,12 @@ export const ModNavPills: React.FC<ModNavPillsProps> = ({
                 style={{
                   color:
                     activeTab === 'details'
-                      ? 'var(--wb-on-primary)'
-                      : 'var(--wb-on-surface-variant)',
+                      ? 'var(--md-sys-color-on-primary)'
+                      : 'var(--md-sys-color-on-surface-variant)',
                   backgroundColor:
                     activeTab === 'details'
-                      ? 'color-mix(in srgb, var(--wb-on-primary) 22%, transparent)'
-                      : 'color-mix(in srgb, var(--wb-on-surface-variant) 18%, transparent)',
+                      ? 'color-mix(in srgb, var(--md-sys-color-on-primary) 22%, transparent)'
+                      : 'color-mix(in srgb, var(--md-sys-color-on-surface-variant) 18%, transparent)',
                 }}
               >
                 {filesCount}

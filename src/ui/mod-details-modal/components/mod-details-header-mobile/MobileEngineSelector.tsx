@@ -51,12 +51,12 @@ export const MobileEngineSelector: React.FC<MobileEngineSelectorProps> = ({
                 {displayCard.hasEngineWarning && (
                   <span
                     id={warningId}
-                    className="absolute -top-1.5 -right-1.5 flex items-center justify-center w-3.5 h-3.5 rounded-full bg-amber-500 text-black shadow pointer-events-auto cursor-help overflow-hidden"
+                    className="absolute -top-1.5 -right-1.5 flex items-center justify-center w-3.5 h-3.5 rounded-full bg-[var(--md-sys-color-tertiary)] text-[var(--md-sys-color-on-tertiary)] shadow pointer-events-auto cursor-help overflow-hidden"
                     aria-label="Engine warning"
                   >
                     <svg
                       viewBox="0 0 24 24"
-                      className="w-2.5 h-2.5 fill-black shrink-0"
+                      className="w-2.5 h-2.5 fill-[var(--md-sys-color-on-tertiary)] shrink-0"
                       aria-hidden="true"
                     >
                       <path
@@ -119,14 +119,14 @@ export const MobileEngineSelector: React.FC<MobileEngineSelectorProps> = ({
                   {cat.name}
                 </span>
                 {isDefault && (
-                  <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-[var(--wb-primary)]/20 text-[var(--wb-primary)] uppercase tracking-wider shrink-0 ml-2 mr-1">
+                  <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-[var(--md-sys-color-primary)]/20 text-[var(--md-sys-color-primary)] uppercase tracking-wider shrink-0 ml-2 mr-1">
                     Default
                   </span>
                 )}
                 {isSelected && (
                   <span
                     slot="trailing-icon"
-                    className="material-symbols-rounded text-base text-[var(--wb-primary)]"
+                    className="material-symbols-rounded text-base text-[var(--md-sys-color-primary)]"
                   >
                     check
                   </span>
@@ -156,12 +156,12 @@ export const MobileEngineSelector: React.FC<MobileEngineSelectorProps> = ({
             {displayCard.hasEngineWarning && (
               <span
                 id={warningId}
-                className="absolute -top-1.5 -right-1.5 flex items-center justify-center w-3.5 h-3.5 rounded-full bg-amber-500 text-black shadow pointer-events-auto cursor-help overflow-hidden"
+                className="absolute -top-1.5 -right-1.5 flex items-center justify-center w-3.5 h-3.5 rounded-full bg-[var(--md-sys-color-tertiary)] text-[var(--md-sys-color-on-tertiary)] shadow pointer-events-auto cursor-help overflow-hidden"
                 aria-label="Engine warning"
               >
                 <svg
                   viewBox="0 0 24 24"
-                  className="w-2.5 h-2.5 fill-black shrink-0"
+                  className="w-2.5 h-2.5 fill-[var(--md-sys-color-on-tertiary)] shrink-0"
                   aria-hidden="true"
                 >
                   <path

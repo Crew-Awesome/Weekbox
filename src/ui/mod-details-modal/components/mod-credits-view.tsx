@@ -58,10 +58,10 @@ export const ModCreditsView: React.FC<ModCreditsViewProps> = ({
       <div
         className={`flex flex-col items-center justify-center py-12 text-center ${className}`}
       >
-        <span className="material-symbols-rounded text-4xl text-[var(--wb-on-surface-variant)] opacity-40 mb-2">
+        <span className="material-symbols-rounded text-4xl text-[var(--md-sys-color-on-surface-variant)] opacity-40 mb-2">
           person
         </span>
-        <span className="text-[var(--wb-on-surface-variant)] text-sm">
+        <span className="text-[var(--md-sys-color-on-surface-variant)] text-sm">
           No detailed contributor info available.
         </span>
       </div>
@@ -72,7 +72,7 @@ export const ModCreditsView: React.FC<ModCreditsViewProps> = ({
     <div className={`flex flex-col gap-6 pb-6 ${className}`}>
       {effectiveGroups.map((group, groupIdx) => (
         <div key={`group-${groupIdx}`} className="flex flex-col gap-2.5">
-          <h3 className="text-xs font-bold text-[var(--wb-primary)] uppercase tracking-wider px-1">
+          <h3 className="text-xs font-bold text-[var(--md-sys-color-primary)] uppercase tracking-wider px-1">
             {group.groupName}
           </h3>
 
@@ -80,19 +80,19 @@ export const ModCreditsView: React.FC<ModCreditsViewProps> = ({
             {group.authors.map((member, mIdx) => (
               <div
                 key={`member-${groupIdx}-${mIdx}`}
-                className="flex items-center gap-3 p-2.5 rounded-xl bg-[var(--wb-surface-bright)]/60 border border-[var(--wb-outline-variant)]/20 transition-all hover:bg-[var(--wb-surface-bright)]"
+                className="flex items-center gap-3 p-2.5 rounded-xl bg-[var(--md-sys-color-surface-bright)]/60 border border-[var(--md-sys-color-outline-variant)]/20 transition-all hover:bg-[var(--md-sys-color-surface-bright)]"
               >
                 {member.avatarUrl ? (
                   <img
                     src={member.avatarUrl}
                     alt={member.name}
-                    className="w-9 h-9 rounded-full object-cover shrink-0 border border-white/10"
+                    className="w-9 h-9 rounded-full object-cover shrink-0 border border-[var(--md-sys-color-outline-variant)]/30"
                     onError={(e) => {
                       e.currentTarget.style.display = 'none'
                     }}
                   />
                 ) : (
-                  <div className="w-9 h-9 rounded-full bg-[var(--wb-surface-container-high)] flex items-center justify-center shrink-0 border border-white/5 text-[var(--wb-on-surface-variant)]">
+                  <div className="w-9 h-9 rounded-full bg-[var(--md-sys-color-surface-container-high)] flex items-center justify-center shrink-0 border border-[var(--md-sys-color-outline-variant)]/20 text-[var(--md-sys-color-on-surface-variant)]">
                     <span className="material-symbols-rounded text-base opacity-70">
                       person
                     </span>
@@ -100,11 +100,11 @@ export const ModCreditsView: React.FC<ModCreditsViewProps> = ({
                 )}
 
                 <div className="flex flex-col min-w-0">
-                  <span className="text-sm font-semibold text-[var(--wb-on-surface)] truncate">
+                  <span className="text-sm font-semibold text-[var(--md-sys-color-on-surface)] truncate">
                     {member.name}
                   </span>
                   {member.role && (
-                    <span className="text-xs text-[var(--wb-on-surface-variant)] truncate opacity-80">
+                    <span className="text-xs text-[var(--md-sys-color-on-surface-variant)] truncate opacity-80">
                       {member.role}
                     </span>
                   )}

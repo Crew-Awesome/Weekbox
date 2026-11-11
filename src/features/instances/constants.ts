@@ -53,7 +53,11 @@ export const ENGINE_MENU_STYLE = {
   '--m3e-menu-item-last-child-shape': '12px',
   '--m3e-menu-item-container-height': '40px',
   '--m3e-menu-container-elevation':
-    'var(--md-sys-elevation-level3, 0 12px 32px rgba(0, 0, 0, 0.32))',
+    '0 12px 32px color-mix(in srgb, var(--md-sys-color-scrim) 25%, transparent)',
+  boxShadow:
+    '0 12px 32px color-mix(in srgb, var(--md-sys-color-scrim) 25%, transparent)',
+  border:
+    '1px solid color-mix(in srgb, var(--md-sys-color-outline-variant) 50%, transparent)',
   width: 'min(320px, calc(100vw - 24px))',
   maxHeight: 'none',
   overflow: 'hidden',

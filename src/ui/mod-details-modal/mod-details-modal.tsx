@@ -200,7 +200,7 @@ export const ModDetailsModal: React.FC<ModDetailsModalProps> = ({
       modalClassName={`flex flex-col ${
         isDesktop
           ? 'aspect-[16/9] max-h-full h-full rounded-3xl bg-transparent'
-          : 'max-h-[92dvh] h-[92dvh] rounded-2xl bg-[var(--wb-surface-container)]'
+          : 'max-h-[92dvh] h-[92dvh] rounded-2xl bg-[var(--md-sys-color-surface-container)]'
       } overflow-hidden shadow-none`}
     >
       <ModDetailsView

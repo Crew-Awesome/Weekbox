@@ -56,7 +56,7 @@ export const InstancesActionButtons: React.FC<InstancesActionButtonsProps> = ({
   return (
     <div className="flex items-center gap-2 shrink-0">
       {isUninstalling ? (
-        <div className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold text-rose-500 border border-rose-500/40 bg-rose-500/10">
+        <div className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold text-[var(--md-sys-color-error)] border border-[var(--md-sys-color-error)]/40 bg-[var(--md-sys-color-error-container)]/20">
           <span className="material-symbols-rounded text-base animate-spin">
             refresh
           </span>
@@ -84,11 +84,11 @@ export const InstancesActionButtons: React.FC<InstancesActionButtonsProps> = ({
             style={{
               backgroundColor:
                 selectedTask.status === 'canceling'
-                  ? 'var(--md-sys-color-error, #ba1a1a)'
+                  ? 'var(--md-sys-color-error)'
                   : 'var(--md-sys-color-primary)',
               color:
                 selectedTask.status === 'canceling'
-                  ? 'var(--md-sys-color-on-error, #ffffff)'
+                  ? 'var(--md-sys-color-on-error)'
                   : 'var(--md-sys-color-on-primary)',
             }}
           >
@@ -110,7 +110,7 @@ export const InstancesActionButtons: React.FC<InstancesActionButtonsProps> = ({
                 if (selectedVersion) onCancelDownload(selectedVersion)
               }}
               disabled={selectedTask.status === 'canceling'}
-              className="inline-flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-3.5 py-1.5 sm:py-2 rounded-xl text-xs font-bold transition cursor-pointer hover:bg-rose-500/20 text-rose-500 border border-rose-500/40 disabled:opacity-50 disabled:cursor-default"
+              className="inline-flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-3.5 py-1.5 sm:py-2 rounded-xl text-xs font-bold transition cursor-pointer hover:bg-[var(--md-sys-color-error)]/20 text-[var(--md-sys-color-error)] border border-[var(--md-sys-color-error)]/40 disabled:opacity-50 disabled:cursor-default"
             >
               <span className="material-symbols-rounded text-sm sm:text-base">
                 close
@@ -138,8 +138,8 @@ export const InstancesActionButtons: React.FC<InstancesActionButtonsProps> = ({
               title="Engine is currently running"
             >
               <span className="relative flex h-2 w-2">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[var(--md-sys-color-primary)] opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-[var(--md-sys-color-primary)]"></span>
               </span>
               <span>
                 <span className="hidden sm:inline">Running </span>({formattedSessionDuration || '00:00'})
@@ -153,7 +153,7 @@ export const InstancesActionButtons: React.FC<InstancesActionButtonsProps> = ({
               onClick={() => {
                 void onStopEngine()
               }}
-              className="inline-flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-3.5 py-1.5 sm:py-2 rounded-xl text-xs sm:text-sm font-bold transition cursor-pointer hover:bg-rose-500/20 text-rose-500 border border-rose-500/40 active:scale-95 shadow-sm"
+              className="inline-flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-3.5 py-1.5 sm:py-2 rounded-xl text-xs sm:text-sm font-bold transition cursor-pointer hover:bg-[var(--md-sys-color-error)]/20 text-[var(--md-sys-color-error)] border border-[var(--md-sys-color-error)]/40 active:scale-95 shadow-sm"
             >
               <span className="material-symbols-rounded text-sm sm:text-base">
                 stop
@@ -201,7 +201,7 @@ export const InstancesActionButtons: React.FC<InstancesActionButtonsProps> = ({
             <button
               type="button"
               onClick={onUninstallSelected}
-              className="inline-flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-3.5 py-1.5 sm:py-2 rounded-xl text-xs font-bold transition cursor-pointer hover:bg-rose-500/20 text-rose-500 border border-rose-500/40"
+              className="inline-flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-3.5 py-1.5 sm:py-2 rounded-xl text-xs font-bold transition cursor-pointer hover:bg-[var(--md-sys-color-error)]/20 text-[var(--md-sys-color-error)] border border-[var(--md-sys-color-error)]/40"
             >
               <span className="material-symbols-rounded text-sm sm:text-base">
                 delete
@@ -226,8 +226,8 @@ export const InstancesActionButtons: React.FC<InstancesActionButtonsProps> = ({
                 title="Engine is currently running"
               >
                 <span className="relative flex h-2 w-2">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                  <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[var(--md-sys-color-primary)] opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-[var(--md-sys-color-primary)]"></span>
                 </span>
                 <span>Running ({formattedSessionDuration || '00:00'})</span>
               </div>
@@ -238,7 +238,7 @@ export const InstancesActionButtons: React.FC<InstancesActionButtonsProps> = ({
                   onClick={() => {
                     void onStopEngine()
                   }}
-                  className="inline-flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-3.5 py-1.5 sm:py-2 rounded-xl text-xs sm:text-sm font-bold transition cursor-pointer hover:bg-rose-500/20 text-rose-500 border border-rose-500/40 active:scale-95 shadow-sm"
+                  className="inline-flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-3.5 py-1.5 sm:py-2 rounded-xl text-xs sm:text-sm font-bold transition cursor-pointer hover:bg-[var(--md-sys-color-error)]/20 text-[var(--md-sys-color-error)] border border-[var(--md-sys-color-error)]/40 active:scale-95 shadow-sm"
                 >
                   <span className="material-symbols-rounded text-sm sm:text-base">
                     stop

@@ -29,16 +29,16 @@ export const MobileDatePills: React.FC<MobileDatePillsProps> = ({
           displayCard.updatedAt &&
             displayCard.updatedAt !== displayCard.submittedAt,
         )) && (
-        <div className="inline-flex items-center rounded-full bg-[var(--wb-surface-bright)] border border-[var(--wb-outline-variant)]/30 overflow-hidden shadow-xs divide-x divide-[var(--wb-outline-variant)]/20 shrink-0">
+        <div className="inline-flex items-center rounded-full bg-[var(--md-sys-color-surface-bright)] border border-[var(--md-sys-color-outline-variant)]/30 overflow-hidden shadow-xs divide-x divide-[var(--md-sys-color-outline-variant)]/20 shrink-0">
           {displayCard.updatedAt &&
             displayCard.updatedAt !== displayCard.submittedAt && (
               <div
                 id={mobileUpdatedId}
                 tabIndex={0}
-                className="flex items-center gap-1 px-2.5 py-1 text-[11px] font-medium text-[var(--wb-on-surface-variant)] hover:text-[var(--wb-on-surface)] hover:bg-[var(--wb-surface-container-highest)]/60 transition-colors select-none cursor-default shrink-0 outline-none"
+                className="flex items-center gap-1 px-2.5 py-1 text-[11px] font-medium text-[var(--md-sys-color-on-surface-variant)] hover:text-[var(--md-sys-color-on-surface)] hover:bg-[var(--md-sys-color-surface-container-highest)]/60 transition-colors select-none cursor-default shrink-0 outline-none"
                 aria-label={`Updated: ${formatDate(displayCard.updatedAt)}`}
               >
-                <span className="material-symbols-rounded text-xs shrink-0 leading-none text-[var(--wb-primary)]">
+                <span className="material-symbols-rounded text-xs shrink-0 leading-none text-[var(--md-sys-color-primary)]">
                   refresh
                 </span>
                 <span className="font-semibold">
@@ -50,10 +50,10 @@ export const MobileDatePills: React.FC<MobileDatePillsProps> = ({
             <div
               id={mobileInstalledId}
               tabIndex={0}
-              className="flex items-center gap-1 px-2.5 py-1 text-[11px] font-medium text-[var(--wb-on-surface-variant)] hover:text-[var(--wb-on-surface)] hover:bg-[var(--wb-surface-container-highest)]/60 transition-colors select-none cursor-default shrink-0 outline-none"
+              className="flex items-center gap-1 px-2.5 py-1 text-[11px] font-medium text-[var(--md-sys-color-on-surface-variant)] hover:text-[var(--md-sys-color-on-surface)] hover:bg-[var(--md-sys-color-surface-container-highest)]/60 transition-colors select-none cursor-default shrink-0 outline-none"
               aria-label={`Installed: ${formatDate(localInstalledAt)}`}
             >
-              <span className="material-symbols-rounded text-xs shrink-0 leading-none text-[var(--wb-primary)]">
+              <span className="material-symbols-rounded text-xs shrink-0 leading-none text-[var(--md-sys-color-primary)]">
                 folder
               </span>
               <span className="font-semibold">

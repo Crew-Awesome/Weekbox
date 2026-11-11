@@ -59,7 +59,7 @@ export const ModDetailsHeaderDesktop: React.FC<ModDetailsHeaderDesktopProps> = (
   const engineMenuId = `hdr-eng-menu-${rawId.replace(/:/g, '-')}`
 
   return (
-    <div className="relative z-30 flex items-center justify-between px-4 md:px-6 pt-2 pb-3 md:pt-3 md:pb-4 shrink-0 bg-[var(--wb-surface-container)] min-h-[56px] rounded-t-2xl pointer-events-auto">
+    <div className="relative z-30 flex items-center justify-between px-4 md:px-6 pt-2 pb-3 md:pt-3 md:pb-4 shrink-0 bg-[var(--md-sys-color-surface-container)] min-h-[56px] rounded-t-2xl pointer-events-auto">
       <div className="flex items-center gap-1.5 md:gap-2 shrink-0 z-10">
         <m3e-icon-button
           variant="tonal"
@@ -73,7 +73,7 @@ export const ModDetailsHeaderDesktop: React.FC<ModDetailsHeaderDesktopProps> = (
             open_in_new
           </span>
         </m3e-icon-button>
-        <div className="w-[1px] h-5 bg-[var(--wb-outline-variant)]/40 mx-0.5" />
+        <div className="w-[1px] h-5 bg-[var(--md-sys-color-outline-variant)]/40 mx-0.5" />
 
         <DesktopEngineSelector
           displayCard={displayCard}

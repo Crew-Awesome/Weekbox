@@ -33,22 +33,22 @@ export const EngineInstallVisual: React.FC<EngineInstallVisualProps> = ({
   const isSpinning = phase === 'starting'
   const isPrimaryTone = tone === 'primary'
   const ringColor = isCanceling
-    ? 'var(--md-sys-color-error, #ba1a1a)'
+    ? 'var(--md-sys-color-error)'
     : isPrimaryTone
       ? 'var(--md-sys-color-primary)'
       : 'var(--md-sys-color-on-primary)'
   const ringTrackColor = isCanceling
-    ? 'color-mix(in srgb, var(--md-sys-color-error, #ba1a1a) 22%, transparent)'
+    ? 'color-mix(in srgb, var(--md-sys-color-error) 22%, transparent)'
     : isPrimaryTone
       ? 'color-mix(in srgb, var(--md-sys-color-primary) 22%, transparent)'
       : 'color-mix(in srgb, var(--md-sys-color-on-primary) 24%, transparent)'
   const shapeContainerColor = isCanceling
-    ? 'var(--md-sys-color-error, #ba1a1a)'
+    ? 'var(--md-sys-color-error)'
     : isPrimaryTone
       ? 'var(--md-sys-color-primary)'
       : 'var(--md-sys-color-on-primary)'
   const shapeTextColor = isCanceling
-    ? 'var(--md-sys-color-on-error, #ffffff)'
+    ? 'var(--md-sys-color-on-error)'
     : isPrimaryTone
       ? 'var(--md-sys-color-on-primary)'
       : 'var(--md-sys-color-primary)'

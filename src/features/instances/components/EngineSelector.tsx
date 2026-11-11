@@ -70,7 +70,9 @@ export const EngineSelector: React.FC<EngineSelectorProps> = ({
                 <div className="flex items-center gap-1.5 mt-0.5">
                   <span
                     className={`w-1.5 h-1.5 rounded-full ${
-                      count > 0 ? 'bg-emerald-500' : 'bg-zinc-500'
+                      count > 0
+                        ? 'bg-[var(--md-sys-color-primary)]'
+                        : 'bg-[var(--md-sys-color-outline)]'
                     }`}
                   />
                   <span

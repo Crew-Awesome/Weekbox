@@ -80,7 +80,7 @@ export const LibraryProfileSidebar: React.FC<LibraryProfileSidebarProps> = ({
   return (
     <div className="fixed inset-0 z-50 flex justify-end overflow-hidden">
       <div
-        className={`fixed inset-0 bg-black/50 backdrop-blur-xs transition-opacity duration-300 ease-out cursor-pointer ${
+        className={`fixed inset-0 bg-[var(--md-sys-color-scrim)]/50 backdrop-blur-xs transition-opacity duration-300 ease-out cursor-pointer ${
           animOpen ? 'opacity-100' : 'opacity-0'
         }`}
         onClick={onClose}
@@ -149,7 +149,7 @@ export const LibraryProfileSidebar: React.FC<LibraryProfileSidebarProps> = ({
             <button
               type="button"
               onClick={() => onDeleteProfile(profile.id)}
-              className="p-2 rounded-xl text-[var(--md-sys-color-on-surface-variant)] hover:text-red-500 hover:bg-red-500/10 transition-colors cursor-pointer"
+              className="p-2 rounded-xl text-[var(--md-sys-color-on-surface-variant)] hover:text-[var(--md-sys-color-error)] hover:bg-[var(--md-sys-color-error)]/10 transition-colors cursor-pointer"
               title="Delete folder"
             >
               <span className="material-symbols-rounded text-lg">delete</span>
@@ -242,7 +242,7 @@ export const LibraryProfileSidebar: React.FC<LibraryProfileSidebarProps> = ({
                       <img
                         src={thumb}
                         alt=""
-                        className="w-11 h-11 rounded-xl object-cover bg-black/20 shrink-0"
+                        className="w-11 h-11 rounded-xl object-cover bg-[var(--md-sys-color-surface-container-highest)] shrink-0"
                       />
                       <div className="min-w-0 flex-1">
                         <div className="text-xs sm:text-sm font-bold text-[var(--md-sys-color-on-surface)] truncate">
@@ -273,7 +273,7 @@ export const LibraryProfileSidebar: React.FC<LibraryProfileSidebarProps> = ({
                           e.stopPropagation()
                           onRemoveMod(String(mod.id))
                         }}
-                        className="p-1.5 rounded-xl text-[var(--md-sys-color-on-surface-variant)] hover:text-red-500 hover:bg-red-500/10 transition-colors cursor-pointer"
+                        className="p-1.5 rounded-xl text-[var(--md-sys-color-on-surface-variant)] hover:text-[var(--md-sys-color-error)] hover:bg-[var(--md-sys-color-error)]/10 transition-colors cursor-pointer"
                         title="Remove from this folder"
                       >
                         <span className="material-symbols-rounded text-base">folder_delete</span>

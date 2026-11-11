@@ -95,19 +95,19 @@ export const ReleaseCard: React.FC<ReleaseCardProps> = ({
               </span>
 
               {isLatest && (
-                <span className="px-2 py-0.5 rounded-full text-xs font-bold bg-emerald-500/15 text-emerald-500 border border-emerald-500/30">
+                <span className="px-2 py-0.5 rounded-full text-xs font-bold bg-[var(--md-sys-color-primary)]/15 text-[var(--md-sys-color-primary)] border border-[var(--md-sys-color-primary)]/30">
                   Latest
                 </span>
               )}
 
               {release.prerelease && (
-                <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-amber-500/15 text-amber-500 border border-amber-500/30">
+                <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-[var(--md-sys-color-tertiary)]/15 text-[var(--md-sys-color-tertiary)] border border-[var(--md-sys-color-tertiary)]/30">
                   Pre-release
                 </span>
               )}
 
               {isInstalled && (
-                <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-emerald-500/20 text-emerald-500 flex items-center gap-1">
+                <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-[var(--md-sys-color-primary)]/20 text-[var(--md-sys-color-primary)] flex items-center gap-1">
                   <span className="material-symbols-rounded text-xs">check</span>
                   Installed
                 </span>
@@ -148,18 +148,18 @@ export const ReleaseCard: React.FC<ReleaseCardProps> = ({
                 <m3e-button
                   variant="outlined"
                   onClick={() => onCancelDownload(release.tagName)}
-                  style={{ cursor: 'pointer', color: 'rgb(244, 63, 94)' }}
+                  style={{ cursor: 'pointer', color: 'var(--md-sys-color-error)' }}
                 >
                   <span
                     slot="icon"
-                    className="material-symbols-rounded text-base flex items-center justify-center leading-none text-rose-500"
+                    className="material-symbols-rounded text-base flex items-center justify-center leading-none text-[var(--md-sys-color-error)]"
                   >
                     close
                   </span>
                   <span>Cancel</span>
                 </m3e-button>
               ) : task?.status === 'canceling' ? (
-                <span className="text-xs font-semibold text-rose-500">Canceling...</span>
+                <span className="text-xs font-semibold text-[var(--md-sys-color-error)]">Canceling...</span>
               ) : null}
             </div>
           ) : (

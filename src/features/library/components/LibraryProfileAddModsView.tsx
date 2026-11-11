@@ -110,8 +110,8 @@ export const LibraryProfileAddModsView: React.FC<LibraryProfileAddModsViewProps>
             onClick={() => setFilterFavorites((prev) => !prev)}
             className={`flex items-center gap-1 px-2.5 py-1 rounded-lg border transition-all cursor-pointer font-semibold ${
               filterFavorites
-                ? 'bg-red-500/15 border-red-500/40 text-red-500'
-                : 'bg-[var(--md-sys-color-surface-container)] border-[var(--md-sys-color-outline-variant)]/30 text-[var(--md-sys-color-on-surface-variant)] hover:text-red-500'
+                ? 'bg-[var(--md-sys-color-error)]/15 border-[var(--md-sys-color-error)]/40 text-[var(--md-sys-color-error)]'
+                : 'bg-[var(--md-sys-color-surface-container)] border-[var(--md-sys-color-outline-variant)]/30 text-[var(--md-sys-color-on-surface-variant)] hover:text-[var(--md-sys-color-error)]'
             }`}
           >
             <span
@@ -128,8 +128,8 @@ export const LibraryProfileAddModsView: React.FC<LibraryProfileAddModsViewProps>
             onClick={() => setFilterBookmarks((prev) => !prev)}
             className={`flex items-center gap-1 px-2.5 py-1 rounded-lg border transition-all cursor-pointer font-semibold ${
               filterBookmarks
-                ? 'bg-amber-400/15 border-amber-400/40 text-amber-400'
-                : 'bg-[var(--md-sys-color-surface-container)] border-[var(--md-sys-color-outline-variant)]/30 text-[var(--md-sys-color-on-surface-variant)] hover:text-amber-400'
+                ? 'bg-[var(--md-sys-color-tertiary)]/15 border-[var(--md-sys-color-tertiary)]/40 text-[var(--md-sys-color-tertiary)]'
+                : 'bg-[var(--md-sys-color-surface-container)] border-[var(--md-sys-color-outline-variant)]/30 text-[var(--md-sys-color-on-surface-variant)] hover:text-[var(--md-sys-color-tertiary)]'
             }`}
           >
             <span
@@ -160,7 +160,7 @@ export const LibraryProfileAddModsView: React.FC<LibraryProfileAddModsViewProps>
             <button
               type="button"
               onClick={clearAllFilters}
-              className="px-2 py-1 rounded-lg text-xs font-semibold text-red-400 hover:bg-red-500/10 transition-colors"
+              className="px-2 py-1 rounded-lg text-xs font-semibold text-[var(--md-sys-color-error)] hover:bg-[var(--md-sys-color-error)]/10 transition-colors"
             >
               Clear
             </button>
@@ -189,7 +189,7 @@ export const LibraryProfileAddModsView: React.FC<LibraryProfileAddModsViewProps>
                   <img
                     src={thumb}
                     alt=""
-                    className="w-10 h-10 rounded-lg object-cover bg-black/20 shrink-0"
+                    className="w-10 h-10 rounded-lg object-cover bg-[var(--md-sys-color-surface-container-highest)] shrink-0"
                   />
                   <div className="min-w-0 flex-1">
                     <div className="text-xs font-bold text-[var(--md-sys-color-on-surface)] truncate">
@@ -205,7 +205,7 @@ export const LibraryProfileAddModsView: React.FC<LibraryProfileAddModsViewProps>
                   <button
                     type="button"
                     onClick={() => onRemoveMod(String(mod.id))}
-                    className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-bold text-[var(--md-sys-color-primary)] bg-[var(--md-sys-color-primary-container)]/30 hover:bg-red-500/10 hover:text-red-500 transition-colors cursor-pointer"
+                    className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-bold text-[var(--md-sys-color-primary)] bg-[var(--md-sys-color-primary-container)]/30 hover:bg-[var(--md-sys-color-error)]/10 hover:text-[var(--md-sys-color-error)] transition-colors cursor-pointer"
                     title="Click to remove from profile"
                   >
                     <span className="material-symbols-rounded text-xs">check</span>

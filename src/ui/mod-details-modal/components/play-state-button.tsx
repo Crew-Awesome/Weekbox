@@ -76,8 +76,10 @@ export const PlayStateButton: React.FC<PlayStateButtonProps> = ({
         style={
           {
             ...baseStyle,
-            '--m3e-button-tonal-container-color': 'rgba(245, 158, 11, 0.2)',
-            '--m3e-button-tonal-label-text-color': '#fcd34d',
+            '--m3e-button-tonal-container-color':
+              'color-mix(in srgb, var(--md-sys-color-tertiary) 20%, transparent)',
+            '--m3e-button-tonal-label-text-color':
+              'var(--md-sys-color-tertiary)',
           } as React.CSSProperties
         }
       >
@@ -103,21 +105,23 @@ export const PlayStateButton: React.FC<PlayStateButtonProps> = ({
         style={
           {
             ...baseStyle,
-            '--m3e-button-tonal-container-color': 'rgba(16, 185, 129, 0.2)',
-            '--m3e-button-tonal-label-text-color': '#6ee7b7',
+            '--m3e-button-tonal-container-color':
+              'color-mix(in srgb, var(--md-sys-color-primary) 20%, transparent)',
+            '--m3e-button-tonal-label-text-color':
+              'var(--md-sys-color-primary)',
           } as React.CSSProperties
         }
         title="Click to stop process"
       >
         <span
           slot="icon"
-          className="material-symbols-rounded text-emerald-400 group-hover:hidden animate-pulse text-xl leading-none"
+          className="material-symbols-rounded text-[var(--md-sys-color-primary)] group-hover:hidden animate-pulse text-xl leading-none"
         >
           pulse
         </span>
         <span
           slot="icon"
-          className="material-symbols-rounded filled text-rose-400 hidden group-hover:inline text-xl leading-none"
+          className="material-symbols-rounded filled text-[var(--md-sys-color-error)] hidden group-hover:inline text-xl leading-none"
         >
           stop
         </span>
@@ -136,14 +140,16 @@ export const PlayStateButton: React.FC<PlayStateButtonProps> = ({
         style={
           {
             ...baseStyle,
-            '--m3e-button-tonal-container-color': 'rgba(245, 158, 11, 0.2)',
-            '--m3e-button-tonal-label-text-color': '#fcd34d',
+            '--m3e-button-tonal-container-color':
+              'color-mix(in srgb, var(--md-sys-color-tertiary) 20%, transparent)',
+            '--m3e-button-tonal-label-text-color':
+              'var(--md-sys-color-tertiary)',
           } as React.CSSProperties
         }
       >
         <span
           slot="icon"
-          className="material-symbols-rounded animate-spin text-amber-400 text-xl leading-none"
+          className="material-symbols-rounded animate-spin text-[var(--md-sys-color-tertiary)] text-xl leading-none"
         >
           progress_activity
         </span>
@@ -161,14 +167,16 @@ export const PlayStateButton: React.FC<PlayStateButtonProps> = ({
         style={
           {
             ...baseStyle,
-            '--m3e-button-tonal-container-color': 'rgba(239, 68, 68, 0.2)',
-            '--m3e-button-tonal-label-text-color': '#fca5a5',
+            '--m3e-button-tonal-container-color':
+              'color-mix(in srgb, var(--md-sys-color-error) 20%, transparent)',
+            '--m3e-button-tonal-label-text-color':
+              'var(--md-sys-color-error)',
           } as React.CSSProperties
         }
       >
         <span
           slot="icon"
-          className="material-symbols-rounded text-rose-400 text-xl leading-none"
+          className="material-symbols-rounded text-[var(--md-sys-color-error)] text-xl leading-none"
         >
           warning
         </span>

@@ -166,7 +166,7 @@ const ThumbnailItem: React.FC<ThumbnailItemProps> = ({
       onClick={onClick}
       className={`relative cursor-pointer ${className} ${
         isActive
-          ? 'border-[var(--wb-primary)] ring-2 ring-[var(--wb-primary)]/40 opacity-100 scale-105'
+          ? 'border-[var(--md-sys-color-primary)] ring-2 ring-[var(--md-sys-color-primary)]/40 opacity-100 scale-105'
           : 'border-transparent opacity-60 hover:opacity-100 hover:scale-105'
       }`}
     >

@@ -22,8 +22,8 @@ export const ModContributorsBtn: React.FC<ModContributorsBtnProps> = ({
     if (typeof window === 'undefined') return 'rgba(255, 255, 255, 0.1)'
     const style = getComputedStyle(btnRef.current || document.documentElement)
     const val =
-      style.getPropertyValue('--wb-card-hover-default').trim() ||
-      style.getPropertyValue('--wb-card-hover-bg').trim()
+      style.getPropertyValue('--md-sys-color-surface-container').trim() ||
+      style.getPropertyValue('--md-sys-color-surface-container-high').trim()
     return val || 'rgba(255, 255, 255, 0.1)'
   }, [])
 
@@ -85,7 +85,7 @@ export const ModContributorsBtn: React.FC<ModContributorsBtnProps> = ({
       onClick={onClick}
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
-      className={`relative isolate overflow-hidden inline-flex items-center gap-1.5 text-xs font-semibold text-[var(--wb-primary)] hover:text-[var(--wb-on-surface)] transition-colors cursor-pointer select-none w-fit ${className}`}
+      className={`relative isolate overflow-hidden inline-flex items-center gap-1.5 text-xs font-semibold text-[var(--md-sys-color-primary)] hover:text-[var(--md-sys-color-on-surface)] transition-colors cursor-pointer select-none w-fit ${className}`}
       title={showCredits ? 'Back to description' : 'View all contributors'}
     >
       <div
@@ -95,14 +95,14 @@ export const ModContributorsBtn: React.FC<ModContributorsBtnProps> = ({
 
       {showCredits ? (
         <>
-          <span className="material-symbols-rounded text-base shrink-0 text-[var(--wb-primary)]">
+          <span className="material-symbols-rounded text-base shrink-0 text-[var(--md-sys-color-primary)]">
             format_align_left
           </span>
           <span>View description</span>
         </>
       ) : (
         <>
-          <span className="material-symbols-rounded text-base shrink-0 text-[var(--wb-primary)]">
+          <span className="material-symbols-rounded text-base shrink-0 text-[var(--md-sys-color-primary)]">
             group
           </span>
           <span>View all contributors</span>

@@ -133,7 +133,7 @@ export const LibraryCriteriaSubmenus: React.FC<LibraryCriteriaSubmenusProps> = (
           >
             <span
               slot="icon"
-              className={`material-symbols-rounded text-lg ${filterFavorites ? 'text-red-500' : 'text-[var(--md-sys-color-primary)]'}`}
+              className={`material-symbols-rounded text-lg ${filterFavorites ? 'text-[var(--md-sys-color-error)]' : 'text-[var(--md-sys-color-primary)]'}`}
               style={filterFavorites ? { fontVariationSettings: "'FILL' 1" } : undefined}
             >
               favorite
@@ -151,7 +151,7 @@ export const LibraryCriteriaSubmenus: React.FC<LibraryCriteriaSubmenusProps> = (
           >
             <span
               slot="icon"
-              className={`material-symbols-rounded text-lg ${filterBookmarks ? 'text-amber-400' : 'text-[var(--md-sys-color-primary)]'}`}
+              className={`material-symbols-rounded text-lg ${filterBookmarks ? 'text-[var(--md-sys-color-tertiary)]' : 'text-[var(--md-sys-color-primary)]'}`}
               style={filterBookmarks ? { fontVariationSettings: "'FILL' 1" } : undefined}
             >
               bookmark

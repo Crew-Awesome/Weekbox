@@ -46,7 +46,7 @@ export const InfoDescriptionTab: React.FC<InfoDescriptionTabProps> = ({
           >
             <span
               slot="icon"
-              className="material-symbols-rounded text-base text-[var(--wb-primary)] flex items-center justify-center leading-none"
+              className="material-symbols-rounded text-base text-[var(--md-sys-color-primary)] flex items-center justify-center leading-none"
             >
               edit
             </span>
@@ -123,12 +123,12 @@ export const InfoDescriptionTab: React.FC<InfoDescriptionTabProps> = ({
             }}
             autoFocus
             rows={isDesktop ? 7 : 6}
-            className={`w-full bg-[var(--wb-surface-container-high)] border border-[var(--wb-primary)]/60 focus:border-[var(--wb-primary)] rounded-lg p-3 ${
+            className={`w-full bg-[var(--md-sys-color-surface-container-high)] border border-[var(--md-sys-color-primary)]/60 focus:border-[var(--md-sys-color-primary)] rounded-lg p-3 ${
               isDesktop ? 'text-sm md:text-base' : 'text-sm'
-            } text-[var(--wb-on-surface)] outline-none custom-scrollbar resize-y shadow-inner font-sans`}
+            } text-[var(--md-sys-color-on-surface)] outline-none custom-scrollbar resize-y shadow-inner font-sans`}
             placeholder="Enter custom mod description..."
           />
-          <div className="flex items-center justify-between text-[11px] text-[var(--wb-on-surface-variant)] px-1">
+          <div className="flex items-center justify-between text-[11px] text-[var(--md-sys-color-on-surface-variant)] px-1">
             <span>Click outside or press Escape to finish</span>
             <m3e-button variant="filled" onClick={handleSaveDesc}>
               Done
@@ -138,7 +138,7 @@ export const InfoDescriptionTab: React.FC<InfoDescriptionTabProps> = ({
       ) : displayCard.htmlBody ? (
         <div
           onClick={() => isInstalled && setIsEditingDesc(true)}
-          className={`text-[var(--wb-on-surface-variant)] prose prose-invert ${
+          className={`text-[var(--md-sys-color-on-surface-variant)] prose prose-invert ${
             isDesktop ? 'prose-sm md:prose-base pb-4' : 'prose-sm pb-6'
           } max-w-full overflow-x-hidden break-words [&_*]:max-w-full [&_pre]:whitespace-pre-wrap [&_pre]:break-words [&_table]:block [&_table]:overflow-x-auto ${
             isInstalled
@@ -156,7 +156,7 @@ export const InfoDescriptionTab: React.FC<InfoDescriptionTabProps> = ({
       ) : (
         <p
           onClick={() => isInstalled && setIsEditingDesc(true)}
-          className={`text-[var(--wb-on-surface-variant)] ${
+          className={`text-[var(--md-sys-color-on-surface-variant)] ${
             isDesktop ? 'text-sm md:text-base pb-4' : 'text-sm pb-6'
           } break-words ${
             isInstalled

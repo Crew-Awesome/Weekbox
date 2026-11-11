@@ -33,14 +33,14 @@ export const ModDownloadList: React.FC<ModDownloadListProps> = ({
   return (
     <div className="flex flex-col gap-3">
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2 text-xs font-bold text-[var(--wb-primary)] uppercase tracking-wider">
+        <div className="flex items-center gap-2 text-xs font-bold text-[var(--md-sys-color-primary)] uppercase tracking-wider">
           <span className="material-symbols-rounded text-base">storage</span>
           <span>Available Downloads ({files.length})</span>
         </div>
       </div>
 
       {files.length === 0 ? (
-        <div className="p-6 rounded-2xl bg-[var(--wb-surface-bright)]/40 border border-[var(--wb-outline-variant)]/20 text-center text-sm text-[var(--wb-on-surface-variant)] flex flex-col items-center justify-center gap-2">
+        <div className="p-6 rounded-2xl bg-[var(--md-sys-color-surface-bright)]/40 border border-[var(--md-sys-color-outline-variant)]/20 text-center text-sm text-[var(--md-sys-color-on-surface-variant)] flex flex-col items-center justify-center gap-2">
           <span className="material-symbols-rounded text-3xl opacity-40 mb-1">
             storage
           </span>
@@ -77,15 +77,15 @@ export const ModDownloadList: React.FC<ModDownloadListProps> = ({
             return (
               <div
                 key={file._idRow || `file-${idx}`}
-                className="flex flex-col gap-2.5 p-3.5 rounded-xl bg-[var(--wb-surface-bright)]/60 border border-[var(--wb-outline-variant)]/20 hover:border-[var(--wb-primary)]/40 transition-colors"
+                className="flex flex-col gap-2.5 p-3.5 rounded-xl bg-[var(--md-sys-color-surface-bright)]/60 border border-[var(--md-sys-color-outline-variant)]/20 hover:border-[var(--md-sys-color-primary)]/40 transition-colors"
               >
                 <div className="flex items-start justify-between gap-3">
                   <div className="flex flex-col min-w-0">
-                    <span className="text-sm font-bold text-[var(--wb-on-surface)] truncate">
+                    <span className="text-sm font-bold text-[var(--md-sys-color-on-surface)] truncate">
                       {file._sFile}
                     </span>
                     {file._sDescription && (
-                      <span className="text-xs text-[var(--wb-on-surface-variant)] mt-1 break-words opacity-90">
+                      <span className="text-xs text-[var(--md-sys-color-on-surface-variant)] mt-1 break-words opacity-90">
                         {file._sDescription}
                       </span>
                     )}
@@ -126,14 +126,14 @@ export const ModDownloadList: React.FC<ModDownloadListProps> = ({
                                 '--m3e-button-label-text-font-weight': '700',
                                 '--m3e-button-label-text-line-height': '1',
                                 '--m3e-button-tonal-container-color': isActive
-                                  ? 'rgba(245, 158, 11, 0.2)'
-                                  : 'rgb(245, 158, 11)',
+                                  ? 'color-mix(in srgb, var(--md-sys-color-tertiary) 20%, transparent)'
+                                  : 'var(--md-sys-color-tertiary)',
                                 '--m3e-button-tonal-label-text-color': isActive
-                                  ? 'rgb(252, 211, 77)'
-                                  : 'rgb(0, 0, 0)',
+                                  ? 'var(--md-sys-color-tertiary)'
+                                  : 'var(--md-sys-color-on-tertiary)',
                                 '--m3e-button-hover-label-text-color': isActive
-                                  ? 'rgb(252, 211, 77)'
-                                  : 'rgb(0, 0, 0)',
+                                  ? 'var(--md-sys-color-tertiary)'
+                                  : 'var(--md-sys-color-on-tertiary)',
                                 borderRadius: '12px',
                               } as React.CSSProperties
                             }
@@ -232,8 +232,8 @@ export const ModDownloadList: React.FC<ModDownloadListProps> = ({
                     ) : null)}
                 </div>
 
-                <div className="flex items-center gap-4 flex-wrap text-xs text-[var(--wb-on-surface-variant)] opacity-80 pt-2 border-t border-[var(--wb-outline-variant)]/15">
-                  <span className="font-semibold text-[var(--wb-on-surface)]">
+                <div className="flex items-center gap-4 flex-wrap text-xs text-[var(--md-sys-color-on-surface-variant)] opacity-80 pt-2 border-t border-[var(--md-sys-color-outline-variant)]/15">
+                  <span className="font-semibold text-[var(--md-sys-color-on-surface)]">
                     {formatFileSize(file._nFilesize)}
                   </span>
                   <span>

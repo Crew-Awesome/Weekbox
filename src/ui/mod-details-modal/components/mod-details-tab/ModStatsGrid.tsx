@@ -17,15 +17,15 @@ export const ModStatsGrid: React.FC<ModStatsGridProps> = ({
   return (
     <div className="flex flex-col gap-3">
       <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-        <div className="flex flex-col p-3 rounded-xl bg-[var(--wb-surface-bright)]/60 border border-[var(--wb-outline-variant)]/20">
-          <div className="flex items-center gap-1.5 text-xs text-[var(--wb-on-surface-variant)] mb-1">
-            <span className="material-symbols-rounded text-sm text-[var(--wb-primary)]">
+        <div className="flex flex-col p-3 rounded-xl bg-[var(--md-sys-color-surface-bright)]/60 border border-[var(--md-sys-color-outline-variant)]/20">
+          <div className="flex items-center gap-1.5 text-xs text-[var(--md-sys-color-on-surface-variant)] mb-1">
+            <span className="material-symbols-rounded text-sm text-[var(--md-sys-color-primary)]">
               calendar_today
             </span>
             <span>Uploaded</span>
           </div>
           <span
-            className="text-sm font-semibold text-[var(--wb-on-surface)] truncate"
+            className="text-sm font-semibold text-[var(--md-sys-color-on-surface)] truncate"
             title={
               formatFullDate ? formatFullDate(displayCard.submittedAt) : undefined
             }
@@ -34,15 +34,15 @@ export const ModStatsGrid: React.FC<ModStatsGridProps> = ({
           </span>
         </div>
 
-        <div className="flex flex-col p-3 rounded-xl bg-[var(--wb-surface-bright)]/60 border border-[var(--wb-outline-variant)]/20">
-          <div className="flex items-center gap-1.5 text-xs text-[var(--wb-on-surface-variant)] mb-1">
-            <span className="material-symbols-rounded text-sm text-[var(--wb-primary)]">
+        <div className="flex flex-col p-3 rounded-xl bg-[var(--md-sys-color-surface-bright)]/60 border border-[var(--md-sys-color-outline-variant)]/20">
+          <div className="flex items-center gap-1.5 text-xs text-[var(--md-sys-color-on-surface-variant)] mb-1">
+            <span className="material-symbols-rounded text-sm text-[var(--md-sys-color-primary)]">
               refresh
             </span>
             <span>Last Updated</span>
           </div>
           <span
-            className="text-sm font-semibold text-[var(--wb-on-surface)] truncate"
+            className="text-sm font-semibold text-[var(--md-sys-color-on-surface)] truncate"
             title={
               formatFullDate ? formatFullDate(displayCard.updatedAt) : undefined
             }
@@ -52,15 +52,15 @@ export const ModStatsGrid: React.FC<ModStatsGridProps> = ({
         </div>
 
         {displayCard.installedAt && (
-          <div className="flex flex-col p-3 rounded-xl bg-[var(--wb-surface-bright)]/60 border border-[var(--wb-outline-variant)]/20">
-            <div className="flex items-center gap-1.5 text-xs text-[var(--wb-on-surface-variant)] mb-1">
-              <span className="material-symbols-rounded text-sm text-[var(--wb-primary)]">
+          <div className="flex flex-col p-3 rounded-xl bg-[var(--md-sys-color-surface-bright)]/60 border border-[var(--md-sys-color-outline-variant)]/20">
+            <div className="flex items-center gap-1.5 text-xs text-[var(--md-sys-color-on-surface-variant)] mb-1">
+              <span className="material-symbols-rounded text-sm text-[var(--md-sys-color-primary)]">
                 storage
               </span>
               <span>Installed</span>
             </div>
             <span
-              className="text-sm font-semibold text-[var(--wb-on-surface)] truncate"
+              className="text-sm font-semibold text-[var(--md-sys-color-on-surface)] truncate"
               title={
                 formatFullDate
                   ? formatFullDate(displayCard.installedAt)
@@ -72,54 +72,54 @@ export const ModStatsGrid: React.FC<ModStatsGridProps> = ({
           </div>
         )}
 
-        <div className="flex flex-col p-3 rounded-xl bg-[var(--wb-surface-bright)]/60 border border-[var(--wb-outline-variant)]/20">
-          <div className="flex items-center gap-1.5 text-xs text-[var(--wb-on-surface-variant)] mb-1">
-            <span className="material-symbols-rounded text-sm text-[var(--wb-primary)]">
+        <div className="flex flex-col p-3 rounded-xl bg-[var(--md-sys-color-surface-bright)]/60 border border-[var(--md-sys-color-outline-variant)]/20">
+          <div className="flex items-center gap-1.5 text-xs text-[var(--md-sys-color-on-surface-variant)] mb-1">
+            <span className="material-symbols-rounded text-sm text-[var(--md-sys-color-primary)]">
               layers
             </span>
             <span>Updates</span>
           </div>
-          <span className="text-sm font-semibold text-[var(--wb-on-surface)]">
+          <span className="text-sm font-semibold text-[var(--md-sys-color-on-surface)]">
             {updatesCount} {updatesCount === 1 ? 'update' : 'updates'}
           </span>
         </div>
 
-        <div className="flex flex-col p-3 rounded-xl bg-[var(--wb-surface-bright)]/60 border border-[var(--wb-outline-variant)]/20">
-          <div className="flex items-center gap-1.5 text-xs text-[var(--wb-on-surface-variant)] mb-1">
-            <span className="material-symbols-rounded text-sm text-[var(--wb-primary)]">
+        <div className="flex flex-col p-3 rounded-xl bg-[var(--md-sys-color-surface-bright)]/60 border border-[var(--md-sys-color-outline-variant)]/20">
+          <div className="flex items-center gap-1.5 text-xs text-[var(--md-sys-color-on-surface-variant)] mb-1">
+            <span className="material-symbols-rounded text-sm text-[var(--md-sys-color-primary)]">
               visibility
             </span>
             <span>Views</span>
           </div>
-          <span className="text-sm font-semibold text-[var(--wb-on-surface)]">
+          <span className="text-sm font-semibold text-[var(--md-sys-color-on-surface)]">
             {displayCard.views !== undefined
               ? Intl.NumberFormat().format(displayCard.views)
               : 'N/A'}
           </span>
         </div>
 
-        <div className="flex flex-col p-3 rounded-xl bg-[var(--wb-surface-bright)]/60 border border-[var(--wb-outline-variant)]/20">
-          <div className="flex items-center gap-1.5 text-xs text-[var(--wb-on-surface-variant)] mb-1">
-            <span className="material-symbols-rounded text-sm text-[var(--wb-primary)]">
+        <div className="flex flex-col p-3 rounded-xl bg-[var(--md-sys-color-surface-bright)]/60 border border-[var(--md-sys-color-outline-variant)]/20">
+          <div className="flex items-center gap-1.5 text-xs text-[var(--md-sys-color-on-surface-variant)] mb-1">
+            <span className="material-symbols-rounded text-sm text-[var(--md-sys-color-primary)]">
               favorite
             </span>
             <span>Likes</span>
           </div>
-          <span className="text-sm font-semibold text-[var(--wb-on-surface)]">
+          <span className="text-sm font-semibold text-[var(--md-sys-color-on-surface)]">
             {displayCard.likes !== undefined
               ? Intl.NumberFormat().format(displayCard.likes)
               : 'N/A'}
           </span>
         </div>
 
-        <div className="flex flex-col p-3 rounded-xl bg-[var(--wb-surface-bright)]/60 border border-[var(--wb-outline-variant)]/20">
-          <div className="flex items-center gap-1.5 text-xs text-[var(--wb-on-surface-variant)] mb-1">
-            <span className="material-symbols-rounded text-sm text-[var(--wb-primary)]">
+        <div className="flex flex-col p-3 rounded-xl bg-[var(--md-sys-color-surface-bright)]/60 border border-[var(--md-sys-color-outline-variant)]/20">
+          <div className="flex items-center gap-1.5 text-xs text-[var(--md-sys-color-on-surface-variant)] mb-1">
+            <span className="material-symbols-rounded text-sm text-[var(--md-sys-color-primary)]">
               download
             </span>
             <span>Downloads</span>
           </div>
-          <span className="text-sm font-semibold text-[var(--wb-on-surface)]">
+          <span className="text-sm font-semibold text-[var(--md-sys-color-on-surface)]">
             {displayCard.downloads !== undefined
               ? Intl.NumberFormat().format(displayCard.downloads)
               : 'N/A'}

@@ -98,9 +98,9 @@ export const LibraryModCard: React.FC<LibraryModCardProps> = ({
                     onToggleFavorite(mod.id)
                   }
                 }}
-                className={`flex items-center gap-1.5 cursor-pointer hover:text-red-500 transition-colors select-none ${
+                className={`flex items-center gap-1.5 cursor-pointer hover:text-[var(--md-sys-color-error)] transition-colors select-none ${
                   isFavorite
-                    ? 'text-red-500'
+                    ? 'text-[var(--md-sys-color-error)]'
                     : 'text-[var(--md-sys-color-on-surface-variant)]'
                 }`}
                 title="Toggle Favorite"
@@ -108,7 +108,7 @@ export const LibraryModCard: React.FC<LibraryModCardProps> = ({
                 <span
                   className={`material-symbols-rounded text-sm ${
                     isFavorite
-                      ? 'text-red-500'
+                      ? 'text-[var(--md-sys-color-error)]'
                       : 'text-[var(--md-sys-color-on-surface-variant)]'
                   }`}
                   style={
@@ -120,7 +120,7 @@ export const LibraryModCard: React.FC<LibraryModCardProps> = ({
                 <span
                   className={`font-medium ${
                     isFavorite
-                      ? 'text-red-500'
+                      ? 'text-[var(--md-sys-color-error)]'
                       : 'text-[var(--md-sys-color-on-surface-variant)]'
                   }`}
                 >
@@ -240,8 +240,8 @@ export const LibraryModCard: React.FC<LibraryModCardProps> = ({
             }}
             className={`p-1.5 rounded-xl transition-all duration-200 cursor-pointer border active:scale-90 ${
               isFavorite
-                ? 'text-red-500 border-red-500/30 bg-red-500/10'
-                : 'text-[var(--md-sys-color-on-surface-variant)] hover:text-red-500 hover:border-red-500/30'
+                ? 'text-[var(--md-sys-color-error)] border-[var(--md-sys-color-error)]/30 bg-[var(--md-sys-color-error-container)]/30'
+                : 'text-[var(--md-sys-color-on-surface-variant)] hover:text-[var(--md-sys-color-error)] hover:border-[var(--md-sys-color-error)]/30'
             }`}
             style={
               !isFavorite

@@ -45,14 +45,16 @@ export const ModDetailsPlayActions: React.FC<ModDetailsPlayActionsProps> = ({
             style={
               {
                 ...tonalButtonStyle,
-                '--m3e-button-tonal-container-color': 'rgba(245, 158, 11, 0.2)',
-                '--m3e-button-tonal-label-text-color': '#fcd34d',
+                '--m3e-button-tonal-container-color':
+                  'color-mix(in srgb, var(--md-sys-color-tertiary) 20%, transparent)',
+                '--m3e-button-tonal-label-text-color':
+                  'var(--md-sys-color-tertiary)',
               } as React.CSSProperties
             }
           >
             <span
               slot="icon"
-              className="material-symbols-rounded animate-spin text-amber-400 text-xl leading-none"
+              className="material-symbols-rounded animate-spin text-[var(--md-sys-color-tertiary)] text-xl leading-none"
             >
               progress_activity
             </span>
@@ -71,8 +73,10 @@ export const ModDetailsPlayActions: React.FC<ModDetailsPlayActionsProps> = ({
             style={
               {
                 ...primaryButtonStyle,
-                '--m3e-button-filled-container-color': '#f59e0b',
-                '--m3e-button-filled-label-text-color': '#000000',
+                '--m3e-button-filled-container-color':
+                  'var(--md-sys-color-tertiary)',
+                '--m3e-button-filled-label-text-color':
+                  'var(--md-sys-color-on-tertiary)',
               } as React.CSSProperties
             }
             title="A new version or update is available for this mod"
@@ -106,8 +110,10 @@ export const ModDetailsPlayActions: React.FC<ModDetailsPlayActionsProps> = ({
         style={
           {
             ...tonalButtonStyle,
-            '--m3e-button-tonal-container-color': 'rgba(239, 68, 68, 0.12)',
-            '--m3e-button-tonal-label-text-color': 'var(--md-sys-color-error, #f87171)',
+            '--m3e-button-tonal-container-color':
+              'color-mix(in srgb, var(--md-sys-color-error) 15%, transparent)',
+            '--m3e-button-tonal-label-text-color':
+              'var(--md-sys-color-error)',
           } as React.CSSProperties
         }
         title={

@@ -125,8 +125,8 @@ export const ModDetailsInfoSection: React.FC<ModDetailsInfoSectionProps> = ({
         ref={headerContainerRef}
         className={`sticky top-0 z-30 transition-all duration-200 backdrop-blur-md ${
           isScrolled
-            ? 'py-2 -mx-3 px-3 sm:-mx-4 sm:px-4 border-b border-white/10 shadow-sm bg-[var(--wb-surface-container)]/85 mb-3'
-            : 'pt-1 pb-2 mb-2 -mx-2 px-2 sm:-mx-2 sm:px-2 bg-[var(--wb-surface-container)]/75 border-b border-[var(--wb-outline-variant)]/20'
+            ? 'py-2 -mx-3 px-3 sm:-mx-4 sm:px-4 border-b border-[var(--md-sys-color-outline-variant)]/30 shadow-sm bg-[var(--md-sys-color-surface-container)]/85 mb-3'
+            : 'pt-1 pb-2 mb-2 -mx-2 px-2 sm:-mx-2 sm:px-2 bg-[var(--md-sys-color-surface-container)]/75 border-b border-[var(--md-sys-color-outline-variant)]/20'
         }`}
         style={{
           backdropFilter: 'blur(16px)',

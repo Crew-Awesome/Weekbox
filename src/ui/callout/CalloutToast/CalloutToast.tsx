@@ -143,7 +143,7 @@ export const CalloutToast: React.FC<CalloutToastProps> = ({
             {
               ...calloutTintStyle,
               boxShadow:
-                'var(--md-sys-elevation-level2, 0 4px 16px rgba(0,0,0,0.2))',
+                '0 4px 16px color-mix(in srgb, var(--md-sys-color-scrim) 20%, transparent)',
               borderRadius: toast.shape === 'square' ? '0px' : '14px',
               overflow: 'hidden',
               display: 'block',

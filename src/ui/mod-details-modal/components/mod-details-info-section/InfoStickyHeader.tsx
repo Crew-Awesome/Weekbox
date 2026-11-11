@@ -29,7 +29,7 @@ export const InfoStickyHeader: React.FC<InfoStickyHeaderProps> = ({
     <div className="flex flex-col gap-1.5 w-full animate-in fade-in duration-150">
       <div className="flex items-center justify-between gap-2 min-w-0">
         <h2
-          className="text-sm sm:text-base font-bold text-[var(--wb-on-surface)] truncate min-w-0 flex-1 leading-tight"
+          className="text-sm sm:text-base font-bold text-[var(--md-sys-color-on-surface)] truncate min-w-0 flex-1 leading-tight"
           title={displayCard.name}
         >
           {displayCard.name}
@@ -42,8 +42,8 @@ export const InfoStickyHeader: React.FC<InfoStickyHeaderProps> = ({
             aria-label={isBookmarked ? 'Remove bookmark' : 'Bookmark mod'}
             className={
               isBookmarked
-                ? 'text-amber-400 border-none !border-0'
-                : 'text-[var(--wb-on-surface-variant)] hover:text-amber-400 border-none !border-0'
+                ? 'text-[var(--md-sys-color-tertiary)] border-none !border-0'
+                : 'text-[var(--md-sys-color-on-surface-variant)] hover:text-[var(--md-sys-color-tertiary)] border-none !border-0'
             }
             style={
               {
@@ -54,7 +54,7 @@ export const InfoStickyHeader: React.FC<InfoStickyHeaderProps> = ({
           >
             <span
               className={`material-symbols-rounded text-sm transition-transform active:scale-125 ${
-                isBookmarked ? 'text-amber-400' : ''
+                isBookmarked ? 'text-[var(--md-sys-color-tertiary)]' : ''
               }`}
               style={
                 isBookmarked
@@ -72,8 +72,8 @@ export const InfoStickyHeader: React.FC<InfoStickyHeaderProps> = ({
             aria-label={isFav ? 'Remove from favorites' : 'Add to favorites'}
             className={
               isFav
-                ? 'text-red-500 border-none !border-0'
-                : 'text-[var(--wb-on-surface-variant)] hover:text-red-400 border-none !border-0'
+                ? 'text-[var(--md-sys-color-error)] border-none !border-0'
+                : 'text-[var(--md-sys-color-on-surface-variant)] hover:text-[var(--md-sys-color-error)] border-none !border-0'
             }
             style={
               {
@@ -84,7 +84,7 @@ export const InfoStickyHeader: React.FC<InfoStickyHeaderProps> = ({
           >
             <span
               className={`material-symbols-rounded text-sm transition-transform active:scale-125 ${
-                isFav ? 'text-red-500' : ''
+                isFav ? 'text-[var(--md-sys-color-error)]' : ''
               }`}
               style={
                 isFav ? { fontVariationSettings: "'FILL' 1" } : undefined

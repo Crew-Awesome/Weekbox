@@ -51,7 +51,7 @@ export const LibraryFolderCard: React.FC<LibraryFolderCardProps> = ({
       }`}
       title={`Open folder: ${profile.name} (${modCount} mods)`}
     >
-      <div className="relative w-full h-[120px] sm:h-[130px] rounded-xl overflow-hidden bg-black/25 flex items-center justify-center pt-5">
+      <div className="relative w-full h-[120px] sm:h-[130px] rounded-xl overflow-hidden bg-[var(--md-sys-color-scrim)]/25 flex items-center justify-center pt-5">
         {topMods.length === 0 ? (
           <div className="flex flex-col items-center justify-center gap-1.5 opacity-60">
             <span className="material-symbols-rounded text-3xl text-[var(--md-sys-color-primary)]">
@@ -73,7 +73,7 @@ export const LibraryFolderCard: React.FC<LibraryFolderCardProps> = ({
                 return (
                   <div
                     key={mod.id}
-                    className="absolute inset-0 rounded-xl overflow-hidden shadow-lg border border-white/10 transition-transform duration-300 group-hover:scale-102"
+                    className="absolute inset-0 rounded-xl overflow-hidden shadow-lg border border-[var(--md-sys-color-outline-variant)]/30 transition-transform duration-300 group-hover:scale-102"
                     style={{
                       transform: style.transform,
                       zIndex: style.zIndex,
@@ -83,7 +83,7 @@ export const LibraryFolderCard: React.FC<LibraryFolderCardProps> = ({
                     <img
                       src={thumb}
                       alt=""
-                      className="w-full h-full object-cover bg-black/40"
+                      className="w-full h-full object-cover bg-[var(--md-sys-color-surface-container-highest)]"
                     />
                   </div>
                 )
@@ -97,7 +97,7 @@ export const LibraryFolderCard: React.FC<LibraryFolderCardProps> = ({
             e.stopPropagation()
             onDelete()
           }}
-          className="absolute top-2 right-2 opacity-0 group-hover:opacity-80 hover:opacity-100 text-[var(--md-sys-color-on-surface-variant)] hover:text-red-500 p-1.5 rounded-lg bg-black/40 backdrop-blur-xs transition-all z-20"
+          className="absolute top-2 right-2 opacity-0 group-hover:opacity-80 hover:opacity-100 text-[var(--md-sys-color-on-surface-variant)] hover:text-[var(--md-sys-color-error)] p-1.5 rounded-lg bg-[var(--md-sys-color-scrim)]/40 backdrop-blur-xs transition-all z-20"
           title="Delete folder"
           aria-label="Delete folder"
         >

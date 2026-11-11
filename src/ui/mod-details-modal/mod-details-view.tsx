@@ -86,7 +86,7 @@ export const ModDetailsView: React.FC<ModDetailsViewProps> = ({
         />
       ) : (
         <div className="block w-full h-full relative">
-          <div className="flex flex-col h-full overflow-hidden text-[var(--wb-on-surface)] w-full relative z-10 pointer-events-none">
+          <div className="flex flex-col h-full overflow-hidden text-[var(--md-sys-color-on-surface)] w-full relative z-10 pointer-events-none">
             <ModDetailsHeaderDesktop
               displayCard={displayCard}
               engineName={engineName}
@@ -114,7 +114,7 @@ export const ModDetailsView: React.FC<ModDetailsViewProps> = ({
 
             <div className="flex flex-col md:flex-row flex-1 w-full relative z-10 min-h-0">
               <div className="w-full md:w-[60%] flex flex-col shrink-0 relative min-h-0">
-                <div className="w-full bg-[var(--wb-surface-container)] rounded-bl-2xl flex flex-col p-1.5 md:p-2.5 pb-3 md:pb-4 relative z-20 pointer-events-auto shadow-sm">
+                <div className="w-full bg-[var(--md-sys-color-surface-container)] rounded-bl-2xl flex flex-col p-1.5 md:p-2.5 pb-3 md:pb-4 relative z-20 pointer-events-auto shadow-sm">
                   <ModMediaCarousel
                     media={displayCard.previewMedia}
                     fallbackImage={displayCard.img || displayCard.image}
@@ -132,7 +132,7 @@ export const ModDetailsView: React.FC<ModDetailsViewProps> = ({
                   <div className="absolute -bottom-6 -right-[1px] w-[calc(1.5rem+1px)] h-6 pointer-events-none hidden md:block z-20">
                     <svg
                       viewBox="0 0 24 24"
-                      className="w-full h-full fill-[var(--wb-surface-container)]"
+                      className="w-full h-full fill-[var(--md-sys-color-surface-container)]"
                       preserveAspectRatio="none"
                     >
                       <path d="M 0 0 C 13 0 24 11 24 24 L 24 0 Z" />
@@ -144,7 +144,7 @@ export const ModDetailsView: React.FC<ModDetailsViewProps> = ({
                   <div
                     onMouseEnter={onMouseEnterCarousel}
                     onMouseLeave={onMouseLeaveCarousel}
-                    className="w-full md:w-[calc(100%+3.5rem)] md:ml-4 -mt-2 pt-3 pb-2 px-3 md:px-4 md:pl-6 z-0 flex items-center justify-start pointer-events-auto bg-[var(--wb-surface-container-lowest)] rounded-bl-2xl shadow-md border-b border-l border-white/5"
+                    className="w-full md:w-[calc(100%+3.5rem)] md:ml-4 -mt-2 pt-3 pb-2 px-3 md:px-4 md:pl-6 z-0 flex items-center justify-start pointer-events-auto bg-[var(--md-sys-color-surface-container-lowest)] rounded-bl-2xl shadow-md border-b border-l border-[var(--md-sys-color-outline-variant)]/20"
                   >
                     <ModThumbnailStrip
                       media={displayCard.previewMedia}
@@ -159,7 +159,7 @@ export const ModDetailsView: React.FC<ModDetailsViewProps> = ({
                 )}
               </div>
 
-              <div className="w-full md:w-[40%] flex flex-col bg-[var(--wb-surface-container)] p-4 md:p-6 overflow-hidden relative rounded-b-2xl z-20 min-h-0 h-full pointer-events-auto">
+              <div className="w-full md:w-[40%] flex flex-col bg-[var(--md-sys-color-surface-container)] p-4 md:p-6 overflow-hidden relative rounded-b-2xl z-20 min-h-0 h-full pointer-events-auto">
                 <m3e-overflow direction="vertical" className="w-full flex-1 min-h-0">
                   <div className="flex flex-col px-2 sm:px-3 pr-4 sm:pr-5 pb-2">
                     <ModDetailsInfoSection
@@ -204,7 +204,7 @@ export const ModDetailsView: React.FC<ModDetailsViewProps> = ({
                   </div>
                 </m3e-overflow>
 
-                <div className="pt-3 md:pt-4 mt-auto shrink-0 bg-[var(--wb-surface-container)] border-t border-white/5">
+                <div className="pt-3 md:pt-4 mt-auto shrink-0 bg-[var(--md-sys-color-surface-container)] border-t border-[var(--md-sys-color-outline-variant)]/20">
                   <div className="relative w-full">
                     <ModDetailsActionButtons
                       variant="desktop"

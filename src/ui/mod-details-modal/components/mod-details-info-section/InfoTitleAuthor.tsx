@@ -63,11 +63,11 @@ export const InfoTitleAuthor: React.FC<InfoTitleAuthorProps> = ({
                 }
               }}
               autoFocus
-              className={`w-full bg-[var(--wb-surface-container-high)] border border-[var(--wb-primary)]/60 focus:border-[var(--wb-primary)] rounded-lg ${
+              className={`w-full bg-[var(--md-sys-color-surface-container-high)] border border-[var(--md-sys-color-primary)]/60 focus:border-[var(--md-sys-color-primary)] rounded-lg ${
                 isDesktop
                   ? 'px-3 py-1.5 text-2xl md:text-3xl'
                   : 'px-2.5 py-1 text-xl'
-              } font-bold text-[var(--wb-on-surface)] outline-none font-display shadow-inner`}
+              } font-bold text-[var(--md-sys-color-on-surface)] outline-none font-display shadow-inner`}
               placeholder="Mod title..."
             />
           </div>
@@ -82,13 +82,13 @@ export const InfoTitleAuthor: React.FC<InfoTitleAuthorProps> = ({
                 isDesktop
                   ? 'text-2xl md:text-3xl lg:text-4xl'
                   : 'text-2xl'
-              } font-bold text-[var(--wb-on-surface)] leading-tight font-display break-words line-clamp-2`}
+              } font-bold text-[var(--md-sys-color-on-surface)] leading-tight font-display break-words line-clamp-2`}
               title={displayCard.name}
             >
               <span>{displayCard.name}</span>
               {isInstalled && (
                 <span
-                  className={`inline-flex items-center align-middle ${isDesktop ? 'ml-2' : 'ml-1.5'} opacity-60 group-hover:opacity-100 group-hover:text-[var(--wb-primary)] transition-all`}
+                  className={`inline-flex items-center align-middle ${isDesktop ? 'ml-2' : 'ml-1.5'} opacity-60 group-hover:opacity-100 group-hover:text-[var(--md-sys-color-primary)] transition-all`}
                 >
                   <span
                     className={`material-symbols-rounded shrink-0 ${isDesktop ? 'text-base md:text-lg' : 'text-base'}`}
@@ -104,7 +104,7 @@ export const InfoTitleAuthor: React.FC<InfoTitleAuthorProps> = ({
 
       {displayCard.description && (
         <p
-          className={`text-[var(--wb-on-surface-variant)] ${isDesktop ? 'text-xs md:text-sm mt-1.5' : 'text-xs mt-1'} line-clamp-2 leading-relaxed opacity-85`}
+          className={`text-[var(--md-sys-color-on-surface-variant)] ${isDesktop ? 'text-xs md:text-sm mt-1.5' : 'text-xs mt-1'} line-clamp-2 leading-relaxed opacity-85`}
         >
           {displayCard.description}
         </p>
@@ -114,7 +114,7 @@ export const InfoTitleAuthor: React.FC<InfoTitleAuthorProps> = ({
         className={`flex items-center ${isDesktop ? 'gap-2 mt-1.5 mb-0.5' : 'gap-1.5 mt-1 mb-0.5'}`}
       >
         <span
-          className={`text-[var(--wb-on-surface-variant)] ${isDesktop ? 'text-xs md:text-sm' : 'text-xs'}`}
+          className={`text-[var(--md-sys-color-on-surface-variant)] ${isDesktop ? 'text-xs md:text-sm' : 'text-xs'}`}
         >
           by
         </span>
@@ -123,22 +123,22 @@ export const InfoTitleAuthor: React.FC<InfoTitleAuthorProps> = ({
             <img
               src={authorAvatar}
               alt={displayCard.author || 'Author'}
-              className={`${isDesktop ? 'w-5 h-5 md:w-5.5 md:h-5.5' : 'w-4.5 h-4.5'} rounded-full object-cover shrink-0 border border-white/10 shadow-sm`}
+              className={`${isDesktop ? 'w-5 h-5 md:w-5.5 md:h-5.5' : 'w-4.5 h-4.5'} rounded-full object-cover shrink-0 border border-[var(--md-sys-color-outline-variant)]/30 shadow-sm`}
               onError={() => setAvatarError(true)}
             />
           ) : (
             <div
-              className={`${isDesktop ? 'w-5 h-5 md:w-5.5 md:h-5.5' : 'w-4.5 h-4.5'} rounded-full bg-[var(--wb-surface-container-highest)] flex items-center justify-center shrink-0 border border-white/10`}
+              className={`${isDesktop ? 'w-5 h-5 md:w-5.5 md:h-5.5' : 'w-4.5 h-4.5'} rounded-full bg-[var(--md-sys-color-surface-container-highest)] flex items-center justify-center shrink-0 border border-[var(--md-sys-color-outline-variant)]/30`}
             >
               <span
-                className={`material-symbols-rounded ${isDesktop ? 'text-xs md:text-sm' : 'text-xs'} text-[var(--wb-on-surface-variant)] opacity-70`}
+                className={`material-symbols-rounded ${isDesktop ? 'text-xs md:text-sm' : 'text-xs'} text-[var(--md-sys-color-on-surface-variant)] opacity-70`}
               >
                 person
               </span>
             </div>
           )}
           <span
-            className={`text-[var(--wb-on-surface)] ${isDesktop ? 'text-xs md:text-sm' : 'text-xs'} font-semibold truncate`}
+            className={`text-[var(--md-sys-color-on-surface)] ${isDesktop ? 'text-xs md:text-sm' : 'text-xs'} font-semibold truncate`}
           >
             {displayCard.author || 'Unknown'}
           </span>
@@ -158,8 +158,8 @@ export const InfoTitleAuthor: React.FC<InfoTitleAuthorProps> = ({
               aria-label={isBookmarked ? 'Remove bookmark' : 'Bookmark mod'}
               className={
                 isBookmarked
-                  ? 'text-amber-400 border-none !border-0'
-                  : 'text-[var(--wb-on-surface-variant)] hover:text-amber-400 border-none !border-0'
+                  ? 'text-[var(--md-sys-color-tertiary)] border-none !border-0'
+                  : 'text-[var(--md-sys-color-on-surface-variant)] hover:text-[var(--md-sys-color-tertiary)] border-none !border-0'
               }
               style={
                 {
@@ -170,7 +170,7 @@ export const InfoTitleAuthor: React.FC<InfoTitleAuthorProps> = ({
             >
               <span
                 className={`material-symbols-rounded text-sm transition-transform duration-100 active:scale-125 ${
-                  isBookmarked ? 'text-amber-400' : ''
+                  isBookmarked ? 'text-[var(--md-sys-color-tertiary)]' : ''
                 }`}
                 style={
                   isBookmarked
@@ -188,8 +188,8 @@ export const InfoTitleAuthor: React.FC<InfoTitleAuthorProps> = ({
               aria-label={isFav ? 'Remove from favorites' : 'Add to favorites'}
               className={
                 isFav
-                  ? 'text-red-500 border-none !border-0'
-                  : 'text-[var(--wb-on-surface-variant)] hover:text-red-400 border-none !border-0'
+                  ? 'text-[var(--md-sys-color-error)] border-none !border-0'
+                  : 'text-[var(--md-sys-color-on-surface-variant)] hover:text-[var(--md-sys-color-error)] border-none !border-0'
               }
               style={
                 {
@@ -200,7 +200,7 @@ export const InfoTitleAuthor: React.FC<InfoTitleAuthorProps> = ({
             >
               <span
                 className={`material-symbols-rounded text-sm transition-transform duration-100 active:scale-125 ${
-                  isFav ? 'text-red-500' : ''
+                  isFav ? 'text-[var(--md-sys-color-error)]' : ''
                 }`}
                 style={
                   isFav ? { fontVariationSettings: "'FILL' 1" } : undefined

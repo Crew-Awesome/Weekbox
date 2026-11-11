@@ -99,7 +99,7 @@ export const EngineHeader: React.FC<EngineHeaderProps> = ({
                   Active:
                 </span>
                 <span
-                  className="font-semibold text-emerald-500 flex items-center gap-0.5"
+                  className="font-semibold text-[var(--md-sys-color-primary)] flex items-center gap-0.5"
                   title="Currently active engine version"
                 >
                   <span className="material-symbols-rounded text-sm">check_circle</span>

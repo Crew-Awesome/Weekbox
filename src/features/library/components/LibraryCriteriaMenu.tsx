@@ -166,11 +166,11 @@ export const LibraryCriteriaMenu: React.FC<LibraryCriteriaMenuProps> = ({
               <m3e-menu-item onClick={handleClearAndClose} style={{ margin: '2px 0' }}>
                 <span
                   slot="icon"
-                  className="material-symbols-rounded text-lg text-red-500"
+                  className="material-symbols-rounded text-lg text-[var(--md-sys-color-error)]"
                 >
                   filter_alt_off
                 </span>
-                <span className="text-xs sm:text-sm font-semibold text-red-500">
+                <span className="text-xs sm:text-sm font-semibold text-[var(--md-sys-color-error)]">
                   Clear Filters
                 </span>
               </m3e-menu-item>
