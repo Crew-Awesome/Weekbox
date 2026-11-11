@@ -98,6 +98,10 @@ export const ModDetailsActionButtons: React.FC<ModDetailsActionButtonsProps> = (
   const primaryButtonStyle: React.CSSProperties = {
     ...baseButtonStyle,
     '--m3e-button-label-text-font-weight': '700',
+    '--m3e-button-container-color': 'var(--md-sys-color-primary)',
+    '--m3e-filled-button-container-color': 'var(--md-sys-color-primary)',
+    '--m3e-button-label-text-color': 'var(--md-sys-color-on-primary)',
+    '--m3e-filled-button-label-text-color': 'var(--md-sys-color-on-primary)',
     '--m3e-button-filled-container-color': 'var(--md-sys-color-primary)',
     '--m3e-button-filled-label-text-color': 'var(--md-sys-color-on-primary)',
   } as React.CSSProperties
@@ -125,17 +129,7 @@ export const ModDetailsActionButtons: React.FC<ModDetailsActionButtonsProps> = (
     if (hasMultipleFiles || validFiles.length > 1) return 'multiplefiles'
     if (hasNoFiles || validFiles.length === 0) return 'no-files'
     return 'download'
-  }, [
-    isLoading,
-    isCanceling,
-    isExtracting,
-    isDownloading,
-    isInstalled,
-    isCompleted,
-    hasMultipleFiles,
-    validFiles.length,
-    hasNoFiles,
-  ])
+  }, [isLoading, isCanceling, isExtracting, isDownloading, isInstalled, isCompleted, hasMultipleFiles, validFiles.length, hasNoFiles])
 
   const cancelIconRef = useRef<CancelAnimatedIconHandle>(null)
   const [isCancelInitiated, setIsCancelInitiated] = useState(false)
@@ -183,12 +177,7 @@ export const ModDetailsActionButtons: React.FC<ModDetailsActionButtonsProps> = (
     )
   }
 
-  if (
-    actionState === 'loading' ||
-    actionState === 'no-files' ||
-    actionState === 'canceling' ||
-    actionState === 'completed'
-  ) {
+  if (actionState === 'loading' || actionState === 'no-files' || actionState === 'canceling' || actionState === 'completed') {
     return (
       <ModDetailsStaticAction
         actionState={actionState}

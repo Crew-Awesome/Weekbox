@@ -105,8 +105,20 @@ export const ModDetailsTransferButton: React.FC<ModDetailsTransferButtonProps> =
   const dynamicButtonStyle: React.CSSProperties = (showCancelState
     ? {
         ...primaryButtonStyle,
-        '--m3e-button-filled-container-color': '#dc2626',
-        '--m3e-button-filled-label-text-color': '#ffffff',
+        '--m3e-button-container-color': 'var(--md-sys-color-error)',
+        '--m3e-filled-button-container-color': 'var(--md-sys-color-error)',
+        '--m3e-button-label-text-color': 'var(--md-sys-color-on-error)',
+        '--m3e-filled-button-label-text-color': 'var(--md-sys-color-on-error)',
+        '--m3e-button-hover-label-text-color': 'var(--md-sys-color-on-error)',
+        '--m3e-filled-button-hover-label-text-color': 'var(--md-sys-color-on-error)',
+        '--m3e-button-state-layer-color': 'var(--md-sys-color-on-error)',
+        '--m3e-filled-button-state-layer-color': 'var(--md-sys-color-on-error)',
+        '--m3e-button-hover-state-layer-color': 'var(--md-sys-color-on-error)',
+        '--m3e-filled-button-hover-state-layer-color': 'var(--md-sys-color-on-error)',
+        '--m3e-button-filled-container-color': 'var(--md-sys-color-error)',
+        '--m3e-button-filled-label-text-color': 'var(--md-sys-color-on-error)',
+        backgroundColor: 'var(--md-sys-color-error)',
+        color: 'var(--md-sys-color-on-error)',
       }
     : primaryButtonStyle) as React.CSSProperties
 
@@ -128,14 +140,14 @@ export const ModDetailsTransferButton: React.FC<ModDetailsTransferButtonProps> =
       )}
 
       {showCancelState ? (
-        <div className="flex items-center justify-center gap-2.5 z-10 py-0.5 text-white">
+        <div className="flex items-center justify-center gap-2.5 z-10 py-0.5 text-[var(--md-sys-color-on-error)]">
           <CancelAnimatedIcon
             ref={cancelIconRef}
             isCanceling={isCancelInitiated}
             size={isDesktop ? 22 : 20}
-            color="#ffffff"
+            color="var(--md-sys-color-on-error)"
           />
-          <span className="font-bold text-[15px] md:text-[16px] tracking-wide">
+          <span className="font-bold text-[15px] md:text-[16px] tracking-wide text-[var(--md-sys-color-on-error)]">
             {isCancelInitiated ? 'Canceling...' : 'Cancel Download'}
           </span>
         </div>

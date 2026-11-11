@@ -28,10 +28,26 @@ export const FileDownloadButton: React.FC<FileDownloadButtonProps> = ({
 
   const buttonStyle: React.CSSProperties = (showCancel
     ? {
-        '--m3e-button-filled-container-color': '#dc2626',
-        '--m3e-button-filled-label-text-color': '#ffffff',
+        '--m3e-button-container-color': 'var(--md-sys-color-error)',
+        '--m3e-filled-button-container-color': 'var(--md-sys-color-error)',
+        '--m3e-button-label-text-color': 'var(--md-sys-color-on-error)',
+        '--m3e-filled-button-label-text-color': 'var(--md-sys-color-on-error)',
+        '--m3e-button-hover-label-text-color': 'var(--md-sys-color-on-error)',
+        '--m3e-filled-button-hover-label-text-color': 'var(--md-sys-color-on-error)',
+        '--m3e-button-state-layer-color': 'var(--md-sys-color-on-error)',
+        '--m3e-filled-button-state-layer-color': 'var(--md-sys-color-on-error)',
+        '--m3e-button-hover-state-layer-color': 'var(--md-sys-color-on-error)',
+        '--m3e-filled-button-hover-state-layer-color': 'var(--md-sys-color-on-error)',
+        '--m3e-button-filled-container-color': 'var(--md-sys-color-error)',
+        '--m3e-button-filled-label-text-color': 'var(--md-sys-color-on-error)',
+        backgroundColor: 'var(--md-sys-color-error)',
+        color: 'var(--md-sys-color-on-error)',
       }
     : {
+        '--m3e-button-container-color': 'var(--md-sys-color-primary)',
+        '--m3e-filled-button-container-color': 'var(--md-sys-color-primary)',
+        '--m3e-button-label-text-color': 'var(--md-sys-color-on-primary)',
+        '--m3e-filled-button-label-text-color': 'var(--md-sys-color-on-primary)',
         '--m3e-button-filled-container-color': 'var(--md-sys-color-primary)',
         '--m3e-button-filled-label-text-color': 'var(--md-sys-color-on-primary)',
       }) as React.CSSProperties
