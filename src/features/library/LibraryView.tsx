@@ -196,7 +196,7 @@ export const LibraryView: React.FC = () => {
         </div>
       </Topbar>
 
-      <div className="flex-1 flex flex-col gap-5 p-4 sm:p-8">
+      <div className="flex-1 flex flex-col gap-5 p-4 sm:p-8 pb-24 sm:pb-16 md:pb-8">
         <LibraryProfilesBar
           profiles={profiles}
           allMods={allMods}

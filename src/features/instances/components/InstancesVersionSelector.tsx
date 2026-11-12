@@ -60,15 +60,15 @@ export const InstancesVersionSelector: React.FC<InstancesVersionSelectorProps> =
           className="w-5 h-5 sm:w-6 sm:h-6 rounded-md object-contain shrink-0 aspect-square"
           style={{ width: '24px', height: '24px', minWidth: '24px', minHeight: '24px', aspectRatio: '1 / 1', objectFit: 'contain' }}
         />
-        <span className="flex flex-col items-start leading-tight min-w-0">
+        <span className="flex flex-col items-start leading-tight min-w-0 flex-1">
           <span
-            className="text-[9px] sm:text-[10px] uppercase tracking-wider font-semibold"
+            className="text-[9px] sm:text-[10px] uppercase tracking-wider font-semibold hidden min-[360px]:inline"
             style={{ color: 'var(--md-sys-color-on-surface-variant)' }}
           >
             Version
           </span>
-          <span className="text-xs sm:text-sm font-bold truncate max-w-[5.5rem] min-[400px]:max-w-[8.5rem] sm:max-w-[14rem]">
-            {selectedVersion ?? 'Select a version'}
+          <span className="text-xs sm:text-sm font-bold truncate max-w-[85px] min-[360px]:max-w-[130px] min-[420px]:max-w-[180px] sm:max-w-[14rem]">
+            {selectedVersion ?? 'Select version'}
           </span>
         </span>
         <span
@@ -82,7 +82,8 @@ export const InstancesVersionSelector: React.FC<InstancesVersionSelectorProps> =
 
       <m3e-menu
         id="instances-version-menu"
-        position-x="after"
+        className="max-md:!left-2 max-md:!right-2 max-md:!w-[calc(100vw-16px)] max-md:!max-w-none"
+        position-x="start"
         position-y="above"
         style={VERSION_MENU_STYLE}
       >

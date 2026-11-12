@@ -54,12 +54,10 @@ export const InstancesActionButtons: React.FC<InstancesActionButtonsProps> = ({
   onStopEngine,
 }) => {
   return (
-    <div className="flex items-center gap-2 shrink-0">
+    <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
       {isUninstalling ? (
-        <div className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold text-[var(--md-sys-color-error)] border border-[var(--md-sys-color-error)]/40 bg-[var(--md-sys-color-error-container)]/20">
-          <span className="material-symbols-rounded text-base animate-spin">
-            refresh
-          </span>
+        <div className="inline-flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-1.5 sm:py-2 rounded-xl text-xs font-bold text-[var(--md-sys-color-error)] border border-[var(--md-sys-color-error)]/40 bg-[var(--md-sys-color-error-container)]/20">
+          <span className="material-symbols-rounded text-base animate-spin">refresh</span>
           <span>Uninstalling...</span>
         </div>
       ) : selectedTask &&
@@ -80,7 +78,7 @@ export const InstancesActionButtons: React.FC<InstancesActionButtonsProps> = ({
           <div
             role="status"
             aria-live="polite"
-            className="inline-flex flex-col items-center justify-center w-28 min-[400px]:w-40 sm:w-52 h-[38px] sm:h-[42px] px-2 sm:px-3.5 py-1 rounded-2xl shadow-sm overflow-hidden shrink-0"
+            className="inline-flex flex-col items-center justify-center w-24 min-[360px]:w-32 min-[400px]:w-40 sm:w-52 h-[38px] sm:h-[42px] px-2 sm:px-3.5 py-1 rounded-2xl shadow-sm overflow-hidden shrink-0"
             style={{
               backgroundColor:
                 selectedTask.status === 'canceling'
@@ -110,15 +108,12 @@ export const InstancesActionButtons: React.FC<InstancesActionButtonsProps> = ({
                 if (selectedVersion) onCancelDownload(selectedVersion)
               }}
               disabled={selectedTask.status === 'canceling'}
-              className="inline-flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-3.5 py-1.5 sm:py-2 rounded-xl text-xs font-bold transition cursor-pointer hover:bg-[var(--md-sys-color-error)]/20 text-[var(--md-sys-color-error)] border border-[var(--md-sys-color-error)]/40 disabled:opacity-50 disabled:cursor-default"
+              className="inline-flex items-center justify-center w-9 h-9 min-[400px]:w-auto gap-1 sm:gap-1.5 px-0 min-[400px]:px-3.5 py-1.5 sm:py-2 rounded-xl text-xs font-bold transition cursor-pointer hover:bg-[var(--md-sys-color-error)]/20 text-[var(--md-sys-color-error)] border border-[var(--md-sys-color-error)]/40 disabled:opacity-50 disabled:cursor-default shrink-0"
+              title="Cancel"
             >
-              <span className="material-symbols-rounded text-sm sm:text-base">
-                close
-              </span>
+              <span className="material-symbols-rounded text-sm sm:text-base">close</span>
               <span className="hidden min-[400px]:inline">
-                {selectedTask.status === 'canceling'
-                  ? 'Canceling...'
-                  : 'Cancel'}
+                {selectedTask.status === 'canceling' ? 'Canceling...' : 'Cancel'}
               </span>
             </button>
           )}
@@ -185,15 +180,13 @@ export const InstancesActionButtons: React.FC<InstancesActionButtonsProps> = ({
           <button
             type="button"
             onClick={onLaunchSelected}
-            className="inline-flex items-center gap-1 sm:gap-1.5 px-3 sm:px-4 py-1.5 sm:py-2 rounded-xl text-xs sm:text-sm font-bold transition cursor-pointer hover:brightness-110 active:scale-95 shadow-sm"
+            className="inline-flex items-center justify-center gap-1 sm:gap-1.5 px-3 sm:px-4 py-1.5 sm:py-2 rounded-xl text-xs sm:text-sm font-bold transition cursor-pointer hover:brightness-110 active:scale-95 shadow-sm shrink-0"
             style={{
               backgroundColor: 'var(--md-sys-color-primary)',
               color: 'var(--md-sys-color-on-primary)',
             }}
           >
-            <span className="material-symbols-rounded text-sm sm:text-base">
-              play_arrow
-            </span>
+            <span className="material-symbols-rounded text-sm sm:text-base">play_arrow</span>
             <span>{isEngineRunning ? 'Relaunch' : 'Run'}</span>
           </button>
 
@@ -201,11 +194,10 @@ export const InstancesActionButtons: React.FC<InstancesActionButtonsProps> = ({
             <button
               type="button"
               onClick={onUninstallSelected}
-              className="inline-flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-3.5 py-1.5 sm:py-2 rounded-xl text-xs font-bold transition cursor-pointer hover:bg-[var(--md-sys-color-error)]/20 text-[var(--md-sys-color-error)] border border-[var(--md-sys-color-error)]/40"
+              className="inline-flex items-center justify-center w-9 h-9 sm:w-auto sm:h-auto gap-1 sm:gap-1.5 px-0 sm:px-3.5 py-1.5 sm:py-2 rounded-xl text-xs font-bold transition cursor-pointer hover:bg-[var(--md-sys-color-error)]/20 text-[var(--md-sys-color-error)] border border-[var(--md-sys-color-error)]/40 shrink-0"
+              title="Uninstall version"
             >
-              <span className="material-symbols-rounded text-sm sm:text-base">
-                delete
-              </span>
+              <span className="material-symbols-rounded text-sm sm:text-base">delete</span>
               <span className="hidden sm:inline">Uninstall</span>
             </button>
           )}
@@ -238,11 +230,9 @@ export const InstancesActionButtons: React.FC<InstancesActionButtonsProps> = ({
                   onClick={() => {
                     void onStopEngine()
                   }}
-                  className="inline-flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-3.5 py-1.5 sm:py-2 rounded-xl text-xs sm:text-sm font-bold transition cursor-pointer hover:bg-[var(--md-sys-color-error)]/20 text-[var(--md-sys-color-error)] border border-[var(--md-sys-color-error)]/40 active:scale-95 shadow-sm"
+                  className="inline-flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-3.5 py-1.5 sm:py-2 rounded-xl text-xs sm:text-sm font-bold transition cursor-pointer hover:bg-[var(--md-sys-color-error)]/20 text-[var(--md-sys-color-error)] border border-[var(--md-sys-color-error)]/40 active:scale-95 shadow-sm shrink-0"
                 >
-                  <span className="material-symbols-rounded text-sm sm:text-base">
-                    stop
-                  </span>
+                  <span className="material-symbols-rounded text-sm sm:text-base">stop</span>
                   <span>Stop</span>
                 </button>
               )}
@@ -253,7 +243,7 @@ export const InstancesActionButtons: React.FC<InstancesActionButtonsProps> = ({
             type="button"
             onClick={onInstallSelected}
             disabled={isInstallStarting || !recommendedAsset}
-            className="inline-flex items-center justify-center gap-2 sm:gap-2.5 px-3 sm:px-4 py-1.5 sm:py-2 rounded-xl text-xs sm:text-sm font-bold transition cursor-pointer hover:brightness-110 active:scale-95 shadow-sm disabled:opacity-50 disabled:cursor-default disabled:hover:brightness-100"
+            className="inline-flex items-center justify-center gap-1.5 sm:gap-2.5 px-3 sm:px-4 py-1.5 sm:py-2 rounded-xl text-xs sm:text-sm font-bold transition cursor-pointer hover:brightness-110 active:scale-95 shadow-sm disabled:opacity-50 disabled:cursor-default disabled:hover:brightness-100 shrink-0"
             style={{
               backgroundColor: 'var(--md-sys-color-primary)',
               color: 'var(--md-sys-color-on-primary)',
@@ -262,7 +252,7 @@ export const InstancesActionButtons: React.FC<InstancesActionButtonsProps> = ({
             <EngineInstallVisual
               phase={isInstallStarting ? 'starting' : 'idle'}
               progress={0}
-              size={24}
+              size={20}
             />
             <div className="flex flex-col items-start leading-tight">
               <span className="text-xs sm:text-sm font-bold">

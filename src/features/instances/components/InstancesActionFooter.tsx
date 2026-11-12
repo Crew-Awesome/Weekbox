@@ -91,12 +91,12 @@ export const InstancesActionFooter: React.FC<InstancesActionFooterProps> = ({
 
   return (
     <footer
-      className="fixed inset-x-0 bottom-[calc(4.25rem+env(safe-area-inset-bottom,0px))] md:bottom-0 z-30 border-t"
+      className="fixed inset-x-0 bottom-[calc(4.25rem+env(safe-area-inset-bottom,0px))] md:bottom-0 z-30 border-t border-b md:border-b-0"
       style={{
         backgroundColor:
-          'color-mix(in srgb, var(--md-sys-color-surface-container) 86%, transparent)',
+          'color-mix(in srgb, var(--md-sys-color-surface-container) 92%, transparent)',
         borderColor:
-          'color-mix(in srgb, var(--md-sys-color-outline-variant) 70%, transparent)',
+          'color-mix(in srgb, var(--md-sys-color-outline-variant) 50%, transparent)',
         backdropFilter: 'blur(24px) saturate(180%)',
         WebkitBackdropFilter: 'blur(24px) saturate(180%)',
         boxShadow:
@@ -142,7 +142,7 @@ export const InstancesActionFooter: React.FC<InstancesActionFooterProps> = ({
       )}
 
       <div className="relative md:pl-[92px]">
-        <div className="max-w-7xl mx-auto w-full px-2.5 sm:px-6 md:px-8 py-2 sm:py-2.5 flex items-center justify-between gap-2 sm:gap-3">
+        <div className="max-w-7xl mx-auto w-full px-2 sm:px-6 md:px-8 py-1.5 sm:py-2.5 flex items-center justify-between gap-1.5 sm:gap-3 min-w-0">
           <InstancesVersionSelector
             currentEngine={currentEngine}
             platform={platform}

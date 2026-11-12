@@ -78,11 +78,12 @@ export const VERSION_TRIGGER_STYLE = {
 
 export const VERSION_MENU_STYLE = {
   ...ENGINE_MENU_STYLE,
-  '--m3e-menu-container-min-width': '270px',
+  '--m3e-menu-container-min-width': 'min(270px, calc(100vw - 20px))',
   '--m3e-menu-container-max-height': 'none',
   '--m3e-menu-item-container-height': '40px',
   '--m3e-menu-item-padding-start': '10px',
   '--m3e-menu-item-padding-end': '10px',
+  maxWidth: 'calc(100vw - 16px)',
 } as React.CSSProperties
 
 export const ACTIONS_MENU_STYLE = {
