@@ -31,6 +31,10 @@ export interface InstancesVersionSelectorProps {
   onSetDefault: (version: string) => void
   onDeleteVersion: (version: string) => void
   onLaunchVersion: (version: string) => void
+  menuId?: string
+  positionY?: 'above' | 'below'
+  positionX?: 'start' | 'after'
+  hideIcon?: boolean
 }
 
 export const InstancesVersionSelector: React.FC<InstancesVersionSelectorProps> = ({
@@ -46,20 +50,26 @@ export const InstancesVersionSelector: React.FC<InstancesVersionSelectorProps> =
   onSetDefault,
   onDeleteVersion,
   onLaunchVersion,
+  menuId = 'instances-version-menu',
+  positionY = 'above',
+  positionX = 'start',
+  hideIcon = false,
 }) => {
   const versionMenuHeight = getMenuHeight(versionOptions.length, 40, 60)
 
   return (
     <div className="flex items-center gap-1.5 sm:gap-2 min-w-0 flex-1">
       <m3e-button variant="text" style={VERSION_TRIGGER_STYLE} className="min-w-0 max-w-full">
-        <m3e-menu-trigger for="instances-version-menu"></m3e-menu-trigger>
-        <img
-          slot="icon"
-          src={currentEngine.icon}
-          alt=""
-          className="w-5 h-5 sm:w-6 sm:h-6 rounded-md object-contain shrink-0 aspect-square"
-          style={{ width: '24px', height: '24px', minWidth: '24px', minHeight: '24px', aspectRatio: '1 / 1', objectFit: 'contain' }}
-        />
+        <m3e-menu-trigger for={menuId}></m3e-menu-trigger>
+        {!hideIcon && (
+          <img
+            slot="icon"
+            src={currentEngine.icon}
+            alt=""
+            className="w-5 h-5 sm:w-6 sm:h-6 rounded-md object-contain shrink-0 aspect-square"
+            style={{ width: '24px', height: '24px', minWidth: '24px', minHeight: '24px', aspectRatio: '1 / 1', objectFit: 'contain' }}
+          />
+        )}
         <span className="flex flex-col items-start leading-tight min-w-0 flex-1">
           <span
             className="text-[9px] sm:text-[10px] uppercase tracking-wider font-semibold hidden min-[360px]:inline"
@@ -76,15 +86,15 @@ export const InstancesVersionSelector: React.FC<InstancesVersionSelectorProps> =
           className="material-symbols-rounded text-[18px] shrink-0"
           style={{ color: 'var(--md-sys-color-on-surface-variant)', fontSize: '18px', width: '18px', height: '18px', lineHeight: '18px' }}
         >
-          expand_less
+          {positionY === 'below' ? 'expand_more' : 'expand_less'}
         </span>
       </m3e-button>
 
       <m3e-menu
-        id="instances-version-menu"
+        id={menuId}
         className="max-md:!left-2 max-md:!right-2 max-md:!w-[calc(100vw-16px)] max-md:!max-w-none"
-        position-x="start"
-        position-y="above"
+        position-x={positionX}
+        position-y={positionY}
         style={VERSION_MENU_STYLE}
       >
         {versionOptions.length === 0 ? (
@@ -120,10 +130,7 @@ export const InstancesVersionSelector: React.FC<InstancesVersionSelectorProps> =
                 const assetLabel = option.asset
                   ? `${PLATFORM_LABELS[platform]} · ${formatFileSize(option.asset.size)}`
                   : PLATFORM_LABELS[platform]
-                const actionsMenuId = getVersionActionsMenuId(
-                  currentEngine.id,
-                  index,
-                )
+                const actionsMenuId = `${menuId}-actions-${currentEngine.id}-${index}`
 
                 return (
                   <m3e-menu-item
@@ -131,7 +138,7 @@ export const InstancesVersionSelector: React.FC<InstancesVersionSelectorProps> =
                     checked={isSelected}
                     onClick={() => {
                       onSelectVersion(option.version)
-                      hideMenuById('instances-version-menu')
+                      hideMenuById(menuId)
                     }}
                     style={{ margin: '3px 0' }}
                   >
@@ -218,10 +225,7 @@ export const InstancesVersionSelector: React.FC<InstancesVersionSelectorProps> =
       {versionOptions.map((option, index) => {
         if (!option.installed) return null
 
-        const actionsMenuId = getVersionActionsMenuId(
-          currentEngine.id,
-          index,
-        )
+        const actionsMenuId = `${menuId}-actions-${currentEngine.id}-${index}`
 
         return (
           <m3e-menu

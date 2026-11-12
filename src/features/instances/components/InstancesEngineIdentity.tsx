@@ -11,6 +11,8 @@ export interface InstancesEngineIdentityProps {
   onRefreshReleases: () => void
   onOpenFolder: () => void
   onOpenGitHub: () => void
+  mobileVersionSelector?: React.ReactNode
+  mobileActionButtons?: React.ReactNode
 }
 
 export const InstancesEngineIdentity: React.FC<InstancesEngineIdentityProps> = ({
@@ -21,6 +23,8 @@ export const InstancesEngineIdentity: React.FC<InstancesEngineIdentityProps> = (
   onRefreshReleases,
   onOpenFolder,
   onOpenGitHub,
+  mobileVersionSelector,
+  mobileActionButtons,
 }) => {
   const { formattedPlaytime } = useEnginePlaytime(engine.id)
 
@@ -33,7 +37,7 @@ export const InstancesEngineIdentity: React.FC<InstancesEngineIdentityProps> = (
         style={{ aspectRatio: '1 / 1' }}
       />
 
-      <div className="min-w-0 flex-1">
+      <div className="hidden md:block min-w-0 flex-1">
         <h2
           className="text-xl sm:text-3xl font-black tracking-tight truncate"
           style={{ color: 'var(--md-sys-color-on-surface)' }}
@@ -65,6 +69,22 @@ export const InstancesEngineIdentity: React.FC<InstancesEngineIdentityProps> = (
           </span>
         </div>
       </div>
+
+      {mobileVersionSelector ? (
+        <div className="md:hidden flex items-center gap-1.5 min-w-0 flex-1 justify-between">
+          <div className="min-w-0 flex-1">{mobileVersionSelector}</div>
+          {mobileActionButtons && <div className="shrink-0">{mobileActionButtons}</div>}
+        </div>
+      ) : (
+        <div className="md:hidden min-w-0 flex-1">
+          <h2
+            className="text-xl font-black tracking-tight truncate"
+            style={{ color: 'var(--md-sys-color-on-surface)' }}
+          >
+            {engine.name}
+          </h2>
+        </div>
+      )}
 
       <div className="relative shrink-0">
         <m3e-icon-button

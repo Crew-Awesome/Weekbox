@@ -4,6 +4,7 @@ import { useEngineProcessState } from '@/core/engines'
 import { useEngineManagement } from './hooks/use-engine-management'
 import { useBannerProgress } from './hooks/use-banner-progress'
 import { useInstancesViewState } from './hooks/use-instances-view-state'
+import { useSmoothProgress } from './hooks/use-smooth-progress'
 import {
   InstancesTopbarUnderlay,
   InstancesEngineBanner,
@@ -12,6 +13,8 @@ import {
   InstancesDocumentation,
   InstancesActionFooter,
   InstancesReleasesError,
+  InstancesVersionSelector,
+  InstancesActionButtons,
 } from './components'
 
 export const InstancesView: React.FC = () => {
@@ -81,6 +84,22 @@ export const InstancesView: React.FC = () => {
     void installSelectedVersion()
   }
 
+  const isBusy = Boolean(
+    selectedTask &&
+      (selectedTask.status === 'downloading' ||
+        selectedTask.status === 'extracting' ||
+        selectedTask.status === 'canceling'),
+  )
+
+  const rawProgress = isUninstalling
+    ? 100
+    : Math.max(0, Math.min(100, selectedTask?.progress || 0))
+
+  const smoothProgress = useSmoothProgress(
+    rawProgress,
+    isBusy || isUninstalling,
+  )
+
   const {
     isRunning: isEngineRunning,
     formattedSessionDuration,
@@ -114,7 +133,7 @@ export const InstancesView: React.FC = () => {
         }
       />
 
-      <div className="flex-1 flex flex-col gap-4 sm:gap-6 px-3 sm:px-8 pt-3 sm:pt-4 pb-[calc(8.5rem+env(safe-area-inset-bottom,0px))] md:pb-36 max-w-7xl mx-auto w-full min-w-0">
+      <div className="flex-1 flex flex-col gap-4 sm:gap-6 px-3 sm:px-8 pt-3 sm:pt-4 pb-8 sm:pb-12 md:pb-36 max-w-7xl mx-auto w-full min-w-0">
         <InstancesEngineBanner
           engine={currentEngine}
           bannerProgress={bannerProgress}
@@ -129,6 +148,49 @@ export const InstancesView: React.FC = () => {
           onRefreshReleases={refreshReleases}
           onOpenFolder={() => void openFolder()}
           onOpenGitHub={openGitHub}
+          mobileVersionSelector={
+            <InstancesVersionSelector
+              currentEngine={currentEngine}
+              platform={platform}
+              selectedVersion={selectedVersion}
+              versionOptions={versionOptions}
+              tasksByVersion={tasksByVersion}
+              isLoadingReleases={isLoadingReleases}
+              smoothProgress={smoothProgress}
+              onSelectVersion={selectVersion}
+              onOpenFolder={(v) => void openFolder(v)}
+              onSetDefault={(v) => void setDefaultVersion(v)}
+              onDeleteVersion={deleteVersion}
+              onLaunchVersion={(v) => void launchVersion(v)}
+              menuId="instances-mobile-version-menu"
+              positionY="below"
+              positionX="start"
+              hideIcon={true}
+            />
+          }
+          mobileActionButtons={
+            <InstancesActionButtons
+              selectedVersion={selectedVersion}
+              selectedInstalledVersion={selectedInstalledVersion}
+              selectedTask={selectedTask}
+              activeVersion={activeVersion}
+              isUninstalling={isUninstalling}
+              isInstallStarting={isInstallStarting}
+              isEngineRunning={isEngineRunning}
+              formattedSessionDuration={formattedSessionDuration}
+              recommendedAsset={recommendedAsset}
+              busyPhase={busyPhase}
+              busyLabel={busyLabel}
+              busyDetail={busyDetail}
+              smoothProgress={smoothProgress}
+              onCancelDownload={cancelDownload}
+              onInstallSelected={handleInstallClick}
+              onSetSelectedAsDefault={() => void setSelectedAsDefault()}
+              onLaunchSelected={launchSelectedVersion}
+              onUninstallSelected={uninstallSelectedVersion}
+              onStopEngine={stopEngine}
+            />
+          }
         />
 
         {releasesError && (
@@ -172,6 +234,7 @@ export const InstancesView: React.FC = () => {
         busyPhase={busyPhase}
         busyLabel={busyLabel}
         busyDetail={busyDetail}
+        smoothProgress={smoothProgress}
         onSelectVersion={selectVersion}
         onOpenFolder={(v) => void openFolder(v)}
         onSetDefault={(v) => void setDefaultVersion(v)}

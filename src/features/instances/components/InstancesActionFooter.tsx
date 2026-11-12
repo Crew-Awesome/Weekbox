@@ -41,6 +41,7 @@ export interface InstancesActionFooterProps {
   onLaunchSelected: () => void
   onUninstallSelected: () => void
   onStopEngine?: () => Promise<boolean>
+  smoothProgress?: number
 }
 
 export const InstancesActionFooter: React.FC<InstancesActionFooterProps> = ({
@@ -61,6 +62,7 @@ export const InstancesActionFooter: React.FC<InstancesActionFooterProps> = ({
   busyPhase,
   busyLabel,
   busyDetail,
+  smoothProgress: smoothProgressProp,
   onSelectVersion,
   onOpenFolder,
   onSetDefault,
@@ -84,14 +86,15 @@ export const InstancesActionFooter: React.FC<InstancesActionFooterProps> = ({
     ? 100
     : Math.max(0, Math.min(100, selectedTask?.progress || 0))
 
-  const smoothProgress = useSmoothProgress(
+  const internalSmoothProgress = useSmoothProgress(
     rawProgress,
     isBusy || isUninstalling,
   )
+  const smoothProgress = smoothProgressProp ?? internalSmoothProgress
 
   return (
     <footer
-      className="fixed inset-x-0 bottom-[calc(4.25rem+env(safe-area-inset-bottom,0px))] md:bottom-0 z-30 border-t border-b md:border-b-0"
+      className="hidden md:block fixed inset-x-0 bottom-0 z-30 border-t"
       style={{
         backgroundColor:
           'color-mix(in srgb, var(--md-sys-color-surface-container) 92%, transparent)',
