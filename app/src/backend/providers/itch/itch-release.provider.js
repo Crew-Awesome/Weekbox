@@ -1,17 +1,47 @@
 import { ItchClient } from "itchlib";
+import { load } from "cheerio";
 import { nativeFetch } from "../../services/network/native-http.js";
 
 const ITCH_REQUEST_TIMEOUT_MS = 15_000;
 
+function normalizeUploadIds(markup) {
+  const $ = load(markup);
+  $(".upload").each((_, element) => {
+    const upload = $(element);
+    if (upload.attr("data-upload_id")) return;
+
+    const downloadButton = upload.find(".download_btn[data-upload_id]").first();
+    const id = downloadButton.attr("data-upload_id");
+    if (id && /^\d+$/.test(id)) upload.attr("data-upload_id", id);
+  });
+  return $.html();
+}
+
 const itchClient = new ItchClient({
-  fetch: (url, options = {}) =>
-    nativeFetch(url, {
+  fetch: async (url, options = {}) => {
+    const response = await nativeFetch(url, {
       ...options,
       body:
         options.body instanceof URLSearchParams
           ? options.body.toString()
           : options.body,
-    }),
+    });
+    const contentType = response.headers?.get("content-type") || "";
+    if (!response.ok || !contentType.toLowerCase().includes("text/html")) {
+      return response;
+    }
+
+    const markup = normalizeUploadIds(await response.text());
+    return {
+      ok: response.ok,
+      status: response.status,
+      statusText: response.statusText,
+      headers: response.headers,
+      url: response.url || String(url),
+      text: async () => markup,
+      json: async () => JSON.parse(markup),
+    };
+  },
   timeout: ITCH_REQUEST_TIMEOUT_MS,
 });
 

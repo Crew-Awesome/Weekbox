@@ -57,6 +57,13 @@
         </screenshot>
     </screenshots>
     <releases>
+        <release version="2.7.1" date="2026-11-16">
+            <description>
+                <ul>
+                    <li>Fixed downloading Itch.io engine releases.</li>
+                </ul>
+            </description>
+        </release>
         <release version="2.7.0" date="2026-11-16">
             <description>
                 <ul>

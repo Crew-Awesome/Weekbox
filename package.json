@@ -1,6 +1,6 @@
 {
   "name": "weekbox",
-  "version": "2.7.0",
+  "version": "2.7.1",
   "description": "A Re-Imagined Original FNF Mod Launcher",
   "main": "index.js",
   "scripts": {
@@ -42,6 +42,7 @@
   },
   "dependencies": {
     "@jaames/iro": "^5.5.2",
+    "cheerio": "^1.2.0",
     "flag-icons": "^7.5.0",
     "itchlib": "^1.0.1",
     "ldrs": "^1.1.9",

@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.7.1] - 2026-11-16
+
+### Fixed
+
+- Fixed downloading Itch.io engine releases.
+
 ## [2.7.0] - 2026-11-16
 
 // there goes almost 20 days of my life lol
@@ -1395,7 +1401,8 @@ This is the Last content update I will do in a long while :)
 - Downloads for Windows, Linux, and macOS.
 - Packages for x64, ARM64, ARMHF, and Universal Macs where available.
 
-[unreleased]: https://github.com/Crew-Awesome/Weekbox/compare/v2.7.0...HEAD
+[unreleased]: https://github.com/Crew-Awesome/Weekbox/compare/v2.7.1...HEAD
+[2.7.1]: https://github.com/Crew-Awesome/Weekbox/compare/v2.7.0...v2.7.1
 [2.7.0]: https://github.com/Crew-Awesome/Weekbox/compare/v2.6.4...v2.7.0
 [2.6.4]: https://github.com/Crew-Awesome/Weekbox/compare/v2.6.3...v2.6.4
 [2.6.3]: https://github.com/Crew-Awesome/Weekbox/compare/v2.6.2...v2.6.3
