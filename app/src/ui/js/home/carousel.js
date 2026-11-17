@@ -1,4 +1,5 @@
 import { gameBananaApi } from "../../../backend/providers/gamebanana/gamebanana.provider.js";
+import { backstageApi } from "../../../backend/providers/backstage/backstage.provider.js";
 import { FS } from "../../../backend/services/filesystem.js";
 import { modModal } from "./modal/index.js";
 import { getEngineLabel, getEngineLabelKey, t } from "../i18n/index.js";
@@ -56,37 +57,61 @@ function createCarouselSlideFallback() {
   return slide;
 }
 
-function loadCarouselImage(slide, imageUrl) {
-  if (!imageUrl) return;
-  const preloader = new Image();
-  preloader.onload = () => {
-    slide.style.backgroundImage = `url('${imageUrl}')`;
-    preloader.onload = null;
-    preloader.onerror = null;
+function loadCarouselImage(slide, imageUrl, fallbacks = []) {
+  const sources = [imageUrl, ...fallbacks].filter((src, index, all) => src && all.indexOf(src) === index);
+  let index = 0;
+  const loadNext = () => {
+    const src = sources[index];
+    if (!src) {
+      slide.style.backgroundImage = "url('assets/img/placeholder-mini.jpg')";
+      return;
+    }
+    const preloader = new Image();
+    preloader.onload = () => {
+      slide.style.backgroundImage = `url('${src}')`;
+      preloader.onload = null;
+      preloader.onerror = null;
+    };
+    preloader.onerror = () => {
+      preloader.onload = null;
+      preloader.onerror = null;
+      index += 1;
+      loadNext();
+    };
+    preloader.src = src;
   };
-  preloader.onerror = () => {
-    slide.style.backgroundImage = "url('assets/img/placeholder-mini.jpg')";
-    preloader.onload = null;
-    preloader.onerror = null;
-  };
-  preloader.src = imageUrl;
+  loadNext();
+}
+
+function getCarouselEngineIconSource(mod, engine) {
+  if (engine?.icon) return FS.getEngineIconSource(mod.engineId);
+  if (mod.source !== "backstage") return "";
+  if (mod.engineName === "Kade Engine") return "assets/icons/kade.png";
+  return mod.icon || "";
 }
 
 function populateCarouselEngine(slide, mod) {
   const engineBadge = slide.querySelector(".home-engine-badge");
+  if (mod.source === "gamejolt") {
+    engineBadge?.setAttribute("hidden", "");
+    return;
+  }
   const engineIcon = engineBadge?.querySelector("img");
   const engineNameEl = engineBadge?.querySelector(".home-engine-name");
-  const engineName = getEngineLabel(mod.engineId, mod.engine?.name);
+  const engine = FS.getEngineDetails(mod.engineId);
+  const engineName = getEngineLabel(mod.engineId, mod.engine?.name || mod.engineName);
   const engineLabelKey = getEngineLabelKey(mod.engineId);
+  const iconSource = getCarouselEngineIconSource(mod, engine);
   if (engineNameEl) {
     engineNameEl.textContent = engineName;
     if (engineLabelKey) engineNameEl.dataset.i18n = engineLabelKey;
   }
   if (engineBadge) engineBadge.title = engineName;
-  if (engineIcon && mod.engine?.icon)
-    engineIcon.src = FS.getEngineIconSource(mod.engineId);
-  if (engineBadge && !engineName && !mod.engine?.icon)
-    engineBadge.hidden = true;
+  if (engineIcon) {
+    engineIcon.hidden = !iconSource;
+    if (iconSource) engineIcon.src = iconSource;
+  }
+  if (engineBadge) engineBadge.hidden = !engineName && !iconSource;
 }
 
 function populateCarouselSlide(slide, mod) {
@@ -112,7 +137,7 @@ function createCarouselSlide(mod, slideTpl) {
     : createCarouselSlideFallback();
 
   slide.style.backgroundImage = "url('assets/img/placeholder-mini.jpg')";
-  loadCarouselImage(slide, mod.image);
+  loadCarouselImage(slide, mod.featureImage || mod.image, [mod.image, ...(mod.imageFallbacks || [])]);
   populateCarouselEngine(slide, mod);
   populateCarouselSlide(slide, mod);
   return slide;
@@ -137,6 +162,47 @@ function appendCarouselMod(
   dotsContainer.appendChild(dot);
 }
 
+async function showBackstageListingFallback({
+  loadToken,
+  track,
+  dotsContainer,
+  controls,
+  goToSlide,
+}) {
+  const fallback = await backstageApi.getMods({ sort: "activity", page: 1, limit: 1 });
+  if (loadToken !== homeCarousel.loadToken) return true;
+  const mod = fallback.mods[0];
+  if (!mod) return false;
+  track.replaceChildren();
+  dotsContainer.replaceChildren();
+  homeCarousel.currentSlideIndex = 0;
+  homeCarousel.totalSlides = 1;
+  appendCarouselMod(
+    mod,
+    0,
+    document.getElementById("tpl-home-carousel-slide"),
+    track,
+    dotsContainer,
+    goToSlide,
+  );
+  if (controls) controls.hidden = true;
+  homeCarousel.setupMotionPause();
+  return true;
+}
+
+async function loadFeaturedMods(service) {
+  if (service === "psychonline") return [];
+  if (service === "backstage") {
+    return (await backstageApi.getMods({
+      featured: true,
+      sort: "activity",
+      page: 1,
+      limit: 12,
+    })).mods;
+  }
+  return gameBananaApi.getFeaturedCarousel();
+}
+
 export const homeCarousel = {
   currentSlideIndex: 0,
   slideInterval: null,
@@ -144,19 +210,33 @@ export const homeCarousel = {
   featuredGroupSize: 5,
   loadToken: 0,
 
-  async init() {
+  async init(service = "gamebanana") {
     const track = document.getElementById("carousel-track");
     const dotsContainer = document.getElementById("carousel-dots");
     if (!track || !dotsContainer) return;
+    const carousel = document.getElementById("featured-carousel");
     const controls = document.querySelector(".carousel-controls");
     const loadToken = ++this.loadToken;
     this.stopAutoSlide();
-    if (!track.querySelector(".carousel-slide") && controls) {
-      controls.hidden = true;
+    this.totalSlides = 0;
+    this.currentSlideIndex = 0;
+    if (carousel) carousel.hidden = service === "gamejolt";
+    if (service === "gamejolt") {
+      track.replaceChildren();
+      dotsContainer.replaceChildren();
+      if (controls) controls.hidden = true;
+      return;
     }
+    track.style.transition = "none";
+    track.style.transform = "";
+    void track.offsetWidth;
+    track.style.removeProperty("transition");
+    track.replaceChildren(document.createTextNode(t("common.loading")));
+    dotsContainer.replaceChildren();
+    if (controls) controls.hidden = true;
 
     try {
-      const mods = await gameBananaApi.getFeaturedCarousel();
+      const mods = await loadFeaturedMods(service);
       if (loadToken !== this.loadToken) return;
       if (mods.length === 0) {
         this.currentSlideIndex = 0;
@@ -168,11 +248,15 @@ export const homeCarousel = {
         return;
       }
 
+      track.style.transition = "none";
+      track.style.transform = "";
       track.replaceChildren();
+      void track.offsetWidth;
+      track.style.removeProperty("transition");
       dotsContainer.replaceChildren();
       this.currentSlideIndex = 0;
       this.totalSlides = mods.length;
-      if (controls) controls.hidden = false;
+      if (controls) controls.hidden = service === "backstage" || mods.length < 2;
 
       const slideTpl = document.getElementById("tpl-home-carousel-slide");
 
@@ -191,8 +275,23 @@ export const homeCarousel = {
       this.setupMotionPause();
       this.updateDots();
       this.startAutoSlide();
-    } catch {
+    } catch (error) {
       if (loadToken !== this.loadToken) return;
+      console.error(`[WeekBox] ${service} featured carousel request failed`, error);
+      if (service === "backstage") {
+        try {
+          if (await showBackstageListingFallback({
+            loadToken,
+            track,
+            dotsContainer,
+            controls,
+            goToSlide: (slideIndex) => this.goToSlide(slideIndex),
+          })) return;
+        } catch (fallbackError) {
+          if (loadToken !== this.loadToken) return;
+          console.warn("[WeekBox] Backstage carousel fallback failed", fallbackError);
+        }
+      }
       const slideCount = track.querySelectorAll(".carousel-slide").length;
       if (slideCount) {
         this.totalSlides = slideCount;

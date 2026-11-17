@@ -17,6 +17,10 @@ const NEWS_SOURCES = [
     username: "News_Funkin",
   },
   {
+    name: "FunkinFest",
+    username: "FunkinFest",
+  },
+  {
     name: "Discussing FNF",
     username: "Discussingfnf",
   },
@@ -597,7 +601,9 @@ async function fetchNewsSource(source, signal, page = {}) {
         signal,
       });
       if (!response.ok) {
-        throw new Error(`${source.name} FxTwitter returned ${response.status}`);
+        const error = new Error(`${source.name} FxTwitter returned ${response.status}`);
+        error.status = response.status;
+        throw error;
       }
       const payload = await response.json();
       if (payload?.code && payload.code !== 200) {
@@ -621,6 +627,7 @@ async function fetchNewsSource(source, signal, page = {}) {
     } catch (error) {
       if (
         error?.name === "AbortError" ||
+        (error?.status >= 400 && error.status < 500 && error.status !== 429) ||
         attempt === NEWS_SOURCE_MAX_ATTEMPTS - 1
       ) {
         throw error;

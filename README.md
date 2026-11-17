@@ -13,7 +13,8 @@ A Re-Imagined Original FNF Mod Launcher
 
 ## What you can do
 
-- Browse mods from GameBanana and Psych Online.
+- Browse mods from GameBanana, Psych Online, Funkin' Backstage, and GameJolt.
+- Save mods to bookmarks and return to them from the Bookmarks view.
 - Install and organize mods and engines on your computer.
 - Enjoy a Comfortable experience playing your favorite FNF mods!
 
@@ -68,8 +69,10 @@ WeekBox is maintained by [ImMalloy](https://github.com/ImMalloy) and
 [Britex](https://github.com/expertyeti).
 
 The app uses [Neutralinojs](https://neutralino.js.org/). Mod listings and
-downloads come from [GameBanana](https://gamebanana.com/) and
-[Sniro's Psych Online site](https://funkin.sniro.boo/mods).
+downloads come from [GameBanana](https://gamebanana.com/),
+[Psych Online](https://funkin.sniro.boo/mods),
+[Funkin' Backstage](https://funkinbackstage.net/), and
+[GameJolt](https://gamejolt.com/).
 See the [full credits](./CREDITS.md).
 
 ## License

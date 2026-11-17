@@ -383,6 +383,42 @@
   mask-repeat: no-repeat, no-repeat, no-repeat;
 }
 
+.mod-wip-badge {
+  display: inline-flex;
+  align-items: center;
+  width: fit-content;
+  padding: 4px 8px;
+  border: 0;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--accent-color) 18%, var(--surface-container-highest));
+  color: color-mix(in srgb, var(--accent-color) 68%, var(--text-main));
+  font-size: 0.72rem;
+  font-weight: 700;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.mod-wip-badge--card {
+  position: absolute;
+  right: 9px;
+  bottom: 9px;
+  z-index: 2;
+}
+
+.modal-wip-row {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+
+.modal-wip-row .modal-author {
+  margin-bottom: 0;
+}
+
+.mod-wip-badge--modal {
+  margin-bottom: 0;
+}
+
 .mod-image {
   width: 100%;
   height: 100%;
@@ -416,6 +452,12 @@
     bottom left;
   -webkit-mask-repeat: no-repeat, no-repeat, no-repeat;
   mask-repeat: no-repeat, no-repeat, no-repeat;
+}
+
+.mod-card--gamejolt .mod-image-container,
+.mod-card--gamejolt .mod-image {
+  -webkit-mask-image: none !important;
+  mask-image: none !important;
 }
 
 .mod-info {
@@ -816,6 +858,22 @@
   grid-column: 1 / -1;
   width: 100%;
   min-height: 180px;
+}
+
+.grid-refresh-status,
+.grid-refresh-error {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-md);
+  color: var(--text-muted);
+  text-align: center;
+}
+
+.grid-refresh-error {
+  color: #ff8585;
 }
 
 .weekbox-loading--panel {
@@ -1476,6 +1534,50 @@
   display: grid;
 }
 
+.gamejolt-track-row {
+  display: grid;
+  gap: 12px;
+  padding: 14px;
+  border-radius: 14px;
+  background: var(--bg-panel);
+}
+
+.gamejolt-track-heading {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 12px;
+}
+
+.gamejolt-track-copy {
+  display: grid;
+  min-width: 0;
+  gap: 3px;
+}
+
+.gamejolt-track-copy strong {
+  overflow-wrap: anywhere;
+  color: var(--text-main);
+  font-size: 0.9rem;
+  line-height: 1.35;
+}
+
+.gamejolt-track-copy > span {
+  color: var(--text-muted);
+  font-size: 0.76rem;
+}
+
+.gamejolt-track-row audio {
+  display: block;
+  width: 100%;
+  min-width: 0;
+  height: 40px;
+  border-radius: 999px;
+  accent-color: var(--accent-color);
+  background: var(--surface-control);
+  color-scheme: light dark;
+}
+
 .modal-credit-row {
   display: flex;
   min-width: 0;
@@ -1495,6 +1597,23 @@
   border-radius: 50%;
   object-fit: cover;
   outline: 1px solid var(--image-outline);
+}
+
+.modal-credit-avatar-button {
+  display: block;
+  width: 40px;
+  height: 40px;
+  flex: 0 0 40px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  cursor: pointer;
+}
+
+.modal-credit-avatar-button:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 3px;
 }
 
 .modal-credit-info {
@@ -1593,6 +1712,10 @@
   padding: 13px 14px;
   color: var(--text-muted);
   font-size: 0.85rem;
+}
+
+.modal-detail-row[hidden] {
+  display: none;
 }
 
 .modal-detail-row + .modal-detail-row {
@@ -1780,6 +1903,17 @@
 .modal-description table {
   width: 100%;
   border-collapse: collapse;
+}
+
+.mod-release-updates {
+  margin-block-start: var(--spacing-lg);
+  padding-block-start: var(--spacing-md);
+  border-top: 1px solid var(--border-color);
+}
+
+.mod-release-updates h3 {
+  margin: 0 0 var(--spacing-sm);
+  font-size: 1rem;
 }
 
 .modal-footer-actions {
@@ -2303,6 +2437,359 @@
   transform: scale(1);
 }
 
+.backstage-filters-dialog {
+  box-sizing: border-box;
+  inset: 0;
+  width: 100vw;
+  max-width: none;
+  height: 100dvh;
+  max-height: none;
+  margin: 0;
+  padding: var(--spacing-lg);
+  border: 0;
+  background: transparent;
+  color: var(--text-main);
+  overflow: auto;
+  overscroll-behavior: contain;
+  transition: opacity 260ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.backstage-filters-dialog:not([open]) { display: none; }
+.backstage-filters-dialog[open] {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.backstage-filters-dialog::backdrop {
+  overflow: hidden;
+  overscroll-behavior: contain;
+  background: rgb(0 0 0 / 62%);
+  backdrop-filter: blur(5px);
+  -webkit-backdrop-filter: blur(5px);
+}
+
+.backstage-filters-dialog::backdrop { transition: background-color 260ms ease; }
+
+.backstage-filters-dialog .backstage-filters-modal {
+  width: min(540px, 100%);
+  max-height: min(620px, calc(100dvh - (var(--spacing-lg) * 2)));
+  overflow: auto;
+}
+
+.backstage-filters-body {
+  gap: var(--spacing-md);
+}
+
+.backstage-filter-section {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(180px, 1.15fr);
+  gap: var(--spacing-md);
+  align-items: center;
+}
+
+.backstage-filter-section h3 {
+  margin: 0;
+  color: var(--text-main);
+  font-size: 0.98rem;
+}
+
+.backstage-filter-field {
+  display: grid;
+  gap: 7px;
+  color: var(--text-muted);
+  font-size: 0.8rem;
+  font-weight: 650;
+}
+
+.backstage-filter-field .pill-dropdown,
+.backstage-filter-select {
+  width: 100%;
+}
+
+.backstage-filter-select {
+  justify-content: space-between;
+  min-height: 40px;
+}
+
+.backstage-filter-select .filter-dropdown-chevron {
+  margin-left: auto;
+}
+
+.backstage-filter-field .custom-options-container {
+  z-index: 5;
+  max-height: 230px;
+  overflow: auto;
+}
+
+.backstage-reverse-control {
+  position: relative;
+  grid-column: 1 / -1;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--spacing-sm);
+  min-height: 40px;
+  color: var(--text-main);
+  font-size: 0.86rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.backstage-reverse-control input {
+  position: absolute;
+  right: 0;
+  width: 40px;
+  height: 24px;
+  margin: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.backstage-reverse-track {
+  display: inline-flex;
+  width: 40px;
+  height: 24px;
+  flex: 0 0 40px;
+  align-items: center;
+  padding: 3px;
+  box-sizing: border-box;
+  border: 1px solid var(--border-color);
+  border-radius: 999px;
+  background: var(--bg-color);
+  transition: background-color 180ms ease, border-color 180ms ease;
+}
+
+.backstage-reverse-track > span {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--text-muted);
+  transform: translateX(0);
+  transition: transform 180ms ease, background-color 180ms ease;
+}
+
+.backstage-reverse-control input:checked + .backstage-reverse-track {
+  border-color: var(--accent-color);
+  background: color-mix(in srgb, var(--accent-color) 22%, var(--bg-color));
+}
+
+.backstage-reverse-control input:checked + .backstage-reverse-track > span {
+  background: var(--accent-color);
+  transform: translateX(16px);
+}
+
+.backstage-reverse-control input:focus-visible + .backstage-reverse-track {
+  outline: 2px solid var(--accent-color);
+  outline-offset: 2px;
+}
+
+.backstage-filters-dialog .mod-settings-close {
+  border: 0;
+  background: transparent;
+}
+
+.backstage-filters-dialog .mod-settings-close:hover {
+  border: 0;
+  background: var(--bg-hover);
+}
+
+.backstage-filters-dialog .mod-settings-header {
+  border-bottom: 0;
+  background: transparent;
+  padding-bottom: 0;
+}
+
+.backstage-filters-footer .mod-settings-status:empty {
+  display: none;
+}
+
+@media (max-width: 540px) {
+  .backstage-filters-dialog {
+    padding: 12px;
+  }
+
+  .backstage-filters-dialog .backstage-filters-modal {
+    width: 100%;
+    max-height: calc(100dvh - 24px);
+  }
+
+  .backstage-filter-section {
+    grid-template-columns: 1fr;
+  }
+
+  .backstage-reverse-control {
+    grid-column: 1;
+  }
+
+  .backstage-filters-footer {
+    display: flex;
+    flex-wrap: wrap;
+  }
+
+  .backstage-filters-footer .mod-settings-status {
+    order: 5;
+    flex: 1 1 100%;
+  }
+}
+
+.gamejolt-filters-button {
+  position: relative;
+}
+
+.gamejolt-filters-indicator {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--accent, var(--text-main));
+  box-shadow: 0 0 0 2px var(--bg-panel);
+}
+
+.gamejolt-filters-dialog {
+  box-sizing: border-box;
+  inset: 0;
+  width: 100vw;
+  max-width: none;
+  height: 100dvh;
+  max-height: none;
+  margin: 0;
+  padding: var(--spacing-lg);
+  border: 0;
+  background: transparent;
+  color: var(--text-main);
+  overflow: auto;
+  overscroll-behavior: contain;
+  transition: opacity 260ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.gamejolt-filters-dialog:not([open]) { display: none; }
+.gamejolt-filters-dialog[open] {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.gamejolt-filters-dialog::backdrop {
+  background: rgb(0 0 0 / 62%);
+  backdrop-filter: blur(5px);
+  -webkit-backdrop-filter: blur(5px);
+}
+
+.gamejolt-filters-dialog .gamejolt-filters-modal {
+  width: min(700px, 100%);
+  max-height: min(760px, calc(100dvh - (var(--spacing-lg) * 2)));
+  overflow: auto;
+}
+
+.gamejolt-filters-body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-lg);
+}
+
+.gamejolt-filter-selects {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--spacing-md);
+}
+
+.gamejolt-filter-field {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 7px;
+  color: var(--text-muted);
+  font-size: 0.82rem;
+  font-weight: 650;
+}
+
+.gamejolt-filter-field .pill-dropdown { width: 100%; }
+.gamejolt-filter-field .gamejolt-filter-select {
+  width: 100%;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.gamejolt-date-field input {
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 40px;
+  padding: 8px 10px;
+  border: 1px solid var(--border-color);
+  border-radius: 9px;
+  background: var(--bg-panel);
+  color: var(--text-main);
+  color-scheme: dark;
+}
+
+.gamejolt-filter-groups {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--spacing-md);
+}
+
+.gamejolt-filter-group {
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.gamejolt-filter-group legend {
+  margin-bottom: 8px;
+  color: var(--text-main);
+  font-size: 0.86rem;
+  font-weight: 700;
+}
+
+.gamejolt-filter-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+}
+
+.gamejolt-filter-chip {
+  min-height: 32px;
+  padding: 6px 10px;
+  border: 1px solid var(--border-color);
+  border-radius: 999px;
+  background: var(--bg-panel);
+  color: var(--text-muted);
+  font: inherit;
+  font-size: 0.78rem;
+  cursor: pointer;
+}
+
+.gamejolt-filter-chip:hover,
+.gamejolt-filter-chip:focus-visible {
+  border-color: var(--text-main);
+  color: var(--text-main);
+}
+
+.gamejolt-filter-chip.selected {
+  border-color: var(--text-main);
+  background: var(--surface-control);
+  color: var(--text-main);
+}
+
+.gamejolt-filters-footer .mod-settings-status:empty { display: none; }
+
+@media (max-width: 620px) {
+  .gamejolt-filters-dialog { padding: 12px; }
+  .gamejolt-filters-dialog .gamejolt-filters-modal {
+    width: 100%;
+    max-height: calc(100dvh - 24px);
+  }
+  .gamejolt-filter-selects { grid-template-columns: 1fr 1fr; }
+  .gamejolt-date-field { grid-column: 1 / -1; }
+}
+
+@media (max-width: 420px) {
+  .gamejolt-filter-selects,
+  .gamejolt-filter-groups { grid-template-columns: 1fr; }
+  .gamejolt-date-field { grid-column: auto; }
+}
+
 .mod-settings-loading {
   display: flex;
   align-items: center;
@@ -2352,7 +2839,7 @@
 .mod-settings-cancel,
 .mod-settings-save,
 .mod-settings-reset,
-.mod-settings-import-gamebanana,
+.mod-settings-import-provider,
 .mod-settings-move-to-mods,
 .mod-settings-convert-engine {
   box-sizing: border-box;
@@ -2370,7 +2857,7 @@
 .mod-settings-open-folder:hover,
 .mod-settings-cancel:hover,
 .mod-settings-reset:hover:not(:disabled),
-.mod-settings-import-gamebanana:hover:not(:disabled),
+.mod-settings-import-provider:hover:not(:disabled),
 .mod-settings-move-to-mods:hover:not(:disabled),
 .mod-settings-convert-engine:hover:not(:disabled) {
   border-color: var(--text-muted);
@@ -2456,58 +2943,6 @@
   transition: opacity 0.18s ease;
 }
 
-.mod-settings-icon-picker {
-  position: relative;
-  display: block;
-  width: 56px;
-  height: 56px;
-  flex: 0 0 56px;
-  align-self: center;
-  overflow: hidden;
-  border: 1px solid var(--border-color);
-  border-radius: 9px;
-  background: var(--bg-color);
-  cursor: pointer;
-}
-
-.mod-settings-icon {
-  width: 100%;
-  height: 100%;
-  display: block;
-  object-fit: cover;
-  box-sizing: border-box;
-}
-
-.mod-settings-icon-upload {
-  position: absolute;
-  inset: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: rgb(0 0 0 / 58%);
-  color: #fff;
-  font-size: 0.9rem;
-  font-weight: 700;
-  opacity: 0;
-  transition: opacity 0.18s ease;
-  cursor: pointer;
-}
-
-.mod-settings-icon-picker:hover,
-.mod-settings-icon-picker:focus-within {
-  border-color: var(--text-muted);
-}
-
-.mod-settings-icon-picker:hover .mod-settings-icon,
-.mod-settings-icon-picker:focus-within .mod-settings-icon {
-  filter: brightness(0.65);
-}
-
-.mod-settings-icon-picker:hover .mod-settings-icon-upload,
-.mod-settings-icon-picker:focus-within .mod-settings-icon-upload {
-  opacity: 1;
-}
-
 .mod-settings-cover-picker:hover,
 .mod-settings-cover-picker:focus-within {
   border-color: var(--text-muted);
@@ -2542,8 +2977,7 @@
   outline: none;
 }
 
-.mod-settings-file,
-.mod-settings-icon-file {
+.mod-settings-file {
   position: absolute;
   width: 1px;
   height: 1px;
@@ -2719,7 +3153,7 @@
 
 .mod-settings-save:disabled,
 .mod-settings-reset:disabled,
-.mod-settings-import-gamebanana:disabled,
+.mod-settings-import-provider:disabled,
 .mod-settings-move-to-mods:disabled,
 .mod-settings-convert-engine:disabled {
   cursor: not-allowed;
@@ -2734,7 +3168,7 @@
   overflow-wrap: anywhere;
 }
 
-.mod-settings-import-gamebanana {
+.mod-settings-import-provider {
   display: inline-flex;
   align-items: center;
   gap: 8px;
@@ -2766,7 +3200,7 @@
   }
 
   .mod-settings-footer .mod-settings-reset,
-  .mod-settings-footer .mod-settings-import-gamebanana,
+  .mod-settings-footer .mod-settings-import-provider,
   .mod-settings-footer .mod-settings-convert-engine {
     width: 100%;
   }
@@ -3203,12 +3637,6 @@ input:checked + .slider:before {
   flex: 0 0 auto;
 }
 
-.mod-settings-modal--editor .mod-settings-icon-picker {
-  width: 64px;
-  height: 64px;
-  flex: 0 0 64px;
-}
-
 .mod-settings-modal--editor .mod-settings-open-folder {
   display: inline-flex;
   align-items: center;
@@ -3287,12 +3715,6 @@ input:checked + .slider:before {
     height: 84px;
   }
 
-  .mod-settings-modal--editor .mod-settings-icon-picker {
-    width: 46px;
-    height: 46px;
-    flex-basis: 46px;
-  }
-
   .mod-settings-modal--editor .mod-settings-main {
     padding: 24px 20px;
     overflow: visible;
@@ -3322,14 +3744,6 @@ input:checked + .slider:before {
   gap: 14px;
   min-width: 0;
   width: 100%;
-}
-
-.mod-settings-modal--editor
-  .mod-settings-identity-header
-  .mod-settings-icon-picker {
-  width: 56px;
-  height: 56px;
-  flex: 0 0 56px;
 }
 
 .mod-settings-modal--editor .mod-settings-identity-header .mod-settings-name {

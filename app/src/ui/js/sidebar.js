@@ -2,14 +2,10 @@ import { router } from "../../backend/core/routing/router.service.js";
 import { modManagerModal } from "./mod-manager/index.js";
 import { engineManagerModal } from "./engine-manager/index.js";
 import { engineUpdateService } from "./engines/engineUpdateService.js";
-import { engineUpdateModal } from "./engines/engineUpdateModal.js";
-import { FS } from "../../backend/services/filesystem.js";
 import { configModal } from "./config/index.js";
 import { networkStatus } from "../../backend/core/system/network-status.service.js";
 import { appEvents } from "../../backend/core/routing/events.service.js";
 import { t } from "./i18n/index.js";
-import { escapeHtml } from "./mod-manager/modSettingsTemplates.js";
-import { appSettings } from "../../backend/core/system/settings.service.js";
 import { homeView } from "./home/index.js";
 
 const SIDEBAR_WIDTH_KEY = "weekbox_sidebar_width";
@@ -20,40 +16,11 @@ const RESPONSIVE_BREAKPOINT = MAX_SIDEBAR_WIDTH * 1.55;
 
 export const sidebar = {
   initialized: false,
-  standaloneLoadPromise: null,
-  standaloneRefreshQueued: false,
-  standaloneRequestId: 0,
-  standaloneButtonStates: new Map(),
-  recentLoadPromise: null,
-  recentRefreshQueued: false,
-  recentRequestId: 0,
-  recentButtonStates: new Map(),
-  activeDynamicKey: null,
-  updateEngineMarquee(button) {
-    const container = button.querySelector(".sidebar__marquee-container");
-    const label = button.querySelector(".sidebar__marquee-text");
-    if (!container || !label) return;
-    requestAnimationFrame(() => {
-      const distance = Math.max(0, label.scrollWidth - container.clientWidth);
-      label.classList.toggle(
-        "sidebar__marquee-text--overflowing",
-        distance > 1,
-      );
-      label.style.setProperty("--marquee-distance", `${distance}px`);
-      label.title = distance > 1 ? label.textContent : "";
-    });
-  },
-  refreshEngineMarquees() {
-    document
-      .querySelectorAll(".sidebar__engine-btn")
-      .forEach((button) => this.updateEngineMarquee(button));
-  },
   async init() {
     if (this.initialized) return;
     this.sidebar = document.getElementById("sidebar");
     this.resizer = document.getElementById("sidebar-resizer");
     this.collapseBtn = document.getElementById("sidebar-collapse-btn");
-    this.sidebarNav = document.querySelector(".sidebar__nav");
     this.tabButtons = document.querySelectorAll(".sidebar__btn[data-tab]");
     this.modManagerBtn = document.getElementById("mod-manager-btn");
     this.engineManagerBtn = document.getElementById("engine-manager-btn");
@@ -64,35 +31,19 @@ export const sidebar = {
     this.initialized = true;
     this.applySavedWidth();
     this.setupCollapse();
-    this.setupCollapsibleSections();
     this.setupResizer();
     this.setupNavigation();
     this.viewChangeListener = (event) => {
       this.syncActive(event.detail);
     };
     appEvents.addEventListener("view:loaded", this.viewChangeListener);
-    this.modsUpdatedListener = () => {
-      void this.loadStandaloneMods();
-      void this.loadRecentlyPlayedMods();
-    };
-    this.recentlyPlayedUpdatedListener = (event) => {
-      void this.loadRecentlyPlayedMods();
-      if (event.detail?.refreshStandalone) void this.loadStandaloneMods();
-    };
-    document.addEventListener("mods-updated", this.modsUpdatedListener);
-    document.addEventListener(
-      "recently-played-mods-updated",
-      this.recentlyPlayedUpdatedListener,
-    );
     this.setupBrandButton();
     this.networkStatusListener = () => {
       void this.refreshNetworkFeatures();
     };
     networkStatus.addEventListener("change", this.networkStatusListener);
-    this.processStateListener = (event) => {
-      this.syncRunningStates(event.detail?.key);
+    this.processExitListener = () => {
       if (
-        event.type === "weekbox-process-exit" &&
         !["mod-manager-modal", "engine-manager-modal", "config-modal"].some(
           (id) => document.getElementById(id)?.classList.contains("show"),
         )
@@ -101,20 +52,13 @@ export const sidebar = {
       }
     };
     document.addEventListener(
-      "weekbox-process-change",
-      this.processStateListener,
-    );
-    document.addEventListener(
       "weekbox-process-exit",
-      this.processStateListener,
+      this.processExitListener,
     );
     void this.refreshNetworkFeatures();
-    void this.loadStandaloneMods();
-    void this.loadRecentlyPlayedMods();
     this.setupResponsiveCollapse();
   },
   setupResponsiveCollapse() {
-    let marqueeFrame = 0;
     const updateCollapse = () => {
       const windowWidth = window.innerWidth;
       const shouldCollapse = windowWidth <= RESPONSIVE_BREAKPOINT;
@@ -124,12 +68,6 @@ export const sidebar = {
       }
       if (this.collapseBtn) {
         this.collapseBtn.style.display = shouldCollapse ? "none" : "";
-      }
-      if (!marqueeFrame) {
-        marqueeFrame = requestAnimationFrame(() => {
-          marqueeFrame = 0;
-          this.refreshEngineMarquees();
-        });
       }
     };
     updateCollapse();
@@ -184,7 +122,6 @@ export const sidebar = {
     try {
       localStorage.setItem(SIDEBAR_WIDTH_KEY, String(newWidth));
     } catch {}
-    this.refreshEngineMarquees();
   },
   applySavedWidth() {
     let savedWidth = 280;
@@ -214,7 +151,6 @@ export const sidebar = {
       this.collapseBtn.title = label;
     }
     this.updateCollapsedTooltips();
-    requestAnimationFrame(() => this.refreshEngineMarquees());
     try {
       localStorage.setItem(SIDEBAR_COLLAPSED_KEY, String(collapsed));
     } catch {}
@@ -232,62 +168,8 @@ export const sidebar = {
       }
       const label =
         button.dataset.defaultTitle?.trim() ||
-        button.querySelector(".sidebar__marquee-text")?.textContent?.trim() ||
         button.querySelector(":scope > span")?.textContent?.trim();
       if (label) button.title = label;
-    });
-  },
-  setupCollapsibleSections(root = this.sidebar) {
-    const sections = [];
-    if (root?.matches?.(".sidebar__section[data-section-key]")) {
-      sections.push(root);
-    }
-    root
-      ?.querySelectorAll?.(".sidebar__section[data-section-key]")
-      .forEach((section) => sections.push(section));
-    sections.forEach((section) => {
-      if (section.dataset.sectionReady) return;
-      section.dataset.sectionReady = "true";
-      const key = `weekbox_sidebar_section_${section.dataset.sectionKey}`;
-      try {
-        const saved = localStorage.getItem(key);
-        if (saved !== null) section.open = saved === "true";
-      } catch {}
-      section.addEventListener("toggle", () => {
-        try {
-          localStorage.setItem(key, String(section.open));
-        } catch {}
-        if (section.open) {
-          requestAnimationFrame(() =>
-            section
-              .querySelectorAll(".sidebar__engine-btn")
-              .forEach((button) => this.updateEngineMarquee(button)),
-          );
-        }
-      });
-      section.addEventListener(
-        "wheel",
-        (e) => {
-          const wrapper = section.querySelector(".sidebar__wrapper");
-          if (!wrapper || e.deltaY === 0) return;
-          const maxScrollTop = wrapper.scrollHeight - wrapper.clientHeight;
-          if (maxScrollTop <= 0) return;
-          const delta =
-            e.deltaMode === 1
-              ? e.deltaY * 16
-              : e.deltaMode === 2
-                ? e.deltaY * wrapper.clientHeight
-                : e.deltaY;
-          const nextScrollTop = Math.min(
-            maxScrollTop,
-            Math.max(0, wrapper.scrollTop + delta),
-          );
-          if (nextScrollTop === wrapper.scrollTop) return;
-          e.preventDefault();
-          wrapper.scrollTop = nextScrollTop;
-        },
-        { passive: false },
-      );
     });
   },
   setActive(button) {
@@ -296,9 +178,7 @@ export const sidebar = {
       this.modManagerBtn,
       this.engineManagerBtn,
       this.configBtn,
-      ...document.querySelectorAll(".sidebar__engine-btn"),
     ].filter(Boolean);
-    this.activeDynamicKey = button?.dataset.sidebarEntryKey || null;
     buttons.forEach((candidate) => {
       candidate.classList.remove("sidebar__btn--active");
       candidate.classList.toggle("active", candidate === button);
@@ -376,303 +256,5 @@ export const sidebar = {
     );
     if (networkStatus.online) engineUpdateService.startScheduledChecks();
   },
-  async loadStandaloneMods() {
-    if (this.standaloneLoadPromise) {
-      this.standaloneRefreshQueued = true;
-      this.standaloneRequestId += 1;
-      return this.standaloneLoadPromise;
-    }
-    const requestId = ++this.standaloneRequestId;
-    this.standaloneLoadPromise = this.refreshStandaloneMods(requestId);
-    try {
-      await this.standaloneLoadPromise;
-    } catch (error) {
-      console.warn("Could not load standalone mods", error);
-    } finally {
-      const refreshAgain = this.standaloneRefreshQueued;
-      this.standaloneRefreshQueued = false;
-      this.standaloneLoadPromise = null;
-      if (refreshAgain) void this.loadStandaloneMods();
-    }
-  },
-  async refreshStandaloneMods(requestId) {
-    const container = document.getElementById("standalone-mods-container");
-    const wrapper = document.getElementById("standalone-mods-wrapper");
-    if (!container || !wrapper) return;
-    if (!FS.isInitialized) {
-      this.standaloneButtonStates.clear();
-      container.hidden = true;
-      return;
-    }
 
-    const allStandaloneMods = await FS.getStandaloneMods();
-    if (requestId !== this.standaloneRequestId) return;
-    const standaloneMods = allStandaloneMods.filter((mod) => !mod.hidden);
-    if (
-      this.activeDynamicKey?.startsWith("standalone:") &&
-      !standaloneMods.some(
-        (mod) => `standalone:${mod.id}` === this.activeDynamicKey,
-      )
-    ) {
-      this.activeDynamicKey = null;
-      this.syncActive();
-    }
-    const savedScrollTop = wrapper.scrollTop;
-    this.standaloneButtonStates.clear();
-    wrapper.replaceChildren();
-
-    if (standaloneMods.length === 0) {
-      container.hidden = true;
-      if (this.activeDynamicKey?.startsWith("standalone:")) {
-        this.activeDynamicKey = null;
-        this.syncActive();
-      }
-      return;
-    }
-
-    container.hidden = false;
-    this.setupCollapsibleSections(container);
-
-    for (const mod of standaloneMods) {
-      const btn = document.createElement("button");
-      const entryKey = `standalone:${mod.id}`;
-      btn.className =
-        "sidebar__btn sidebar__engine-btn sidebar__standalone-btn";
-      btn.dataset.modId = String(mod.id);
-      btn.dataset.sidebarEntryKey = entryKey;
-      btn.title = mod.name;
-      let iconSrc =
-        mod.icoPath ||
-        "data:image/svg+xml;utf8,<svg xmlns=\\'http://www.w3.org/2000/svg\\' viewBox=\\'0 0 512 512\\'><path fill=\\'%23888\\' d=\\'M448 32H64C28.65 32 0 60.65 0 96v320c0 35.35 28.65 64 64 64h384c35.35 0 64-28.65 64-64V96C512 60.65 483.3 32 448 32zM212.7 222.7L132.7 302.7C126.4 308.9 118.2 312 110.1 312s-16.38-3.125-22.62-9.375c-12.5-12.5-12.5-32.75 0-45.25L155.3 189.3l-67.88-67.88c-12.5-12.5-12.5-32.75 0-45.25s32.75-32.75 45.25 0l102.6 102.6C247.7 191.3 247.7 210.2 212.7 222.7zM384 320c-17.67 0-32-14.33-32-32s14.33-32 32-32h32c17.67 0 32 14.33 32 32s-14.33 32-32 32H384z\\'/></svg>";
-      iconSrc = escapeHtml(iconSrc);
-      btn.innerHTML = `
-        <img src="${iconSrc}" class="sidebar__engine-icon" onerror="this.onerror=null; this.src='data:image/svg+xml;utf8,<svg xmlns=\\'http://www.w3.org/2000/svg\\' viewBox=\\'0 0 512 512\\'><path fill=\\'%23888\\' d=\\'M448 32H64C28.65 32 0 60.65 0 96v320c0 35.35 28.65 64 64 64h384c35.35 0 64-28.65 64-64V96C512 60.65 483.3 32 448 32zM212.7 222.7L132.7 302.7C126.4 308.9 118.2 312 110.1 312s-16.38-3.125-22.62-9.375c-12.5-12.5-12.5-32.75 0-45.25L155.3 189.3l-67.88-67.88c-12.5-12.5-12.5-32.75 0-45.25s32.75-32.75 45.25 0l102.6 102.6C247.7 191.3 247.7 210.2 212.7 222.7zM384 320c-17.67 0-32-14.33-32-32s14.33-32 32-32h32c17.67 0 32 14.33 32 32s-14.33 32-32 32H384z\\'/></svg>'">
-        <div class="sidebar__marquee-container"><span class="sidebar__marquee-text">${escapeHtml(mod.name)}</span></div>
-      `;
-      const setRunning = (running) => {
-        btn.classList.toggle("running", running);
-        if (running) {
-          btn.querySelector(".sidebar__marquee-container").innerHTML = `
-            <div style="display: flex; align-items: center; gap: 8px;">
-              <i class="fa-solid fa-stop" style="color: #ff4a4a;" title="${t("sidebar.stop")}"></i>
-              <span class="sidebar__marquee-text">${t("engines.launched")}</span>
-            </div>
-          `;
-        } else {
-          btn.querySelector(".sidebar__marquee-container").innerHTML =
-            `<span class="sidebar__marquee-text">${escapeHtml(mod.name)}</span>`;
-        }
-        this.updateEngineMarquee(btn);
-      };
-      this.standaloneButtonStates.set(String(mod.id), setRunning);
-      setRunning(FS.isStandaloneModRunning(mod.id));
-      btn.addEventListener("click", async () => {
-        if (FS.isStandaloneModRunning(mod.id)) {
-          const process = FS.activeEngineProcesses.get(`standalone:${mod.id}`);
-          if (process) {
-            btn.querySelector(".sidebar__marquee-container").innerHTML =
-              `<l-hourglass class="weekbox-hourglass" size="16" color="currentColor" speed="1.75" bg-opacity="0.12" aria-hidden="true"></l-hourglass> ${t("engines.closing")}`;
-            Neutralino.os
-              .updateSpawnedProcess(process.id, "exit")
-              .catch(() => {});
-          }
-          return;
-        }
-        this.setActive(btn);
-        setRunning(true);
-        if (appSettings.get("hideOnLaunch")) Neutralino.window.hide();
-        await FS.runStandaloneMod(mod.id, () => {
-          if (appSettings.get("hideOnLaunch")) {
-            Neutralino.window.show();
-            Neutralino.window.focus();
-          }
-          setRunning(false);
-          this.syncActive();
-        });
-      });
-      wrapper.appendChild(btn);
-      if (this.activeDynamicKey === entryKey) {
-        btn.classList.add("active", "sidebar__btn--active");
-      }
-      this.updateEngineMarquee(btn);
-    }
-    wrapper.scrollTop = savedScrollTop;
-    this.updateCollapsedTooltips();
-  },
-  async loadRecentlyPlayedMods() {
-    if (this.recentLoadPromise) {
-      this.recentRefreshQueued = true;
-      this.recentRequestId += 1;
-      return this.recentLoadPromise;
-    }
-    const requestId = ++this.recentRequestId;
-    this.recentLoadPromise = this.refreshRecentlyPlayedMods(requestId);
-    try {
-      await this.recentLoadPromise;
-    } catch (error) {
-      console.warn("Could not load recently played mods", error);
-    } finally {
-      const refreshAgain = this.recentRefreshQueued;
-      this.recentRefreshQueued = false;
-      this.recentLoadPromise = null;
-      if (refreshAgain) void this.loadRecentlyPlayedMods();
-    }
-  },
-  async refreshRecentlyPlayedMods(requestId) {
-    const container = document.getElementById("recently-played-container");
-    const wrapper = document.getElementById("recently-played-wrapper");
-    if (!container || !wrapper) return;
-    if (!FS.isInitialized) {
-      this.recentButtonStates.clear();
-      container.hidden = true;
-      return;
-    }
-
-    const recentMods = await FS.getRecentlyPlayedMods();
-    const entries = await Promise.all(
-      recentMods.map(async (mod) => ({
-        mod,
-        customIcon: await FS.getModIcon(mod.id).catch(() => null),
-      })),
-    );
-    if (requestId !== this.recentRequestId) return;
-    if (
-      this.activeDynamicKey?.startsWith("recent:") &&
-      !entries.some(({ mod }) => `recent:${mod.id}` === this.activeDynamicKey)
-    ) {
-      this.activeDynamicKey = null;
-      this.syncActive();
-    }
-    const savedScrollTop = wrapper.scrollTop;
-    this.recentButtonStates.clear();
-    wrapper.replaceChildren();
-    container.hidden = recentMods.length === 0;
-    if (!recentMods.length) {
-      if (this.activeDynamicKey?.startsWith("recent:")) {
-        this.activeDynamicKey = null;
-        this.syncActive();
-      }
-      return;
-    }
-
-    this.setupCollapsibleSections(container);
-    for (const { mod, customIcon } of entries) {
-      const btn = document.createElement("button");
-      btn.type = "button";
-      const entryKey = `recent:${mod.id}`;
-      btn.className =
-        "sidebar__btn sidebar__engine-btn sidebar__recent-mod-btn";
-      btn.dataset.modId = String(mod.id);
-      btn.dataset.sidebarEntryKey = entryKey;
-      btn.title = mod.name;
-      const iconBox = document.createElement("span");
-      iconBox.className = "sidebar__recent-mod-icon";
-      const engineIcon =
-        mod.engineId && mod.engineId !== "executable"
-          ? FS.getEngineIconSource(mod.engineId)
-          : "assets/icons/exe.png";
-      const renderIcon = (running) => {
-        const icon = document.createElement("i");
-        icon.className = running
-          ? "fa-solid fa-square sidebar__recent-mod-stop"
-          : "fa-solid fa-gamepad";
-        icon.setAttribute("aria-hidden", "true");
-        if (running) {
-          iconBox.replaceChildren(icon);
-          return;
-        }
-        if (customIcon) {
-          const image = document.createElement("img");
-          image.className = "sidebar__engine-icon";
-          image.src = customIcon;
-          image.alt = "";
-          let fallbackTried = false;
-          image.onerror = () => {
-            if (mod.engineId && !fallbackTried) {
-              fallbackTried = true;
-              image.onerror = () => image.replaceWith(icon);
-              image.src = engineIcon;
-              return;
-            }
-            image.replaceWith(icon);
-          };
-          iconBox.replaceChildren(image);
-          return;
-        }
-        if (mod.engineId) {
-          const image = document.createElement("img");
-          image.className = "sidebar__engine-icon";
-          image.src = engineIcon;
-          image.alt = "";
-          image.onerror = () => image.replaceWith(icon);
-          iconBox.replaceChildren(image);
-          return;
-        }
-        iconBox.replaceChildren(icon);
-      };
-      const text = document.createElement("span");
-      text.className = "sidebar__marquee-text";
-      text.textContent = mod.name;
-      const marquee = document.createElement("span");
-      marquee.className = "sidebar__marquee-container";
-      marquee.appendChild(text);
-      btn.append(iconBox, marquee);
-
-      const setRunning = (running) => {
-        btn.classList.toggle("running", running);
-        renderIcon(running);
-        this.updateEngineMarquee(btn);
-      };
-      this.recentButtonStates.set(String(mod.id), setRunning);
-      const onStateChange = (state) => {
-        if (state === "running" || state === "launched") setRunning(true);
-        if (["completed", "closing", "error", "not_found"].includes(state))
-          setRunning(false);
-        if (
-          state === "not_found" &&
-          mod.engineId &&
-          mod.engineId !== "executable"
-        ) {
-          const engine = FS.getEngineDetails(mod.engineId);
-          void engineUpdateModal.missing({
-            engineId: mod.engineId,
-            name: engine?.name || t("engineUpdates.assignedEngine"),
-            icon: engine?.icon,
-          });
-        }
-      };
-      setRunning(FS.isModRunning(mod.id));
-      btn.addEventListener("click", async () => {
-        this.setActive(btn);
-        const wasRunning = FS.isModRunning(mod.id);
-        setRunning(!wasRunning);
-        if (appSettings.get("hideOnLaunch")) Neutralino.window.hide();
-        await FS.launchRecentlyPlayedMod(mod.id, onStateChange).catch(() => {});
-        if (appSettings.get("hideOnLaunch")) {
-          Neutralino.window.show();
-          Neutralino.window.focus();
-        }
-        setRunning(FS.isModRunning(mod.id));
-      });
-      wrapper.appendChild(btn);
-      if (this.activeDynamicKey === entryKey) {
-        btn.classList.add("active", "sidebar__btn--active");
-      }
-      this.updateEngineMarquee(btn);
-    }
-    wrapper.scrollTop = savedScrollTop;
-    this.updateCollapsedTooltips();
-  },
-  syncRunningStates(processKey = "") {
-    if (processKey.startsWith("standalone:")) {
-      const modId = processKey.slice("standalone:".length);
-      this.standaloneButtonStates.get(modId)?.(
-        FS.isStandaloneModRunning(modId),
-      );
-      return;
-    }
-    this.recentButtonStates.forEach((setRunning, modId) => {
-      setRunning(FS.isModRunning(modId));
-    });
-  },
 };

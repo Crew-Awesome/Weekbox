@@ -3,46 +3,91 @@ import { hasCachedDominantColor } from "../../utils/media/extract-color.util.js"
 
 const MAX_MOD_COVER_CACHE = 200;
 const modCoverCache = new Map();
+const pendingCoverLoads = new Map();
+const cardImageLoads = new WeakMap();
 const PLACEHOLDER_IMAGE = "assets/img/placeholder-mini.jpg";
 
+const cardImageObserver = typeof IntersectionObserver === "function"
+  ? new IntersectionObserver(
+      (entries, observer) => {
+        for (const entry of entries) {
+          if (!entry.target.isConnected) {
+            observer.unobserve(entry.target);
+            cardImageLoads.delete(entry.target);
+            continue;
+          }
+          if (!entry.isIntersecting) continue;
+          observer.unobserve(entry.target);
+          const load = cardImageLoads.get(entry.target);
+          cardImageLoads.delete(entry.target);
+          if (load) void load();
+        }
+      },
+      { rootMargin: "480px 0px" },
+    )
+  : null;
+
 export function primeModCover(modId, coverUrl) {
-  if (coverUrl) {
-    if (modCoverCache.size >= MAX_MOD_COVER_CACHE) {
-      const oldestKey = modCoverCache.keys().next().value;
-      if (oldestKey !== undefined) modCoverCache.delete(oldestKey);
+  if (!coverUrl) return;
+  const key = String(modId);
+  if (modCoverCache.has(key)) modCoverCache.delete(key);
+  while (modCoverCache.size >= MAX_MOD_COVER_CACHE) {
+    modCoverCache.delete(modCoverCache.keys().next().value);
+  }
+  modCoverCache.set(key, coverUrl);
+}
+
+async function resolveModCover(mod, fetchDetails) {
+  const modId = String(mod.id);
+  const localCover = await FS.getModCover(modId);
+  if (localCover) return localCover;
+
+  const cachedCover = modCoverCache.get(modId);
+  if (cachedCover) return cachedCover;
+
+  let imageUrl = mod.image || null;
+  if (!imageUrl || imageUrl === PLACEHOLDER_IMAGE) {
+    try {
+      const details = await fetchDetails(modId, { includeRequirements: false });
+      imageUrl = details?.source === "backstage"
+        ? details.image || details.thumbnail || details.images?.[0]
+        : details?.images?.find(
+            (image) => image && image !== PLACEHOLDER_IMAGE,
+          );
+    } catch {
+      imageUrl = null;
     }
-    modCoverCache.set(String(modId), coverUrl);
+  }
+
+  if (
+    !imageUrl ||
+    imageUrl === "assets/icons/launcher-icon.png" ||
+    imageUrl === PLACEHOLDER_IMAGE
+  ) {
+    return PLACEHOLDER_IMAGE;
+  }
+
+  try {
+    const cover = await FS.ensureModCover(modId, async () => imageUrl);
+    return cover || imageUrl;
+  } catch {
+    // The webview can display some remote images even when it cannot cache them.
+    return imageUrl;
   }
 }
 
-export async function getModCover(modId, fetchDetails) {
-  const cacheKey = String(modId);
+export function getModCover(mod, fetchDetails) {
+  const modId = String(mod.id);
+  if (pendingCoverLoads.has(modId)) return pendingCoverLoads.get(modId);
 
-
-
-  const localCover = await FS.getModCover(modId);
-  if (localCover) {
-    primeModCover(modId, localCover);
-    return localCover;
-  }
-  if (modCoverCache.has(cacheKey)) return modCoverCache.get(cacheKey);
-
-  const cover = await FS.ensureModCover(modId, async () => {
-    const details = await fetchDetails(modId, {
-      includeRequirements: false,
-    });
-    const imageUrl = details?.images?.[0];
-    if (
-      !imageUrl ||
-      imageUrl === "assets/icons/launcher-icon.png" ||
-      imageUrl === PLACEHOLDER_IMAGE
-    ) {
-      return PLACEHOLDER_IMAGE;
-    }
-    return imageUrl;
-  });
-  primeModCover(modId, cover);
-  return cover;
+  const request = resolveModCover(mod, fetchDetails)
+    .then((cover) => {
+      primeModCover(modId, cover);
+      return cover;
+    })
+    .finally(() => pendingCoverLoads.delete(modId));
+  pendingCoverLoads.set(modId, request);
+  return request;
 }
 
 export function loadModCardImage({
@@ -52,50 +97,55 @@ export function loadModCardImage({
   applyDominantColor,
 }) {
   const image = card.querySelector(".mod-manager-cover");
-  const finishLoading = (hasCover) => {
-    if (!card.isConnected) return;
-    card.classList.remove("is-cover-loading");
-    card.classList.toggle("has-cover", hasCover);
-    card.classList.toggle("has-no-cover", !hasCover);
-  };
-  Promise.resolve()
-    .then(() => getModCover(mod.id, fetchDetails))
-    .then((localCover) => {
-      if (!localCover || !image) {
-        finishLoading(false);
-        return;
-      }
-      if (hasCachedDominantColor(localCover)) {
-        image.src = localCover;
+  const load = async () => {
+    if (!card.isConnected || !image) return;
+    try {
+      const coverUrl = await getModCover(mod, fetchDetails);
+      if (!card.isConnected || !coverUrl) return;
+
+      if (hasCachedDominantColor(coverUrl)) {
+        image.src = coverUrl;
         image.hidden = false;
         applyDominantColor(image, card);
-        finishLoading(true);
+        card.classList.remove("is-cover-loading");
+        card.classList.add("has-cover");
         return;
       }
+
       const preload = new Image();
-      const onLoad = () => {
-        preload.removeEventListener("load", onLoad);
-        preload.removeEventListener("error", onError);
+      preload.addEventListener("load", () => {
         if (!card.isConnected) return;
-        image.src = localCover;
+        image.src = coverUrl;
         image.hidden = false;
         image.onerror = () => {
           image.hidden = true;
           image.removeAttribute("src");
-          finishLoading(false);
+          card.classList.remove("is-cover-loading");
+          card.classList.add("has-no-cover");
         };
         applyDominantColor(image, card);
-        requestAnimationFrame(() => finishLoading(true));
-      };
-      const onError = () => {
-        preload.removeEventListener("load", onLoad);
-        preload.removeEventListener("error", onError);
-        finishLoading(false);
-      };
-      preload.addEventListener("load", onLoad);
-      preload.addEventListener("error", onError);
-      preload.src = localCover;
-    })
-    .catch(() => finishLoading(false));
-}
+        requestAnimationFrame(() => {
+          card.classList.remove("is-cover-loading");
+          card.classList.add("has-cover");
+        });
+      }, { once: true });
+      preload.addEventListener("error", () => {
+        if (!card.isConnected) return;
+        card.classList.remove("is-cover-loading");
+        card.classList.add("has-no-cover");
+      }, { once: true });
+      preload.src = coverUrl;
+    } catch {
+      if (!card.isConnected) return;
+      card.classList.remove("is-cover-loading");
+      card.classList.add("has-no-cover");
+    }
+  };
 
+  if (!cardImageObserver) {
+    void load();
+    return;
+  }
+  cardImageLoads.set(card, load);
+  cardImageObserver.observe(card);
+}

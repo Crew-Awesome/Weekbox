@@ -32,6 +32,19 @@ function sameId(left, right) {
   return String(left) === String(right);
 }
 
+function getProviderPersistenceMetadata(metadata) {
+  return {
+    gameBananaId: metadata.gameBananaId || null,
+    gameBananaType: metadata.gameBananaType || null,
+    providerSource: metadata.providerSource || null,
+    providerId: metadata.providerId || null,
+    providerType: metadata.providerType || null,
+    providerUrl: metadata.providerUrl || null,
+    sourceUrl: metadata.sourceUrl || null,
+    author: metadata.author || null,
+  };
+}
+
 function isOneDrivePath(path) {
   return /(?:^|[\\/])OneDrive(?:[\\/]|$)/i.test(String(path));
 }
@@ -2203,10 +2216,12 @@ var _FileSystemService = class _FileSystemService {
     });
     return available;
   }
-  async getStandaloneMods({ includeIcons = true } = {}) {
+  async getStandaloneMods({ includeIcons = true, mods: installedMods } = {}) {
     if (!this.isInitialized) return [];
+    const shouldPersist = !installedMods;
+    const mods = installedMods || (await this.mods.getAll());
     const standaloneMods = await Promise.all(
-      (await this.mods.getAll()).map(async (mod) => {
+      mods.map(async (mod) => {
         const folderName = getModFolderName(mod);
         if (!folderName) return null;
         const executable = await this.findExecutable(
@@ -2221,12 +2236,33 @@ var _FileSystemService = class _FileSystemService {
           kind: "mod",
           exePath: executable,
           icoPath: includeIcons
-            ? await this.executables.getIconDataUrl(executable)
+            ? (await this.getModIcon(mod.id)) ||
+              mod.providerIconUrl ||
+              (await this.executables.getIconDataUrl(executable))
             : "",
         };
       }),
     );
-    return standaloneMods.filter(Boolean);
+    const availableMods = standaloneMods.filter(Boolean);
+    let changed = false;
+    for (const mod of availableMods) {
+      if (
+        mod.engineId !== "executable" ||
+        mod.engineVersion ||
+        mod.engineLocked ||
+        mod.kind !== "mod"
+      ) {
+        Object.assign(mod, {
+          engineId: "executable",
+          engineVersion: null,
+          engineLocked: false,
+          kind: "mod",
+        });
+        changed = true;
+      }
+    }
+    if (changed && shouldPersist) await this.mods.saveAll(mods);
+    return availableMods;
   }
   async runStandaloneMod(modId, onStateChange) {
     this.assertStorageUnlocked();
@@ -2413,6 +2449,13 @@ var _FileSystemService = class _FileSystemService {
     coverUrl,
     gameBananaId,
     gameBananaType,
+    providerSource,
+    providerId,
+    providerType,
+    providerUrl,
+    sourceUrl,
+    author,
+    iconUrl,
   }) {
     this.assertStorageUnlocked();
     const prepared = await prepareLocalModImport(this, {
@@ -2446,9 +2489,12 @@ var _FileSystemService = class _FileSystemService {
             ? engineVersion || null
             : null,
         source: "local",
-        gameBananaId: gameBananaId || null,
-        gameBananaType: gameBananaType || null,
+        ...getProviderPersistenceMetadata({
+          gameBananaId, gameBananaType, providerSource, providerId,
+          providerType, providerUrl, sourceUrl, author,
+        }),
       });
+      if (iconUrl) await this.cacheModIcon(modId, iconUrl).catch(() => null);
       if (requestedKind !== "mod") {
         await this.setModType(modId, requestedKind);
       }
@@ -2522,7 +2568,7 @@ var _FileSystemService = class _FileSystemService {
   }
   async updateModAppearance(modId, appearance) {
     if (!this.isInitialized) return null;
-    const { coverDataUrl, coverUrl, iconDataUrl, ...metadata } = appearance;
+    const { coverDataUrl, coverUrl, iconDataUrl, iconUrl, ...metadata } = appearance;
     let coverPath;
     let iconPath;
     if (coverDataUrl !== void 0) {
@@ -2539,6 +2585,8 @@ var _FileSystemService = class _FileSystemService {
         await this.covers.removeIcon(modId);
         iconPath = null;
       }
+    } else if (iconUrl) {
+      iconPath = await this.covers.saveIconUrl(modId, iconUrl).catch(() => null);
     }
     return this.mods.updateAppearance(modId, {
       ...metadata,
@@ -2561,6 +2609,12 @@ var _FileSystemService = class _FileSystemService {
     } catch {
       return null;
     }
+  }
+  async cacheModIcon(modId, iconUrl) {
+    if (!this.isInitialized || !iconUrl) return null;
+    const iconPath = await this.covers.saveIconUrl(modId, iconUrl);
+    await this.mods.updateAppearance(modId, { iconPath });
+    return this.getModIcon(modId);
   }
   async ensureModCover(modId, getDefaultCoverUrl) {
     const localCover = await this.getModCover(modId);

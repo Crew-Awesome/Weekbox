@@ -27,6 +27,8 @@ import {
 } from "../../utils/gamebanana/submission-links.js";
 import { DISCOVERY_CONFIG } from "../../config/discovery.config.js";
 import { peoApi } from "../peo/peo.provider.js";
+import { backstageApi } from "../backstage/backstage.provider.js";
+import { gameJoltApi } from "../gamejolt/gamejolt.provider.js";
 import { nativeFetch } from "../../services/network/native-http.js";
 import {
   ENGINE_CATEGORY_IDS,
@@ -1022,9 +1024,23 @@ export const gameBananaApi = {
     const notifyProgress = async (details) => {
       if (typeof onProgress === "function") await onProgress(details);
     };
+    if (String(modId).startsWith("gamejolt:")) {
+      try {
+        return await gameJoltApi.getGameDetails(String(modId).slice("gamejolt:".length));
+      } catch {
+        return null;
+      }
+    }
     if (String(modId).startsWith("peo:")) {
       try {
         return await peoApi.getModDetails(String(modId).slice("peo:".length));
+      } catch {
+        return null;
+      }
+    }
+    if (String(modId).startsWith("backstage:")) {
+      try {
+        return await backstageApi.getModDetails(String(modId).slice("backstage:".length));
       } catch {
         return null;
       }

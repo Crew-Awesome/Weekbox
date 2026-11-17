@@ -363,12 +363,16 @@ async function handleStartupAppUpdate() {
       new Promise((_, reject) => {
         timeoutHandle = setTimeout(
           () => reject(new Error("Update check timeout")),
-          3500,
+          10000,
         );
       }),
     ]);
   } catch (error) {
-    console.warn("Could not check for a WeekBox update during startup", error);
+    if (error?.name === "AbortError" || error?.message === "Update check timeout") {
+      console.info("Skipped the startup update check because it took too long.");
+    } else {
+      console.warn("Could not check for a WeekBox update during startup", error);
+    }
     return false;
   } finally {
     if (timeoutHandle) clearTimeout(timeoutHandle);

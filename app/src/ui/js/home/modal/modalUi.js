@@ -13,6 +13,7 @@ import { getEngineLabel, i18n, t } from "../../i18n/index.js";
 import { setButtonLoading } from "../../hourglass.js";
 import { modBookmarks } from "../../../../backend/core/state/mod-bookmarks.service.js";
 import { sanitizeReleaseDom } from "../../engines/releaseNotes.js";
+import { backstageApi } from "../../../../backend/providers/backstage/backstage.provider.js";
 
 const WEEKBOX_AVATAR = "assets/icons/launcher-icon.png";
 const MODAL_OPEN_GUARD_MS = 350;
@@ -21,7 +22,9 @@ const modalShowFrames = new WeakMap();
 
 function safeExternalUrl(value) {
   try {
-    const url = new URL(String(value || "").trim(), window.location.href);
+    const rawUrl = String(value || "").trim();
+    if (!/^https?:\/\//i.test(rawUrl)) return "";
+    const url = new URL(rawUrl);
     return url.protocol === "https:" || url.protocol === "http:"
       ? url.href
       : "";
@@ -200,6 +203,10 @@ function resetModal() {
     const el = document.getElementById(id);
     if (el) el.hidden = false;
   });
+  ["modal-category-row", "modal-rating-row"].forEach((id) => {
+    const row = document.getElementById(id);
+    if (row) row.hidden = true;
+  });
   const mainImage = document.getElementById("modal-main-image");
   if (mainImage) {
     mainImage.src = "";
@@ -219,6 +226,7 @@ function resetModal() {
   }
   const authorEl = document.getElementById("modal-author");
   if (authorEl) {
+    authorEl.parentElement?.querySelector(".mod-wip-badge--modal")?.remove();
     authorEl.hidden = false;
     authorEl.disabled = true;
     authorEl.onclick = null;
@@ -290,25 +298,26 @@ function setModalInfoLoading(loading, loaderId = "modal-info-loader") {
   if (loader) loader.hidden = !loading;
 }
 
-function linkifyDescriptionSubmissionUrls(content) {
+function linkifyDescriptionUrls(content) {
   const textNodes = [];
   const walker = document.createTreeWalker(content, NodeFilter.SHOW_TEXT);
   while (walker.nextNode()) {
     const textNode = walker.currentNode;
-    if (!textNode.parentElement?.closest("a, button, script, style")) {
+    if (!textNode.parentElement?.closest("a, button, code, pre, script, style")) {
       textNodes.push(textNode);
     }
   }
-  const submissionUrl =
-    /https?:\/\/(?:www\.)?gamebanana\.com\/(?:mods|tools)\/\d+(?:[/?#][^\s<]*)?|https?:\/\/(?:[\w-]+\.)*sniro\.boo\/mod\/[^\s<]+/gi;
+  const urlPattern = /https?:\/\/[^\s<>"']+/gi;
   textNodes.forEach((textNode) => {
-    const matches = [...textNode.textContent.matchAll(submissionUrl)];
+    const matches = [...textNode.textContent.matchAll(urlPattern)];
     if (!matches.length) return;
     const fragment = document.createDocumentFragment();
     let cursor = 0;
     matches.forEach((match) => {
-      const url = match[0];
       const index = match.index || 0;
+      const rawUrl = match[0];
+      const url = rawUrl.replace(/[),.!?;:]+$/g, "");
+      if (!url) return;
       fragment.append(textNode.textContent.slice(cursor, index));
       const link = document.createElement("a");
       link.href = url;
@@ -321,11 +330,44 @@ function linkifyDescriptionSubmissionUrls(content) {
   });
 }
 
+function updateWipBadge(data) {
+  const author = document.getElementById("modal-author");
+  if (!author?.parentElement) return;
+  author.parentElement.querySelector(".mod-wip-badge--modal")?.remove();
+  const isWip = data.source === "backstage" && (data.categoryId === "wips" || data.wip);
+  if (!isWip) return;
+  const progress = Number(data.wip?.progress);
+  const badge = document.createElement("span");
+  badge.className = "mod-wip-badge mod-wip-badge--modal";
+  badge.textContent = `WIP${Number.isFinite(progress) ? ` ${progress}%` : ""}`;
+  badge.setAttribute("aria-label", Number.isFinite(progress) ? `Work in progress, ${progress}% complete` : "Work in progress");
+  author.insertAdjacentElement("afterend", badge);
+}
+
+function updateBackstageDetailRows(data) {
+  const isBackstage = data.source === "backstage";
+  const categoryRow = document.getElementById("modal-category-row");
+  const categoryValue = document.getElementById("modal-category");
+  if (categoryRow) categoryRow.hidden = !isBackstage || !data.categoryName;
+  if (categoryValue) categoryValue.textContent = data.categoryName || "";
+
+  const ratingRow = document.getElementById("modal-rating-row");
+  const ratingValue = document.getElementById("modal-rating");
+  const stars = Number(data.stars) || 0;
+  const ratings = Number(data.ratings) || 0;
+  const ratingParts = [];
+  if (stars > 0) ratingParts.push(`${stars.toLocaleString()} ${stars === 1 ? "star" : "stars"}`);
+  if (ratings > 0) ratingParts.push(`${ratings.toLocaleString()} ${ratings === 1 ? "rating" : "ratings"}`);
+  if (ratingRow) ratingRow.hidden = !isBackstage || ratingParts.length === 0;
+  if (ratingValue) ratingValue.textContent = ratingParts.join(" · ");
+}
+
 function renderModalDescription(description, data) {
   const body = sanitizeReleaseDom(data.description || "");
-  linkifyDescriptionSubmissionUrls(body);
+  linkifyDescriptionUrls(body);
   description.replaceChildren(...body.childNodes);
   enhanceContentLinks(description, {
+    onProviderMod: (modId) => modModal.open(modId),
     onGameBanana: async (submission, reference) => {
       try {
         await modModal.openSubmission(submission);
@@ -341,6 +383,18 @@ function renderModalDescription(description, data) {
   });
 }
 
+function getModalEngine(data) {
+  return FS.getEngineDetails(data.engineId) || ENGINE_DETAILS[data.engineId] ||
+    (data.source === "backstage" && data.engineName ? { name: data.engineName } : null);
+}
+
+function getModalEngineIconSource(data) {
+  if (data.engineId) return FS.getEngineIconSource(data.engineId);
+  if (data.source !== "backstage") return "";
+  if (data.engineName === "Kade Engine") return "assets/icons/kade.png";
+  return data.icon || "";
+}
+
 function resetProfileModal() {
   setModalInfoLoading(true, "profile-info-loader");
   const profileName = document.getElementById("modal-profile-name");
@@ -348,31 +402,52 @@ function resetProfileModal() {
   const profileLink = document.getElementById("modal-profile-link");
   const profileBack = document.getElementById("modal-profile-back");
   const profileGrid = document.getElementById("modal-profile-grid");
+  const profileGridTitle = document.getElementById("modal-profile-grid-title");
   if (profileName) profileName.textContent = t("common.loading");
   if (profileAvatar) {
     profileAvatar.classList.add("is-weekbox-avatar");
     profileAvatar.src = WEEKBOX_AVATAR;
   }
   if (profileLink) profileLink.hidden = true;
+  const profileLinkIcon = profileLink?.querySelector("img");
+  if (profileLinkIcon) profileLinkIcon.src = "assets/icons/gamebanana.png";
   if (profileBack) profileBack.hidden = true;
+  if (profileGridTitle) {
+    profileGridTitle.dataset.i18n = "modModal.profileMods";
+    profileGridTitle.textContent = t("modModal.profileMods");
+  }
   if (profileGrid) {
     profileGrid.className = "grid-layout mod-profile-grid";
     profileGrid.replaceChildren();
   }
 }
 
-function showProfileData(profile, mods) {
+function showProfileData(profile, mods, source = "gamebanana", contributionsFailed = false) {
   setModalInfoLoading(false, "profile-info-loader");
   const profileName = document.getElementById("modal-profile-name");
   const profileAvatar = document.getElementById("modal-profile-avatar");
   const profileLink = document.getElementById("modal-profile-link");
   const profileGrid = document.getElementById("modal-profile-grid");
+  const profileGridTitle = document.getElementById("modal-profile-grid-title");
   if (profileName) profileName.textContent = profile.username;
+  if (profileGridTitle) {
+    profileGridTitle.textContent = source === "backstage"
+      ? "Contributions"
+      : t("modModal.profileMods");
+    if (source === "backstage") profileGridTitle.removeAttribute("data-i18n");
+    else profileGridTitle.dataset.i18n = "modModal.profileMods";
+  }
   if (profileAvatar) setAvatarImage(profileAvatar, profile.avatar);
   if (profileLink) {
     const profileUrl = safeExternalUrl(profile.profileUrl);
     profileLink.hidden = !profileUrl;
     if (profileUrl) profileLink.href = profileUrl;
+    const profileLinkIcon = profileLink.querySelector("img");
+    if (profileLinkIcon) {
+      profileLinkIcon.src = source === "backstage"
+        ? "assets/icons/backstage.png"
+        : "assets/icons/gamebanana.png";
+    }
     profileLink.onclick = (event) => {
       event.preventDefault();
       if (profileUrl) Neutralino.os.open(profileUrl).catch(() => {});
@@ -382,7 +457,11 @@ function showProfileData(profile, mods) {
     profileGrid.replaceChildren();
     if (!mods.length) {
       profileGrid.classList.add("grid-empty");
-      profileGrid.textContent = t("modModal.noProfileMods");
+      profileGrid.textContent = contributionsFailed
+        ? "Could not load contributions. Try again later."
+        : source === "backstage"
+          ? "No contributions found."
+          : t("modModal.noProfileMods");
     }
   }
   return profileGrid;
@@ -390,19 +469,36 @@ function showProfileData(profile, mods) {
 
 function updateModalGameBananaLink(link, data) {
   const sourceUrl = safeExternalUrl(
-    data.source === "peo" ? data.sourceUrl : data.gameBananaUrl,
+    data.source === "peo" || data.source === "backstage" || data.source === "gamejolt" ? data.sourceUrl : data.gameBananaUrl,
   );
   if (sourceUrl) link.href = sourceUrl;
   else link.removeAttribute("href");
   link.hidden = !sourceUrl;
+  const image = link.querySelector("img");
+  if (image) image.src = data.source === "peo"
+    ? "assets/icons/psychonline.png"
+      : data.source === "backstage"
+        ? "assets/icons/backstage.png"
+        : data.source === "gamejolt"
+          ? "assets/icons/gamejolt.png"
+          : "assets/icons/gamebanana.png";
   if (data.source === "peo") {
-    const image = link.querySelector("img");
-    if (image) image.src = "assets/icons/psychonline.png";
     link.setAttribute(
       "aria-label",
       t("modModal.openOnPsychOnline", { title: data.title }),
     );
     link.title = t("modModal.openOnPsychOnline", { title: data.title });
+  }
+  if (data.source === "backstage") {
+    link.setAttribute("aria-label", `Open ${data.title} on FunkinBackstage`);
+    link.title = `Open ${data.title} on FunkinBackstage`;
+  } else if (data.source === "gamejolt") {
+    link.setAttribute("aria-label", `Open ${data.title} on GameJolt`);
+    link.title = `Open ${data.title} on GameJolt`;
+  } else if (data.source !== "peo") {
+    const label = t("dependencies.openOnGameBanana", { title: data.title || "" });
+    link.setAttribute("aria-label", label);
+    link.title = label;
   }
   link.onclick = (event) => {
     event.preventDefault();
@@ -419,8 +515,19 @@ function updateModalAuthor(data) {
   author.hidden = Boolean(data.hideAuthor);
   author.disabled = !data.authorId;
   author.onclick = data.authorId
-    ? () => modModal.openAuthor(data.authorId)
+    ? () => modModal.openAuthor(data.authorId, data.authorSource || "gamebanana")
     : null;
+}
+
+function updateModalProviderTabs(data) {
+  const tab = document.getElementById("modal-tab-contributors");
+  if (!tab) return;
+  const songs = data.source === "gamejolt" && Array.isArray(data.songs) ? data.songs : [];
+  const showMusic = data.source === "gamejolt" && songs.length > 0;
+  tab.hidden = data.source === "gamejolt" && !showMusic;
+  tab.textContent = showMusic ? "Music" : t("modModal.tabContributors");
+  if (showMusic) tab.removeAttribute("data-i18n");
+  else tab.dataset.i18n = "modModal.tabContributors";
 }
 
 function updateModalContributors(data) {
@@ -428,9 +535,44 @@ function updateModalContributors(data) {
   const empty = document.getElementById("modal-no-credits");
   if (!groups) return;
   groups.replaceChildren();
+  if (data.source === "gamejolt") {
+    const songs = Array.isArray(data.songs) ? data.songs.filter((song) => song?.title || song?.filename) : [];
+    if (empty) empty.hidden = songs.length > 0;
+    for (const song of songs) {
+      const row = document.createElement("div");
+      row.className = "gamejolt-track-row";
+      const heading = document.createElement("div");
+      heading.className = "gamejolt-track-heading";
+      const copy = document.createElement("span");
+      copy.className = "gamejolt-track-copy";
+      const title = document.createElement("strong");
+      title.textContent = song.title || song.filename || "Untitled track";
+      copy.append(title);
+      heading.append(copy);
+      row.appendChild(heading);
+      const url = safeExternalUrl(song.url);
+      if (url) {
+        const audio = document.createElement("audio");
+        audio.className = "gamejolt-track-player";
+        audio.controls = true;
+        audio.preload = "none";
+        audio.src = url;
+        audio.setAttribute("aria-label", `Play ${title.textContent}`);
+        audio.addEventListener("play", () => {
+          document.querySelectorAll("#mod-modal .gamejolt-track-player").forEach((other) => {
+            if (other !== audio) other.pause();
+          });
+        });
+        row.appendChild(audio);
+      }
+      groups.appendChild(row);
+    }
+    return;
+  }
   const credits = Array.isArray(data.credits) ? data.credits : [];
   if (empty) empty.hidden = credits.length > 0;
   const fragment = document.createDocumentFragment();
+  const creditAvatars = new Map();
   credits.forEach((group) => {
     const section = document.createElement("section");
     section.className = "modal-credit-group";
@@ -448,6 +590,21 @@ function updateModalContributors(data) {
       avatar.loading = "lazy";
       if (!author.id && !author.url) avatar.classList.add("is-unlinked");
       setAvatarImage(avatar, author.avatar);
+      if (data.source === "backstage" && author.id != null) {
+        const userId = String(author.id);
+        if (!creditAvatars.has(userId)) creditAvatars.set(userId, []);
+        creditAvatars.get(userId).push(avatar);
+      }
+      let avatarContent = avatar;
+      if (author.id) {
+        const avatarButton = document.createElement("button");
+        avatarButton.type = "button";
+        avatarButton.className = "modal-credit-avatar-button";
+        avatarButton.setAttribute("aria-label", `Open ${author.name}'s profile`);
+        avatarButton.onclick = () => modModal.openAuthor(author.id, author.source || "gamebanana");
+        avatarButton.appendChild(avatar);
+        avatarContent = avatarButton;
+      }
       const info = document.createElement("div");
       info.className = "modal-credit-info";
       const nameRow = document.createElement("div");
@@ -460,8 +617,8 @@ function updateModalContributors(data) {
       nameRow.appendChild(name);
       if (author.id) {
         name.type = "button";
-        name.onclick = () => modModal.openAuthor(author.id);
-      } else if (safeExternalUrl(author.url)) {
+        name.onclick = () => modModal.openAuthor(author.id, author.source || "gamebanana");
+      } else if (data.source !== "backstage" && safeExternalUrl(author.url)) {
         const authorUrl = safeExternalUrl(author.url);
         const link = document.createElement("a");
         link.className = "modal-credit-link";
@@ -484,13 +641,21 @@ function updateModalContributors(data) {
         role.textContent = author.role;
         info.appendChild(role);
       }
-      row.append(avatar, info);
+      row.append(avatarContent, info);
       list.appendChild(row);
     });
     section.append(heading, list);
     fragment.appendChild(section);
   });
   groups.appendChild(fragment);
+  creditAvatars.forEach((avatars, userId) => {
+    void backstageApi.getUserProfile(userId).then((profile) => {
+      if (!profile?.avatar) return;
+      avatars.forEach((avatar) => {
+        if (avatar.isConnected) setAvatarImage(avatar, profile.avatar);
+      });
+    }).catch(() => {});
+  });
 }
 
 function updateModalRequirements(data) {
@@ -524,7 +689,10 @@ function showModData(data, installedCount, onDownload) {
   setModalInfoLoading(false);
   const titleEl = document.getElementById("modal-title");
   if (titleEl) titleEl.textContent = data.title;
+  updateModalProviderTabs(data);
+  updateBackstageDetailRows(data);
   updateModalAuthor(data);
+  updateWipBadge(data);
   updateModalContributors(data);
   updateModalRequirements(data);
   const timeEl = document.getElementById("modal-time");
@@ -539,15 +707,30 @@ function showModData(data, installedCount, onDownload) {
     if (dateEl) dateEl.hidden = !value;
   });
   const likesEl = document.getElementById("modal-likes");
-  if (likesEl) likesEl.textContent = data.likes.toLocaleString();
+  if (likesEl) {
+    likesEl.textContent = Number(data.likes || 0).toLocaleString();
+    const metric = likesEl.closest(".modal-detail-metric");
+    if (metric) metric.hidden = data.source === "gamejolt";
+  }
   const viewsEl = document.getElementById("modal-views");
   if (viewsEl) {
-    viewsEl.textContent = (data.downloads ?? data.views).toLocaleString();
+    const count = data.source === "gamejolt"
+      ? data.followers
+      : data.downloads ?? data.views;
+    viewsEl.textContent = Number(count || 0).toLocaleString();
+    const label = viewsEl.closest(".modal-detail-metric")?.querySelector("span");
+    if (label) {
+      label.textContent = data.source === "gamejolt" ? "Followers" : t("modModal.views");
+    }
   }
   const viewsIcon = document.getElementById("modal-views-icon");
   if (viewsIcon) {
     viewsIcon.className =
-      data.source === "peo" ? "fa-solid fa-download" : "fa-solid fa-eye";
+      data.source === "peo" || data.source === "backstage"
+        ? "fa-solid fa-download"
+        : data.source === "gamejolt"
+          ? "fa-solid fa-user-group"
+          : "fa-solid fa-eye";
   }
   const description = document.getElementById("modal-description");
   if (description) renderModalDescription(description, data);
@@ -557,14 +740,15 @@ function showModData(data, installedCount, onDownload) {
   const gameBananaLink = document.getElementById("modal-gamebanana-link");
   if (gameBananaLink) updateModalGameBananaLink(gameBananaLink, data);
   updateBookmarkButton(data);
-  const engine =
-    FS.getEngineDetails(data.engineId) || ENGINE_DETAILS[data.engineId];
+  const engine = getModalEngine(data);
   const engineBadge = document.getElementById("modal-engine-badge");
   const engineIcon = document.getElementById("modal-engine-icon");
   const engineName = document.getElementById("modal-engine-name");
   if (engine) {
     if (engineIcon) {
-      engineIcon.src = FS.getEngineIconSource(data.engineId);
+      const iconSource = getModalEngineIconSource(data);
+      engineIcon.hidden = !iconSource;
+      if (iconSource) engineIcon.src = iconSource;
       engineIcon.alt = "";
     }
     if (engineName)
@@ -624,12 +808,18 @@ function updateDownloadStatus(data, installedCount, onDownload) {
     setModalDownloadButton(button, "fa-solid fa-check", installedLabel, true);
   } else {
     const sourceUrl = safeExternalUrl(
-      data.source === "peo" ? data.sourceUrl : data.gameBananaUrl,
+      data.source === "peo" || data.source === "backstage" || data.source === "gamejolt" ? data.sourceUrl : data.gameBananaUrl,
     );
     const isPsych = data.source === "peo";
+    const isBackstage = data.source === "backstage";
+    const isGameJolt = data.source === "gamejolt";
     const label = isPsych
       ? t("modModal.openOnPsychOnline", { title: data.title || "" })
-      : t("modModal.downloadOnGameBanana");
+      : isBackstage
+        ? `Open on FunkinBackstage`
+        : isGameJolt
+          ? "Open on GameJolt"
+          : t("modModal.downloadOnGameBanana");
     setModalDownloadButton(
       button,
       "fa-solid fa-arrow-up-right-from-square",

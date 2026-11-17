@@ -57,6 +57,15 @@
         </screenshot>
     </screenshots>
     <releases>
+        <release version="2.7.0" date="2026-11-16">
+            <description>
+                <ul>
+                    <li>Browse mods from Funkin' Backstage and GameJolt.</li>
+                    <li>Save mods to bookmarks and open linked provider mod pages.</li>
+                    <li>Use WIP progress badges on Backstage mods.</li>
+                </ul>
+            </description>
+        </release>
         <release version="2.6.4" date="2026-10-25" >
             <description>
             <ul>

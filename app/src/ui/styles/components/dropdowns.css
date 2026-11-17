@@ -143,6 +143,13 @@
   display: flex;
 }
 
+/* Menus portaled into a modal escape its scroll container and are positioned by the shared dropdown controller. */
+.custom-options-container.dropdown-portal-menu {
+  display: flex !important;
+  z-index: 1200;
+  box-shadow: 0 8px 28px color-mix(in srgb, var(--shadow) 46%, transparent);
+}
+
 .pill-dropdown .custom-option {
   box-sizing: border-box;
   width: 100%;

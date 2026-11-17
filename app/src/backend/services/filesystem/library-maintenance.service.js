@@ -195,6 +195,10 @@ var _LibraryMaintenanceService = class _LibraryMaintenanceService {
         })),
       );
       for (const { mod, executable } of results) {
+        if (mod.providerSource === "backstage" && mod.engineLocked) {
+          mod.engineLocked = false;
+          changed = true;
+        }
         if (!executable) {
           if (mod.engineId !== "executable") continue;
           mod.engineId = null;

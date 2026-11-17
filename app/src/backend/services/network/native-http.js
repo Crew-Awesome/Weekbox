@@ -22,7 +22,7 @@ function toResponse(result) {
 
 function asHttpResponse(error) {
   const status = Number(error?.statusCode ?? error?.status);
-  if (status < 100 || status > 599) throw error;
+  if (!Number.isFinite(status) || status < 100 || status > 599) throw error;
   return toResponse(error);
 }
 

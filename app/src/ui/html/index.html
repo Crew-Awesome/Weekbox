@@ -1,5 +1,4 @@
 <template id="tpl-mainModal">
-
   <div class="mod-manager-overlay" id="mod-manager-modal" style="display: none">
     <div
       class="mod-manager-content"
@@ -336,7 +335,6 @@
         </header>
 
         <div class="config-body">
-
           <div id="config-general" class="config-tab-content active">
             <div class="settings-list">
               <div class="setting-item">
@@ -418,7 +416,8 @@
                 <div class="setting-info">
                   <h4 data-i18n="settings.accentColor">Accent color</h4>
                   <p data-i18n="settings.accentColorDescription">
-                    Choose the color used for buttons, highlights, and focus rings.
+                    Choose the color used for buttons, highlights, and focus
+                    rings.
                   </p>
                 </div>
                 <div class="setting-color-control">
@@ -546,7 +545,6 @@
             </div>
           </div>
 
-
           <div
             id="config-engines"
             class="config-tab-content"
@@ -615,7 +613,6 @@
               </div>
             </div>
           </div>
-
 
           <div
             id="config-library"
@@ -692,13 +689,14 @@
                     id="delete-all-library"
                   >
                     <i class="fa-solid fa-trash" aria-hidden="true"></i>
-                    <span data-i18n="settings.clearLibrary">Clear library data</span>
+                    <span data-i18n="settings.clearLibrary"
+                      >Clear library data</span
+                    >
                   </button>
                 </div>
               </div>
             </div>
           </div>
-
 
           <div
             id="config-updates"
@@ -782,9 +780,18 @@
           id="library-delete-status"
           role="status"
         ></p>
-        <div class="library-delete-target-picker" id="library-delete-target-picker">
-          <label for="library-delete-target-trigger" id="library-delete-target-label"></label>
-          <div class="mod-settings-dropdown library-delete-target-dropdown" id="library-delete-target-dropdown">
+        <div
+          class="library-delete-target-picker"
+          id="library-delete-target-picker"
+        >
+          <label
+            for="library-delete-target-trigger"
+            id="library-delete-target-label"
+          ></label>
+          <div
+            class="mod-settings-dropdown library-delete-target-dropdown"
+            id="library-delete-target-dropdown"
+          >
             <button
               type="button"
               class="mod-settings-dropdown-trigger"
@@ -793,7 +800,10 @@
               aria-expanded="false"
             >
               <span id="library-delete-target-selected"></span>
-              <i class="fa-solid fa-chevron-down mod-settings-select-chevron" aria-hidden="true"></i>
+              <i
+                class="fa-solid fa-chevron-down mod-settings-select-chevron"
+                aria-hidden="true"
+              ></i>
             </button>
             <div
               class="mod-settings-dropdown-menu"
@@ -802,7 +812,11 @@
               hidden
             >
               <button type="button" role="option" data-target="mods"></button>
-              <button type="button" role="option" data-target="engines"></button>
+              <button
+                type="button"
+                role="option"
+                data-target="engines"
+              ></button>
               <button type="button" role="option" data-target="all"></button>
             </div>
             <select id="library-delete-target" hidden>
@@ -813,8 +827,15 @@
             </select>
           </div>
         </div>
-        <div class="library-delete-confirmation" id="library-delete-confirmation" hidden>
-          <label for="library-delete-confirmation-input" id="library-delete-confirmation-label"></label>
+        <div
+          class="library-delete-confirmation"
+          id="library-delete-confirmation"
+          hidden
+        >
+          <label
+            for="library-delete-confirmation-input"
+            id="library-delete-confirmation-label"
+          ></label>
           <input
             id="library-delete-confirmation-input"
             type="text"
@@ -1178,17 +1199,110 @@
 
       <section class="mods-section">
         <header class="section-header">
-          <div class="home-grid-switcher" data-home-mode-switcher role="tablist" aria-label="Home content">
-            <button class="pill-btn home-grid-switcher__tab selected" type="button" data-home-mode="mods" role="tab" aria-selected="true">
-              <i class="fa-solid fa-puzzle-piece" aria-hidden="true"></i>
-              <span data-i18n="common.mods">Mods</span>
-            </button>
-            <button class="pill-btn home-grid-switcher__tab" type="button" data-home-mode="bookmarks" role="tab" aria-selected="false">
+          <div class="home-grid-switcher" data-home-mode-switcher>
+            <div
+              class="pill-dropdown home-service-picker"
+              id="home-service-dropdown"
+            >
+              <button
+                class="pill-btn home-grid-switcher__tab selected dropdown-trigger"
+                id="home-service-trigger"
+                type="button"
+                aria-haspopup="listbox"
+                aria-expanded="false"
+                aria-controls="home-service-options"
+              >
+                <span
+                  class="home-service-icon"
+                  id="home-service-icon"
+                  aria-hidden="true"
+                >
+                  <img src="assets/icons/gamebanana.png" alt="" />
+                </span>
+                <span id="home-service-selected">GameBanana</span>
+                <i
+                  class="fa-solid fa-chevron-down filter-dropdown-chevron"
+                  aria-hidden="true"
+                ></i>
+              </button>
+              <div
+                class="custom-options-container"
+                id="home-service-options"
+                role="listbox"
+                aria-labelledby="home-service-trigger"
+                hidden
+              >
+                <button
+                  class="custom-option selected"
+                  type="button"
+                  role="option"
+                  aria-selected="true"
+                  data-home-service="gamebanana"
+                >
+                  <span class="home-service-icon" aria-hidden="true">
+                    <img src="assets/icons/gamebanana.png" alt="" />
+                  </span>
+                  <span class="home-service-option-label">GameBanana</span>
+                </button>
+                <button
+                  class="custom-option"
+                  type="button"
+                  role="option"
+                  aria-selected="false"
+                  data-home-service="psychonline"
+                >
+                  <span class="home-service-icon" aria-hidden="true">
+                    <img src="assets/icons/psychonline.png" alt="" />
+                  </span>
+                  <span
+                    class="home-service-option-label"
+                    data-i18n="home.psychOnline"
+                    >Psych Online</span
+                  >
+                </button>
+                <button
+                  class="custom-option"
+                  type="button"
+                  role="option"
+                  aria-selected="false"
+                  data-home-service="backstage"
+                >
+                  <span class="home-service-icon" aria-hidden="true">
+                    <img src="assets/icons/backstage.png" alt="" />
+                  </span>
+                  <span class="home-service-option-label">FunkinBackstage</span>
+                </button>
+                <button
+                  class="custom-option"
+                  type="button"
+                  role="option"
+                  aria-selected="false"
+                  data-home-service="gamejolt"
+                >
+                  <span class="home-service-icon" aria-hidden="true"
+                    ><img src="assets/icons/gamejolt.png" alt=""
+                  /></span>
+                  <span class="home-service-option-label">GameJolt</span>
+                </button>
+              </div>
+            </div>
+            <button
+              class="pill-btn home-grid-switcher__tab"
+              type="button"
+              data-home-mode="bookmarks"
+              aria-pressed="false"
+            >
               <i class="fa-solid fa-bookmark" aria-hidden="true"></i>
               <span data-i18n="home.bookmarks">Bookmarks</span>
             </button>
           </div>
-          <h2 id="grid-section-title" class="visually-hidden" data-i18n="common.mods">Mods</h2>
+          <h2
+            id="grid-section-title"
+            class="visually-hidden"
+            data-i18n="common.mods"
+          >
+            Mods
+          </h2>
           <div class="filter-pills" id="grid-filters">
             <div class="pill-dropdown" id="engine-filter-dropdown">
               <button
@@ -1330,6 +1444,64 @@
               </div>
             </div>
 
+            <button
+              class="pill-btn backstage-filters-button"
+              id="backstage-filters-button"
+              type="button"
+              aria-haspopup="dialog"
+              aria-controls="backstage-filters-modal"
+              hidden
+            >
+              <i class="fa-solid fa-sliders" aria-hidden="true"></i>
+              <span>Filters</span>
+              <span
+                class="backstage-filters-indicator"
+                aria-hidden="true"
+                hidden
+              ></span>
+            </button>
+
+            <button
+              class="pill-btn gamejolt-filters-button"
+              id="gamejolt-filters-button"
+              type="button"
+              aria-haspopup="dialog"
+              aria-controls="gamejolt-filters-modal"
+              hidden
+            >
+              <i class="fa-solid fa-sliders" aria-hidden="true"></i>
+              <span>Filters</span>
+              <span
+                class="gamejolt-filters-indicator"
+                aria-hidden="true"
+                hidden
+              ></span>
+            </button>
+
+            <div class="pill-dropdown" id="backstage-category-dropdown" hidden>
+              <button
+                class="pill-btn dropdown-trigger"
+                id="backstage-category-trigger"
+                type="button"
+                aria-haspopup="listbox"
+                aria-expanded="false"
+              >
+                <i class="fa-solid fa-shapes" aria-hidden="true"></i>
+                <span id="backstage-category-selected">All categories</span>
+                <i
+                  class="fa-solid fa-chevron-down filter-dropdown-chevron"
+                  aria-hidden="true"
+                ></i>
+              </button>
+              <div
+                class="custom-options-container"
+                id="backstage-category-options"
+                role="listbox"
+                aria-label="Mod category filter"
+                hidden
+              ></div>
+            </div>
+
             <div class="pill-dropdown" id="sort-filter-dropdown">
               <button
                 class="pill-btn dropdown-trigger"
@@ -1399,6 +1571,15 @@
                 </button>
               </div>
             </div>
+            <button
+              class="pill-btn"
+              id="backstage-reverse-sort"
+              type="button"
+              aria-pressed="false"
+              hidden
+            >
+              Reverse
+            </button>
           </div>
         </header>
 
@@ -1497,14 +1678,16 @@
 
         <div class="modal-header-info">
           <h2 id="modal-title" data-i18n="common.loading">Loading...</h2>
-          <button
-            class="modal-author"
-            id="modal-author"
-            type="button"
-            data-i18n="home.byUnknown"
-          >
-            by ---
-          </button>
+          <div class="modal-wip-row">
+            <button
+              class="modal-author"
+              id="modal-author"
+              type="button"
+              data-i18n="home.byUnknown"
+            >
+              by ---
+            </button>
+          </div>
         </div>
 
         <nav
@@ -1601,6 +1784,16 @@
                   </span>
                   <span data-i18n="common.engine">Engine</span>
                   <strong id="modal-engine-name"></strong>
+                </div>
+                <div class="modal-detail-row" id="modal-category-row" hidden>
+                  <i class="fa-solid fa-layer-group" aria-hidden="true"></i>
+                  <span>Category</span>
+                  <strong id="modal-category"></strong>
+                </div>
+                <div class="modal-detail-row" id="modal-rating-row" hidden>
+                  <i class="fa-solid fa-star" aria-hidden="true"></i>
+                  <span>Rating</span>
+                  <strong id="modal-rating"></strong>
                 </div>
                 <div
                   class="modal-detail-row"
@@ -1751,15 +1944,14 @@
           title="View profile"
           hidden
         >
-          <img
-            src="https://images.gamebanana.com/static/img/banana.png"
-            alt=""
-          />
+          <img src="assets/icons/gamebanana.png" alt="" />
         </a>
       </header>
       <div class="mod-profile-body">
         <div class="mod-profile-title-row">
-          <h3 data-i18n="modModal.profileMods">Friday Night Funkin' mods</h3>
+          <h3 id="modal-profile-grid-title" data-i18n="modModal.profileMods">
+            Friday Night Funkin' mods
+          </h3>
         </div>
         <div class="grid-layout mod-profile-grid" id="modal-profile-grid"></div>
       </div>
@@ -1769,25 +1961,97 @@
 <template id="tpl-news">
   <section class="news-view" aria-labelledby="news-view-title">
     <div class="news-view__layout">
-      <aside class="news-view__account-sidebar" data-news-account-sidebar hidden>
-        <h2 class="news-view__account-sidebar-title" data-i18n="nav.news">News</h2>
-        <div class="custom-options-container news-account-options" role="listbox" aria-label="News account filter"></div>
+      <aside
+        class="news-view__account-sidebar"
+        data-news-account-sidebar
+        hidden
+      >
+        <h2 class="news-view__account-sidebar-title" data-i18n="nav.news">
+          News
+        </h2>
+        <div
+          class="custom-options-container news-account-options"
+          role="listbox"
+          aria-label="News account filter"
+        ></div>
       </aside>
       <div class="news-view__content">
         <header class="news-view__header">
           <h1 id="news-view-title" data-i18n="nav.news">News</h1>
           <div class="news-view__actions" data-news-controls hidden>
-            <div class="pill-dropdown news-view__account-dropdown" id="news-account-dropdown">
-              <button class="pill-btn dropdown-trigger" id="news-account-trigger" type="button" aria-haspopup="listbox" aria-expanded="false">
-                <span class="filter-engine-icon news-account-trigger-icon" aria-hidden="true"><i class="fa-solid fa-users"></i></span>
+            <div
+              class="pill-dropdown news-view__account-dropdown"
+              id="news-account-dropdown"
+            >
+              <button
+                class="pill-btn dropdown-trigger"
+                id="news-account-trigger"
+                type="button"
+                aria-haspopup="listbox"
+                aria-expanded="false"
+              >
+                <span
+                  class="filter-engine-icon news-account-trigger-icon"
+                  aria-hidden="true"
+                  ><i class="fa-solid fa-users"></i
+                ></span>
                 <span id="news-account-selected">News feeds</span>
-                <i class="fa-solid fa-chevron-down filter-dropdown-chevron" aria-hidden="true"></i>
+                <i
+                  class="fa-solid fa-chevron-down filter-dropdown-chevron"
+                  aria-hidden="true"
+                ></i>
               </button>
-              <div class="custom-options-container news-account-options" id="news-account-options" role="listbox" aria-label="News account filter">
-                <button class="custom-option" type="button" data-account="News_Funkin" role="option" aria-selected="false">Funkin News</button>
-                <button class="custom-option" type="button" data-account="Discussingfnf" role="option" aria-selected="false">Discussing FNF</button>
-                <button class="custom-option" type="button" data-account="FNF_Developers" role="option" aria-selected="false">FNF Developers</button>
-                <button class="custom-option" type="button" data-account="GameBananaFNF" role="option" aria-selected="false">GameBanana FNF</button>
+              <div
+                class="custom-options-container news-account-options"
+                id="news-account-options"
+                role="listbox"
+                aria-label="News account filter"
+              >
+                <button
+                  class="custom-option"
+                  type="button"
+                  data-account="News_Funkin"
+                  role="option"
+                  aria-selected="false"
+                >
+                  Funkin News
+                </button>
+                <button
+                  class="custom-option"
+                  type="button"
+                  data-account="FunkinFest"
+                  role="option"
+                  aria-selected="false"
+                >
+                  FunkinFest
+                </button>
+                <button
+                  class="custom-option"
+                  type="button"
+                  data-account="Discussingfnf"
+                  role="option"
+                  aria-selected="false"
+                >
+                  Discussing FNF
+                </button>
+                <button
+                  class="custom-option"
+                  type="button"
+                  data-account="FNF_Developers"
+                  role="option"
+                  aria-selected="false"
+                >
+                  FNF Developers
+                </button>
+                <button
+                  class="custom-option"
+                  type="button"
+                  data-account="GameBananaFNF"
+                  role="option"
+                  aria-selected="false"
+                >
+                  GameBanana FNF
+                </button>
               </div>
             </div>
             <button class="news-view__refresh" type="button" data-news-refresh>
@@ -1913,39 +2177,6 @@
           <i class="fa-solid fa-server" aria-hidden="true"></i>
           <span data-i18n="nav.engineManager">Engines</span>
         </button>
-        <details
-          id="standalone-mods-container"
-          class="sidebar__section sidebar__list"
-          data-section-key="standalone-mods"
-          open
-        >
-          <div class="sidebar__divider"></div>
-          <summary class="sidebar__section-toggle">
-            <span>
-              <i class="fa-solid fa-puzzle-piece" aria-hidden="true"></i>
-              <span data-i18n="sidebar.standaloneMods">Standalone Mods</span>
-            </span>
-            <i class="fa-solid fa-chevron-down" aria-hidden="true"></i>
-          </summary>
-          <div class="sidebar__wrapper" id="standalone-mods-wrapper"></div>
-        </details>
-        <details
-          id="recently-played-container"
-          class="sidebar__section sidebar__list"
-          data-section-key="recently-played"
-          open
-          hidden
-        >
-          <div class="sidebar__divider"></div>
-          <summary class="sidebar__section-toggle">
-            <span>
-              <i class="fa-solid fa-clock-rotate-left" aria-hidden="true"></i>
-              <span data-i18n="sidebar.recentlyPlayed">Recently Played</span>
-            </span>
-            <i class="fa-solid fa-chevron-down" aria-hidden="true"></i>
-          </summary>
-          <div class="sidebar__wrapper" id="recently-played-wrapper"></div>
-        </details>
       </nav>
     </div>
     <button class="sidebar__btn sidebar__btn--config" id="config-btn">

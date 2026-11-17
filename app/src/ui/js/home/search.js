@@ -95,12 +95,15 @@ export const homeSearch = {
 
   setSearchType(type) {
     if (!type || !["mods", "users"].includes(type)) return;
+    const supportsUserSearch = ["gamebanana", "backstage"].includes(homeGrid.service);
+    if (type === "users" && !supportsUserSearch) return;
     this.searchType = type;
     homeGrid.searchType = type;
     const input = document.getElementById("mod-search-input");
     const hint = document.getElementById("mod-search-hint");
     this.syncSearchType(input, hint);
     this.searchTypeDropdown?.close();
+    document.dispatchEvent(new Event("home-search-type-changed"));
     if (input?.value.trim()) this.executeSearch(input.value);
     else homeSearchDropdown.updateDropdown();
   },
@@ -126,7 +129,17 @@ export const homeSearch = {
     const options = document.querySelectorAll(
       "#search-type-options [data-search-type]",
     );
+    const supportsUserSearch = ["gamebanana", "backstage"].includes(homeGrid.service);
+    if (!supportsUserSearch && this.searchType === "users") {
+      this.searchType = "mods";
+      homeGrid.searchType = "mods";
+    }
     const isUsers = this.searchType === "users";
+    const isGenericServiceMods = !isUsers && homeGrid.service !== "gamebanana";
+    const isBackstageUsers = isUsers && homeGrid.service === "backstage";
+    document.querySelectorAll("#search-type-options [data-search-type='users']").forEach((option) => {
+      option.hidden = !supportsUserSearch;
+    });
     if (label) label.textContent = t(isUsers ? "common.users" : "common.mods");
     if (triggerIcon)
       triggerIcon.className = isUsers
@@ -139,15 +152,21 @@ export const homeSearch = {
     });
     if (input) {
       input.placeholder = "";
-      input.setAttribute(
-        "aria-label",
-        t(isUsers ? "home.searchGameBananaUsers" : "home.searchGameBanana"),
-      );
+      const labelKey = isUsers
+        ? "home.searchGameBananaUsers"
+        : isGenericServiceMods
+          ? "home.searchPlaceholder"
+          : "home.searchGameBanana";
+      input.setAttribute("aria-label", isBackstageUsers ? "Search FunkinBackstage users" : t(labelKey));
     }
-    if (hint)
-      hint.textContent = t(
-        isUsers ? "home.searchUsersHint" : "home.searchHint",
-      );
+    if (hint) {
+      const hintKey = isUsers
+        ? "home.searchUsersHint"
+        : isGenericServiceMods
+          ? "home.searchPlaceholder"
+          : "home.searchHint";
+      hint.textContent = isBackstageUsers ? "Search users on FunkinBackstage" : t(hintKey);
+    }
     if (input && hint) this.updateHintVisibility(input, hint);
   },
 

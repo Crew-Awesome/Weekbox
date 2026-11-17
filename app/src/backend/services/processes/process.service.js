@@ -5,6 +5,7 @@ import {
   findDescendantPids,
 } from "./process-tree.util.js";
 import { appSettings } from "../../core/system/settings.service.js";
+import { errorHandler } from "../../../ui/js/errors/errorHandler.js";
 
 var ACTIVE_PROCESSES_KEY = "weekbox_active_processes";
 var WINE_COMMANDS = [
@@ -332,18 +333,16 @@ var _ProcessService = class _ProcessService {
           return false;
         }
 
-        if (await isFlatpak()) {
-            const lastSlash = executablePath.lastIndexOf("/");
-            const folderPath = executablePath.slice(0, lastSlash + 1);
-            const filePath = executablePath.slice(lastSlash + 1);
-  
-            command = [
-                this.wrapFlatpakCMD(
-                    quoteShellArgument(folderPath),
-                    `./${quoteShellArgument(wineCommand)} ${quoteShellArgument(executablePath)}`,
-                    args.map((arg) => quoteShellArgument(arg))
-                )
-            ].join(" ");
+        if (window.NL_OS === "Linux" && await this.isFlatpak()) {
+          const lastSlash = executablePath.lastIndexOf("/");
+          const folderPath = executablePath.slice(0, lastSlash + 1);
+          command = [
+            this.wrapFlatpakCMD(
+              quoteShellArgument(folderPath),
+              `./${quoteShellArgument(wineCommand)} ${quoteShellArgument(executablePath)}`,
+              args.map((arg) => quoteShellArgument(arg)),
+            ),
+          ].join(" ");
         } else {
           command = [
             `${quoteShellArgument(wineCommand)} ${quoteShellArgument(executablePath)}`,
@@ -351,7 +350,7 @@ var _ProcessService = class _ProcessService {
           ].join(" ");
         }
       } else {
-        if (await isFlatpak()) {
+        if (window.NL_OS === "Linux" && await this.isFlatpak()) {
           const lastSlash = executablePath.lastIndexOf("/");
           const folderPath = executablePath.slice(0, lastSlash + 1);
           const filePath = executablePath.slice(lastSlash + 1);

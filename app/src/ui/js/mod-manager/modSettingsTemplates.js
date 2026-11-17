@@ -131,18 +131,8 @@ function renderIdentitySection({ localCover, readOnly, isDependency }) {
         </aside>`;
 }
 
-function renderIdentityHeader({ mod, localIcon, readOnly }) {
-  const defaultIcon = mod.engineId
-    ? FS.getEngineIconSource(mod.engineId)
-    : "assets/icons/exe.png";
+function renderIdentityHeader({ mod, readOnly }) {
   return `<div class="mod-settings-identity-header">
-          <div class="mod-settings-icon-picker">
-            <img class="mod-settings-icon" src="${escapeHtml(localIcon || defaultIcon)}" alt="${t("modSettings.currentSidebarIcon")}">
-            <label class="mod-settings-icon-upload" title="${readOnly ? t("modSettings.changesUnavailable") : t("modSettings.changeSidebarIcon")}" aria-label="${readOnly ? t("modSettings.changesUnavailable") : t("modSettings.changeSidebarIcon")}" tabindex="0">
-              <i class="fa-solid fa-upload" aria-hidden="true"></i>
-              <input class="mod-settings-icon-file" type="file" accept="image/*" ${readOnly ? "disabled" : ""}>
-            </label>
-          </div>
           <input class="mod-settings-name" aria-label="${t("import.modName")}" value="${escapeHtml(mod.name)}" maxlength="120" required ${readOnly ? "disabled" : ""}>
         </div>`;
 }
@@ -150,7 +140,6 @@ function renderIdentityHeader({ mod, localIcon, readOnly }) {
 export function settingsContent({
   mod,
   localCover,
-  localIcon,
   controlsDisabled,
   canReset,
   resetTitle,
@@ -178,7 +167,7 @@ export function settingsContent({
       <div class="mod-settings-body">
         ${renderIdentitySection({ localCover, readOnly, isDependency })}
         <main class="mod-settings-main">
-          ${renderIdentityHeader({ mod, localIcon, readOnly })}
+        ${renderIdentityHeader({ mod, readOnly })}
           <section class="mod-settings-section mod-settings-general">
             ${renderEngineSection({
               hasEngine,
@@ -192,7 +181,7 @@ export function settingsContent({
           <section class="mod-settings-section mod-settings-sources">
             <div class="mod-settings-source-actions">
               ${isExecutable ? `<button type="button" class="mod-settings-convert-engine" ${readOnly || fileLocked ? "disabled" : ""}><i class="fa-solid fa-arrows-rotate" aria-hidden="true"></i> ${t("engineManager.convertExecutable")}</button>` : ""}
-              <button type="button" class="mod-settings-import-gamebanana" ${readOnly || fileLocked ? "disabled" : ""}><img class="gamebanana-icon" src="assets/icons/gamebanana.png" alt=""> ${t("import.importGameBanana")}</button>
+              <button type="button" class="mod-settings-import-provider" ${readOnly || fileLocked ? "disabled" : ""}><i class="fa-solid fa-link" aria-hidden="true"></i> ${t("import.importProvider")}</button>
             </div>
           </section>
         </main>

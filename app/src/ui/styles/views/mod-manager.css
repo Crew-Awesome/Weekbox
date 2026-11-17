@@ -1103,11 +1103,17 @@
   max-width: 100%;
   --card-image-height: 160px;
   --card-color: var(--surface-control-hover);
+  content-visibility: auto;
+  contain-intrinsic-size: auto 280px;
   animation: card-enter 420ms cubic-bezier(0.16, 1, 0.3, 1) both;
   animation-delay: calc(var(--card-index, 0) * 45ms);
   transition:
     transform 180ms cubic-bezier(0.2, 0, 0, 1),
     box-shadow 180ms cubic-bezier(0.2, 0, 0, 1);
+}
+
+.mod-manager-card--no-enter {
+  animation: none;
 }
 
 .mod-manager-card.is-hidden {
@@ -2067,7 +2073,7 @@
   justify-self: end;
 }
 
-.local-mod-import-gamebanana {
+.local-mod-import-provider {
   min-height: 36px;
   padding: 0 12px;
   border: 1px solid var(--border-color);
@@ -2078,7 +2084,7 @@
   cursor: pointer;
 }
 
-.local-mod-import-gamebanana:hover {
+.local-mod-import-provider:hover {
   border-color: var(--accent-color);
 }
 
@@ -2436,7 +2442,7 @@
   justify-self: start;
 }
 
-.local-mod-import-footer .local-mod-import-gamebanana {
+.local-mod-import-footer .local-mod-import-provider {
   grid-column: 2;
   grid-row: 1;
   justify-self: center;
@@ -2453,20 +2459,76 @@
   margin-right: auto;
 }
 
-.local-mod-gamebanana-overlay {
+.local-mod-gamebanana-overlay,
+.local-mod-provider-overlay {
   z-index: 2300;
 }
 
-.mod-settings-modal.local-mod-gamebanana-modal {
+.mod-settings-modal.local-mod-gamebanana-modal,
+.mod-settings-modal.local-mod-provider-modal {
   width: min(470px, calc(100vw - (var(--spacing-lg) * 2)));
   box-sizing: border-box;
 }
 
-.local-mod-gamebanana-body label {
+.local-mod-gamebanana-body label,
+.local-mod-provider-body label {
   color: var(--text-muted);
   font-size: 0.8rem;
   font-weight: 650;
 }
+
+.local-mod-provider-body input {
+  width: 100%;
+  min-height: 40px;
+  box-sizing: border-box;
+}
+
+.local-mod-provider-modal .mod-settings-header p {
+  margin: 5px 0 0;
+  color: var(--text-muted);
+  font-size: 0.82rem;
+}
+
+.provider-import-preview {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+  min-height: 72px;
+  padding: var(--spacing-sm);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  background: var(--bg-color);
+}
+
+.provider-import-preview[hidden] { display: none; }
+
+.provider-import-artwork {
+  width: 104px;
+  height: 72px;
+  flex: 0 0 104px;
+  border-radius: 6px;
+  object-fit: cover;
+  background: var(--bg-panel);
+}
+
+.provider-import-identity {
+  display: grid;
+  gap: 5px;
+  min-width: 0;
+  color: var(--text-muted);
+  font-size: 0.82rem;
+}
+
+.provider-import-provider {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--text-main);
+  font-size: 0.76rem;
+}
+
+.provider-import-provider img { width: 16px; height: 16px; object-fit: contain; }
+.provider-import-title { overflow: hidden; color: var(--text-main); text-overflow: ellipsis; white-space: nowrap; }
 
 @media (max-width: 540px) {
   .local-mod-import-form .local-mod-import-footer {

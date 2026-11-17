@@ -1,5 +1,7 @@
 import { FS } from "../../../backend/services/filesystem.js";
 import { gameBananaApi } from "../../../backend/providers/gamebanana/gamebanana.provider.js";
+import { backstageApi } from "../../../backend/providers/backstage/backstage.provider.js";
+import { gameJoltApi } from "../../../backend/providers/gamejolt/gamejolt.provider.js";
 import { getEngineLaunchBehavior } from "../../../backend/config/engines.config.js";
 import { applyDominantColor } from "../../utils/media/extract-color.util.js";
 import { engineUpdateModal } from "../engines/engineUpdateModal.js";
@@ -22,7 +24,14 @@ function formatVersionLabel(version) {
   return `v ${clean}`;
 }
 
-function getCardEngineContext(mod, standaloneModIds, installedEngines) {
+function yieldToMain() {
+  if (typeof window.scheduler?.yield === "function") {
+    return window.scheduler.yield();
+  }
+  return new Promise((resolve) => setTimeout(resolve, 0));
+}
+
+function getCardEngineContext(mod, standaloneModIds, enginesById) {
   const isExecutable =
     standaloneModIds.has(String(mod.id)) || mod.engineId === "executable";
   const hasEngine = Boolean(
@@ -33,15 +42,12 @@ function getCardEngineContext(mod, standaloneModIds, installedEngines) {
   );
   const engine = hasEngine
     ? (() => {
-        const versions = installedEngines
-          .filter((item) => item.id === mod.engineId)
-          .map((item) => item.version);
+        const versions = enginesById.get(mod.engineId) || [];
+        const versionNumbers = versions.map((item) => item.version);
         const version =
           mod.engineVersion ||
-          getPreferredEngineVersion(mod.engineId, versions);
-        return installedEngines.find(
-          (item) => item.id === mod.engineId && item.version === version,
-        );
+          getPreferredEngineVersion(mod.engineId, versionNumbers);
+        return versions.find((item) => item.version === version);
       })()
     : null;
   let engineBadgeHtml = modManagerTemplates.unassignedBadge();
@@ -58,8 +64,8 @@ function getCardEngineContext(mod, standaloneModIds, installedEngines) {
   return { isExecutable, hasEngine, engine, engineBadgeHtml };
 }
 
-function createModManagerCard(mod, standaloneModIds, installedEngines) {
-  const context = getCardEngineContext(mod, standaloneModIds, installedEngines);
+function createModManagerCard(mod, standaloneModIds, enginesById) {
+  const context = getCardEngineContext(mod, standaloneModIds, enginesById);
   const { isExecutable, hasEngine, engine, engineBadgeHtml } = context;
   const isUnassigned = !isExecutable && !hasEngine;
   const eyeIcon = mod.hidden ? "fa-eye-slash" : "fa-eye";
@@ -103,7 +109,12 @@ function createModManagerCard(mod, standaloneModIds, installedEngines) {
   loadModCardImage({
     mod,
     card,
-    fetchDetails: gameBananaApi.getModDetails.bind(gameBananaApi),
+    fetchDetails: (modId, options) =>
+      mod.providerSource === "backstage" && mod.providerId
+        ? backstageApi.getModDetails(mod.providerId)
+        : mod.providerSource === "gamejolt" && mod.providerId
+          ? gameJoltApi.getGameDetails(mod.providerId)
+        : gameBananaApi.getModDetails(modId, options),
     applyDominantColor,
   });
   return {
@@ -260,7 +271,12 @@ export const cardRenderer = {
     onSettingsSaved,
   ) {
     const standaloneModIds = new Set(standaloneMods.map((m) => String(m.id)));
-    const fragment = document.createDocumentFragment();
+    const modsById = new Map(allMods.map((mod) => [String(mod.id), mod]));
+    const enginesById = new Map();
+    for (const engine of installedEngines) {
+      if (!enginesById.has(engine.id)) enginesById.set(engine.id, []);
+      enginesById.get(engine.id).push(engine);
+    }
 
     const refreshLaunchButtons = () => {
       gridContainer
@@ -284,9 +300,7 @@ export const cardRenderer = {
 
     const refreshChangeButtons = () => {
       gridContainer.querySelectorAll(".mod-manager-card").forEach((card) => {
-        const mod = allMods.find(
-          (item) => String(item.id) === card.dataset.modId,
-        );
+        const mod = modsById.get(card.dataset.modId);
 
         if (!mod) return;
         const locked = FS.isModLockedForChanges(mod, allMods);
@@ -328,11 +342,12 @@ export const cardRenderer = {
       onProcessExit,
     );
 
+    let fragment = document.createDocumentFragment();
     for (const [index, mod] of modsToRender.entries()) {
       const context = createModManagerCard(
         mod,
         standaloneModIds,
-        installedEngines,
+        enginesById,
       );
       bindModManagerCardActions({
         context,
@@ -346,8 +361,17 @@ export const cardRenderer = {
         refreshChangeButtons,
       });
       const { card } = context;
-      card.style.setProperty("--card-index", String(Math.min(index, 7)));
+      if (index < 8) {
+        card.style.setProperty("--card-index", String(index));
+      } else {
+        card.classList.add("mod-manager-card--no-enter");
+      }
       fragment.appendChild(card);
+      if ((index + 1) % 48 === 0) {
+        gridContainer.appendChild(fragment);
+        fragment = document.createDocumentFragment();
+        await yieldToMain();
+      }
     }
 
     gridContainer.appendChild(fragment);

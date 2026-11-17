@@ -75,6 +75,8 @@ export const modManagerModal = {
   typeFilters: { include: [], exclude: [] },
   sortMode: "added-desc",
   searchQuery: "",
+  searchFilterFrame: 0,
+  searchTagCounts: null,
   activeView: "mods",
   cachedMods: null,
   cachedStandaloneMods: null,
@@ -204,7 +206,12 @@ export const modManagerModal = {
         searchInput.setAttribute("aria-expanded", "false");
         searchInput.addEventListener("input", (event) => {
           this.searchQuery = event.target.value.trim().toLocaleLowerCase();
-          this.applySearchFilter();
+          if (!this.searchFilterFrame) {
+            this.searchFilterFrame = requestAnimationFrame(() => {
+              this.searchFilterFrame = 0;
+              this.applySearchFilter();
+            });
+          }
         });
         searchInput.addEventListener("focus", () =>
           this.updateSearchSuggestions(),
@@ -330,6 +337,7 @@ export const modManagerModal = {
             void this.loadInstalledMods(true);
           } else {
             this.cachedMods = null;
+            this.searchTagCounts = null;
             this.cachedStandaloneMods = null;
             this.cachedInstalledEngines = null;
             this.cachedViews = { mods: null, dependencies: null };
@@ -412,6 +420,7 @@ export const modManagerModal = {
     this.loadRequestId += 1;
     if (this.loadPromise) {
       this.cachedMods = null;
+      this.searchTagCounts = null;
       this.cachedStandaloneMods = null;
       this.cachedInstalledEngines = null;
       this.cachedViews = { mods: null, dependencies: null };
@@ -442,15 +451,31 @@ export const modManagerModal = {
         let standaloneMods = this.cachedStandaloneMods;
         let installedEngines = this.cachedInstalledEngines;
         if (needsScan) {
-          [mods, standaloneMods, installedEngines] = await Promise.all([
-            FS.getInstalledMods(),
-            FS.getStandaloneMods(),
+          mods = await FS.getInstalledMods();
+          [standaloneMods, installedEngines] = await Promise.all([
+            FS.getStandaloneMods({ mods }),
             FS.getInstalledEngines(),
           ]);
         }
         if (requestId !== this.loadRequestId) return;
 
+        const standaloneIds = new Set(
+          (standaloneMods || []).map((mod) => String(mod.id)),
+        );
+        mods = (mods || []).map((mod) =>
+          standaloneIds.has(String(mod.id))
+            ? {
+                ...mod,
+                engineId: "executable",
+                engineVersion: null,
+                engineLocked: false,
+                kind: "mod",
+              }
+            : mod,
+        );
+
         this.cachedMods = mods;
+        this.searchTagCounts = null;
         this.cachedStandaloneMods = standaloneMods;
         this.cachedInstalledEngines = installedEngines;
         await this.render(mods, standaloneMods, installedEngines);
@@ -594,19 +619,25 @@ export const modManagerModal = {
     if (!input || !suggestions) return;
 
     const query = input.value.trim().toLocaleLowerCase().replace(/^#+/, "");
-    const tagCounts = new Map();
-    (this.cachedMods || []).forEach((mod) => {
-      (Array.isArray(mod.tags) ? mod.tags : []).forEach((tag) => {
-        const normalized = String(tag || "")
-          .trim()
-          .replace(/^#+/, "")
-          .toLocaleLowerCase();
-        if (normalized)
-          tagCounts.set(normalized, (tagCounts.get(normalized) || 0) + 1);
+    if (!this.searchTagCounts) {
+      this.searchTagCounts = new Map();
+      (this.cachedMods || []).forEach((mod) => {
+        (Array.isArray(mod.tags) ? mod.tags : []).forEach((tag) => {
+          const normalized = String(tag || "")
+            .trim()
+            .replace(/^#+/, "")
+            .toLocaleLowerCase();
+          if (normalized) {
+            this.searchTagCounts.set(
+              normalized,
+              (this.searchTagCounts.get(normalized) || 0) + 1,
+            );
+          }
+        });
       });
-    });
+    }
 
-    const matches = [...tagCounts.entries()]
+    const matches = [...this.searchTagCounts.entries()]
       .filter(([tag]) => !query || tag.includes(query))
       .sort(
         ([tagA, countA], [tagB, countB]) =>
@@ -772,6 +803,7 @@ export const modManagerModal = {
             this.cachedMods = this.cachedMods.filter(
               (mod) => !sameId(mod.id, deletedId),
             );
+            this.searchTagCounts = null;
             this.cachedStandaloneMods = this.cachedStandaloneMods.filter(
               (mod) => !sameId(mod.id, deletedId),
             );
@@ -824,6 +856,7 @@ export const modManagerModal = {
           this.cachedMods = this.cachedMods.filter(
             (mod) => !sameId(mod.id, deletedId),
           );
+          this.searchTagCounts = null;
           this.cachedStandaloneMods = this.cachedStandaloneMods.filter(
             (mod) => !sameId(mod.id, deletedId),
           );

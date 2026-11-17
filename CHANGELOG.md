@@ -7,6 +7,33 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.7.0] - 2026-11-16
+
+// there goes almost 20 days of my life lol
+// expect issues thanks big changes!
+
+### Added
+
+- Added Funkin' Fest to News Feed.
+- Added Funkin' Backstage and GameJolt as providers for browsing, search, sorting, filters, mod details, profiles, and downloads.
+- reworked imports in mod settings for GameBanana, Psych Online, Funkin' Backstage, and GameJolt.
+- Added music for GameJolt in mod details.
+- Added Flatpak packages for Linux releases. (thank u daveberrygoat)
+
+### Changed
+
+- Backstage WIP mods show progress badges on cards and in details.
+- Provider links offered as downloads open that provider's mod details.
+
+### Removed
+
+- Removed the Standalone Mods and Recently Played lists from the sidebar.
+
+### Fixed
+
+- Improved Itch.io detection with ItchLib release
+- Avoided false startup update-check failures on slower connections.
+
 ## [2.6.4] - 2026-10-25
 
 ### Added
@@ -1369,7 +1396,8 @@ This is the Last content update I will do in a long while :)
 - Downloads for Windows, Linux, and macOS.
 - Packages for x64, ARM64, ARMHF, and Universal Macs where available.
 
-[unreleased]: https://github.com/Crew-Awesome/Weekbox/compare/v2.6.4...HEAD
+[unreleased]: https://github.com/Crew-Awesome/Weekbox/compare/v2.7.0...HEAD
+[2.7.0]: https://github.com/Crew-Awesome/Weekbox/compare/v2.6.4...v2.7.0
 [2.6.4]: https://github.com/Crew-Awesome/Weekbox/compare/v2.6.3...v2.6.4
 [2.6.3]: https://github.com/Crew-Awesome/Weekbox/compare/v2.6.2...v2.6.3
 [2.6.2]: https://github.com/Crew-Awesome/Weekbox/compare/v2.6.1...v2.6.2

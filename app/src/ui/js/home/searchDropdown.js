@@ -1,4 +1,5 @@
 import { gameBananaApi } from "../../../backend/providers/gamebanana/gamebanana.provider.js";
+import { homeGrid } from "./grid/index.js";
 import { homeSearch } from "./search.js";
 import { t } from "../i18n/index.js";
 import { createHourglass } from "../hourglass.js";
@@ -73,6 +74,9 @@ export const homeSearchDropdown = {
   },
 
   hideDropdown() {
+    this.suggestionVersion += 1;
+    clearTimeout(this.fetchTimeout);
+    this.fetchTimeout = null;
     if (!this.dropdown) return;
     this.dropdown.style.display = "none";
   },
@@ -103,7 +107,7 @@ export const homeSearchDropdown = {
       );
     }
 
-    if (query.length > 2) {
+    if (query.length > 2 && homeGrid.service === "gamebanana") {
       clearTimeout(this.fetchTimeout);
 
       const relatedSection = document.createElement("div");

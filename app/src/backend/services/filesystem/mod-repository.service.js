@@ -19,6 +19,14 @@ function normalizeTags(tags) {
   ].slice(0, 20);
 }
 
+function applyOptionalMetadata(mod, values, keys) {
+  for (const key of keys) {
+    if (Object.prototype.hasOwnProperty.call(values || {}, key)) {
+      mod[key] = values[key] || null;
+    }
+  }
+}
+
 var _ModRepository = class _ModRepository {
   constructor({ api, getStoragePaths }) {
     this.api = api;
@@ -137,7 +145,7 @@ var _ModRepository = class _ModRepository {
   }
   async updateAppearance(
     modId,
-    { name, coverPath, iconPath, gameBananaId, gameBananaType } = {},
+    { name, coverPath, iconPath } = {},
   ) {
     const mods = await this.getAll();
     const mod = mods.find((item) => sameId(item.id, modId));
@@ -156,8 +164,21 @@ var _ModRepository = class _ModRepository {
       delete mod.imageBase64;
     }
     if (iconPath !== void 0) mod.iconPath = iconPath || null;
-    if (gameBananaId !== void 0) mod.gameBananaId = gameBananaId || null;
-    if (gameBananaType !== void 0) mod.gameBananaType = gameBananaType || null;
+    applyOptionalMetadata(mod, arguments[1], [
+      "gameBananaId", "gameBananaType", "providerSource", "providerId",
+      "providerType", "providerUrl", "sourceUrl", "author",
+    ]);
+    await this.saveAll(mods);
+    return mod;
+  }
+  async setExecutable(modId) {
+    const mods = await this.getAll();
+    const mod = mods.find((item) => sameId(item.id, modId));
+    if (!mod) return null;
+    mod.engineId = "executable";
+    mod.engineVersion = null;
+    mod.engineLocked = false;
+    mod.kind = "mod";
     await this.saveAll(mods);
     return mod;
   }

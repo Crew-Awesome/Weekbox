@@ -1,4 +1,6 @@
 import { gameBananaApi } from "../../../backend/providers/gamebanana/gamebanana.provider.js";
+import { backstageApi } from "../../../backend/providers/backstage/backstage.provider.js";
+import { gameJoltApi } from "../../../backend/providers/gamejolt/gamejolt.provider.js";
 import { FS } from "../../../backend/services/filesystem.js";
 import { setupModSettingsDropdowns } from "./modSettingsDropdowns.js";
 import {
@@ -13,7 +15,7 @@ import {
   deactivateCheckoutDialog,
 } from "../home/modal/dialogFocus.js";
 import { customEngineModal } from "../engine-manager/customEngineModal.js";
-import { openGameBananaImport } from "./gameBananaImportModal.js";
+import { openProviderImport } from "./providerImportModal.js";
 
 function setupTagEditor({ overlay, mod, readOnly }) {
   const tagInput = overlay.querySelector(".mod-settings-tag-input");
@@ -114,8 +116,8 @@ async function saveModSettings({
   tags,
   pendingCoverDataUrl,
   pendingCoverUrl,
-  pendingIconDataUrl,
-  gameBananaSource,
+  pendingIconUrl,
+  providerSource,
   onSaved,
 }) {
   if (!fileLocked) await FS.assertModChangeAllowed(mod.id);
@@ -130,8 +132,8 @@ async function saveModSettings({
     fileLocked,
     pendingCoverDataUrl,
     pendingCoverUrl,
-    pendingIconDataUrl,
-    gameBananaSource,
+    pendingIconUrl,
+    providerSource,
   });
   await onSaved?.();
   document.dispatchEvent(
@@ -180,55 +182,58 @@ async function saveModAppearance({
   fileLocked,
   pendingCoverDataUrl,
   pendingCoverUrl,
-  pendingIconDataUrl,
-  gameBananaSource,
+  pendingIconUrl,
+  providerSource,
 }) {
   const appearance = { name };
-  if (gameBananaSource) {
-    appearance.gameBananaId = gameBananaSource.id;
-    appearance.gameBananaType = gameBananaSource.type;
+  if (providerSource) {
+    appearance.providerSource = providerSource.provider;
+    appearance.providerId = providerSource.id;
+    appearance.providerType = providerSource.type || null;
+    appearance.providerUrl = providerSource.url;
+    appearance.sourceUrl = providerSource.url;
+    appearance.author = providerSource.author || null;
+    appearance.gameBananaId = providerSource.provider === "gamebanana" ? providerSource.id : null;
+    appearance.gameBananaType = providerSource.provider === "gamebanana" ? providerSource.type : null;
   }
   if (fileLocked && !mod.folderName) {
     appearance.folderName = mod.name ? sanitizePathSegment(mod.name) : null;
   }
   if (pendingCoverDataUrl) appearance.coverDataUrl = pendingCoverDataUrl;
   else if (pendingCoverUrl) appearance.coverUrl = pendingCoverUrl;
-  if (pendingIconDataUrl !== undefined)
-    appearance.iconDataUrl = pendingIconDataUrl;
+  if (pendingIconUrl) appearance.iconUrl = pendingIconUrl;
   if (!(await FS.updateModAppearance(mod.id, appearance))) {
     throw new Error(t("modSettings.saveFailed"));
   }
 }
 
-function getGameBananaImage(details) {
-  return details.images?.[0] || details.thumbnail || null;
+function getProviderArtwork(details, provider) {
+  const galleryImage = details.images?.find(
+    (image) => image && !image.includes("placeholder-mini"),
+  );
+  if (provider === "backstage") {
+    return details.image || details.thumbnail || galleryImage || null;
+  }
+  if (provider === "gamejolt") {
+    return details.image || details.thumbnail || galleryImage || null;
+  }
+  return galleryImage || details.thumbnail || null;
 }
 
-function applyGameBananaDetails({
-  details,
-  source,
-  nameInput,
-  cover,
-  dropdowns,
-  setSource,
-  setStatus,
-}) {
-  setSource(source);
-  nameInput.value = details.title;
-  cover.src = getGameBananaImage(details) || "assets/img/placeholder-mini.jpg";
-  const engineId =
-    details.engineId ||
-    gameBananaApi.getEngineIdForCategory(details.categoryId) ||
-    "";
-  dropdowns?.refresh({
-    engineId,
-    version: "",
-    type: details.kind || "mod",
-  });
-  setStatus(t("modSettings.defaultsLoaded"));
+function getProviderSource(mod) {
+  if (mod.providerSource && mod.providerId) {
+    return { provider: mod.providerSource, id: String(mod.providerId), type: mod.providerType || "mod", url: mod.providerUrl || mod.sourceUrl || "" };
+  }
+  const gameBananaSource = getGameBananaSource(mod);
+  return gameBananaSource ? { ...gameBananaSource, provider: "gamebanana", url: mod.sourceUrl || "" } : null;
 }
 
-function setupGameBananaImportButton({
+function getImportedEngineId(details, provider) {
+  if (details.engineId) return details.engineId;
+  return provider === "gamebanana" ? gameBananaApi.getEngineIdForCategory(details.categoryId) || "" : "";
+}
+
+function setupProviderImportButton({
   overlay,
   nameInput,
   cover,
@@ -237,23 +242,29 @@ function setupGameBananaImportButton({
   setSource,
   setCoverDataUrl,
   setCoverUrl,
+  setIconUrl,
+  canReplaceCover,
+  canSetProviderIcon,
 }) {
   overlay
-    .querySelector(".mod-settings-import-gamebanana")
+    .querySelector(".mod-settings-import-provider")
     ?.addEventListener("click", () => {
-      openGameBananaImport({
+      openProviderImport({
         onImported: ({ details, source }) => {
-          setCoverDataUrl(null);
-          setCoverUrl(getGameBananaImage(details));
-          applyGameBananaDetails({
-            details,
-            source,
-            nameInput,
-            cover,
-            dropdowns,
-            setSource,
-            setStatus: (value) => (status.textContent = value),
-          });
+          const artwork = getProviderArtwork(details, source.provider);
+          const engineId = getImportedEngineId(details, source.provider);
+          setSource({ ...source, author: details.author || "" });
+          nameInput.value = details.title;
+          dropdowns?.refresh({ engineId, version: "", type: details.kind || "mod" });
+          if (canReplaceCover() && artwork) {
+            setCoverDataUrl(null);
+            setCoverUrl(artwork);
+            cover.src = artwork;
+          }
+          if (canSetProviderIcon()) {
+            setIconUrl(source.provider === "backstage" ? details.icon || null : null);
+          }
+          status.textContent = t("modSettings.defaultsLoaded");
         },
       });
     });
@@ -306,6 +317,42 @@ export const modSettingsModal = {
     }
     if (requestId !== this.openRequestId) return false;
 
+    const linkedProvider = getProviderSource(mod);
+    let providerCoverFallback = mod.image || null;
+    let providerIconFallback = mod.providerIconUrl || null;
+    if (
+      ["backstage", "gamejolt"].includes(linkedProvider?.provider) &&
+      (!localCover || (linkedProvider.provider === "backstage" && !localIcon))
+    ) {
+      const details = await (linkedProvider.provider === "backstage"
+        ? backstageApi.getModDetails(linkedProvider.id)
+        : gameJoltApi.getGameDetails(linkedProvider.id))
+        .catch(() => null);
+      providerCoverFallback ||= details?.image || details?.thumbnail || details?.images?.[0] || null;
+      providerIconFallback ||= details?.icon || null;
+      if (!localCover) {
+        const coverUrl = providerCoverFallback;
+        if (coverUrl) {
+          localCover = await FS.ensureModCover(mod.id, async () => coverUrl)
+            .catch(() => null);
+        }
+      }
+      if (!localIcon && details?.icon) {
+        localIcon = await FS.cacheModIcon(mod.id, details.icon).catch(() => null);
+        if (localIcon) {
+          document.dispatchEvent(
+            new CustomEvent("recently-played-mods-updated", {
+              detail: { refreshStandalone: true },
+            }),
+          );
+        }
+      }
+    }
+    // Provider URLs are display fallbacks when local caching is blocked by
+    // cross-origin policy. Saved user artwork remains the first choice.
+    localCover ||= providerCoverFallback;
+    localIcon ||= providerIconFallback;
+
     const controlsDisabled =
       readOnly || fileLocked || mod.engineLocked ? "disabled" : "";
     const isDependency = mod.kind === "dependency";
@@ -328,11 +375,8 @@ export const modSettingsModal = {
     overlay.innerHTML = settingsContent({
       mod,
       localCover,
-      localIcon,
       controlsDisabled,
-      canReset:
-        (Boolean(getGameBananaSource(mod)) && networkStatus.online) ||
-        Boolean(localIcon),
+      canReset: Boolean(getGameBananaSource(mod)) && networkStatus.online,
       resetTitle: networkStatus.online
         ? t("modSettings.defaultsOnlyGameBanana")
         : t("modSettings.connectToReset"),
@@ -347,11 +391,6 @@ export const modSettingsModal = {
     const nameInput = overlay.querySelector(".mod-settings-name");
     const cover = overlay.querySelector(".mod-settings-cover");
     const fileInput = overlay.querySelector(".mod-settings-file");
-    const icon = overlay.querySelector(".mod-settings-icon");
-    const iconFileInput = overlay.querySelector(".mod-settings-icon-file");
-    const defaultIcon = mod.engineId
-      ? FS.getEngineIconSource(mod.engineId)
-      : "assets/icons/exe.png";
     const status = overlay.querySelector(".mod-settings-status");
     const typeSelect = overlay.querySelector(".mod-settings-type");
     const tagEditor = setupTagEditor({ overlay, mod, readOnly });
@@ -361,8 +400,8 @@ export const modSettingsModal = {
     this.dropdowns = dropdowns;
     let pendingCoverDataUrl = null;
     let pendingCoverUrl = null;
-    let pendingIconDataUrl = null;
-    let gameBananaSource = getGameBananaSource(mod);
+    let pendingIconUrl = null;
+    let providerSource = getProviderSource(mod);
 
     fileInput.addEventListener("change", () => {
       const file = fileInput.files?.[0];
@@ -375,17 +414,6 @@ export const modSettingsModal = {
       });
       reader.readAsDataURL(file);
     });
-    iconFileInput.addEventListener("change", () => {
-      const file = iconFileInput.files?.[0];
-      if (!file) return;
-      const reader = new FileReader();
-      reader.addEventListener("load", () => {
-        pendingIconDataUrl = String(reader.result || "");
-        icon.src = pendingIconDataUrl;
-      });
-      reader.readAsDataURL(file);
-    });
-
     const close = () => this.close();
     overlay
       .querySelector(".mod-settings-close")
@@ -406,25 +434,24 @@ export const modSettingsModal = {
           status.textContent = t("modSettings.openFolderFailed");
         }
       });
-    setupGameBananaImportButton({
+    setupProviderImportButton({
       overlay,
       nameInput,
       cover,
       dropdowns,
       status,
-      setSource: (value) => (gameBananaSource = value),
+      setSource: (value) => (providerSource = value),
       setCoverDataUrl: (value) => (pendingCoverDataUrl = value),
       setCoverUrl: (value) => (pendingCoverUrl = value),
+      setIconUrl: (value) => (pendingIconUrl = value),
+      canReplaceCover: () => !mod.coverPath && !pendingCoverDataUrl,
+      canSetProviderIcon: () => !localIcon,
     });
     overlay
       .querySelector(".mod-settings-reset")
       .addEventListener("click", async () => {
         const source = getGameBananaSource(mod);
-        if (!source) {
-          pendingIconDataUrl = "";
-          icon.src = defaultIcon;
-          return;
-        }
+        if (!source) return;
         status.textContent = t("modSettings.loadingDefaults");
         try {
           const details =
@@ -442,9 +469,7 @@ export const modSettingsModal = {
               : details.images?.[0] || null;
           pendingCoverDataUrl = null;
           cover.src = pendingCoverUrl || "assets/img/placeholder-mini.jpg";
-          pendingIconDataUrl = "";
-          icon.src = defaultIcon;
-          gameBananaSource = source;
+          providerSource = { ...source, provider: "gamebanana", url: details.gameBananaUrl || "" };
           status.textContent = t("modSettings.defaultsLoaded");
         } catch {
           status.textContent = t("modSettings.defaultsFailed");
@@ -499,8 +524,8 @@ export const modSettingsModal = {
           tags: tagEditor.getTags(),
           pendingCoverDataUrl,
           pendingCoverUrl,
-          pendingIconDataUrl,
-          gameBananaSource,
+          pendingIconUrl,
+          providerSource,
           onSaved,
         });
       } catch (error) {

@@ -1,8 +1,7 @@
-import { gameBananaApi } from "../../../backend/providers/gamebanana/gamebanana.provider.js";
 import { FS } from "../../../backend/services/filesystem.js";
 import { setupModSettingsDropdowns } from "./modSettingsDropdowns.js";
 import { escapeHtml } from "./modSettingsTemplates.js";
-import { openGameBananaImport } from "./gameBananaImportModal.js";
+import { openProviderImport } from "./providerImportModal.js";
 import { t } from "../i18n/index.js";
 import {
   activateCheckoutDialog,
@@ -46,6 +45,19 @@ function getTagSuggestions(mods) {
   ].sort();
 }
 
+function getProviderMetadata(source) {
+  return {
+    providerSource: source?.provider || null,
+    providerId: source?.id || null,
+    providerType: source?.type || null,
+    providerUrl: source?.url || null,
+    sourceUrl: source?.url || null,
+    author: source?.author || null,
+    gameBananaId: source?.provider === "gamebanana" ? source.id : null,
+    gameBananaType: source?.provider === "gamebanana" ? source.type : null,
+  };
+}
+
 export const localModImportModal = {
   overlay: null,
   sourcePath: "",
@@ -53,7 +65,8 @@ export const localModImportModal = {
   tagSuggestions: [],
   pendingCoverDataUrl: null,
   pendingCoverUrl: null,
-  gameBananaSource: null,
+  pendingIconUrl: null,
+  providerSource: null,
   dropdowns: null,
   draft: null,
   previousFocus: null,
@@ -63,7 +76,8 @@ export const localModImportModal = {
     this.sourcePath = "";
     this.pendingCoverDataUrl = null;
     this.pendingCoverUrl = null;
-    this.gameBananaSource = null;
+    this.pendingIconUrl = null;
+    this.providerSource = null;
     this.draft = {
       name: t("import.localMod"),
       kind: "mod",
@@ -278,7 +292,7 @@ export const localModImportModal = {
         <footer class="mod-settings-footer local-mod-import-footer">
           <button type="button" class="mod-settings-cancel local-mod-import-back"><i class="fa-solid fa-arrow-left" aria-hidden="true"></i> ${t("common.back")}</button>
           <span class="mod-settings-status" role="status"></span>
-          <button type="button" class="mod-settings-reset local-mod-import-gamebanana"><img class="gamebanana-icon" src="assets/icons/gamebanana.png" alt=""> ${t("import.importGameBanana")}</button>
+          <button type="button" class="mod-settings-reset local-mod-import-provider"><i class="fa-solid fa-link" aria-hidden="true"></i> ${t("import.importProvider")}</button>
           <button type="submit" class="mod-settings-save local-mod-import-submit"><i class="fa-solid fa-plus" aria-hidden="true"></i> ${t("import.addMod")}</button>
         </footer>
       </form>`;
@@ -384,17 +398,14 @@ export const localModImportModal = {
       .querySelector(".local-mod-import-back")
       .addEventListener("click", () => this.renderFolderStep());
     this.overlay
-      .querySelector(".local-mod-import-gamebanana")
+      .querySelector(".local-mod-import-provider")
       .addEventListener("click", () => {
-        openGameBananaImport({
+        openProviderImport({
           onImported: ({ details, source }) => {
-            this.gameBananaSource = source;
+            this.providerSource = { ...source, author: details.author || "" };
             this.draft.name = details.title;
             this.draft.kind = details.kind || "mod";
-            this.draft.engineId =
-              details.engineId ||
-              gameBananaApi.getEngineIdForCategory(details.categoryId) ||
-              "";
+            this.draft.engineId = details.engineId || "";
             this.draft.engineVersion = "";
             nameInput.value = this.draft.name;
             this.dropdowns?.refresh({
@@ -402,11 +413,14 @@ export const localModImportModal = {
               version: this.draft.engineVersion,
               type: this.draft.kind,
             });
-            this.pendingCoverDataUrl = null;
-            this.pendingCoverUrl =
-              details.images?.[0] || details.thumbnail || null;
-            delete coverImage.dataset.fallback;
-            coverImage.src = this.pendingCoverUrl || DEFAULT_COVER;
+            this.pendingIconUrl = source.provider === "backstage" ? details.icon || null : null;
+            if (!this.pendingCoverDataUrl) {
+              this.pendingCoverUrl = source.provider === "backstage"
+                ? details.image || details.thumbnail || details.images?.find((image) => image && !image.includes("placeholder-mini")) || null
+                : details.images?.find((image) => image && !image.includes("placeholder-mini")) || details.thumbnail || null;
+              delete coverImage.dataset.fallback;
+              coverImage.src = this.pendingCoverUrl || DEFAULT_COVER;
+            }
           },
         });
       });
@@ -445,8 +459,10 @@ export const localModImportModal = {
         coverUrl: /^https?:\/\//i.test(this.pendingCoverUrl || "")
           ? this.pendingCoverUrl
           : null,
-        gameBananaId: this.gameBananaSource?.id || null,
-        gameBananaType: this.gameBananaSource?.type || null,
+        iconUrl: /^https?:\/\//i.test(this.pendingIconUrl || "")
+          ? this.pendingIconUrl
+          : null,
+        ...getProviderMetadata(this.providerSource),
       });
       await this.onImported?.();
       this.close();

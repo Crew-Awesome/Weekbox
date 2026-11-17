@@ -82,6 +82,7 @@ function toBookmark(mod) {
     likes: Number(mod.likes) || 0,
     views: Number(mod.views) || 0,
     downloads: Number(mod.downloads) || 0,
+    followers: Number(mod.followers) || 0,
     timeAgo: mod.timeAgo || "",
     sourceUrl: mod.sourceUrl || mod.gameBananaUrl || null,
   };

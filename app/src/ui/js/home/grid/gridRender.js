@@ -1,4 +1,7 @@
 import { gameBananaApi } from "../../../../backend/providers/gamebanana/gamebanana.provider.js";
+import { peoApi } from "../../../../backend/providers/peo/peo.provider.js";
+import { backstageApi } from "../../../../backend/providers/backstage/backstage.provider.js";
+import { gameJoltApi } from "../../../../backend/providers/gamejolt/gamejolt.provider.js";
 import { gridState } from "./gridState.js";
 import {
   createCard,
@@ -38,10 +41,24 @@ function selectFeaturedPosition(grid, cardCount) {
 }
 
 function getGridPageSize() {
+  if (gridState.service === "gamejolt") return 36;
   return !gridState.isSearchMode &&
     ["ripe", "new", "updated"].includes(gridState.currentFilter)
     ? 24
     : 12;
+}
+
+function getServiceLabel() {
+  return {
+    gamebanana: "GameBanana",
+    psychonline: "Psych Online",
+    backstage: "FunkinBackstage",
+    gamejolt: "GameJolt",
+  }[gridState.service] || "mods service";
+}
+
+function getLoadingMessage() {
+  return t("home.loadingMods", { service: getServiceLabel() });
 }
 
 function resetGridForInitialRender(grid) {
@@ -50,14 +67,36 @@ function resetGridForInitialRender(grid) {
   gridState.discoverySnapshotId = null;
   gridState.currentPage = 1;
   gridState.hasMore = true;
-  grid.replaceChildren();
+  gridState.pendingReplacement = Boolean(
+    grid.querySelector(".mod-card, .member-card"),
+  );
   gridState.featuredCandidates = [];
   gridState.featuredIds.clear();
   gridState.featuredEngineIds.clear();
   grid.classList.remove("grid-empty", "grid-error");
-  grid.appendChild(
-    createLoadingState(t("home.loadingMods"), 32, "weekbox-loading--section"),
-  );
+  grid.setAttribute("aria-busy", "true");
+  grid.querySelector(".grid-refresh-status")?.remove();
+  grid.querySelector(".chunk-loader")?.remove();
+  if (gridState.pendingReplacement) {
+    grid.prepend(
+      createLoadingState(getLoadingMessage(), 20, "grid-refresh-status"),
+    );
+  } else {
+    grid.replaceChildren(
+      createLoadingState(
+        getLoadingMessage(),
+        32,
+        "weekbox-loading--section",
+      ),
+    );
+  }
+}
+
+function replaceGridWithFreshResults(grid) {
+  if (!gridState.pendingReplacement) return;
+  grid.replaceChildren();
+  gridState.pendingReplacement = false;
+  grid.classList.remove("grid-empty", "grid-error");
 }
 
 function removeGridLoadingState(grid) {
@@ -67,13 +106,73 @@ function removeGridLoadingState(grid) {
 async function fetchGridPage(requestedPage, pageSize, onProgress) {
   if (gridState.isSearchMode) {
     if (gridState.searchType === "users") {
+      if (gridState.service === "backstage") {
+        const users = await backstageApi.searchUsers(
+          gridState.searchQuery,
+          gridState.discoveryController?.signal,
+        );
+        const start = (requestedPage - 1) * pageSize;
+        return { mods: users.slice(start, start + pageSize), exhausted: start + pageSize >= users.length };
+      }
       return gameBananaApi.searchMembers(
         gridState.searchQuery,
         requestedPage,
         12,
       );
     }
+    if (gridState.service === "backstage") {
+      return backstageApi.getMods({
+        query: gridState.searchQuery,
+        sort: gridState.currentFilter,
+        reverse: gridState.backstageReverse,
+        engine: gridState.backstageEngine,
+        category: gridState.backstageCategory,
+        page: requestedPage,
+        limit: pageSize,
+        signal: gridState.discoveryController?.signal,
+      });
+    }
+    if (gridState.service === "gamejolt") {
+      return gameJoltApi.getGames({
+        section: gridState.currentFilter,
+        date: gridState.gamejoltDate,
+        query: gridState.searchQuery,
+        filters: gridState.gamejoltFilters,
+        page: requestedPage,
+        signal: gridState.discoveryController?.signal,
+      });
+    }
+    if (gridState.service === "psychonline") {
+      return fetchPsychOnlinePage(
+        gridState.searchQuery,
+        requestedPage,
+        pageSize,
+      );
+    }
     return gameBananaApi.searchMods(gridState.searchQuery, requestedPage, 12);
+  }
+  if (gridState.service === "backstage") {
+    return backstageApi.getMods({
+      sort: gridState.currentFilter,
+      reverse: gridState.backstageReverse,
+      engine: gridState.backstageEngine,
+      category: gridState.backstageCategory,
+      page: requestedPage,
+      limit: pageSize,
+      signal: gridState.discoveryController?.signal,
+    });
+  }
+  if (gridState.service === "gamejolt") {
+    return gameJoltApi.getGames({
+      section: gridState.currentFilter,
+      date: gridState.gamejoltDate,
+      filters: gridState.gamejoltFilters,
+      page: requestedPage,
+      signal: gridState.discoveryController?.signal,
+    });
+  }
+  if (gridState.service === "psychonline") {
+    return fetchPsychOnlinePage("", requestedPage, pageSize);
   }
   return gameBananaApi.getGridMods(
     gridState.currentFilter,
@@ -88,7 +187,29 @@ async function fetchGridPage(requestedPage, pageSize, onProgress) {
   );
 }
 
+async function fetchPsychOnlinePage(query, page, pageSize) {
+  const sort =
+    {
+      newest: "submitted:desc",
+      oldest: "submitted:asc",
+      az: "title:asc",
+      za: "title:desc",
+      liked: "favoritedCount:desc",
+      leastLiked: "favoritedCount:asc",
+      downloaded: "downloadHits:desc",
+      leastDownloaded: "downloadHits:asc",
+    }[gridState.currentFilter] || "submitted:desc";
+  const mods = await peoApi.listAll(query, sort);
+  const start = (page - 1) * pageSize;
+  const pageMods = mods.slice(start, start + pageSize);
+  return {
+    mods: pageMods,
+    exhausted: start + pageMods.length >= mods.length,
+  };
+}
+
 function renderEmptyGrid(grid, result) {
+  gridState.pendingReplacement = false;
   if (result.sourceErrors?.length) {
     grid.textContent = t("home.discoveryUnavailable");
     grid.classList.add("grid-error");
@@ -112,6 +233,7 @@ function getFeaturedGridData(grid, mods, requestedPage, isInitial) {
     gridState.featuredCandidates = mods;
   }
   const showFeatured =
+    gridState.service === "gamebanana" &&
     !gridState.isSearchMode &&
     Math.random() < 0.5 &&
     ((isInitial && gridState.currentFilter === "popular") ||
@@ -207,6 +329,7 @@ async function loadGridPages(
         ? (mods) => {
             if (renderVersion !== gridState.renderVersion || !mods.length)
               return;
+            replaceGridWithFreshResults(grid);
             removeGridLoadingState(grid);
             grid.classList.remove("grid-empty", "grid-error");
             appendGridPage(
@@ -231,6 +354,7 @@ async function loadGridPages(
       return false;
     }
 
+    if (isInitial) replaceGridWithFreshResults(grid);
     grid.classList.remove("grid-empty", "grid-error");
     removeGridLoadingState(grid);
     if (mods.length === 0) {
@@ -371,19 +495,35 @@ export const gridRender = {
         pagesToLoad,
       );
     } catch (error) {
-      if (error?.kind === "aborted") return false;
+      if (error?.kind === "aborted" || error?.name === "AbortError") return false;
+      console.error(`[WeekBox] ${getServiceLabel()} discovery request failed`, error);
       if (isInitial && renderVersion === gridState.renderVersion) {
-        grid.textContent = t(
+        const errorMessage = t(
           gridState.isSearchMode && gridState.searchType === "users"
             ? "home.failedToLoadUsers"
             : "home.failedToLoadMods",
         );
-        grid.classList.add("grid-error");
+        const hasResults = grid.querySelector(".mod-card, .member-card");
+        grid.querySelector(".grid-refresh-status")?.remove();
+        if (hasResults) {
+          const status = document.createElement("div");
+          status.className = "grid-refresh-error";
+          status.setAttribute("role", "status");
+          status.setAttribute("aria-live", "polite");
+          status.textContent = errorMessage;
+          grid.prepend(status);
+        } else {
+          grid.textContent = errorMessage;
+          grid.classList.add("grid-error");
+        }
+        gridState.pendingReplacement = false;
       }
       return false;
     } finally {
       if (renderVersion === gridState.renderVersion) {
         this.hideLoadMoreIndicator(grid);
+        grid.querySelector(".grid-refresh-status")?.remove();
+        grid.setAttribute("aria-busy", "false");
         gridState.isLoading = false;
         if (gridState.pendingInitialRender) {
           gridState.pendingInitialRender = false;

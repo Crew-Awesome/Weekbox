@@ -11,6 +11,14 @@ function blobToDataUrl(blob) {
   });
 }
 
+function quoteCommandArgument(value) {
+  const argument = String(value ?? "").replace(/[\r\n]/g, "");
+  if (window.NL_OS === "Windows") {
+    return `"${argument.replace(/["^]/g, "^$&")}"`;
+  }
+  return `'${argument.replaceAll("'", `'"'"'`)}'`;
+}
+
 var _ModCoverService = class _ModCoverService {
   constructor({ api, getStoragePaths }) {
     this.api = api;
@@ -120,11 +128,39 @@ var _ModCoverService = class _ModCoverService {
     );
     return `mod-covers/${safeCoverName(modId)}.icon.webp`;
   }
+  async saveIconUrl(modId, url) {
+    if (!url) return null;
+    const blob = await this.fetchUrlBlob(url);
+    await this.api.ensureDir(this.coversPath);
+    const optimized = await this.optimizeIcon(blob);
+    await this.api.write(
+      this.getIconPath(modId),
+      await optimized.arrayBuffer(),
+      true,
+    );
+    return `mod-covers/${safeCoverName(modId)}.icon.webp`;
+  }
   async saveUrl(modId, url) {
     if (!url) return null;
-    const response = await fetch(url);
-    if (!response.ok) throw new Error("Could not download the mod cover");
-    return this.saveBlob(modId, await response.blob());
+    return this.saveBlob(modId, await this.fetchUrlBlob(url));
+  }
+  async fetchUrlBlob(url) {
+    if (typeof Neutralino === "undefined" || !Neutralino.os?.execCommand) {
+      const response = await fetch(url);
+      if (!response.ok) throw new Error("Could not download mod artwork");
+      return response.blob();
+    }
+    await this.api.ensureDir(this.coversPath);
+    const tempPath = `${this.coversPath}/.artwork-${Date.now()}-${Math.random().toString(36).slice(2)}.tmp`;
+    const command = `curl --globoff --silent --show-error --location --fail --connect-timeout 8 --max-time 30 ${quoteCommandArgument(url)} -o ${quoteCommandArgument(tempPath)}`;
+    try {
+      const result = await Neutralino.os.execCommand(command, { background: false });
+      if (result.exitCode !== 0) throw new Error("Could not download mod artwork");
+      const bytes = await this.api.read(tempPath, true);
+      return new Blob([bytes]);
+    } finally {
+      await this.api.remove(tempPath).catch(() => {});
+    }
   }
   async saveNoImagePlaceholder(modId) {
     const response = await fetch("assets/img/placeholder-mini.jpg");

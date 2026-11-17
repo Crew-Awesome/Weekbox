@@ -33,6 +33,13 @@ export const homeGrid = {
     gridState.searchType = val;
   },
 
+  get service() {
+    return gridState.service;
+  },
+  set service(val) {
+    gridState.service = val;
+  },
+
   get currentCategoryId() {
     return gridState.currentCategoryId;
   },
