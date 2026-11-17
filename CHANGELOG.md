@@ -18,7 +18,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added Funkin' Backstage and GameJolt as providers for browsing, search, sorting, filters, mod details, profiles, and downloads.
 - reworked imports in mod settings for GameBanana, Psych Online, Funkin' Backstage, and GameJolt.
 - Added music for GameJolt in mod details.
-- Added Flatpak packages for Linux releases. (thank u daveberrygoat)
 
 ### Changed
 
