@@ -2472,26 +2472,22 @@
 .backstage-filters-dialog::backdrop { transition: background-color 260ms ease; }
 
 .backstage-filters-dialog .backstage-filters-modal {
-  width: min(540px, 100%);
-  max-height: min(620px, calc(100dvh - (var(--spacing-lg) * 2)));
+  width: min(700px, 100%);
+  max-height: min(760px, calc(100dvh - (var(--spacing-lg) * 2)));
   overflow: auto;
 }
 
 .backstage-filters-body {
-  gap: var(--spacing-md);
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-lg);
 }
 
 .backstage-filter-section {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(180px, 1.15fr);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: var(--spacing-md);
   align-items: center;
-}
-
-.backstage-filter-section h3 {
-  margin: 0;
-  color: var(--text-main);
-  font-size: 0.98rem;
 }
 
 .backstage-filter-field {
@@ -2522,7 +2518,42 @@
   overflow: auto;
 }
 
-.backstage-reverse-control {
+.backstage-filters-dialog .custom-options-container.dropdown-portal-menu {
+  padding: 4px;
+  border-radius: 10px;
+  box-shadow: none;
+}
+
+.backstage-filters-dialog .dropdown-portal-menu .custom-option {
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  border: 0;
+  border-radius: 6px;
+  padding: 10px 16px;
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-align: left;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  overflow-wrap: anywhere;
+  transition: background-color 0.2s, color 0.2s;
+}
+
+.backstage-filters-dialog .dropdown-portal-menu .custom-option:hover {
+  background-color: var(--bg-hover);
+  color: var(--text-main);
+}
+
+.backstage-filters-dialog .dropdown-portal-menu .custom-option.selected {
+  background-color: var(--surface-control);
+  color: var(--text-main);
+}
+
+.filter-switch-control {
   position: relative;
   grid-column: 1 / -1;
   display: flex;
@@ -2536,7 +2567,7 @@
   cursor: pointer;
 }
 
-.backstage-reverse-control input {
+.filter-switch-control input {
   position: absolute;
   right: 0;
   width: 40px;
@@ -2546,7 +2577,7 @@
   cursor: pointer;
 }
 
-.backstage-reverse-track {
+.filter-switch-track {
   display: inline-flex;
   width: 40px;
   height: 24px;
@@ -2560,7 +2591,7 @@
   transition: background-color 180ms ease, border-color 180ms ease;
 }
 
-.backstage-reverse-track > span {
+.filter-switch-track > span {
   width: 16px;
   height: 16px;
   border-radius: 50%;
@@ -2569,17 +2600,17 @@
   transition: transform 180ms ease, background-color 180ms ease;
 }
 
-.backstage-reverse-control input:checked + .backstage-reverse-track {
+.filter-switch-control input:checked + .filter-switch-track {
   border-color: var(--accent-color);
   background: color-mix(in srgb, var(--accent-color) 22%, var(--bg-color));
 }
 
-.backstage-reverse-control input:checked + .backstage-reverse-track > span {
+.filter-switch-control input:checked + .filter-switch-track > span {
   background: var(--accent-color);
   transform: translateX(16px);
 }
 
-.backstage-reverse-control input:focus-visible + .backstage-reverse-track {
+.filter-switch-control input:focus-visible + .filter-switch-track {
   outline: 2px solid var(--accent-color);
   outline-offset: 2px;
 }
@@ -2592,12 +2623,6 @@
 .backstage-filters-dialog .mod-settings-close:hover {
   border: 0;
   background: var(--bg-hover);
-}
-
-.backstage-filters-dialog .mod-settings-header {
-  border-bottom: 0;
-  background: transparent;
-  padding-bottom: 0;
 }
 
 .backstage-filters-footer .mod-settings-status:empty {
@@ -2618,7 +2643,7 @@
     grid-template-columns: 1fr;
   }
 
-  .backstage-reverse-control {
+  .filter-switch-control {
     grid-column: 1;
   }
 
@@ -2687,44 +2712,9 @@
   gap: var(--spacing-lg);
 }
 
-.gamejolt-filter-selects {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: var(--spacing-md);
-}
-
-.gamejolt-filter-field {
-  display: flex;
-  min-width: 0;
-  flex-direction: column;
-  gap: 7px;
-  color: var(--text-muted);
-  font-size: 0.82rem;
-  font-weight: 650;
-}
-
-.gamejolt-filter-field .pill-dropdown { width: 100%; }
-.gamejolt-filter-field .gamejolt-filter-select {
-  width: 100%;
-  justify-content: space-between;
-  gap: 8px;
-}
-
-.gamejolt-date-field input {
-  box-sizing: border-box;
-  width: 100%;
-  min-height: 40px;
-  padding: 8px 10px;
-  border: 1px solid var(--border-color);
-  border-radius: 9px;
-  background: var(--bg-panel);
-  color: var(--text-main);
-  color-scheme: dark;
-}
-
 .gamejolt-filter-groups {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: minmax(0, 1fr);
   gap: var(--spacing-md);
 }
 
@@ -2780,14 +2770,10 @@
     width: 100%;
     max-height: calc(100dvh - 24px);
   }
-  .gamejolt-filter-selects { grid-template-columns: 1fr 1fr; }
-  .gamejolt-date-field { grid-column: 1 / -1; }
 }
 
 @media (max-width: 420px) {
-  .gamejolt-filter-selects,
   .gamejolt-filter-groups { grid-template-columns: 1fr; }
-  .gamejolt-date-field { grid-column: auto; }
 }
 
 .mod-settings-loading {

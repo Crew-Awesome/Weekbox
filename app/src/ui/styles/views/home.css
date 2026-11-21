@@ -227,6 +227,29 @@
   min-width: 0;
 }
 
+.gamejolt-search-notice {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  margin: 0 0 var(--spacing-md);
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: var(--surface-container-low);
+  color: var(--text-muted);
+  font-size: 0.9rem;
+  line-height: 1.45;
+}
+
+.gamejolt-search-notice[hidden] {
+  display: none;
+}
+
+.gamejolt-search-notice > i {
+  flex: 0 0 auto;
+  margin-top: 2px;
+  color: var(--accent-color);
+}
+
 .home-bookmarks-empty {
   align-items: center;
   color: var(--text-muted);

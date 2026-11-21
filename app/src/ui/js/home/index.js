@@ -207,6 +207,7 @@ export const homeView = {
       localStorage.setItem(HOME_SERVICE_STORAGE_KEY, service);
     } catch {}
     homeGrid.service = service;
+    homeSearch.syncGameJoltSearchNotice();
     this.syncServicePicker();
     filterManager.setService(service);
     this.serviceDropdownCtrl?.close();

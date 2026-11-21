@@ -108,7 +108,7 @@ export const backstageFilters = {
                 <span class="custom-options-container" id="backstage-filter-category-options" role="listbox" aria-label="Filter by category"></span>
               </span>
             </label>
-            <label class="backstage-reverse-control"><span>Reverse order</span><input type="checkbox" role="switch" data-reverse><span class="backstage-reverse-track" aria-hidden="true"><span></span></span></label>
+            <label class="filter-switch-control"><span>Reverse order</span><input type="checkbox" role="switch" data-reverse><span class="filter-switch-track" aria-hidden="true"><span></span></span></label>
           </section>
         </div>
         <footer class="mod-settings-footer backstage-filters-footer">
@@ -125,7 +125,12 @@ export const backstageFilters = {
     this.dropdowns = ["sort", "category"].map((key) => setupDropdown(
       overlay.querySelector(`#backstage-filter-${key}-trigger`),
       overlay.querySelector(`#backstage-filter-${key}-dropdown`),
-      { menuElement: overlay.querySelector(`#backstage-filter-${key}-options`), portalHost: overlay },
+      {
+        menuElement: overlay.querySelector(`#backstage-filter-${key}-options`),
+        portalHost: overlay,
+        portalMenuWidth: 190,
+        portalMenuAlign: "end",
+      },
     ));
     const reverse = overlay.querySelector("[data-reverse]");
     reverse.checked = this.draft.reverse;
@@ -173,6 +178,7 @@ export const backstageFilters = {
   close() {
     const overlay = this.overlay;
     if (!overlay) return;
+    const previousFocus = this.previousFocus;
     this.dropdowns.forEach((dropdown) => dropdown?.destroy());
     this.dropdowns = [];
     this.overlay = null;
@@ -181,8 +187,9 @@ export const backstageFilters = {
     overlay.classList.remove("show");
     setTimeout(() => {
       if (overlay.open) overlay.close();
-      deactivateCheckoutDialog(overlay);
+      deactivateCheckoutDialog(overlay, false);
       overlay.remove();
+      previousFocus?.focus?.();
     }, 260);
   },
 };

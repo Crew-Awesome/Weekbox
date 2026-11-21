@@ -135,7 +135,6 @@ async function fetchGridPage(requestedPage, pageSize, onProgress) {
     if (gridState.service === "gamejolt") {
       return gameJoltApi.getGames({
         section: gridState.currentFilter,
-        date: gridState.gamejoltDate,
         query: gridState.searchQuery,
         filters: gridState.gamejoltFilters,
         page: requestedPage,
@@ -165,7 +164,6 @@ async function fetchGridPage(requestedPage, pageSize, onProgress) {
   if (gridState.service === "gamejolt") {
     return gameJoltApi.getGames({
       section: gridState.currentFilter,
-      date: gridState.gamejoltDate,
       filters: gridState.gamejoltFilters,
       page: requestedPage,
       signal: gridState.discoveryController?.signal,

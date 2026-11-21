@@ -36,20 +36,29 @@ export function getExternalDownloadLabel(url) {
   return "External download";
 }
 
+function getDownloadHostname(option) {
+  const downloadUrl = String(option?.downloadUrl || "").trim();
+  if (!downloadUrl) return "";
+  try {
+    return new URL(downloadUrl).hostname.toLowerCase();
+  } catch {
+    return "";
+  }
+}
+
 export function getPreferredDownloadOption(options) {
+  if (!Array.isArray(options)) return null;
   return (
     options.find((option) => option.type === "gamebanana") ||
     options.find(
       (option) =>
         option.type === "external" &&
-        new URL(option.downloadUrl).hostname
-          .toLowerCase()
-          .endsWith("mediafire.com"),
+        getDownloadHostname(option).endsWith("mediafire.com"),
     ) ||
     options.find(
       (option) =>
         option.type === "external" &&
-        new URL(option.downloadUrl).hostname.toLowerCase() === "github.com",
+        getDownloadHostname(option) === "github.com",
     ) ||
     options.find((option) => option.type === "external") ||
     null

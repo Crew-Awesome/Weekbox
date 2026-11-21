@@ -91,6 +91,18 @@ export const homeSearch = {
 
     this.updateHintVisibility(input, hint);
     this.syncSearchType(input, hint);
+    this.syncGameJoltSearchNotice();
+  },
+
+  syncGameJoltSearchNotice() {
+    const notice = document.getElementById("gamejolt-search-notice");
+    if (!notice) return;
+    notice.hidden = !(
+      this.mode === "mods" &&
+      homeGrid.service === "gamejolt" &&
+      !homeGrid.isBookmarksMode &&
+      homeGrid.isSearchMode
+    );
   },
 
   setSearchType(type) {
@@ -119,6 +131,7 @@ export const homeSearch = {
       document.getElementById("mod-search-input"),
       document.getElementById("mod-search-hint"),
     );
+    this.syncGameJoltSearchNotice();
   },
 
   syncSearchType(input, hint) {
@@ -233,6 +246,7 @@ export const homeSearch = {
     homeGrid.isSearchMode = query.length > 0;
     homeGrid.searchQuery = query;
     homeGrid.currentPage = 1;
+    this.syncGameJoltSearchNotice();
     if (input && hint) this.updateHintVisibility(input, hint);
 
     if (query.length > 0) {

@@ -13,10 +13,6 @@ export const GAMEJOLT_SECTIONS = [
 
 export const GAMEJOLT_FILTERS = {
   os: [["windows", "Windows"], ["mac", "Mac"], ["linux", "Linux"], ["other", "Other"], ["rom", "ROM"]],
-  browser: [["html", "HTML"], ["flash", "Flash"], ["unity", "Unity"]],
-  maturity: [["everyone", "All Ages"], ["teen", "Teen Content"], ["adult", "Mature Content"]],
-  status: [["complete", "Complete / Stable"], ["wip", "Early Access"], ["devlog", "Devlog"]],
-  partners: [["partners", "Partner Games"]],
 };
 
 function absoluteUrl(value) {
@@ -214,18 +210,31 @@ function findDownloadUrl(value, depth = 0) {
   return "";
 }
 
-function createListingParams({ section, page, query, date, filters = {} }) {
+function createListingParams({ section, page, query, filters = {} }) {
   const params = new URLSearchParams();
-  params.set("section", date ? "by-date" : (GAMEJOLT_SECTIONS.some(([key]) => key === section) ? section : "featured"));
+  params.set("section", GAMEJOLT_SECTIONS.some(([key]) => key === section) ? section : "featured");
   params.set("tag", "fnf");
-  if (date) params.set("date", date);
   if (page > 1) params.set("page", String(page));
   if (query.trim()) params.set("query", query.trim());
-  for (const key of ["os", "browser", "maturity", "status", "partners"]) {
-    for (const value of (Array.isArray(filters[key]) ? filters[key] : [])) {
-      if (GAMEJOLT_FILTERS[key].some(([option]) => option === value)) params.append(`f_${key}[]`, value);
-    }
+  const requestedOs = [...new Set(Array.isArray(filters.os) ? filters.os : [])]
+    .filter((value) => GAMEJOLT_FILTERS.os.some(([option]) => option === value));
+  const osFilters = requestedOs.length
+    ? requestedOs
+    : filters.downloadableOnly
+      ? GAMEJOLT_FILTERS.os.map(([value]) => value)
+      : [];
+  for (const value of osFilters) {
+    params.append("f_os[]", value);
   }
+  return params;
+}
+
+function createGameSearchParams({ page, query }) {
+  const params = new URLSearchParams({
+    q: query.trim(),
+    "post-feed-use-offset": "1",
+  });
+  if (page > 1) params.set("page", String(page));
   return params;
 }
 
@@ -242,9 +251,14 @@ export class GameJoltService {
     return response.json();
   }
 
-  async getGames({ section = "hot", page = 1, query = "", date = "", filters = {}, signal } = {}) {
-    const params = createListingParams({ section, page, query, date, filters });
-    const response = await this.request(`/web/discover/games?${params}`, { signal });
+  async getGames({ section = "hot", page = 1, query = "", filters = {}, signal } = {}) {
+    const normalizedQuery = String(query || "").trim();
+    const isSearch = Boolean(normalizedQuery);
+    const params = isSearch
+      ? createGameSearchParams({ page, query: normalizedQuery })
+      : createListingParams({ section, page, query: "", filters });
+    const endpoint = isSearch ? "/web/search/games" : "/web/discover/games";
+    const response = await this.request(`${endpoint}?${params}`, { signal });
     const payload = response?.payload || {};
     const games = Array.isArray(payload.games) ? payload.games : [];
     const perPage = Math.max(1, Number(payload.perPage) || 36);

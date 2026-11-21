@@ -57,6 +57,15 @@
         </screenshot>
     </screenshots>
     <releases>
+        <release version="2.7.2" date="2026-11-17">
+            <description>
+                <ul>
+                    <li>Updated GameJolt filters and search.</li>
+                    <li>Improved Funkin' Backstage filter menus.</li>
+                    <li>Fixed errors when choosing between GameJolt downloads.</li>
+                </ul>
+            </description>
+        </release>
         <release version="2.7.1" date="2026-11-16">
             <description>
                 <ul>

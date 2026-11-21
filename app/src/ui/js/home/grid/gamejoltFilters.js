@@ -4,20 +4,13 @@ import { gridRender } from "./gridRender.js";
 import { activateCheckoutDialog, deactivateCheckoutDialog } from "../modal/dialogFocus.js";
 
 const GROUP_LABELS = {
-  browser: "Browser",
-  partners: "Partner games",
-  status: "Development status",
-  maturity: "Maturity",
   os: "Platform",
 };
 
 function cloneFilters(filters) {
   return {
     os: [...(filters?.os || [])],
-    browser: [...(filters?.browser || [])],
-    maturity: [...(filters?.maturity || [])],
-    status: [...(filters?.status || [])],
-    partners: [...(filters?.partners || [])],
+    downloadableOnly: Boolean(filters?.downloadableOnly),
   };
 }
 
@@ -51,7 +44,7 @@ export const gameJoltFilters = {
     const button = document.getElementById("gamejolt-filters-button");
     const indicator = button?.querySelector(".gamejolt-filters-indicator");
     const filters = gridState.gamejoltFilters;
-    const active = Boolean(gridState.gamejoltDate) ||
+    const active = Boolean(filters.downloadableOnly) ||
       Object.values(filters).some((value) => Array.isArray(value) && value.length);
     indicator?.toggleAttribute("hidden", !active);
     button?.classList.toggle("has-active-filters", active);
@@ -85,10 +78,15 @@ export const gameJoltFilters = {
     }));
   },
 
+  syncDownloadableToggle() {
+    const toggle = this.overlay?.querySelector("[data-downloadable-only]");
+    const selected = Boolean(this.draft?.filters.downloadableOnly);
+    if (toggle) toggle.checked = selected;
+  },
+
   open() {
     if (gridState.service !== "gamejolt" || this.overlay) return;
     this.draft = {
-      date: gridState.gamejoltDate,
       filters: cloneFilters(gridState.gamejoltFilters),
     };
     this.previousFocus = document.activeElement;
@@ -103,12 +101,11 @@ export const gameJoltFilters = {
           <button type="button" class="mod-settings-close" data-close aria-label="Close filters"><i class="fa-solid fa-xmark" aria-hidden="true"></i></button>
         </header>
         <div class="mod-settings-body gamejolt-filters-body">
-          <div class="gamejolt-filter-selects">
-            <label class="gamejolt-filter-field gamejolt-date-field">Published on
-              <input type="date" data-gamejolt-date aria-label="Published on date">
-            </label>
-          </div>
           <div class="gamejolt-filter-groups" data-gamejolt-filter-groups></div>
+          <fieldset class="gamejolt-filter-group gamejolt-download-group">
+            <legend>Availability</legend>
+            <label class="filter-switch-control gamejolt-download-toggle"><span>Downloadable games only</span><input type="checkbox" role="switch" data-downloadable-only><span class="filter-switch-track" aria-hidden="true"><span></span></span></label>
+          </fieldset>
         </div>
         <footer class="mod-settings-footer gamejolt-filters-footer">
           <button type="button" class="mod-settings-reset" data-reset>Reset</button>
@@ -120,10 +117,12 @@ export const gameJoltFilters = {
     document.body.append(overlay);
     this.overlay = overlay;
     this.renderGroups();
+    this.syncDownloadableToggle();
     this.dropdowns = [];
-    const date = overlay.querySelector("[data-gamejolt-date]");
-    date.value = this.draft.date;
-    date.addEventListener("input", () => { this.draft.date = date.value; });
+    const downloadableToggle = overlay.querySelector("[data-downloadable-only]");
+    downloadableToggle.addEventListener("change", () => {
+      this.draft.filters.downloadableOnly = downloadableToggle.checked;
+    });
     overlay.addEventListener("click", (event) => {
       const chip = event.target.closest("[data-filter-group]");
       if (chip) {
@@ -137,9 +136,9 @@ export const gameJoltFilters = {
       }
       if (event.target.closest("[data-close]")) this.close();
       if (event.target.closest("[data-reset]")) {
-        this.draft = { date: "", filters: cloneFilters({}) };
-        date.value = "";
+        this.draft = { filters: cloneFilters({}) };
         this.renderGroups();
+        this.syncDownloadableToggle();
       }
       if (event.target.closest("[data-apply]")) this.apply();
     });
@@ -150,15 +149,14 @@ export const gameJoltFilters = {
       if (event.clientX < rect.left || event.clientX > rect.right || event.clientY < rect.top || event.clientY > rect.bottom) this.close();
     });
     overlay.showModal();
-    activateCheckoutDialog(overlay, overlay, overlay.querySelector("[data-gamejolt-date]"), () => this.close());
+    activateCheckoutDialog(overlay, overlay, overlay.querySelector(".gamejolt-filter-chip"), () => this.close());
     requestAnimationFrame(() => overlay.classList.add("show"));
   },
 
   apply() {
     if (!this.draft) return;
     const nextFilters = cloneFilters(this.draft.filters);
-    const changed = this.draft.date !== gridState.gamejoltDate || !sameFilters(nextFilters, gridState.gamejoltFilters);
-    gridState.gamejoltDate = this.draft.date;
+    const changed = !sameFilters(nextFilters, gridState.gamejoltFilters);
     gridState.gamejoltFilters = nextFilters;
     this.syncIndicator();
     this.close();

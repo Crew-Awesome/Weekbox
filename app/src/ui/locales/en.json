@@ -246,6 +246,7 @@
   "home.noBookmarks": "No bookmarks yet",
   "home.noBookmarksDescription": "Bookmark mods from their details page and they will appear here.",
   "home.searchPlaceholder": "Search mods (e.g. Sonic, Tricky, Indie...)",
+  "home.gamejoltSearchNotice": "GameJolt search is still a work in progress. GameJolt doesn’t offer an FNF-only filter, so unrelated games may appear.",
   "home.searchHint": "Search mods, paste a GameBanana link, or enter a mod ID",
   "home.searchType": "Search type",
   "home.searchUsersHint": "Search GameBanana users by username",
