@@ -1,5 +1,5 @@
 import { ENGINE_DETAILS } from "../../../../backend/config/engines.config.js";
-import { FS } from "../../../../backend/services/filesystem.js";
+import { FS } from "../../../../backend/services/filesystem/index.js";
 import { errorHandler } from "../../errors/errorHandler.js";
 import {
   activateCheckoutDialog,
@@ -8,12 +8,12 @@ import {
 import { enhanceContentLinks } from "../../contentLinks.js";
 import { setModalBackdrop } from "./modalBackdrop.js";
 import { modModal } from "./index.js";
+import { renderModalContributors } from "./contributorsRenderer.js";
 import { homeCarousel } from "../carousel.js";
 import { getEngineLabel, i18n, t } from "../../i18n/index.js";
 import { setButtonLoading } from "../../hourglass.js";
 import { modBookmarks } from "../../../../backend/core/state/mod-bookmarks.service.js";
 import { sanitizeReleaseDom } from "../../engines/releaseNotes.js";
-import { backstageApi } from "../../../../backend/providers/backstage/backstage.provider.js";
 
 const WEEKBOX_AVATAR = "assets/icons/launcher-icon.png";
 const MODAL_OPEN_GUARD_MS = 350;
@@ -303,7 +303,9 @@ function linkifyDescriptionUrls(content) {
   const walker = document.createTreeWalker(content, NodeFilter.SHOW_TEXT);
   while (walker.nextNode()) {
     const textNode = walker.currentNode;
-    if (!textNode.parentElement?.closest("a, button, code, pre, script, style")) {
+    if (
+      !textNode.parentElement?.closest("a, button, code, pre, script, style")
+    ) {
       textNodes.push(textNode);
     }
   }
@@ -334,13 +336,19 @@ function updateWipBadge(data) {
   const author = document.getElementById("modal-author");
   if (!author?.parentElement) return;
   author.parentElement.querySelector(".mod-wip-badge--modal")?.remove();
-  const isWip = data.source === "backstage" && (data.categoryId === "wips" || data.wip);
+  const isWip =
+    data.source === "backstage" && (data.categoryId === "wips" || data.wip);
   if (!isWip) return;
   const progress = Number(data.wip?.progress);
   const badge = document.createElement("span");
   badge.className = "mod-wip-badge mod-wip-badge--modal";
   badge.textContent = `WIP${Number.isFinite(progress) ? ` ${progress}%` : ""}`;
-  badge.setAttribute("aria-label", Number.isFinite(progress) ? `Work in progress, ${progress}% complete` : "Work in progress");
+  badge.setAttribute(
+    "aria-label",
+    Number.isFinite(progress)
+      ? `Work in progress, ${progress}% complete`
+      : "Work in progress",
+  );
   author.insertAdjacentElement("afterend", badge);
 }
 
@@ -356,8 +364,14 @@ function updateBackstageDetailRows(data) {
   const stars = Number(data.stars) || 0;
   const ratings = Number(data.ratings) || 0;
   const ratingParts = [];
-  if (stars > 0) ratingParts.push(`${stars.toLocaleString()} ${stars === 1 ? "star" : "stars"}`);
-  if (ratings > 0) ratingParts.push(`${ratings.toLocaleString()} ${ratings === 1 ? "rating" : "ratings"}`);
+  if (stars > 0)
+    ratingParts.push(
+      `${stars.toLocaleString()} ${stars === 1 ? "star" : "stars"}`,
+    );
+  if (ratings > 0)
+    ratingParts.push(
+      `${ratings.toLocaleString()} ${ratings === 1 ? "rating" : "ratings"}`,
+    );
   if (ratingRow) ratingRow.hidden = !isBackstage || ratingParts.length === 0;
   if (ratingValue) ratingValue.textContent = ratingParts.join(" · ");
 }
@@ -384,8 +398,13 @@ function renderModalDescription(description, data) {
 }
 
 function getModalEngine(data) {
-  return FS.getEngineDetails(data.engineId) || ENGINE_DETAILS[data.engineId] ||
-    (data.source === "backstage" && data.engineName ? { name: data.engineName } : null);
+  return (
+    FS.getEngineDetails(data.engineId) ||
+    ENGINE_DETAILS[data.engineId] ||
+    (data.source === "backstage" && data.engineName
+      ? { name: data.engineName }
+      : null)
+  );
 }
 
 function getModalEngineIconSource(data) {
@@ -422,7 +441,12 @@ function resetProfileModal() {
   }
 }
 
-function showProfileData(profile, mods, source = "gamebanana", contributionsFailed = false) {
+function showProfileData(
+  profile,
+  mods,
+  source = "gamebanana",
+  contributionsFailed = false,
+) {
   setModalInfoLoading(false, "profile-info-loader");
   const profileName = document.getElementById("modal-profile-name");
   const profileAvatar = document.getElementById("modal-profile-avatar");
@@ -431,9 +455,8 @@ function showProfileData(profile, mods, source = "gamebanana", contributionsFail
   const profileGridTitle = document.getElementById("modal-profile-grid-title");
   if (profileName) profileName.textContent = profile.username;
   if (profileGridTitle) {
-    profileGridTitle.textContent = source === "backstage"
-      ? "Contributions"
-      : t("modModal.profileMods");
+    profileGridTitle.textContent =
+      source === "backstage" ? "Contributions" : t("modModal.profileMods");
     if (source === "backstage") profileGridTitle.removeAttribute("data-i18n");
     else profileGridTitle.dataset.i18n = "modModal.profileMods";
   }
@@ -444,9 +467,10 @@ function showProfileData(profile, mods, source = "gamebanana", contributionsFail
     if (profileUrl) profileLink.href = profileUrl;
     const profileLinkIcon = profileLink.querySelector("img");
     if (profileLinkIcon) {
-      profileLinkIcon.src = source === "backstage"
-        ? "assets/icons/backstage.png"
-        : "assets/icons/gamebanana.png";
+      profileLinkIcon.src =
+        source === "backstage"
+          ? "assets/icons/backstage.png"
+          : "assets/icons/gamebanana.png";
     }
     profileLink.onclick = (event) => {
       event.preventDefault();
@@ -469,19 +493,25 @@ function showProfileData(profile, mods, source = "gamebanana", contributionsFail
 
 function updateModalGameBananaLink(link, data) {
   const sourceUrl = safeExternalUrl(
-    data.source === "peo" || data.source === "backstage" || data.source === "gamejolt" ? data.sourceUrl : data.gameBananaUrl,
+    data.source === "peo" ||
+      data.source === "backstage" ||
+      data.source === "gamejolt"
+      ? data.sourceUrl
+      : data.gameBananaUrl,
   );
   if (sourceUrl) link.href = sourceUrl;
   else link.removeAttribute("href");
   link.hidden = !sourceUrl;
   const image = link.querySelector("img");
-  if (image) image.src = data.source === "peo"
-    ? "assets/icons/psychonline.png"
-      : data.source === "backstage"
-        ? "assets/icons/backstage.png"
-        : data.source === "gamejolt"
-          ? "assets/icons/gamejolt.png"
-          : "assets/icons/gamebanana.png";
+  if (image)
+    image.src =
+      data.source === "peo"
+        ? "assets/icons/psychonline.png"
+        : data.source === "backstage"
+          ? "assets/icons/backstage.png"
+          : data.source === "gamejolt"
+            ? "assets/icons/gamejolt.png"
+            : "assets/icons/gamebanana.png";
   if (data.source === "peo") {
     link.setAttribute(
       "aria-label",
@@ -496,7 +526,9 @@ function updateModalGameBananaLink(link, data) {
     link.setAttribute("aria-label", `Open ${data.title} on GameJolt`);
     link.title = `Open ${data.title} on GameJolt`;
   } else if (data.source !== "peo") {
-    const label = t("dependencies.openOnGameBanana", { title: data.title || "" });
+    const label = t("dependencies.openOnGameBanana", {
+      title: data.title || "",
+    });
     link.setAttribute("aria-label", label);
     link.title = label;
   }
@@ -515,147 +547,21 @@ function updateModalAuthor(data) {
   author.hidden = Boolean(data.hideAuthor);
   author.disabled = !data.authorId;
   author.onclick = data.authorId
-    ? () => modModal.openAuthor(data.authorId, data.authorSource || "gamebanana")
+    ? () =>
+        modModal.openAuthor(data.authorId, data.authorSource || "gamebanana")
     : null;
 }
 
 function updateModalProviderTabs(data) {
   const tab = document.getElementById("modal-tab-contributors");
   if (!tab) return;
-  const songs = data.source === "gamejolt" && Array.isArray(data.songs) ? data.songs : [];
+  const songs =
+    data.source === "gamejolt" && Array.isArray(data.songs) ? data.songs : [];
   const showMusic = data.source === "gamejolt" && songs.length > 0;
   tab.hidden = data.source === "gamejolt" && !showMusic;
   tab.textContent = showMusic ? "Music" : t("modModal.tabContributors");
   if (showMusic) tab.removeAttribute("data-i18n");
   else tab.dataset.i18n = "modModal.tabContributors";
-}
-
-function updateModalContributors(data) {
-  const groups = document.getElementById("modal-credit-groups");
-  const empty = document.getElementById("modal-no-credits");
-  if (!groups) return;
-  groups.replaceChildren();
-  if (data.source === "gamejolt") {
-    const songs = Array.isArray(data.songs) ? data.songs.filter((song) => song?.title || song?.filename) : [];
-    if (empty) empty.hidden = songs.length > 0;
-    for (const song of songs) {
-      const row = document.createElement("div");
-      row.className = "gamejolt-track-row";
-      const heading = document.createElement("div");
-      heading.className = "gamejolt-track-heading";
-      const copy = document.createElement("span");
-      copy.className = "gamejolt-track-copy";
-      const title = document.createElement("strong");
-      title.textContent = song.title || song.filename || "Untitled track";
-      copy.append(title);
-      heading.append(copy);
-      row.appendChild(heading);
-      const url = safeExternalUrl(song.url);
-      if (url) {
-        const audio = document.createElement("audio");
-        audio.className = "gamejolt-track-player";
-        audio.controls = true;
-        audio.preload = "none";
-        audio.src = url;
-        audio.setAttribute("aria-label", `Play ${title.textContent}`);
-        audio.addEventListener("play", () => {
-          document.querySelectorAll("#mod-modal .gamejolt-track-player").forEach((other) => {
-            if (other !== audio) other.pause();
-          });
-        });
-        row.appendChild(audio);
-      }
-      groups.appendChild(row);
-    }
-    return;
-  }
-  const credits = Array.isArray(data.credits) ? data.credits : [];
-  if (empty) empty.hidden = credits.length > 0;
-  const fragment = document.createDocumentFragment();
-  const creditAvatars = new Map();
-  credits.forEach((group) => {
-    const section = document.createElement("section");
-    section.className = "modal-credit-group";
-    const heading = document.createElement("h4");
-    heading.className = "modal-credit-group-title";
-    heading.textContent = group.name;
-    const list = document.createElement("div");
-    list.className = "modal-credit-list";
-    group.authors.forEach((author) => {
-      const row = document.createElement("div");
-      row.className = "modal-credit-row";
-      const avatar = document.createElement("img");
-      avatar.className = "modal-credit-avatar";
-      avatar.alt = "";
-      avatar.loading = "lazy";
-      if (!author.id && !author.url) avatar.classList.add("is-unlinked");
-      setAvatarImage(avatar, author.avatar);
-      if (data.source === "backstage" && author.id != null) {
-        const userId = String(author.id);
-        if (!creditAvatars.has(userId)) creditAvatars.set(userId, []);
-        creditAvatars.get(userId).push(avatar);
-      }
-      let avatarContent = avatar;
-      if (author.id) {
-        const avatarButton = document.createElement("button");
-        avatarButton.type = "button";
-        avatarButton.className = "modal-credit-avatar-button";
-        avatarButton.setAttribute("aria-label", `Open ${author.name}'s profile`);
-        avatarButton.onclick = () => modModal.openAuthor(author.id, author.source || "gamebanana");
-        avatarButton.appendChild(avatar);
-        avatarContent = avatarButton;
-      }
-      const info = document.createElement("div");
-      info.className = "modal-credit-info";
-      const nameRow = document.createElement("div");
-      nameRow.className = "modal-credit-name-row";
-      const name = author.id
-        ? document.createElement("button")
-        : document.createElement("span");
-      name.className = "modal-credit-name";
-      name.textContent = author.name;
-      nameRow.appendChild(name);
-      if (author.id) {
-        name.type = "button";
-        name.onclick = () => modModal.openAuthor(author.id, author.source || "gamebanana");
-      } else if (data.source !== "backstage" && safeExternalUrl(author.url)) {
-        const authorUrl = safeExternalUrl(author.url);
-        const link = document.createElement("a");
-        link.className = "modal-credit-link";
-        link.href = authorUrl;
-        link.target = "_blank";
-        link.rel = "noreferrer";
-        link.setAttribute("aria-label", t("common.openOnWebsite"));
-        link.title = t("common.openOnWebsite");
-        link.innerHTML = '<i class="fa-solid fa-link" aria-hidden="true"></i>';
-        link.onclick = (event) => {
-          event.preventDefault();
-          Neutralino.os.open(authorUrl).catch(() => {});
-        };
-        nameRow.appendChild(link);
-      }
-      info.appendChild(nameRow);
-      if (author.role) {
-        const role = document.createElement("span");
-        role.className = "modal-credit-role";
-        role.textContent = author.role;
-        info.appendChild(role);
-      }
-      row.append(avatarContent, info);
-      list.appendChild(row);
-    });
-    section.append(heading, list);
-    fragment.appendChild(section);
-  });
-  groups.appendChild(fragment);
-  creditAvatars.forEach((avatars, userId) => {
-    void backstageApi.getUserProfile(userId).then((profile) => {
-      if (!profile?.avatar) return;
-      avatars.forEach((avatar) => {
-        if (avatar.isConnected) setAvatarImage(avatar, profile.avatar);
-      });
-    }).catch(() => {});
-  });
 }
 
 function updateModalRequirements(data) {
@@ -693,10 +599,29 @@ function showModData(data, installedCount, onDownload) {
   updateBackstageDetailRows(data);
   updateModalAuthor(data);
   updateWipBadge(data);
-  updateModalContributors(data);
+  renderModalContributors(data, {
+    safeExternalUrl,
+    setAvatarImage,
+    openAuthor: (authorId, source) => modModal.openAuthor(authorId, source),
+  });
   updateModalRequirements(data);
   const timeEl = document.getElementById("modal-time");
   if (timeEl) timeEl.textContent = data.submittedTimeAgo || data.timeAgo;
+  updateModalDates(data);
+  updateModalMetrics(data);
+  const description = document.getElementById("modal-description");
+  if (description) renderModalDescription(description, data);
+  const imgLoader = document.getElementById("modal-image-loader");
+  if (imgLoader) imgLoader.style.display = "none";
+
+  const gameBananaLink = document.getElementById("modal-gamebanana-link");
+  if (gameBananaLink) updateModalGameBananaLink(gameBananaLink, data);
+  updateBookmarkButton(data);
+  updateModalEngineBadge(data);
+  updateDownloadStatus(data, installedCount, onDownload);
+}
+
+function updateModalDates(data) {
   [
     ["modal-modified-date", "modal-modified-time", data.modifiedTimeAgo],
     ["modal-updated-date", "modal-updated-time", data.updatedTimeAgo],
@@ -706,6 +631,9 @@ function showModData(data, installedCount, onDownload) {
     if (timeEl) timeEl.textContent = value || "--";
     if (dateEl) dateEl.hidden = !value;
   });
+}
+
+function updateModalMetrics(data) {
   const likesEl = document.getElementById("modal-likes");
   if (likesEl) {
     likesEl.textContent = Number(data.likes || 0).toLocaleString();
@@ -714,13 +642,17 @@ function showModData(data, installedCount, onDownload) {
   }
   const viewsEl = document.getElementById("modal-views");
   if (viewsEl) {
-    const count = data.source === "gamejolt"
-      ? data.followers
-      : data.downloads ?? data.views;
+    const count =
+      data.source === "gamejolt"
+        ? data.followers
+        : (data.downloads ?? data.views);
     viewsEl.textContent = Number(count || 0).toLocaleString();
-    const label = viewsEl.closest(".modal-detail-metric")?.querySelector("span");
+    const label = viewsEl
+      .closest(".modal-detail-metric")
+      ?.querySelector("span");
     if (label) {
-      label.textContent = data.source === "gamejolt" ? "Followers" : t("modModal.views");
+      label.textContent =
+        data.source === "gamejolt" ? "Followers" : t("modModal.views");
     }
   }
   const viewsIcon = document.getElementById("modal-views-icon");
@@ -732,14 +664,9 @@ function showModData(data, installedCount, onDownload) {
           ? "fa-solid fa-user-group"
           : "fa-solid fa-eye";
   }
-  const description = document.getElementById("modal-description");
-  if (description) renderModalDescription(description, data);
-  const imgLoader = document.getElementById("modal-image-loader");
-  if (imgLoader) imgLoader.style.display = "none";
+}
 
-  const gameBananaLink = document.getElementById("modal-gamebanana-link");
-  if (gameBananaLink) updateModalGameBananaLink(gameBananaLink, data);
-  updateBookmarkButton(data);
+function updateModalEngineBadge(data) {
   const engine = getModalEngine(data);
   const engineBadge = document.getElementById("modal-engine-badge");
   const engineIcon = document.getElementById("modal-engine-icon");
@@ -757,7 +684,6 @@ function showModData(data, installedCount, onDownload) {
   } else if (engineBadge) {
     engineBadge.hidden = true;
   }
-  updateDownloadStatus(data, installedCount, onDownload);
 }
 
 function updateDownloadStatus(data, installedCount, onDownload) {
@@ -807,32 +733,38 @@ function updateDownloadStatus(data, installedCount, onDownload) {
     button.onclick = null;
     setModalDownloadButton(button, "fa-solid fa-check", installedLabel, true);
   } else {
-    const sourceUrl = safeExternalUrl(
-      data.source === "peo" || data.source === "backstage" || data.source === "gamejolt" ? data.sourceUrl : data.gameBananaUrl,
-    );
-    const isPsych = data.source === "peo";
-    const isBackstage = data.source === "backstage";
-    const isGameJolt = data.source === "gamejolt";
-    const label = isPsych
+    setExternalDownloadButton(button, data);
+  }
+}
+
+function setExternalDownloadButton(button, data) {
+  const sourceUrl = safeExternalUrl(
+    data.source === "peo" ||
+      data.source === "backstage" ||
+      data.source === "gamejolt"
+      ? data.sourceUrl
+      : data.gameBananaUrl,
+  );
+  const label =
+    data.source === "peo"
       ? t("modModal.openOnPsychOnline", { title: data.title || "" })
-      : isBackstage
-        ? `Open on FunkinBackstage`
-        : isGameJolt
+      : data.source === "backstage"
+        ? "Open on FunkinBackstage"
+        : data.source === "gamejolt"
           ? "Open on GameJolt"
           : t("modModal.downloadOnGameBanana");
-    setModalDownloadButton(
-      button,
-      "fa-solid fa-arrow-up-right-from-square",
-      label,
-      !sourceUrl,
-    );
-    button.onclick = (event) => {
-      event.preventDefault();
-      if (sourceUrl && window.Neutralino?.os?.open) {
-        Neutralino.os.open(sourceUrl).catch(() => {});
-      }
-    };
-  }
+  setModalDownloadButton(
+    button,
+    "fa-solid fa-arrow-up-right-from-square",
+    label,
+    !sourceUrl,
+  );
+  button.onclick = (event) => {
+    event.preventDefault();
+    if (sourceUrl && window.Neutralino?.os?.open) {
+      Neutralino.os.open(sourceUrl).catch(() => {});
+    }
+  };
 }
 
 export {

@@ -1,6 +1,5 @@
-import { gameBananaApi } from "../../../backend/providers/gamebanana/gamebanana.provider.js";
-import { backstageApi } from "../../../backend/providers/backstage/backstage.provider.js";
-import { FS } from "../../../backend/services/filesystem.js";
+import { FS } from "../../../backend/services/filesystem/index.js";
+import { modCatalogService } from "../../../backend/services/mod-catalog.service.js";
 import { modModal } from "./modal/index.js";
 import { getEngineLabel, getEngineLabelKey, t } from "../i18n/index.js";
 
@@ -58,7 +57,9 @@ function createCarouselSlideFallback() {
 }
 
 function loadCarouselImage(slide, imageUrl, fallbacks = []) {
-  const sources = [imageUrl, ...fallbacks].filter((src, index, all) => src && all.indexOf(src) === index);
+  const sources = [imageUrl, ...fallbacks].filter(
+    (src, index, all) => src && all.indexOf(src) === index,
+  );
   let index = 0;
   const loadNext = () => {
     const src = sources[index];
@@ -99,7 +100,10 @@ function populateCarouselEngine(slide, mod) {
   const engineIcon = engineBadge?.querySelector("img");
   const engineNameEl = engineBadge?.querySelector(".home-engine-name");
   const engine = FS.getEngineDetails(mod.engineId);
-  const engineName = getEngineLabel(mod.engineId, mod.engine?.name || mod.engineName);
+  const engineName = getEngineLabel(
+    mod.engineId,
+    mod.engine?.name || mod.engineName,
+  );
   const engineLabelKey = getEngineLabelKey(mod.engineId);
   const iconSource = getCarouselEngineIconSource(mod, engine);
   if (engineNameEl) {
@@ -137,7 +141,10 @@ function createCarouselSlide(mod, slideTpl) {
     : createCarouselSlideFallback();
 
   slide.style.backgroundImage = "url('assets/img/placeholder-mini.jpg')";
-  loadCarouselImage(slide, mod.featureImage || mod.image, [mod.image, ...(mod.imageFallbacks || [])]);
+  loadCarouselImage(slide, mod.featureImage || mod.image, [
+    mod.image,
+    ...(mod.imageFallbacks || []),
+  ]);
   populateCarouselEngine(slide, mod);
   populateCarouselSlide(slide, mod);
   return slide;
@@ -169,7 +176,7 @@ async function showBackstageListingFallback({
   controls,
   goToSlide,
 }) {
-  const fallback = await backstageApi.getMods({ sort: "activity", page: 1, limit: 1 });
+  const fallback = await modCatalogService.getBackstageCarouselFallback();
   if (loadToken !== homeCarousel.loadToken) return true;
   const mod = fallback.mods[0];
   if (!mod) return false;
@@ -190,17 +197,59 @@ async function showBackstageListingFallback({
   return true;
 }
 
-async function loadFeaturedMods(service) {
-  if (service === "psychonline") return [];
+async function handleCarouselLoadError({
+  controller,
+  error,
+  service,
+  loadToken,
+  track,
+  dotsContainer,
+  controls,
+}) {
+  if (loadToken !== controller.loadToken) return;
+  console.error(`[WeekBox] ${service} featured carousel request failed`, error);
   if (service === "backstage") {
-    return (await backstageApi.getMods({
-      featured: true,
-      sort: "activity",
-      page: 1,
-      limit: 12,
-    })).mods;
+    try {
+      if (
+        await showBackstageListingFallback({
+          loadToken,
+          track,
+          dotsContainer,
+          controls,
+          goToSlide: (slideIndex) => controller.goToSlide(slideIndex),
+        })
+      ) {
+        return;
+      }
+    } catch (fallbackError) {
+      if (loadToken !== controller.loadToken) return;
+      console.warn(
+        "[WeekBox] Backstage carousel fallback failed",
+        fallbackError,
+      );
+    }
   }
-  return gameBananaApi.getFeaturedCarousel();
+  const slideCount = track.querySelectorAll(".carousel-slide").length;
+  if (slideCount) {
+    controller.totalSlides = slideCount;
+    controller.currentSlideIndex = Math.min(
+      controller.currentSlideIndex,
+      slideCount - 1,
+    );
+    if (controls) controls.hidden = false;
+    controller.updateDots();
+    controller.startAutoSlide();
+    return;
+  }
+  controller.currentSlideIndex = 0;
+  controller.totalSlides = 0;
+  dotsContainer.replaceChildren();
+  if (controls) controls.hidden = true;
+  track.textContent = t("home.carouselError");
+}
+
+async function loadFeaturedMods(service) {
+  return modCatalogService.getHomeFeaturedMods(service);
 }
 
 export const homeCarousel = {
@@ -256,7 +305,8 @@ export const homeCarousel = {
       dotsContainer.replaceChildren();
       this.currentSlideIndex = 0;
       this.totalSlides = mods.length;
-      if (controls) controls.hidden = service === "backstage" || mods.length < 2;
+      if (controls)
+        controls.hidden = service === "backstage" || mods.length < 2;
 
       const slideTpl = document.getElementById("tpl-home-carousel-slide");
 
@@ -276,39 +326,15 @@ export const homeCarousel = {
       this.updateDots();
       this.startAutoSlide();
     } catch (error) {
-      if (loadToken !== this.loadToken) return;
-      console.error(`[WeekBox] ${service} featured carousel request failed`, error);
-      if (service === "backstage") {
-        try {
-          if (await showBackstageListingFallback({
-            loadToken,
-            track,
-            dotsContainer,
-            controls,
-            goToSlide: (slideIndex) => this.goToSlide(slideIndex),
-          })) return;
-        } catch (fallbackError) {
-          if (loadToken !== this.loadToken) return;
-          console.warn("[WeekBox] Backstage carousel fallback failed", fallbackError);
-        }
-      }
-      const slideCount = track.querySelectorAll(".carousel-slide").length;
-      if (slideCount) {
-        this.totalSlides = slideCount;
-        this.currentSlideIndex = Math.min(
-          this.currentSlideIndex,
-          slideCount - 1,
-        );
-        if (controls) controls.hidden = false;
-        this.updateDots();
-        this.startAutoSlide();
-        return;
-      }
-      this.currentSlideIndex = 0;
-      this.totalSlides = 0;
-      dotsContainer.replaceChildren();
-      if (controls) controls.hidden = true;
-      track.textContent = t("home.carouselError");
+      return handleCarouselLoadError({
+        controller: this,
+        error,
+        service,
+        loadToken,
+        track,
+        dotsContainer,
+        controls,
+      });
     }
   },
 

@@ -1,5 +1,5 @@
 import { getTargetPlatform } from "./utils.js";
-import { FS } from "../../../backend/services/filesystem.js";
+import { FS } from "../../../backend/services/filesystem/index.js";
 import { i18n, t } from "../i18n/index.js";
 import {
   activateCheckoutDialog,

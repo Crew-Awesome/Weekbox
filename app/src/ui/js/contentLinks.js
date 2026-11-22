@@ -1,7 +1,4 @@
-import { gameBananaApi } from "../../backend/providers/gamebanana/gamebanana.provider.js";
-import { peoApi } from "../../backend/providers/peo/peo.provider.js";
-import { backstageApi } from "../../backend/providers/backstage/backstage.provider.js";
-import { gameJoltApi } from "../../backend/providers/gamejolt/gamejolt.provider.js";
+import { modCatalogService } from "../../backend/services/mod-catalog.service.js";
 import { t } from "./i18n/index.js";
 
 const containerVersions = new WeakMap();
@@ -17,50 +14,22 @@ function safeHttpUrl(value) {
   }
 }
 
-function safeDecodePath(value) {
-  try { return decodeURIComponent(value); } catch { return value; }
-}
-
 function getRecognizedSubmission(url) {
-  const gameBananaSubmission = gameBananaApi.getGameBananaSubmission(url);
-  if (gameBananaSubmission) {
-    return { kind: "gamebanana", submission: gameBananaSubmission };
-  }
-
-  const parsedUrl = new URL(url);
-  const peoMatch = parsedUrl.pathname.match(/^\/mod\/([^/]+)\/?$/i);
-  if (/(?:^|\.)sniro\.boo$/i.test(parsedUrl.hostname) && peoMatch) {
-    return { kind: "peo", modId: `peo:${safeDecodePath(peoMatch[1])}` };
-  }
-  const backstageMatch = parsedUrl.pathname.match(/^\/mods\/([a-z0-9_-]+)\/?$/i);
-  if (/^(?:www\.)?funkinbackstage\.net$/i.test(parsedUrl.hostname) && backstageMatch) {
-    return { kind: "backstage", modId: `backstage:${safeDecodePath(backstageMatch[1])}` };
-  }
-  const gameJoltMatch = parsedUrl.pathname.match(/^\/games\/(?:[^/]+\/)?(\d+)(?:\/|$)/i);
-  if (/(?:^|\.)gamejolt\.com$/i.test(parsedUrl.hostname) && gameJoltMatch) {
-    return { kind: "gamejolt", modId: `gamejolt:${gameJoltMatch[1]}` };
-  }
-  return null;
+  return modCatalogService.parseSubmissionUrl(url);
 }
 
 function openExternal(url) {
   return Neutralino.os.open(url).catch(() => {});
 }
 
-function getProviderDetails(recognized) {
-  const sourceId = recognized.modId.slice(recognized.kind.length + 1);
-  if (recognized.kind === "peo") return peoApi.getModDetails(sourceId);
-  if (recognized.kind === "backstage") return backstageApi.getModDetails(sourceId);
-  if (recognized.kind === "gamejolt") return gameJoltApi.getGameDetails(sourceId);
-  return Promise.resolve(null);
-}
-
 function getProviderName(kind) {
-  return {
-    peo: t("home.psychOnline"),
-    backstage: "FunkinBackstage",
-    gamejolt: "GameJolt",
-  }[kind] || "mod service";
+  return (
+    {
+      peo: t("home.psychOnline"),
+      backstage: "FunkinBackstage",
+      gamejolt: "GameJolt",
+    }[kind] || "mod service"
+  );
 }
 
 function setPillLabel(pill, label, title) {
@@ -69,8 +38,15 @@ function setPillLabel(pill, label, title) {
   pill.setAttribute("aria-label", title);
 }
 
-function createSubmissionPill(link, recognized, onGameBanana, onProviderMod, loadGameBananaDetails) {
-  const originalLabel = link.textContent.trim() || link.querySelector("img")?.alt.trim() || "";
+function createSubmissionPill(
+  link,
+  recognized,
+  onGameBanana,
+  onProviderMod,
+  loadGameBananaDetails,
+) {
+  const originalLabel =
+    link.textContent.trim() || link.querySelector("img")?.alt.trim() || "";
   const pill = document.createElement("button");
   pill.type = "button";
   pill.className = "modal-description-submission-link";
@@ -128,7 +104,12 @@ function createSubmissionPill(link, recognized, onGameBanana, onProviderMod, loa
 
 export function enhanceContentLinks(
   container,
-  { onGameBanana, onProviderMod, loadGameBananaDetails = true, loadGameBananaTitle = false } = {},
+  {
+    onGameBanana,
+    onProviderMod,
+    loadGameBananaDetails = true,
+    loadGameBananaTitle = false,
+  } = {},
 ) {
   if (!container) return;
   const version = (containerVersions.get(container) || 0) + 1;
@@ -167,11 +148,16 @@ export function enhanceContentLinks(
 
     if (recognized.kind !== "gamebanana") {
       if (recognized.modId) {
-        getProviderDetails(recognized)
+        modCatalogService
+          .getModDetails(recognized.modId)
           .then((details) => {
             if (!isCurrent() || !details?.title) return;
             const title = details.title;
-            setPillLabel(pill, title, `Open ${title} in WeekBox (${getProviderName(recognized.kind)})`);
+            setPillLabel(
+              pill,
+              title,
+              `Open ${title} in WeekBox (${getProviderName(recognized.kind)})`,
+            );
           })
           .catch(() => {});
       }
@@ -179,21 +165,10 @@ export function enhanceContentLinks(
     }
     if (!loadGameBananaDetails && !loadGameBananaTitle) return;
     const { submission } = recognized;
-    const getDetails = loadGameBananaDetails
-      ? submission.type === "tool"
-        ? gameBananaApi.getToolDetails(submission.id, {
-            requireDownload: false,
-          })
-        : gameBananaApi.getModDetails(submission.id, {
-            includeRequirements: false,
-          })
-      : submission.type === "tool"
-        ? gameBananaApi.getToolDetails(submission.id, {
-            requireDownload: false,
-          })
-        : gameBananaApi.getModProfile(submission.id).then((profile) =>
-            profile ? { title: profile._sName } : null,
-          );
+    const getDetails = modCatalogService.getSubmissionDetails(submission, {
+      loadDetails: loadGameBananaDetails,
+      loadTitle: loadGameBananaTitle,
+    });
     getDetails
       .then((details) => {
         if (!isCurrent()) return;

@@ -1,44 +1,24 @@
-function quoteShellArgument(value) {
-  const argument = String(value ?? "").replace(/[\r\n]/g, "");
-  if (window.NL_OS === "Windows") {
-    return `"${argument.replace(/["^%]/g, "^$&")}"`;
-  }
-  return `'${argument.replaceAll("'", "'\"'\"'")}'`;
-}
-
 async function replaceFile(sourcePath, destinationPath) {
   if (!(await APIneuFileSystem.exists(destinationPath))) {
     await Neutralino.filesystem.move(sourcePath, destinationPath);
     return;
   }
-
-  const source =
-    window.NL_OS === "Windows" ? sourcePath.replaceAll("/", "\\") : sourcePath;
-  const destination =
-    window.NL_OS === "Windows"
-      ? destinationPath.replaceAll("/", "\\")
-      : destinationPath;
-  const command =
-    window.NL_OS === "Windows"
-      ? `cmd /c move /Y ${quoteShellArgument(source)} ${quoteShellArgument(destination)}`
-      : `mv -f ${quoteShellArgument(source)} ${quoteShellArgument(destination)}`;
-  await Neutralino.os.execCommand(command, { background: false });
-}
-
-function getRemovalCommand(path, isDirectory) {
-  if (window.NL_OS !== "Windows") {
-    return `rm -rf ${quoteShellArgument(path)}`;
+  const backupPath = `${destinationPath}.weekbox-backup-${globalThis.crypto?.randomUUID?.() || Date.now()}`;
+  await Neutralino.filesystem.move(destinationPath, backupPath);
+  try {
+    await Neutralino.filesystem.move(sourcePath, destinationPath);
+  } catch (error) {
+    try {
+      await Neutralino.filesystem.move(backupPath, destinationPath);
+    } catch (restoreError) {
+      throw new Error(
+        `Could not replace ${destinationPath}; the original file is preserved at ${backupPath}. ${restoreError?.message || restoreError}`,
+        { cause: error },
+      );
+    }
+    throw error;
   }
-  const windowsPath = quoteShellArgument(path.replace(/\//g, "\\"));
-  return isDirectory
-    ? `cmd /c rmdir /S /Q ${windowsPath}`
-    : `cmd /c del /F /Q ${windowsPath}`;
-}
-
-async function removeWithCommand(path) {
-  const stats = await Neutralino.filesystem.getStats(path).catch(() => null);
-  const command = getRemovalCommand(path, Boolean(stats?.isDirectory));
-  await Neutralino.os.execCommand(command, { background: false });
+  await Neutralino.filesystem.remove(backupPath);
 }
 
 async function waitForMoveSource(api, source, destination, maxAttempts) {
@@ -68,40 +48,46 @@ async function moveWithRetries(source, destination, maxAttempts) {
   return lastError;
 }
 
-async function copyMoveFallback(api, source, destination, lastError) {
-  let isDirectory = false;
+async function pathIsConfirmedAbsent(path, visited = new Set()) {
+  const rawPath = String(path).replace(/\\/g, "/");
+  const normalized =
+    rawPath.replace(/\/+$/, "") || (rawPath.startsWith("/") ? "/" : "");
+  if (
+    !normalized ||
+    normalized === "/" ||
+    /^[a-z]:\/?$/i.test(normalized) ||
+    /^\/\/[^/]+\/[^/]+$/.test(normalized) ||
+    visited.has(normalized)
+  ) {
+    return false;
+  }
+  visited.add(normalized);
+  const drivePath = normalized.match(/^([a-z]:)\/(.+)$/i);
+  const separator = normalized.lastIndexOf("/");
+  if (separator < 0 && !drivePath) return false;
+  const parent = drivePath
+    ? separator === 2
+      ? `${drivePath[1]}/`
+      : normalized.slice(0, separator)
+    : normalized.slice(0, separator) || "/";
+  const basename = normalized.slice(separator + 1);
+  let entries;
   try {
-    const stats = await Neutralino.filesystem.getStats(source);
-    isDirectory = Boolean(stats?.isDirectory || stats?.type === "DIRECTORY");
-  } catch {
-    try {
-      await Neutralino.filesystem.readDirectory(source);
-      isDirectory = true;
-    } catch {}
-  }
-
-  if (isDirectory) {
-    await api.ensureDir(destination);
-  } else {
-    const separator = destination.lastIndexOf("/");
-    if (separator > 0) await api.ensureDir(destination.slice(0, separator));
-  }
-  await Neutralino.filesystem.copy(source, destination, {
-    recursive: isDirectory,
-    overwrite: true,
-    skip: false,
-  });
-  if (await api.exists(destination)) {
-    await api.remove(source);
-    if (await api.exists(source)) {
-      throw new Error(
-        `WeekBox copied ${source} to ${destination} but could not remove the source.`,
-      );
+    entries = await Neutralino.filesystem.readDirectory(parent);
+  } catch (error) {
+    if (
+      error?.code === "NE_FS_NOPATHE" &&
+      (await pathIsConfirmedAbsent(parent, visited))
+    ) {
+      return true;
     }
-    return true;
+    throw error;
   }
-  if (lastError) throw lastError;
-  return false;
+  return !entries.some((entry) =>
+    window.NL_OS === "Windows"
+      ? String(entry.entry).toLocaleLowerCase() === basename.toLocaleLowerCase()
+      : String(entry.entry) === basename,
+  );
 }
 
 var APIneuFileSystem = {
@@ -110,8 +96,11 @@ var APIneuFileSystem = {
     try {
       await Neutralino.filesystem.getStats(path);
       return true;
-    } catch {
-      return false;
+    } catch (error) {
+      if (error?.code === "NE_FS_NOPATHE") {
+        if (await pathIsConfirmedAbsent(path)) return false;
+      }
+      throw error;
     }
   },
 
@@ -236,38 +225,9 @@ var APIneuFileSystem = {
     const exists = await this.exists(normalizedPath);
     if (!exists) return;
 
-    try {
-      await Neutralino.filesystem.remove(normalizedPath);
-      if (!(await this.exists(normalizedPath))) return;
-    } catch {
-      // Native remove can fail if path is a non-empty directory
-    }
-
-    const maxAttempts = window.NL_OS === "Windows" ? 3 : 2;
-    for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
-      if (!(await this.exists(normalizedPath))) return;
-      try {
-        await removeWithCommand(normalizedPath);
-        if (!(await this.exists(normalizedPath))) return;
-      } catch (cmdError) {
-        console.warn("Recursive removal fallback failed:", cmdError);
-      }
-      if (attempt < maxAttempts)
-        await new Promise((resolve) => setTimeout(resolve, attempt * 200));
-    }
-
+    await Neutralino.filesystem.remove(normalizedPath);
     if (await this.exists(normalizedPath)) {
-      await new Promise((r) => setTimeout(r, 200));
-      try {
-        await Neutralino.filesystem.remove(normalizedPath);
-      } catch (error) {
-        if (
-          (await this.exists(normalizedPath)) ||
-          /access|permission|denied/i.test(String(error?.message || error))
-        ) {
-          throw error;
-        }
-      }
+      throw new Error(`WeekBox could not remove ${normalizedPath}.`);
     }
   },
   /**
@@ -286,6 +246,11 @@ var APIneuFileSystem = {
     }
     const normalizedSource = String(sourcePath).replace(/\\/g, "/");
     const normalizedDest = String(destinationPath).replace(/\\/g, "/");
+    if (await this.exists(normalizedDest)) {
+      throw new Error(
+        `WeekBox could not move ${normalizedSource} because ${normalizedDest} already exists.`,
+      );
+    }
 
     const maxAttempts =
       options.maxAttempts || (window.NL_OS === "Windows" ? 8 : 5);
@@ -298,7 +263,6 @@ var APIneuFileSystem = {
         maxAttempts,
       ))
     ) {
-      if (await this.exists(normalizedDest)) return;
       throw new Error(
         `WeekBox could not move ${normalizedSource} because it does not exist.`,
       );
@@ -310,26 +274,7 @@ var APIneuFileSystem = {
       maxAttempts,
     );
     if (!lastError) return;
-    if (
-      !(await this.exists(normalizedSource)) &&
-      (await this.exists(normalizedDest))
-    ) {
-      return;
-    }
-
-    try {
-      if (
-        await copyMoveFallback(
-          this,
-          normalizedSource,
-          normalizedDest,
-          lastError,
-        )
-      )
-        return;
-    } catch (fallbackError) {
-      throw lastError || fallbackError;
-    }
+    throw lastError;
   },
 };
 

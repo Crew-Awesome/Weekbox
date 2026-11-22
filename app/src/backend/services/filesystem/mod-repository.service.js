@@ -1,6 +1,5 @@
-function sameId(left, right) {
-  return String(left) === String(right);
-}
+import { sameId } from "./identity.util.js";
+import { getModFolderName } from "./path.util.js";
 
 function normalizeTags(tags) {
   if (!Array.isArray(tags)) return [];
@@ -28,9 +27,10 @@ function applyOptionalMetadata(mod, values, keys) {
 }
 
 var _ModRepository = class _ModRepository {
-  constructor({ api, getStoragePaths }) {
+  constructor({ api, getStoragePaths, readDirectory }) {
     this.api = api;
     this.getStoragePaths = getStoragePaths;
+    this.readDirectory = readDirectory;
   }
   get filePath() {
     return this.getStoragePaths().installedModsFile;
@@ -43,6 +43,40 @@ var _ModRepository = class _ModRepository {
     } catch {
       return [];
     }
+  }
+  async getInstalled(modsPath) {
+    let entries;
+    try {
+      entries = await this.readDirectory(modsPath);
+    } catch (error) {
+      throw new Error(
+        `Could not inspect installed mods at ${modsPath}: ${error?.message || error}`,
+        { cause: error },
+      );
+    }
+    const mods = await this.getAll();
+    let migrated = false;
+    for (const mod of mods) {
+      if (mod.kind === "dependency") {
+        delete mod.kind;
+        delete mod.consumers;
+        migrated = true;
+      }
+      if (Array.isArray(mod.dependencies)) {
+        delete mod.dependencies;
+        migrated = true;
+      }
+    }
+    if (migrated) await this.saveAll(mods);
+    const validFolders = new Set(
+      entries
+        .filter((entry) => entry.type === "DIRECTORY")
+        .map((entry) => entry.entry),
+    );
+    return mods.filter((mod) => {
+      const folderName = getModFolderName(mod);
+      return folderName && validFolders.has(folderName);
+    });
   }
   async saveAll(mods) {
     await this.api.writeAtomic(this.filePath, JSON.stringify(mods, null, 2));
@@ -143,10 +177,7 @@ var _ModRepository = class _ModRepository {
     await this.saveAll(mods);
     return mod;
   }
-  async updateAppearance(
-    modId,
-    { name, coverPath, iconPath } = {},
-  ) {
+  async updateAppearance(modId, { name, coverPath, iconPath } = {}) {
     const mods = await this.getAll();
     const mod = mods.find((item) => sameId(item.id, modId));
     if (!mod) return null;
@@ -165,8 +196,14 @@ var _ModRepository = class _ModRepository {
     }
     if (iconPath !== void 0) mod.iconPath = iconPath || null;
     applyOptionalMetadata(mod, arguments[1], [
-      "gameBananaId", "gameBananaType", "providerSource", "providerId",
-      "providerType", "providerUrl", "sourceUrl", "author",
+      "gameBananaId",
+      "gameBananaType",
+      "providerSource",
+      "providerId",
+      "providerType",
+      "providerUrl",
+      "sourceUrl",
+      "author",
     ]);
     await this.saveAll(mods);
     return mod;

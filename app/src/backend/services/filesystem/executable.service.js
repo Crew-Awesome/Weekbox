@@ -89,7 +89,13 @@ async function findMacBundleExecutable(service, fullPath) {
     const match = executable || fallback;
     return match ? `${macOSDirectory}/${match.entry}` : null;
   } catch (error) {
-    service.lastError = describeFileSystemError(error);
+    if (error?.code !== "NE_FS_NOPATHE") {
+      service.lastError = describeFileSystemError(error);
+      throw new Error(
+        `WeekBox could not inspect executable files in ${macOSDirectory}. ${error?.message || error}`,
+        { cause: error },
+      );
+    }
     return null;
   }
 }
@@ -134,63 +140,128 @@ async function scanExecutableDirectory(
     }
   } catch (error) {
     service.lastError = describeFileSystemError(error);
+    if (error?.code !== "NE_FS_NOPATHE") {
+      throw new Error(
+        `WeekBox could not inspect executable files in ${currentDir}. ${error?.message || error}`,
+        { cause: error },
+      );
+    }
   }
   return { result: null, children };
 }
 
-async function findWindowsExecutable(service, normalizedDir) {
+function isExecutableCandidate(entry, isWindows) {
+  return (
+    (isWindows && entry.entry.toLowerCase().endsWith(".exe")) ||
+    (!isWindows && !entry.entry.includes(".") && entry.entry !== "CodeResources")
+  ) && !isExcludedExecutable(entry.entry);
+}
+
+async function scanExecutableCandidates(
+  service,
+  path,
+  depth,
+  isWindows,
+  isMacOS,
+  limit,
+) {
+  const candidates = [];
+  const children = [];
   try {
-    const cmdPromise = Neutralino.os.execCommand(
-      `where.exe /r "${normalizedDir.replace(/\//g, "\\")}" *.exe`,
-      { background: false },
+    const entries = getRealEntries(
+      await Neutralino.filesystem.readDirectory(path),
     );
-    const result = await Promise.race([
-      cmdPromise,
-      new Promise((resolve) => setTimeout(() => resolve(null), 1500)),
-    ]);
-    if (!result || result.exitCode !== 0) return null;
-    for (const path of (result.stdOut || "")
-      .split(/\r?\n/)
-      .map((item) => item.trim())
-      .filter(Boolean)) {
-      const fileName = path.split(/[\\/]/).pop();
-      if (!isExcludedExecutable(fileName)) return path.replace(/\\/g, "/");
+    for (const entry of entries) {
+      const fullPath = `${path}/${entry.entry}`;
+      if (entry.type === "DIRECTORY") {
+        if (isMacOS && /\.app$/i.test(entry.entry)) {
+          const bundleExecutable = await findMacBundleExecutable(service, fullPath);
+          if (bundleExecutable) candidates.push(bundleExecutable);
+        }
+        if (depth < 3) children.push({ path: fullPath, depth: depth + 1 });
+      } else if (isExecutableCandidate(entry, isWindows)) {
+        candidates.push(fullPath);
+      }
+      if (candidates.length >= limit) break;
     }
   } catch (error) {
-    console.warn(
-      "Could not search for a Windows executable:",
-      normalizedDir,
-      error,
-    );
+    if (error?.code !== "NE_FS_NOPATHE") {
+      service.lastError = describeFileSystemError(error);
+      throw new Error(
+        `WeekBox could not inspect executable files in ${path}. ${error?.message || error}`,
+        { cause: error },
+      );
+    }
   }
-  return null;
+  return { candidates, children };
 }
 
 var _ExecutableService = class _ExecutableService {
   constructor() {
     this.cache = new Map();
+    this.pending = new Map();
+    this.cacheTtlMs = 60_000;
+    this.maxCacheEntries = 512;
+    this.iconCache = new Map();
+    this.pendingIcons = new Map();
+    this.iconCacheTtlMs = 10 * 60_000;
+    this.maxIconCacheEntries = 64;
   }
 
   async find(dir) {
     if (!dir) return null;
     const normalizedDir = String(dir).replace(/\\/g, "/").replace(/\/+$/, "");
-    if (this.cache.has(normalizedDir)) {
-      const cached = this.cache.get(normalizedDir);
+    const now = Date.now();
+    const cached = this.cache.get(normalizedDir);
+    if (cached && cached.expiresAt > now) {
+      this.cache.delete(normalizedDir);
+      this.cache.set(normalizedDir, cached);
+      if (!cached.path) return null;
       try {
-        await Neutralino.filesystem.getStats(cached);
-        return cached;
-      } catch {
+        await Neutralino.filesystem.getStats(cached.path);
+        return cached.path;
+      } catch (error) {
+        if (error?.code !== "NE_FS_NOPATHE") throw error;
         this.cache.delete(normalizedDir);
       }
     }
+    const pending = this.pending.get(normalizedDir);
+    if (pending) return pending.promise;
 
+    const requestEntry = { stale: false, promise: null };
+    requestEntry.promise = this.findUncached(normalizedDir)
+      .then((path) => {
+        if (requestEntry.stale) {
+          return this.find(normalizedDir);
+        }
+        while (this.cache.size >= this.maxCacheEntries) {
+          this.cache.delete(this.cache.keys().next().value);
+        }
+        this.cache.set(normalizedDir, {
+          path,
+          expiresAt: Date.now() + this.cacheTtlMs,
+        });
+        return path;
+      })
+      .finally(() => {
+        if (this.pending.get(normalizedDir) === requestEntry) {
+          this.pending.delete(normalizedDir);
+        }
+      });
+    this.pending.set(normalizedDir, requestEntry);
+    return requestEntry.promise;
+  }
+
+  async findUncached(normalizedDir) {
     this.lastError = null;
     const isWindows = window.NL_OS === "Windows";
     const isMacOS = window.NL_OS === "Darwin";
     const queue = [{ path: normalizedDir, depth: 0 }];
+    let queueIndex = 0;
 
-    while (queue.length > 0) {
-      const { path: currentDir, depth } = queue.shift();
+    while (queueIndex < queue.length) {
+      const { path: currentDir, depth } = queue[queueIndex];
+      queueIndex += 1;
       const scan = await scanExecutableDirectory(
         this,
         currentDir,
@@ -198,46 +269,47 @@ var _ExecutableService = class _ExecutableService {
         isMacOS,
         isWindows,
       );
-      if (scan.result) {
-        this.cache.set(normalizedDir, scan.result);
-        return scan.result;
-      }
+      if (scan.result) return scan.result;
       queue.push(...scan.children);
-    }
-    if (isWindows) {
-      const result = await findWindowsExecutable(this, normalizedDir);
-      if (result) {
-        this.cache.set(normalizedDir, result);
-        return result;
-      }
     }
     return null;
   }
   async findAll(dir) {
     if (!dir) return [];
+    this.lastError = null;
     const normalizedDir = String(dir).replace(/\\/g, "/").replace(/\/+$/, "");
-    if (window.NL_OS === "Windows") {
-      try {
-        const result = await Neutralino.os.execCommand(
-          `where.exe /r "${normalizedDir.replace(/\//g, "\\")}" *.exe`,
-          { background: false },
-        );
-        if (result?.exitCode === 0) {
-          return [
-            ...new Set(
-              String(result.stdOut || "")
-                .split(/\r?\n/)
-                .map((path) => path.trim().replace(/\\/g, "/"))
-                .filter(
-                  (path) => !isExcludedExecutable(path.split("/").at(-1)),
-                ),
-            ),
-          ].slice(0, 24);
-        }
-      } catch {}
+    const isWindows = window.NL_OS === "Windows";
+    const isMacOS = window.NL_OS === "Darwin";
+    const results = [];
+    const queue = [{ path: normalizedDir, depth: 0 }];
+    let queueIndex = 0;
+    while (queueIndex < queue.length && results.length < 24) {
+      const directory = queue[queueIndex];
+      queueIndex += 1;
+      const scan = await scanExecutableCandidates(
+        this,
+        directory.path,
+        directory.depth,
+        isWindows,
+        isMacOS,
+        24 - results.length,
+      );
+      results.push(...scan.candidates);
+      queue.push(...scan.children);
     }
-    const executable = await this.find(normalizedDir);
-    return executable ? [executable] : [];
+    return [...new Set(results)];
+  }
+  invalidate(dir) {
+    if (!dir) return;
+    const normalized = String(dir).replace(/\\/g, "/").replace(/\/+$/, "");
+    this.cache.delete(normalized);
+    const pending = this.pending.get(normalized);
+    if (pending) pending.stale = true;
+    this.pending.delete(normalized);
+    for (const path of this.iconCache.keys()) {
+      if (path === normalized || path.startsWith(`${normalized}/`))
+        this.iconCache.delete(path);
+    }
   }
   getLastError() {
     return this.lastError;
@@ -246,6 +318,30 @@ var _ExecutableService = class _ExecutableService {
     return getParentPath(executablePath);
   }
   async getIconDataUrl(executablePath) {
+    const path = String(executablePath).replace(/\\/g, "/");
+    const cached = this.iconCache.get(path);
+    if (cached && cached.expiresAt > Date.now()) {
+      this.iconCache.delete(path);
+      this.iconCache.set(path, cached);
+      return cached.value;
+    }
+    if (cached) this.iconCache.delete(path);
+    if (this.pendingIcons.has(path)) return this.pendingIcons.get(path);
+    const request = this.getIconDataUrlUncached(path)
+      .then((value) => {
+        while (this.iconCache.size >= this.maxIconCacheEntries)
+          this.iconCache.delete(this.iconCache.keys().next().value);
+        this.iconCache.set(path, {
+          value,
+          expiresAt: Date.now() + this.iconCacheTtlMs,
+        });
+        return value;
+      })
+      .finally(() => this.pendingIcons.delete(path));
+    this.pendingIcons.set(path, request);
+    return request;
+  }
+  async getIconDataUrlUncached(executablePath) {
     try {
       const executableDir = this.getDirectory(executablePath);
       const entries = await Neutralino.filesystem.readDirectory(executableDir);

@@ -1,13 +1,11 @@
-import { FS } from "../../../backend/services/filesystem.js";
-import { gameBananaApi } from "../../../backend/providers/gamebanana/gamebanana.provider.js";
-import { backstageApi } from "../../../backend/providers/backstage/backstage.provider.js";
-import { gameJoltApi } from "../../../backend/providers/gamejolt/gamejolt.provider.js";
+import { FS } from "../../../backend/services/filesystem/index.js";
+import { modCatalogService } from "../../../backend/services/mod-catalog.service.js";
 import { getEngineLaunchBehavior } from "../../../backend/config/engines.config.js";
 import { applyDominantColor } from "../../utils/media/extract-color.util.js";
 import { engineUpdateModal } from "../engines/engineUpdateModal.js";
 import { modManagerTemplates } from "./templates.js";
 import { createHourglass } from "../hourglass.js";
-import { loadModCardImage } from "./modImageLoader.js";
+import { loadModCardImage, releaseModCardImage } from "./modImageLoader.js";
 import { modSettingsModal } from "./modSettingsModal.js";
 import {
   replaceProcessExitListener,
@@ -15,6 +13,12 @@ import {
 } from "./processUiSync.js";
 import { getEngineLabel, i18n, t } from "../i18n/index.js";
 import { getPreferredEngineVersion } from "../../../backend/config/engine-preferences.js";
+import {
+  createVirtualGridMetrics,
+  getVirtualGridRange,
+} from "./virtualGrid.util.mjs";
+
+const MAX_MEASURED_GRID_ROWS = 512;
 
 function formatVersionLabel(version) {
   if (!version) return "v 0.0.1";
@@ -24,11 +28,42 @@ function formatVersionLabel(version) {
   return `v ${clean}`;
 }
 
-function yieldToMain() {
-  if (typeof window.scheduler?.yield === "function") {
-    return window.scheduler.yield();
+function getColumnCount(grid) {
+  if (grid.classList.contains("list-view")) return 1;
+  const columns = getComputedStyle(grid).gridTemplateColumns;
+  return Math.max(1, columns.split(" ").filter(Boolean).length);
+}
+
+function createSpacer(className) {
+  const spacer = document.createElement("div");
+  spacer.className = className;
+  spacer.setAttribute("aria-hidden", "true");
+  return spacer;
+}
+
+function syncGridChildren(grid, nodes) {
+  const retained = new Set(nodes);
+  for (let index = grid.children.length - 1; index >= 0; index -= 1) {
+    const child = grid.children[index];
+    if (!retained.has(child)) {
+      if (child.matches?.(".mod-manager-card")) releaseModCardImage(child);
+      child.remove();
+    }
   }
-  return new Promise((resolve) => setTimeout(resolve, 0));
+  if (typeof grid.moveBefore !== "function") {
+    grid.replaceChildren(...nodes);
+    return;
+  }
+  let reference = grid.firstElementChild;
+  for (const node of nodes) {
+    if (node === reference) {
+      reference = reference.nextElementSibling;
+    } else if (node.parentElement === grid) {
+      grid.moveBefore(node, reference);
+    } else {
+      grid.insertBefore(node, reference);
+    }
+  }
 }
 
 function getCardEngineContext(mod, standaloneModIds, enginesById) {
@@ -110,11 +145,15 @@ function createModManagerCard(mod, standaloneModIds, enginesById) {
     mod,
     card,
     fetchDetails: (modId, options) =>
-      mod.providerSource === "backstage" && mod.providerId
-        ? backstageApi.getModDetails(mod.providerId)
-        : mod.providerSource === "gamejolt" && mod.providerId
-          ? gameJoltApi.getGameDetails(mod.providerId)
-        : gameBananaApi.getModDetails(modId, options),
+      modCatalogService.getDetailsForSource(
+        {
+          provider: mod.providerSource,
+          id: mod.providerId,
+          type: mod.providerType,
+        },
+        options,
+        modId,
+      ),
     applyDominantColor,
   });
   return {
@@ -132,7 +171,7 @@ function createModManagerCard(mod, standaloneModIds, enginesById) {
 function bindModManagerCardActions({
   context,
   mod,
-  allMods,
+  getAllMods,
   installedEngines,
   gridContainer,
   onModDeleted,
@@ -181,7 +220,7 @@ function bindModManagerCardActions({
   });
 
   deleteBtn.addEventListener("click", async () => {
-    if (FS.isModLockedForChanges(mod, allMods)) return;
+    if (FS.isModLockedForChanges(mod, getAllMods())) return;
     deleteBtn.disabled = true;
     deleteBtn.innerHTML = modManagerTemplates.deleteSpinner();
     try {
@@ -220,7 +259,7 @@ function bindModManagerCardActions({
         installedEngines,
         onSaved: onSettingsSaved,
         readOnly: false,
-        fileLocked: FS.isModLockedForChanges(mod, allMods),
+        fileLocked: FS.isModLockedForChanges(mod, getAllMods()),
       });
     } finally {
       settingsBtn.disabled = false;
@@ -229,7 +268,7 @@ function bindModManagerCardActions({
   });
 
   visBtn.addEventListener("click", async () => {
-    if (FS.isModLockedForChanges(mod, allMods)) return;
+    if (FS.isModLockedForChanges(mod, getAllMods())) return;
     visBtn.disabled = true;
     const isNowHidden = !mod.hidden;
     mod.hidden = isNowHidden;
@@ -271,12 +310,13 @@ export const cardRenderer = {
     onSettingsSaved,
   ) {
     const standaloneModIds = new Set(standaloneMods.map((m) => String(m.id)));
-    const modsById = new Map(allMods.map((mod) => [String(mod.id), mod]));
+    let modsById = new Map(allMods.map((mod) => [String(mod.id), mod]));
     const enginesById = new Map();
     for (const engine of installedEngines) {
       if (!enginesById.has(engine.id)) enginesById.set(engine.id, []);
       enginesById.get(engine.id).push(engine);
     }
+    let currentAllMods = allMods;
 
     const refreshLaunchButtons = () => {
       gridContainer
@@ -303,7 +343,7 @@ export const cardRenderer = {
         const mod = modsById.get(card.dataset.modId);
 
         if (!mod) return;
-        const locked = FS.isModLockedForChanges(mod, allMods);
+        const locked = FS.isModLockedForChanges(mod, currentAllMods);
         const message = t("modManager.closeEngineBeforeChange");
         const deleteBtn = card.querySelector(".mod-manager-delete-btn");
         const settingsBtn = card.querySelector(".mod-manager-settings-btn");
@@ -341,18 +381,52 @@ export const cardRenderer = {
       gridContainer.parentElement,
       onProcessExit,
     );
+    const scrollRoot = gridContainer.closest(".mod-manager-body");
+    gridContainer.setAttribute("role", "list");
+    const topSpacer = createSpacer("mod-manager-virtual-spacer");
+    const bottomSpacer = createSpacer("mod-manager-virtual-spacer");
+    const measuredRows = new Map();
+    let items = [...modsToRender];
+    let active = true;
+    let destroyed = false;
+    let scheduledFrame = 0;
+    let itemsRevision = 0;
+    let renderedKey = "";
+    const invalidatedIds = new Set();
+    let columnCount = getColumnCount(gridContainer);
+    const rowKey = (rowIndex) =>
+      items
+        .slice(rowIndex * columnCount, (rowIndex + 1) * columnCount)
+        .map((mod) => String(mod.id))
+        .join("|");
+    let rowIndexByKey = new Map();
+    const createMetrics = () => {
+      const rowCount = Math.ceil(items.length / columnCount);
+      rowIndexByKey = new Map();
+      const heights = Array.from({ length: rowCount }, (_, row) => {
+        const key = rowKey(row);
+        rowIndexByKey.set(key, row);
+        return measuredRows.get(key) || 340;
+      });
+      return createVirtualGridMetrics(heights);
+    };
+    let virtualMetrics = createMetrics();
 
-    let fragment = document.createDocumentFragment();
-    for (const [index, mod] of modsToRender.entries()) {
-      const context = createModManagerCard(
-        mod,
-        standaloneModIds,
-        enginesById,
-      );
+    const rowHeight = (rowIndex) => measuredRows.get(rowKey(rowIndex)) || 340;
+    const offsetForRow = (endRow) => virtualMetrics.prefix(endRow);
+    const syncCardPosition = (card, index) => {
+      card.dataset.virtualIndex = String(index);
+      card.setAttribute("role", "listitem");
+      card.setAttribute("aria-posinset", String(index + 1));
+      card.setAttribute("aria-setsize", String(items.length));
+    };
+
+    const makeCard = (mod, index) => {
+      const context = createModManagerCard(mod, standaloneModIds, enginesById);
       bindModManagerCardActions({
         context,
         mod,
-        allMods,
+        getAllMods: () => currentAllMods,
         installedEngines,
         gridContainer,
         onModDeleted,
@@ -360,23 +434,251 @@ export const cardRenderer = {
         refreshLaunchButtons,
         refreshChangeButtons,
       });
-      const { card } = context;
-      if (index < 8) {
-        card.style.setProperty("--card-index", String(index));
-      } else {
-        card.classList.add("mod-manager-card--no-enter");
-      }
-      fragment.appendChild(card);
-      if ((index + 1) % 48 === 0) {
-        gridContainer.appendChild(fragment);
-        fragment = document.createDocumentFragment();
-        await yieldToMain();
-      }
-    }
+      if (index < 8)
+        context.card.style.setProperty("--card-index", String(index));
+      else context.card.classList.add("mod-manager-card--no-enter");
+      syncCardPosition(context.card, index);
+      return context.card;
+    };
 
-    gridContainer.appendChild(fragment);
-    i18n.apply(gridContainer);
-    refreshLaunchButtons();
-    refreshChangeButtons();
+    const measureVisibleRows = (firstRow) => {
+      const cards = [
+        ...gridContainer.querySelectorAll(
+          ".mod-manager-card:not(.mod-manager-installing-card)",
+        ),
+      ];
+      let changed = false;
+      for (let offset = 0; offset < cards.length; offset += columnCount) {
+        const rowIndex = firstRow + Math.floor(offset / columnCount);
+        const key = rowKey(rowIndex);
+        const height = Math.max(
+          ...cards
+            .slice(offset, offset + columnCount)
+            .map((card) => card.getBoundingClientRect().height),
+        );
+        const gap =
+          Number.parseFloat(getComputedStyle(gridContainer).rowGap) || 0;
+        const measured = height + gap;
+        if (height && Math.abs((measuredRows.get(key) || 340) - measured) > 1) {
+          measuredRows.delete(key);
+          measuredRows.set(key, measured);
+          virtualMetrics.setHeight(rowIndex, measured);
+          while (measuredRows.size > MAX_MEASURED_GRID_ROWS) {
+            const oldestKey = measuredRows.keys().next().value;
+            measuredRows.delete(oldestKey);
+            const oldestRow = rowIndexByKey.get(oldestKey);
+            if (oldestRow !== undefined)
+              virtualMetrics.setHeight(oldestRow, 340);
+          }
+          changed = true;
+        }
+      }
+      return changed;
+    };
+
+    const renderWindow = () => {
+      if (destroyed || !active || !gridContainer.isConnected || !scrollRoot)
+        return;
+      const nextColumnCount = getColumnCount(gridContainer);
+      if (nextColumnCount !== columnCount) {
+        columnCount = nextColumnCount;
+        measuredRows.clear();
+        virtualMetrics = createMetrics();
+      }
+      const range = getVirtualGridRange({
+        itemCount: items.length,
+        columns: columnCount,
+        scrollTop: scrollRoot.scrollTop,
+        viewportHeight: scrollRoot.clientHeight,
+        rowHeight,
+        metrics: virtualMetrics,
+      });
+      const { firstRow, firstIndex, lastIndex } = range;
+      const key = `${itemsRevision}:${columnCount}:${firstIndex}:${lastIndex}`;
+      if (renderedKey === key) {
+        if (measureVisibleRows(firstRow)) {
+          const gap =
+            Number.parseFloat(getComputedStyle(gridContainer).rowGap) || 0;
+          topSpacer.style.height = `${Math.max(0, range.topHeight - gap)}px`;
+          bottomSpacer.style.height = `${Math.max(0, range.bottomHeight - gap)}px`;
+        }
+        return;
+      }
+      renderedKey = key;
+      const pendingCards = [
+        ...gridContainer.querySelectorAll(".mod-manager-installing-card"),
+      ];
+      const reusableCards = new Map(
+        [
+          ...gridContainer.querySelectorAll(
+            ".mod-manager-card:not(.mod-manager-installing-card)",
+          ),
+        ].map((card) => [card.dataset.modId, card]),
+      );
+      const gap =
+        Number.parseFloat(getComputedStyle(gridContainer).rowGap) || 0;
+      topSpacer.style.height = `${Math.max(0, range.topHeight - gap)}px`;
+      bottomSpacer.style.height = `${Math.max(0, range.bottomHeight - gap)}px`;
+      const windowCards = [];
+      for (let index = firstIndex; index < lastIndex; index += 1) {
+        const mod = items[index];
+        const modId = String(mod.id);
+        const card = reusableCards.get(modId);
+        if (card && !invalidatedIds.has(modId)) {
+          syncCardPosition(card, index);
+          windowCards.push(card);
+        } else {
+          windowCards.push(makeCard(mod, index));
+        }
+      }
+      syncGridChildren(gridContainer, [
+        topSpacer,
+        ...windowCards,
+        bottomSpacer,
+        ...pendingCards,
+      ]);
+      invalidatedIds.clear();
+      i18n.apply(gridContainer);
+      refreshLaunchButtons();
+      refreshChangeButtons();
+      if (measureVisibleRows(firstRow)) {
+        const measuredRange = getVirtualGridRange({
+          itemCount: items.length,
+          columns: columnCount,
+          scrollTop: scrollRoot.scrollTop,
+          viewportHeight: scrollRoot.clientHeight,
+          rowHeight,
+          metrics: virtualMetrics,
+        });
+        topSpacer.style.height = `${Math.max(0, measuredRange.topHeight - gap)}px`;
+        bottomSpacer.style.height = `${Math.max(0, measuredRange.bottomHeight - gap)}px`;
+        if (
+          measuredRange.firstIndex !== firstIndex ||
+          measuredRange.lastIndex !== lastIndex
+        ) {
+          scheduleRender();
+        }
+      }
+    };
+
+    const scheduleRender = () => {
+      if (scheduledFrame || destroyed) return;
+      scheduledFrame = requestAnimationFrame(() => {
+        scheduledFrame = 0;
+        renderWindow();
+      });
+    };
+    const onScroll = () => scheduleRender();
+    const onGridKeyDown = (event) => {
+      if (event.key !== "Tab") return;
+      const card = event.target.closest(
+        ".mod-manager-card:not(.mod-manager-installing-card)",
+      );
+      if (!card) return;
+      const focusable = [
+        ...card.querySelectorAll(
+          'button:not([disabled]), a[href], input:not([disabled]), [tabindex]:not([tabindex="-1"])',
+        ),
+      ];
+      if (!focusable.length) return;
+      const isBoundary = event.shiftKey
+        ? event.target === focusable[0] &&
+          Number(card.dataset.virtualIndex) === firstRenderedIndex()
+        : event.target === focusable.at(-1) &&
+          Number(card.dataset.virtualIndex) === lastRenderedIndex();
+      if (!isBoundary) return;
+      const currentIndex = Number(card.dataset.virtualIndex);
+      const nextIndex = currentIndex + (event.shiftKey ? -1 : 1);
+      if (nextIndex < 0 || nextIndex >= items.length) return;
+      event.preventDefault();
+      const targetRow = Math.floor(nextIndex / columnCount);
+      scrollRoot.scrollTop = offsetForRow(targetRow);
+      renderWindow();
+      requestAnimationFrame(() => {
+        const targetCard = [
+          ...gridContainer.querySelectorAll(
+            ".mod-manager-card:not(.mod-manager-installing-card)",
+          ),
+        ].find(
+          (candidate) => Number(candidate.dataset.virtualIndex) === nextIndex,
+        );
+        const targetFocusable = targetCard?.querySelectorAll(
+          'button:not([disabled]), a[href], input:not([disabled]), [tabindex]:not([tabindex="-1"])',
+        );
+        const destination = event.shiftKey
+          ? targetFocusable?.[targetFocusable.length - 1]
+          : targetFocusable?.[0];
+        destination?.focus();
+      });
+    };
+    const firstRenderedIndex = () =>
+      Number(
+        gridContainer.querySelector(
+          ".mod-manager-card:not(.mod-manager-installing-card)",
+        )?.dataset.virtualIndex ?? -1,
+      );
+    const lastRenderedIndex = () => {
+      const cards = gridContainer.querySelectorAll(
+        ".mod-manager-card:not(.mod-manager-installing-card)",
+      );
+      return Number(cards[cards.length - 1]?.dataset.virtualIndex ?? -1);
+    };
+    scrollRoot?.addEventListener("scroll", onScroll, { passive: true });
+    gridContainer.addEventListener("keydown", onGridKeyDown);
+    const resizeObserver =
+      typeof ResizeObserver === "function"
+        ? new ResizeObserver(scheduleRender)
+        : null;
+    resizeObserver?.observe(scrollRoot);
+    resizeObserver?.observe(gridContainer);
+
+    const renderer = {
+      setItems(nextItems) {
+        if (
+          items.length === nextItems.length &&
+          items.every((mod, index) => mod === nextItems[index])
+        ) {
+          return;
+        }
+        const previousById = new Map(items.map((mod) => [String(mod.id), mod]));
+        for (const mod of nextItems) {
+          const id = String(mod.id);
+          if (previousById.has(id) && previousById.get(id) !== mod) {
+            invalidatedIds.add(id);
+          }
+        }
+        items = [...nextItems];
+        itemsRevision += 1;
+        virtualMetrics = createMetrics();
+        renderedKey = "";
+        scheduleRender();
+      },
+      setAllMods(nextAllMods) {
+        currentAllMods = nextAllMods;
+        modsById = new Map(nextAllMods.map((mod) => [String(mod.id), mod]));
+        refreshChangeButtons();
+      },
+      refreshLayout() {
+        measuredRows.clear();
+        virtualMetrics = createMetrics();
+        renderedKey = "";
+        scheduleRender();
+      },
+      setActive(nextActive) {
+        active = nextActive;
+        if (active) scheduleRender();
+      },
+      destroy() {
+        destroyed = true;
+        if (scheduledFrame) cancelAnimationFrame(scheduledFrame);
+        scrollRoot?.removeEventListener("scroll", onScroll);
+        gridContainer.removeEventListener("keydown", onGridKeyDown);
+        resizeObserver?.disconnect();
+        removeProcessExitListener();
+      },
+    };
+
+    renderWindow();
+    return renderer;
   },
 };

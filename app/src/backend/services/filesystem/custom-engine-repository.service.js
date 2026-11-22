@@ -1,6 +1,4 @@
-function sameId(left, right) {
-  return String(left) === String(right);
-}
+import { sameId } from "./identity.util.js";
 
 class CustomEngineRepository {
   constructor({ api, getStoragePaths }) {

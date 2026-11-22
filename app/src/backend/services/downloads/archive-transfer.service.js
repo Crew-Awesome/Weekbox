@@ -9,6 +9,14 @@ import {
   getRangeSupportedFileSize,
 } from "./external-download.resolver.js";
 import { formatBytes } from "../../utils/formatters.js";
+import { quoteCommandArgument } from "./shell-argument.util.js";
+import {
+  getPowerShellExtractCommand,
+  getWindowsExtractionCommand,
+} from "./archive-tools.service.js";
+import { ArchiveExtractionService } from "./archive-extraction.service.js";
+import { ArchiveValidationService } from "./archive-validation.service.js";
+import { createNestedArchiveExtractor } from "./nested-archive.service.js";
 import {
   getHtmlResponseError,
   isGoogleDriveConfirmationPage,
@@ -110,16 +118,6 @@ var MIN_SEGMENTED_DOWNLOAD_BYTES = 8 * 1024 * 1024;
 var MAX_RANGE_DOWNLOAD_BYTES = 128 * 1024 * 1024;
 var MAX_DOWNLOAD_ATTEMPTS = 4;
 var archiveFinalizations = new Map();
-var bundledArchiveToolsPromise = null;
-function quoteCommandArgument(value) {
-  const argument = String(value ?? "").replace(/[\r\n]/g, "");
-  if (typeof window !== "undefined" && window.NL_OS === "Windows") {
-    return `"${argument.replace(/["^]/g, "^$&")}"`;
-  }
-  const escaped = argument.replaceAll("'", "'\"'\"'");
-  return `'${escaped}'`;
-}
-
 function getParentPath(path) {
   const normalized = String(path || "").replace(/\\/g, "/");
   return normalized.slice(0, normalized.lastIndexOf("/"));
@@ -352,98 +350,8 @@ async function retryTransientDownload(
   throw lastError;
 }
 
-function isNonFatalUnzipFilenameWarning(exitCode, output) {
-  if (Number(exitCode) !== 1) return false;
-  const detail = String(output || "");
-  return (
-    /mismatching ["']?local["']? filename/i.test(detail) &&
-    /continuing with ["']?central["']? filename version/i.test(detail)
-  );
-}
-
 async function detectArchiveFormat(path) {
-  try {
-    const data = new Uint8Array(
-      await Neutralino.filesystem.readBinaryFile(path, { pos: 0, size: 560 }),
-    );
-    const startsWith = (...bytes) =>
-      bytes.every((byte, index) => data[index] === byte);
-    if (startsWith(80, 75)) return "zip";
-    if (startsWith(82, 97, 114, 33, 26, 7)) return "rar";
-    if (startsWith(55, 122, 188, 175, 39, 28)) return "7z";
-    if (startsWith(31, 139)) return "gzip";
-    if (String.fromCharCode(...data.slice(257, 262)) === "ustar") return "tar";
-  } catch {}
-  try {
-    const stats = await Neutralino.filesystem.getStats(path);
-    const trailer = new Uint8Array(
-      await Neutralino.filesystem.readBinaryFile(path, {
-        pos: Math.max(0, Number(stats.size) - 512),
-        size: 512,
-      }),
-    );
-    if ([107, 111, 108, 121].every((byte, index) => trailer[index] === byte))
-      return "dmg";
-  } catch {}
-  return "unknown";
-}
-
-async function verifyArchiveReadable(archivePath, archiveFormat) {
-  if (archiveFormat === "dmg") return;
-  const binaryPath = await find7zBinary();
-  if (!binaryPath) return;
-  const process = await spawnProcessWithShell(
-    get7zTestCommand(binaryPath, archivePath),
-  );
-  let processOutput = "";
-  await listenForProcess(
-    process,
-    () => null,
-    (event, handler, resolve, reject) => {
-      if (event.action === "stdOut" || event.action === "stdErr") {
-        processOutput = appendProcessOutput(processOutput, event.data);
-        return;
-      }
-      if (event.action !== "exit") return;
-      Neutralino.events.off("spawnedProcess", handler);
-      const exitCode = Number(event.data);
-      if (
-        exitCode === 0 ||
-        exitCode === 1 ||
-        isNonFatalUnzipFilenameWarning(exitCode, processOutput)
-      ) {
-        resolve();
-        return;
-      }
-      const error = new Error(
-        `The downloaded ${archiveFormat} archive failed integrity verification. Try the download again or choose another link.`,
-      );
-      error.archiveDiagnostics = {
-        stage: "archive-test",
-        format: archiveFormat,
-        retryable: false,
-        output: getUsefulProcessOutput(processOutput),
-      };
-      reject(error);
-    },
-  );
-}
-
-async function hasExtractedPayload(path) {
-  try {
-    const entries = await Neutralino.filesystem.readDirectory(path);
-    for (const entry of entries) {
-      if ([".", "..", ".downloading"].includes(entry.entry)) continue;
-      if (entry.type === "FILE") return true;
-      if (
-        entry.type === "DIRECTORY" &&
-        (await hasExtractedPayload(`${path}/${entry.entry}`))
-      ) {
-        return true;
-      }
-    }
-  } catch {}
-  return false;
+  return archiveValidation.detectFormat(path);
 }
 
 function getDownloadSegments(totalBytes, outPath) {
@@ -504,299 +412,54 @@ async function mergeParts(parts, outPath) {
   }
 }
 
-function getWindowsExtractionCommand(archivePath, destinationPath) {
-  const normArchive = String(archivePath || "").replace(/\//g, "\\");
-  const normDest = String(destinationPath || "").replace(/\//g, "\\");
-  return `tar.exe -xf "${normArchive}" -C "${normDest}"`;
-}
-
-function get7zExtractionCommand(binaryPath, archivePath, destinationPath) {
-  const isWindows = window.NL_OS === "Windows";
-  if (isWindows) {
-    const normBin = String(binaryPath || "").replace(/\//g, "\\");
-    const normArchive = String(archivePath || "").replace(/\//g, "\\");
-    const normDest = String(destinationPath || "").replace(/\//g, "\\");
-    return `"${normBin}" x -y -aoa "-o${normDest}" "${normArchive}"`;
-  }
-  const cleanSteamEnvironment =
-    window.NL_OS === "Linux" ? "unset LD_PRELOAD; " : "";
-  return `${cleanSteamEnvironment}${quoteCommandArgument(binaryPath)} x -y -aoa -o${quoteCommandArgument(destinationPath)} ${quoteCommandArgument(archivePath)}`;
-}
-
-function get7zTestCommand(binaryPath, archivePath) {
-  const isWindows = window.NL_OS === "Windows";
-  if (isWindows) {
-    const normBin = String(binaryPath || "").replace(/\//g, "\\");
-    const normArchive = String(archivePath || "").replace(/\//g, "\\");
-    return `"${normBin}" t -y "${normArchive}"`;
-  }
-  const cleanSteamEnvironment =
-    window.NL_OS === "Linux" ? "unset LD_PRELOAD; " : "";
-  return `${cleanSteamEnvironment}${quoteCommandArgument(binaryPath)} t -y ${quoteCommandArgument(archivePath)}`;
-}
-
-async function prepareArchiveTool(binaryPath) {
-  if (window.NL_OS !== "Windows") {
-    await Neutralino.filesystem.chmod(binaryPath, 0o755).catch(() => {});
-  }
-  return binaryPath;
-}
-
-function getArchiveToolNames() {
-  if (window.NL_OS === "Windows") return ["7z.exe", "7za.exe"];
-  if (window.NL_OS === "Darwin") return ["7zz-mac", "7zz", "7za-mac"];
-  return ["7zz-linux", "7zzs", "7zz", "7za-linux"];
-}
-
-function getArchiveToolPaths(binNames) {
-  const candidateDirs = new Set();
-  if (window.NL_PATH) {
-    candidateDirs.add(window.NL_PATH);
-    candidateDirs.add(`${window.NL_PATH}/..`);
-  }
-  if (window.NL_CWD) {
-    candidateDirs.add(window.NL_CWD);
-    candidateDirs.add(`${window.NL_CWD}/..`);
-  }
-  if (window.NL_ARGS?.[0]) {
-    const exeDir = window.NL_ARGS[0].replace(/[/\\][^/\\]+$/, "");
-    candidateDirs.add(exeDir);
-    candidateDirs.add(`${exeDir}/..`);
-  }
-  const paths = [];
-  for (const dir of candidateDirs) {
-    for (const bin of binNames) {
-      paths.push(
-        `${dir}/app/assets/bin/${bin}`,
-        `${dir}/assets/bin/${bin}`,
-        `${dir}/resources/app/assets/bin/${bin}`,
-        `${dir}/resources/assets/bin/${bin}`,
-        `${dir}/bin/${bin}`,
-      );
-    }
-  }
-  for (const bin of binNames)
-    paths.push(`app/assets/bin/${bin}`, `assets/bin/${bin}`);
-  if (window.NL_OS === "Windows") {
-    paths.push(
-      "C:/Program Files/7-Zip/7z.exe",
-      "C:/Program Files (x86)/7-Zip/7z.exe",
-    );
-  }
-  return paths;
-}
-
-async function findArchiveTool(paths) {
-  for (const rawPath of paths) {
-    const normalized = rawPath.replace(/\\/g, "/");
-    try {
-      const stats = await Neutralino.filesystem.getStats(normalized);
-      if (stats?.isFile || stats?.type === "FILE")
-        return prepareArchiveTool(normalized);
-    } catch {}
-  }
-  return null;
-}
-
-async function extractBundledArchiveTools() {
-  if (!window.NL_DATAPATH || !Neutralino.resources?.extractDirectory)
-    return null;
-  const destination = `${window.NL_DATAPATH}/.weekbox-tools`;
-  try {
-    await Neutralino.filesystem.createDirectory(destination).catch(() => {});
-    await Neutralino.resources.extractDirectory("/app/assets/bin", destination);
-    return destination;
-  } catch (error) {
-    console.warn("Could not extract the bundled archive tools", error);
-    return null;
-  }
-}
-
-async function find7zBinary() {
-  const binNames = getArchiveToolNames();
-  const directTool = await findArchiveTool(getArchiveToolPaths(binNames));
-  if (directTool) return directTool;
-
-  if (!bundledArchiveToolsPromise) {
-    bundledArchiveToolsPromise = extractBundledArchiveTools();
-  }
-  const bundledDirectory = await bundledArchiveToolsPromise;
-  return bundledDirectory
-    ? findArchiveTool(binNames.map((bin) => `${bundledDirectory}/${bin}`))
-    : null;
-}
-
-function getPowerShellExtractCommand(archivePath, destinationPath) {
-  const safeArchive = String(archivePath || "")
-    .replace(/\//g, "\\")
-    .replace(/'/g, "''");
-  const safeDest = String(destinationPath || "")
-    .replace(/\//g, "\\")
-    .replace(/'/g, "''");
-  return `powershell -NoProfile -NonInteractive -Command "Expand-Archive -Path '${safeArchive}' -DestinationPath '${safeDest}' -Force"`;
-}
-
-var NESTED_ARCHIVE_PATTERNS = [
-  /\.zip$/i,
-  /\.tar\.gz$/i,
-  /\.tgz$/i,
-  /\.tar$/i,
-  /\.7z$/i,
-  /\.rar$/i,
-];
-function isNestedArchive(entryName) {
-  return (
-    NESTED_ARCHIVE_PATTERNS.some((pattern) => pattern.test(entryName)) ||
-    (window.NL_OS === "Darwin" && /\.dmg$/i.test(String(entryName)))
+async function executeNestedArchiveCommand(command, getTask, reportEntry) {
+  const process = await spawnProcessWithShell(command);
+  const activeTask = getTask?.();
+  if (activeTask) activeTask.pid = getOsProcessId(process);
+  let processOutput = "";
+  await listenForProcess(
+    process,
+    getTask,
+    (event, handler, resolve, reject) => {
+      if (event.action === "stdOut" || event.action === "stdErr") {
+        const output = String(event.data || "");
+        processOutput = appendProcessOutput(processOutput, output);
+        const trimmedOutput = output.trim();
+        if (trimmedOutput) reportEntry(trimmedOutput);
+        return;
+      }
+      if (event.action !== "exit") return;
+      Neutralino.events.off("spawnedProcess", handler);
+      if (event.data === 0) resolve();
+      else
+        reject(
+          createProcessError("Nested extraction", event.data, processOutput),
+        );
+    },
   );
 }
 
-async function collectArchiveFiles(dir) {
-  const found = [];
-  const stack = [dir];
-  while (stack.length) {
-    const current = stack.pop();
-    let entries;
-    try {
-      entries = await Neutralino.filesystem.readDirectory(current);
-    } catch {
-      continue;
-    }
-    for (const entry of entries) {
-      if (entry.entry === "." || entry.entry === "..") continue;
-      const fullPath = `${current}/${entry.entry}`;
-      if (String(entry.type).toUpperCase() === "DIRECTORY") {
-        stack.push(fullPath);
-      } else if (isNestedArchive(entry.entry)) {
-        found.push(fullPath);
-      }
-    }
-  }
-  return found;
-}
-
-function getNestedExtractionCommand(archivePath, destinationPath) {
-  const isWindows = window.NL_OS === "Windows";
-  const lower = String(archivePath).toLowerCase();
-  if (lower.endsWith(".zip")) {
-    if (isWindows)
-      return getWindowsExtractionCommand(archivePath, destinationPath);
-    return `unzip -oq "${archivePath}" -d "${destinationPath}"`;
-  }
-  const archive = archivePath;
-  const dest = destinationPath;
-  const flags =
-    lower.endsWith(".gz") || lower.endsWith(".tgz") ? "-xzf" : "-xf";
-  return `tar ${flags} "${archive}" -C "${dest}"`;
-}
-
-async function extractOneNestedArchive(
-  archivePath,
-  getTask,
-  onEntry,
-  reportEntry,
-) {
-  if (getTask?.()?.cancelled) throw new Error("Cancelled");
-  const parentDir = archivePath.slice(0, archivePath.lastIndexOf("/"));
-  if (window.NL_OS === "Darwin" && /\.dmg$/i.test(archivePath)) {
-    await extractArchive({
-      archivePath,
-      destinationPath: parentDir,
-      getTask,
-      onEntry,
-      extractNested: false,
-    });
-    await Neutralino.filesystem.remove(archivePath).catch(() => {});
-    return;
-  }
-  const command = getNestedExtractionCommand(archivePath, parentDir);
-  const executeNested = async (cmd) => {
-    const process = await spawnProcessWithShell(cmd);
-    const activeTask = getTask?.();
-    if (activeTask) activeTask.pid = getOsProcessId(process);
-    let processOutput = "";
-    await listenForProcess(
-      process,
-      getTask,
-      (event, handler, resolve, reject) => {
-        if (event.action === "stdOut" || event.action === "stdErr") {
-          const output = String(event.data || "");
-          processOutput = appendProcessOutput(processOutput, output);
-          const trimmedOutput = output.trim();
-          if (trimmedOutput) reportEntry(trimmedOutput);
-          return;
-        }
-        if (event.action !== "exit") return;
-        Neutralino.events.off("spawnedProcess", handler);
-        if (event.data === 0) resolve();
-        else
-          reject(
-            createProcessError("Nested extraction", event.data, processOutput),
-          );
-      },
-    );
-  };
-  try {
-    await executeNested(command);
-    await Neutralino.filesystem.remove(archivePath).catch(() => {});
-    return;
-  } catch (error) {
-    let extractionError = error;
-    let recovered = false;
-    if (
-      window.NL_OS === "Windows" &&
-      String(extractionError).includes("resolve failed")
-    ) {
-      const fallbackCommand = command.includes("tar.exe")
-        ? command.replace("tar.exe -xf", "tar.exe --force-local -xf")
-        : command.replace("tar ", "tar --force-local ");
-      if (!command.includes("--force-local")) {
-        try {
-          await executeNested(fallbackCommand);
-          recovered = true;
-        } catch (retryError) {
-          extractionError = retryError;
-        }
-      }
-    }
-    if (
-      !recovered &&
-      window.NL_OS === "Windows" &&
-      String(archivePath).toLowerCase().endsWith(".zip")
-    ) {
-      try {
-        await executeNested(
-          getPowerShellExtractCommand(archivePath, parentDir),
-        );
-        recovered = true;
-      } catch (psError) {
-        extractionError = psError;
-      }
-    }
-    if (recovered) {
-      await Neutralino.filesystem.remove(archivePath).catch(() => {});
-    } else {
-      console.warn(
-        "Could not extract nested archive:",
-        archivePath,
-        extractionError,
-      );
-    }
-  }
-}
-
-async function extractNestedArchives(destinationPath, getTask, onEntry) {
-  const MAX_PASSES = 10;
-  const reportEntry = createThrottledEntryReporter(onEntry);
-  for (let pass = 0; pass < MAX_PASSES; pass += 1) {
-    const task = getTask?.();
-    if (task?.cancelled) throw new Error("Cancelled");
-    const archives = await collectArchiveFiles(destinationPath);
-    if (!archives.length) break;
-    for (const archivePath of archives)
-      await extractOneNestedArchive(archivePath, getTask, onEntry, reportEntry);
-  }
-}
+const extractNestedArchives = createNestedArchiveExtractor({
+  executeCommand: executeNestedArchiveCommand,
+  extractArchive,
+  getWindowsExtractionCommand,
+  getPowerShellExtractCommand,
+  createEntryReporter: createThrottledEntryReporter,
+});
+const archiveExtraction = new ArchiveExtractionService({
+  spawnProcessWithShell,
+  getOsProcessId,
+  listenForProcess,
+  appendProcessOutput,
+  createProcessError,
+});
+const archiveValidation = new ArchiveValidationService({
+  spawnProcessWithShell,
+  listenForProcess,
+  appendProcessOutput,
+  getUsefulProcessOutput,
+  logGoogleDriveDebug,
+});
 
 function formatTransferBytes(bytes) {
   return formatBytes(bytes, 2, "0 Bytes");
@@ -1197,247 +860,6 @@ async function downloadGoogleDriveRangedArchive({
   });
 }
 
-async function extractDiskImage(
-  archivePath,
-  destinationPath,
-  getTask,
-  onEntry,
-) {
-  const mountPath = `${destinationPath}/.weekbox-dmg-${Date.now()}`;
-  let attached = false;
-  let processOutput = "";
-  try {
-    await Neutralino.filesystem.createDirectory(mountPath);
-    const process = await spawnProcessWithShell(
-      `hdiutil attach -nobrowse -readonly -mountpoint ${quoteCommandArgument(mountPath)} ${quoteCommandArgument(archivePath)}`,
-    );
-    const task = getTask();
-    if (task) task.pid = getOsProcessId(process);
-    await listenForProcess(
-      process,
-      getTask,
-      (event, handler, resolve, reject) => {
-        if (event.action === "stdOut" || event.action === "stdErr") {
-          processOutput = appendProcessOutput(processOutput, event.data);
-          return;
-        }
-        if (event.action !== "exit") return;
-        Neutralino.events.off("spawnedProcess", handler);
-        if (event.data === 0) resolve();
-        else
-          reject(
-            createProcessError(
-              "Mounting disk image",
-              event.data,
-              processOutput,
-            ),
-          );
-      },
-    );
-    attached = true;
-    const entries = await Neutralino.filesystem.readDirectory(mountPath);
-    const app = entries.find(
-      (entry) =>
-        entry.type === "DIRECTORY" && /\.app$/i.test(String(entry.entry)),
-    );
-    if (!app)
-      throw new Error("The disk image does not contain a macOS application");
-    onEntry?.(app.entry);
-    await Neutralino.filesystem.copy(
-      `${mountPath}/${app.entry}`,
-      `${destinationPath}/${app.entry}`,
-      { recursive: true, overwrite: false },
-    );
-  } finally {
-    if (attached) {
-      const result = await Neutralino.os.execCommand(
-        `hdiutil detach ${quoteCommandArgument(mountPath)}`,
-        { background: false },
-      );
-      if (result.exitCode !== 0)
-        console.warn("Could not detach WeekBox disk image:", result.stdErr);
-    }
-    await Neutralino.filesystem.remove(mountPath).catch(() => {});
-  }
-}
-
-function getArchiveExtractionCommand({
-  portable7z,
-  archivePath,
-  destinationPath,
-  archiveFormat,
-  isWindows,
-}) {
-  if (portable7z)
-    return get7zExtractionCommand(portable7z, archivePath, destinationPath);
-  if (isWindows)
-    return getWindowsExtractionCommand(archivePath, destinationPath);
-  if (archiveFormat === "tar" || archiveFormat === "gzip") {
-    return `tar -xf ${quoteCommandArgument(archivePath)} -C ${quoteCommandArgument(destinationPath)}`;
-  }
-  if (archiveFormat === "rar" || archiveFormat === "7z") {
-    return window.NL_OS === "Darwin"
-      ? `tar -xf ${quoteCommandArgument(archivePath)} -C ${quoteCommandArgument(destinationPath)}`
-      : `7z x -y -aoa -o${quoteCommandArgument(destinationPath)} ${quoteCommandArgument(archivePath)}`;
-  }
-  return `unzip -oq ${quoteCommandArgument(archivePath)} -d ${quoteCommandArgument(destinationPath)}`;
-}
-
-function createExtractionExecutor({ getTask, reportEntry, isWindows }) {
-  return async (cmd) => {
-    const process = await spawnProcessWithShell(cmd);
-    const task = getTask();
-    if (task) task.pid = getOsProcessId(process);
-    let processOutput = "";
-    await listenForProcess(
-      process,
-      getTask,
-      (event, handler, resolve, reject) => {
-        if (event.action === "stdOut" || event.action === "stdErr") {
-          const output = String(event.data || "");
-          processOutput = appendProcessOutput(processOutput, output);
-          const trimmedOutput = output.trim();
-          if (trimmedOutput) reportEntry(trimmedOutput);
-          return;
-        }
-        if (event.action !== "exit") return;
-        Neutralino.events.off("spawnedProcess", handler);
-        const tolerated =
-          !isWindows &&
-          isNonFatalUnzipFilenameWarning(event.data, processOutput);
-        if (event.data === 0 || tolerated) resolve();
-        else
-          reject(createProcessError("Extraction", event.data, processOutput));
-      },
-    );
-  };
-}
-
-async function tryWindowsExtractionFallbacks({
-  execute,
-  archivePath,
-  destinationPath,
-  archiveFormat,
-  portable7z,
-}) {
-  if (portable7z) return false;
-  for (const sys7z of [
-    "7z",
-    "7za",
-    "C:\\Program Files\\7-Zip\\7z.exe",
-    "C:\\Program Files (x86)\\7-Zip\\7z.exe",
-  ]) {
-    try {
-      await execute(
-        get7zExtractionCommand(sys7z, archivePath, destinationPath),
-      );
-      if (await hasExtractedPayload(destinationPath)) return true;
-    } catch {}
-  }
-  try {
-    await execute(getWindowsExtractionCommand(archivePath, destinationPath));
-    if (await hasExtractedPayload(destinationPath)) return true;
-  } catch {}
-  const isZip =
-    String(archivePath).toLowerCase().endsWith(".zip") ||
-    archiveFormat === "zip" ||
-    archiveFormat === "unknown";
-  if (!isZip) return false;
-  try {
-    await execute(getPowerShellExtractCommand(archivePath, destinationPath));
-    return await hasExtractedPayload(destinationPath);
-  } catch {
-    return false;
-  }
-}
-
-async function tryUnixExtractionFallbacks({
-  execute,
-  archivePath,
-  destinationPath,
-  archiveFormat,
-}) {
-  if (archiveFormat !== "unknown" && archiveFormat !== "zip") return false;
-  const fallbackCommands = [
-    `tar -xf ${quoteCommandArgument(archivePath)} -C ${quoteCommandArgument(destinationPath)}`,
-  ];
-  if (window.NL_OS !== "Darwin") {
-    fallbackCommands.push(
-      `7z x -y -aoa -o${quoteCommandArgument(destinationPath)} ${quoteCommandArgument(archivePath)}`,
-    );
-  }
-  for (const fallbackCommand of fallbackCommands) {
-    try {
-      await execute(fallbackCommand);
-      if (await hasExtractedPayload(destinationPath)) return true;
-    } catch {}
-  }
-  return false;
-}
-
-async function extractArchiveContents({
-  archivePath,
-  destinationPath,
-  archiveFormat,
-  getTask,
-  reportEntry,
-}) {
-  const isWindows = window.NL_OS === "Windows";
-  const portable7z = await find7zBinary();
-  const command = getArchiveExtractionCommand({
-    portable7z,
-    archivePath,
-    destinationPath,
-    archiveFormat,
-    isWindows,
-  });
-  const execute = createExtractionExecutor({ getTask, reportEntry, isWindows });
-  let primaryError = null;
-  try {
-    await execute(command);
-    if (await hasExtractedPayload(destinationPath)) return;
-  } catch (error) {
-    primaryError = error;
-  }
-  let recovered = await hasExtractedPayload(destinationPath);
-  if (!recovered && isWindows) {
-    recovered = await tryWindowsExtractionFallbacks({
-      execute,
-      archivePath,
-      destinationPath,
-      archiveFormat,
-      portable7z,
-    });
-  } else if (!recovered) {
-    recovered = await tryUnixExtractionFallbacks({
-      execute,
-      archivePath,
-      destinationPath,
-      archiveFormat,
-    });
-  }
-  if (
-    !recovered &&
-    window.NL_OS === "Darwin" &&
-    ["rar", "7z"].includes(archiveFormat)
-  ) {
-    throw new Error(
-      `This ${archiveFormat.toUpperCase()} download cannot be unpacked by this version of macOS. Ask the mod author for a ZIP download.`,
-    );
-  }
-  if (!recovered) {
-    throw (
-      primaryError ||
-      new Error(
-        "WeekBox could not extract the downloaded archive files to storage.",
-      )
-    );
-  }
-}
-
-/**
- * @fix 2026-08-05T03:31:10.964Z - Fix Google Drive quota detection and confirmation handling
- */
 async function downloadGoogleDriveArchive({
   fileId,
   outPath,
@@ -2084,109 +1506,16 @@ async function downloadArchive({
   }
 }
 
-async function validateArchiveResponse(archivePath, stats) {
-  const sample = new TextDecoder().decode(
-    await Neutralino.filesystem.readBinaryFile(archivePath, {
-      pos: 0,
-      size: 8192,
-    }),
-  );
-  if (looksLikeHtmlResponse(sample)) {
-    logGoogleDriveDebug("archive-validation-html", {
-      bytes: stats.size,
-      hasConfirmation: isGoogleDriveConfirmationPage(sample),
-      hasQuotaText: isGoogleDriveQuotaError(sample),
-    });
-  }
-  const htmlError = getHtmlResponseError(sample);
-  if (htmlError) {
-    htmlError.archiveDiagnostics = {
-      stage: "html-response",
-      retryable: false,
-    };
-    throw htmlError;
-  }
-  if (!looksLikeHtmlResponse(sample)) return;
-  const error = new Error(
-    "The download server returned a web page instead of the archive. Select another download link and try again.",
-  );
-  error.archiveDiagnostics = {
-    stage: "html-response",
-    retryable: false,
-  };
-  throw error;
-}
-
-async function validateSmallArchiveResponse(archivePath) {
-  try {
-    const sample = await Neutralino.filesystem.readFile(archivePath);
-    if (!/<!(?:DOCTYPE html|doctype html)|<html|<HTML/.test(sample)) return;
-    if (isGoogleDriveQuotaError(sample)) {
-      throw new Error(
-        "Google Drive: Este archivo ha superado la cuota de descargas porque demasiados usuarios lo han descargado recientemente. Inténtalo más tarde o prueba con otro enlace.",
-      );
-    }
-    const titleMatch = sample.match(/<title[^>]*>([^<]+)<\/title>/i);
-    const headingMatch = sample.match(/<h1[^>]*>([^<]+)<\/h1>/i);
-    const pMatch = sample.match(
-      /<p[^>]*class="[^"]*error[^"]*"[^>]*>([^<]+)<\/p>/i,
-    );
-    const errorReason =
-      pMatch?.[1]?.trim() ||
-      headingMatch?.[1]?.trim() ||
-      titleMatch?.[1]?.trim() ||
-      "Web page returned";
-    throw new Error(
-      `La descarga falló: El servidor devolvió una página web ('${errorReason}') en lugar de un archivo de mod.`,
-    );
-  } catch (error) {
-    if (
-      error.message?.includes("Google Drive:") ||
-      error.message?.includes("La descarga falló:") ||
-      error.message?.includes("The downloaded archive is empty")
-    )
-      throw error;
-  }
-}
-
-async function verifyArchiveFormat(archivePath) {
-  const archiveFormat = /\.dmg$/i.test(String(archivePath))
-    ? "dmg"
-    : await detectArchiveFormat(archivePath);
-  if (archiveFormat === "unknown") {
-    const error = new Error(
-      "The downloaded file is not a recognized archive. Choose another download link and try again.",
-    );
-    error.archiveDiagnostics = {
-      stage: "format",
-      retryable: false,
-    };
-    throw error;
-  }
-  await verifyArchiveReadable(archivePath, archiveFormat);
-}
-
 async function verifyDownloadedArchiveContent(
   archivePath,
   expectedSize = 0,
   validateArchive = true,
 ) {
-  const stats = await Neutralino.filesystem.getStats(archivePath);
-  if (stats.size === 0) {
-    throw new Error("The downloaded archive is empty (0 bytes).");
-  }
-  await validateArchiveResponse(archivePath, stats);
-  if (Number(expectedSize) > 0 && Number(stats.size) !== Number(expectedSize)) {
-    throw Object.assign(
-      new Error(
-        `The downloaded archive was incomplete. Expected ${expectedSize} bytes but found ${stats.size}. Try the download again.`,
-      ),
-      { archiveDiagnostics: { stage: "size", retryable: true } },
-    );
-  }
-  if (stats.size < 500 * 1024) await validateSmallArchiveResponse(archivePath);
-  if (validateArchive) await verifyArchiveFormat(archivePath);
-  return stats;
+  return archiveValidation.verifyDownloadedContent(
+    archivePath,
+    expectedSize,
+    validateArchive,
+  );
 }
 
 async function extractArchive({
@@ -2211,10 +1540,15 @@ async function extractArchive({
   const archiveFormat = await detectArchiveFormat(archivePath);
   const isDiskImage = window.NL_OS === "Darwin" && archiveFormat === "dmg";
   if (isDiskImage) {
-    await extractDiskImage(archivePath, destinationPath, getTask, onEntry);
+    await archiveExtraction.extractDiskImage(
+      archivePath,
+      destinationPath,
+      getTask,
+      onEntry,
+    );
     return;
   }
-  await extractArchiveContents({
+  await archiveExtraction.extractContents({
     archivePath,
     destinationPath,
     archiveFormat,

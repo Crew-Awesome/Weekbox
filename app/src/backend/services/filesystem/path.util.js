@@ -17,6 +17,13 @@ function getParentPath(path) {
   return path.slice(0, Math.max(path.lastIndexOf("/"), path.lastIndexOf("\\")));
 }
 
+function trimPath(path) {
+  return String(path || "")
+    .trim()
+    .replace(/\\/g, "/")
+    .replace(/\/+$/, "");
+}
+
 function normalizeComparablePath(path) {
   return String(path || "")
     .trim()
@@ -51,7 +58,6 @@ function getModFolderName(mod) {
 function getEngineModFolderName(mod) {
   const name = mod.engineFolderName || getModFolderName(mod);
 
-
   if (mod.engineId === "psychonline" && !mod.engineFolderName && mod.id) {
     return `${name}--${String(mod.id).replace(/[^a-z0-9_-]/gi, "_")}`;
   }
@@ -67,6 +73,7 @@ function normalizeFolderName(value) {
 
 export {
   getParentPath,
+  trimPath,
   normalizeComparablePath,
   pathsOverlap,
   sanitizePathSegment,

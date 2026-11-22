@@ -6,8 +6,8 @@ import {
   getTargetLink,
   getTargetSize,
 } from "./utils.js";
-import { resolveItchDownloadUrl } from "../../../backend/providers/itch/itch-release.provider.js";
-import { FS } from "../../../backend/services/filesystem.js";
+import { engineReleaseService } from "../../../backend/services/engine-release.service.js";
+import { FS } from "../../../backend/services/filesystem/index.js";
 import { downloadEngine } from "./downloadEngine.js";
 import { modsMaster } from "./modsMasterClass.js";
 import { rememberInstalledEngineBuild } from "./engineUpdateService.js";
@@ -246,7 +246,7 @@ export const enginesView = {
         let downloadUrl = getTargetLink(versionData);
         if (!downloadUrl && targetItchPlatform) {
           try {
-            downloadUrl = await resolveItchDownloadUrl(
+            downloadUrl = await engineReleaseService.resolveItchDownloadUrl(
               versionData.itch,
               targetItchPlatform,
             );
@@ -293,7 +293,10 @@ export const enginesView = {
             expectedSize: getTargetSize(versionData),
             refreshUrl: targetItchPlatform
               ? () =>
-                  resolveItchDownloadUrl(versionData.itch, targetItchPlatform)
+                  engineReleaseService.resolveItchDownloadUrl(
+                    versionData.itch,
+                    targetItchPlatform,
+                  )
               : undefined,
           },
         );

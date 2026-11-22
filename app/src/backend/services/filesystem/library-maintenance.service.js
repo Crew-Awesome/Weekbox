@@ -7,10 +7,11 @@ import {
   sanitizePathSegment,
   normalizeFolderName,
 } from "./path.util.js";
-
-function sameId(left, right) {
-  return String(left) === String(right);
-}
+import {
+  allSettledWithConcurrency,
+  mapWithConcurrency,
+} from "../../utils/async-concurrency.util.mjs";
+import { sameId } from "./identity.util.js";
 
 function getStableUrlId(url) {
   let hash = 5381;
@@ -170,11 +171,11 @@ var _LibraryMaintenanceService = class _LibraryMaintenanceService {
     );
     if (!hiddenMods.length) return;
     const engines = installedEngines || (await this.getInstalledEngines());
-    await Promise.all(
-      hiddenMods.map((mod) =>
-        this.injection.unlinkFromInstalledEngines(mod, engines),
-      ),
+    const results = await allSettledWithConcurrency(hiddenMods, 3, (mod) =>
+      this.injection.unlinkFromInstalledEngines(mod, engines),
     );
+    const failure = results.find((result) => result.status === "rejected");
+    if (failure) throw failure.reason;
   }
   async migrateExecutableMods() {
     const storedMods = await this.mods.getAll();
@@ -245,22 +246,11 @@ var _LibraryMaintenanceService = class _LibraryMaintenanceService {
         await new Promise((resolve) => setTimeout(resolve, attempt * 250));
       }
     }
-    try {
-      if (await this.api.exists(destinationPath)) return false;
-      await Neutralino.filesystem.copy(sourcePath, destinationPath, {
-        recursive: true,
-        overwrite: false,
-        skip: false,
-      });
-      await this.api.remove(sourcePath);
-      return true;
-    } catch (error) {
-      console.warn(
-        "Could not import Psych Online mod:",
-        error?.message || lastError?.message || error,
-      );
-      return false;
-    }
+    console.warn(
+      "Could not move Psych Online mod:",
+      lastError?.message || lastError,
+    );
+    return false;
   }
   async importPsychOnlineEngineMods(installedEngines = null) {
     const engines = installedEngines || (await this.getInstalledEngines());
@@ -277,18 +267,16 @@ var _LibraryMaintenanceService = class _LibraryMaintenanceService {
         const entries = getRealEntries(
           await Neutralino.filesystem.readDirectory(path),
         );
-        await Promise.all(
-          entries
-            .filter(
-              (entry) =>
-                entry.type === "FILE" &&
-                /^\.?temp[-_].+\.(?:zip|dmg)(?:\.part(?:-\d+)?)*$/i.test(
-                  entry.entry,
-                ),
-            )
-            .map((entry) =>
-              this.api.remove(`${path}/${entry.entry}`).catch(() => {}),
-            ),
+        await mapWithConcurrency(
+          entries.filter(
+            (entry) =>
+              entry.type === "FILE" &&
+              /^\.?temp[-_].+\.(?:zip|dmg)(?:\.part(?:-\d+)?)*$/i.test(
+                entry.entry,
+              ),
+          ),
+          3,
+          (entry) => this.api.remove(`${path}/${entry.entry}`).catch(() => {}),
         );
       };
       const enginesPath = this.getEnginesPath();
@@ -297,46 +285,41 @@ var _LibraryMaintenanceService = class _LibraryMaintenanceService {
       const modFolders = getRealEntries(
         await Neutralino.filesystem.readDirectory(modsPath),
       );
-      await Promise.all(
-        modFolders
-          .filter(
-            (entry) =>
-              entry.type === "DIRECTORY" &&
-              !entry.entry.startsWith(".extract_"),
-          )
-          .map(async (entry) => {
-            const modPath = `${modsPath}/${entry.entry}`;
-            if (await this.api.exists(`${modPath}/.downloading`)) {
-              await this.api.remove(modPath);
-            }
-          }),
+      await mapWithConcurrency(
+        modFolders.filter(
+          (entry) =>
+            entry.type === "DIRECTORY" && !entry.entry.startsWith(".extract_"),
+        ),
+        3,
+        async (entry) => {
+          const modPath = `${modsPath}/${entry.entry}`;
+          if (await this.api.exists(`${modPath}/.downloading`)) {
+            await this.api.remove(modPath);
+          }
+        },
       );
       await cleanupTemporaryArchives(enginesPath);
       const engines = await Neutralino.filesystem.readDirectory(enginesPath);
-      await Promise.all(
-        getRealEntries(engines)
-          .filter((engine) => engine.type === "DIRECTORY")
-          .map(async (engine) => {
-            const versions = await Neutralino.filesystem.readDirectory(
-              `${enginesPath}/${engine.entry}`,
-            );
-            await Promise.all(
-              getRealEntries(versions)
-                .filter((version) => version.type === "DIRECTORY")
-                .map(async (version) => {
-                  const versionPath = `${enginesPath}/${engine.entry}/${version.entry}`;
-                  if (!(await this.api.exists(`${versionPath}/.downloading`)))
-                    return;
-                  const command =
-                    window.NL_OS === "Windows"
-                      ? `rmdir /S /Q "${versionPath.replace(/\//g, "\\")}"`
-                      : `rm -rf "${versionPath}"`;
-                  await Neutralino.os
-                    .execCommand(command, { background: true })
-                    .catch(() => {});
-                }),
-            );
-          }),
+      await mapWithConcurrency(
+        getRealEntries(engines).filter((engine) => engine.type === "DIRECTORY"),
+        3,
+        async (engine) => {
+          const versions = await Neutralino.filesystem.readDirectory(
+            `${enginesPath}/${engine.entry}`,
+          );
+          await mapWithConcurrency(
+            getRealEntries(versions).filter(
+              (version) => version.type === "DIRECTORY",
+            ),
+            3,
+            async (version) => {
+              const versionPath = `${enginesPath}/${engine.entry}/${version.entry}`;
+              if (!(await this.api.exists(`${versionPath}/.downloading`)))
+                return;
+              await this.api.remove(versionPath);
+            },
+          );
+        },
       );
     } catch (error) {
       console.warn("Could not clean up incomplete downloads", error);

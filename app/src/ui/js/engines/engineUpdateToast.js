@@ -1,6 +1,6 @@
 import { toastSystem } from "../toasts/toastSystem.js";
 import { ENGINE_DETAILS } from "../../../backend/config/engines.config.js";
-import { FS } from "../../../backend/services/filesystem.js";
+import { FS } from "../../../backend/services/filesystem/index.js";
 import { t } from "../i18n/index.js";
 import { notifyDesktop } from "../desktopNotifications.js";
 

@@ -1,7 +1,5 @@
-import { gameBananaApi } from "../../../backend/providers/gamebanana/gamebanana.provider.js";
-import { backstageApi } from "../../../backend/providers/backstage/backstage.provider.js";
-import { gameJoltApi } from "../../../backend/providers/gamejolt/gamejolt.provider.js";
-import { FS } from "../../../backend/services/filesystem.js";
+import { modCatalogService } from "../../../backend/services/mod-catalog.service.js";
+import { FS } from "../../../backend/services/filesystem/index.js";
 import { setupModSettingsDropdowns } from "./modSettingsDropdowns.js";
 import {
   getGameBananaSource,
@@ -193,8 +191,10 @@ async function saveModAppearance({
     appearance.providerUrl = providerSource.url;
     appearance.sourceUrl = providerSource.url;
     appearance.author = providerSource.author || null;
-    appearance.gameBananaId = providerSource.provider === "gamebanana" ? providerSource.id : null;
-    appearance.gameBananaType = providerSource.provider === "gamebanana" ? providerSource.type : null;
+    appearance.gameBananaId =
+      providerSource.provider === "gamebanana" ? providerSource.id : null;
+    appearance.gameBananaType =
+      providerSource.provider === "gamebanana" ? providerSource.type : null;
   }
   if (fileLocked && !mod.folderName) {
     appearance.folderName = mod.name ? sanitizePathSegment(mod.name) : null;
@@ -222,15 +222,24 @@ function getProviderArtwork(details, provider) {
 
 function getProviderSource(mod) {
   if (mod.providerSource && mod.providerId) {
-    return { provider: mod.providerSource, id: String(mod.providerId), type: mod.providerType || "mod", url: mod.providerUrl || mod.sourceUrl || "" };
+    return {
+      provider: mod.providerSource,
+      id: String(mod.providerId),
+      type: mod.providerType || "mod",
+      url: mod.providerUrl || mod.sourceUrl || "",
+    };
   }
   const gameBananaSource = getGameBananaSource(mod);
-  return gameBananaSource ? { ...gameBananaSource, provider: "gamebanana", url: mod.sourceUrl || "" } : null;
+  return gameBananaSource
+    ? { ...gameBananaSource, provider: "gamebanana", url: mod.sourceUrl || "" }
+    : null;
 }
 
 function getImportedEngineId(details, provider) {
   if (details.engineId) return details.engineId;
-  return provider === "gamebanana" ? gameBananaApi.getEngineIdForCategory(details.categoryId) || "" : "";
+  return provider === "gamebanana"
+    ? modCatalogService.getEngineIdForCategory(details.categoryId) || ""
+    : "";
 }
 
 function setupProviderImportButton({
@@ -255,19 +264,347 @@ function setupProviderImportButton({
           const engineId = getImportedEngineId(details, source.provider);
           setSource({ ...source, author: details.author || "" });
           nameInput.value = details.title;
-          dropdowns?.refresh({ engineId, version: "", type: details.kind || "mod" });
+          dropdowns?.refresh({
+            engineId,
+            version: "",
+            type: details.kind || "mod",
+          });
           if (canReplaceCover() && artwork) {
             setCoverDataUrl(null);
             setCoverUrl(artwork);
             cover.src = artwork;
           }
           if (canSetProviderIcon()) {
-            setIconUrl(source.provider === "backstage" ? details.icon || null : null);
+            setIconUrl(
+              source.provider === "backstage" ? details.icon || null : null,
+            );
           }
           status.textContent = t("modSettings.defaultsLoaded");
         },
       });
     });
+}
+
+function bindModSettingsForm({
+  controller,
+  overlay,
+  mod,
+  isExecutable,
+  installedEngines,
+  onSaved,
+  readOnly,
+  fileLocked,
+  localIcon,
+}) {
+  const form = overlay.querySelector("form");
+  const nameInput = overlay.querySelector(".mod-settings-name");
+  const cover = overlay.querySelector(".mod-settings-cover");
+  const fileInput = overlay.querySelector(".mod-settings-file");
+  const status = overlay.querySelector(".mod-settings-status");
+  const typeSelect = overlay.querySelector(".mod-settings-type");
+  const tagEditor = setupTagEditor({ overlay, mod, readOnly });
+  const dropdowns = isExecutable
+    ? null
+    : setupModSettingsDropdowns(overlay, mod, installedEngines);
+  controller.dropdowns = dropdowns;
+  let pendingCoverDataUrl = null;
+  let pendingCoverUrl = null;
+  let pendingIconUrl = null;
+  let providerSource = getProviderSource(mod);
+
+  fileInput.addEventListener("change", () => {
+    const file = fileInput.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.addEventListener("load", () => {
+      pendingCoverDataUrl = String(reader.result || "");
+      pendingCoverUrl = null;
+      cover.src = pendingCoverDataUrl;
+    });
+    reader.readAsDataURL(file);
+  });
+  const close = () => controller.close();
+  overlay.querySelector(".mod-settings-close").addEventListener("click", close);
+  overlay
+    .querySelector(".mod-settings-cancel")
+    .addEventListener("click", close);
+  overlay.addEventListener("click", (event) => {
+    if (event.target === overlay) close();
+  });
+  overlay
+    .querySelector(".mod-settings-open-folder")
+    .addEventListener("click", async () => {
+      const modPath = `${FS.modsPath}/${mod.folderName || sanitizePathSegment(mod.name)}`;
+      try {
+        await Neutralino.os.open(modPath);
+      } catch {
+        status.textContent = t("modSettings.openFolderFailed");
+      }
+    });
+  setupProviderImportButton({
+    overlay,
+    nameInput,
+    cover,
+    dropdowns,
+    status,
+    setSource: (value) => (providerSource = value),
+    setCoverDataUrl: (value) => (pendingCoverDataUrl = value),
+    setCoverUrl: (value) => (pendingCoverUrl = value),
+    setIconUrl: (value) => (pendingIconUrl = value),
+    canReplaceCover: () => !mod.coverPath && !pendingCoverDataUrl,
+    canSetProviderIcon: () => !localIcon,
+  });
+  bindModSettingsReset({
+    overlay,
+    mod,
+    nameInput,
+    cover,
+    status,
+    setCoverDataUrl: (value) => (pendingCoverDataUrl = value),
+    setCoverUrl: (value) => (pendingCoverUrl = value),
+    setProviderSource: (value) => (providerSource = value),
+  });
+  bindModSettingsEngineConversion({ overlay, mod, onSaved });
+  bindMoveDependencyToMods({
+    overlay,
+    mod,
+    fileLocked,
+    status,
+    close,
+    onSaved,
+  });
+  bindModSettingsSave({
+    form,
+    overlay,
+    controller,
+    mod,
+    nameInput,
+    status,
+    fileLocked,
+    isExecutable,
+    dropdowns,
+    typeSelect,
+    tagEditor,
+    pendingArtwork: () => ({
+      pendingCoverDataUrl,
+      pendingCoverUrl,
+      pendingIconUrl,
+      providerSource,
+    }),
+    onSaved,
+  });
+  activateCheckoutDialog(overlay, overlay, nameInput, close);
+}
+
+function bindModSettingsReset({
+  overlay,
+  mod,
+  nameInput,
+  cover,
+  status,
+  setCoverDataUrl,
+  setCoverUrl,
+  setProviderSource,
+}) {
+  overlay
+    .querySelector(".mod-settings-reset")
+    .addEventListener("click", async () => {
+      const source = getGameBananaSource(mod);
+      if (!source) return;
+      status.textContent = t("modSettings.loadingDefaults");
+      try {
+        const details = await modCatalogService.getDetailsForSource(
+          { ...source, provider: "gamebanana" },
+          source.type === "tool" ? {} : { includeRequirements: false },
+        );
+        if (!details?.title)
+          throw new Error(t("modSettings.defaultsUnavailable"));
+        nameInput.value = details.title;
+        const coverUrl =
+          source.type === "tool"
+            ? details?.thumbnail || null
+            : details.images?.[0] || null;
+        setCoverUrl(coverUrl);
+        setCoverDataUrl(null);
+        cover.src = coverUrl || "assets/img/placeholder-mini.jpg";
+        setProviderSource({
+          ...source,
+          provider: "gamebanana",
+          url: details.gameBananaUrl || "",
+        });
+        status.textContent = t("modSettings.defaultsLoaded");
+      } catch {
+        status.textContent = t("modSettings.defaultsFailed");
+      }
+    });
+}
+
+function bindModSettingsEngineConversion({ overlay, mod, onSaved }) {
+  overlay
+    .querySelector(".mod-settings-convert-engine")
+    ?.addEventListener("click", () => {
+      const folderName = mod.folderName || sanitizePathSegment(mod.name);
+      if (!folderName) return;
+      void customEngineModal.open({
+        sourcePath: `${FS.modsPath}/${folderName}`,
+        allowLibrarySource: true,
+        onImported: () => onSaved?.(),
+      });
+    });
+}
+
+function bindMoveDependencyToMods({
+  overlay,
+  mod,
+  fileLocked,
+  status,
+  close,
+  onSaved,
+}) {
+  overlay
+    .querySelector(".mod-settings-move-to-mods")
+    ?.addEventListener("click", async (event) => {
+      const moveButton = event.currentTarget;
+      moveButton.disabled = true;
+      status.textContent = t("modSettings.movingToMods");
+      try {
+        if (!fileLocked) await FS.assertModChangeAllowed(mod.id);
+        const movedMod = await FS.moveDependencyToMods(mod.id);
+        if (!movedMod) throw new Error(t("modSettings.dependencyMoveFailed"));
+        await onSaved?.();
+        close();
+      } catch {
+        status.textContent = t("modSettings.couldNotMoveDependency");
+        moveButton.disabled = false;
+      }
+    });
+}
+
+function bindModSettingsSave({
+  form,
+  overlay,
+  controller,
+  mod,
+  nameInput,
+  status,
+  fileLocked,
+  isExecutable,
+  dropdowns,
+  typeSelect,
+  tagEditor,
+  pendingArtwork,
+  onSaved,
+}) {
+  form.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    const name = nameInput.value.trim();
+    if (!name || controller.savingModId !== null) return;
+    controller.savingModId = mod.id;
+    const saveButton = overlay.querySelector(".mod-settings-save");
+    saveButton.disabled = true;
+    status.textContent = t("modSettings.saving");
+    try {
+      await saveModSettings({
+        modal: controller,
+        mod,
+        name,
+        fileLocked,
+        isExecutable,
+        dropdowns,
+        typeSelect,
+        tags: tagEditor.getTags(),
+        ...pendingArtwork(),
+        onSaved,
+      });
+    } catch (error) {
+      console.error("Could not save mod settings", {
+        modId: mod.id,
+        error,
+      });
+      status.textContent = t("modSettings.couldNotSave");
+      saveButton.disabled = false;
+    } finally {
+      if (controller.savingModId === mod.id) controller.savingModId = null;
+    }
+  });
+}
+
+async function loadModSettingsArtwork(mod) {
+  let [localCover, localIcon] = await Promise.all([
+    FS.getModCover(mod.id),
+    FS.getModIcon(mod.id),
+  ]);
+  const linkedProvider = getProviderSource(mod);
+  let providerCoverFallback = mod.image || null;
+  let providerIconFallback = mod.providerIconUrl || null;
+  if (needsLinkedProviderDetails(linkedProvider, localCover, localIcon)) {
+    const details = await getLinkedProviderDetails(linkedProvider);
+    providerCoverFallback ||=
+      details?.image || details?.thumbnail || details?.images?.[0] || null;
+    providerIconFallback ||= details?.icon || null;
+    localCover = await cacheProviderCover(
+      mod.id,
+      localCover,
+      providerCoverFallback,
+    );
+    localIcon = await cacheProviderIcon(mod.id, localIcon, details?.icon);
+  }
+  return {
+    localCover: localCover || providerCoverFallback,
+    localIcon: localIcon || providerIconFallback,
+  };
+}
+
+function needsLinkedProviderDetails(linkedProvider, localCover, localIcon) {
+  return (
+    ["backstage", "gamejolt"].includes(linkedProvider?.provider) &&
+    (!localCover || (linkedProvider.provider === "backstage" && !localIcon))
+  );
+}
+
+async function cacheProviderCover(modId, localCover, providerCoverFallback) {
+  if (localCover || !providerCoverFallback) return localCover;
+  return FS.ensureModCover(modId, async () => providerCoverFallback).catch(
+    () => null,
+  );
+}
+
+async function cacheProviderIcon(modId, localIcon, providerIcon) {
+  if (localIcon || !providerIcon) return localIcon;
+  const cachedIcon = await FS.cacheModIcon(modId, providerIcon).catch(
+    () => null,
+  );
+  if (!cachedIcon) return null;
+  document.dispatchEvent(
+    new CustomEvent("recently-played-mods-updated", {
+      detail: { refreshStandalone: true },
+    }),
+  );
+  return cachedIcon;
+}
+
+async function getLinkedProviderDetails(linkedProvider) {
+  return modCatalogService
+    .getDetailsForSource(linkedProvider)
+    .catch(() => null);
+}
+
+async function getModSettingsTagSuggestions(mod) {
+  try {
+    const installedMods = await FS.getInstalledMods();
+    const currentTags = Array.isArray(mod.tags) ? mod.tags : [];
+    return [
+      ...new Set(
+        (Array.isArray(installedMods) ? installedMods : []).flatMap((item) =>
+          Array.isArray(item.tags) ? item.tags : [],
+        ),
+      ),
+    ]
+      .filter((tag) => !currentTags.includes(tag))
+      .sort();
+  } catch {
+    return [];
+  }
 }
 
 export const modSettingsModal = {
@@ -305,76 +642,22 @@ export const modSettingsModal = {
     activateCheckoutDialog(overlay, overlay, null, () => this.close());
     requestAnimationFrame(() => overlay.classList.add("show"));
 
-    let localCover;
-    let localIcon;
+    let artwork;
     try {
-      [localCover, localIcon] = await Promise.all([
-        FS.getModCover(mod.id),
-        FS.getModIcon(mod.id),
-      ]);
+      artwork = await loadModSettingsArtwork(mod);
     } finally {
       this.isOpening = false;
     }
     if (requestId !== this.openRequestId) return false;
 
-    const linkedProvider = getProviderSource(mod);
-    let providerCoverFallback = mod.image || null;
-    let providerIconFallback = mod.providerIconUrl || null;
-    if (
-      ["backstage", "gamejolt"].includes(linkedProvider?.provider) &&
-      (!localCover || (linkedProvider.provider === "backstage" && !localIcon))
-    ) {
-      const details = await (linkedProvider.provider === "backstage"
-        ? backstageApi.getModDetails(linkedProvider.id)
-        : gameJoltApi.getGameDetails(linkedProvider.id))
-        .catch(() => null);
-      providerCoverFallback ||= details?.image || details?.thumbnail || details?.images?.[0] || null;
-      providerIconFallback ||= details?.icon || null;
-      if (!localCover) {
-        const coverUrl = providerCoverFallback;
-        if (coverUrl) {
-          localCover = await FS.ensureModCover(mod.id, async () => coverUrl)
-            .catch(() => null);
-        }
-      }
-      if (!localIcon && details?.icon) {
-        localIcon = await FS.cacheModIcon(mod.id, details.icon).catch(() => null);
-        if (localIcon) {
-          document.dispatchEvent(
-            new CustomEvent("recently-played-mods-updated", {
-              detail: { refreshStandalone: true },
-            }),
-          );
-        }
-      }
-    }
-    // Provider URLs are display fallbacks when local caching is blocked by
-    // cross-origin policy. Saved user artwork remains the first choice.
-    localCover ||= providerCoverFallback;
-    localIcon ||= providerIconFallback;
-
     const controlsDisabled =
       readOnly || fileLocked || mod.engineLocked ? "disabled" : "";
     const isDependency = mod.kind === "dependency";
-    let tagSuggestions = [];
-    try {
-      const installedMods = await FS.getInstalledMods();
-      const currentTags = Array.isArray(mod.tags) ? mod.tags : [];
-      tagSuggestions = [
-        ...new Set(
-          (Array.isArray(installedMods) ? installedMods : []).flatMap((item) =>
-            Array.isArray(item.tags) ? item.tags : [],
-          ),
-        ),
-      ]
-        .filter((tag) => !currentTags.includes(tag))
-        .sort();
-    } catch {
-      tagSuggestions = [];
-    }
+    const tagSuggestions = await getModSettingsTagSuggestions(mod);
+    if (requestId !== this.openRequestId) return false;
     overlay.innerHTML = settingsContent({
       mod,
-      localCover,
+      localCover: artwork.localCover,
       controlsDisabled,
       canReset: Boolean(getGameBananaSource(mod)) && networkStatus.online,
       resetTitle: networkStatus.online
@@ -387,159 +670,17 @@ export const modSettingsModal = {
       tagSuggestions,
     });
 
-    const form = overlay.querySelector("form");
-    const nameInput = overlay.querySelector(".mod-settings-name");
-    const cover = overlay.querySelector(".mod-settings-cover");
-    const fileInput = overlay.querySelector(".mod-settings-file");
-    const status = overlay.querySelector(".mod-settings-status");
-    const typeSelect = overlay.querySelector(".mod-settings-type");
-    const tagEditor = setupTagEditor({ overlay, mod, readOnly });
-    const dropdowns = isExecutable
-      ? null
-      : setupModSettingsDropdowns(overlay, mod, installedEngines);
-    this.dropdowns = dropdowns;
-    let pendingCoverDataUrl = null;
-    let pendingCoverUrl = null;
-    let pendingIconUrl = null;
-    let providerSource = getProviderSource(mod);
-
-    fileInput.addEventListener("change", () => {
-      const file = fileInput.files?.[0];
-      if (!file) return;
-      const reader = new FileReader();
-      reader.addEventListener("load", () => {
-        pendingCoverDataUrl = String(reader.result || "");
-        pendingCoverUrl = null;
-        cover.src = pendingCoverDataUrl;
-      });
-      reader.readAsDataURL(file);
-    });
-    const close = () => this.close();
-    overlay
-      .querySelector(".mod-settings-close")
-      .addEventListener("click", close);
-    overlay
-      .querySelector(".mod-settings-cancel")
-      .addEventListener("click", close);
-    overlay.addEventListener("click", (event) => {
-      if (event.target === overlay) close();
-    });
-    overlay
-      .querySelector(".mod-settings-open-folder")
-      .addEventListener("click", async () => {
-        const modPath = `${FS.modsPath}/${mod.folderName || sanitizePathSegment(mod.name)}`;
-        try {
-          await Neutralino.os.open(modPath);
-        } catch {
-          status.textContent = t("modSettings.openFolderFailed");
-        }
-      });
-    setupProviderImportButton({
+    bindModSettingsForm({
+      controller: this,
       overlay,
-      nameInput,
-      cover,
-      dropdowns,
-      status,
-      setSource: (value) => (providerSource = value),
-      setCoverDataUrl: (value) => (pendingCoverDataUrl = value),
-      setCoverUrl: (value) => (pendingCoverUrl = value),
-      setIconUrl: (value) => (pendingIconUrl = value),
-      canReplaceCover: () => !mod.coverPath && !pendingCoverDataUrl,
-      canSetProviderIcon: () => !localIcon,
+      mod,
+      isExecutable,
+      installedEngines,
+      onSaved,
+      readOnly,
+      fileLocked,
+      localIcon: artwork.localIcon,
     });
-    overlay
-      .querySelector(".mod-settings-reset")
-      .addEventListener("click", async () => {
-        const source = getGameBananaSource(mod);
-        if (!source) return;
-        status.textContent = t("modSettings.loadingDefaults");
-        try {
-          const details =
-            source.type === "tool"
-              ? await gameBananaApi.getToolDetails(source.id)
-              : await gameBananaApi.getModDetails(source.id, {
-                  includeRequirements: false,
-                });
-          if (!details?.title)
-            throw new Error(t("modSettings.defaultsUnavailable"));
-          nameInput.value = details.title;
-          pendingCoverUrl =
-            source.type === "tool"
-              ? details?.thumbnail || null
-              : details.images?.[0] || null;
-          pendingCoverDataUrl = null;
-          cover.src = pendingCoverUrl || "assets/img/placeholder-mini.jpg";
-          providerSource = { ...source, provider: "gamebanana", url: details.gameBananaUrl || "" };
-          status.textContent = t("modSettings.defaultsLoaded");
-        } catch {
-          status.textContent = t("modSettings.defaultsFailed");
-        }
-      });
-    overlay
-      .querySelector(".mod-settings-convert-engine")
-      ?.addEventListener("click", () => {
-        const folderName = mod.folderName || sanitizePathSegment(mod.name);
-        if (!folderName) return;
-        void customEngineModal.open({
-          sourcePath: `${FS.modsPath}/${folderName}`,
-          allowLibrarySource: true,
-          onImported: () => onSaved?.(),
-        });
-      });
-    overlay
-      .querySelector(".mod-settings-move-to-mods")
-      ?.addEventListener("click", async (event) => {
-        const moveButton = event.currentTarget;
-        moveButton.disabled = true;
-        status.textContent = t("modSettings.movingToMods");
-        try {
-          if (!fileLocked) await FS.assertModChangeAllowed(mod.id);
-          const movedMod = await FS.moveDependencyToMods(mod.id);
-          if (!movedMod) throw new Error(t("modSettings.dependencyMoveFailed"));
-          await onSaved?.();
-          close();
-        } catch {
-          status.textContent = t("modSettings.couldNotMoveDependency");
-          moveButton.disabled = false;
-        }
-      });
-    form.addEventListener("submit", async (event) => {
-      event.preventDefault();
-      const name = nameInput.value.trim();
-      if (!name) return;
-      if (this.savingModId !== null) return;
-      this.savingModId = mod.id;
-      const saveButton = overlay.querySelector(".mod-settings-save");
-      saveButton.disabled = true;
-      status.textContent = t("modSettings.saving");
-      try {
-        await saveModSettings({
-          modal: this,
-          mod,
-          name,
-          fileLocked,
-          isExecutable,
-          dropdowns,
-          typeSelect,
-          tags: tagEditor.getTags(),
-          pendingCoverDataUrl,
-          pendingCoverUrl,
-          pendingIconUrl,
-          providerSource,
-          onSaved,
-        });
-      } catch (error) {
-        console.error("Could not save mod settings", {
-          modId: mod.id,
-          error,
-        });
-        status.textContent = t("modSettings.couldNotSave");
-        saveButton.disabled = false;
-      } finally {
-        if (this.savingModId === mod.id) this.savingModId = null;
-      }
-    });
-    activateCheckoutDialog(overlay, overlay, nameInput, () => this.close());
     return true;
   },
 

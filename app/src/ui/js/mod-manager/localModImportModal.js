@@ -1,4 +1,4 @@
-import { FS } from "../../../backend/services/filesystem.js";
+import { FS } from "../../../backend/services/filesystem/index.js";
 import { setupModSettingsDropdowns } from "./modSettingsDropdowns.js";
 import { escapeHtml } from "./modSettingsTemplates.js";
 import { openProviderImport } from "./providerImportModal.js";
@@ -413,11 +413,22 @@ export const localModImportModal = {
               version: this.draft.engineVersion,
               type: this.draft.kind,
             });
-            this.pendingIconUrl = source.provider === "backstage" ? details.icon || null : null;
+            this.pendingIconUrl =
+              source.provider === "backstage" ? details.icon || null : null;
             if (!this.pendingCoverDataUrl) {
-              this.pendingCoverUrl = source.provider === "backstage"
-                ? details.image || details.thumbnail || details.images?.find((image) => image && !image.includes("placeholder-mini")) || null
-                : details.images?.find((image) => image && !image.includes("placeholder-mini")) || details.thumbnail || null;
+              this.pendingCoverUrl =
+                source.provider === "backstage"
+                  ? details.image ||
+                    details.thumbnail ||
+                    details.images?.find(
+                      (image) => image && !image.includes("placeholder-mini"),
+                    ) ||
+                    null
+                  : details.images?.find(
+                      (image) => image && !image.includes("placeholder-mini"),
+                    ) ||
+                    details.thumbnail ||
+                    null;
               delete coverImage.dataset.fallback;
               coverImage.src = this.pendingCoverUrl || DEFAULT_COVER;
             }

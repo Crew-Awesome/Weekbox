@@ -1,5 +1,5 @@
 import { modModal } from "../modal/index.js";
-import { FS } from "../../../../backend/services/filesystem.js";
+import { FS } from "../../../../backend/services/filesystem/index.js";
 import {
   applyDominantColor,
   hasCachedDominantColor,
@@ -18,12 +18,17 @@ const engineLabelKeys = {
 
 function getModCountStat(mod) {
   if (mod.source === "gamejolt") {
-    return ["fa-solid fa-user-group", Number(mod.followers || 0).toLocaleString()];
+    return [
+      "fa-solid fa-user-group",
+      Number(mod.followers || 0).toLocaleString(),
+    ];
   }
   const showDownloads = mod.source === "peo" || mod.source === "backstage";
   return [
     showDownloads ? "fa-solid fa-download" : "fa-solid fa-eye",
-    Number(showDownloads ? mod.downloads || 0 : mod.views || 0).toLocaleString(),
+    Number(
+      showDownloads ? mod.downloads || 0 : mod.views || 0,
+    ).toLocaleString(),
   ];
 }
 
@@ -64,7 +69,9 @@ function createEngineIndicator(mod) {
     : mod.source === "backstage" && mod.engineName
       ? ""
       : "home.noEngine";
-  const engineName = labelKey ? t(labelKey) : mod.engineName || engine?.name || t("home.noEngine");
+  const engineName = labelKey
+    ? t(labelKey)
+    : mod.engineName || engine?.name || t("home.noEngine");
   indicator.dataset.labelKey = labelKey || "";
   indicator.dataset.label = engineName;
   indicator.setAttribute("role", "img");
@@ -96,8 +103,9 @@ export function createCard(mod, index) {
   const image = document.createElement("img");
   image.className = "mod-image";
   const targetImgSrc = mod.image || "assets/img/placeholder-mini.jpg";
-  const imageSources = [targetImgSrc, ...(mod.imageFallbacks || [])]
-    .filter((src, index, sources) => src && sources.indexOf(src) === index);
+  const imageSources = [targetImgSrc, ...(mod.imageFallbacks || [])].filter(
+    (src, index, sources) => src && sources.indexOf(src) === index,
+  );
   let imageSourceIndex = 0;
   image.src = targetImgSrc;
   image.alt = "";
@@ -115,15 +123,20 @@ export function createCard(mod, index) {
   imageContainer.appendChild(image);
 
   const wipProgress = Number(mod.wip?.progress);
-  const isWip = mod.source === "backstage" && (mod.categoryId === "wips" || mod.wip);
+  const isWip =
+    mod.source === "backstage" && (mod.categoryId === "wips" || mod.wip);
   if (isWip) {
     const badge = document.createElement("span");
     badge.className = "mod-wip-badge mod-wip-badge--card";
     badge.textContent = `WIP${Number.isFinite(wipProgress) ? ` ${wipProgress}%` : ""}`;
-    badge.setAttribute("aria-label", Number.isFinite(wipProgress) ? `Work in progress, ${wipProgress}% complete` : "Work in progress");
+    badge.setAttribute(
+      "aria-label",
+      Number.isFinite(wipProgress)
+        ? `Work in progress, ${wipProgress}% complete`
+        : "Work in progress",
+    );
     imageContainer.appendChild(badge);
   }
-
 
   const engineIndicator = createEngineIndicator(mod);
 
@@ -136,7 +149,9 @@ export function createCard(mod, index) {
   } else {
     let sameOriginImage = false;
     try {
-      sameOriginImage = new URL(targetImgSrc, window.location.href).origin === window.location.origin;
+      sameOriginImage =
+        new URL(targetImgSrc, window.location.href).origin ===
+        window.location.origin;
     } catch {}
     if (sameOriginImage) {
       const colorProbe = new Image();
@@ -172,9 +187,15 @@ export function createCard(mod, index) {
 
   const cardStats = [["fa-regular fa-clock", mod.timeAgo]];
   if (mod.source === "gamejolt") {
-    cardStats.push(["fa-solid fa-user-group", Number(mod.followers || 0).toLocaleString()]);
+    cardStats.push([
+      "fa-solid fa-user-group",
+      Number(mod.followers || 0).toLocaleString(),
+    ]);
   } else {
-    cardStats.push(["fa-solid fa-heart", Number(mod.likes || 0).toLocaleString()]);
+    cardStats.push([
+      "fa-solid fa-heart",
+      Number(mod.likes || 0).toLocaleString(),
+    ]);
     cardStats.push(getModCountStat(mod));
   }
   cardStats.forEach(([icon, value]) => {

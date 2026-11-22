@@ -1,74 +1,29 @@
-import { FS } from "../../../backend/services/filesystem.js";
+import { FS } from "../../../backend/services/filesystem/index.js";
 import { dependenciesRenderer } from "./dependenciesRenderer.js";
 import { cardRenderer } from "./cardRenderer.js";
 import { modSettingsModal } from "./modSettingsModal.js";
-import { localModImportModal } from "./localModImportModal.js";
 import { modManagerTemplates } from "./templates.js";
-import { openFilterSortModal } from "./filterSortModal.js";
 import { sidebar } from "../sidebar.js";
-import { i18n, t } from "../i18n/index.js";
+import { t } from "../i18n/index.js";
 import {
   activateCheckoutDialog,
   deactivateCheckoutDialog,
 } from "../home/modal/dialogFocus.js";
 import { createLoadingState } from "../hourglass.js";
+import {
+  filterModsBySearch,
+  getFilteredMods,
+} from "./modManagerIndex.util.mjs";
+import {
+  disposeStaleRenderer,
+  prepareModManagerRenderer,
+} from "./modManagerRendererLifecycle.util.mjs";
+import { setupModManagerModal } from "./modalSetup.js";
 
 const MODAL_OPEN_GUARD_MS = 350;
 
 function sameId(left, right) {
   return String(left) === String(right);
-}
-
-function getFilteredMods(mods, standaloneMods, filters, sortMode) {
-  const standaloneIds = new Set(
-    (Array.isArray(standaloneMods) ? standaloneMods : []).map((mod) =>
-      String(mod.id),
-    ),
-  );
-  const order = new Map(
-    (Array.isArray(mods) ? mods : []).map((mod, index) => [
-      String(mod.id),
-      index,
-    ]),
-  );
-  const filterMatches = (mod, filter) => {
-    const isExecutable = standaloneIds.has(String(mod.id));
-    if (filter.startsWith("engine:"))
-      return mod.engineId === filter.slice("engine:".length);
-    if (filter === "kind:mod")
-      return !["dependency", "addon"].includes(mod.kind) && !isExecutable;
-    if (filter === "kind:dependency") return mod.kind === "dependency";
-    if (filter === "kind:addon") return mod.kind === "addon";
-    if (filter === "executable") return isExecutable;
-    if (filter === "unassigned") return !mod.engineId && !isExecutable;
-    return false;
-  };
-  const included = filters?.include || [];
-  const excluded = filters?.exclude || [];
-  return (Array.isArray(mods) ? mods : [])
-    .filter(
-      (mod) =>
-        !excluded.some((filter) => filterMatches(mod, filter)) &&
-        (!included.length ||
-          included.some((filter) => filterMatches(mod, filter))),
-    )
-    .sort((left, right) => {
-      if (sortMode === "name-asc")
-        return String(left.name || "").localeCompare(String(right.name || ""));
-      if (sortMode === "name-desc")
-        return String(right.name || "").localeCompare(String(left.name || ""));
-      if (sortMode === "engine-asc")
-        return String(left.engineId || "").localeCompare(
-          String(right.engineId || ""),
-        );
-      if (sortMode === "engine-desc")
-        return String(right.engineId || "").localeCompare(
-          String(left.engineId || ""),
-        );
-      const difference =
-        order.get(String(left.id)) - order.get(String(right.id));
-      return sortMode === "added-asc" ? difference : -difference;
-    });
 }
 
 export const modManagerModal = {
@@ -84,6 +39,7 @@ export const modManagerModal = {
   cachedViews: { mods: null, dependencies: null },
   eventBound: false,
   loadRequestId: 0,
+  renderGeneration: 0,
   loadPromise: null,
   queuedRefresh: false,
   preloadPromise: null,
@@ -91,280 +47,13 @@ export const modManagerModal = {
   pendingInstalls: new Map(),
   engineTooltip: null,
   openingGuardUntil: 0,
+  closeTimer: 0,
+  gridRenderer: null,
+  dependenciesRenderer: null,
 
   async init() {
-    if (!document.getElementById("mod-manager-modal")) {
-      const wrapper = document.createElement("div");
-      wrapper.innerHTML = modManagerTemplates.mainModal();
-      const modalElement = wrapper.firstElementChild;
-      if (!modalElement)
-        throw new Error("WeekBox mod manager template is unavailable.");
-      document.body.appendChild(modalElement);
-      i18n.apply(document.getElementById("mod-manager-modal"));
-
-      const modal = document.getElementById("mod-manager-modal");
-      this.engineTooltip = document.createElement("div");
-      this.engineTooltip.className = "mod-manager-engine-tooltip";
-      this.engineTooltip.setAttribute("role", "tooltip");
-      document.body.appendChild(this.engineTooltip);
-      modal?.addEventListener("pointerover", (event) => {
-        const indicator = event.target.closest(".mod-manager-engine-indicator");
-        if (!indicator || !this.engineTooltip) return;
-        this.engineTooltip.textContent = indicator.dataset.label || "";
-        const rect = indicator.getBoundingClientRect();
-        const halfWidth = this.engineTooltip.offsetWidth / 2;
-        const left = Math.min(
-          Math.max(rect.left + rect.width / 2, halfWidth + 8),
-          window.innerWidth - halfWidth - 8,
-        );
-        const belowTop = rect.bottom + 8;
-        const top =
-          belowTop + this.engineTooltip.offsetHeight <= window.innerHeight - 8
-            ? belowTop
-            : rect.top - this.engineTooltip.offsetHeight - 8;
-        this.engineTooltip.style.left = `${left}px`;
-        this.engineTooltip.style.top = `${Math.max(8, top)}px`;
-        this.engineTooltip.classList.toggle("is-above", top < rect.top);
-        this.engineTooltip.classList.add("is-visible");
-      });
-      modal?.addEventListener("pointerout", (event) => {
-        const indicator = event.target.closest(".mod-manager-engine-indicator");
-        if (
-          indicator &&
-          !(
-            event.relatedTarget instanceof Node &&
-            indicator.contains(event.relatedTarget)
-          )
-        ) {
-          this.engineTooltip?.classList.remove("is-visible");
-        }
-      });
-
-      document
-        .getElementById("mod-manager-close-btn")
-        ?.addEventListener("click", () => this.close());
-      document
-        .getElementById("mod-manager-modal")
-        ?.addEventListener("click", (e) => {
-          if (
-            e.target.id === "mod-manager-modal" &&
-            performance.now() >= this.openingGuardUntil
-          ) {
-            this.close();
-          }
-        });
-
-      const toggleBtn = document.getElementById("mod-manager-view-toggle");
-      if (toggleBtn) {
-        toggleBtn.addEventListener("click", () => {
-          const grid = document.getElementById("mod-manager-grid-container");
-          if (!grid) return;
-          const isListView = grid.classList.toggle("list-view");
-          localStorage.setItem(
-            this.activeView === "dependencies"
-              ? "weekbox_dependency_view"
-              : "weekbox_mod_manager_view",
-            isListView ? "list" : "grid",
-          );
-          const icon = toggleBtn.querySelector("i");
-          if (icon) {
-            icon.className = isListView
-              ? "fa-solid fa-table-cells-large"
-              : "fa-solid fa-list";
-          }
-        });
-      }
-
-      const depToggle = document.getElementById(
-        "mod-manager-dependencies-toggle",
-      );
-      if (depToggle) {
-        depToggle.addEventListener("click", () => {
-          this.activeView =
-            this.activeView === "mods" ? "dependencies" : "mods";
-          if (!this.showCachedView()) {
-            this.render(
-              this.cachedMods || [],
-              this.cachedStandaloneMods || [],
-              this.cachedInstalledEngines || [],
-              { preserveOtherView: true },
-            );
-          }
-        });
-      }
-
-      const searchInput = document.getElementById("mod-manager-search-input");
-      const searchSuggestions = document.getElementById(
-        "mod-manager-search-suggestions",
-      );
-      if (searchInput) {
-        searchInput.setAttribute("aria-autocomplete", "list");
-        searchInput.setAttribute(
-          "aria-controls",
-          "mod-manager-search-suggestions",
-        );
-        searchInput.setAttribute("aria-expanded", "false");
-        searchInput.addEventListener("input", (event) => {
-          this.searchQuery = event.target.value.trim().toLocaleLowerCase();
-          if (!this.searchFilterFrame) {
-            this.searchFilterFrame = requestAnimationFrame(() => {
-              this.searchFilterFrame = 0;
-              this.applySearchFilter();
-            });
-          }
-        });
-        searchInput.addEventListener("focus", () =>
-          this.updateSearchSuggestions(),
-        );
-        searchInput.addEventListener("keydown", (event) => {
-          if (event.key === "Escape") {
-            this.hideSearchSuggestions();
-            return;
-          }
-          if (event.key !== "ArrowDown") return;
-          const firstSuggestion = searchSuggestions?.querySelector("button");
-          if (!firstSuggestion) return;
-          event.preventDefault();
-          firstSuggestion.focus();
-        });
-        searchInput.addEventListener("focusout", () => {
-          setTimeout(() => {
-            if (!searchSuggestions?.contains(document.activeElement))
-              this.hideSearchSuggestions();
-          }, 0);
-        });
-      }
-      if (searchSuggestions && searchInput) {
-        searchSuggestions.setAttribute("role", "listbox");
-        searchSuggestions.addEventListener("mousedown", (event) => {
-          if (event.target.closest("button[data-tag]")) event.preventDefault();
-        });
-        searchSuggestions.addEventListener("click", (event) => {
-          const button = event.target.closest("button[data-tag]");
-          if (!button) return;
-          searchInput.value = button.dataset.tag || "";
-          this.searchQuery = searchInput.value.toLocaleLowerCase();
-          this.applySearchFilter();
-          this.hideSearchSuggestions();
-          searchInput.focus();
-        });
-        searchSuggestions.addEventListener("keydown", (event) => {
-          const buttons = [
-            ...searchSuggestions.querySelectorAll("button[data-tag]"),
-          ];
-          const currentIndex = buttons.indexOf(document.activeElement);
-          if (event.key === "Escape") {
-            this.hideSearchSuggestions();
-            searchInput.focus();
-          } else if (event.key === "ArrowDown" && buttons.length) {
-            event.preventDefault();
-            buttons[(currentIndex + 1) % buttons.length].focus();
-          } else if (event.key === "ArrowUp") {
-            event.preventDefault();
-            if (currentIndex <= 0) searchInput.focus();
-            else buttons[currentIndex - 1].focus();
-          }
-        });
-      }
-
-      const filterToggle = document.getElementById("mod-manager-filter-toggle");
-      if (filterToggle) {
-        filterToggle.addEventListener("click", () => {
-          openFilterSortModal({
-            filters: this.typeFilters,
-            sort: this.sortMode,
-            engineIds: [
-              ...new Set(
-                (this.cachedMods || [])
-                  .filter(
-                    (mod) => mod.engineId && mod.engineId !== "executable",
-                  )
-                  .map((mod) => mod.engineId),
-              ),
-            ],
-            hasMods: (this.cachedMods || []).some(
-              (mod) =>
-                !["dependency", "addon"].includes(mod.kind) &&
-                !(this.cachedStandaloneMods || []).some(
-                  (standalone) => String(standalone.id) === String(mod.id),
-                ),
-            ),
-            hasDependencies: (this.cachedMods || []).some(
-              (mod) => mod.kind === "dependency",
-            ),
-            hasAddons: (this.cachedMods || []).some(
-              (mod) => mod.kind === "addon",
-            ),
-            hasExecutables: (this.cachedStandaloneMods || []).length > 0,
-            hasUnassigned: (this.cachedMods || []).some((mod) => !mod.engineId),
-            onApply: ({ filters, sort }) => {
-              this.typeFilters = filters;
-              this.sortMode = sort;
-              if (!this.syncModGrid()) {
-                void this.render(
-                  this.cachedMods || [],
-                  this.cachedStandaloneMods || [],
-                );
-              }
-            },
-          });
-        });
-      }
-
-      const addLocalBtn = document.getElementById("mod-manager-add-local-btn");
-      if (addLocalBtn) {
-        addLocalBtn.addEventListener("click", async () => {
-          if (addLocalBtn.disabled) return;
-          addLocalBtn.disabled = true;
-          try {
-            await localModImportModal.open({
-              onImported: () => this.loadInstalledMods(true),
-            });
-          } finally {
-            addLocalBtn.disabled = false;
-          }
-        });
-      }
-
-      if (!this.eventBound) {
-        document.addEventListener("mods-updated", (event) => {
-          if (
-            document
-              .getElementById("mod-manager-modal")
-              ?.classList.contains("show")
-          ) {
-            if (event.detail?.source === "mod-manager") return;
-            void this.loadInstalledMods(true);
-          } else {
-            this.cachedMods = null;
-            this.searchTagCounts = null;
-            this.cachedStandaloneMods = null;
-            this.cachedInstalledEngines = null;
-            this.cachedViews = { mods: null, dependencies: null };
-            this.preloaded = false;
-            this.preloadPromise = null;
-          }
-        });
-        document.addEventListener("mod-install-progress", (event) => {
-          const install = event.detail;
-          if (!install?.modId) return;
-          if (install.status === "complete" || install.status === "cancelled") {
-            this.pendingInstalls.delete(String(install.modId));
-            document
-              .querySelectorAll(".mod-manager-installing-card")
-              .forEach((card) => {
-                if (card.dataset.modId === String(install.modId)) card.remove();
-              });
-            return;
-          }
-          this.pendingInstalls.set(String(install.modId), install);
-          this.updatePendingInstallCard(install);
-        });
-        this.eventBound = true;
-      }
-    }
+    setupModManagerModal(this);
   },
-
   async open() {
     await this.init();
     if (!FS.isInitialized) await FS.init();
@@ -372,6 +61,10 @@ export const modManagerModal = {
     const modal = document.getElementById("mod-manager-modal");
     if (!modal) return;
 
+    if (this.closeTimer) {
+      clearTimeout(this.closeTimer);
+      this.closeTimer = 0;
+    }
     sidebar.setActive(sidebar.modManagerBtn);
     this.openingGuardUntil = performance.now() + MODAL_OPEN_GUARD_MS;
     modal.style.display = "flex";
@@ -396,6 +89,8 @@ export const modManagerModal = {
         );
       }
       await this.preload();
+      if (this.cachedMods) this.showCachedView();
+      else await this.loadInstalledMods();
     } else if (!this.showCachedView()) {
       await this.loadInstalledMods();
     }
@@ -418,6 +113,7 @@ export const modManagerModal = {
 
   close() {
     this.loadRequestId += 1;
+    this.renderGeneration += 1;
     if (this.loadPromise) {
       this.cachedMods = null;
       this.searchTagCounts = null;
@@ -428,12 +124,16 @@ export const modManagerModal = {
     modSettingsModal.close();
     const modal = document.getElementById("mod-manager-modal");
     if (!modal) return;
+    this.gridRenderer?.setActive(false);
+    this.dependenciesRenderer?.setActive(false);
     this.engineTooltip?.classList.remove("is-visible");
     sidebar.syncActive();
     deactivateCheckoutDialog(modal);
     modal.classList.remove("show");
-    setTimeout(() => {
-      modal.style.display = "none";
+    if (this.closeTimer) clearTimeout(this.closeTimer);
+    this.closeTimer = setTimeout(() => {
+      this.closeTimer = 0;
+      if (!modal.classList.contains("show")) modal.style.display = "none";
     }, 260);
   },
 
@@ -549,6 +249,10 @@ export const modManagerModal = {
     if (!view || !container) return false;
 
     container.replaceChildren(view);
+    this.gridRenderer?.setActive(view === this.cachedViews.mods);
+    this.dependenciesRenderer?.setActive(
+      view === this.cachedViews.dependencies,
+    );
     this.syncActiveView();
     this.syncViewToggleIcon();
     this.applySearchFilter();
@@ -559,14 +263,19 @@ export const modManagerModal = {
   applySearchFilter() {
     const grid = document.getElementById("mod-manager-grid-container");
     if (!grid || this.activeView !== "mods") return;
-    grid.querySelectorAll(".mod-manager-card").forEach((card) => {
-      if (card.classList.contains("mod-manager-installing-card")) return;
-      card.classList.toggle(
-        "is-search-hidden",
-        Boolean(this.searchQuery) &&
-          !card.dataset.modSearch.includes(this.searchQuery),
+    if (this.gridRenderer) {
+      this.gridRenderer.setItems(
+        filterModsBySearch(
+          getFilteredMods(
+            this.cachedMods || [],
+            this.cachedStandaloneMods || [],
+            this.typeFilters,
+            this.sortMode,
+          ),
+          this.searchQuery,
+        ),
       );
-    });
+    }
     this.updateSearchSuggestions();
   },
 
@@ -581,23 +290,11 @@ export const modManagerModal = {
       this.typeFilters,
       this.sortMode,
     );
-    const visibleIds = new Set(filteredMods.map((mod) => String(mod.id)));
-    const cards = new Map(
-      [
-        ...grid.querySelectorAll(
-          ".mod-manager-card:not(.mod-manager-installing-card)",
-        ),
-      ].map((card) => [card.dataset.modId, card]),
+    this.gridRenderer?.setItems(
+      filterModsBySearch(filteredMods, this.searchQuery),
     );
-    cards.forEach((card, modId) =>
-      card.classList.toggle("is-filter-hidden", !visibleIds.has(modId)),
-    );
-    filteredMods.forEach((mod) => {
-      const card = cards.get(String(mod.id));
-      if (card) grid.appendChild(card);
-    });
     this.renderActiveFilters();
-    this.applySearchFilter();
+    this.updateSearchSuggestions();
     return true;
   },
 
@@ -760,6 +457,7 @@ export const modManagerModal = {
     installedEngines = this.cachedInstalledEngines || [],
     { preserveOtherView = false } = {},
   ) {
+    const renderGeneration = ++this.renderGeneration;
     const container = document.getElementById("mod-manager-modal-body");
     if (!container) return;
 
@@ -770,11 +468,14 @@ export const modManagerModal = {
     const playableMods = mods;
 
     this.syncActiveView();
-    const filteredMods = getFilteredMods(
-      playableMods,
-      standaloneMods,
-      selectedFilters,
-      this.sortMode,
+    const filteredMods = filterModsBySearch(
+      getFilteredMods(
+        playableMods,
+        standaloneMods,
+        selectedFilters,
+        this.sortMode,
+      ),
+      this.searchQuery,
     );
 
     this.renderActiveFilters();
@@ -782,55 +483,100 @@ export const modManagerModal = {
     if (!preserveOtherView) {
       this.cachedViews = { mods: null, dependencies: null };
     }
+    prepareModManagerRenderer(this, preserveOtherView);
     container.innerHTML = "";
 
     if (this.activeView === "dependencies") {
-      if (dependencies.length) {
-        const isListView =
-          localStorage.getItem("weekbox_dependency_view") !== "grid";
-        const toggleIcon = document.querySelector("#mod-manager-view-toggle i");
-        if (toggleIcon)
-          toggleIcon.className = isListView
-            ? "fa-solid fa-table-cells-large"
-            : "fa-solid fa-list";
-        await dependenciesRenderer.render(
-          container,
-          dependencies,
-          mods,
-          installedEngines,
-          isListView,
-          (deletedId) => {
-            this.cachedMods = this.cachedMods.filter(
-              (mod) => !sameId(mod.id, deletedId),
-            );
-            this.searchTagCounts = null;
-            this.cachedStandaloneMods = this.cachedStandaloneMods.filter(
-              (mod) => !sameId(mod.id, deletedId),
-            );
-            void this.render(this.cachedMods, this.cachedStandaloneMods);
-            document.dispatchEvent(
-              new CustomEvent("mods-updated", {
-                detail: {
-                  source: "mod-manager",
-                  action: "deleted",
-                  modId: deletedId,
-                },
-              }),
-            );
-          },
-          () => this.loadInstalledMods(true),
-        );
-        this.cachedViews.dependencies = container.firstElementChild;
-      } else {
-        container.innerHTML = modManagerTemplates.emptyState(
-          t("modManager.noDependencies"),
-        );
-        this.cachedViews.dependencies = container.firstElementChild;
-      }
-      container.scrollTop = savedScrollTop;
+      await this.renderDependenciesView({
+        container,
+        dependencies,
+        mods,
+        installedEngines,
+        renderGeneration,
+        savedScrollTop,
+      });
       return;
     }
 
+    await this.renderModsView({
+      container,
+      mods,
+      filteredMods,
+      standaloneMods,
+      installedEngines,
+      renderGeneration,
+      savedScrollTop,
+    });
+  },
+
+  async renderDependenciesView({
+    container,
+    dependencies,
+    mods,
+    installedEngines,
+    renderGeneration,
+    savedScrollTop,
+  }) {
+    if (!dependencies.length) {
+      container.innerHTML = modManagerTemplates.emptyState(
+        t("modManager.noDependencies"),
+      );
+      this.cachedViews.dependencies = container.firstElementChild;
+      container.scrollTop = savedScrollTop;
+      return;
+    }
+    const isListView =
+      localStorage.getItem("weekbox_dependency_view") !== "grid";
+    const toggleIcon = document.querySelector("#mod-manager-view-toggle i");
+    if (toggleIcon)
+      toggleIcon.className = isListView
+        ? "fa-solid fa-table-cells-large"
+        : "fa-solid fa-list";
+    const renderer = await dependenciesRenderer.render(
+      container,
+      dependencies,
+      mods,
+      installedEngines,
+      isListView,
+      (deletedId) => {
+        this.cachedMods = this.cachedMods.filter(
+          (mod) => !sameId(mod.id, deletedId),
+        );
+        this.searchTagCounts = null;
+        this.cachedStandaloneMods = this.cachedStandaloneMods.filter(
+          (mod) => !sameId(mod.id, deletedId),
+        );
+        void this.render(this.cachedMods, this.cachedStandaloneMods);
+        document.dispatchEvent(
+          new CustomEvent("mods-updated", {
+            detail: {
+              source: "mod-manager",
+              action: "deleted",
+              modId: deletedId,
+            },
+          }),
+        );
+      },
+      () => this.loadInstalledMods(true),
+    );
+    if (renderGeneration !== this.renderGeneration) {
+      disposeStaleRenderer(renderer);
+      return;
+    }
+    this.dependenciesRenderer = renderer;
+    this.cachedViews.dependencies = container.firstElementChild;
+    container.scrollTop = savedScrollTop;
+  },
+
+  async renderModsView({
+    container,
+    mods,
+    filteredMods,
+    standaloneMods,
+    installedEngines,
+    renderGeneration,
+    savedScrollTop,
+  }) {
     const gridContainer = document.createElement("div");
     gridContainer.id = "mod-manager-grid-container";
     gridContainer.className = "mod-manager-grid";
@@ -846,7 +592,7 @@ export const modManagerModal = {
 
     container.appendChild(gridContainer);
     try {
-      await cardRenderer.renderCards(
+      const renderer = await cardRenderer.renderCards(
         gridContainer,
         filteredMods,
         mods,
@@ -860,11 +606,28 @@ export const modManagerModal = {
           this.cachedStandaloneMods = this.cachedStandaloneMods.filter(
             (mod) => !sameId(mod.id, deletedId),
           );
+          this.gridRenderer?.setAllMods(this.cachedMods);
+          this.gridRenderer?.setItems(
+            filterModsBySearch(
+              getFilteredMods(
+                this.cachedMods,
+                this.cachedStandaloneMods,
+                this.typeFilters,
+                this.sortMode,
+              ),
+              this.searchQuery,
+            ),
+          );
         },
         () => {
           this.loadInstalledMods(true);
         },
       );
+      if (renderGeneration !== this.renderGeneration) {
+        disposeStaleRenderer(renderer, gridContainer);
+        return;
+      }
+      this.gridRenderer = renderer;
       this.applySearchFilter();
       this.renderPendingInstallCards();
       this.cachedViews.mods = gridContainer;
@@ -873,6 +636,7 @@ export const modManagerModal = {
         container.scrollTop = savedScrollTop;
       });
     } catch (err) {
+      if (renderGeneration !== this.renderGeneration) return;
       console.error(err);
       container.innerHTML = modManagerTemplates.emptyState(
         `<i class="fa-solid fa-triangle-exclamation"></i> ${t("modManager.errorRenderingCards")}`,

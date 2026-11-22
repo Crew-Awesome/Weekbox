@@ -3,10 +3,15 @@ import {
   getEngineModFolderName,
   normalizeFolderName,
 } from "./path.util.js";
-
-function sameId(left, right) {
-  return String(left) === String(right);
-}
+import {
+  allSettledWithConcurrency,
+  mapWithConcurrency,
+} from "../../utils/async-concurrency.util.mjs";
+import {
+  interpretEngineLinkCheck,
+  shouldCopyWhenJunctionUnsupported,
+} from "./engine-link-check.util.mjs";
+import { sameId } from "./identity.util.js";
 
 function supportsEngineVersion(mod, version) {
   return !mod.engineVersion || mod.engineVersion === version;
@@ -18,6 +23,34 @@ function usesAddonsDirectory(mod, engineId) {
     (engineId === "codename" &&
       (mod.kind === "dependency" || mod.kind === "addon")) ||
     (String(engineId).startsWith("custom-") && mod.kind === "addon")
+  );
+}
+
+function quotePosix(value) {
+  return `'${String(value).replaceAll("'", "'\\''")}'`;
+}
+
+function encodePowerShellCommand(command) {
+  const bytes = new Uint8Array(command.length * 2);
+  for (let index = 0; index < command.length; index += 1) {
+    const code = command.charCodeAt(index);
+    bytes[index * 2] = code & 0xff;
+    bytes[index * 2 + 1] = code >> 8;
+  }
+  let binary = "";
+  for (const byte of bytes) binary += String.fromCharCode(byte);
+  return window.btoa(binary);
+}
+
+function quotePowerShell(value) {
+  return `'${String(value).replaceAll("'", "''")}'`;
+}
+
+function execPowerShell(script) {
+  const encoded = encodePowerShellCommand(script);
+  return Neutralino.os.execCommand(
+    `powershell.exe -NoProfile -NonInteractive -EncodedCommand ${encoded}`,
+    { background: false },
   );
 }
 
@@ -36,24 +69,23 @@ async function removeEngineModLinkAttempt({
     );
   }
   if (isCopiedLink) {
-    await api.remove(linkPath).catch(async () => {
-      if (window.NL_OS !== "Windows")
-        throw new Error("Could not remove copied mod link");
-      await Neutralino.os.execCommand(
-        `rmdir /S /Q "${linkPath.replace(/\//g, "\\")}"`,
-        { background: false },
+    await api.remove(linkPath);
+  } else if (window.NL_OS === "Windows") {
+    const path = quotePowerShell(linkPath);
+    const result = await execPowerShell(
+      `$item=Get-Item -LiteralPath ${path} -Force -ErrorAction Stop;if(($item.Attributes -band [IO.FileAttributes]::ReparsePoint) -eq 0){exit 2};Remove-Item -LiteralPath ${path} -Force -ErrorAction Stop;if(Test-Path -LiteralPath ${path}){exit 1}`,
+    );
+    if (result.exitCode !== 0)
+      throw new Error(
+        result.stdErr || result.stdOut || "Could not remove engine link",
       );
-    });
   } else {
-    const command =
-      window.NL_OS === "Windows"
-        ? `cmd /c rmdir /S /Q "${linkPath.replace(/\//g, "\\")}"`
-        : window.NL_OS === "Darwin"
-          ? `rm -f "${linkPath}"`
-          : `rm -rf "${linkPath}"`;
-    const result = await Neutralino.os.execCommand(command, {
-      background: false,
-    });
+    const result = await Neutralino.os.execCommand(
+      `unlink ${quotePosix(linkPath)}`,
+      {
+        background: false,
+      },
+    );
     if (result.exitCode !== 0)
       throw new Error(
         result.stdErr || result.stdOut || "The directory is not empty",
@@ -72,13 +104,16 @@ async function removeEngineModLink({
 }) {
   const linkCheck =
     window.NL_OS === "Windows"
-      ? `cmd /c fsutil reparsepoint query "${linkPath.replace(/\//g, "\\")}"`
-      : `test -L "${linkPath}"`;
-  const isLink = await Neutralino.os
-    .execCommand(linkCheck, { background: false })
-    .then((result) => result.exitCode === 0)
-    .catch(() => false);
-  const isCopiedLink = await api.exists(`${linkPath}/.weekbox-copy-link`);
+      ? execPowerShell(
+          `try{$item=Get-Item -LiteralPath ${quotePowerShell(linkPath)} -Force -ErrorAction Stop;if($item.Attributes -band [IO.FileAttributes]::ReparsePoint){exit 0};exit 1}catch [System.Management.Automation.ItemNotFoundException]{exit 1}catch{[Console]::Error.WriteLine($_);exit 2}`,
+        )
+      : Neutralino.os.execCommand(`test -L ${quotePosix(linkPath)}`, {
+          background: false,
+        });
+  const isLink = interpretEngineLinkCheck(await linkCheck, linkPath);
+  const isCopiedLink =
+    !isLink &&
+    (await api.exists(`${linkPath}/.weekbox-copy-link`));
   if (!isLink && !isCopiedLink) return false;
 
   let lastError;
@@ -118,8 +153,9 @@ async function getExistingLinkConflict(
   mod,
   engineId,
   engineFolderName,
+  allMods = null,
 ) {
-  const storedMods = await service.modRepository.getAll();
+  const storedMods = allMods || (await service.modRepository.getAll());
   const conflicts = (Array.isArray(storedMods) ? storedMods : []).filter(
     (otherMod) =>
       !sameId(otherMod.id, mod.id) &&
@@ -136,11 +172,14 @@ async function getExistingLinkConflict(
 async function createEngineLink(service, mod, sourcePath, linkPath) {
   const command =
     window.NL_OS === "Windows"
-      ? `cmd /c mklink /J "${linkPath}" "${sourcePath}"`
-      : `ln -s "${sourcePath}" "${linkPath}"`;
-  const result = await Neutralino.os.execCommand(command, {
-    background: false,
-  });
+      ? null
+      : `ln -s ${quotePosix(sourcePath)} ${quotePosix(linkPath)}`;
+  const result =
+    window.NL_OS === "Windows"
+      ? await execPowerShell(
+          `try{New-Item -ItemType Junction -Path ${quotePowerShell(linkPath)} -Target ${quotePowerShell(sourcePath)} -ErrorAction Stop | Out-Null;exit 0}catch{[Console]::Error.WriteLine($_);exit 1}`,
+        )
+      : await Neutralino.os.execCommand(command, { background: false });
   if (result.exitCode === 0) return { linked: true, path: linkPath };
   const output = String(result.stdErr || result.stdOut || "");
   if (
@@ -154,7 +193,7 @@ async function createEngineLink(service, mod, sourcePath, linkPath) {
   }
   if (
     window.NL_OS === "Windows" &&
-    /local ntfs volumes are required|not supported/i.test(output)
+    shouldCopyWhenJunctionUnsupported(output)
   ) {
     await Neutralino.filesystem.copy(sourcePath, linkPath, {
       recursive: true,
@@ -163,6 +202,11 @@ async function createEngineLink(service, mod, sourcePath, linkPath) {
     });
     await service.api.write(`${linkPath}/.weekbox-copy-link`, "1");
     return { linked: true, copied: true, path: linkPath };
+  }
+  if (window.NL_OS === "Windows") {
+    throw new Error(
+      `Windows cannot create a junction for ${mod.name} on this storage volume. Move the WeekBox library and engine to a local NTFS volume, then try again.`,
+    );
   }
   throw new Error(output || `Could not inject ${mod.name}`);
 }
@@ -240,9 +284,15 @@ var _ModInjectionService = class _ModInjectionService {
       return;
     }
     await this.api.ensureDir(bundleModsPath);
-    const entries = await Neutralino.filesystem
-      .readDirectory(legacyModsPath)
-      .catch(() => []);
+    let entries;
+    try {
+      entries = await Neutralino.filesystem.readDirectory(legacyModsPath);
+    } catch (error) {
+      throw new Error(
+        `Could not read legacy engine mods at ${legacyModsPath}: ${error?.message || error}`,
+        { cause: error },
+      );
+    }
     for (const entry of entries.filter(
       (item) => item.entry !== "." && item.entry !== "..",
     )) {
@@ -252,19 +302,20 @@ var _ModInjectionService = class _ModInjectionService {
       try {
         await this.api.move(sourcePath, destinationPath);
       } catch (error) {
-        console.warn("Could not migrate macOS engine mod:", sourcePath, error);
+        throw new Error(
+          `Could not migrate legacy engine mod from ${sourcePath} to ${destinationPath}: ${error?.message || error}`,
+          { cause: error },
+        );
       }
     }
   }
   async migrateLegacyEngineModsFor(engines) {
     if (window.NL_OS !== "Darwin") return;
-    await Promise.all(
-      engines.map((engine) =>
-        this.migrateLegacyEngineMods(engine.id, engine.version),
-      ),
+    await mapWithConcurrency(engines, 3, (engine) =>
+      this.migrateLegacyEngineMods(engine.id, engine.version),
     );
   }
-  async link(mod, engineId, version) {
+  async link(mod, engineId, version, allMods = null) {
     const folderName = getModFolderName(mod);
     if (!String(folderName || "").trim())
       throw new Error(
@@ -313,6 +364,7 @@ var _ModInjectionService = class _ModInjectionService {
         mod,
         engineId,
         engineFolderName,
+        allMods,
       );
       if (conflict) {
         throw new Error(
@@ -329,7 +381,7 @@ var _ModInjectionService = class _ModInjectionService {
       sameId(item.id, modId),
     );
     if (!mod || mod.hidden || !supportsEngineVersion(mod, version)) return;
-    return this.link(mod, engineId, version);
+    return this.link(mod, engineId, version, storedMods);
   }
   async injectForEngine(engineId, version) {
     const storedMods = await this.modRepository.getAll();
@@ -339,8 +391,8 @@ var _ModInjectionService = class _ModInjectionService {
         !mod.hidden &&
         supportsEngineVersion(mod, version),
     );
-    return Promise.allSettled(
-      mods.map((mod) => this.link(mod, engineId, version)),
+    return allSettledWithConcurrency(mods, 3, (mod) =>
+      this.link(mod, engineId, version, storedMods),
     );
   }
   async injectIntoInstalledEngines(modId, engines) {
@@ -349,14 +401,29 @@ var _ModInjectionService = class _ModInjectionService {
       sameId(item.id, modId),
     );
     if (!mod?.engineId || mod.hidden) return [];
-    return Promise.allSettled(
-      engines
-        .filter(
-          (engine) =>
-            engine.id === mod.engineId &&
-            supportsEngineVersion(mod, engine.version),
-        )
-        .map((engine) => this.link(mod, engine.id, engine.version)),
+    const matchingEngines = engines.filter(
+      (engine) =>
+        engine.id === mod.engineId &&
+        supportsEngineVersion(mod, engine.version),
+    );
+    return allSettledWithConcurrency(matchingEngines, 3, (engine) =>
+      this.link(mod, engine.id, engine.version, storedMods),
+    );
+  }
+  async injectModsIntoInstalledEngines(mods, engines) {
+    const batches = await allSettledWithConcurrency(mods, 3, async (mod) => {
+      if (!mod?.engineId || mod.hidden) return [];
+      const matches = engines.filter(
+        (engine) =>
+          engine.id === mod.engineId &&
+          supportsEngineVersion(mod, engine.version),
+      );
+      return allSettledWithConcurrency(matches, 3, (engine) =>
+        this.link(mod, engine.id, engine.version, mods),
+      );
+    });
+    return batches.flatMap((batch) =>
+      batch.status === "rejected" ? [batch] : batch.value,
     );
   }
   async unlinkFromEngine(mod, engineId, version) {
@@ -398,14 +465,13 @@ var _ModInjectionService = class _ModInjectionService {
     return removed;
   }
   async unlinkFromInstalledEngines(mod, engines) {
-    return Promise.allSettled(
-      engines
-        .filter(
-          (engine) =>
-            engine.id === mod.engineId &&
-            supportsEngineVersion(mod, engine.version),
-        )
-        .map((engine) => this.unlinkFromEngine(mod, engine.id, engine.version)),
+    const matchingEngines = engines.filter(
+      (engine) =>
+        engine.id === mod.engineId &&
+        supportsEngineVersion(mod, engine.version),
+    );
+    return allSettledWithConcurrency(matchingEngines, 3, (engine) =>
+      this.unlinkFromEngine(mod, engine.id, engine.version),
     );
   }
   async cleanup(engineId, version) {

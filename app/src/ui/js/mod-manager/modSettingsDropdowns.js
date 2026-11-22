@@ -1,4 +1,4 @@
-import { FS } from "../../../backend/services/filesystem.js";
+import { FS } from "../../../backend/services/filesystem/index.js";
 import { setupDropdown } from "../../utils/components/dropdown.component.js";
 import { escapeHtml } from "./modSettingsTemplates.js";
 import { getEngineLabel, t } from "../i18n/index.js";

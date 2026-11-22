@@ -1,4 +1,4 @@
-import { gameBananaApi } from "../../../backend/providers/gamebanana/gamebanana.provider.js";
+import { modCatalogService } from "../../../backend/services/mod-catalog.service.js";
 import { homeGrid } from "./grid/index.js";
 import { homeSearch } from "./search.js";
 import { t } from "../i18n/index.js";
@@ -263,7 +263,7 @@ export const homeSearchDropdown = {
   },
 
   async fetchRelated(query) {
-    return gameBananaApi.getSearchSuggestions(
+    return modCatalogService.getSearchSuggestions(
       query,
       homeSearch.searchType === "users" ? "Member" : "Mod",
     );

@@ -1,4 +1,4 @@
-import { FS } from "../../../backend/services/filesystem.js";
+import { FS } from "../../../backend/services/filesystem/index.js";
 import {
   downloadArchive,
   extractArchive,

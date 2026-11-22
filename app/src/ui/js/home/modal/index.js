@@ -1,13 +1,8 @@
-import { gameBananaApi } from "../../../../backend/providers/gamebanana/gamebanana.provider.js";
-import { peoApi } from "../../../../backend/providers/peo/peo.provider.js";
-import { backstageApi } from "../../../../backend/providers/backstage/backstage.provider.js";
-import { gameJoltApi } from "../../../../backend/providers/gamejolt/gamejolt.provider.js";
 import { engineManagerModal } from "../../engine-manager/index.js";
-import { FS } from "../../../../backend/services/filesystem.js";
+import { FS } from "../../../../backend/services/filesystem/index.js";
+import { modCatalogService } from "../../../../backend/services/mod-catalog.service.js";
 import { modModalCarousel } from "./carousel.js";
-import { dependencyReviewModal } from "./dependencyReviewModal.js";
-import { downloadChoiceModal } from "./downloadChoiceModal.js";
-import { downloadMod } from "./downloadMod.js";
+import { ModInstallWorkflow } from "./installModWorkflow.js";
 import { createCard } from "../grid/cardBuilder.js";
 import { gridRender } from "../grid/gridRender.js";
 import { t } from "../../i18n/index.js";
@@ -23,44 +18,13 @@ import {
   updateDownloadStatus,
 } from "./modalUi.js";
 
-function getExternalProviderId(modId) {
-  return String(modId).match(/^(peo|backstage|gamejolt):(.+)$/);
-}
-
-function getProviderModIdFromUrl(value) {
-  try {
-    const url = new URL(value);
-    const host = url.hostname.toLowerCase().replace(/^www\./, "");
-    let match;
-    if (host === "gamebanana.com" && (match = url.pathname.match(/^\/(mods|tools)\/(\d+)(?:\/|$)/i))) {
-      return `${match[1].toLowerCase() === "tools" ? "tool" : "mod"}:${match[2]}`;
-    }
-    if (host === "gamejolt.com" && (match = url.pathname.match(/^\/games\/(?:[^/]+\/)?(\d+)(?:\/|$)/i))) {
-      return `gamejolt:${match[1]}`;
-    }
-    if (host === "funkinbackstage.net" && (match = url.pathname.match(/^\/mods\/([a-z0-9]+)\/?$/i))) {
-      return `backstage:${match[1]}`;
-    }
-    if (host === "funkin.sniro.boo" && (match = url.pathname.match(/^\/mod\/([^/]+)\/?$/i))) {
-      return `peo:${decodeURIComponent(match[1])}`;
-    }
-  } catch {}
-  return null;
-}
-
-function fetchProviderModDetails(modId, onProgress) {
-  const providerId = getExternalProviderId(modId);
-  if (providerId?.[1] === "peo") return peoApi.getModDetails(providerId[2]);
-  if (providerId?.[1] === "backstage") return backstageApi.getModDetails(providerId[2]);
-  if (providerId?.[1] === "gamejolt") return gameJoltApi.getGameDetails(providerId[2]);
-  return gameBananaApi.getModDetails(modId, { onProgress });
-}
-
 function showProviderDetailsError() {
   setModalInfoLoading(false);
   const title = document.getElementById("modal-title");
   if (title) title.textContent = t("modModal.errorLoadingMod");
-  document.getElementById("modal-image-loader")?.style.setProperty("display", "none");
+  document
+    .getElementById("modal-image-loader")
+    ?.style.setProperty("display", "none");
   const downloadButton = document.getElementById("modal-download-btn");
   if (downloadButton) {
     downloadButton.disabled = true;
@@ -100,35 +64,11 @@ function setProfileBackdrop(modal, imageUrl) {
   modal.dataset.profileBackdropLayer = String(nextIndex);
 }
 
-function getInstallMetadata(data, selectedDownload) {
-  const image = data.image || data.images?.find((candidate) => candidate && !candidate.includes("placeholder-mini")) || null;
-  const sourceUrl = data.sourceUrl || data.gameBananaUrl || null;
-  return {
-    kind: data.kind || "mod",
-    categoryId: data.categoryId || null,
-    toastThumbnail: image,
-    downloadIcon: data.source === "backstage" ? data.icon || null : null,
-    providerIconUrl: data.source === "backstage" ? data.icon || null : null,
-    sourceType: selectedDownload.type,
-    fileName: selectedDownload.fileName,
-    fileSize: selectedDownload.fileSize,
-    source: data.source || "gamebanana",
-    image,
-    sourceUrl,
-    providerSource: data.source || "gamebanana",
-    providerId: data.sourceId || String(data.id).replace(/^(?:mod|tool|peo|backstage|gamejolt):/, ""),
-    providerBuildId: selectedDownload.providerBuildId || null,
-    providerType: data.type || null,
-    providerUrl: sourceUrl,
-    author: data.author || null,
-    engineLocked: Boolean(data.engineLocked),
-  };
-}
-
 const modModal = {
   requestId: 0,
   activeModId: null,
   profileReturnModId: null,
+  installWorkflow: new ModInstallWorkflow(),
 
   async init() {
     try {
@@ -143,10 +83,10 @@ const modModal = {
     const requestId = ++this.requestId;
     this.activeModId = modId;
     this.profileReturnModId = null;
-    const providerId = getExternalProviderId(modId);
-    const engineId = providerId
+    const isExternalMod = modCatalogService.isExternalModId(modId);
+    const engineId = isExternalMod
       ? null
-      : gameBananaApi.getEngineIdForSubmission("mods", modId);
+      : modCatalogService.getEngineIdForSubmission("mods", modId);
     if (engineId) {
       await engineManagerModal.open(engineId);
       return;
@@ -181,7 +121,7 @@ const modModal = {
     };
     let data;
     try {
-      data = await fetchProviderModDetails(modId, showProgress);
+      data = await modCatalogService.getModDetails(modId, showProgress);
     } catch (error) {
       if (requestId !== this.requestId) return;
       console.warn("Could not load provider mod details", error);
@@ -206,8 +146,7 @@ const modModal = {
     if (!hasRenderedProfile) {
       installedCount = await FS.getInstalledModCount(data.id);
       await this.populateData(data, installedCount);
-    }
-    else
+    } else
       updateDownloadStatus(data, installedCount, () =>
         this.installWithDependencies(data),
       );
@@ -234,7 +173,7 @@ const modModal = {
     if (titleEl) titleEl.textContent = t("modModal.loadingInfo");
     const loaderEl = document.getElementById("modal-image-loader");
     if (loaderEl) loaderEl.style.display = "block";
-    const data = await gameBananaApi.getToolDetails(submission.id, {
+    const data = await modCatalogService.getToolDetails(submission.id, {
       requireDownload: false,
     });
     if (requestId !== this.requestId) return;
@@ -265,14 +204,18 @@ const modModal = {
     let contributionsFailed = false;
     if (source === "backstage") {
       const [profileResult, contributionsResult] = await Promise.allSettled([
-        backstageApi.getUserProfile(authorId),
-        backstageApi.getUserContributions(authorId),
+        modCatalogService.getAuthorProfile(authorId, source),
+        modCatalogService.getAuthorContributions(authorId, source),
       ]);
       if (profileResult.status === "rejected") {
-        console.warn("Could not load FunkinBackstage user profile", profileResult.reason);
+        console.warn(
+          "Could not load FunkinBackstage user profile",
+          profileResult.reason,
+        );
         setModalInfoLoading(false, "profile-info-loader");
         const profileName = document.getElementById("modal-profile-name");
-        if (profileName) profileName.textContent = t("modModal.errorLoadingProfile");
+        if (profileName)
+          profileName.textContent = t("modModal.errorLoadingProfile");
         return;
       }
       profile = profileResult.value;
@@ -280,8 +223,8 @@ const modModal = {
       mods = contributionsFailed ? [] : contributionsResult.value;
     } else {
       [profile, mods] = await Promise.all([
-        gameBananaApi.getMemberProfile(authorId),
-        gameBananaApi.getMemberMods(authorId),
+        modCatalogService.getAuthorProfile(authorId, source),
+        modCatalogService.getAuthorContributions(authorId, source),
       ]);
     }
     if (requestId !== this.requestId) return;
@@ -349,48 +292,13 @@ const modModal = {
     modModalCarousel.setup(data.images);
   },
   async installWithDependencies(data) {
-    let selectedDownload = await downloadChoiceModal.choose(
-      data.downloadOptions || [],
-    );
-    if (!selectedDownload) return;
-    const linkedModId = getProviderModIdFromUrl(selectedDownload.downloadUrl);
-    if (linkedModId) {
-      await this.open(linkedModId);
-      return;
-    }
-    const requirements = data.requirements || [];
-    const selected = requirements.length
-      ? await dependencyReviewModal.review(requirements)
-      : [];
-    if (selected === null) return;
-    for (const dependency of selected) {
-      const installed = await FS.isModInstalled(dependency.dependencyId);
-      if (installed) continue;
-      const installedDependency = await downloadMod.install(
-        dependency.dependencyId,
-        dependency.title,
-        dependency.downloadUrl,
-        data.engineId,
-        {
-          sourceType: dependency.downloadType || dependency.type,
-          fileSize: dependency.fileSize,
-          toastThumbnail: dependency.thumbnail,
-        },
-      );
-      if (!installedDependency) return;
-    }
-    const installedMod = await downloadMod.install(
-      data.id,
-      data.title,
-      selectedDownload.downloadUrl,
-      data.engineId,
-      getInstallMetadata(data, selectedDownload),
-    );
-    if (!installedMod) return;
-    const installedCount = await FS.getInstalledModCount(data.id);
-    updateDownloadStatus(data, installedCount, () =>
-      this.installWithDependencies(data),
-    );
+    return this.installWorkflow.install(data, {
+      openMod: (modId) => this.open(modId),
+      onInstalled: (mod, installedCount) =>
+        updateDownloadStatus(mod, installedCount, () =>
+          this.installWithDependencies(mod),
+        ),
+    });
   },
 };
 

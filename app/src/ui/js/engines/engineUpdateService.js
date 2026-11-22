@@ -1,6 +1,6 @@
-import { getEngineUpdateCandidate } from "../../../backend/providers/github/github-release.provider.js";
+import { engineReleaseService } from "../../../backend/services/engine-release.service.js";
 import { ENGINE_DETAILS } from "../../../backend/config/engines.config.js";
-import { FS } from "../../../backend/services/filesystem.js";
+import { FS } from "../../../backend/services/filesystem/index.js";
 import { getTargetLink, getTargetPlatform, getTargetSize } from "./utils.js";
 import { downloadEngine } from "./downloadEngine.js";
 import { engineUpdateModal } from "./engineUpdateModal.js";
@@ -75,7 +75,7 @@ async function findAvailableUpdate(engineId, installedVersion) {
   if (engineId === "psychonline" && installedVersion !== "Latest") {
     return { status: "pinned" };
   }
-  const candidate = await getEngineUpdateCandidate(engineId);
+  const candidate = await engineReleaseService.getUpdateCandidate(engineId);
   if (!candidate) return { status: "unavailable" };
 
   const platform = getTargetPlatform(candidate);

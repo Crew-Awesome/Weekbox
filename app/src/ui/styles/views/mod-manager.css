@@ -1077,6 +1077,12 @@
   align-content: start;
 }
 
+.mod-manager-virtual-spacer {
+  grid-column: 1 / -1;
+  width: 100%;
+  pointer-events: none;
+}
+
 @media (max-width: 1200px) {
   .mod-manager-grid {
     grid-template-columns: repeat(3, minmax(0, 1fr));

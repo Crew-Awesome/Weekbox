@@ -1,4 +1,4 @@
-import { FS } from "../../../../backend/services/filesystem.js";
+import { FS } from "../../../../backend/services/filesystem/index.js";
 import {
   sanitizeModFolderName,
   sanitizePathSegment,
@@ -14,12 +14,12 @@ import {
 import { toastDownloadMod } from "./toastDownloadMod.js";
 import { errorHandler } from "../../errors/errorHandler.js";
 import { t } from "../../i18n/index.js";
-
-function getArtwork(details, preferred = "") {
-  const image = details?.images?.find((item) => item && !item.includes("placeholder-mini"));
-  return image || details?.image || details?.thumbnail || preferred || null;
-}
 import { notifyDesktop } from "../../desktopNotifications.js";
+import {
+  fetchCoverSourceDetails,
+  resolveCoverSource,
+  selectCoverUrl,
+} from "../../modCoverSource.util.mjs";
 
 function setModalButtonState(btn, iconClass, text, disabled) {
   if (!btn) return;
@@ -34,7 +34,8 @@ function getArchiveExtension(downloadUrl, fileName = "") {
   const lowerName = String(fileName || "").toLowerCase();
   if (lowerName.endsWith(".rar")) return ".rar";
   if (lowerName.endsWith(".7z")) return ".7z";
-  if (lowerName.endsWith(".tar.gz") || lowerName.endsWith(".tgz")) return ".tar.gz";
+  if (lowerName.endsWith(".tar.gz") || lowerName.endsWith(".tgz"))
+    return ".tar.gz";
   if (lowerName.endsWith(".tar")) return ".tar";
   if (lowerName.endsWith(".zip")) return ".zip";
   if (lowerUrl.includes(".rar")) return ".rar";
@@ -262,35 +263,14 @@ export const downloadMod = {
   },
 
   async fetchModCoverUrl(modId, sourceType, fallbackCoverUrl = null) {
-    if (String(modId).startsWith("gamejolt:")) {
-      const details = await gameJoltApi
-        .getGameDetails(String(modId).slice("gamejolt:".length))
-        .catch(() => null);
-      return details?.image || fallbackCoverUrl || getArtwork(details);
-    }
-    if (String(modId).startsWith("backstage:")) {
-      const details = await backstageApi
-        .getModDetails(String(modId).slice("backstage:".length))
-        .catch(() => null);
-      return details?.image || details?.thumbnail || fallbackCoverUrl || getArtwork(details);
-    }
-    const source = String(modId).match(/^(mod|tool):(\d+)$/);
-    const type =
-      sourceType === "tool" || source?.[1] === "tool" ? "tool" : "mod";
-    const sourceId = source?.[2] || modId;
-    const details =
-      type === "tool"
-        ? await gameBananaApi.getToolDetails(sourceId).catch(() => null)
-        : await gameBananaApi
-            .getModDetails(sourceId, { includeRequirements: false })
-            .catch(() => null);
-    const imageUrl = type === "tool"
-      ? details?.thumbnail || fallbackCoverUrl
-      : getArtwork(details, fallbackCoverUrl);
+    const source = resolveCoverSource(modId, sourceType);
+    const details = await fetchCoverSourceDetails(source, {
+      gamebanana: gameBananaApi,
+      backstage: backstageApi,
+      gamejolt: gameJoltApi,
+    }).catch(() => null);
+    const imageUrl = selectCoverUrl(source, details, fallbackCoverUrl);
     if (!imageUrl || imageUrl === "assets/icons/launcher-icon.png") return null;
-
-    const preload = new Image();
-    preload.src = imageUrl;
     return imageUrl;
   },
 
@@ -454,8 +434,16 @@ export const downloadMod = {
     let engineFolderName = fallbackFolderName;
     let targetModFolder = `${modsBasePath}/.extract_${taskKey}`;
     let finalModFolder = null;
-    const { toastThumbnail, downloadIcon, sourceType, fileSize, fileName, ...installMetadata } = metadata;
-    const installCoverUrl = metadata.image || metadata.coverUrl || toastThumbnail || null;
+    const {
+      toastThumbnail,
+      downloadIcon,
+      sourceType,
+      fileSize,
+      fileName,
+      ...installMetadata
+    } = metadata;
+    const installCoverUrl =
+      metadata.image || metadata.coverUrl || toastThumbnail || null;
     const archiveExt = getArchiveExtension(downloadUrl, fileName);
     const tempFilePath = `${modsBasePath}/temp_${taskKey}${archiveExt}`;
     let downloadMarkerPath = `${targetModFolder}/.downloading`;
@@ -475,16 +463,25 @@ export const downloadMod = {
       sourceType,
       installCoverUrl,
     );
-    this.reportInstallProgress(modId, modName, t("downloads.downloading"), 2, installCoverUrl);
+    this.reportInstallProgress(
+      modId,
+      modName,
+      t("downloads.downloading"),
+      2,
+      installCoverUrl,
+    );
     toastDownloadMod.show(modId, modName, () => this.cancel(modId), {
-      iconHtml: toastThumbnail || downloadIcon
-        ? `<img class="toast-system-thumbnail" src="${toastThumbnail || downloadIcon}" alt="" />`
-        : undefined,
+      iconHtml:
+        toastThumbnail || downloadIcon
+          ? `<img class="toast-system-thumbnail" src="${toastThumbnail || downloadIcon}" alt="" />`
+          : undefined,
     });
 
     try {
       if (metadata.providerBuildId) {
-        downloadUrl = await gameJoltApi.getBuildDownloadUrl(metadata.providerBuildId);
+        downloadUrl = await gameJoltApi.getBuildDownloadUrl(
+          metadata.providerBuildId,
+        );
       }
       await FS.api.ensureDir(modsBasePath);
       await FS.api.ensureDir(targetModFolder);
@@ -500,7 +497,13 @@ export const downloadMod = {
         getTask: () => this.activeTasks.get(modId),
         onProgress: (status, progress) => {
           toastDownloadMod.update(modId, progress, status);
-          this.reportInstallProgress(modId, modName, status, progress, installCoverUrl);
+          this.reportInstallProgress(
+            modId,
+            modName,
+            status,
+            progress,
+            installCoverUrl,
+          );
         },
       });
 
@@ -508,7 +511,13 @@ export const downloadMod = {
 
       assertInstallActive(this, modId);
       toastDownloadMod.update(modId, 98, t("downloads.extracting"));
-      this.reportInstallProgress(modId, modName, t("downloads.installing"), 98, installCoverUrl);
+      this.reportInstallProgress(
+        modId,
+        modName,
+        t("downloads.installing"),
+        98,
+        installCoverUrl,
+      );
 
       await extractArchive({
         archivePath: tempFilePath,
@@ -519,7 +528,13 @@ export const downloadMod = {
             const entryText =
               t("engines.extractingFile", { file }) || `Extracting: ${file}`;
             toastDownloadMod.update(modId, 98, entryText);
-            this.reportInstallProgress(modId, modName, entryText, 98, installCoverUrl);
+            this.reportInstallProgress(
+              modId,
+              modName,
+              entryText,
+              98,
+              installCoverUrl,
+            );
           }
         },
       });

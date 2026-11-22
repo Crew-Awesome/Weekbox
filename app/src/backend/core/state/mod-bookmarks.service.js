@@ -1,5 +1,5 @@
 import { appSettings } from "../system/settings.service.js";
-import { FS } from "../../services/filesystem.js";
+import { FS } from "../../services/filesystem/index.js";
 
 const BOOKMARKS_SETTING = "modBookmarks";
 let bookmarks = [];

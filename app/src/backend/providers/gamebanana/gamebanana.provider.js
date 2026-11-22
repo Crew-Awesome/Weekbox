@@ -21,15 +21,22 @@ import {
   getSearchTypoRelevance as rankSearchTypo,
   getTypoSearchVariants as buildTypoSearchVariants,
 } from "../../utils/gamebanana/search-ranking.js";
-import {
-  isDependencySubmission,
-  parseGameBananaSubmission,
-} from "../../utils/gamebanana/submission-links.js";
+import { parseGameBananaSubmission } from "../../utils/gamebanana/submission-links.js";
 import { DISCOVERY_CONFIG } from "../../config/discovery.config.js";
 import { peoApi } from "../peo/peo.provider.js";
 import { backstageApi } from "../backstage/backstage.provider.js";
 import { gameJoltApi } from "../gamejolt/gamejolt.provider.js";
 import { nativeFetch } from "../../services/network/native-http.js";
+import { setBoundedCache } from "../../utils/bounded-cache.util.js";
+import {
+  buildModDetails,
+  buildToolDetails,
+  EXCLUDED_ENGINE_SUBMISSIONS,
+  getRawRequirements,
+  isDependencyRequirement,
+} from "./mod-details.mapper.js";
+import { gameBananaExternalDownloads } from "../../services/gamebanana/external-download.service.js";
+import { gameBananaDownloadOptions } from "../../services/gamebanana/download-options.service.js";
 import {
   ENGINE_CATEGORY_IDS,
   ENGINE_CATEGORY_ROOTS,
@@ -38,208 +45,6 @@ import {
   EXCLUDED_MOD_CATEGORY_IDS,
   MOD_KIND_CATEGORY_IDS,
 } from "../../config/engines.config.js";
-import {
-  extractMediaFireDirectUrl,
-  getGoogleDriveFileId,
-  getRangeSupportedFileSize,
-} from "../../services/downloads/external-download.resolver.js";
-
-const EXCLUDED_ENGINE_SUBMISSIONS = new Map([
-  ["mods:309789", "psych"],
-  ["mods:44201", "fpsplus"],
-  ["mods:598553", "codename"],
-  ["mods:535203", "pslice"],
-  ["mods:479714", "psychonline"],
-]);
-
-const NON_DEPENDENCY_REQUIREMENTS = new Set(EXCLUDED_ENGINE_SUBMISSIONS.keys());
-const BROWSER_USER_AGENT =
-  "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36";
-
-function quoteCommandArgument(value) {
-  const argument = String(value).replace(/[\r\n]/g, "");
-  if (window.NL_OS === "Windows") {
-    return `"${argument.replace(/["^]/g, "^$&")}"`;
-  }
-  return `'${argument.replaceAll("'", "'\\''")}'`;
-}
-
-function parseHumanFileSize(value) {
-  const match = String(value || "").match(
-    /([\d.,]+)\s*(B|KB|MB|GB|TB|K|M|G|T)\b/i,
-  );
-  if (!match) return 0;
-  const amount = Number(match[1].replace(",", "."));
-  const unit = match[2].toUpperCase();
-  const power = { B: 0, K: 1, KB: 1, M: 2, MB: 2, G: 3, GB: 3, T: 4, TB: 4 }[
-    unit
-  ];
-  return Number.isFinite(amount) && power !== undefined
-    ? Math.round(amount * 1024 ** power)
-    : 0;
-}
-
-function isGoogleDriveHost(hostname) {
-  return [
-    "drive.google.com",
-    "drive.usercontent.google.com",
-    "docs.google.com",
-  ].includes(hostname);
-}
-
-async function getGoogleDriveFileDetails(url) {
-  const fileId = getGoogleDriveFileId(url);
-  if (!fileId) return null;
-  try {
-    const size = await getRangeSupportedFileSize(
-      `https://drive.usercontent.google.com/download?id=${encodeURIComponent(fileId)}&export=download&confirm=t`,
-      (...args) => Neutralino.os.execCommand(...args),
-    );
-    return { filename: null, size: Number(size) || 0 };
-  } catch {
-    return { filename: null, size: 0 };
-  }
-}
-
-async function getMediaFireDownloadInfo(url) {
-  const page = await Neutralino.os.execCommand(
-    `curl -sSL -A ${quoteCommandArgument(BROWSER_USER_AGENT)} -H "Accept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8" -H "Accept-Language: en-US,en;q=0.9" --connect-timeout 5 --max-time 12 ${quoteCommandArgument(url)}`,
-    { background: false },
-  );
-  if (page.exitCode !== 0 && !page.stdOut)
-    return { result: { filename: null, size: 0 } };
-  const html = page.stdOut || "";
-  const pageSize = parseHumanFileSize(
-    html.match(/File size:\s*<span>\s*([^<]+)<\/span>/i)?.[1] ||
-      html.match(/Download\s*\(([^)]+)\)/i)?.[1] ||
-      html.match(
-        /(?:File size|Download)[\s\S]{0,80}?([\d.,]+\s*(?:B|KB|MB|GB|TB|K|M|G|T)\b)/i,
-      )?.[1],
-  );
-  const downloadUrl = extractMediaFireDirectUrl(html);
-  return downloadUrl
-    ? { downloadUrl, pageSize }
-    : { result: { filename: null, size: pageSize } };
-}
-
-async function getExternalHeaderDetails(downloadUrl, pageSize) {
-  const result = await Neutralino.os.execCommand(
-    `curl -fsSIL -A ${quoteCommandArgument(BROWSER_USER_AGENT)} --connect-timeout 5 --max-time 12 ${quoteCommandArgument(downloadUrl)}`,
-    { background: false },
-  );
-  if (result.exitCode !== 0) return { filename: null, size: pageSize };
-  const header = `${result.stdOut || ""}\n${result.stdErr || ""}`;
-  const filename = header.match(
-    /content-disposition:[^\r\n]*filename\*?=(?:UTF-8''|"?)([^";\r\n]+)/i,
-  )?.[1];
-  const sizes = [...header.matchAll(/content-length:\s*(\d+)/gi)];
-  const ranges = [...header.matchAll(/content-range:[^\r\n]*\/(\d+)/gi)];
-  const size = Number(ranges.at(-1)?.[1] || sizes.at(-1)?.[1] || pageSize || 0);
-  return {
-    filename: filename
-      ? decodeURIComponent(filename.trim().replace(/^"+|"+$/g, ""))
-      : null,
-    size: Number.isFinite(size) ? size : 0,
-  };
-}
-
-function buildToolTimingDetails(api, data) {
-  return {
-    timeAgo: api.getTimeAgo(data._tsDateAdded),
-    submittedTimeAgo: api.getTimeAgo(data._tsDateAdded),
-    modifiedTimeAgo: data._tsDateModified
-      ? api.getTimeAgo(data._tsDateModified)
-      : "",
-    updatedTimeAgo: data._tsDateUpdated
-      ? api.getTimeAgo(data._tsDateUpdated)
-      : "",
-  };
-}
-
-function buildToolDownloadDetails(api, data, file) {
-  return {
-    downloadUrl: file?._sDownloadUrl || "",
-    fileSize: Number(file?._nFilesize || 0),
-    fileSizeStr: file
-      ? api.formatBytes(file._nFilesize || 0)
-      : "No download available",
-    downloadOptions: file
-      ? [
-          {
-            id: `file:${file._idRow || data._idRow}`,
-            type: "tool",
-            name: file._sFile || file._sDescription || "Download",
-            fileSize: Number(file._nFilesize || 0),
-            fileSizeStr: api.formatBytes(file._nFilesize || 0),
-            downloadUrl: file._sDownloadUrl,
-          },
-        ]
-      : [],
-  };
-}
-
-function buildToolDetails(api, data, file, images) {
-  const id = `tool:${data._idRow}`;
-  return {
-    id,
-    dependencyId: id,
-    type: "tool",
-    title: data._sName || "Unknown Tool",
-    author: data._aSubmitter?._sName || "Unknown Creator",
-    description: data._sText || "<p>No description available.</p>",
-    likes: data._nLikeCount || 0,
-    views: data._nViewCount || 0,
-    ...buildToolTimingDetails(api, data),
-    images,
-    ...buildToolDownloadDetails(api, data, file),
-    thumbnail: images[0] || null,
-    gameBananaUrl: `https://gamebanana.com/tools/${data._idRow}`,
-  };
-}
-
-function getModDownloadDetails(api, downloadOptions, loadingDownloads) {
-  const preferredDownload = api.getPreferredDownloadOption(downloadOptions);
-  const downloadButtonLabel =
-    preferredDownload?.type === "external"
-      ? api.getExternalDownloadLabel(preferredDownload.downloadUrl)
-      : null;
-  return {
-    fileSizeStr: loadingDownloads
-      ? "Checking downloads…"
-      : preferredDownload
-        ? preferredDownload.fileSize > 0
-          ? api.formatBytes(preferredDownload.fileSize)
-          : "Unknown size"
-        : "No download available",
-    fileSize: preferredDownload?.fileSize || 0,
-    downloadUrl: preferredDownload?.downloadUrl || "",
-    downloadType: preferredDownload?.type || null,
-    downloadButtonLabel,
-  };
-}
-
-function getModClassification(api, data) {
-  return {
-    gameId: Number(data._aGame?._idRow || data._idGame || 0),
-    isDeleted: api.isDeletedMod(data),
-    categoryId: api.getCategoryId(data._aCategory),
-    kind:
-      api.getModKindForCategories(
-        data._aCategory,
-        data._aSuperCategory,
-        data._aRootCategory,
-        data._aSubCategory,
-        data._idCategory,
-      ) || "mod",
-    engineId: api.getEngineIdForCategories(
-      data._aCategory,
-      data._aSuperCategory,
-      data._aRootCategory,
-      data._aSubCategory,
-      data._idCategory,
-    ),
-  };
-}
 
 const OTHER_MISC_CATEGORY_ID = 43773;
 const OTHER_MISC_CATEGORY_IDS = [43773, 3046, 3828, 43772];
@@ -267,88 +72,6 @@ function isOtherMiscEngineMod(api, mod) {
       mod._aSubCategory,
     ),
   );
-}
-
-function buildModDetails(
-  api,
-  data,
-  images,
-  downloadOptions = [],
-  requirements = [],
-  { loadingDownloads = false, loadingRequirements = false } = {},
-) {
-  return {
-    id: data._idRow,
-    title: data._sName,
-    author: data._aSubmitter?._sName || "Unknown Creator",
-    authorId: data._aSubmitter?._idRow || null,
-    authorAvatar: data._aSubmitter?._sAvatarUrl || "",
-    credits: getModCredits(data),
-    requirementLinks: getRequirementLinks(data),
-    description: data._sText || "<p>No description available.</p>",
-    likes: data._nLikeCount || 0,
-    views: data._nViewCount || 0,
-    timeAgo: api.getTimeAgo(data._tsDateAdded),
-    submittedTimeAgo: api.getTimeAgo(data._tsDateAdded),
-    modifiedTimeAgo: data._tsDateModified
-      ? api.getTimeAgo(data._tsDateModified)
-      : "",
-    updatedTimeAgo: data._tsDateUpdated
-      ? api.getTimeAgo(data._tsDateUpdated)
-      : "",
-    images,
-    ...getModDownloadDetails(api, downloadOptions, loadingDownloads),
-    downloadOptions,
-    requirements,
-    loadingDownloads,
-    loadingRequirements,
-    gameBananaUrl: `https://gamebanana.com/mods/${data._idRow}`,
-    ...getModClassification(api, data),
-  };
-}
-
-function getModCredits(data) {
-  return (Array.isArray(data?._aCredits) ? data._aCredits : [])
-    .map((group) => ({
-      name: group._sGroupName || "Contributors",
-      authors: (Array.isArray(group._aAuthors) ? group._aAuthors : [])
-        .map((author) => ({
-          id:
-            author._idRow ||
-            (author._sProfileUrl || author._sUrl)?.match(
-              /\/members\/(\d+)(?:\/|$)/i,
-            )?.[1] ||
-            null,
-          name: author._sName || "Unknown Contributor",
-          role: author._sRole || "",
-          avatar: author._sAvatarUrl || author._sUpicUrl || "",
-          url: author._sUrl || "",
-        }))
-        .filter((author) => author.name),
-    }))
-    .filter((group) => group.authors.length);
-}
-
-function getRawRequirements(data) {
-  if (Array.isArray(data?._aRequirements)) return data._aRequirements;
-  if (Array.isArray(data?._aRequirements?.value))
-    return data._aRequirements.value;
-  return [];
-}
-
-function getRequirementLinks(data) {
-  const rawRequirements = getRawRequirements(data);
-  const requirements = Array.isArray(rawRequirements[0])
-    ? rawRequirements
-    : rawRequirements.length >= 2
-      ? [rawRequirements]
-      : [];
-  return requirements
-    .filter(
-      ([name, url]) =>
-        name && isDependencySubmission(url, NON_DEPENDENCY_REQUIREMENTS),
-    )
-    .map(([name, url]) => ({ title: name, url }));
 }
 
 function appendRipeMods(api, feed, records, targetCategoryId) {
@@ -572,15 +295,6 @@ async function loadPsychOnlineBatch(
   return { sourceErrors };
 }
 
-function setBoundedCache(map, key, value, maxSize = 100) {
-  if (!map || !key) return;
-  if (map.size >= maxSize) {
-    const oldestKey = map.keys().next().value;
-    if (oldestKey !== undefined) map.delete(oldestKey);
-  }
-  map.set(key, value);
-}
-
 export const gameBananaApi = {
   baseUrl: "https://gamebanana.com/apiv11",
   subfeedBaseUrl: "https://gamebanana.com/apiv12",
@@ -605,7 +319,6 @@ export const gameBananaApi = {
   categoryResolver: null,
   searchService: null,
   psychOnlineFeedCache: new Map(),
-  downloadAvailabilityCache: new Map(),
 
   getEngineIdForSubmission(type, id) {
     return EXCLUDED_ENGINE_SUBMISSIONS.get(`${type}:${id}`) || null;
@@ -720,203 +433,23 @@ export const gameBananaApi = {
   },
 
   getExternalDownloadFiles(data) {
-    const supportedHosts = new Set([
-      "drive.google.com",
-      "drive.usercontent.google.com",
-      "docs.google.com",
-      "mediafire.com",
-      "www.mediafire.com",
-      "github.com",
-    ]);
-    const files = new Map();
-    const addExternal = (value, name = "") => {
-      try {
-        const url = new URL(value);
-        const hostname = url.hostname.toLowerCase();
-        if (!supportedHosts.has(hostname)) return;
-        if (
-          (hostname === "drive.google.com" ||
-            hostname === "drive.usercontent.google.com" ||
-            hostname === "docs.google.com") &&
-          !getGoogleDriveFileId(url)
-        ) {
-          return;
-        }
-        if (
-          hostname === "github.com" &&
-          !/^\/[^/]+\/[^/]+\/releases\/download\/[^/]+\/[^/]+$/i.test(
-            url.pathname,
-          )
-        ) {
-          return;
-        }
-        if (!files.has(url.href)) {
-          files.set(url.href, {
-            id: `external:${url.href}`,
-            type: "external",
-            name: name || url.hostname,
-            fileSize: 0,
-            fileSizeStr: this.getExternalDownloadLabel(url.href),
-            downloadUrl: url.href,
-          });
-        }
-      } catch {}
-    };
-
-    const rawAlternateSources = data?._aAlternateFileSources;
-    const alternateSources = Array.isArray(rawAlternateSources)
-      ? rawAlternateSources
-      : rawAlternateSources?.url || rawAlternateSources?._sUrl
-        ? [rawAlternateSources]
-        : Object.values(rawAlternateSources || {});
-    alternateSources.forEach((source) => {
-      if (source && typeof source === "object") {
-        addExternal(
-          source.url || source._sUrl,
-          source.description || source._sDescription,
-        );
-      }
-    });
-    return [...files.values()];
+    return gameBananaDownloadOptions.getExternalFiles(data, this);
   },
 
   async getExternalFileDetails(url) {
-    try {
-      const parsed = new URL(url);
-      const hostname = parsed.hostname.toLowerCase();
-      if (isGoogleDriveHost(hostname))
-        return await getGoogleDriveFileDetails(url);
-      if (
-        hostname !== "github.com" &&
-        !["mediafire.com", "www.mediafire.com"].includes(hostname)
-      ) {
-        return { filename: null, size: 0 };
-      }
-      if (hostname === "github.com")
-        return await getExternalHeaderDetails(url, 0);
-      const mediafire = await getMediaFireDownloadInfo(url);
-      if (mediafire.result) return mediafire.result;
-      return getExternalHeaderDetails(
-        mediafire.downloadUrl,
-        mediafire.pageSize,
-      );
-    } catch {
-      return null;
-    }
+    return gameBananaExternalDownloads.getFileDetails(url);
   },
 
   async isDownloadAvailable(url) {
-    const cacheKey = String(url);
-    const cached = this.downloadAvailabilityCache.get(cacheKey);
-    if (cached && cached.expiresAt > Date.now()) return cached.available;
-    try {
-      const result = await Neutralino.os.execCommand(
-        `curl -sSIL -A ${quoteCommandArgument(BROWSER_USER_AGENT)} --connect-timeout 3 --max-time 5 ${quoteCommandArgument(url)}`,
-        { background: false },
-      );
-      if (result.exitCode !== 0) return null;
-      const statuses = [
-        ...`${result.stdOut || ""}`.matchAll(/HTTP\/\S+\s+(\d{3})/gi),
-      ];
-      const status = Number(statuses.at(-1)?.[1]);
-      if (!Number.isFinite(status)) return null;
-      const isErrorPage = `${result.stdOut || ""}`
-        .toLowerCase()
-        .includes("location: /error.php");
-      const available = status < 400 && !isErrorPage;
-      setBoundedCache(
-        this.downloadAvailabilityCache,
-        cacheKey,
-        {
-          available,
-          expiresAt: Date.now() + 5 * 60 * 1000,
-        },
-        100,
-      );
-      return available;
-    } catch {
-      return null;
-    }
+    return gameBananaExternalDownloads.isAvailable(url);
   },
 
   formatDownloadDate(timestamp) {
-    const date = new Date(Number(timestamp) * 1000);
-    if (!Number.isFinite(date.getTime())) return null;
-    return date.toLocaleDateString(undefined, {
-      year: "numeric",
-      month: "short",
-      day: "numeric",
-    });
+    return gameBananaDownloadOptions.formatDate(timestamp);
   },
 
   async getDownloadOptions(data) {
-    const externalDownloadFiles = this.getExternalDownloadFiles(data);
-    const options = [
-      ...this.getDownloadFiles(data)
-        .filter((file) => this.isInstallableDownloadFile(file))
-        .map((file, index) => ({
-          id: `file:${file._idRow || index}`,
-          type: "gamebanana",
-          name:
-            file._sFile ||
-            file._sDescription ||
-            file._sVersion ||
-            `File ${index + 1}`,
-          fileSize: Number(file._nFilesize || 0),
-          fileSizeStr: this.formatBytes(file._nFilesize || 0),
-          uploadedAt: Number(file._tsDateAdded || 0),
-          uploadedAtLabel: this.formatDownloadDate(file._tsDateAdded),
-          downloadUrl: file._sDownloadUrl,
-        })),
-      ...externalDownloadFiles,
-    ];
-    options.sort(
-      (left, right) =>
-        Number(right.uploadedAt || 0) - Number(left.uploadedAt || 0),
-    );
-    const verifyOptions = async () => {
-      await Promise.all(
-        options
-          .filter((option) => option.type === "external")
-          .map(async (option) => {
-            const details = await this.getExternalFileDetails(
-              option.downloadUrl,
-            );
-            if (!details) {
-              option.unavailable = true;
-              return;
-            }
-            if (details) {
-              if (details.filename) option.name = details.filename;
-              if (details.size > 0) {
-                option.fileSize = details.size;
-                option.fileSizeStr = `${this.getExternalDownloadLabel(option.downloadUrl)} • ${this.formatBytes(details.size)}`;
-              }
-            }
-          }),
-      );
-      await Promise.all(
-        options
-          .filter((option) => option.type === "gamebanana")
-          .map(async (option) => {
-            const available = await this.isDownloadAvailable(
-              option.downloadUrl,
-            );
-            if (available === false) option.unavailable = true;
-          }),
-      );
-    };
-    await verifyOptions();
-
-    return options.filter((option) => {
-      const cached = this.downloadAvailabilityCache.get(option.downloadUrl);
-      return (
-        !option.unavailable &&
-        (!cached ||
-          cached.expiresAt <= Date.now() ||
-          cached.available !== false)
-      );
-    });
+    return gameBananaDownloadOptions.getOptions(data, this);
   },
 
   async getToolDetails(toolId, { requireDownload = true } = {}) {
@@ -967,9 +500,7 @@ export const gameBananaApi = {
         : [];
     const resolved = await Promise.all(
       requirements
-        .filter(([, url]) =>
-          isDependencySubmission(url, NON_DEPENDENCY_REQUIREMENTS),
-        )
+        .filter(([, url]) => isDependencyRequirement(url))
         .map(([name, url]) => this.getRequirementDetails({ name, url })),
     );
     return resolved.filter(Boolean);
@@ -1026,7 +557,9 @@ export const gameBananaApi = {
     };
     if (String(modId).startsWith("gamejolt:")) {
       try {
-        return await gameJoltApi.getGameDetails(String(modId).slice("gamejolt:".length));
+        return await gameJoltApi.getGameDetails(
+          String(modId).slice("gamejolt:".length),
+        );
       } catch {
         return null;
       }
@@ -1040,7 +573,9 @@ export const gameBananaApi = {
     }
     if (String(modId).startsWith("backstage:")) {
       try {
-        return await backstageApi.getModDetails(String(modId).slice("backstage:".length));
+        return await backstageApi.getModDetails(
+          String(modId).slice("backstage:".length),
+        );
       } catch {
         return null;
       }

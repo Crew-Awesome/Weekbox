@@ -368,6 +368,53 @@ async function loadGridPages(
   return true;
 }
 
+function restartInitialGridRenderIfLoading(isInitial, renderGrid) {
+  if (!isInitial) return;
+  gridState.discoveryController?.abort();
+  gridState.renderVersion++;
+  gridState.pendingInitialRender = false;
+  gridState.isLoading = false;
+  void renderGrid(true);
+}
+
+function renderGridLoadError(grid, error, isInitial, renderVersion) {
+  if (error?.kind === "aborted" || error?.name === "AbortError") return false;
+  console.error(`[WeekBox] ${getServiceLabel()} discovery request failed`, error);
+  if (!isInitial || renderVersion !== gridState.renderVersion) return false;
+  const errorMessage = t(
+    gridState.isSearchMode && gridState.searchType === "users"
+      ? "home.failedToLoadUsers"
+      : "home.failedToLoadMods",
+  );
+  const hasResults = grid.querySelector(".mod-card, .member-card");
+  grid.querySelector(".grid-refresh-status")?.remove();
+  if (hasResults) {
+    const status = document.createElement("div");
+    status.className = "grid-refresh-error";
+    status.setAttribute("role", "status");
+    status.setAttribute("aria-live", "polite");
+    status.textContent = errorMessage;
+    grid.prepend(status);
+  } else {
+    grid.textContent = errorMessage;
+    grid.classList.add("grid-error");
+  }
+  gridState.pendingReplacement = false;
+  return false;
+}
+
+function finishGridRender(gridRender, grid, renderVersion) {
+  if (renderVersion !== gridState.renderVersion) return;
+  gridRender.hideLoadMoreIndicator(grid);
+  grid.querySelector(".grid-refresh-status")?.remove();
+  grid.setAttribute("aria-busy", "false");
+  gridState.isLoading = false;
+  if (gridState.pendingInitialRender) {
+    gridState.pendingInitialRender = false;
+    void gridRender.renderGrid(true);
+  }
+}
+
 export const gridRender = {
   ensureEngineTooltip(grid) {
     if (!gridState.engineTooltip) {
@@ -463,13 +510,9 @@ export const gridRender = {
 
   async renderGrid(isInitial = false, pagesToLoad = 1) {
     if (gridState.isLoading) {
-      if (isInitial) {
-        gridState.discoveryController?.abort();
-        gridState.renderVersion++;
-        gridState.pendingInitialRender = false;
-        gridState.isLoading = false;
-        void this.renderGrid(true);
-      }
+      restartInitialGridRenderIfLoading(isInitial, (initial) =>
+        this.renderGrid(initial),
+      );
       return;
     }
 
@@ -493,41 +536,9 @@ export const gridRender = {
         pagesToLoad,
       );
     } catch (error) {
-      if (error?.kind === "aborted" || error?.name === "AbortError") return false;
-      console.error(`[WeekBox] ${getServiceLabel()} discovery request failed`, error);
-      if (isInitial && renderVersion === gridState.renderVersion) {
-        const errorMessage = t(
-          gridState.isSearchMode && gridState.searchType === "users"
-            ? "home.failedToLoadUsers"
-            : "home.failedToLoadMods",
-        );
-        const hasResults = grid.querySelector(".mod-card, .member-card");
-        grid.querySelector(".grid-refresh-status")?.remove();
-        if (hasResults) {
-          const status = document.createElement("div");
-          status.className = "grid-refresh-error";
-          status.setAttribute("role", "status");
-          status.setAttribute("aria-live", "polite");
-          status.textContent = errorMessage;
-          grid.prepend(status);
-        } else {
-          grid.textContent = errorMessage;
-          grid.classList.add("grid-error");
-        }
-        gridState.pendingReplacement = false;
-      }
-      return false;
+      return renderGridLoadError(grid, error, isInitial, renderVersion);
     } finally {
-      if (renderVersion === gridState.renderVersion) {
-        this.hideLoadMoreIndicator(grid);
-        grid.querySelector(".grid-refresh-status")?.remove();
-        grid.setAttribute("aria-busy", "false");
-        gridState.isLoading = false;
-        if (gridState.pendingInitialRender) {
-          gridState.pendingInitialRender = false;
-          this.renderGrid(true);
-        }
-      }
+      finishGridRender(this, grid, renderVersion);
     }
   },
 

@@ -1,36 +1,63 @@
-import { APIneuFileSystem } from "./filesystem/api-neu-file-system.service.js";
-import { ExecutableService } from "./filesystem/executable.service.js";
-import { LibraryMaintenanceService } from "./filesystem/library-maintenance.service.js";
-import { ModCoverService } from "./filesystem/mod-cover.service.js";
-import { ModInjectionService } from "./filesystem/mod-injection.service.js";
-import { ModRepository } from "./filesystem/mod-repository.service.js";
-import { CustomEngineRepository } from "./filesystem/custom-engine-repository.service.js";
-import { ProcessService } from "./processes/process.service.js";
-import { appSettings } from "../core/system/settings.service.js";
+import { APIneuFileSystem } from "./api-neu-file-system.service.js";
+import { ExecutableService } from "./executable.service.js";
+import { LibraryMaintenanceService } from "./library-maintenance.service.js";
+import { ModCoverService } from "./mod-cover.service.js";
+import { ModKindService } from "./mod-kind.service.js";
+import { ModInjectionService } from "./mod-injection.service.js";
+import { ModRepository } from "./mod-repository.service.js";
+import { StandaloneModCatalogService } from "./standalone-mod-catalog.service.js";
+import { CustomEngineService } from "./custom-engine.service.js";
+import { CustomEngineRepository } from "./custom-engine-repository.service.js";
+import { ProcessService } from "../processes/process.service.js";
+import { appSettings } from "../../core/system/settings.service.js";
 import {
   getParentPath,
+  trimPath,
   sanitizePathSegment,
   getRealEntries,
   getModFolderName,
   getEngineModFolderName,
   pathsOverlap,
   normalizeComparablePath,
-} from "./filesystem/path.util.js";
-import { isValidEngineVersion } from "./filesystem/engine-version.service.js";
+} from "./path.util.js";
+import { isValidEngineVersion } from "./engine-version.service.js";
 import {
   getEngineLaunchBehavior,
   getEngineModLaunchArgs,
   ENGINE_DETAILS,
-} from "../../backend/config/engines.config.js";
-import { getPreferredEngineVersion } from "../config/engine-preferences.js";
+} from "../../config/engines.config.js";
+import { getPreferredEngineVersion } from "../../config/engine-preferences.js";
 import {
-  STORAGE_LAYOUT_VERSION,
-  getStoragePaths,
-} from "./filesystem/storage-paths.js";
+  allSettledWithConcurrency,
+  mapWithConcurrency,
+} from "../../utils/async-concurrency.util.mjs";
+import { discoverInstalledEngines } from "./engine-discovery.util.mjs";
+import { STORAGE_LAYOUT_VERSION, getStoragePaths } from "./storage-paths.js";
+import {
+  cleanupAtomicWriteTemps,
+  hasStorageIdentity,
+  isEmptyStorageScaffold,
+  migrateStorageMetadata,
+  moveStorageTo,
+  readStorageMoveMarker,
+} from "./storage-transfer.service.js";
+import { sameId } from "./identity.util.js";
 
-function sameId(left, right) {
-  return String(left) === String(right);
-}
+const STORAGE_FOLDER_NAME = "WeekBoxLibrary";
+const LOCAL_MOD_COVER_FILES = [
+  "cover.png",
+  "cover.jpg",
+  "cover.jpeg",
+  "thumbnail.png",
+  "thumbnail.jpg",
+  "thumbnail.jpeg",
+  "icon.png",
+  "icon.jpg",
+  "icon.jpeg",
+  "images/icon.png",
+  "images/icon.jpg",
+  "images/icon.jpeg",
+];
 
 function getProviderPersistenceMetadata(metadata) {
   return {
@@ -55,455 +82,6 @@ function isICloudPath(path) {
   );
 }
 
-function trimPath(path) {
-  return String(path || "")
-    .trim()
-    .replace(/\\/g, "/")
-    .replace(/\/+$/, "");
-}
-
-const STORAGE_MOVE_PARTIAL_SUFFIX = ".weekbox-partial";
-const STORAGE_MOVE_CHUNK_SIZE = 4 * 1024 * 1024;
-const STORAGE_FOLDER_NAME = "WeekBoxLibrary";
-const STORAGE_LAYOUT_DIRECTORIES = new Set([
-  "config",
-  "data",
-  "state",
-  "runtime",
-  "engines",
-  "mods",
-]);
-
-function getStorageMoveMarkerPaths(path) {
-  const paths = getStoragePaths(path);
-  const applicationRoot = trimPath(window.NL_DATAPATH);
-  return [
-    applicationRoot && `${applicationRoot}/.weekbox-moving.json`,
-    paths.storageMoveMarkerFile,
-    paths.legacyStorageMoveMarkerFile,
-    applicationRoot && `${applicationRoot}/weekbox-moving.json`,
-  ].filter(
-    (markerPath, index, allPaths) =>
-      markerPath && allPaths.indexOf(markerPath) === index,
-  );
-}
-
-function storageMoveMarkerPath(path) {
-  return getStorageMoveMarkerPaths(path)[0];
-}
-
-async function readStorageMoveMarker(service) {
-  for (const markerPath of getStorageMoveMarkerPaths(service.basePath)) {
-    if (!(await service.api.exists(markerPath))) continue;
-    try {
-      const marker = JSON.parse(await service.api.read(markerPath));
-      if (
-        marker?.version !== 1 ||
-        marker?.operation !== "move" ||
-        (normalizeComparablePath(marker.source) !==
-          normalizeComparablePath(service.basePath) &&
-          normalizeComparablePath(marker.destination) !==
-            normalizeComparablePath(service.basePath))
-      ) {
-        continue;
-      }
-      return { ...marker, markerPath };
-    } catch {}
-  }
-  return null;
-}
-
-async function migrateFile(api, sourcePath, destinationPath) {
-  if (!(await api.exists(sourcePath))) return true;
-  if (!(await api.exists(destinationPath))) {
-    await api.move(sourcePath, destinationPath);
-    return true;
-  }
-  const [source, destination] = await Promise.all([
-    api.read(sourcePath),
-    api.read(destinationPath),
-  ]);
-  if (source === destination) {
-    await api.remove(sourcePath);
-    return true;
-  }
-  console.warn(
-    `[WeekBox] Preserved conflicting legacy metadata file: ${sourcePath}`,
-  );
-  return false;
-}
-
-async function cleanupAtomicWriteTemps(service) {
-  const paths = [
-    service.paths.settingsFile,
-    service.paths.storageManifestFile,
-    service.paths.bookmarksFile,
-    service.paths.customEnginesFile,
-    service.paths.installedModsFile,
-    service.paths.legacyInstalledModsFile,
-    service.paths.engineUpdatesFile,
-    service.paths.legacyEngineUpdatesFile,
-    service.paths.deeplinkFile,
-    service.paths.legacyDeeplinkFile,
-    service.paths.legacySettingsFile,
-    service.paths.legacyDataSettingsFile,
-    ...getStorageMoveMarkerPaths(service.basePath),
-  ];
-  await Promise.all(
-    paths.map(async (path) => {
-      const directory = getParentPath(path);
-      const fileName = path.slice(directory.length + 1);
-      const entries = await Neutralino.filesystem
-        .readDirectory(directory)
-        .catch(() => []);
-      await Promise.all(
-        getRealEntries(entries)
-          .filter(
-            (entry) =>
-              entry.type === "FILE" &&
-              String(entry.entry).startsWith(`${fileName}.tmp-`),
-          )
-          .map((entry) => service.api.remove(`${directory}/${entry.entry}`)),
-      );
-    }),
-  );
-}
-
-function isStorageMoveMarkerPath(path, root) {
-  return getStorageMoveMarkerPaths(root).some(
-    (markerPath) =>
-      markerPath &&
-      normalizeComparablePath(markerPath) === normalizeComparablePath(path),
-  );
-}
-
-function relativeStoragePath(path, sourcePath) {
-  const value = String(path || "").replace(/\\/g, "/");
-  const source = trimPath(sourcePath).replace(/\\/g, "/");
-  const prefix = `${source}/`;
-  return value.startsWith(prefix) ? value.slice(prefix.length) : value;
-}
-
-function storageMoveCancelled(service) {
-  if (!service.storageMoveCancelled) return;
-  const error = new Error("Storage move cancelled");
-  error.code = "STORAGE_MOVE_CANCELLED";
-  throw error;
-}
-
-async function scanStorageFiles(
-  sourcePath,
-  markerPath,
-  onProgress,
-  allowedRootEntries = null,
-) {
-  const files = [];
-  const directories = [];
-  let totalBytes = 0;
-  const marker = normalizeComparablePath(markerPath);
-  const walk = async (directoryPath) => {
-    directories.push(directoryPath);
-    const entries = getRealEntries(
-      await Neutralino.filesystem.readDirectory(directoryPath),
-    );
-    for (const entry of entries) {
-      if (
-        directoryPath === sourcePath &&
-        allowedRootEntries &&
-        !allowedRootEntries.has(entry.entry)
-      ) {
-        continue;
-      }
-      const entryPath = `${directoryPath}/${entry.entry}`;
-      if (
-        normalizeComparablePath(entryPath) === marker ||
-        isStorageMoveMarkerPath(entryPath, sourcePath)
-      )
-        continue;
-      if (entry.type === "DIRECTORY") {
-        await walk(entryPath);
-        continue;
-      }
-      if (entry.type !== "FILE") continue;
-      const stats = await Neutralino.filesystem.getStats(entryPath);
-      const file = {
-        path: entryPath,
-        relativePath: relativeStoragePath(entryPath, sourcePath),
-        size: Number(stats.size) || 0,
-      };
-      files.push(file);
-      totalBytes += file.size;
-      onProgress({
-        phase: "PREPARING",
-        status: "SCANNING",
-        progress: null,
-        bytesMoved: 0,
-        totalBytes,
-        copiedFiles: 0,
-        totalFiles: files.length,
-        currentFile: file.relativePath,
-      });
-    }
-  };
-  await walk(sourcePath);
-  return { files, directories };
-}
-
-async function removeEmptyStorageDirectories(directories) {
-  const sourceRoot = directories[0];
-  for (const directoryPath of [...directories].sort(
-    (left, right) => right.length - left.length,
-  )) {
-    if (directoryPath === sourceRoot) continue;
-    if (!(await APIneuFileSystem.exists(directoryPath))) continue;
-    const entries = getRealEntries(
-      await Neutralino.filesystem.readDirectory(directoryPath).catch(() => []),
-    );
-    if (!entries.length) await Neutralino.filesystem.remove(directoryPath);
-  }
-}
-
-async function hasStorageIdentity(service, root) {
-  const paths = getStoragePaths(root);
-  const identityPaths = [
-    paths.storageManifestFile,
-    paths.settingsFile,
-    paths.legacySettingsFile,
-    paths.legacyDataSettingsFile,
-  ];
-  for (const path of identityPaths) {
-    if (!(await service.api.exists(path))) continue;
-    if (path !== paths.storageManifestFile) return true;
-    try {
-      if (Number(JSON.parse(await service.api.read(path))?.version) > 0)
-        return true;
-    } catch {}
-  }
-  return false;
-}
-
-async function isEmptyDirectory(path) {
-  const rawEntries = await Neutralino.filesystem
-    .readDirectory(path)
-    .catch(() => null);
-  if (!Array.isArray(rawEntries)) return false;
-  return getRealEntries(rawEntries).length === 0;
-}
-
-async function isEmptyStorageScaffold(path, entries = null) {
-  let rootEntries = entries;
-  if (rootEntries === null) {
-    const rawEntries = await Neutralino.filesystem
-      .readDirectory(path)
-      .catch(() => null);
-    if (!Array.isArray(rawEntries)) return false;
-    rootEntries = getRealEntries(rawEntries);
-  }
-  if (!rootEntries.length) return true;
-  if (
-    rootEntries.some(
-      (entry) =>
-        entry.type !== "DIRECTORY" ||
-        !STORAGE_LAYOUT_DIRECTORIES.has(
-          String(entry.entry).toLocaleLowerCase(),
-        ),
-    )
-  ) {
-    return false;
-  }
-  return Promise.all(
-    rootEntries.map((entry) => isEmptyDirectory(`${path}/${entry.entry}`)),
-  ).then((results) => results.every(Boolean));
-}
-
-async function copyStorageChunks(service, file, partialPath, state, report) {
-  if (!file.size) {
-    storageMoveCancelled(service);
-    await Neutralino.filesystem.writeBinaryFile(
-      partialPath,
-      new ArrayBuffer(0),
-    );
-    report({
-      ...state,
-      currentFile: file.relativePath,
-      progress: state.totalBytes
-        ? (state.bytesMoved / state.totalBytes) * 100
-        : 100,
-    });
-    return;
-  }
-  let offset = 0;
-  while (offset < file.size) {
-    storageMoveCancelled(service);
-    const requested = file.size
-      ? Math.min(STORAGE_MOVE_CHUNK_SIZE, file.size - offset)
-      : 0;
-    const chunk = await Neutralino.filesystem.readBinaryFile(file.path, {
-      pos: offset,
-      size: requested,
-    });
-    if (file.size && !chunk?.byteLength) {
-      throw new Error(`Could not read ${file.relativePath} while moving it.`);
-    }
-    if (offset === 0) {
-      await Neutralino.filesystem.writeBinaryFile(partialPath, chunk);
-    } else {
-      await Neutralino.filesystem.appendBinaryFile(partialPath, chunk);
-    }
-    offset += chunk?.byteLength || 0;
-    report({
-      ...state,
-      currentFile: file.relativePath,
-      bytesMoved: state.bytesMoved + offset,
-      progress: state.totalBytes
-        ? ((state.bytesMoved + offset) / state.totalBytes) * 100
-        : 100,
-    });
-  }
-}
-
-async function moveStorageFile(
-  service,
-  file,
-  destinationRoot,
-  state,
-  report,
-  onTransferStart = () => {},
-) {
-  const destinationPath = `${destinationRoot}/${file.relativePath}`;
-  const partialPath = `${destinationPath}${STORAGE_MOVE_PARTIAL_SUFFIX}`;
-  await service.api.ensureDir(getParentPath(destinationPath));
-  storageMoveCancelled(service);
-
-  const existingStats = await Neutralino.filesystem
-    .getStats(destinationPath)
-    .catch(() => null);
-  if (existingStats) await Neutralino.filesystem.remove(destinationPath);
-  if (await service.api.exists(partialPath)) {
-    await Neutralino.filesystem.remove(partialPath);
-  }
-
-  onTransferStart();
-  await copyStorageChunks(service, file, partialPath, state, report);
-
-  const partialStats = await Neutralino.filesystem.getStats(partialPath);
-  if (Number(partialStats.size) !== file.size) {
-    throw new Error(`Could not verify ${file.relativePath} after copying it.`);
-  }
-  storageMoveCancelled(service);
-  await Neutralino.filesystem.move(partialPath, destinationPath);
-  const destinationStats =
-    await Neutralino.filesystem.getStats(destinationPath);
-  if (Number(destinationStats.size) !== file.size) {
-    throw new Error(`Could not verify ${file.relativePath} after moving it.`);
-  }
-  storageMoveCancelled(service);
-  const sourceStats = await Neutralino.filesystem.getStats(file.path);
-  if (Number(sourceStats.size) !== file.size) {
-    throw new Error(`The source changed while moving ${file.relativePath}.`);
-  }
-  storageMoveCancelled(service);
-  await Neutralino.filesystem.remove(file.path);
-  if (await service.api.exists(file.path)) {
-    throw new Error(`Could not remove ${file.relativePath} after moving it.`);
-  }
-  state.bytesMoved += file.size;
-  state.copiedFiles += 1;
-  report({ ...state, currentFile: file.relativePath });
-}
-
-async function transferStorageFiles(
-  service,
-  sourcePath,
-  destinationPath,
-  markerPath,
-  report,
-) {
-  await service.ensureStorageDirectoriesAt(destinationPath);
-  const sourceExists = await service.api.exists(sourcePath);
-  let files = [];
-  let directories = [];
-  if (sourceExists) {
-    const allowedRootEntries = service.isStorageInExecutableDirectory()
-      ? new Set([
-          "config",
-          "data",
-          "state",
-          "runtime",
-          "engines",
-          "mods",
-          "settings.json",
-          "storage-manifest.json",
-          ".weekbox-moving.json",
-          "weekbox-moving.json",
-        ])
-      : null;
-    ({ files, directories } = await scanStorageFiles(
-      sourcePath,
-      markerPath,
-      report,
-      allowedRootEntries,
-    ));
-  }
-  const totalBytes = files.reduce((total, file) => total + file.size, 0);
-  const state = {
-    phase: "MOVING",
-    progress: totalBytes ? 0 : 100,
-    bytesMoved: 0,
-    totalBytes,
-    copiedFiles: 0,
-    totalFiles: files.length,
-    currentFile: "",
-  };
-  let transferStartedAt = null;
-  const reportMove = (event) => {
-    const bytesMoved = Number(event.bytesMoved) || 0;
-    const elapsed = transferStartedAt
-      ? Math.max(0.001, (performance.now() - transferStartedAt) / 1000)
-      : 0;
-    const speed = elapsed ? bytesMoved / elapsed : 0;
-    report({
-      ...event,
-      phase: "MOVING",
-      speed,
-      eta:
-        speed > 0 && totalBytes > bytesMoved
-          ? (totalBytes - bytesMoved) / speed
-          : null,
-    });
-  };
-  reportMove(state);
-  for (const file of files) {
-    await moveStorageFile(
-      service,
-      file,
-      destinationPath,
-      state,
-      reportMove,
-      () => {
-        if (transferStartedAt === null) transferStartedAt = performance.now();
-      },
-    );
-  }
-  if (sourceExists) await removeEmptyStorageDirectories(directories);
-  return state;
-}
-
-const LOCAL_MOD_COVER_FILES = [
-  "cover.png",
-  "cover.jpg",
-  "cover.jpeg",
-  "thumbnail.png",
-  "thumbnail.jpg",
-  "thumbnail.jpeg",
-  "icon.png",
-  "icon.jpg",
-  "icon.jpeg",
-  "images/icon.png",
-  "images/icon.jpg",
-  "images/icon.jpeg",
-];
-
 function getDataUrlMimeType(path) {
   const extension = String(path || "")
     .split(".")
@@ -514,114 +92,6 @@ function getDataUrlMimeType(path) {
     : extension === "webp"
       ? "image/webp"
       : "image/png";
-}
-
-async function prepareStorageDestination(service, destinationPath, marker) {
-  if (!(await service.api.exists(destinationPath))) return;
-  const entries = getRealEntries(
-    await Neutralino.filesystem.readDirectory(destinationPath),
-  ).filter(
-    (entry) =>
-      !isStorageMoveMarkerPath(
-        `${destinationPath}/${entry.entry}`,
-        destinationPath,
-      ),
-  );
-  if (await isEmptyStorageScaffold(destinationPath, entries)) {
-    return;
-  }
-  if (
-    !marker ||
-    normalizeComparablePath(marker.destination) !==
-      normalizeComparablePath(destinationPath)
-  ) {
-    throw new Error(
-      "The selected storage folder must be empty. Use the existing WeekBox library directly instead.",
-    );
-  }
-}
-
-async function getStorageMovePlan(
-  service,
-  basePath,
-  { destinationIsResolved = false } = {},
-) {
-  const destinationPath = destinationIsResolved
-    ? trimPath(basePath)
-    : service.getStorageDestinationPath(basePath);
-  if (!destinationPath) throw new Error("Choose a storage folder first");
-  const pending = service.pendingStorageMove;
-  if (
-    normalizeComparablePath(destinationPath) ===
-    normalizeComparablePath(service.basePath)
-  ) {
-    return { destinationPath, pending, samePath: true };
-  }
-  await service.assertStoragePathAllowed(destinationPath);
-  if (service.hasRunningProcesses()) {
-    throw new Error("Close running engines before moving WeekBox files");
-  }
-  if (pathsOverlap(destinationPath, service.basePath)) {
-    throw new Error(
-      "Choose a storage folder outside the current storage folder.",
-    );
-  }
-  if (
-    pending &&
-    normalizeComparablePath(pending.destination) !==
-      normalizeComparablePath(destinationPath)
-  ) {
-    throw new Error(
-      `Resume the interrupted storage move to ${pending.destination} before choosing another location.`,
-    );
-  }
-  return {
-    destinationPath,
-    pending,
-    samePath: false,
-    markerPath: pending?.markerPath || storageMoveMarkerPath(service.basePath),
-  };
-}
-
-async function finishSamePathStorageMove(service, plan) {
-  if (
-    plan.pending &&
-    normalizeComparablePath(plan.pending.destination) ===
-      normalizeComparablePath(service.basePath) &&
-    (await service.isCompleteStorage(service.basePath))
-  ) {
-    await Promise.all(
-      [plan.pending.markerPath, ...getStorageMoveMarkerPaths(service.basePath)]
-        .filter(
-          (path, index, allPaths) => path && allPaths.indexOf(path) === index,
-        )
-        .map((path) => service.api.remove(path)),
-    );
-    service.pendingStorageMove = null;
-  }
-  return service.weekboxPath;
-}
-
-async function restoreStorageMoveState(
-  service,
-  { basePath, settingsPath, settingsDocument, storagePath, mods, engines },
-) {
-  service.setStoragePaths(basePath);
-  appSettings.path = settingsPath;
-  appSettings.document = settingsDocument;
-  appSettings.set("storagePath", storagePath, { persist: false });
-  const results = await Promise.allSettled(
-    mods.map((mod) =>
-      service.injection.injectIntoInstalledEngines(mod.id, engines),
-    ),
-  );
-  const failures = results.filter((result) => result.status === "rejected");
-  if (failures.length) {
-    return new Error(
-      `Restored storage, but ${failures.length} installed mod(s) could not be linked back into engines.`,
-    );
-  }
-  return null;
 }
 
 async function prepareLocalModImport(
@@ -687,249 +157,9 @@ async function removeModFiles(service, mod, folderName) {
   }
   const modPath = `${service.modsPath}/${folderName}`;
   if (!(await service.api.exists(modPath))) return;
-  const command =
-    window.NL_OS === "Windows"
-      ? `cmd /c rmdir /S /Q "${modPath.replace(/\//g, "\\")}"`
-      : `rm -rf "${modPath}"`;
-  let result;
-  for (let attempt = 1; attempt <= 3; attempt += 1) {
-    result = await Neutralino.os.execCommand(command, { background: false });
-    if (result.exitCode === 0 || !(await service.api.exists(modPath))) return;
-    if (attempt < 3)
-      await new Promise((resolve) => setTimeout(resolve, attempt * 400));
-  }
-  if (result?.exitCode !== 0 && (await service.api.exists(modPath))) {
-    const detail = String(result?.stdErr || result?.stdOut || "")
-      .replace(/[\0\r]+/g, " ")
-      .trim();
-    throw new Error(
-      detail
-        ? `Could not remove mod files because a file is in use: ${detail}`
-        : `Could not remove mod files for ${mod.name}. Close any program using this mod and try again.`,
-    );
-  }
-}
-
-async function copyCustomEngineInstall(
-  service,
-  { source, resolvedId, version, executable, details },
-) {
-  const installId = `${version}-${crypto.randomUUID().slice(0, 8)}`;
-  const stagingPath = `${service.enginesPath}/.custom-install-${crypto.randomUUID()}`;
-  const destinationPath = `${service.enginesPath}/${resolvedId}/${installId}`;
-  try {
-    await service.api.ensureDir(`${service.enginesPath}/${resolvedId}`);
-    await Neutralino.filesystem.copy(source, stagingPath, {
-      recursive: true,
-      overwrite: false,
-      skip: false,
-    });
-    const requestedExecutable = String(executable || details.executable || "")
-      .replace(/\\/g, "/")
-      .replace(/^\/+/, "");
-    const requestedExecutablePath = `${stagingPath}/${requestedExecutable}`;
-    const stagedExecutable =
-      requestedExecutable && (await service.api.exists(requestedExecutablePath))
-        ? requestedExecutablePath
-        : await service.findExecutable(stagingPath);
-    if (!stagedExecutable)
-      throw new Error("The imported folder has no runnable executable.");
-    const stagedPrefix = `${stagingPath}/`;
-    const executableRelative = stagedExecutable.startsWith(stagedPrefix)
-      ? stagedExecutable.slice(stagedPrefix.length)
-      : requestedExecutable;
-    const manifest = {
-      version: 1,
-      engineId: resolvedId,
-      originalVersion: version,
-      executable: executableRelative,
-      modDirectories: Array.isArray(details.contentFolders)
-        ? details.contentFolders
-            .filter((folder) => folder?.path && folder.enabled)
-            .map((folder) => ({
-              path: sanitizePathSegment(folder.path),
-              type: ["mod", "addon", "dependency"].includes(folder.type)
-                ? folder.type
-                : "mod",
-              enabled: true,
-            }))
-        : [],
-      sourceName: source.split("/").at(-1) || source,
-    };
-    await service.api.write(
-      `${stagingPath}/engine.json`,
-      `${JSON.stringify(manifest, null, 2)}\n`,
-    );
-    await service.api.move(stagingPath, destinationPath);
-    return {
-      installId,
-      executable: executableRelative,
-      modDirectories: manifest.modDirectories,
-      sourceName: manifest.sourceName,
-    };
-  } catch (error) {
-    await service.api.remove(stagingPath).catch(() => {});
-    await service.api.remove(destinationPath).catch(() => {});
-    throw error;
-  }
-}
-
-function assertCustomEngineSourceAllowed(service, source, allowLibrarySource) {
-  const isLibraryModSource =
-    pathsOverlap(source, service.modsPath) &&
-    normalizeComparablePath(source) !==
-      normalizeComparablePath(service.modsPath);
-  if (
-    pathsOverlap(source, service.basePath) &&
-    (!allowLibrarySource || !isLibraryModSource)
-  )
-    throw new Error("Choose an engine folder outside your WeekBox library.");
-}
-
-async function prepareCustomEngineFamily(
-  service,
-  { source, engineId, name, version, executable, details },
-) {
-  const normalizedName = String(name || details.name).trim();
-  const normalizedVersion = sanitizePathSegment(version) || "Local";
-  const resolvedId = engineId || `custom-${crypto.randomUUID()}`;
-  const existingEngine = service.customEngines.get(resolvedId);
-  const executablePath = `${source}/${String(
-    executable || details.executable || "",
-  )
-    .replace(/\\/g, "/")
-    .replace(/^\/+/, "")}`;
-  const detectedIcon =
-    !existingEngine || !existingEngine.icon || existingEngine.icon === "exe.png"
-      ? await service.executables.getIconDataUrl(executablePath)
-      : "";
-  const engine = existingEngine || {
-    id: resolvedId,
-    name: normalizedName,
-    icon: detectedIcon || "exe.png",
-    createdAt: new Date().toISOString(),
-    versions: [],
-  };
-  if (!existingEngine) engine.name = normalizedName || engine.name;
-  if (existingEngine && detectedIcon) engine.icon = detectedIcon;
-  return { engine, normalizedVersion, resolvedId };
-}
-
-async function removeMissingCustomVersion(service, engine, version) {
-  const existing = engine.versions.find(
-    (candidate) => candidate.version === version,
-  );
-  if (!existing) return null;
-  if (
-    await service.api.exists(
-      `${service.enginesPath}/${engine.id}/${existing.installId}`,
-    )
-  )
-    return existing;
-  engine.versions = engine.versions.filter(
-    (candidate) => candidate !== existing,
-  );
-  await service.customEngines.upsert(engine);
-  return null;
-}
-
-async function importCustomEngineContent(service, install, engineId, version) {
-  const imported = [];
-  const existingMods = await service.mods.getAll();
-  for (const directory of install.modDirectories || []) {
-    if (directory.enabled === false) continue;
-    const sourceDirectory = `${install.path}/${directory.path}`;
-    if (!(await service.api.exists(sourceDirectory))) continue;
-    const entries = getRealEntries(
-      await Neutralino.filesystem
-        .readDirectory(sourceDirectory)
-        .catch(() => []),
-    );
-    for (const entry of entries.filter((item) => item.type === "DIRECTORY")) {
-      const name = entry.entry.trim();
-      if (!name) continue;
-      const sourceEngineFolder = `${directory.path}/${entry.entry}`;
-      const engineFolderName = sanitizePathSegment(name) || name;
-      const sourceMatch = existingMods.find(
-        (mod) =>
-          mod.sourceEngineId === engineId &&
-          mod.sourceEngineVersion === version &&
-          mod.sourceEngineFolder === sourceEngineFolder,
-      );
-      if (sourceMatch) {
-        const legacyMatch = existingMods.find(
-          (mod) =>
-            sourceMatch.source === "custom-engine" &&
-            String(sourceMatch.id).startsWith("local-") &&
-            mod !== sourceMatch &&
-            !mod.sourceEngineId &&
-            mod.engineId === engineId &&
-            mod.engineFolderName === engineFolderName &&
-            (!mod.engineVersion || mod.engineVersion === version),
-        );
-        if (legacyMatch) {
-          await removeModFiles(service, sourceMatch, sourceMatch.folderName);
-          legacyMatch.engineVersion = version;
-          legacyMatch.sourceEngineId = engineId;
-          legacyMatch.sourceEngineVersion = version;
-          legacyMatch.sourceEngineFolder = sourceEngineFolder;
-          existingMods.splice(existingMods.indexOf(sourceMatch), 1);
-          await service.mods.saveAll(existingMods);
-        }
-        continue;
-      }
-      const legacyMatch = existingMods.find(
-        (mod) =>
-          !mod.sourceEngineId &&
-          mod.engineId === engineId &&
-          mod.engineFolderName === engineFolderName &&
-          (!mod.engineVersion || mod.engineVersion === version),
-      );
-      if (legacyMatch) {
-        legacyMatch.engineVersion = version;
-        legacyMatch.sourceEngineId = engineId;
-        legacyMatch.sourceEngineVersion = version;
-        legacyMatch.sourceEngineFolder = sourceEngineFolder;
-        await service.mods.saveAll(existingMods);
-        continue;
-      }
-      const folderName = await service.getAvailableLocalModFolderName(name);
-      const modId = `local-${crypto.randomUUID()}`;
-      const destinationPath = `${service.modsPath}/${folderName}`;
-      try {
-        await Neutralino.filesystem.copy(
-          `${sourceDirectory}/${entry.entry}`,
-          destinationPath,
-          { recursive: true, overwrite: false, skip: false },
-        );
-        const kind = ["addon", "dependency"].includes(directory.type)
-          ? directory.type
-          : null;
-        await service.saveInstalledMod(modId, name, {
-          folderName,
-          engineFolderName,
-          engineId,
-          engineVersion: version,
-          ...(kind ? { kind } : {}),
-          source: "custom-engine",
-          sourceEngineId: engineId,
-          sourceEngineVersion: version,
-          sourceEngineFolder,
-        });
-        imported.push(modId);
-      } catch (error) {
-        await service.api.remove(destinationPath).catch(() => {});
-        throw error;
-      }
-    }
-  }
-  const engines = await service.getInstalledEngines();
-  await Promise.all(
-    imported.map((modId) =>
-      service.injection.injectIntoInstalledEngines(modId, engines),
-    ),
-  );
-  return imported;
+  await service.api.remove(modPath);
+  if (await service.api.exists(modPath))
+    throw new Error(`Could not remove mod files for ${mod.name}.`);
 }
 
 var _FileSystemService = class _FileSystemService {
@@ -968,6 +198,14 @@ var _FileSystemService = class _FileSystemService {
     this.mods = new ModRepository({
       api: this.api,
       getStoragePaths: () => this.paths,
+      readDirectory: (path) => Neutralino.filesystem.readDirectory(path),
+    });
+    this.standaloneMods = new StandaloneModCatalogService({
+      mods: this.mods,
+      getModsPath: () => this.modsPath,
+      findExecutable: (path) => this.findExecutable(path),
+      getModIcon: (modId) => this.getModIcon(modId),
+      getIconDataUrl: (path) => this.executables.getIconDataUrl(path),
     });
     this.covers = new ModCoverService({
       api: this.api,
@@ -996,6 +234,38 @@ var _FileSystemService = class _FileSystemService {
       isEngineRunning: (engineId, version) =>
         this.isEngineRunning(engineId, version),
       findExecutable: (path) => this.findExecutable(path),
+    });
+    this.modKinds = new ModKindService({
+      mods: this.mods,
+      injection: this.injection,
+      getIsInitialized: () => this.isInitialized,
+      assertStorageUnlocked: () => this.assertStorageUnlocked(),
+      assertModChangeAllowed: (modId) => this.assertModChangeAllowed(modId),
+      isCustomEngine: (engineId) => this.isCustomEngine(engineId),
+      getInstalledEngines: () => this.getInstalledEngines(),
+    });
+    this.customEngineService = new CustomEngineService({
+      api: this.api,
+      executables: this.executables,
+      customEngines: this.customEngines,
+      mods: this.mods,
+      injection: this.injection,
+      getBasePath: () => this.basePath,
+      getEnginesPath: () => this.enginesPath,
+      getModsPath: () => this.modsPath,
+      isInitialized: () => this.isInitialized,
+      assertStorageUnlocked: () => this.assertStorageUnlocked(),
+      readDirectory: (path) => Neutralino.filesystem.readDirectory(path),
+      findExecutable: (path) => this.findExecutable(path),
+      getAvailableLocalModFolderName: (name) =>
+        this.getAvailableLocalModFolderName(name),
+      saveInstalledMod: (id, name, metadata) =>
+        this.saveInstalledMod(id, name, metadata),
+      getInstalledEngines: () => this.getInstalledEngines(),
+      getEngineInstall: (id, version) => this.getEngineInstall(id, version),
+      isEngineRunning: (id, version) => this.isEngineRunning(id, version),
+      removeModFiles: (mod, folderName) =>
+        removeModFiles(this, mod, folderName),
     });
   }
   async init(options = {}) {
@@ -1181,8 +451,10 @@ var _FileSystemService = class _FileSystemService {
       (directory) => `${root}/${directory}`,
     );
     return (
-      await Promise.all(requiredPaths.map((item) => this.api.exists(item)))
-    ).every(Boolean) && (await hasStorageIdentity(this, root));
+      (
+        await Promise.all(requiredPaths.map((item) => this.api.exists(item)))
+      ).every(Boolean) && (await hasStorageIdentity(this, root))
+    );
   }
   getStorageDestinationPath(path) {
     const selectedPath = trimPath(path);
@@ -1247,32 +519,7 @@ var _FileSystemService = class _FileSystemService {
   }
 
   async migrateStorageMetadata() {
-    let manifestVersion = 0;
-    try {
-      manifestVersion = Number(
-        JSON.parse(await this.api.read(this.paths.storageManifestFile))
-          ?.version,
-      );
-    } catch {}
-    if (manifestVersion >= STORAGE_LAYOUT_VERSION) return true;
-    let complete = await migrateFile(
-      this.api,
-      this.paths.legacyInstalledModsFile,
-      this.paths.installedModsFile,
-    );
-    complete =
-      (await migrateFile(
-        this.api,
-        this.paths.legacyEngineUpdatesFile,
-        this.paths.engineUpdatesFile,
-      )) && complete;
-    complete =
-      (await migrateFile(
-        this.api,
-        this.paths.legacyDeeplinkFile,
-        this.paths.deeplinkFile,
-      )) && complete;
-    return complete;
+    return migrateStorageMetadata(this);
   }
 
   async ensureStorageManifest() {
@@ -1385,9 +632,15 @@ var _FileSystemService = class _FileSystemService {
     if (!destinationPath || !(await this.api.exists(destinationPath))) {
       return false;
     }
-    const entries = await Neutralino.filesystem
-      .readDirectory(destinationPath)
-      .catch(() => []);
+    let entries;
+    try {
+      entries = await Neutralino.filesystem.readDirectory(destinationPath);
+    } catch (error) {
+      throw new Error(
+        `Could not inspect storage folder ${destinationPath}: ${error?.message || error}`,
+        { cause: error },
+      );
+    }
     const realEntries = getRealEntries(entries);
     if (await this.isCompleteStorage(destinationPath)) return true;
     return !(await isEmptyStorageScaffold(destinationPath, realEntries));
@@ -1444,149 +697,7 @@ var _FileSystemService = class _FileSystemService {
     onProgress = () => {},
     { destinationIsResolved = false } = {},
   ) {
-    this.assertStorageUnlocked({ allowPending: true });
-    const plan = await getStorageMovePlan(this, basePath, {
-      destinationIsResolved,
-    });
-    if (plan.samePath) return finishSamePathStorageMove(this, plan);
-    const { destinationPath, pending, markerPath } = plan;
-    const isResume = Boolean(pending);
-    const previousBasePath = this.basePath;
-    const previousSettingsPath = appSettings.path;
-    const previousStoragePath = appSettings.get("storagePath");
-    const previousSettingsDocument = JSON.parse(
-      JSON.stringify(appSettings.document),
-    );
-    let mods = [];
-    let engines = [];
-    this.isStorageMoveInProgress = true;
-    this.storageMoveCancelled = false;
-    let lastProgress = {};
-    const report = (event) => {
-      lastProgress = { ...lastProgress, ...event };
-      onProgress({ phase: "PREPARING", ...lastProgress });
-    };
-    try {
-      await this.api.ensureDir(getParentPath(destinationPath));
-      await prepareStorageDestination(this, destinationPath, pending);
-      const marker = {
-        version: 1,
-        source: previousBasePath,
-        destination: destinationPath,
-        startedAt: pending?.startedAt || new Date().toISOString(),
-        operation: "move",
-      };
-      await Promise.all(
-        getStorageMoveMarkerPaths(previousBasePath)
-          .slice(0, 2)
-          .map((path) =>
-            this.api.writeAtomic(path, `${JSON.stringify(marker)}\n`),
-          ),
-      );
-      this.pendingStorageMove = { ...marker, markerPath };
-      console.info(
-        `[WeekBox] Storage move ${isResume ? "resumed" : "started"}`,
-        { source: previousBasePath, destination: destinationPath },
-      );
-      report({
-        phase: "PREPARING",
-        progress: null,
-        bytesMoved: 0,
-        totalBytes: 0,
-      });
-      const storedMods = await this.mods.getAll();
-      mods = Array.isArray(storedMods) ? storedMods : [];
-      engines = await this.getInstalledEngines();
-      await Promise.all(
-        mods.map((mod) =>
-          this.injection.unlinkFromInstalledEngines(mod, engines),
-        ),
-      );
-      const transferState = await transferStorageFiles(
-        this,
-        previousBasePath,
-        destinationPath,
-        markerPath,
-        (event) => report(event),
-      );
-      report({ ...transferState, phase: "VERIFYING", progress: 100 });
-      await this.ensureStorageDirectoriesAt(destinationPath);
-      if (!(await this.isCompleteStorage(destinationPath))) {
-        throw new Error("The destination is missing required WeekBox folders.");
-      }
-      report({ ...transferState, phase: "FINALIZING", progress: 100 });
-      this.setStoragePaths(destinationPath);
-      await cleanupAtomicWriteTemps(this);
-      const metadataMigrationComplete = await this.migrateStorageMetadata();
-      await this.customEngines.load();
-      await this.selectSettingsPath(destinationPath);
-      await this.writeStorageManifest(destinationPath, {
-        allowUpgrade: metadataMigrationComplete,
-      });
-      const movedMods = (await this.mods.getAll()) || [];
-      const movedEngines = await this.getInstalledEngines();
-      await Promise.all(
-        movedMods.map((mod) =>
-          this.injection.injectIntoInstalledEngines(mod.id, movedEngines),
-        ),
-      );
-      await Promise.all(
-        [
-          markerPath,
-          ...getStorageMoveMarkerPaths(previousBasePath),
-          ...getStorageMoveMarkerPaths(destinationPath),
-        ]
-          .filter(
-            (path, index, allPaths) => path && allPaths.indexOf(path) === index,
-          )
-          .map((path) => this.api.remove(path)),
-      );
-      this.pendingStorageMove = null;
-      report({ phase: "COMPLETE", progress: 100 });
-      console.info("[WeekBox] Storage move completed", {
-        source: previousBasePath,
-        destination: destinationPath,
-      });
-      return this.weekboxPath;
-    } catch (error) {
-      const cancelled = error?.code === "STORAGE_MOVE_CANCELLED";
-      let restoreError = null;
-      try {
-        restoreError = await restoreStorageMoveState(this, {
-          basePath: previousBasePath,
-          settingsPath: previousSettingsPath,
-          settingsDocument: previousSettingsDocument,
-          storagePath: previousStoragePath,
-          mods,
-          engines,
-        });
-      } catch (stateError) {
-        restoreError = stateError;
-      }
-      if (cancelled) {
-        report({ ...lastProgress, phase: "CANCELLED" });
-        console.info("[WeekBox] Storage move cancelled");
-        throw error;
-      }
-      const failureMessage = [
-        error?.message || String(error),
-        restoreError?.message && `Recovery warning: ${restoreError.message}`,
-      ]
-        .filter(Boolean)
-        .join("\n\n");
-      report({
-        ...lastProgress,
-        phase: "FAILED",
-        error: failureMessage,
-      });
-      console.error("[WeekBox] Storage move failed", error, restoreError);
-      throw new Error(
-        `Could not move the WeekBox library. The files already transferred are safe. You can retry the move to continue where it stopped.\n\nReason: ${failureMessage}`,
-      );
-    } finally {
-      this.isStorageMoveInProgress = false;
-      this.storageMoveCancelled = false;
-    }
+    return moveStorageTo(this, basePath, onProgress, { destinationIsResolved });
   }
   async shouldRecommendDefaultStorage() {
     if (this.pendingStorageMove) return false;
@@ -1634,10 +745,8 @@ var _FileSystemService = class _FileSystemService {
     if (target === "mods" || target === "all") {
       const mods = await this.mods.getAll();
       const engines = await this.getInstalledEngines();
-      const unlinkResults = await Promise.allSettled(
-        mods.map((mod) =>
-          this.injection.unlinkFromInstalledEngines(mod, engines),
-        ),
+      const unlinkResults = await allSettledWithConcurrency(mods, 3, (mod) =>
+        this.injection.unlinkFromInstalledEngines(mod, engines),
       );
       const unlinkFailure = unlinkResults.find(
         (result) => result.status === "rejected",
@@ -1771,131 +880,19 @@ var _FileSystemService = class _FileSystemService {
     return /^(?:data|blob|https?):/i.test(icon) ? icon : `assets/icons/${icon}`;
   }
   async inspectCustomEngine(sourcePath) {
-    const normalizedSource = trimPath(sourcePath);
-    if (!normalizedSource) throw new Error("Choose an engine folder first");
-    const stats = await Neutralino.filesystem.getStats(normalizedSource);
-    if (!stats?.isDirectory)
-      throw new Error("The selected path is not a folder");
-    const executables = await this.findExecutables(normalizedSource);
-    const executable = executables[0];
-    if (!executable) {
-      const detail = this.getExecutableSearchError();
-      throw new Error(
-        detail
-          ? `WeekBox could not search the engine folder: ${detail}`
-          : "No runnable executable was found in this folder.",
-      );
-    }
-    const sourcePrefix = `${normalizedSource}/`;
-    const executableRelative = executable.startsWith(sourcePrefix)
-      ? executable.slice(sourcePrefix.length)
-      : executable;
-    const entries = getRealEntries(
-      await Neutralino.filesystem.readDirectory(normalizedSource),
-    );
-    const excludedContentFolders = new Set(["manifest", "assets", "plugins"]);
-    const contentFolders = entries
-      .filter(
-        (entry) =>
-          entry.type === "DIRECTORY" &&
-          !excludedContentFolders.has(entry.entry.toLocaleLowerCase()),
-      )
-      .map((entry) => {
-        const name = entry.entry.toLocaleLowerCase();
-        return {
-          path: entry.entry,
-          type: name === "addons" ? "addon" : "mod",
-          enabled: name === "mods" || name === "addons",
-        };
-      });
-    return {
-      name: normalizedSource.split("/").at(-1) || "Custom Engine",
-      version: "Local",
-      executable: executableRelative,
-      executables: executables.map((path) =>
-        path.startsWith(sourcePrefix) ? path.slice(sourcePrefix.length) : path,
-      ),
-      contentFolders,
-    };
+    return this.customEngineService.inspect(sourcePath);
   }
-  async importCustomEngine({
-    sourcePath,
-    engineId = null,
-    name,
-    version = "Local",
-    executable,
-    contentFolders = [],
-    allowLibrarySource = false,
-  }) {
-    this.assertStorageUnlocked();
-    if (!this.isInitialized) throw new Error("WeekBox storage is not ready");
-    const source = trimPath(sourcePath);
-    if (!source) throw new Error("Choose an engine folder first");
-    assertCustomEngineSourceAllowed(this, source, allowLibrarySource);
-    const details = await this.inspectCustomEngine(source);
-    const { engine, normalizedVersion, resolvedId } =
-      await prepareCustomEngineFamily(this, {
-        source,
-        engineId,
-        name,
-        version,
-        executable,
-        details,
-      });
-    const existing = await removeMissingCustomVersion(
-      this,
-      engine,
-      normalizedVersion,
-    );
-    if (existing)
-      throw new Error(`Version ${normalizedVersion} is already imported.`);
-    const install = await copyCustomEngineInstall(this, {
-      source,
-      resolvedId,
-      version: normalizedVersion,
-      executable,
-      details: { ...details, contentFolders },
-    });
-    engine.versions.push({ version: normalizedVersion, ...install });
-    await this.customEngines.upsert(engine);
-    return { id: resolvedId, version: normalizedVersion };
+  async importCustomEngine(options) {
+    return this.customEngineService.import(options);
   }
-  async updateCustomEngine(engineId, { name, icon } = {}) {
-    this.assertStorageUnlocked();
-    const engine = this.customEngines.get(engineId);
-    if (!engine || ENGINE_DETAILS[engineId])
-      throw new Error("Only custom engine families can be edited.");
-    const normalizedName = String(name || "").trim();
-    if (!normalizedName) throw new Error("Enter an engine family name.");
-    engine.name = normalizedName.slice(0, 80);
-    if (icon !== undefined) engine.icon = icon || "exe.png";
-    await this.customEngines.upsert(engine);
-    return engine;
+  async updateCustomEngine(engineId, options) {
+    return this.customEngineService.update(engineId, options);
   }
   async removeCustomEngine(engineId) {
-    this.assertStorageUnlocked();
-    const engine = this.customEngines.get(engineId);
-    if (!engine || ENGINE_DETAILS[engineId])
-      throw new Error("Only custom engine families can be deleted.");
-    if (
-      engine.versions.some((version) =>
-        this.isEngineRunning(engineId, version.version),
-      )
-    ) {
-      throw new Error("Close the custom engine before deleting its family.");
-    }
-    const familyPath = `${this.enginesPath}/${engineId}`;
-    if (await this.api.exists(familyPath)) await this.api.remove(familyPath);
-    await this.customEngines.remove(engineId);
-    return true;
+    return this.customEngineService.remove(engineId);
   }
   async importCustomEngineMods(engineId, version) {
-    this.assertStorageUnlocked();
-    if (!this.isInitialized) throw new Error("WeekBox storage is not ready");
-    const customEngine = this.customEngines.get(engineId);
-    const install = this.getEngineInstall(engineId, version);
-    if (!customEngine || !install) throw new Error("Custom engine not found");
-    return importCustomEngineContent(this, install, engineId, version);
+    return this.customEngineService.importMods(engineId, version);
   }
   async runEngine(
     engineId,
@@ -2078,76 +1075,15 @@ var _FileSystemService = class _FileSystemService {
   }
   async getInstalledEngines() {
     if (!this.isInitialized) return [];
-    try {
-      const customInstallIds = new Set(
-        this.customEngines
-          .getAll()
-          .flatMap((engine) =>
-            engine.versions.map(
-              (version) => `${engine.id}/${version.installId}`,
-            ),
-          ),
-      );
-      const entries = await Neutralino.filesystem.readDirectory(
-        this.enginesPath,
-      );
-      const engines = await Promise.all(
-        entries
-          .filter(
-            (entry) =>
-              entry.type === "DIRECTORY" &&
-              Object.prototype.hasOwnProperty.call(ENGINE_DETAILS, entry.entry),
-          )
-          .map(async (engine) => {
-            const versions = await Neutralino.filesystem.readDirectory(
-              `${this.enginesPath}/${engine.entry}`,
-            );
-            const installedVersions = await Promise.all(
-              versions
-                .filter(
-                  (version) =>
-                    version.type === "DIRECTORY" &&
-                    isValidEngineVersion(version.entry) &&
-                    (engine.entry !== "psychonline" ||
-                      version.entry === "Latest") &&
-                    !customInstallIds.has(`${engine.entry}/${version.entry}`),
-                )
-                .map(async (version) => {
-                  const versionPath = `${this.enginesPath}/${engine.entry}/${version.entry}`;
-                  if (await this.api.exists(`${versionPath}/.downloading`)) {
-                    return null;
-                  }
-                  if (!(await this.findExecutable(versionPath))) return null;
-                  return { id: engine.entry, version: version.entry };
-                }),
-            );
-            return installedVersions.filter(Boolean);
-          }),
-      );
-      const installed = engines.flat();
-      const customInstalled = [];
-      for (const engine of this.customEngines.getAll()) {
-        for (const version of engine.versions) {
-          const path = `${this.enginesPath}/${engine.id}/${version.installId}`;
-          if (await this.api.exists(`${path}/.downloading`)) continue;
-          const executable = version.executable
-            ? `${path}/${version.executable}`
-            : await this.findExecutable(path);
-          if (!executable || !(await this.api.exists(executable))) continue;
-          customInstalled.push({
-            id: engine.id,
-            version: version.version,
-            installId: version.installId,
-            custom: true,
-            path,
-            originalVersion: version.version,
-          });
-        }
-      }
-      return [...installed, ...customInstalled];
-    } catch {
-      return [];
-    }
+    return discoverInstalledEngines({
+      enginesPath: this.enginesPath,
+      engineDetails: ENGINE_DETAILS,
+      customEngines: this.customEngines.getAll(),
+      readDirectory: (path) => Neutralino.filesystem.readDirectory(path),
+      exists: (path) => this.api.exists(path),
+      findExecutable: (path) => this.findExecutable(path),
+      isValidEngineVersion,
+    });
   }
   async refreshCustomEngineIcons(installedEngines = []) {
     let changed = false;
@@ -2189,80 +1125,14 @@ var _FileSystemService = class _FileSystemService {
   }
   async getInstalledMods() {
     if (!this.isInitialized) return [];
-    const mods = await this.mods.getAll();
-    let migrated = false;
-    for (const mod of mods) {
-      if (mod.kind === "dependency") {
-        delete mod.kind;
-        delete mod.consumers;
-        migrated = true;
-      }
-      if (Array.isArray(mod.dependencies)) {
-        delete mod.dependencies;
-        migrated = true;
-      }
-    }
-    if (migrated) await this.mods.saveAll(mods);
-    let validFolders = new Set();
-    try {
-      const entries = await Neutralino.filesystem.readDirectory(this.modsPath);
-      for (const e of entries) {
-        if (e.type === "DIRECTORY") validFolders.add(e.entry);
-      }
-    } catch {}
-    const available = mods.filter((mod) => {
-      const folderName = getModFolderName(mod);
-      return folderName && validFolders.has(folderName);
-    });
-    return available;
+    return this.mods.getInstalled(this.modsPath);
   }
   async getStandaloneMods({ includeIcons = true, mods: installedMods } = {}) {
     if (!this.isInitialized) return [];
-    const shouldPersist = !installedMods;
-    const mods = installedMods || (await this.mods.getAll());
-    const standaloneMods = await Promise.all(
-      mods.map(async (mod) => {
-        const folderName = getModFolderName(mod);
-        if (!folderName) return null;
-        const executable = await this.findExecutable(
-          `${this.modsPath}/${folderName}`,
-        );
-        if (!executable) return null;
-        return {
-          ...mod,
-          engineId: "executable",
-          engineVersion: null,
-          engineLocked: false,
-          kind: "mod",
-          exePath: executable,
-          icoPath: includeIcons
-            ? (await this.getModIcon(mod.id)) ||
-              mod.providerIconUrl ||
-              (await this.executables.getIconDataUrl(executable))
-            : "",
-        };
-      }),
-    );
-    const availableMods = standaloneMods.filter(Boolean);
-    let changed = false;
-    for (const mod of availableMods) {
-      if (
-        mod.engineId !== "executable" ||
-        mod.engineVersion ||
-        mod.engineLocked ||
-        mod.kind !== "mod"
-      ) {
-        Object.assign(mod, {
-          engineId: "executable",
-          engineVersion: null,
-          engineLocked: false,
-          kind: "mod",
-        });
-        changed = true;
-      }
-    }
-    if (changed && shouldPersist) await this.mods.saveAll(mods);
-    return availableMods;
+    return this.standaloneMods.getMods({
+      includeIcons,
+      mods: installedMods,
+    });
   }
   async runStandaloneMod(modId, onStateChange) {
     this.assertStorageUnlocked();
@@ -2424,6 +1294,9 @@ var _FileSystemService = class _FileSystemService {
   async saveInstalledMod(modId, modName, metadata = {}) {
     if (!this.isInitialized) return;
     await this.mods.add(modId, modName, metadata);
+    if (metadata.folderName) {
+      this.executables.invalidate(`${this.modsPath}/${metadata.folderName}`);
+    }
   }
   async getAvailableLocalModFolderName(name, existingFolderName = "") {
     const displayName = sanitizePathSegment(name) || "Local Mod";
@@ -2490,8 +1363,14 @@ var _FileSystemService = class _FileSystemService {
             : null,
         source: "local",
         ...getProviderPersistenceMetadata({
-          gameBananaId, gameBananaType, providerSource, providerId,
-          providerType, providerUrl, sourceUrl, author,
+          gameBananaId,
+          gameBananaType,
+          providerSource,
+          providerId,
+          providerType,
+          providerUrl,
+          sourceUrl,
+          author,
         }),
       });
       if (iconUrl) await this.cacheModIcon(modId, iconUrl).catch(() => null);
@@ -2568,7 +1447,8 @@ var _FileSystemService = class _FileSystemService {
   }
   async updateModAppearance(modId, appearance) {
     if (!this.isInitialized) return null;
-    const { coverDataUrl, coverUrl, iconDataUrl, iconUrl, ...metadata } = appearance;
+    const { coverDataUrl, coverUrl, iconDataUrl, iconUrl, ...metadata } =
+      appearance;
     let coverPath;
     let iconPath;
     if (coverDataUrl !== void 0) {
@@ -2586,7 +1466,9 @@ var _FileSystemService = class _FileSystemService {
         iconPath = null;
       }
     } else if (iconUrl) {
-      iconPath = await this.covers.saveIconUrl(modId, iconUrl).catch(() => null);
+      iconPath = await this.covers
+        .saveIconUrl(modId, iconUrl)
+        .catch(() => null);
     }
     return this.mods.updateAppearance(modId, {
       ...metadata,
@@ -2660,85 +1542,15 @@ var _FileSystemService = class _FileSystemService {
     return this.mods.setTags(modId, tags);
   }
   async setModType(modId, type) {
-    this.assertStorageUnlocked();
-    if (!this.isInitialized) return null;
-    await this.assertModChangeAllowed(modId);
-    const mods = await this.mods.getAll();
-    const mod = mods.find((item) => sameId(item.id, modId));
-    if (!mod) return null;
-    if (
-      type === "addon" &&
-      mod.engineId !== "codename" &&
-      !this.isCustomEngine(mod.engineId)
-    ) {
-      throw new Error("Addons are only available for Codename Engine mods");
-    }
-    if (type === "dependency") return this.moveModToDependencies(modId);
-    const engines = await this.getInstalledEngines();
-    if (mod.kind === "dependency") {
-      const consumers = mods.filter(
-        (item) =>
-          item.kind !== "dependency" &&
-          Array.isArray(item.dependencies) &&
-          item.dependencies.some((dependencyId) => sameId(dependencyId, modId)),
-      );
-      if (consumers.length)
-        throw new Error(
-          `Remove ${consumers.map((item) => item.name).join(", ")} before changing ${mod.name}`,
-        );
-    }
-
-    if ((mod.kind || "mod") !== type)
-      await this.injection.unlinkFromInstalledEngines(mod, engines);
-    const updated = await this.mods.setType(modId, type);
-    if (updated?.engineId && !updated.hidden)
-      await this.injection.injectIntoInstalledEngines(modId, engines);
-    return updated;
+    return this.modKinds.setModType(modId, type);
   }
   async moveModToDependencies(modId) {
-    this.assertStorageUnlocked();
-    if (!this.isInitialized) return null;
-    await this.assertModChangeAllowed(modId);
-    const mod = (await this.mods.getAll()).find((item) =>
-      sameId(item.id, modId),
-    );
-    if (!mod || mod.kind === "dependency") return mod || null;
-    const engines = await this.getInstalledEngines();
-    await this.injection.unlinkFromInstalledEngines(mod, engines);
-    const dependency = await this.mods.moveToDependencies(modId);
-    if (dependency?.engineId && !dependency.hidden) {
-      await this.injection.injectIntoInstalledEngines(modId, engines);
-    }
-    return dependency;
+    return this.modKinds.moveModToDependencies(modId);
   }
   async moveDependencyToMods(modId) {
-    this.assertStorageUnlocked();
-    if (!this.isInitialized) return null;
-    await this.assertModChangeAllowed(modId);
-    const mods = await this.mods.getAll();
-    const dependency = mods.find((item) => sameId(item.id, modId));
-    if (!dependency || dependency.kind !== "dependency")
-      return dependency || null;
-    const consumers = mods.filter(
-      (item) =>
-        item.kind !== "dependency" &&
-        Array.isArray(item.dependencies) &&
-        item.dependencies.some((dependencyId) => sameId(dependencyId, modId)),
-    );
-    if (consumers.length) {
-      throw new Error(
-        `Remove ${consumers.map((item) => item.name).join(", ")} before moving ${dependency.name}`,
-      );
-    }
-    const mod = await this.mods.moveToMods(modId);
-    if (mod?.engineId && !mod.hidden) {
-      await this.injection.injectIntoInstalledEngines(
-        modId,
-        await this.getInstalledEngines(),
-      );
-    }
-    return mod;
+    return this.modKinds.moveDependencyToMods(modId);
   }
+
   async removeInstalledMod(modId) {
     this.assertStorageUnlocked();
     if (!this.isInitialized) return false;
@@ -2758,14 +1570,13 @@ var _FileSystemService = class _FileSystemService {
     );
     if (unlinkFailure) throw unlinkFailure.reason;
     await removeModFiles(this, mod, getModFolderName(mod));
+    this.executables.invalidate(`${this.modsPath}/${getModFolderName(mod)}`);
     await this.mods.remove(modId);
     await this.covers.remove(modId).catch(() => {});
     await this.covers.removeIcon(modId).catch(() => {});
     if (Array.isArray(mod.dependencies)) {
-      await Promise.all(
-        mod.dependencies.map((dependencyId) =>
-          this.removeDependencyConsumer(dependencyId, modId),
-        ),
+      await mapWithConcurrency(mod.dependencies, 4, (dependencyId) =>
+        this.removeDependencyConsumer(dependencyId, modId),
       );
     }
     return true;
@@ -2780,8 +1591,8 @@ var _FileSystemService = class _FileSystemService {
       const id = String(item.id);
       return id === sourceId || id.startsWith(`${sourceId}--`);
     });
-    const installed = await Promise.all(
-      mods.map(async (mod) => ((await this.hasModFiles(mod)) ? 1 : 0)),
+    const installed = await mapWithConcurrency(mods, 4, async (mod) =>
+      (await this.hasModFiles(mod)) ? 1 : 0,
     );
     return installed.reduce((count, value) => count + value, 0);
   }

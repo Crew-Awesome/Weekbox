@@ -1,6 +1,6 @@
-import { FS } from "../../../backend/services/filesystem.js";
+import { FS } from "../../../backend/services/filesystem/index.js";
 import { sanitizePathSegment } from "../../../backend/services/filesystem/path.util.js";
-import { gameBananaApi } from "../../../backend/providers/gamebanana/gamebanana.provider.js";
+import { modCatalogService } from "../../../backend/services/mod-catalog.service.js";
 import { modSettingsModal } from "./modSettingsModal.js";
 import { getGameBananaSource } from "./modSettingsTemplates.js";
 import { modManagerTemplates } from "./templates.js";
@@ -34,38 +34,36 @@ function getDependencyDetails(dependency, users) {
     : t("dependencies.gameBananaMod");
 }
 
-function loadDependencyCover(dependency, image) {
-  Promise.resolve()
-    .then(async () => {
-      const source = getGameBananaSource(dependency);
-      if (!source) return FS.ensureModCover(dependency.id, async () => null);
+async function loadDependencyCover(dependency, isActive) {
+  const existingCover = await FS.getModCover(dependency.id);
+  if (existingCover || !isActive()) return existingCover;
 
-      const details =
-        source.type === "tool"
-          ? await gameBananaApi.getToolDetails(source.id)
-          : await gameBananaApi.getModDetails(source.id, {
-              includeRequirements: false,
-            });
-      const imageUrl =
-        source.type === "tool" ? details?.thumbnail : details?.images?.[0];
-      if (!imageUrl || imageUrl === "assets/icons/launcher-icon.png") {
-        return FS.ensureModCover(dependency.id, async () => null);
-      }
+  const source = getGameBananaSource(dependency);
+  if (!source) return null;
 
-      const coverSource = `${source.type}:${source.id}`;
-      if (dependency.coverSource !== coverSource) {
-        await FS.updateModAppearance(dependency.id, {
-          coverUrl: imageUrl,
-          coverSource,
-        });
-        dependency.coverSource = coverSource;
-      }
-      return FS.getModCover(dependency.id);
-    })
-    .then((localCover) => {
-      if (localCover) image.src = localCover;
-    })
-    .catch(() => {});
+  const details = await modCatalogService.getDetailsForSource(
+    { ...source, provider: "gamebanana" },
+    source.type === "tool" ? {} : { includeRequirements: false },
+  );
+  const imageUrl =
+    source.type === "tool" ? details?.thumbnail : details?.images?.[0];
+  if (
+    !imageUrl ||
+    imageUrl === "assets/icons/launcher-icon.png" ||
+    !isActive()
+  ) {
+    return null;
+  }
+
+  const coverSource = `${source.type}:${source.id}`;
+  if (dependency.coverSource !== coverSource) {
+    await FS.updateModAppearance(dependency.id, {
+      coverUrl: imageUrl,
+      coverSource,
+    });
+    dependency.coverSource = coverSource;
+  }
+  return isActive() ? FS.getModCover(dependency.id) : null;
 }
 
 export const dependenciesRenderer = {
@@ -86,6 +84,62 @@ export const dependenciesRenderer = {
     list.className = "mod-manager-dependency-list";
     if (isListView) list.classList.add("list-view");
     const syncDependencyActions = [];
+    const coverRows = [];
+    const coverByRow = new WeakMap();
+    const pendingCovers = [];
+    let activeCoverLoads = 0;
+    let active = true;
+    let disposed = false;
+    const runCover = (dependency, cover) => {
+      cover.dataset.loading = "true";
+      loadDependencyCover(dependency, () => active && !disposed)
+        .then((localCover) => {
+          if (localCover && active && !disposed && cover.isConnected) {
+            cover.src = localCover;
+          }
+          if (!disposed && !active) delete cover.dataset.loading;
+        })
+        .catch(() => {
+          if (!disposed && !active) delete cover.dataset.loading;
+        })
+        .finally(() => {
+          activeCoverLoads -= 1;
+          pumpCovers();
+        });
+    };
+    const pumpCovers = () => {
+      while (
+        active &&
+        !disposed &&
+        activeCoverLoads < 4 &&
+        pendingCovers.length
+      ) {
+        const { dependency, cover } = pendingCovers.shift();
+        if (cover.dataset.loading === "true") continue;
+        activeCoverLoads += 1;
+        runCover(dependency, cover);
+      }
+    };
+    const loadCover = (dependency, cover) => {
+      if (cover.dataset.loading || disposed) return;
+      cover.dataset.loading = "queued";
+      pendingCovers.push({ dependency, cover });
+      pumpCovers();
+    };
+    const coverObserver =
+      typeof IntersectionObserver === "function"
+        ? new IntersectionObserver(
+            (entries) => {
+              entries.forEach((entry) => {
+                if (!entry.isIntersecting) return;
+                coverObserver.unobserve(entry.target);
+                const item = coverByRow.get(entry.target);
+                if (item) loadCover(item.dependency, item.cover);
+              });
+            },
+            { rootMargin: "160px" },
+          )
+        : null;
 
     dependencies.forEach((dependency) => {
       const users = getDependencyUsers(dependency, allMods);
@@ -98,15 +152,13 @@ export const dependenciesRenderer = {
       cover.src = "assets/img/placeholder-mini.jpg";
       cover.alt = "";
       cover.loading = "lazy";
+      coverRows.push({ dependency, cover });
+      coverByRow.set(row, { dependency, cover });
       cover.addEventListener("error", () => {
         cover.src = "assets/img/placeholder-mini.jpg";
       });
-      loadDependencyCover(dependency, cover);
-      FS.getModCover(dependency.id)
-        .then((localCover) => {
-          if (localCover && cover.isConnected) cover.src = localCover;
-        })
-        .catch(() => {});
+      if (coverObserver) coverObserver.observe(row);
+      else if (coverRows.length <= 12) loadCover(dependency, cover);
 
       const copy = document.createElement("div");
       copy.className = "mod-manager-dependency-copy";
@@ -200,15 +252,41 @@ export const dependenciesRenderer = {
     container.append(section);
     let removeProcessExitListener = () => {};
     const onProcessExit = () => {
-      if (!section.isConnected) {
-        removeProcessExitListener();
-        return;
-      }
+      if (!active || !section.isConnected) return;
       syncDependencyActions.forEach((sync) => sync());
     };
-    removeProcessExitListener = replaceProcessExitListener(
-      section.parentElement,
-      onProcessExit,
-    );
+    const syncListener = () => {
+      removeProcessExitListener();
+      removeProcessExitListener = active
+        ? replaceProcessExitListener(section.parentElement, onProcessExit)
+        : () => {};
+    };
+    syncListener();
+    return {
+      root: section,
+      setActive(nextActive) {
+        if (disposed || active === nextActive) return;
+        active = nextActive;
+        syncListener();
+        pumpCovers();
+        if (!coverObserver) return;
+        if (active) {
+          coverRows.forEach(({ cover }) => {
+            if (!cover.dataset.loading)
+              coverObserver.observe(cover.parentElement);
+          });
+        } else {
+          coverObserver.disconnect();
+        }
+      },
+      destroy() {
+        if (disposed) return;
+        disposed = true;
+        active = false;
+        pendingCovers.length = 0;
+        coverObserver?.disconnect();
+        removeProcessExitListener();
+      },
+    };
   },
 };

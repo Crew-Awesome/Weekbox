@@ -1,5 +1,5 @@
 import { setupDropdown } from "../../utils/components/dropdown.component.js";
-import { FS } from "../../../backend/services/filesystem.js";
+import { FS } from "../../../backend/services/filesystem/index.js";
 import { getEngineLabel, t } from "../i18n/index.js";
 import {
   activateCheckoutDialog,

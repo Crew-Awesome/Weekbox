@@ -1,4 +1,4 @@
-import { FS } from "../../../backend/services/filesystem.js";
+import { FS } from "../../../backend/services/filesystem/index.js";
 import { ENGINE_DETAILS } from "../../../backend/config/engines.config.js";
 import { engineUpdateService } from "../engines/engineUpdateService.js";
 import { engineUpdateToast } from "../engines/engineUpdateToast.js";
@@ -7,19 +7,10 @@ import { networkStatus } from "../../../backend/core/system/network-status.servi
 import { sidebar } from "../sidebar.js";
 import { getEngineLabel, getEngineLabelKey, i18n, t } from "../i18n/index.js";
 import { errorHandler } from "../errors/errorHandler.js";
-import { getEngineReleaseVersions } from "../../../backend/providers/github/github-release.provider.js";
-import {
-  getTargetItchPlatform,
-  getTargetLink,
-  getTargetSize,
-  extractVersionFallback,
-} from "../engines/utils.js";
-import { resolveItchDownloadUrl } from "../../../backend/providers/itch/itch-release.provider.js";
-import { downloadEngine } from "../engines/downloadEngine.js";
-import { engineInstallToast } from "../engines/engineInstallToast.js";
-import { rememberInstalledEngineBuild } from "../engines/engineUpdateService.js";
-import { fetchAndRenderReleaseNotes } from "../engines/releaseNotes.js";
+import { engineReleaseService } from "../../../backend/services/engine-release.service.js";
+import { extractVersionFallback } from "../engines/utils.js";
 import { customEngineModal } from "./customEngineModal.js";
+import { renderDownloadPicker } from "./download-picker.js";
 import {
   activateCheckoutDialog,
   deactivateCheckoutDialog,
@@ -32,16 +23,15 @@ import {
   setEngineVersionOrder,
   setPreferredEngineVersion,
   getEngineVersionName,
-  setEngineVersionName,
 } from "../../../backend/config/engine-preferences.js";
 import { createLoadingState, setButtonLoading } from "../hourglass.js";
-import { appSettings } from "../../../backend/core/system/settings.service.js";
+import { setupAnimatedSortable } from "./animated-sortable.js";
+import {
+  configureEngineVersionActions,
+  openRenameInstalledVersion,
+} from "./version-actions.js";
 
 const MODAL_OPEN_GUARD_MS = 350;
-
-function sortableItems(container, selector) {
-  return [...container.children].filter((item) => item.matches(selector));
-}
 
 function normalizeEngineVersions(releases) {
   return releases
@@ -106,410 +96,12 @@ function finishEngineManagerTransition(container) {
   );
 }
 
-function bindVersionActions({
-  item,
-  engineId,
-  version,
-  displayName,
-  onProcessFinished,
-}) {
-  const launchBtn = item.querySelector(".engine-launch-btn");
-  const updateLaunchButton = () => {
-    const running = FS.isEngineRunning(engineId, version);
-    if (!launchBtn) return;
-    launchBtn.innerHTML = `<i class="fa-solid ${running ? "fa-stop" : "fa-play"}" aria-hidden="true"></i>`;
-    launchBtn.title = t(running ? "common.close" : "engines.launch");
-    launchBtn.setAttribute("aria-label", launchBtn.title);
-  };
-  updateLaunchButton();
-  launchBtn?.addEventListener("click", async (event) => {
-    event.stopPropagation();
-    launchBtn.disabled = true;
-    setButtonLoading(launchBtn);
-    try {
-      if (FS.isEngineRunning(engineId, version)) {
-        await FS.closeEngine(engineId, version, updateLaunchButton);
-      } else {
-        await FS.injectModsIntoEngine(engineId, version);
-        if (appSettings.get("hideOnLaunch")) Neutralino.window.hide();
-        await FS.runEngine(engineId, version, (state) => {
-          updateLaunchButton();
-          if (state === "completed" || state === "error") {
-            if (appSettings.get("hideOnLaunch")) {
-              Neutralino.window.show();
-              Neutralino.window.focus();
-            }
-            onProcessFinished();
-          }
-        });
-      }
-    } catch (error) {
-      errorHandler.show({
-        error,
-        action: t("engines.launch"),
-        item: displayName,
-        version,
-        storagePath: FS.weekboxPath,
-      });
-    } finally {
-      launchBtn.disabled = false;
-      updateLaunchButton();
-    }
-  });
-}
-
-function configureVersionActions({
-  item,
-  engineId,
-  version,
-  displayName,
-  onProcessFinished,
-}) {
-  bindVersionActions({
-    item,
-    engineId,
-    version,
-    displayName,
-    onProcessFinished,
-  });
-}
-
-function renameInstalledVersion(engineId, version, onSaved) {
-  const template = document.getElementById("tpl-engine-rename-modal");
-  if (!template) return;
-  const modal = template.content.firstElementChild.cloneNode(true);
-  const dialog = modal.querySelector(".engine-rename-dialog");
-  const input = modal.querySelector(".engine-rename-input");
-  const currentName = getEngineVersionName(engineId, version, version);
-  input.value = currentName;
-  input.maxLength = 80;
-  input.setAttribute("aria-label", t("engineManager.renameVersion"));
-  document.body.appendChild(modal);
-  i18n.apply(modal);
-  let finished = false;
-  const finish = (save) => {
-    if (finished) return;
-    finished = true;
-    if (save) setEngineVersionName(engineId, version, input.value, version);
-    deactivateCheckoutDialog(modal);
-    modal.classList.remove("show");
-    setTimeout(() => modal.remove(), 220);
-    onSaved?.();
-  };
-  modal
-    .querySelector(".engine-rename-cancel")
-    .addEventListener("click", () => finish(false));
-  modal
-    .querySelector(".engine-rename-save")
-    .addEventListener("click", () => finish(true));
-  modal.addEventListener("click", (event) => {
-    if (event.target === modal) finish(false);
-  });
-  input.addEventListener("keydown", (event) => {
-    if (event.key === "Enter") {
-      event.preventDefault();
-      finish(true);
-    } else if (event.key === "Escape") {
-      event.preventDefault();
-      finish(false);
-    }
-  });
-  modal.hidden = false;
-  requestAnimationFrame(() => {
-    modal.classList.add("show");
-    activateCheckoutDialog(modal, dialog, input, () => finish(false));
-  });
-}
-
-function setupAnimatedSortable(
-  container,
-  item,
-  { selector, axis = "y", onDrop },
-) {
-  let drag = null;
-  let pending = null;
-  let suppressClick = false;
-  let originalEngineColor = null;
-  const flipFrames = new WeakMap();
-  item.draggable = false;
-
-  const clearDragStyles = () => {
-    item.classList.remove("is-dragging", "is-settling");
-    item.style.position = "";
-    item.style.left = "";
-    item.style.top = "";
-    item.style.width = "";
-    item.style.height = "";
-    item.style.zIndex = "";
-    item.style.pointerEvents = "";
-    item.style.transform = "";
-    item.style.transition = "";
-    item.style.translate = "";
-    if (originalEngineColor !== null) {
-      if (originalEngineColor) {
-        item.style.setProperty("--engine-color", originalEngineColor);
-      } else {
-        item.style.removeProperty("--engine-color");
-      }
-      originalEngineColor = null;
-    }
-  };
-
-  const animateLayout = (previousRects) => {
-    const movedItems = sortableItems(container, selector);
-    movedItems.forEach((other) => {
-      if (other === item) return;
-      const before = previousRects.get(other);
-      if (!before) return;
-      const after = other.getBoundingClientRect();
-      const distance =
-        axis === "x" ? before.left - after.left : before.top - after.top;
-      if (!distance) return;
-      other.style.setProperty(
-        "--engine-sort-shift",
-        axis === "x" ? `${distance}px 0` : `0 ${distance}px`,
-      );
-      void other.offsetWidth;
-      const previousFrame = flipFrames.get(other);
-      if (previousFrame) cancelAnimationFrame(previousFrame);
-      flipFrames.set(
-        other,
-        requestAnimationFrame(() => {
-          flipFrames.delete(other);
-          other.style.removeProperty("--engine-sort-shift");
-        }),
-      );
-    });
-  };
-
-  const movePlaceholder = (clientX, clientY) => {
-    if (!drag) return;
-    const previousRects = new Map(
-      sortableItems(container, selector).map((other) => [
-        other,
-        other.getBoundingClientRect(),
-      ]),
-    );
-    const pointer = axis === "x" ? clientX : clientY;
-    const movingBackward = pointer < drag.lastPointer;
-    const movingForward = pointer > drag.lastPointer;
-    let moved = false;
-    while (true) {
-      const children = [...container.children];
-      const placeholderIndex = children.indexOf(drag.placeholder);
-      const previousItem = children
-        .slice(0, placeholderIndex)
-        .reverse()
-        .find((child) => child.matches(selector));
-      const nextItem = children
-        .slice(placeholderIndex + 1)
-        .find((child) => child.matches(selector));
-      const previousRect = previousItem?.getBoundingClientRect();
-      const nextRect = nextItem?.getBoundingClientRect();
-      const previousMidpoint = previousRect
-        ? (axis === "x" ? previousRect.left : previousRect.top) +
-          (axis === "x" ? previousRect.width : previousRect.height) / 2
-        : 0;
-      const nextMidpoint = nextRect
-        ? (axis === "x" ? nextRect.left : nextRect.top) +
-          (axis === "x" ? nextRect.width : nextRect.height) / 2
-        : 0;
-
-      if (movingBackward && previousItem && pointer <= previousMidpoint) {
-        container.insertBefore(drag.placeholder, previousItem);
-        moved = true;
-      } else if (movingForward && nextItem && pointer >= nextMidpoint) {
-        const afterNext = nextItem.nextElementSibling;
-        if (afterNext) container.insertBefore(drag.placeholder, afterNext);
-        else container.appendChild(drag.placeholder);
-        moved = true;
-      } else {
-        break;
-      }
-    }
-
-    drag.lastPointer = pointer;
-    if (moved) {
-      drag.moved = true;
-      animateLayout(previousRects);
-    }
-  };
-
-  const releasePointer = (pointerId) => {
-    if (!container.hasPointerCapture?.(pointerId)) return;
-    container.releasePointerCapture(pointerId);
-  };
-
-  const stopTracking = () => {
-    document.removeEventListener("pointermove", handlePointerMove);
-    document.removeEventListener("pointerup", handlePointerUp);
-    document.removeEventListener("pointercancel", handlePointerCancel);
-  };
-
-  const cancelPending = () => {
-    if (!pending) return;
-    const pointerId = pending.pointerId;
-    pending = null;
-    stopTracking();
-    releasePointer(pointerId);
-  };
-
-  const startDrag = (event) => {
-    if (!pending) return;
-    const { pointerId } = pending;
-    const rect = item.getBoundingClientRect();
-    const startPointer = axis === "x" ? pending.startX : pending.startY;
-    const placeholder = document.createElement("div");
-    placeholder.className = `engine-sort-placeholder ${axis}`;
-    placeholder.style.width = `${rect.width}px`;
-    placeholder.style.height = `${rect.height}px`;
-    const originalNextSibling = item.nextElementSibling;
-    item.after(placeholder);
-    originalEngineColor = item.style.getPropertyValue("--engine-color");
-    const engineColor = getComputedStyle(item)
-      .getPropertyValue("--engine-color")
-      .trim();
-    if (engineColor) item.style.setProperty("--engine-color", engineColor);
-    document.body.appendChild(item);
-    item.classList.add("is-dragging");
-    drag = {
-      pointerId,
-      lastPointer: startPointer,
-      offsetX: event.clientX - rect.left,
-      offsetY: event.clientY - rect.top,
-      originalNextSibling,
-      placeholder,
-      moved: false,
-    };
-    pending = null;
-    item.style.position = "fixed";
-    item.style.left = `${event.clientX - drag.offsetX}px`;
-    item.style.top = `${event.clientY - drag.offsetY}px`;
-    item.style.width = `${rect.width}px`;
-    item.style.height = `${rect.height}px`;
-    item.style.zIndex = "1000";
-    item.style.pointerEvents = "none";
-    container.setPointerCapture?.(pointerId);
-  };
-
-  const finish = (cancelled = false) => {
-    if (!drag) return;
-    const currentDrag = drag;
-    drag = null;
-    stopTracking();
-    releasePointer(currentDrag.pointerId);
-
-    if (cancelled) {
-      if (currentDrag.originalNextSibling?.parentNode === container) {
-        container.insertBefore(
-          currentDrag.placeholder,
-          currentDrag.originalNextSibling,
-        );
-      } else {
-        const endItem = [...container.children].find(
-          (child) =>
-            child !== currentDrag.placeholder && !child.matches(selector),
-        );
-        if (endItem) container.insertBefore(currentDrag.placeholder, endItem);
-        else container.appendChild(currentDrag.placeholder);
-      }
-    }
-
-    if (!currentDrag.moved || cancelled) {
-      currentDrag.placeholder.replaceWith(item);
-      clearDragStyles();
-      return;
-    }
-
-    suppressClick = true;
-    setTimeout(() => {
-      suppressClick = false;
-    }, 400);
-    const targetRect = currentDrag.placeholder.getBoundingClientRect();
-    item.classList.add("is-settling");
-    item.style.transition =
-      "left 180ms ease-out, top 180ms ease-out, transform 180ms ease-out";
-    requestAnimationFrame(() => {
-      item.style.left = `${targetRect.left}px`;
-      item.style.top = `${targetRect.top}px`;
-      item.style.transform = "scale(1) rotate(0deg)";
-    });
-    setTimeout(() => {
-      currentDrag.placeholder.replaceWith(item);
-      clearDragStyles();
-      onDrop?.();
-    }, 180);
-  };
-
-  function handlePointerMove(event) {
-    const active = drag || pending;
-    if (!active || event.pointerId !== active.pointerId) return;
-    if (!drag) {
-      const distance = Math.hypot(
-        event.clientX - pending.startX,
-        event.clientY - pending.startY,
-      );
-      if (distance < 5) return;
-      startDrag(event);
-    }
-    event.preventDefault();
-    item.style.left = `${event.clientX - drag.offsetX}px`;
-    item.style.top = `${event.clientY - drag.offsetY}px`;
-    movePlaceholder(event.clientX, event.clientY);
-  }
-
-  function handlePointerUp(event) {
-    if (drag?.pointerId === event.pointerId) finish();
-    else if (pending?.pointerId === event.pointerId) cancelPending();
-  }
-
-  function handlePointerCancel(event) {
-    if (drag?.pointerId === event.pointerId) finish(true);
-    else if (pending?.pointerId === event.pointerId) cancelPending();
-  }
-
-  item.addEventListener("pointerdown", (event) => {
-    const interactive = event.target.closest("button, a, input, select");
-    if (
-      drag ||
-      pending ||
-      !event.isPrimary ||
-      (event.pointerType === "mouse" && event.button !== 0) ||
-      (interactive && interactive !== item)
-    ) {
-      return;
-    }
-    pending = {
-      pointerId: event.pointerId,
-      startX: event.clientX,
-      startY: event.clientY,
-    };
-    document.addEventListener("pointermove", handlePointerMove, {
-      passive: false,
-    });
-    document.addEventListener("pointerup", handlePointerUp);
-    document.addEventListener("pointercancel", handlePointerCancel);
-  });
-  container.addEventListener("lostpointercapture", () => {
-    if (drag) finish(true);
-    else cancelPending();
-  });
-  item.addEventListener(
-    "click",
-    (event) => {
-      if (!suppressClick) return;
-      suppressClick = false;
-      event.preventDefault();
-      event.stopImmediatePropagation();
-    },
-    true,
-  );
-}
-
 export const engineManagerModal = {
   currentIndex: 0,
   resizeObserver: null,
+  sortableCleanups: [],
   pickerRequestId: 0,
+  loadRequestId: 0,
   isPickerOpen: false,
   openingGuardUntil: 0,
   async init() {
@@ -570,10 +162,12 @@ export const engineManagerModal = {
     if (engineId) await this.showInstallMethodChooser(engineId, "installed");
   },
   close() {
-    const modal = document.getElementById("engine-manager-modal");
-    if (!modal) return;
+    this.loadRequestId += 1;
     this.isPickerOpen = false;
     this.pickerRequestId += 1;
+    this.clearSortableInteractions();
+    const modal = document.getElementById("engine-manager-modal");
+    if (!modal) return;
     sidebar.syncActive();
     deactivateCheckoutDialog(modal);
     modal.classList.remove("show");
@@ -585,10 +179,28 @@ export const engineManagerModal = {
       }
     }, 260);
   },
+  clearSortableInteractions() {
+    for (const cleanup of this.sortableCleanups.splice(0)) cleanup();
+  },
   async loadInstalledEngines() {
     if (this.isPickerOpen) return;
-    const engines = await FS.getInstalledEngines();
-    this.render(engines);
+    const requestId = ++this.loadRequestId;
+    try {
+      const engines = await FS.getInstalledEngines();
+      if (requestId !== this.loadRequestId || this.isPickerOpen) return;
+      const modal = document.getElementById("engine-manager-modal");
+      if (!modal || modal.style.display === "none") return;
+      this.render(engines);
+    } catch (error) {
+      if (requestId !== this.loadRequestId || this.isPickerOpen) return;
+      console.error("Could not load installed engines:", error);
+      errorHandler.show({
+        error,
+        action: "Loading installed engines",
+        item: FS.enginesPath,
+        storagePath: FS.weekboxPath,
+      });
+    }
   },
   async returnToInstalledEngines() {
     const container = document.getElementById("engine-manager-modal-body");
@@ -605,6 +217,7 @@ export const engineManagerModal = {
     if (!container || !engineId) return;
     if (FS.isCustomEngine(engineId) && !ENGINE_DETAILS[engineId]) {
       this.isPickerOpen = false;
+      this.loadRequestId += 1;
       this.pickerRequestId += 1;
       await customEngineModal.open({
         engineId,
@@ -613,6 +226,7 @@ export const engineManagerModal = {
       return;
     }
     this.isPickerOpen = true;
+    this.loadRequestId += 1;
     const requestId = ++this.pickerRequestId;
     beginEngineManagerTransition(container);
     await new Promise((resolve) => setTimeout(resolve, 120));
@@ -683,11 +297,24 @@ export const engineManagerModal = {
   async renderEngineChooser() {
     const container = document.getElementById("engine-manager-modal-body");
     if (!container) return;
-    const installedCustomEngineIds = new Set(
-      (await FS.getInstalledEngines())
-        .filter((engine) => engine.custom)
-        .map((engine) => engine.id),
-    );
+    let installedCustomEngineIds;
+    try {
+      installedCustomEngineIds = new Set(
+        (await FS.getInstalledEngines())
+          .filter((engine) => engine.custom)
+          .map((engine) => engine.id),
+      );
+    } catch (error) {
+      if (!this.isPickerOpen || !container.isConnected) return;
+      console.error("Could not prepare installed engine list:", error);
+      errorHandler.show({
+        error,
+        action: "Preparing engine list",
+        item: FS.enginesPath,
+        storagePath: FS.weekboxPath,
+      });
+      return;
+    }
     if (!this.isPickerOpen || !container.isConnected) return;
     const panel = document.createElement("section");
     panel.className = "engine-download-picker engine-download-picker--chooser";
@@ -746,195 +373,7 @@ export const engineManagerModal = {
     container.replaceChildren(panel);
   },
   renderDownloadPicker(engineId, versions, returnTo = "chooser") {
-    const container = document.getElementById("engine-manager-modal-body");
-    if (!container) return null;
-    const details = getEngineDetails(engineId);
-    const panel = document.createElement("section");
-    panel.className = "engine-download-picker";
-    const header = document.createElement("header");
-    header.className = "engine-download-picker__header";
-    const back = document.createElement("button");
-    back.type = "button";
-    back.className = "engine-download-picker__back";
-    back.title = t("common.back");
-    back.setAttribute("aria-label", t("common.back"));
-    back.innerHTML =
-      '<i class="fa-solid fa-arrow-left" aria-hidden="true"></i>';
-    back.addEventListener(
-      "click",
-      () =>
-        void (returnTo === "installed"
-          ? this.returnToInstalledEngines()
-          : this.showDownloadPicker()),
-    );
-    const heading = document.createElement("div");
-    heading.className = "engine-download-picker__identity";
-    const icon = document.createElement("img");
-    icon.src = FS.getEngineIconSource(engineId);
-    icon.alt = "";
-    const title = document.createElement("h3");
-    title.textContent = getEngineLabel(engineId, details.name);
-    heading.append(icon, title);
-    header.append(back, heading);
-
-    const main = document.createElement("div");
-    main.className = "engine-download-picker__main";
-    const versionsList = document.createElement("div");
-    versionsList.className = "engine-download-picker__versions";
-    versionsList.setAttribute("role", "listbox");
-    const notes = document.createElement("div");
-    notes.className = "engine-download-picker__notes markdown-body";
-    const footer = document.createElement("footer");
-    footer.className = "engine-download-picker__footer";
-    const download = document.createElement("button");
-    download.type = "button";
-    download.className = "engine-download-picker__download";
-    download.textContent = t("common.download");
-    footer.append(download);
-    main.append(versionsList, notes);
-    panel.append(header, main, footer);
-    container.replaceChildren(panel);
-
-    let selected = null;
-    versions.forEach((versionData, index) => {
-      const button = document.createElement("button");
-      button.type = "button";
-      button.className = "engine-download-picker__version";
-      button.setAttribute("role", "option");
-      button.setAttribute("aria-selected", String(index === 0));
-      button.textContent = versionData.label || versionData.version;
-      button.addEventListener("click", () => {
-        selected = versionData;
-        if (activeInstall?.version !== selected.version) {
-          activeInstall = null;
-          download.classList.remove("is-cancel");
-          download.textContent = t("common.download");
-          download.disabled = false;
-        }
-        versionsList
-          .querySelectorAll(".engine-download-picker__version")
-          .forEach((option) =>
-            option.setAttribute("aria-selected", String(option === button)),
-          );
-        void fetchAndRenderReleaseNotes(
-          versionData,
-          getTargetLink(versionData),
-          notes,
-        );
-        const task = downloadEngine.getActiveTask(engineId, selected.version);
-        if (task) {
-          activeInstall = {
-            engineId,
-            version: selected.version,
-            name: getEngineLabel(engineId, details.name),
-          };
-          download.disabled = true;
-          download.classList.add("is-cancel");
-          download.textContent = t("common.cancel");
-          engineInstallToast.show(activeInstall, cancelInstall);
-          updateInstallProgress(task.progressInfo);
-        }
-      });
-      versionsList.appendChild(button);
-    });
-    selected = versions[0] || null;
-    if (selected)
-      void fetchAndRenderReleaseNotes(selected, getTargetLink(selected), notes);
-    download.disabled = !selected;
-    let activeInstall = null;
-    let cancelRequested = false;
-    const updateInstallProgress = (progressInfo) => {
-      if (activeInstall) engineInstallToast.update(activeInstall, progressInfo);
-    };
-    const cancelInstall = async () => {
-      if (!activeInstall) return;
-      cancelRequested = true;
-      download.disabled = true;
-      download.textContent = t("downloads.cancelling");
-      engineInstallToast.cancel(activeInstall);
-      await downloadEngine.cancel(
-        activeInstall.engineId,
-        activeInstall.version,
-      );
-      engineInstallToast.hide(activeInstall);
-    };
-    const existingTask = selected
-      ? downloadEngine.getActiveTask(engineId, selected.version)
-      : null;
-    if (existingTask && selected) {
-      activeInstall = {
-        engineId,
-        version: selected.version,
-        name: getEngineLabel(engineId, details.name),
-      };
-      download.disabled = true;
-      download.classList.add("is-cancel");
-      download.textContent = t("common.cancel");
-      engineInstallToast.show(activeInstall, cancelInstall);
-      updateInstallProgress(existingTask.progressInfo);
-    }
-    download.addEventListener("click", async () => {
-      if (activeInstall) {
-        void cancelInstall();
-        return;
-      }
-      if (!selected || download.disabled) return;
-      download.disabled = true;
-      download.classList.add("is-cancel");
-      download.textContent = t("common.cancel");
-      cancelRequested = false;
-      activeInstall = {
-        engineId,
-        version: selected.version,
-        name: getEngineLabel(engineId, details.name),
-      };
-      engineInstallToast.show(activeInstall, cancelInstall);
-      try {
-        let downloadUrl = getTargetLink(selected);
-        const targetPlatform = getTargetItchPlatform(selected);
-        if (!downloadUrl && targetPlatform) {
-          downloadUrl = await resolveItchDownloadUrl(
-            selected.itch,
-            targetPlatform,
-          );
-        }
-        if (!downloadUrl) throw new Error(t("engines.unsupportedOs"));
-        const success = await downloadEngine.install(
-          engineId,
-          selected.version,
-          downloadUrl,
-          updateInstallProgress,
-          undefined,
-          {
-            expectedSize: getTargetSize(selected),
-            refreshUrl: targetPlatform
-              ? () => resolveItchDownloadUrl(selected.itch, targetPlatform)
-              : undefined,
-          },
-        );
-        if (!success) {
-          if (cancelRequested) return;
-          throw new Error(t("engines.installationFailed"));
-        }
-        await rememberInstalledEngineBuild(engineId, selected);
-        engineInstallToast.complete(activeInstall);
-        document.dispatchEvent(new CustomEvent("mods-updated"));
-      } catch (error) {
-        if (cancelRequested) return;
-        console.error("Could not download engine version", error);
-        engineInstallToast.error(
-          activeInstall,
-          t("engines.installationFailed"),
-        );
-      } finally {
-        if (cancelRequested) engineInstallToast.hide(activeInstall);
-        activeInstall = null;
-        download.classList.remove("is-cancel");
-        download.textContent = t("common.download");
-        download.disabled = !selected;
-      }
-    });
-    return panel;
+    return renderDownloadPicker(this, engineId, versions, returnTo);
   },
   async showDownloadPicker(engineId, returnTo = "chooser") {
     const container = document.getElementById("engine-manager-modal-body");
@@ -949,6 +388,7 @@ export const engineManagerModal = {
       return;
     }
     this.isPickerOpen = true;
+    this.loadRequestId += 1;
     const requestId = ++this.pickerRequestId;
     beginEngineManagerTransition(container);
     await new Promise((resolve) => setTimeout(resolve, 120));
@@ -969,7 +409,7 @@ export const engineManagerModal = {
     if (!engineId) return;
     try {
       const versions = normalizeEngineVersions(
-        await getEngineReleaseVersions(engineId),
+        await engineReleaseService.getVersions(engineId),
       );
       if (requestId !== this.pickerRequestId) return;
       const panel = this.renderDownloadPicker(engineId, versions, returnTo);
@@ -994,6 +434,7 @@ export const engineManagerModal = {
     const container = document.getElementById("engine-manager-modal-body");
     if (!container) return;
 
+    this.clearSortableInteractions();
     if (this.resizeObserver) {
       this.resizeObserver.disconnect();
       this.resizeObserver = null;
@@ -1378,7 +819,7 @@ export const engineManagerModal = {
           item.append(versionText, actions);
         }
 
-        configureVersionActions({
+        configureEngineVersionActions({
           item,
           engineId,
           version,
@@ -1467,7 +908,7 @@ export const engineManagerModal = {
           .querySelector(".engine-rename-btn")
           .addEventListener("click", (e) => {
             e.stopPropagation();
-            renameInstalledVersion(engineId, version, () =>
+            openRenameInstalledVersion(engineId, version, () =>
               this.loadInstalledEngines(),
             );
           });
@@ -1502,10 +943,12 @@ export const engineManagerModal = {
           }
         });
         versionsList.appendChild(item);
-        setupAnimatedSortable(versionsList, item, {
-          selector: ".version-item",
-          onDrop: saveVersionOrder,
-        });
+        this.sortableCleanups.push(
+          setupAnimatedSortable(versionsList, item, {
+            selector: ".version-item",
+            onDrop: saveVersionOrder,
+          }),
+        );
       });
       const addVersionButton = document.createElement("button");
       addVersionButton.type = "button";
@@ -1557,11 +1000,13 @@ export const engineManagerModal = {
         indexIcon.focus();
       });
       indexContainer.appendChild(indexIcon);
-      setupAnimatedSortable(indexContainer, indexIcon, {
-        selector: ".em-index-icon",
-        axis: "x",
-        onDrop: syncEngineOrder,
-      });
+      this.sortableCleanups.push(
+        setupAnimatedSortable(indexContainer, indexIcon, {
+          selector: ".em-index-icon",
+          axis: "x",
+          onDrop: syncEngineOrder,
+        }),
+      );
     });
     const addEngineButton = document.createElement("button");
     addEngineButton.type = "button";
