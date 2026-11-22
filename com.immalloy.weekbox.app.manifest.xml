@@ -57,12 +57,14 @@
         </screenshot>
     </screenshots>
     <releases>
-        <release version="2.7.2" date="2026-11-17">
+        <release version="2.7.2" date="2026-11-21">
             <description>
                 <ul>
-                    <li>Updated GameJolt filters and search.</li>
-                    <li>Improved Funkin' Backstage filter menus.</li>
-                    <li>Fixed errors when choosing between GameJolt downloads.</li>
+                    <li>Install WeekBox with Flatpak on Linux.</li>
+                    <li>Browse GameJolt games you can download.</li>
+                    <li>Large mod libraries scroll more smoothly.</li>
+                    <li>Improved library moves and error messages.</li>
+                    <li>Fixed deleted mods staying in the Mod Manager.</li>
                 </ul>
             </description>
         </release>

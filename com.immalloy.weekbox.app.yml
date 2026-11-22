@@ -47,8 +47,7 @@ modules:
 
     build-commands:
       - rm -rf node_modules
-      - npm install -g pnpm@10 --prefix "$HOME/.local"
-      - pnpm install --frozen-lockfile
+      - npm ci
       - npm run build
       - npm run package:linux
 

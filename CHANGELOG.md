@@ -7,6 +7,37 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.7.2] - 2026-11-21
+
+### Added
+
+- Added a Flatpak package for Linux.
+- Added a GameJolt filter for downloadable games.
+- Added clearer error messages and support reports.
+- Errors now appear in the console, even when WeekBox handles them.
+
+### Changed
+
+- Large mod libraries scroll more smoothly.
+- Library moves use a direct move when possible and verify files during transfers.
+- GameJolt search now uses GameJolt's search results.
+- News retries temporary errors and skips repeat tries for permanent ones.
+- Reorganized app code to make future fixes easier.
+- Sort menus now fit their buttons.
+- Updated translations and translated new error messages.
+
+### Fixed
+
+- Deleted mods now disappear from the Mod Manager right away.
+- Fixed removing mods and engine links on Windows.
+- Fixed file moves failing when Windows reports them late.
+- Fixed settings saves failing on some Windows PCs.
+- Kept the old settings file if a new save fails.
+- Fixed GameJolt filters and search notices getting out of sync.
+- Fixed the Backstage sort menu width.
+- Download rate limits now tell you to try again later.
+- Opening WeekBox twice now focuses the window that's already open.
+
 ## [2.7.1] - 2026-11-16
 
 ### Fixed
@@ -1401,7 +1432,8 @@ This is the Last content update I will do in a long while :)
 - Downloads for Windows, Linux, and macOS.
 - Packages for x64, ARM64, ARMHF, and Universal Macs where available.
 
-[unreleased]: https://github.com/Crew-Awesome/Weekbox/compare/v2.7.1...HEAD
+[unreleased]: https://github.com/Crew-Awesome/Weekbox/compare/v2.7.2...HEAD
+[2.7.2]: https://github.com/Crew-Awesome/Weekbox/compare/v2.7.1...v2.7.2
 [2.7.1]: https://github.com/Crew-Awesome/Weekbox/compare/v2.7.0...v2.7.1
 [2.7.0]: https://github.com/Crew-Awesome/Weekbox/compare/v2.6.4...v2.7.0
 [2.6.4]: https://github.com/Crew-Awesome/Weekbox/compare/v2.6.3...v2.6.4

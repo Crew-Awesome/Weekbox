@@ -70,10 +70,6 @@ async function downloadVerified(url, destination, expectedSha256) {
   return actualSha256;
 }
 
-function powershellQuote(value) {
-  return `'${value.replaceAll("'", "''")}'`;
-}
-
 function findFile(directory, filename) {
   for (const entry of fs.readdirSync(directory, { withFileTypes: true })) {
     const entryPath = path.join(directory, entry.name);
@@ -88,16 +84,9 @@ function findFile(directory, filename) {
 
 function extractZip(archive, destination) {
   if (process.platform === "win32") {
-    execFileSync(
-      "powershell.exe",
-      [
-        "-NoProfile",
-        "-NonInteractive",
-        "-Command",
-        `$ErrorActionPreference = 'Stop'; Expand-Archive -LiteralPath ${powershellQuote(archive)} -DestinationPath ${powershellQuote(destination)} -Force`,
-      ],
-      { stdio: "inherit" },
-    );
+    execFileSync("tar.exe", ["-xf", archive, "-C", destination], {
+      stdio: "inherit",
+    });
     return;
   }
 
@@ -145,7 +134,16 @@ async function main() {
 
     for (const { binary, downloadedRuntime } of validatedRuntimes) {
       const runtimePath = path.join(projectRoot, binary.file);
-      fs.copyFileSync(downloadedRuntime, runtimePath);
+      const runtimeAlreadyMatches =
+        fs.existsSync(runtimePath) &&
+        crypto
+          .createHash("sha256")
+          .update(fs.readFileSync(runtimePath))
+          .digest("hex")
+          .toUpperCase() === binary.sha256;
+      if (!runtimeAlreadyMatches) {
+        fs.copyFileSync(downloadedRuntime, runtimePath);
+      }
       if (process.platform !== "win32") fs.chmodSync(runtimePath, 0o755);
     }
 
