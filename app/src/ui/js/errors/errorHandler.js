@@ -153,6 +153,8 @@ const ISSUE_RULES = [
         "directory is not empty",
         "could not be written to storage",
         "could not write ",
+        "could not replace ",
+        "could not confirm the replacement of",
         "could not create its storage folder",
         "could not prepare the download destination",
         "could not finalize the temporary download",

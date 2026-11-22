@@ -1,24 +1,55 @@
 async function replaceFile(sourcePath, destinationPath) {
   if (!(await APIneuFileSystem.exists(destinationPath))) {
-    await Neutralino.filesystem.move(sourcePath, destinationPath);
+    await moveFileAndConfirm(sourcePath, destinationPath);
     return;
   }
   const backupPath = `${destinationPath}.weekbox-backup-${globalThis.crypto?.randomUUID?.() || Date.now()}`;
-  await Neutralino.filesystem.move(destinationPath, backupPath);
+  await moveFileAndConfirm(destinationPath, backupPath);
   try {
-    await Neutralino.filesystem.move(sourcePath, destinationPath);
+    await moveFileAndConfirm(sourcePath, destinationPath);
   } catch (error) {
-    try {
-      await Neutralino.filesystem.move(backupPath, destinationPath);
-    } catch (restoreError) {
+    const [backupExists, destinationExists] = await Promise.all([
+      APIneuFileSystem.exists(backupPath),
+      APIneuFileSystem.exists(destinationPath),
+    ]);
+    if (backupExists && !destinationExists) {
+      try {
+        await moveFileAndConfirm(backupPath, destinationPath);
+      } catch (restoreError) {
+        throw new Error(
+          `Could not replace ${destinationPath}; the original file is preserved at ${backupPath}. ${restoreError?.message || restoreError}`,
+          { cause: error },
+        );
+      }
+    } else if (backupExists) {
       throw new Error(
-        `Could not replace ${destinationPath}; the original file is preserved at ${backupPath}. ${restoreError?.message || restoreError}`,
+        `Could not confirm the replacement of ${destinationPath}; the original file is preserved at ${backupPath}. ${error?.message || error}`,
         { cause: error },
       );
     }
     throw error;
   }
-  await Neutralino.filesystem.remove(backupPath);
+  await APIneuFileSystem.remove(backupPath).catch((error) =>
+    console.warn("WeekBox storage: could not remove the previous file backup.", error),
+  );
+}
+
+async function moveFileAndConfirm(sourcePath, destinationPath) {
+  const maxAttempts = window.NL_OS === "Windows" ? 8 : 5;
+  await APIneuFileSystem.move(sourcePath, destinationPath, { maxAttempts });
+  for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+    const [sourceExists, destinationExists] = await Promise.all([
+      APIneuFileSystem.exists(sourcePath),
+      APIneuFileSystem.exists(destinationPath),
+    ]);
+    if (!sourceExists && destinationExists) return;
+    if (attempt < maxAttempts) {
+      await new Promise((resolve) => setTimeout(resolve, attempt * 150));
+    }
+  }
+  throw new Error(
+    `WeekBox could not confirm moving ${sourcePath} to ${destinationPath}.`,
+  );
 }
 
 async function waitForMoveSource(api, source, destination, maxAttempts) {
@@ -179,12 +210,12 @@ var APIneuFileSystem = {
     try {
       await this.write(temporaryPath, data, isBinary);
       await replaceFile(temporaryPath, path);
-      if (!(await this.exists(path)) || (await this.exists(temporaryPath))) {
-        throw new Error(`Could not replace ${path} atomically.`);
-      }
     } catch (error) {
       await this.remove(temporaryPath).catch(() => {});
-      throw error;
+      throw new Error(
+        `Could not replace ${path} atomically: ${error?.message || error}`,
+        { cause: error },
+      );
     }
   },
 
