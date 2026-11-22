@@ -5,6 +5,7 @@ function setupDropdown(trigger, container, options = {}) {
     menuElement = null,
     portalHost = null,
     portalMenuWidth = null,
+    portalMenuMatchTrigger = false,
     portalMenuAlign = "start",
 
     onToggle = null,
@@ -18,10 +19,10 @@ function setupDropdown(trigger, container, options = {}) {
     if (!portalOpen || !menuElement) return;
     const rect = trigger.getBoundingClientRect();
     const viewportPadding = 8;
-    const width = Math.min(
-      Math.max(portalMenuWidth || rect.width, 190),
-      Math.max(120, window.innerWidth - viewportPadding * 2),
-    );
+    const availableWidth = Math.max(120, window.innerWidth - viewportPadding * 2);
+    const width = portalMenuMatchTrigger
+      ? Math.min(rect.width, availableWidth)
+      : Math.min(Math.max(portalMenuWidth || rect.width, 190), availableWidth);
     const preferredLeft = portalMenuAlign === "end" ? rect.right - width : rect.left;
     const left = Math.min(
       Math.max(viewportPadding, preferredLeft),

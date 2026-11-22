@@ -128,8 +128,7 @@ export const backstageFilters = {
       {
         menuElement: overlay.querySelector(`#backstage-filter-${key}-options`),
         portalHost: overlay,
-        portalMenuWidth: 190,
-        portalMenuAlign: "end",
+        portalMenuMatchTrigger: true,
       },
     ));
     const reverse = overlay.querySelector("[data-reverse]");

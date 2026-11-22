@@ -1,7 +1,13 @@
 export function shouldRetryNewsSource(error, attempt, maxAttempts) {
+  const isNotFoundRetry = error?.status === 404 && attempt === 0;
+  const isNonRetryableClientError =
+    error?.status >= 400 &&
+    error.status < 500 &&
+    error.status !== 429 &&
+    !isNotFoundRetry;
   return (
     error?.name !== "AbortError" &&
-    !(error?.status >= 400 && error.status < 500 && error.status !== 429) &&
+    !isNonRetryableClientError &&
     attempt < maxAttempts - 1
   );
 }
