@@ -90,6 +90,16 @@ const DOWNLOAD_UNAVAILABLE = () =>
 
 const ISSUE_RULES = [
   {
+    matches: (lower, _message, error) =>
+      Number(error?.status) === 429 || /\b429\b/.test(lower),
+    create: () =>
+      issueText(
+        "errors.rateLimitedTitle",
+        "errors.rateLimitedSummary",
+        "errors.rateLimitedTag",
+      ),
+  },
+  {
     matches: (lower) =>
       hasAny(lower, [
         "integrity verification",
@@ -325,7 +335,7 @@ function describeIssue(error) {
   const message = getMessage(error);
   const lower = message.toLowerCase();
   const rule = ISSUE_RULES.find((candidate) =>
-    candidate.matches(lower, message),
+    candidate.matches(lower, message, error),
   );
   return rule
     ? rule.create(lower, message)
@@ -432,6 +442,12 @@ export const errorHandler = {
   },
 
   show(context) {
+    if (context.logToConsole !== false) {
+      const subject = [context.action, context.item, context.version]
+        .filter(Boolean)
+        .join(" / ");
+      console.error(`[WeekBox] ${subject || "Action failed"}`, context.error);
+    }
     const issue = describeIssue(context.error);
     const report = createReport({ ...context, issue });
     const modal = this.ensureModal();

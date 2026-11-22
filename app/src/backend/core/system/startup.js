@@ -76,6 +76,7 @@ function installGlobalErrorReporter() {
       error,
       action: "Run WeekBox",
       storagePath: FS.weekboxPath,
+      logToConsole: false,
     });
   });
   window.addEventListener("unhandledrejection", (event) => {
@@ -84,6 +85,7 @@ function installGlobalErrorReporter() {
       error: event.reason,
       action: "Run WeekBox",
       storagePath: FS.weekboxPath,
+      logToConsole: false,
     });
   });
 }
@@ -560,6 +562,7 @@ async function startApp() {
         error: startupError,
         action: t("startup.startWeekBoxAction"),
         storagePath: FS.weekboxPath,
+        logToConsole: false,
       });
     } catch (reportingError) {
       console.error("Could not show startup error report:", reportingError);

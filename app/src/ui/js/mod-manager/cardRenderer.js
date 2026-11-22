@@ -1,4 +1,5 @@
 import { FS } from "../../../backend/services/filesystem/index.js";
+import { toastSystem } from "../toasts/toastSystem.js";
 import { modCatalogService } from "../../../backend/services/mod-catalog.service.js";
 import { getEngineLaunchBehavior } from "../../../backend/config/engines.config.js";
 import { applyDominantColor } from "../../utils/media/extract-color.util.js";
@@ -242,7 +243,25 @@ function bindModManagerCardActions({
           detail: { source: "mod-manager", action: "deleted", modId: mod.id },
         }),
       );
-    } catch {
+    } catch (error) {
+      console.error(
+        `[WeekBox] Could not delete mod ${mod.id} (${mod.name})`,
+        error,
+      );
+      const toastId = `mod-delete-error-${String(mod.id).replace(
+        /[^a-z0-9_-]/gi,
+        "_",
+      )}`;
+      toastSystem.show(toastId, {
+        title: t("modManager.errorRemovingMod"),
+        message: error?.message || t("modManager.errorRemovingMod"),
+        badgeHtml: '<i class="fa-solid fa-xmark" aria-hidden="true"></i>',
+        showProgress: false,
+        duration: 10000,
+      });
+      toastSystem.setState(toastId, "error", {
+        badgeHtml: '<i class="fa-solid fa-xmark" aria-hidden="true"></i>',
+      });
       deleteBtn.disabled = false;
       deleteBtn.innerHTML = modManagerTemplates.deleteIcon();
     }

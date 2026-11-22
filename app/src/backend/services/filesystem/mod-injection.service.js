@@ -73,7 +73,7 @@ async function removeEngineModLinkAttempt({
   } else if (window.NL_OS === "Windows") {
     const path = quotePowerShell(linkPath);
     const result = await execPowerShell(
-      `$item=Get-Item -LiteralPath ${path} -Force -ErrorAction Stop;if(($item.Attributes -band [IO.FileAttributes]::ReparsePoint) -eq 0){exit 2};Remove-Item -LiteralPath ${path} -Force -ErrorAction Stop;if(Test-Path -LiteralPath ${path}){exit 1}`,
+      `$item=Get-Item -LiteralPath ${path} -Force -ErrorAction Stop;if(($item.Attributes -band [IO.FileAttributes]::ReparsePoint) -eq 0){exit 2};if($item.PSIsContainer){[System.IO.Directory]::Delete(${path},$false)}else{[System.IO.File]::Delete(${path})};if(Test-Path -LiteralPath ${path}){exit 1}`,
     );
     if (result.exitCode !== 0)
       throw new Error(

@@ -199,6 +199,7 @@ export const engineManagerModal = {
         action: "Loading installed engines",
         item: FS.enginesPath,
         storagePath: FS.weekboxPath,
+        logToConsole: false,
       });
     }
   },
@@ -312,6 +313,7 @@ export const engineManagerModal = {
         action: "Preparing engine list",
         item: FS.enginesPath,
         storagePath: FS.weekboxPath,
+        logToConsole: false,
       });
       return;
     }

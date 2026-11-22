@@ -260,6 +260,7 @@ export const downloadEngine = {
           item: engineId,
           version,
           storagePath: FS.weekboxPath,
+          logToConsole: false,
         });
       }
 

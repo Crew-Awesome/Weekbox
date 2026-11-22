@@ -386,11 +386,12 @@ function renderModalDescription(description, data) {
       try {
         await modModal.openSubmission(submission);
       } catch (error) {
-        console.warn("Could not open GameBanana submission reference", error);
+        console.error("Could not open GameBanana submission reference", error);
         errorHandler.show({
           error,
           action: "Open GameBanana reference",
           item: reference.title,
+          logToConsole: false,
         });
       }
     },
