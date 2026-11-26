@@ -91,8 +91,6 @@
 }
 
 [data-theme="dark"] {
-  --wb-card-hover-default: color-mix(in srgb, var(--md-sys-color-primary) 10%, var(--md-sys-color-surface-container-high));
-  --wb-card-hover-bg: color-mix(in srgb, var(--md-sys-color-primary) 10%, var(--md-sys-color-surface-container-high));
   --md-sys-color-primary: #BFC2FF;
   --md-sys-color-on-primary: #0300AC;
   --md-sys-color-primary-container: #0800EE;
@@ -129,6 +127,8 @@
   --md-sys-color-surface-container-low: #1B1B21;
   --md-sys-color-surface-container-lowest: #0E0E13;
   --md-sys-color-surface-dim: #131318;
+  --wb-card-hover-default: color-mix(in srgb, var(--md-sys-color-primary) 10%, var(--md-sys-color-surface-container-high));
+  --wb-card-hover-bg: color-mix(in srgb, var(--md-sys-color-primary) 10%, var(--md-sys-color-surface-container-high));
 }
 
 @media (prefers-color-scheme: dark) {
@@ -196,4 +196,106 @@
   --color-on-error: var(--md-sys-color-on-error);
   --color-outline: var(--md-sys-color-outline);
   --color-outline-variant: var(--md-sys-color-outline-variant);
+}
+
+/* Centralized M3E Component Default Tokens */
+m3e-card {
+  --m3e-card-container-color: transparent;
+  --m3e-filled-card-container-color: transparent;
+  --m3e-elevated-card-container-color: transparent;
+  --m3e-outlined-card-container-color: transparent;
+}
+
+m3e-tooltip {
+  --m3e-tooltip-container-color: var(--md-sys-color-surface-container-highest, var(--md-sys-color-inverse-surface));
+  --m3e-tooltip-supporting-text-color: var(--md-sys-color-on-surface, var(--md-sys-color-inverse-on-surface));
+  --m3e-tooltip-shape: 8px;
+  --m3e-tooltip-padding: 6px 12px;
+  --m3e-tooltip-max-width: 360px;
+  --m3e-tooltip-supporting-text-font-size: 11.5px;
+  --m3e-tooltip-supporting-text-font-weight: 500;
+}
+
+m3e-filter-chip,
+m3e-assist-chip,
+m3e-suggestion-chip,
+m3e-chip {
+  --m3e-chip-container-shape: 16px;
+  --m3e-outlined-chip-outline-color: var(--md-sys-color-outline-variant);
+  --m3e-outlined-chip-container-color: var(--md-sys-color-surface-container-low);
+  --m3e-chip-label-text-color: var(--md-sys-color-on-surface-variant);
+  --m3e-chip-icon-color: var(--md-sys-color-primary);
+  --m3e-chip-selected-container-color: var(--md-sys-color-secondary-container);
+  --m3e-chip-selected-label-text-color: var(--md-sys-color-on-secondary-container);
+  --m3e-chip-selected-leading-icon-color: var(--md-sys-color-on-secondary-container);
+  --m3e-chip-selected-outline-thickness: 0px;
+  --m3e-chip-unselected-label-text-color: var(--md-sys-color-on-surface-variant);
+  --m3e-chip-unselected-leading-icon-color: var(--md-sys-color-primary);
+}
+
+m3e-menu {
+  --m3e-menu-container-color: var(--md-sys-color-surface-container);
+  --m3e-menu-container-shape: 16px;
+  --m3e-menu-container-max-height: none;
+  --m3e-menu-container-elevation: 0 12px 32px color-mix(in srgb, var(--md-sys-color-scrim) 25%, transparent);
+  --m3e-menu-item-color: var(--md-sys-color-on-surface);
+  --m3e-menu-item-container-hover-color: var(--md-sys-color-on-surface);
+  --m3e-menu-item-container-focus-color: var(--md-sys-color-on-surface);
+  --m3e-menu-item-ripple-color: var(--md-sys-color-on-surface);
+  --m3e-menu-item-selected-color: var(--md-sys-color-primary);
+  --m3e-menu-item-selected-container-color: color-mix(in srgb, var(--md-sys-color-primary) 16%, transparent);
+  --m3e-menu-item-selected-container-hover-color: color-mix(in srgb, var(--md-sys-color-primary) 24%, transparent);
+  --m3e-menu-item-selected-container-focus-color: color-mix(in srgb, var(--md-sys-color-primary) 24%, transparent);
+  --m3e-menu-item-selected-ripple-color: var(--md-sys-color-primary);
+  --m3e-menu-item-icon-size: 18px;
+  --m3e-menu-item-icon-label-space: 8px;
+  --m3e-menu-item-padding-start: 10px;
+  --m3e-menu-item-padding-end: 10px;
+  --m3e-menu-item-shape: 10px;
+  --m3e-menu-item-first-child-shape: 12px;
+  --m3e-menu-item-last-child-shape: 12px;
+  --m3e-menu-item-container-height: 38px;
+}
+
+m3e-search-view,
+m3e-search-bar {
+  --m3e-search-bar-container-color: var(--md-sys-color-surface-container-high);
+  --m3e-search-bar-leading-icon-color: var(--md-sys-color-on-surface-variant);
+  --m3e-search-bar-trailing-icon-color: var(--md-sys-color-on-surface-variant);
+  --m3e-search-bar-container-height: 46px;
+  --m3e-search-view-container-color: var(--md-sys-color-surface-container-high);
+  --m3e-search-view-contained-container-color: var(--md-sys-color-surface-container-high);
+  --m3e-search-view-divider-color: var(--md-sys-color-outline-variant);
+  --m3e-search-view-docked-header-container-height: 46px;
+  --m3e-search-view-docked-container-shape: 24px;
+  --m3e-search-view-contained-docked-bar-shape: 24px;
+}
+
+m3e-nav-item {
+  --m3e-nav-item-active-container-color: var(--md-sys-color-secondary-container);
+  --m3e-nav-item-active-icon-color: var(--md-sys-color-on-secondary-container);
+  --m3e-nav-item-inactive-icon-color: var(--md-sys-color-on-surface-variant);
+  --m3e-nav-item-active-label-text-color: var(--md-sys-color-primary);
+  --m3e-nav-item-inactive-label-text-color: var(--md-sys-color-on-surface-variant);
+  --m3e-nav-item-label-text-font-weight: 600;
+}
+
+m3e-icon-button {
+  --m3e-icon-button-icon-color: var(--md-sys-color-on-surface-variant);
+}
+
+m3e-button[variant='outlined'] {
+  --m3e-button-outlined-container-shape: 16px;
+  --m3e-button-outlined-outline-color: color-mix(in srgb, var(--md-sys-color-outline-variant) 60%, transparent);
+  --m3e-button-outlined-label-text-color: var(--md-sys-color-on-surface);
+}
+
+m3e-circular-progress-indicator,
+m3e-linear-progress-indicator {
+  --m3e-progress-indicator-color: var(--md-sys-color-primary);
+  --m3e-progress-indicator-track-color: color-mix(in srgb, var(--md-sys-color-on-surface) 8%, transparent);
+}
+
+m3e-shape {
+  --m3e-shape-container-color: var(--md-sys-color-primary);
 }

@@ -5,99 +5,132 @@ import React, {
   useRef,
   useCallback,
 } from 'react'
+import { useSmoothProgress } from '@/utils/hooks/use-smooth-progress'
 import { LoadingContext } from './context'
 import { LoadingScreen } from './LoadingScreen'
+import {
+  getStartupSnapshot,
+  subscribeStartupLoad,
+} from './startup-loader'
 
 export const LoadingProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
-  const [isLoading, setIsLoading] = useState(true)
+  const initialSnapshot = getStartupSnapshot()
+  const [isLoading, setIsLoading] = useState(!initialSnapshot.isCompleted)
   const [isFadingOut, setIsFadingOut] = useState(false)
-  const [progress, setProgressState] = useState(0)
-  const [message, setMessage] = useState('Starting WeekBox...')
-  const timerRef = useRef<number | null>(null)
+  const [isAppReady, setIsAppReady] = useState(initialSnapshot.isReadyToMount)
+  const [targetProgress, setTargetProgress] = useState(initialSnapshot.progress)
+  const [message, setMessage] = useState(initialSnapshot.message)
+  const [completionRequested, setCompletionRequested] = useState(
+    initialSnapshot.isCompleted,
+  )
   const fadeoutTimerRef = useRef<number | null>(null)
+  const hideSafetyTimerRef = useRef<number | null>(null)
+  const completionCallbackRef = useRef<(() => void) | undefined>(undefined)
+  const hasStartedFadeRef = useRef(false)
 
-  const clearTimer = useCallback(() => {
-    if (timerRef.current !== null) {
-      clearInterval(timerRef.current)
-      timerRef.current = null
-    }
-  }, [])
+  const smoothProgress = useSmoothProgress(targetProgress, {
+    isActive: isLoading && !isFadingOut,
+    maxRatePerSec: 48,
+    easing: 4.2,
+    smoothBackward: false,
+  })
 
-  const clearFadeoutTimer = useCallback(() => {
+  const clearTimers = useCallback(() => {
     if (fadeoutTimerRef.current !== null) {
       clearTimeout(fadeoutTimerRef.current)
       fadeoutTimerRef.current = null
     }
+    if (hideSafetyTimerRef.current !== null) {
+      clearTimeout(hideSafetyTimerRef.current)
+      hideSafetyTimerRef.current = null
+    }
   }, [])
+
+  const beginFadeout = useCallback(() => {
+    if (hasStartedFadeRef.current) return
+    hasStartedFadeRef.current = true
+    clearTimers()
+    fadeoutTimerRef.current = window.setTimeout(() => {
+      setIsFadingOut(true)
+      fadeoutTimerRef.current = window.setTimeout(() => {
+        setIsLoading(false)
+        setIsFadingOut(false)
+        const cb = completionCallbackRef.current
+        completionCallbackRef.current = undefined
+        cb?.()
+      }, 340)
+    }, 120)
+  }, [clearTimers])
 
   const triggerFadeoutAndExit = useCallback(
     (onComplete?: () => void) => {
-      clearTimer()
-      clearFadeoutTimer()
-      setProgressState(100)
-      fadeoutTimerRef.current = window.setTimeout(() => {
-        setIsFadingOut(true)
-        fadeoutTimerRef.current = window.setTimeout(() => {
-          setIsLoading(false)
-          setIsFadingOut(false)
-          if (onComplete) onComplete()
-        }, 600)
-      }, 200)
+      if (onComplete) {
+        completionCallbackRef.current = onComplete
+      }
+      setTargetProgress(100)
+      setCompletionRequested(true)
     },
-    [clearTimer, clearFadeoutTimer],
-  )
-
-  const startProgressTimer = useCallback(
-    (onComplete?: () => void) => {
-      clearTimer()
-      clearFadeoutTimer()
-
-      const intervalTime = 30
-      timerRef.current = window.setInterval(() => {
-        setProgressState((prev) => {
-          if (prev >= 100) {
-            clearTimer()
-            return 100
-          }
-          const increment = prev < 35 ? 1.5 : prev < 70 ? 1.2 : 0.8
-          const next = prev + increment
-          if (next >= 100) {
-            clearTimer()
-            triggerFadeoutAndExit(onComplete)
-            return 100
-          }
-          return next
-        })
-      }, intervalTime)
-    },
-    [clearTimer, clearFadeoutTimer, triggerFadeoutAndExit],
+    [],
   )
 
   useEffect(() => {
-    startProgressTimer()
-    return () => {
-      clearTimer()
-      clearFadeoutTimer()
+    if (!completionRequested || !isLoading || hasStartedFadeRef.current) return
+
+    if (smoothProgress >= 99.4) {
+      const rafId = requestAnimationFrame(() => {
+        beginFadeout()
+      })
+      return () => cancelAnimationFrame(rafId)
     }
-  }, [startProgressTimer, clearTimer, clearFadeoutTimer])
+
+    if (hideSafetyTimerRef.current === null) {
+      hideSafetyTimerRef.current = window.setTimeout(() => {
+        beginFadeout()
+      }, 2600)
+    }
+  }, [beginFadeout, completionRequested, isLoading, smoothProgress])
+
+  useEffect(() => {
+    const unsubscribe = subscribeStartupLoad((snapshot) => {
+      setTargetProgress(snapshot.progress)
+      setMessage(snapshot.message)
+      if (snapshot.isReadyToMount) {
+        setIsAppReady(true)
+      }
+      if (snapshot.isCompleted) {
+        triggerFadeoutAndExit()
+      }
+    })
+
+    return () => {
+      unsubscribe()
+      clearTimers()
+    }
+  }, [clearTimers, triggerFadeoutAndExit])
 
   const showLoading = useCallback(
     (msg = 'Starting WeekBox...') => {
+      clearTimers()
+      hasStartedFadeRef.current = false
+      completionCallbackRef.current = undefined
+      setCompletionRequested(false)
       setMessage(msg)
       setIsFadingOut(false)
       setIsLoading(true)
-      setProgressState(0)
-      startProgressTimer()
+      setTargetProgress(0)
     },
-    [startProgressTimer],
+    [clearTimers],
   )
 
   const setProgress = useCallback(
-    (val: number) => {
+    (val: number, msg?: string) => {
       const clamped = Math.min(100, Math.max(0, val))
-      setProgressState(clamped)
+      setTargetProgress(clamped)
+      if (msg !== undefined) {
+        setMessage(msg)
+      }
       if (clamped >= 100) {
         triggerFadeoutAndExit()
       }
@@ -113,13 +146,23 @@ export const LoadingProvider: React.FC<{ children: React.ReactNode }> = ({
     () => ({
       isLoading,
       isFadingOut,
-      progress,
+      isAppReady,
+      progress: smoothProgress,
       message,
       showLoading,
       setProgress,
       hideLoading,
     }),
-    [isLoading, isFadingOut, progress, message, showLoading, setProgress, hideLoading],
+    [
+      isLoading,
+      isFadingOut,
+      isAppReady,
+      smoothProgress,
+      message,
+      showLoading,
+      setProgress,
+      hideLoading,
+    ],
   )
 
   return (
@@ -128,7 +171,7 @@ export const LoadingProvider: React.FC<{ children: React.ReactNode }> = ({
       <LoadingScreen
         visible={isLoading}
         isFadingOut={isFadingOut}
-        progress={progress}
+        progress={smoothProgress}
         message={message}
       />
     </LoadingContext.Provider>

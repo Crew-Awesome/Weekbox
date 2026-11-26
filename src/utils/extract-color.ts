@@ -44,6 +44,41 @@ const getBgColors = (): number[][] => {
 }
 
 const colorCache = new Map<string, string>()
+const MAX_COLOR_CACHE_SIZE = 150
+const inFlightColorExtractions = new Map<string, Promise<string>>()
+const extractionQueue: Array<() => void> = []
+const MAX_CONCURRENT_EXTRACTIONS = 2
+let activeExtractions = 0
+
+function enqueueColorExtraction(task: () => Promise<void>): void {
+  const run = () => {
+    activeExtractions++
+    void task().finally(() => {
+      activeExtractions = Math.max(0, activeExtractions - 1)
+      const next = extractionQueue.shift()
+      if (next) {
+        setTimeout(next, 16)
+      }
+    })
+  }
+
+  if (activeExtractions < MAX_CONCURRENT_EXTRACTIONS) {
+    run()
+  } else {
+    extractionQueue.push(run)
+  }
+}
+
+function setColorCacheEntry(key: string, value: string): void {
+  if (colorCache.has(key)) {
+    colorCache.delete(key)
+  } else if (colorCache.size >= MAX_COLOR_CACHE_SIZE) {
+    const oldestKey = colorCache.keys().next().value
+    if (oldestKey) colorCache.delete(oldestKey)
+  }
+  colorCache.set(key, value)
+}
+
 const EXTRACT_COLOR_STORAGE_KEY = 'wb_extract_color_active'
 
 type ExtractColorListener = (active: boolean) => void
@@ -117,22 +152,23 @@ function getCORSFriendlyImageUrl(url: string): string {
     cleanUrl = `/mod-covers/${cleanUrl.split('/mod-covers/').pop()}`
   }
 
-  if (typeof (window as unknown as { NL_PORT?: unknown }).NL_PORT !== 'undefined') {
-    return cleanUrl
-  }
   if (!isRemoteHttpUrl(cleanUrl)) return cleanUrl
   if (cleanUrl.startsWith('/api/proxy-image') || cleanUrl.includes('wsrv.nl')) return cleanUrl
+
+  if (typeof (window as unknown as { NL_PORT?: unknown }).NL_PORT !== 'undefined') {
+    return `https://wsrv.nl/?url=${encodeURIComponent(cleanUrl)}&output=webp&w=64`
+  }
 
   const hostname = window.location ? window.location.hostname : ''
   if (hostname === 'localhost' || hostname === '127.0.0.1') {
     return `/api/proxy-image?url=${encodeURIComponent(cleanUrl)}`
   }
-  return `https://wsrv.nl/?url=${encodeURIComponent(cleanUrl)}&output=webp&w=120`
+  return `https://wsrv.nl/?url=${encodeURIComponent(cleanUrl)}&output=webp&w=64`
 }
 
 function getFallbackProxyUrl(url: string): string {
   if (!isRemoteHttpUrl(url) || url.includes('wsrv.nl')) return url
-  return `https://wsrv.nl/?url=${encodeURIComponent(url)}&output=webp&w=120`
+  return `https://wsrv.nl/?url=${encodeURIComponent(url)}&output=webp&w=64`
 }
 
 export const getFallbackHoverColor = (opacity?: number): string => {
@@ -160,109 +196,161 @@ export const extractColor = (
   imageUrl: string,
   opacity?: number,
 ): Promise<string> => {
-  return new Promise((resolve) => {
-    if (!isExtractColorActive() || typeof document === 'undefined' || !imageUrl) {
-      resolve(getFallbackHoverColor(opacity))
-      return
-    }
+  if (!isExtractColorActive() || typeof document === 'undefined' || !imageUrl) {
+    return Promise.resolve(getFallbackHoverColor(opacity))
+  }
 
-    const cacheKey = `${imageUrl}:${opacity ?? ''}`
-    if (colorCache.has(cacheKey)) {
-      resolve(colorCache.get(cacheKey)!)
-      return
-    }
+  const cacheKey = `${imageUrl}:${opacity ?? ''}`
+  if (colorCache.has(cacheKey)) {
+    return Promise.resolve(colorCache.get(cacheKey)!)
+  }
 
-    const loadImageAndExtract = (srcToLoad: string, canRetry = true) => {
-      const img = new Image()
-      img.crossOrigin = 'Anonymous'
+  const existingFlight = inFlightColorExtractions.get(cacheKey)
+  if (existingFlight) {
+    return existingFlight
+  }
 
-      img.onload = () => {
-        try {
-          const canvas = document.createElement('canvas')
-          const ctx = canvas.getContext('2d', { willReadFrequently: true })
-          if (!ctx || img.width <= 0 || img.height <= 0) {
-            resolve(getFallbackHoverColor(opacity))
+  const promise = new Promise<string>((resolve) => {
+    enqueueColorExtraction(
+      () =>
+        new Promise<void>((releaseSlot) => {
+          if (colorCache.has(cacheKey)) {
+            resolve(colorCache.get(cacheKey)!)
+            releaseSlot()
             return
           }
 
-          const maxDim = 24
-          let width = img.width
-          let height = img.height
-          if (width > height) {
-            if (width > maxDim) {
-              height = Math.round((height * maxDim) / width)
-              width = maxDim
-            }
-          } else if (height > maxDim) {
-            width = Math.round((width * maxDim) / height)
-            height = maxDim
+          let settled = false
+          const finish = (result: string) => {
+            if (settled) return
+            settled = true
+            resolve(result)
+            releaseSlot()
           }
 
-          canvas.width = width
-          canvas.height = height
-          ctx.drawImage(img, 0, 0, width, height)
+          const loadImageAndExtract = (srcToLoad: string, canRetry = true) => {
+            const img = new Image()
+            img.crossOrigin = 'Anonymous'
+            img.decoding = 'async'
 
-          const { data } = ctx.getImageData(0, 0, width, height)
-          const colorCounts: Record<string, { count: number; rgb: number[] }> = {}
-
-          for (let i = 0; i < data.length; i += 16) {
-            if (data[i + 3] < 128) continue
-            const finalR = Math.min(255, Math.round(data[i] / 16) * 16)
-            const finalG = Math.min(255, Math.round(data[i + 1] / 16) * 16)
-            const finalB = Math.min(255, Math.round(data[i + 2] / 16) * 16)
-            const rgbStr = `rgb(${finalR}, ${finalG}, ${finalB})`
-            if (!colorCounts[rgbStr]) {
-              colorCounts[rgbStr] = { count: 0, rgb: [finalR, finalG, finalB] }
+            const cleanupImage = () => {
+              img.onload = null
+              img.onerror = null
+              img.src = ''
             }
-            colorCounts[rgbStr].count += 1
+
+            const timeoutId = window.setTimeout(() => {
+              cleanupImage()
+              finish(getFallbackHoverColor(opacity))
+            }, 5000)
+
+            img.onload = () => {
+              window.clearTimeout(timeoutId)
+              const canvas = document.createElement('canvas')
+              try {
+                const ctx = canvas.getContext('2d', { willReadFrequently: true })
+                if (!ctx || img.width <= 0 || img.height <= 0) {
+                  finish(getFallbackHoverColor(opacity))
+                  return
+                }
+
+                const maxDim = 24
+                let width = img.width
+                let height = img.height
+                if (width > height) {
+                  if (width > maxDim) {
+                    height = Math.round((height * maxDim) / width)
+                    width = maxDim
+                  }
+                } else if (height > maxDim) {
+                  width = Math.round((width * maxDim) / height)
+                  height = maxDim
+                }
+
+                canvas.width = width
+                canvas.height = height
+                ctx.drawImage(img, 0, 0, width, height)
+
+                const { data } = ctx.getImageData(0, 0, width, height)
+                const colorCounts: Record<string, { count: number; rgb: number[] }> = {}
+
+                for (let i = 0; i < data.length; i += 16) {
+                  if (data[i + 3] < 128) continue
+                  const finalR = Math.min(255, Math.round(data[i] / 16) * 16)
+                  const finalG = Math.min(255, Math.round(data[i + 1] / 16) * 16)
+                  const finalB = Math.min(255, Math.round(data[i + 2] / 16) * 16)
+                  const rgbStr = `rgb(${finalR}, ${finalG}, ${finalB})`
+                  if (!colorCounts[rgbStr]) {
+                    colorCounts[rgbStr] = { count: 0, rgb: [finalR, finalG, finalB] }
+                  }
+                  colorCounts[rgbStr].count += 1
+                }
+
+                const bgs = [...getBgColors(), [255, 255, 255], [240, 240, 240]]
+                const sortedColors = Object.values(colorCounts).sort(
+                  (a, b) => b.count - a.count,
+                )
+                let bestColor =
+                  sortedColors.length > 0 ? sortedColors[0].rgb : [255, 255, 255]
+
+                for (const candidate of sortedColors) {
+                  const isDifferent = bgs.every(
+                    (bg) =>
+                      Math.hypot(
+                        candidate.rgb[0] - bg[0],
+                        candidate.rgb[1] - bg[1],
+                        candidate.rgb[2] - bg[2],
+                      ) >= 50,
+                  )
+                  if (isDifferent) {
+                    bestColor = candidate.rgb
+                    break
+                  }
+                }
+
+                const finalResult =
+                  opacity !== undefined
+                    ? `color-mix(in srgb, rgb(${bestColor[0]}, ${bestColor[1]}, ${bestColor[2]}) ${Math.round(opacity * 100)}%, var(--md-sys-color-surface-container-high))`
+                    : `rgb(${bestColor[0]}, ${bestColor[1]}, ${bestColor[2]})`
+
+                setColorCacheEntry(cacheKey, finalResult)
+                finish(finalResult)
+              } catch {
+                if (canRetry) {
+                  loadImageAndExtract(getFallbackProxyUrl(imageUrl), false)
+                } else {
+                  finish(getFallbackHoverColor(opacity))
+                }
+              } finally {
+                canvas.width = 0
+                canvas.height = 0
+                cleanupImage()
+              }
+            }
+
+            img.onerror = () => {
+              window.clearTimeout(timeoutId)
+              cleanupImage()
+              if (canRetry) {
+                loadImageAndExtract(getFallbackProxyUrl(imageUrl), false)
+              } else {
+                finish(getFallbackHoverColor(opacity))
+              }
+            }
+
+            img.src = srcToLoad
           }
 
-          const bgs = [...getBgColors(), [255, 255, 255], [240, 240, 240]]
-          const sortedColors = Object.values(colorCounts).sort(
-            (a, b) => b.count - a.count,
-          )
-          let bestColor =
-            sortedColors.length > 0 ? sortedColors[0].rgb : [255, 255, 255]
-
-          for (const candidate of sortedColors) {
-            const isDifferent = bgs.every(
-              (bg) =>
-                Math.hypot(
-                  candidate.rgb[0] - bg[0],
-                  candidate.rgb[1] - bg[1],
-                  candidate.rgb[2] - bg[2],
-                ) >= 50,
-            )
-            if (isDifferent) {
-              bestColor = candidate.rgb
-              break
-            }
-          }
-
-          const finalResult =
-            opacity !== undefined
-              ? `color-mix(in srgb, rgb(${bestColor[0]}, ${bestColor[1]}, ${bestColor[2]}) ${Math.round(opacity * 100)}%, var(--md-sys-color-surface-container-high))`
-              : `rgb(${bestColor[0]}, ${bestColor[1]}, ${bestColor[2]})`
-
-          colorCache.set(cacheKey, finalResult)
-          resolve(finalResult)
-        } catch {
-          if (canRetry) loadImageAndExtract(getFallbackProxyUrl(imageUrl), false)
-          else resolve(getFallbackHoverColor(opacity))
-        }
-      }
-
-      img.onerror = () => {
-        if (canRetry) loadImageAndExtract(getFallbackProxyUrl(imageUrl), false)
-        else resolve(getFallbackHoverColor(opacity))
-      }
-
-      img.src = srcToLoad
-    }
-
-    const initialUrl = getCORSFriendlyImageUrl(imageUrl)
-    const canRetry =
-      isRemoteHttpUrl(imageUrl) && initialUrl !== getFallbackProxyUrl(imageUrl)
-    loadImageAndExtract(initialUrl, canRetry)
+          const initialUrl = getCORSFriendlyImageUrl(imageUrl)
+          const canRetry =
+            isRemoteHttpUrl(imageUrl) && initialUrl !== getFallbackProxyUrl(imageUrl)
+          loadImageAndExtract(initialUrl, canRetry)
+        }),
+    )
+  }).finally(() => {
+    inFlightColorExtractions.delete(cacheKey)
   })
+
+  inFlightColorExtractions.set(cacheKey, promise)
+  return promise
 }

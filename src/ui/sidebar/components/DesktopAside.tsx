@@ -1,5 +1,6 @@
 import React from 'react'
 import { SIDEBAR_NAV_ITEMS, DESKTOP_NAV_ITEM_STYLE, ACTION_ICON_BUTTON_STYLE } from '../constants'
+import { prefetchView } from '@/core/routes/prefetch'
 import { SidebarIcon } from './SidebarIcon'
 
 export interface DesktopAsideProps {
@@ -29,6 +30,7 @@ const AsideBackgroundActions: React.FC<{
         variant="standard"
         size="small"
         onClick={onOpenInfo}
+        onPointerEnter={() => prefetchView('about')}
         title="Information"
         className="group transition-transform hover:scale-105"
         style={ACTION_ICON_BUTTON_STYLE}
@@ -41,6 +43,7 @@ const AsideBackgroundActions: React.FC<{
         variant="standard"
         size="small"
         onClick={onOpenSettings}
+        onPointerEnter={() => prefetchView('settings')}
         title="Settings"
         className="group transition-transform hover:scale-105"
         style={ACTION_ICON_BUTTON_STYLE}
@@ -111,6 +114,8 @@ export const DesktopAside: React.FC<DesktopAsideProps> = ({
                     orientation="vertical"
                     selected={isActive ? true : undefined}
                     onClick={() => onNavigate(item.path)}
+                    onPointerEnter={() => prefetchView(item.path)}
+                    onFocus={() => prefetchView(item.path)}
                     style={DESKTOP_NAV_ITEM_STYLE}
                   >
                     <div

@@ -7,9 +7,27 @@ import { weekBoxHostPlugin } from './vite-plugins/host-bridge/index.ts'
 export default defineConfig({
   plugins: [react(), tailwindcss(), weekBoxHostPlugin()],
   resolve: {
+    dedupe: [
+      'react',
+      'react-dom',
+      'react-router',
+      'react-router-dom',
+      'react-i18next',
+      'i18next',
+    ],
     alias: {
       '@': path.resolve(import.meta.dirname, './src'),
     },
+  },
+  optimizeDeps: {
+    include: [
+      'react',
+      'react-dom',
+      'react-dom/client',
+      'react-router-dom',
+      'react-i18next',
+      'i18next',
+    ],
   },
   build: {
     rollupOptions: {

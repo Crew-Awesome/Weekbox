@@ -4,13 +4,24 @@ interface ModalBackdropProps {
   backdropImage?: string
   baseOverlayClass: string
   showCirclePattern?: boolean
+  isHomeStyle?: boolean
 }
 
 export const ModalBackdrop: React.FC<ModalBackdropProps> = ({
   backdropImage,
   baseOverlayClass,
   showCirclePattern,
+  isHomeStyle = false,
 }) => {
+  if (isHomeStyle) {
+    return (
+      <div
+        className="absolute inset-0 z-0 pointer-events-none bg-black/55"
+        aria-hidden="true"
+      />
+    )
+  }
+
   return (
     <>
       {backdropImage && (

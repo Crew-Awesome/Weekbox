@@ -17,8 +17,10 @@ import {
 } from './carousel-pointer'
 import type { CarouselProps, CarouselAPI } from './types'
 import { isCapacitor } from '@/core/host'
+import { useUiStyle } from '@/utils/ui-style'
 
 export function useCarousel(props: CarouselProps) {
+  const isHomeStyle = useUiStyle() === 'home'
   const {
     children,
     isInfinite = false,
@@ -72,7 +74,9 @@ export function useCarousel(props: CarouselProps) {
   }, [isInfinite, totalItems])
 
   const [activeIndex, setActiveIndex] = useState(0)
+  const [activeLogicalIndex, setActiveLogicalIndex] = useState(0)
   const activeIndexRef = useRef(0)
+  const activeLogicalIndexRef = useRef(0)
   const autoTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const progressTweenRef = useRef<gsap.core.Tween | null>(null)
   const progressRefs = useRef<(HTMLDivElement | null)[]>([])
@@ -108,6 +112,7 @@ export function useCarousel(props: CarouselProps) {
       progress,
       isInfinite,
       isMobile: checkIsMobile(),
+      isSimple: isHomeStyle,
       visualRefs: visualRefs.current,
     })
 
@@ -117,6 +122,11 @@ export function useCarousel(props: CarouselProps) {
       ((currentIndex % totalItems) + totalItems) % totalItems
     const originalIndex = currentLogicalIndex % childrenArray.length
 
+    if (activeLogicalIndexRef.current !== currentLogicalIndex) {
+      activeLogicalIndexRef.current = currentLogicalIndex
+      setActiveLogicalIndex(currentLogicalIndex)
+    }
+
     if (activeIndexRef.current !== originalIndex) {
       activeIndexRef.current = originalIndex
       setActiveIndex(originalIndex)
@@ -124,7 +134,7 @@ export function useCarousel(props: CarouselProps) {
         setTimeout(() => playAutoRef.current(), 0)
       }
     }
-  }, [isInfinite, totalItems, childrenArray.length, isAuto, checkIsMobile])
+  }, [isInfinite, totalItems, childrenArray.length, isAuto, checkIsMobile, isHomeStyle])
 
   const pauseAuto = useCallback(() => {
     if (autoTimerRef.current) {
@@ -291,5 +301,6 @@ export function useCarousel(props: CarouselProps) {
     totalItems,
     exactIndexRef,
     activeIndexRef,
+    activeLogicalIndex,
   }
 }

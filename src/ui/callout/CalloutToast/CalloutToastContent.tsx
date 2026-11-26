@@ -1,4 +1,5 @@
 import React from 'react'
+import { useUiStyle } from '@/utils/ui-style'
 import type { CalloutToastItem } from '../types'
 import { CalloutToastDownload } from './CalloutToastDownload'
 
@@ -62,13 +63,37 @@ export const CalloutToastInnerContent: React.FC<CalloutToastInnerContentProps> =
   isMinimized,
   currentShape,
   downloadProgress,
-}) => (
+}) => {
+  const isHomeStyle = useUiStyle() === 'home'
+
+  return (
   <>
     {toast.download ? (
       <div
         slot="icon"
         className="shrink-0 flex items-center justify-center -my-0.5"
       >
+        {isHomeStyle ? (
+          <span
+            className="px-1.5 py-0.5 rounded text-[10px] font-mono font-bold select-none"
+            style={{
+              backgroundColor:
+                toast.download.status === 'completed'
+                  ? 'var(--md-sys-color-tertiary, #388e3c)'
+                  : 'var(--md-sys-color-primary)',
+              color:
+                toast.download.status === 'completed'
+                  ? 'var(--md-sys-color-on-tertiary, #ffffff)'
+                  : 'var(--md-sys-color-on-primary, #ffffff)',
+            }}
+          >
+            {toast.download.status === 'completed'
+              ? 'OK'
+              : toast.download.status === 'extracting'
+                ? '99%'
+                : `${Math.round(downloadProgress)}%`}
+          </span>
+        ) : (
         <m3e-shape
           name={currentShape}
           style={
@@ -103,11 +128,14 @@ export const CalloutToastInnerContent: React.FC<CalloutToastInnerContentProps> =
               <span className="material-symbols-rounded text-[15px]">
                 check
               </span>
+            ) : toast.download.status === 'extracting' ? (
+              '99%'
             ) : (
               `${Math.round(downloadProgress)}%`
             )}
           </span>
         </m3e-shape>
+        )}
       </div>
     ) : toast.icon ? (
       <span
@@ -131,7 +159,11 @@ export const CalloutToastInnerContent: React.FC<CalloutToastInnerContentProps> =
         <span className="truncate max-w-[250px]">{toast.title}</span>
         {isMinimized && (
           <span className="text-[9.5px] font-normal uppercase tracking-wider px-1 py-0.2 rounded opacity-70 border border-current select-none shrink-0">
-            {toast.download ? `${Math.round(downloadProgress)}%` : 'min'}
+            {toast.download
+              ? toast.download.status === 'extracting'
+                ? '99%'
+                : `${Math.round(downloadProgress)}%`
+              : 'min'}
           </span>
         )}
       </span>
@@ -194,4 +226,5 @@ export const CalloutToastInnerContent: React.FC<CalloutToastInnerContentProps> =
       </div>
     </div>
   </>
-)
+  )
+}

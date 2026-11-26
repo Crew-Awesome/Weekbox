@@ -23,7 +23,7 @@ export interface CalloutDownloadInfo {
   downloaded?: string
   total?: string
   filename?: string
-  status?: 'downloading' | 'completed' | 'paused' | 'error'
+  status?: 'downloading' | 'extracting' | 'completed' | 'paused' | 'error'
   onCancel?: () => void
 }
 
@@ -34,7 +34,7 @@ export interface CalloutDownloadOptions extends Omit<CalloutToastOptions, 'messa
   downloaded?: string
   total?: string
   filename?: string
-  status?: 'downloading' | 'completed' | 'paused' | 'error'
+  status?: 'downloading' | 'extracting' | 'completed' | 'paused' | 'error'
   onCancel?: () => void
 }
 

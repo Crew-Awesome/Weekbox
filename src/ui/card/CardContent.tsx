@@ -1,12 +1,16 @@
 import React from 'react'
+import { ModAvatar } from '@/ui/avatar/ModAvatar'
 
 export interface CardContentProps {
   title: string
   description?: string
   isLoading?: boolean
   isNsfw?: boolean
+  isHomeStyle?: boolean
   author?: string
   authorAvatar?: string
+  authorAvatarRelPath?: string
+  authorAvatarFullPath?: string
   children?: React.ReactNode
 }
 
@@ -15,19 +19,34 @@ export const CardContent: React.FC<CardContentProps> = ({
   description,
   isLoading,
   isNsfw,
+  isHomeStyle = false,
   author,
   authorAvatar,
+  authorAvatarRelPath,
+  authorAvatarFullPath,
   children,
 }) => {
   return (
-    <div className="p-4 pb-3 flex flex-col gap-1.5">
+    <div className={`${isHomeStyle ? 'p-3.5' : 'p-4 pb-3'} flex flex-col gap-1.5`}>
       {isLoading ? (
         <>
-          <div className="h-5 w-3/4 rounded-md bg-[var(--md-sys-color-surface-container-highest)] animate-pulse" />
+          <div
+            className={`h-5 w-3/4 rounded-md bg-[var(--md-sys-color-surface-container-highest)] ${
+              isHomeStyle ? '' : 'animate-pulse'
+            }`}
+          />
           {description !== undefined && (
-            <div className="h-3.5 w-1/2 rounded-md bg-[var(--md-sys-color-surface-container-highest)] animate-pulse mt-0.5" />
+            <div
+              className={`h-3.5 w-1/2 rounded-md bg-[var(--md-sys-color-surface-container-highest)] ${
+                isHomeStyle ? '' : 'animate-pulse'
+              } mt-0.5`}
+            />
           )}
-          <div className="h-4 w-1/3 rounded-full bg-[var(--md-sys-color-surface-container-highest)] animate-pulse pt-0.5" />
+          <div
+            className={`h-4 w-1/3 rounded-full bg-[var(--md-sys-color-surface-container-highest)] ${
+              isHomeStyle ? '' : 'animate-pulse'
+            } pt-0.5`}
+          />
         </>
       ) : (
         <>
@@ -50,26 +69,17 @@ export const CardContent: React.FC<CardContentProps> = ({
             </p>
           )}
 
-          {(author || authorAvatar) && (
+          {(author || authorAvatar || authorAvatarRelPath) && (
             <div className="flex items-center gap-1.5 pt-0.5">
-              {authorAvatar ? (
-                <img
-                  src={authorAvatar}
-                  alt={author || 'Creator'}
-                  className="w-5 h-5 rounded-full object-cover border border-[var(--md-sys-color-outline-variant)]/30 shrink-0 shadow-sm"
-                  loading="lazy"
-                  decoding="async"
-                  onError={(e) => {
-                    e.currentTarget.style.display = 'none'
-                  }}
-                />
-              ) : (
-                <div className="w-5 h-5 rounded-full bg-[var(--md-sys-color-surface-container-highest)] flex items-center justify-center shrink-0 border border-[var(--md-sys-color-outline-variant)]/20">
-                  <span className="material-symbols-rounded text-xs text-[var(--md-sys-color-on-surface-variant)] opacity-90">
-                    person
-                  </span>
-                </div>
-              )}
+              <ModAvatar
+                remoteUrl={authorAvatar}
+                localRelPath={authorAvatarRelPath}
+                localFullPath={authorAvatarFullPath}
+                alt={author || 'Creator'}
+                className="w-5 h-5 rounded-full object-cover border border-[var(--md-sys-color-outline-variant)]/30 shrink-0 shadow-sm"
+                fallbackClassName="w-5 h-5 rounded-full bg-[var(--md-sys-color-surface-container-highest)] flex items-center justify-center shrink-0 border border-[var(--md-sys-color-outline-variant)]/20"
+                iconClassName="material-symbols-rounded text-xs text-[var(--md-sys-color-on-surface-variant)] opacity-90"
+              />
               <span className="text-xs font-semibold text-[var(--md-sys-color-on-surface)] truncate">
                 {author || 'Unknown Creator'}
               </span>

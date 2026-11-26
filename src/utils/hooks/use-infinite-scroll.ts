@@ -25,7 +25,10 @@ export function useInfiniteScroll({
   const [armed, setArmed] = useState(true)
   const onLoadMoreRef = useRef(onLoadMore)
   const sentinelRef = useRef<HTMLElement | null>(null)
-  sentinelRef.current = sentinel
+
+  useEffect(() => {
+    sentinelRef.current = sentinel
+  }, [sentinel])
 
   useEffect(() => {
     onLoadMoreRef.current = onLoadMore

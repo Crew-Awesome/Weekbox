@@ -49,7 +49,7 @@ export function useSurfaceHoverColor({
           observer.disconnect()
         }
       },
-      { rootMargin: '400px' },
+      { rootMargin: '100px' },
     )
     if (rootRef.current) observer.observe(rootRef.current)
     return () => observer.disconnect()

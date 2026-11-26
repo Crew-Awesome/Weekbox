@@ -5,6 +5,7 @@ import { useModalBackHandler } from './use-modal-back-handler'
 import { useModalAnimation } from './use-modal-animation'
 import { ModalBackdrop } from './modal-backdrop'
 import { useViewport } from '@/utils/hooks/use-viewport'
+import { useUiStyle } from '@/utils/ui-style'
 
 export type * from './types'
 
@@ -34,6 +35,7 @@ export const Modal: React.FC<ModalProps> = ({
   onBack,
 }) => {
   const { isDesktop } = useViewport()
+  const isHomeStyle = useUiStyle() === 'home'
   const { isRendered, isVisible, handleClose } = useModalAnimation(isOpen, onClose)
   useModalBackHandler(isOpen, handleClose, onBack)
 
@@ -106,9 +108,11 @@ export const Modal: React.FC<ModalProps> = ({
       onClick={handleClose}
       style={{
         zIndex,
-        transition: isVisible
-          ? 'opacity 500ms cubic-bezier(0.2, 0.0, 0, 1.0)'
-          : 'opacity 150ms cubic-bezier(0.2, 0.0, 0, 1.0)',
+        transition: isHomeStyle
+          ? 'opacity 180ms ease-out'
+          : isVisible
+            ? 'opacity 500ms cubic-bezier(0.2, 0.0, 0, 1.0)'
+            : 'opacity 150ms cubic-bezier(0.2, 0.0, 0, 1.0)',
         opacity: isVisible ? 1 : 0,
         ...(overlayPadding ? { padding: overlayPadding } : {}),
       }}
@@ -117,6 +121,7 @@ export const Modal: React.FC<ModalProps> = ({
         backdropImage={backdropImage}
         baseOverlayClass={baseOverlayClass}
         showCirclePattern={showCirclePattern}
+        isHomeStyle={isHomeStyle}
       />
 
       <div
@@ -124,25 +129,33 @@ export const Modal: React.FC<ModalProps> = ({
         onClick={(e) => e.stopPropagation()}
         style={{
           ...staticModalStyle,
-          transformOrigin: 'top center',
-          transition: isVisible
-            ? 'opacity 500ms cubic-bezier(0.2, 0.0, 0, 1.0), transform 500ms cubic-bezier(0.2, 0.0, 0, 1.0)'
-            : 'opacity 150ms cubic-bezier(0.2, 0.0, 0, 1.0), transform 150ms cubic-bezier(0.2, 0.0, 0, 1.0)',
+          transformOrigin: isHomeStyle ? 'center center' : 'top center',
+          transition: isHomeStyle
+            ? 'opacity 180ms ease-out, transform 180ms ease-out'
+            : isVisible
+              ? 'opacity 500ms cubic-bezier(0.2, 0.0, 0, 1.0), transform 500ms cubic-bezier(0.2, 0.0, 0, 1.0)'
+              : 'opacity 150ms cubic-bezier(0.2, 0.0, 0, 1.0), transform 150ms cubic-bezier(0.2, 0.0, 0, 1.0)',
           opacity: isVisible ? 1 : 0,
-          transform: isVisible
-            ? 'scaleY(1) translateY(0)'
-            : 'scaleY(0.6) translateY(-24px)',
+          transform: isHomeStyle
+            ? isVisible
+              ? 'scale(1)'
+              : 'scale(0.97)'
+            : isVisible
+              ? 'scaleY(1) translateY(0)'
+              : 'scaleY(0.6) translateY(-24px)',
           willChange: 'transform, opacity',
         }}
       >
         <div
           className={`absolute inset-0 ${
             !hideDefaultBackground
-              ? 'bg-[var(--md-sys-color-surface)] rounded-2xl shadow-[0_8px_32px_rgba(0,0,0,0.6)] border border-white/10'
+              ? isHomeStyle
+                ? 'bg-[var(--md-sys-color-surface)] rounded-xl shadow-lg border border-[var(--md-sys-color-outline-variant)]'
+                : 'bg-[var(--md-sys-color-surface)] rounded-2xl shadow-[0_8px_32px_rgba(0,0,0,0.6)] border border-white/10'
               : ''
           } overflow-hidden z-0`}
         >
-          {svgBackgrounds && (
+          {!isHomeStyle && svgBackgrounds && (
             <div className="absolute inset-0 pointer-events-none z-0 overflow-hidden">
               {svgBackgrounds}
             </div>

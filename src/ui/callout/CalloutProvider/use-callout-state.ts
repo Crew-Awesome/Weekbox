@@ -185,9 +185,14 @@ export function useCalloutState() {
         prev.map((t) => {
           if (t.id !== id || !t.download) return t
 
-          const newProgress =
-            update.progress !== undefined ? update.progress : t.download.progress
-          const isCompleted = newProgress >= 100 || update.status === 'completed'
+          const isExtracting = update.status === 'extracting'
+          const newProgress = isExtracting
+            ? 99
+            : update.progress !== undefined
+              ? update.progress
+              : t.download.progress
+          const isCompleted =
+            !isExtracting && (newProgress >= 100 || update.status === 'completed')
 
           const updatedDownload: CalloutDownloadInfo = {
             ...t.download,

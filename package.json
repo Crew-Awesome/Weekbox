@@ -29,10 +29,12 @@
     "@tailwindcss/vite": "^4.3.3",
     "7zip-bin": "^5.2.0",
     "gsap": "^3.15.0",
+    "i18next": "^27.2.7",
     "marked": "^18.1.1",
     "node-unrar-js": "^2.0.2",
     "react": "^19.2.8",
     "react-dom": "^19.2.8",
+    "react-i18next": "^18.0.3",
     "react-router-dom": "^7.18.4",
     "tailwindcss": "^4.3.3"
   },

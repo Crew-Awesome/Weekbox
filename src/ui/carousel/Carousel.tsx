@@ -30,6 +30,7 @@ export const Carousel: React.FC<CarouselProps> = (props) => {
     totalItems,
     exactIndexRef,
     activeIndexRef,
+    activeLogicalIndex,
   } = useCarousel(props)
 
   useLayoutEffect(() => {
@@ -121,31 +122,39 @@ export const Carousel: React.FC<CarouselProps> = (props) => {
           onTouchEnd={onTouchEnd}
         >
           <div className="absolute inset-0 pointer-events-none">
-            {visualChildren.map((child, idx) => (
-              <div
-                key={`visual-${idx}`}
-                ref={(el) => {
-                  visualRefs.current[idx] = el
-                }}
-                className="absolute h-full pointer-events-auto cursor-pointer select-none"
-                style={{
-                  left: '100%',
-                  width: '0%',
-                  visibility: 'hidden',
-                  willChange: 'transform, width, left',
-                }}
-                onClick={() => {
-                  const logicalIdx = idx % childrenArray.length
-                  if (logicalIdx === api.activeIndex) {
-                    props.onItemClick?.(logicalIdx)
-                  } else {
-                    api.goToLogicalIndex(logicalIdx)
-                  }
-                }}
-              >
-                {child}
-              </div>
-            ))}
+            {visualChildren.map((child, idx) => {
+              const directDiff = Math.abs(idx - activeLogicalIndex)
+              const dist = isInfinite
+                ? Math.min(directDiff, totalItems - directDiff)
+                : directDiff
+              const isNearActive = totalItems <= 5 || dist <= 2
+
+              return (
+                <div
+                  key={`visual-${idx}`}
+                  ref={(el) => {
+                    visualRefs.current[idx] = el
+                  }}
+                  className="absolute h-full pointer-events-auto cursor-pointer select-none"
+                  style={{
+                    left: '100%',
+                    width: '0%',
+                    visibility: 'hidden',
+                    willChange: isNearActive ? 'transform, width, left' : 'auto',
+                  }}
+                  onClick={() => {
+                    const logicalIdx = idx % childrenArray.length
+                    if (logicalIdx === api.activeIndex) {
+                      props.onItemClick?.(logicalIdx)
+                    } else {
+                      api.goToLogicalIndex(logicalIdx)
+                    }
+                  }}
+                >
+                  {isNearActive ? child : null}
+                </div>
+              )
+            })}
           </div>
 
           {Array.from({ length: dummyCount }).map((_, idx) => (

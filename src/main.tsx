@@ -17,9 +17,13 @@ import '@m3e/web/chips'
 import '@m3e/web/card'
 import '@m3e/web/slider'
 import '@/ui/overflow/M3eOverflow'
+import '@/core/i18n'
 import { registerCalloutDevTools } from '@/ui/callout'
+import { registerWeekBoxDevTools } from '@/core/devtools/wb-console'
 import { ensureNeutralinoInit } from '@/core/host'
 import { initSavedTheme } from '@/utils/theme'
+import { initSavedUiScale } from '@/utils/ui-scale'
+import { initSavedUiStyle } from '@/utils/ui-style'
 import './index.css'
 import App from './App.tsx'
 
@@ -82,7 +86,10 @@ if (typeof localStorage !== 'undefined') {
 }
 
 initSavedTheme()
+initSavedUiScale()
+initSavedUiStyle()
 registerCalloutDevTools()
+registerWeekBoxDevTools()
 ensureNeutralinoInit()
 
 createRoot(document.getElementById('root')!).render(

@@ -1,8 +1,14 @@
-import React, { useState, lazy, Suspense } from 'react'
+import React, { useEffect, useState, lazy, Suspense } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import type { SidebarProps, SidebarNavItem } from './types'
 import { DesktopAside } from './components/DesktopAside'
+import { MadeInHomeAside } from './components/MadeInHomeAside'
 import { MobileBottomNav } from './components/MobileBottomNav'
+import {
+  getSidebarStyle,
+  SIDEBAR_STYLE_CHANGED_EVENT,
+  type SidebarStyle,
+} from './sidebar-style'
 
 const AboutModal = lazy(() =>
   import('./components/AboutModal').then((m) => ({ default: m.AboutModal })),
@@ -19,6 +25,15 @@ export const Sidebar: React.FC<SidebarProps> = ({ onNavigate }) => {
 
   const [showInfo, setShowInfo] = useState(false)
   const [showSettings, setShowSettings] = useState(false)
+  const [sidebarStyle, setSidebarStyleState] = useState<SidebarStyle>(getSidebarStyle)
+
+  useEffect(() => {
+    const syncSidebarStyle = () => setSidebarStyleState(getSidebarStyle())
+    window.addEventListener(SIDEBAR_STYLE_CHANGED_EVENT, syncSidebarStyle)
+    return () => {
+      window.removeEventListener(SIDEBAR_STYLE_CHANGED_EVENT, syncSidebarStyle)
+    }
+  }, [])
 
   const handleNavigate = (path: string) => {
     const isCurrent =
@@ -46,20 +61,32 @@ export const Sidebar: React.FC<SidebarProps> = ({ onNavigate }) => {
 
   return (
     <>
-      <DesktopAside
-        activePath={location.pathname}
-        onNavigate={handleNavigate}
-        onOpenInfo={() => setShowInfo(true)}
-        onOpenSettings={() => setShowSettings(true)}
-        isInfoOpen={showInfo}
-        isSettingsOpen={showSettings}
-      />
+      {sidebarStyle === 'home' ? (
+        <MadeInHomeAside
+          activePath={location.pathname}
+          onNavigate={handleNavigate}
+          onOpenInfo={() => setShowInfo(true)}
+          onOpenSettings={() => setShowSettings(true)}
+          isInfoOpen={showInfo}
+          isSettingsOpen={showSettings}
+        />
+      ) : (
+        <DesktopAside
+          activePath={location.pathname}
+          onNavigate={handleNavigate}
+          onOpenInfo={() => setShowInfo(true)}
+          onOpenSettings={() => setShowSettings(true)}
+          isInfoOpen={showInfo}
+          isSettingsOpen={showSettings}
+        />
+      )}
 
       <MobileBottomNav
         activePath={location.pathname}
         onNavigate={handleNavigate}
         onOpenSettings={() => setShowSettings(true)}
         isSettingsOpen={showSettings}
+        sidebarStyle={sidebarStyle}
       />
 
       {showInfo && (

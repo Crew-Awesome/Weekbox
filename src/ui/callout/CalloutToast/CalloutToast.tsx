@@ -1,5 +1,6 @@
 import React, { useRef, useCallback } from 'react'
 import '../callout.css'
+import { useUiStyle } from '@/utils/ui-style'
 import type { CalloutToastItem } from '../types'
 import { useShapeMorph } from './use-shape-morph'
 import { useToastTimer } from './use-toast-timer'
@@ -31,7 +32,8 @@ export const CalloutToast: React.FC<CalloutToastProps> = ({
 
   const isMinimized = toast.minimized
   const isDownload = Boolean(toast.download)
-  const currentShape = useShapeMorph(isDownload)
+  const isHomeStyle = useUiStyle() === 'home'
+  const currentShape = useShapeMorph(isDownload && !isHomeStyle)
 
   const calloutTintStyle = (
     toast.variant === 'error'
@@ -142,12 +144,15 @@ export const CalloutToast: React.FC<CalloutToastProps> = ({
           style={
             {
               ...calloutTintStyle,
-              boxShadow:
-                '0 4px 16px color-mix(in srgb, var(--md-sys-color-scrim) 20%, transparent)',
-              borderRadius: toast.shape === 'square' ? '0px' : '14px',
+              boxShadow: isHomeStyle
+                ? '0 2px 8px color-mix(in srgb, var(--md-sys-color-scrim) 16%, transparent)'
+                : '0 4px 16px color-mix(in srgb, var(--md-sys-color-scrim) 20%, transparent)',
+              borderRadius: toast.shape === 'square' ? '0px' : isHomeStyle ? '8px' : '14px',
+              ...(isHomeStyle
+                ? { border: '1px solid var(--md-sys-color-outline-variant)' }
+                : { backdropFilter: 'blur(16px)' }),
               overflow: 'hidden',
               display: 'block',
-              backdropFilter: 'blur(16px)',
               transition:
                 'padding 200ms cubic-bezier(0.2, 0, 0, 1), transform 200ms ease',
               '--m3e-callout-top-space': isMinimized ? '6px' : '9px',
@@ -155,7 +160,7 @@ export const CalloutToast: React.FC<CalloutToastProps> = ({
               '--m3e-callout-leading-space': '10px',
               '--m3e-callout-trailing-space':
                 toast.canMinimize || toast.allowClose ? '34px' : '12px',
-            } as React.CSSProperties
+            } as Record<string, string | number> as React.CSSProperties
           }
         >
           <CalloutToastInnerContent

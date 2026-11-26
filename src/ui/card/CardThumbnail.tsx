@@ -7,6 +7,7 @@ export interface CardThumbnailProps {
   displayThumbnail: string
   title: string
   shouldRenderIcon: boolean
+  isHomeStyle?: boolean
   thumbClipPath?: string
   thumbClipId: string
   isThumbnailClickable: boolean
@@ -35,6 +36,7 @@ export const CardThumbnail: React.FC<CardThumbnailProps> = ({
   displayThumbnail,
   title,
   shouldRenderIcon,
+  isHomeStyle = false,
   thumbClipPath,
   thumbClipId,
   isThumbnailClickable,
@@ -65,14 +67,16 @@ export const CardThumbnail: React.FC<CardThumbnailProps> = ({
       <div
         ref={thumbContainerRef}
         className={`relative overflow-hidden w-full aspect-[16/9] isolate ${
-          !thumbClipPath
-            ? shouldRenderIcon
-              ? 'rounded-tr-2xl rounded-tl-none'
-              : 'rounded-t-2xl'
-            : ''
+          isHomeStyle
+            ? 'rounded-t-xl border-b border-[var(--md-sys-color-outline-variant)]/40'
+            : !thumbClipPath
+              ? shouldRenderIcon
+                ? 'rounded-tr-2xl rounded-tl-none'
+                : 'rounded-t-2xl'
+              : ''
         } ${isThumbnailClickable ? 'cursor-pointer' : ''}`}
         style={
-          thumbClipPath
+          !isHomeStyle && thumbClipPath
             ? {
                 clipPath: `url(#${thumbClipId})`,
                 WebkitClipPath: `url(#${thumbClipId})`,
@@ -83,12 +87,12 @@ export const CardThumbnail: React.FC<CardThumbnailProps> = ({
           isThumbnailClickable && !isWholeCardClickable ? onClick : undefined
         }
         onMouseEnter={
-          isThumbnailClickable && !isWholeCardClickable
+          isThumbnailClickable && !isWholeCardClickable && !isHomeStyle
             ? onMouseEnter
             : undefined
         }
         onMouseLeave={
-          isThumbnailClickable && !isWholeCardClickable
+          isThumbnailClickable && !isWholeCardClickable && !isHomeStyle
             ? onMouseLeave
             : undefined
         }
@@ -96,7 +100,11 @@ export const CardThumbnail: React.FC<CardThumbnailProps> = ({
         <div className="absolute inset-0 isolate">
           <div ref={thumbnailRef} className="absolute inset-0">
             {(!thumbnailLoaded || isLoading) && (
-              <div className="absolute inset-0 block w-full h-full bg-[var(--md-sys-color-surface-container-highest)] animate-pulse" />
+              <div
+                className={`absolute inset-0 block w-full h-full bg-[var(--md-sys-color-surface-container-highest)] ${
+                  isHomeStyle ? '' : 'animate-pulse'
+                }`}
+              />
             )}
             {!isLoading && (
               <img
@@ -119,15 +127,41 @@ export const CardThumbnail: React.FC<CardThumbnailProps> = ({
                     setThumbnailLoaded(true)
                   }
                 }}
-                style={{
-                  WebkitMaskImage:
-                    'linear-gradient(to bottom, black 60%, transparent 100%)',
-                  maskImage:
-                    'linear-gradient(to bottom, black 60%, transparent 100%)',
-                }}
+                style={
+                  isHomeStyle
+                    ? undefined
+                    : {
+                        WebkitMaskImage:
+                          'linear-gradient(to bottom, black 60%, transparent 100%)',
+                        maskImage:
+                          'linear-gradient(to bottom, black 60%, transparent 100%)',
+                      }
+                }
               />
             )}
           </div>
+          {isHomeStyle && shouldRenderIcon && !isLoading && (
+            <div
+              className="absolute top-2 left-2 z-30 flex items-center gap-1 px-1.5 py-1 rounded-md bg-black/75 border border-white/15 pointer-events-auto"
+              title={hasWarning ? warningTooltip || iconTooltip : iconTooltip}
+            >
+              {icon && (
+                <img
+                  src={icon}
+                  alt={iconTooltip || 'Engine'}
+                  className={`w-5 h-5 object-contain ${
+                    hasWarning ? 'grayscale opacity-75' : ''
+                  }`}
+                  draggable={false}
+                />
+              )}
+              {hasWarning && (
+                <span className="material-symbols-rounded text-[15px] leading-none text-amber-400">
+                  warning
+                </span>
+              )}
+            </div>
+          )}
           {thumbnailOverlay && (
             <div className="absolute inset-0 z-20 pointer-events-none overflow-hidden">
               {thumbnailOverlay}
@@ -158,7 +192,7 @@ export const CardThumbnail: React.FC<CardThumbnailProps> = ({
         </div>
       </div>
 
-      {shouldRenderIcon && (
+      {shouldRenderIcon && !isHomeStyle && (
         <NotchCornerOverlay
           icon={icon}
           iconTooltip={iconTooltip}

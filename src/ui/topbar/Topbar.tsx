@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react'
+import { useUiStyle } from '@/utils/ui-style'
 
 export interface TopbarProps {
   title?: React.ReactNode
@@ -89,6 +90,25 @@ export const Topbar: React.FC<TopbarProps> = ({
 
   const hasLeadingOrTitle = Boolean(leading || title || subtitle)
   const effectiveIsHidden = sticky && autoHideOnScroll ? isHidden : false
+  const isHomeStyle = useUiStyle() === 'home'
+
+  const surfaceStyle: React.CSSProperties = isHomeStyle
+    ? {
+        backgroundColor: 'var(--md-sys-color-surface)',
+        borderBottom: '1px solid var(--md-sys-color-outline-variant)',
+        color: 'var(--md-sys-color-on-surface)',
+      }
+    : {
+        backgroundColor:
+          'color-mix(in srgb, var(--md-sys-color-surface) 62%, transparent)',
+        backdropFilter: 'blur(24px) saturate(180%)',
+        WebkitBackdropFilter: 'blur(24px) saturate(180%)',
+        borderBottom:
+          '1px solid color-mix(in srgb, var(--md-sys-color-outline-variant) 45%, transparent)',
+        boxShadow:
+          '0 8px 32px color-mix(in srgb, var(--md-sys-color-scrim) 8%, transparent), inset 0 1px 0 color-mix(in srgb, var(--md-sys-color-surface-container-lowest) 25%, transparent)',
+        color: 'var(--md-sys-color-on-surface)',
+      }
 
   return (
     <header
@@ -99,19 +119,11 @@ export const Topbar: React.FC<TopbarProps> = ({
         effectiveIsHidden ? '-translate-y-full opacity-0' : 'translate-y-0 opacity-100'
       } ${className}`}
       style={{
-        backgroundColor:
-          'color-mix(in srgb, var(--md-sys-color-surface) 62%, transparent)',
-        backdropFilter: 'blur(24px) saturate(180%)',
-        WebkitBackdropFilter: 'blur(24px) saturate(180%)',
-        borderBottom:
-          '1px solid color-mix(in srgb, var(--md-sys-color-outline-variant) 45%, transparent)',
-        boxShadow:
-          '0 8px 32px color-mix(in srgb, var(--md-sys-color-scrim) 8%, transparent), inset 0 1px 0 color-mix(in srgb, var(--md-sys-color-surface-container-lowest) 25%, transparent)',
-        color: 'var(--md-sys-color-on-surface)',
+        ...surfaceStyle,
         ...style,
       }}
     >
-      {underlay}
+      {!isHomeStyle && underlay}
 
       {hasLeadingOrTitle && (
         <div className="relative z-10 flex items-center gap-3 min-w-0">

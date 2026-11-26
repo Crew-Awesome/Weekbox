@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react'
 import { createPortal } from 'react-dom'
 import './loading.css'
 import { host } from '@/core/host'
+import { useUiStyle } from '@/utils/ui-style'
 import type { LoadingContextType } from './context'
 
 export type { LoadingContextType }
@@ -38,6 +39,7 @@ export const LoadingScreen: React.FC<LoadingScreenProps> = ({
 }) => {
   const [shapeIndex, setShapeIndex] = useState(0)
   const [appVersion, setAppVersion] = useState<string>('')
+  const isHomeStyle = useUiStyle() === 'home'
 
   useEffect(() => {
     let isMounted = true
@@ -63,7 +65,7 @@ export const LoadingScreen: React.FC<LoadingScreenProps> = ({
     if (!visible) return
     const interval = setInterval(() => {
       setShapeIndex((prev) => (prev + 1) % MORPH_SHAPES.length)
-    }, 1200)
+    }, 850)
     return () => clearInterval(interval)
   }, [visible])
 
@@ -77,12 +79,16 @@ export const LoadingScreen: React.FC<LoadingScreenProps> = ({
   if (!target) return null
 
   const displayProgress = Math.min(100, Math.max(0, progress))
+  const waveAmplitude =
+    displayProgress >= 92
+      ? Math.max(0, 3.2 * (1 - (displayProgress - 92) / 8))
+      : 3.2
   const currentShape = MORPH_SHAPES[shapeIndex]
 
   return createPortal(
     <div
       role="progressbar"
-      aria-valuenow={displayProgress}
+      aria-valuenow={Math.round(displayProgress)}
       aria-valuemin={0}
       aria-valuemax={100}
       aria-label={message}
@@ -93,24 +99,27 @@ export const LoadingScreen: React.FC<LoadingScreenProps> = ({
       }`}
       style={{
         transitionProperty: 'opacity, transform',
-        transitionDuration: '600ms',
+        transitionDuration: '340ms',
         transitionTimingFunction: 'cubic-bezier(0.16, 1, 0.3, 1)',
       }}
     >
-      <div
-        className="absolute -inset-6 z-0 bg-center bg-cover bg-no-repeat pointer-events-none"
+      <img
+        src="/imgs/loading-screen.webp"
+        alt=""
+        decoding="async"
+        draggable={false}
+        className="absolute -inset-6 z-0 w-[calc(100%+3rem)] h-[calc(100%+3rem)] object-cover object-center pointer-events-none select-none"
         style={{
-          backgroundImage: 'url(/imgs/loading-screen.webp)',
           animation:
-            'startup-loading-background-reveal 4.5s cubic-bezier(0.16, 1, 0.3, 1) forwards',
+            'startup-loading-background-reveal 2.4s cubic-bezier(0.16, 1, 0.3, 1) forwards',
         }}
       />
 
       <div
-        className="absolute inset-0 z-0 bg-black/40 pointer-events-none"
+        className="absolute inset-0 z-0 bg-black pointer-events-none"
         style={{
           animation:
-            'startup-loading-overlay-reveal 4s cubic-bezier(0.16, 1, 0.3, 1) forwards',
+            'startup-loading-overlay-reveal 2.4s cubic-bezier(0.16, 1, 0.3, 1) forwards',
         }}
       />
 
@@ -130,31 +139,42 @@ export const LoadingScreen: React.FC<LoadingScreenProps> = ({
 
       <div className="relative z-10 w-full px-6 md:px-10 pb-6 flex items-center gap-4">
         <div className="shrink-0 flex items-center justify-center">
-          <m3e-shape
-            name={currentShape}
-            style={
-              {
-                '--m3e-shape-size': '54px',
-                '--m3e-shape-container-color': 'var(--md-sys-color-primary)',
-                '--m3e-shape-transition':
-                  'clip-path 0.9s cubic-bezier(0.4, 0, 0.2, 1)',
-                display: 'inline-flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-              } as React.CSSProperties
-            }
-          >
+          {isHomeStyle ? (
             <span
-              className="font-mono font-bold text-xs select-none tracking-tight flex items-center justify-center w-full h-full text-center drop-shadow-sm"
+              className="px-3 py-1.5 rounded-lg font-mono font-bold text-xs tracking-tight select-none tabular-nums"
               style={{
-                position: 'absolute',
-                inset: 0,
+                backgroundColor: 'var(--md-sys-color-primary)',
                 color: 'var(--md-sys-color-on-primary)',
               }}
             >
               {Math.round(displayProgress)}%
             </span>
-          </m3e-shape>
+          ) : (
+            <m3e-shape
+              name={currentShape}
+              style={
+                {
+                  '--m3e-shape-size': '54px',
+                  '--m3e-shape-transition':
+                    'clip-path 0.9s cubic-bezier(0.4, 0, 0.2, 1)',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                } as React.CSSProperties
+              }
+            >
+              <span
+                className="font-mono font-bold text-xs select-none tracking-tight flex items-center justify-center w-full h-full text-center drop-shadow-sm"
+                style={{
+                  position: 'absolute',
+                  inset: 0,
+                  color: 'var(--md-sys-color-on-primary)',
+                }}
+              >
+                {Math.round(displayProgress)}%
+              </span>
+            </m3e-shape>
+          )}
         </div>
 
         <div className="flex-1 flex flex-col justify-center gap-2">
@@ -165,18 +185,16 @@ export const LoadingScreen: React.FC<LoadingScreenProps> = ({
           </div>
 
           <m3e-linear-progress-indicator
-            variant="wavy"
-            value={displayProgress}
+            variant={isHomeStyle ? 'flat' : 'wavy'}
+            value={Math.round(displayProgress * 10) / 10}
             max="100"
             style={
               {
                 width: '100%',
                 display: 'block',
-                '--m3e-linear-progress-indicator-thickness': '5.5px',
-                '--m3e-linear-wavy-progress-indicator-amplitude': '3px',
+                '--m3e-linear-progress-indicator-thickness': isHomeStyle ? '4px' : '5.5px',
+                '--m3e-linear-wavy-progress-indicator-amplitude': `${waveAmplitude.toFixed(2)}px`,
                 '--m3e-linear-wavy-progress-indicator-wavelength': '20px',
-                '--m3e-progress-indicator-color':
-                  'var(--md-sys-color-primary)',
                 '--m3e-progress-indicator-track-color':
                   'rgba(255, 255, 255, 0.25)',
               } as React.CSSProperties

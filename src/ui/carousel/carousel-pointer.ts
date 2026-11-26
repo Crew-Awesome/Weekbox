@@ -16,9 +16,57 @@ export function applyCarouselLayouts(params: {
   progress: number
   isInfinite: boolean
   isMobile: boolean
+  isSimple?: boolean
   visualRefs: (HTMLDivElement | null)[]
 }): void {
-  const { totalItems, progress, isInfinite, isMobile, visualRefs } = params
+  const { totalItems, progress, isInfinite, isMobile, isSimple = false, visualRefs } =
+    params
+
+  if (isSimple) {
+    if (totalItems === 0) return
+    if (totalItems === 1) {
+      const item = visualRefs[0]
+      if (item) {
+        item.style.width = '100%'
+        item.style.left = '0%'
+        item.style.transform = 'translateZ(0)'
+        item.style.zIndex = '10'
+        item.style.visibility = 'visible'
+        const content = item.querySelector('.m3-card-content') as HTMLElement | null
+        const badge = item.querySelector('.m3-card-badge') as HTMLElement | null
+        if (content) content.style.opacity = '1'
+        if (badge) badge.style.opacity = '1'
+      }
+      return
+    }
+
+    const p = isInfinite
+      ? ((progress % totalItems) + totalItems) % totalItems
+      : Math.max(0, Math.min(totalItems - 1, progress))
+
+    for (let index = 0; index < totalItems; index++) {
+      const item = visualRefs[index]
+      if (!item) continue
+      let offset = index - p
+      if (isInfinite) {
+        if (offset > totalItems / 2) offset -= totalItems
+        if (offset < -totalItems / 2) offset += totalItems
+      }
+      const isVisible = Math.abs(offset) <= 1.25
+      item.style.width = '100%'
+      item.style.left = `${(offset * 100).toFixed(2)}%`
+      item.style.transform = 'translateZ(0)'
+      item.style.zIndex = Math.abs(offset) < 0.5 ? '10' : '1'
+      item.style.visibility = isVisible ? 'visible' : 'hidden'
+
+      const content = item.querySelector('.m3-card-content') as HTMLElement | null
+      const badge = item.querySelector('.m3-card-badge') as HTMLElement | null
+      if (content) content.style.opacity = '1'
+      if (badge) badge.style.opacity = '1'
+    }
+    return
+  }
+
   const layouts = calculateVisuals(totalItems, progress, !isInfinite, isMobile)
 
   layouts.forEach((layout, index) => {

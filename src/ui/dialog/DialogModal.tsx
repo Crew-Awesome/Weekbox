@@ -1,5 +1,6 @@
 import React from 'react'
 import { createPortal } from 'react-dom'
+import { useUiStyle } from '@/utils/ui-style'
 import type { SystemDialogOptions } from './context'
 
 interface DialogModalProps {
@@ -15,6 +16,7 @@ export const DialogModal: React.FC<DialogModalProps> = ({
   target,
   handleClose,
 }) => {
+  const isHomeStyle = useUiStyle() === 'home'
   const type = cachedOptions.type || 'info'
 
   const iconName =
@@ -45,29 +47,41 @@ export const DialogModal: React.FC<DialogModalProps> = ({
 
   return createPortal(
     <div
-      className={`fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm ${
-        isVisible ? 'pointer-events-auto' : 'pointer-events-none'
-      }`}
+      className={`fixed inset-0 z-[9999] flex items-center justify-center p-4 ${
+        isHomeStyle ? 'bg-black/55' : 'bg-black/40 backdrop-blur-sm'
+      } ${isVisible ? 'pointer-events-auto' : 'pointer-events-none'}`}
       onClick={handleCancel}
       style={{
         opacity: isVisible ? 1 : 0,
-        transition: isVisible
-          ? 'opacity 500ms cubic-bezier(0.2, 0.0, 0, 1.0)'
-          : 'opacity 150ms cubic-bezier(0.2, 0.0, 0, 1.0)',
+        transition: isHomeStyle
+          ? 'opacity 180ms ease-out'
+          : isVisible
+            ? 'opacity 500ms cubic-bezier(0.2, 0.0, 0, 1.0)'
+            : 'opacity 150ms cubic-bezier(0.2, 0.0, 0, 1.0)',
       }}
     >
       <div
-        className="relative flex flex-col w-full max-w-[min(560px,calc(100vw-32px))] bg-[var(--md-sys-color-surface-container-high)] text-[var(--md-sys-color-on-surface)] rounded-[24px] sm:rounded-[28px] shadow-2xl border border-white/10 p-4.5 sm:p-6 overflow-hidden"
+        className={`relative flex flex-col w-full max-w-[min(560px,calc(100vw-32px))] bg-[var(--md-sys-color-surface-container-high)] text-[var(--md-sys-color-on-surface)] ${
+          isHomeStyle
+            ? 'rounded-xl shadow-lg border border-[var(--md-sys-color-outline-variant)] p-5'
+            : 'rounded-[24px] sm:rounded-[28px] shadow-2xl border border-white/10 p-4.5 sm:p-6'
+        } overflow-hidden`}
         onClick={(e) => e.stopPropagation()}
         style={{
-          transformOrigin: 'top center',
+          transformOrigin: isHomeStyle ? 'center center' : 'top center',
           opacity: isVisible ? 1 : 0,
-          transform: isVisible
-            ? 'scaleY(1) translateY(0)'
-            : 'scaleY(0.6) translateY(-24px)',
-          transition: isVisible
-            ? 'opacity 500ms cubic-bezier(0.2, 0.0, 0, 1.0), transform 500ms cubic-bezier(0.2, 0.0, 0, 1.0)'
-            : 'opacity 150ms cubic-bezier(0.2, 0.0, 0, 1.0), transform 150ms cubic-bezier(0.2, 0.0, 0, 1.0)',
+          transform: isHomeStyle
+            ? isVisible
+              ? 'scale(1)'
+              : 'scale(0.97)'
+            : isVisible
+              ? 'scaleY(1) translateY(0)'
+              : 'scaleY(0.6) translateY(-24px)',
+          transition: isHomeStyle
+            ? 'opacity 180ms ease-out, transform 180ms ease-out'
+            : isVisible
+              ? 'opacity 500ms cubic-bezier(0.2, 0.0, 0, 1.0), transform 500ms cubic-bezier(0.2, 0.0, 0, 1.0)'
+              : 'opacity 150ms cubic-bezier(0.2, 0.0, 0, 1.0), transform 150ms cubic-bezier(0.2, 0.0, 0, 1.0)',
           willChange: 'transform, opacity',
         }}
       >
