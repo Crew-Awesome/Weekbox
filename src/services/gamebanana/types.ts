@@ -2,6 +2,8 @@ export interface ModCreditAuthor {
   name: string
   role?: string
   avatarUrl?: string
+  avatarPath?: string
+  localAvatarPath?: string
   id?: number
 }
 
@@ -81,7 +83,7 @@ export interface GameBananaRawRecord {
 }
 
 export interface GameBananaItem {
-  id: number
+  id: number | string
   gameId: number
   title: string
   description: string
@@ -104,6 +106,10 @@ export interface GameBananaItem {
 }
 
 export interface GameBananaMod extends GameBananaItem {
+  source?: 'gamebanana' | 'gamejolt' | 'backstage'
+  sourceId?: string
+  sourceUrl?: string
+  followers?: number
   engineId?: string
   engineIcon?: string
   engineName?: string

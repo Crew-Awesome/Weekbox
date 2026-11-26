@@ -1,4 +1,5 @@
 import React from 'react'
+import { ModAvatar } from '@/ui/avatar/ModAvatar'
 import type { ModCreditGroup, ModCreditAuthor } from '../types'
 
 interface ModCreditsViewProps {
@@ -35,7 +36,10 @@ export const ModCreditsView: React.FC<ModCreditsViewProps> = ({
                   ? 'Lead Creator'
                   : 'Contributor'
             const avatarUrl = typeof entry === 'object' ? entry.avatarUrl : undefined
-            return { name, role, avatarUrl }
+            const avatarPath = typeof entry === 'object' ? entry.avatarPath : undefined
+            const localAvatarPath =
+              typeof entry === 'object' ? entry.localAvatarPath : undefined
+            return { name, role, avatarUrl, avatarPath, localAvatarPath }
           }),
         },
       ]
@@ -82,22 +86,15 @@ export const ModCreditsView: React.FC<ModCreditsViewProps> = ({
                 key={`member-${groupIdx}-${mIdx}`}
                 className="flex items-center gap-3 p-2.5 rounded-xl bg-[var(--md-sys-color-surface-bright)]/60 border border-[var(--md-sys-color-outline-variant)]/20 transition-all hover:bg-[var(--md-sys-color-surface-bright)]"
               >
-                {member.avatarUrl ? (
-                  <img
-                    src={member.avatarUrl}
-                    alt={member.name}
-                    className="w-9 h-9 rounded-full object-cover shrink-0 border border-[var(--md-sys-color-outline-variant)]/30"
-                    onError={(e) => {
-                      e.currentTarget.style.display = 'none'
-                    }}
-                  />
-                ) : (
-                  <div className="w-9 h-9 rounded-full bg-[var(--md-sys-color-surface-container-high)] flex items-center justify-center shrink-0 border border-[var(--md-sys-color-outline-variant)]/20 text-[var(--md-sys-color-on-surface-variant)]">
-                    <span className="material-symbols-rounded text-base opacity-70">
-                      person
-                    </span>
-                  </div>
-                )}
+                <ModAvatar
+                  remoteUrl={member.avatarUrl}
+                  localRelPath={member.avatarPath}
+                  localFullPath={member.localAvatarPath}
+                  alt={member.name}
+                  className="w-9 h-9 rounded-full object-cover shrink-0 border border-[var(--md-sys-color-outline-variant)]/30"
+                  fallbackClassName="w-9 h-9 rounded-full bg-[var(--md-sys-color-surface-container-high)] flex items-center justify-center shrink-0 border border-[var(--md-sys-color-outline-variant)]/20 text-[var(--md-sys-color-on-surface-variant)]"
+                  iconClassName="material-symbols-rounded text-base opacity-70"
+                />
 
                 <div className="flex flex-col min-w-0">
                   <span className="text-sm font-semibold text-[var(--md-sys-color-on-surface)] truncate">

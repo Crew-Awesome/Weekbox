@@ -41,16 +41,18 @@ export const ModDetailsTab: React.FC<ModDetailsTabProps> = ({
 
   return (
     <div className={`flex flex-col gap-6 pb-6 ${className}`}>
-      <ModDownloadList
-        displayCard={displayCard}
-        files={files}
-        isInstalled={isInstalled}
-        formatDate={formatDate}
-        onDownloadFile={onDownloadFile}
-        onCancelDownload={onCancelDownload}
-        onManageFile={onManageFile}
-        downloadTasks={downloadTasks}
-      />
+      {files.length !== 1 && (
+        <ModDownloadList
+          displayCard={displayCard}
+          files={files}
+          isInstalled={isInstalled}
+          formatDate={formatDate}
+          onDownloadFile={onDownloadFile}
+          onCancelDownload={onCancelDownload}
+          onManageFile={onManageFile}
+          downloadTasks={downloadTasks}
+        />
+      )}
 
       <ModStatsGrid
         displayCard={displayCard}

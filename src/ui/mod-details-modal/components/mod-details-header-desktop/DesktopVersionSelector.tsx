@@ -62,14 +62,14 @@ export const DesktopVersionSelector: React.FC<DesktopVersionSelectorProps> = ({
               onClick={() => handleSelectVersion('Any version')}
               className={`flex items-center justify-between gap-2 px-2.5 py-1.5 rounded-lg text-xs font-semibold cursor-pointer text-left w-full transition-colors ${
                 selectedVersion === 'Any version' || selectedVersion === 'any'
-                  ? 'bg-[var(--md-sys-color-inverse-primary)]/20 text-[var(--md-sys-color-inverse-primary)]'
+                  ? 'bg-[var(--md-sys-color-primary)]/20 text-[var(--md-sys-color-primary)]'
                   : 'text-[var(--md-sys-color-on-surface-variant)] hover:text-[var(--md-sys-color-on-surface)] hover:bg-[var(--md-sys-color-surface-container-high)]'
               }`}
             >
               <div className="flex items-center gap-2 truncate">
                 <span className={`material-symbols-rounded text-sm shrink-0 leading-none ${
                   selectedVersion === 'Any version' || selectedVersion === 'any'
-                    ? 'text-[var(--md-sys-color-inverse-primary)]'
+                    ? 'text-[var(--md-sys-color-primary)]'
                     : 'text-[var(--md-sys-color-primary)]'
                 }`}>
                   layers
@@ -77,7 +77,7 @@ export const DesktopVersionSelector: React.FC<DesktopVersionSelectorProps> = ({
                 <span className="truncate">Any version</span>
               </div>
               {(selectedVersion === 'Any version' || selectedVersion === 'any') && (
-                <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-[var(--md-sys-color-inverse-primary)]/30 text-[var(--md-sys-color-inverse-primary)] uppercase tracking-wider shrink-0">
+                <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-[var(--md-sys-color-primary)]/30 text-[var(--md-sys-color-primary)] uppercase tracking-wider shrink-0">
                   Selected
                 </span>
               )}
@@ -91,14 +91,14 @@ export const DesktopVersionSelector: React.FC<DesktopVersionSelectorProps> = ({
                   onClick={() => handleSelectVersion(ver)}
                   className={`flex items-center justify-between gap-2 px-2.5 py-1.5 rounded-lg text-xs font-semibold cursor-pointer text-left w-full transition-colors ${
                     isSelected
-                      ? 'bg-[var(--md-sys-color-inverse-primary)]/20 text-[var(--md-sys-color-inverse-primary)]'
+                      ? 'bg-[var(--md-sys-color-primary)]/20 text-[var(--md-sys-color-primary)]'
                       : 'text-[var(--md-sys-color-on-surface-variant)] hover:text-[var(--md-sys-color-on-surface)] hover:bg-[var(--md-sys-color-surface-container-high)]'
                   }`}
                 >
                   <div className="flex items-center gap-2 truncate">
                     <span className={`material-symbols-rounded text-sm shrink-0 leading-none ${
                       isSelected
-                        ? 'text-[var(--md-sys-color-inverse-primary)]'
+                        ? 'text-[var(--md-sys-color-primary)]'
                         : 'text-[var(--md-sys-color-primary)]'
                     }`}>
                       sell
@@ -106,7 +106,7 @@ export const DesktopVersionSelector: React.FC<DesktopVersionSelectorProps> = ({
                     <span className="truncate">{ver}</span>
                   </div>
                   {isSelected && (
-                    <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-[var(--md-sys-color-inverse-primary)]/30 text-[var(--md-sys-color-inverse-primary)] uppercase tracking-wider shrink-0">
+                    <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-[var(--md-sys-color-primary)]/30 text-[var(--md-sys-color-primary)] uppercase tracking-wider shrink-0">
                       Selected
                     </span>
                   )}

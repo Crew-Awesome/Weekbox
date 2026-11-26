@@ -1,4 +1,5 @@
 import React from 'react'
+import { useUiStyle } from '@/utils/ui-style'
 import { formatFileSize } from '../types'
 import {
   CancelAnimatedIcon,
@@ -36,27 +37,36 @@ export const ModDetailsTransferButton: React.FC<ModDetailsTransferButtonProps> =
   cancelIconRef,
   onCancelClick,
 }) => {
+  const isHomeStyle = useUiStyle() === 'home'
+  const radiusPx = isHomeStyle ? '8px' : '14px'
+  const indicatorVariant = isHomeStyle ? 'flat' : 'wavy'
+
   if (mode === 'extracting') {
     return (
       <m3e-button
         variant="filled"
         aria-busy="true"
         onClick={(e: React.MouseEvent) => e.preventDefault()}
-        className="w-full relative overflow-hidden select-none transition-all duration-300 shadow-md cursor-default rounded-[14px]"
-        style={{ ...primaryButtonStyle, borderRadius: '14px' }}
+        className={`w-full relative overflow-hidden select-none transition-all duration-300 ${
+          isHomeStyle ? '' : 'shadow-md'
+        } cursor-default`}
+        style={{ ...primaryButtonStyle, borderRadius: radiusPx }}
         title="Extracting"
       >
         {singleFileProgress > 0 && (
           <div
-            className="absolute left-0 top-0 bottom-0 bg-[var(--md-sys-color-primary-container)]/40 transition-all duration-300 ease-out z-0 pointer-events-none rounded-[14px]"
-            style={{ width: `${Math.max(0, Math.min(100, singleFileProgress))}%` }}
+            className="absolute left-0 top-0 bottom-0 bg-[var(--md-sys-color-primary-container)]/40 transition-all duration-300 ease-out z-0 pointer-events-none"
+            style={{
+              width: `${Math.max(0, Math.min(100, singleFileProgress))}%`,
+              borderRadius: radiusPx,
+            }}
           />
         )}
 
         <div className="flex flex-col items-center justify-center leading-tight z-10 py-0.5 min-w-0 max-w-full px-2">
           <div className="flex items-center justify-center gap-2 min-w-0 max-w-full">
             <m3e-circular-progress-indicator
-              variant="wavy"
+              variant={indicatorVariant}
               indeterminate
               title="Extracting"
               className="shrink-0"
@@ -118,13 +128,13 @@ export const ModDetailsTransferButton: React.FC<ModDetailsTransferButtonProps> =
         '--m3e-filled-button-hover-state-layer-color': 'var(--md-sys-color-on-error)',
         '--m3e-button-filled-container-color': 'var(--md-sys-color-error)',
         '--m3e-button-filled-label-text-color': 'var(--md-sys-color-on-error)',
-        '--m3e-button-shape-round': '14px',
-        borderRadius: '14px',
+        '--m3e-button-shape-round': radiusPx,
+        borderRadius: radiusPx,
       }
     : {
         ...primaryButtonStyle,
-        '--m3e-button-shape-round': '14px',
-        borderRadius: '14px',
+        '--m3e-button-shape-round': radiusPx,
+        borderRadius: radiusPx,
       }) as React.CSSProperties
 
   return (
@@ -133,18 +143,23 @@ export const ModDetailsTransferButton: React.FC<ModDetailsTransferButtonProps> =
       onClick={onCancelClick}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
-      className="w-full relative overflow-hidden select-none transition-all duration-300 shadow-md cursor-pointer rounded-[14px]"
+      className={`w-full relative overflow-hidden select-none transition-all duration-300 ${
+        isHomeStyle ? '' : 'shadow-md'
+      } cursor-pointer`}
       style={dynamicButtonStyle}
       title="Click to cancel download"
     >
       {!isStarting && (
         <div
-          className={`absolute left-0 top-0 bottom-0 transition-all duration-300 ease-out z-0 pointer-events-none rounded-[14px] ${
+          className={`absolute left-0 top-0 bottom-0 transition-all duration-300 ease-out z-0 pointer-events-none ${
             showCancelState
               ? 'bg-[var(--md-sys-color-error-container)]/40'
               : 'bg-[var(--md-sys-color-primary-container)]/40'
           }`}
-          style={{ width: `${Math.max(0, Math.min(100, singleFileProgress))}%` }}
+          style={{
+            width: `${Math.max(0, Math.min(100, singleFileProgress))}%`,
+            borderRadius: radiusPx,
+          }}
         />
       )}
 
@@ -164,7 +179,7 @@ export const ModDetailsTransferButton: React.FC<ModDetailsTransferButtonProps> =
       ) : isStarting ? (
         <div className="flex items-center justify-center gap-2 z-10 py-0.5">
           <m3e-circular-progress-indicator
-            variant="wavy"
+            variant={indicatorVariant}
             indeterminate
             className="shrink-0"
             style={
@@ -192,7 +207,7 @@ export const ModDetailsTransferButton: React.FC<ModDetailsTransferButtonProps> =
         <div className="flex flex-col items-center justify-center leading-tight z-10 py-0.5 min-w-0">
           <div className="flex items-center justify-center gap-2 min-w-0">
             <m3e-circular-progress-indicator
-              variant="wavy"
+              variant={indicatorVariant}
               value={singleFileProgress}
               max="100"
               className="shrink-0"

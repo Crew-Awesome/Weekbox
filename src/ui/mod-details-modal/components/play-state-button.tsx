@@ -1,4 +1,5 @@
 import React from 'react'
+import { useUiStyle } from '@/utils/ui-style'
 
 export type PlayButtonState =
   | 'play'
@@ -42,6 +43,7 @@ export const PlayStateButton: React.FC<PlayStateButtonProps> = ({
 }) => {
   const isModal = variant === 'modal-desktop' || variant === 'modal-mobile'
   const isModalDesktop = variant === 'modal-desktop'
+  const isHomeStyle = useUiStyle() === 'home'
 
   const effectiveLabel = label || playLabel || idleLabel
   const effectiveTitle = title || playTitle || idleTitle
@@ -51,7 +53,7 @@ export const PlayStateButton: React.FC<PlayStateButtonProps> = ({
 
   const baseStyle: React.CSSProperties = {
     '--m3e-button-container-height': heightPx,
-    '--m3e-button-shape-round': '14px',
+    '--m3e-button-shape-round': isHomeStyle ? '8px' : '14px',
     '--m3e-button-label-text-font-size': labelFontSize,
     '--m3e-button-label-text-font-weight': '700',
     '--m3e-button-label-text-tracking': '0.15px',
@@ -61,11 +63,17 @@ export const PlayStateButton: React.FC<PlayStateButtonProps> = ({
     '--m3e-button-trailing-space': isModal ? '16px' : '24px',
   } as React.CSSProperties
 
-  const sizeClasses = isModal
-    ? 'flex-1 rounded-xl'
-    : variant === 'footer-flex'
-      ? 'flex-1 sm:flex-initial rounded-2xl shadow-lg'
-      : 'w-full sm:w-auto rounded-2xl shadow-lg'
+  const sizeClasses = isHomeStyle
+    ? isModal
+      ? 'flex-1 rounded-lg'
+      : variant === 'footer-flex'
+        ? 'flex-1 sm:flex-initial rounded-lg'
+        : 'w-full sm:w-auto rounded-lg'
+    : isModal
+      ? 'flex-1 rounded-xl'
+      : variant === 'footer-flex'
+        ? 'flex-1 sm:flex-initial rounded-2xl shadow-lg'
+        : 'w-full sm:w-auto rounded-2xl shadow-lg'
 
   if (playStatus === 'launching') {
     return (
@@ -193,7 +201,7 @@ export const PlayStateButton: React.FC<PlayStateButtonProps> = ({
       className={`flex items-center justify-center transition-all duration-300 ${sizeClasses} ${
         disabled
           ? 'opacity-50 cursor-not-allowed'
-          : isModal
+          : isModal || isHomeStyle
             ? 'hover:opacity-95 cursor-pointer'
             : 'hover:opacity-95 cursor-pointer hover:scale-105 active:scale-95'
       }`}

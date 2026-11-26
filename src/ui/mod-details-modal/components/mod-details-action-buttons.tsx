@@ -1,4 +1,5 @@
 import React, { useMemo, useRef, useState } from 'react'
+import { useUiStyle } from '@/utils/ui-style'
 import { formatFileSize, type GameBananaFile } from '../types'
 import type { ModModalTab } from './mod-nav-pills'
 import type { CancelAnimatedIconHandle } from './cancel-animated-icon'
@@ -81,13 +82,15 @@ export const ModDetailsActionButtons: React.FC<ModDetailsActionButtonsProps> = (
   isDropdownOpen,
 }) => {
   const isDesktop = variant === 'desktop'
+  const isHomeStyle = useUiStyle() === 'home'
   const heightPx = isDesktop ? '48px' : '44px'
   const labelFontSize = isDesktop ? '15px' : '14px'
+  const radiusPx = isHomeStyle ? '8px' : '14px'
 
   const baseButtonStyle: React.CSSProperties = {
     '--m3e-button-container-height': heightPx,
-    '--m3e-button-shape-round': '14px',
-    borderRadius: '14px',
+    '--m3e-button-shape-round': radiusPx,
+    borderRadius: radiusPx,
     '--m3e-button-label-text-font-size': labelFontSize,
     '--m3e-button-label-text-tracking': '0.15px',
     '--m3e-button-icon-size': '20px',
@@ -214,8 +217,10 @@ export const ModDetailsActionButtons: React.FC<ModDetailsActionButtonsProps> = (
       <m3e-button
         variant="filled"
         onClick={() => setActiveTab('details')}
-        className={`w-full relative overflow-hidden cursor-pointer select-none group transition-all duration-300 shadow-md ${
-          isDesktop ? 'hover:scale-[1.01] active:scale-[0.99]' : ''
+        className={`w-full relative overflow-hidden cursor-pointer select-none group transition-all duration-300 ${
+          isHomeStyle ? '' : 'shadow-md'
+        } ${
+          isDesktop && !isHomeStyle ? 'hover:scale-[1.01] active:scale-[0.99]' : ''
         }`}
         style={primaryButtonStyle}
         title="View all files and download options in Details"
@@ -258,8 +263,10 @@ export const ModDetailsActionButtons: React.FC<ModDetailsActionButtonsProps> = (
     <m3e-button
       variant="filled"
       onClick={() => handleDownload()}
-      className={`w-full relative overflow-hidden cursor-pointer select-none group transition-all duration-300 shadow-md ${
-        isDesktop ? 'hover:scale-[1.01] active:scale-[0.99]' : ''
+      className={`w-full relative overflow-hidden cursor-pointer select-none group transition-all duration-300 ${
+        isHomeStyle ? '' : 'shadow-md'
+      } ${
+        isDesktop && !isHomeStyle ? 'hover:scale-[1.01] active:scale-[0.99]' : ''
       }`}
       style={primaryButtonStyle}
       title="Download mod"

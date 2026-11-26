@@ -1,4 +1,5 @@
 import React from 'react'
+import { useUiStyle } from '@/utils/ui-style'
 import { PlayStateButton } from './play-state-button'
 import { CancelAnimatedIcon } from './cancel-animated-icon'
 import type { ModActionState } from './mod-details-action-buttons'
@@ -34,6 +35,7 @@ export const ModDetailsPlayActions: React.FC<ModDetailsPlayActionsProps> = ({
   primaryButtonStyle,
   tonalButtonStyle,
 }) => {
+  const isHomeStyle = useUiStyle() === 'home'
   return (
     <div className="flex items-center gap-2 md:gap-3 w-full">
       {hasUpdate &&
@@ -67,8 +69,10 @@ export const ModDetailsPlayActions: React.FC<ModDetailsPlayActionsProps> = ({
             variant="filled"
             onClick={handleUpdateClick}
             disabled={isStorageMigrating}
-            className={`flex-1 transition-all cursor-pointer shadow-md ${
-              isDesktop ? 'hover:scale-[1.02] active:scale-[0.98]' : ''
+            className={`flex-1 transition-all cursor-pointer ${
+              isHomeStyle ? '' : 'shadow-md'
+            } ${
+              isDesktop && !isHomeStyle ? 'hover:scale-[1.02] active:scale-[0.98]' : ''
             } ${isStorageMigrating ? 'opacity-50 cursor-not-allowed pointer-events-none' : ''}`}
             style={
               {

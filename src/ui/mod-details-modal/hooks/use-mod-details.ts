@@ -1,6 +1,10 @@
 import { useState, useMemo, useCallback } from 'react'
 import { useViewport } from '@/utils/hooks/use-viewport'
 import { updateInstalledModMetadata } from '@/core/mods'
+import {
+  detectModEngineFromFiles,
+  UNDETECTED_ENGINE_WARNING_MSG,
+} from '@/core/mods/mod-filesystem'
 import type { ModalViewProps, GameBananaFile } from '../types'
 import type { EngineCategory } from '../constants'
 import type { ModModalTab } from '../components/mod-nav-pills'
@@ -32,11 +36,13 @@ export function useModDetails({
 
   const [activeTab, setActiveTab] = useState<ModModalTab>('description')
   const [prevCardId, setPrevCardId] = useState(displayCard?.id)
+  const [selectedVersion, setSelectedVersion] = useState('latest')
   const isDropdownOpen = activeTab === 'details'
 
   if (displayCard?.id !== prevCardId) {
     setPrevCardId(displayCard?.id)
     setActiveTab('description')
+    setSelectedVersion('latest')
   }
 
   const authorAvatar = useMemo(() => {
@@ -90,7 +96,6 @@ export function useModDetails({
 
   const [isEngineDropdownOpen, setIsEngineDropdownOpen] = useState(false)
   const [isVersionDropdownOpen, setIsVersionDropdownOpen] = useState(false)
-  const [selectedVersion, setSelectedVersion] = useState('latest')
   const [isInstallingEngine, setIsInstallingEngine] = useState(false)
   const installedEngineVersions = ['0.7.3', '0.7.2', 'latest']
 
@@ -105,28 +110,56 @@ export function useModDetails({
   })
 
   const modId = displayCard?.id
+  const installedPath = installedRecord?.installPath
 
   const handleSelectEngine = useCallback(
-    (cat: EngineCategory) => {
+    (cat: EngineCategory, version = 'latest') => {
       setIsEngineDropdownOpen(false)
-      if (onUpdateMod) {
-        void onUpdateMod({
-          engineId: cat.id,
+      setSelectedVersion(version || 'latest')
+      const nextIsExe = cat.id === 'exe' || cat.id === 'executable'
+      const nextEngineId = nextIsExe ? 'executable' : cat.id
+
+      const applyEngineUpdate = (
+        hasWarning: boolean,
+        warningMessage?: string,
+      ) => {
+        const updates = {
+          engineId: nextEngineId,
           engineName: cat.name,
           icon: cat.icon,
-          hasEngineWarning: false,
-        })
+          isExecutable: nextIsExe,
+          hasEngineWarning: hasWarning,
+          engineWarningMessage: warningMessage,
+        }
+        if (onUpdateMod) {
+          void onUpdateMod(updates)
+        }
+        if (isInstalled && modId !== undefined) {
+          void updateInstalledModMetadata(modId, {
+            ...updates,
+            engineLocked: true,
+          })
+        }
       }
-      if (isInstalled && modId !== undefined) {
-        void updateInstalledModMetadata(modId, {
-          engineId: cat.id,
-          engineName: cat.name,
-          icon: cat.icon,
-          hasEngineWarning: false,
-        })
+
+      if (nextIsExe && isInstalled && installedPath) {
+        void detectModEngineFromFiles(installedPath, 'executable').then(
+          (detected) => {
+            const warn = Boolean(detected.hasEngineWarning)
+            applyEngineUpdate(
+              warn,
+              warn
+                ? detected.engineWarningMessage || UNDETECTED_ENGINE_WARNING_MSG
+                : undefined,
+            )
+          },
+        )
+        return
       }
+
+      applyEngineUpdate(false, undefined)
     },
-    [onUpdateMod, isInstalled, modId],
+    [onUpdateMod, isInstalled, modId, installedPath],
   )
 
   const handleSelectVersion = useCallback((ver: string) => {

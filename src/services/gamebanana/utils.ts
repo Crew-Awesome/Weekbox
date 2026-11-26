@@ -173,7 +173,7 @@ export function extractThumbnail(record?: GameBananaRawRecord | null): string {
     const first = images[0]
     if (first?._sBaseUrl) {
       const file =
-        first._sFile800 || first._sFile || first._sFile530 || first._sFile220
+        first._sFile530 || first._sFile800 || first._sFile220 || first._sFile
       if (file) {
         return `${first._sBaseUrl}/${file}`
       }

@@ -1,5 +1,7 @@
 import React from 'react'
+import { ModAvatar } from '@/ui/avatar/ModAvatar'
 import { ModNavPills, type ModModalTab } from '../mod-nav-pills'
+import { InfoBookmarkFavoriteActions } from './InfoBookmarkFavoriteActions'
 import type { ModItem } from '../../types'
 
 interface InfoTitleAuthorProps {
@@ -12,8 +14,8 @@ interface InfoTitleAuthorProps {
   setTitleInput: React.Dispatch<React.SetStateAction<string>>
   handleSaveTitle: () => void
   authorAvatar?: string
-  avatarError: boolean
-  setAvatarError: React.Dispatch<React.SetStateAction<boolean>>
+  avatarError?: boolean
+  setAvatarError?: React.Dispatch<React.SetStateAction<boolean>>
   activeTab: ModModalTab
   setActiveTab: React.Dispatch<React.SetStateAction<ModModalTab>>
   contributorsCount?: number
@@ -34,8 +36,8 @@ export const InfoTitleAuthor: React.FC<InfoTitleAuthorProps> = ({
   setTitleInput,
   handleSaveTitle,
   authorAvatar,
-  avatarError,
-  setAvatarError,
+  avatarError: _avatarError,
+  setAvatarError: _setAvatarError,
   activeTab,
   setActiveTab,
   contributorsCount,
@@ -119,24 +121,27 @@ export const InfoTitleAuthor: React.FC<InfoTitleAuthorProps> = ({
           by
         </span>
         <div className="flex items-center gap-1.5 min-w-0">
-          {authorAvatar && !avatarError ? (
-            <img
-              src={authorAvatar}
-              alt={displayCard.author || 'Author'}
-              className={`${isDesktop ? 'w-5 h-5 md:w-5.5 md:h-5.5' : 'w-4.5 h-4.5'} rounded-full object-cover shrink-0 border border-[var(--md-sys-color-outline-variant)]/30 shadow-sm`}
-              onError={() => setAvatarError(true)}
-            />
-          ) : (
-            <div
-              className={`${isDesktop ? 'w-5 h-5 md:w-5.5 md:h-5.5' : 'w-4.5 h-4.5'} rounded-full bg-[var(--md-sys-color-surface-container-highest)] flex items-center justify-center shrink-0 border border-[var(--md-sys-color-outline-variant)]/30`}
-            >
-              <span
-                className={`material-symbols-rounded ${isDesktop ? 'text-xs md:text-sm' : 'text-xs'} text-[var(--md-sys-color-on-surface-variant)] opacity-70`}
-              >
-                person
-              </span>
-            </div>
-          )}
+          {(() => {
+            const authorLower = (displayCard.author || '').trim().toLowerCase()
+            const matchedCredit = displayCard.credits
+              ?.flatMap((g) => g.authors || [])
+              ?.find(
+                (a) =>
+                  a.name?.trim().toLowerCase() === authorLower &&
+                  Boolean(a.avatarUrl || a.avatarPath || a.localAvatarPath),
+              )
+            return (
+              <ModAvatar
+                remoteUrl={displayCard.userPfp || matchedCredit?.avatarUrl || authorAvatar}
+                localRelPath={displayCard.userPfpPath || matchedCredit?.avatarPath}
+                localFullPath={displayCard.localUserPfp || matchedCredit?.localAvatarPath}
+                alt={displayCard.author || 'Author'}
+                className={`${isDesktop ? 'w-5 h-5 md:w-5.5 md:h-5.5' : 'w-4.5 h-4.5'} rounded-full object-cover shrink-0 border border-[var(--md-sys-color-outline-variant)]/30 shadow-sm`}
+                fallbackClassName={`${isDesktop ? 'w-5 h-5 md:w-5.5 md:h-5.5' : 'w-4.5 h-4.5'} rounded-full bg-[var(--md-sys-color-surface-container-highest)] flex items-center justify-center shrink-0 border border-[var(--md-sys-color-outline-variant)]/30`}
+                iconClassName={`material-symbols-rounded ${isDesktop ? 'text-xs md:text-sm' : 'text-xs'} text-[var(--md-sys-color-on-surface-variant)] opacity-70`}
+              />
+            )
+          })()}
           <span
             className={`text-[var(--md-sys-color-on-surface)] ${isDesktop ? 'text-xs md:text-sm' : 'text-xs'} font-semibold truncate`}
           >
@@ -151,65 +156,12 @@ export const InfoTitleAuthor: React.FC<InfoTitleAuthorProps> = ({
         contributorsCount={contributorsCount}
         filesCount={validFilesCount}
         extraActions={
-          <div className="flex items-center gap-0.5 shrink-0">
-            <m3e-icon-button
-              onClick={handleToggleBookmark}
-              title={isBookmarked ? 'Remove bookmark' : 'Bookmark mod'}
-              aria-label={isBookmarked ? 'Remove bookmark' : 'Bookmark mod'}
-              className={
-                isBookmarked
-                  ? 'text-[var(--md-sys-color-tertiary)] border-none !border-0'
-                  : 'text-[var(--md-sys-color-on-surface-variant)] hover:text-[var(--md-sys-color-tertiary)] border-none !border-0'
-              }
-              style={
-                {
-                  '--m3e-icon-button-size': '26px',
-                  border: 'none',
-                } as React.CSSProperties
-              }
-            >
-              <span
-                className={`material-symbols-rounded text-sm transition-transform duration-100 active:scale-125 ${
-                  isBookmarked ? 'text-[var(--md-sys-color-tertiary)]' : ''
-                }`}
-                style={
-                  isBookmarked
-                    ? { fontVariationSettings: "'FILL' 1" }
-                    : undefined
-                }
-              >
-                bookmark
-              </span>
-            </m3e-icon-button>
-
-            <m3e-icon-button
-              onClick={handleToggleFavorite}
-              title={isFav ? 'Remove from favorites' : 'Add to favorites'}
-              aria-label={isFav ? 'Remove from favorites' : 'Add to favorites'}
-              className={
-                isFav
-                  ? 'text-[var(--md-sys-color-error)] border-none !border-0'
-                  : 'text-[var(--md-sys-color-on-surface-variant)] hover:text-[var(--md-sys-color-error)] border-none !border-0'
-              }
-              style={
-                {
-                  '--m3e-icon-button-size': '26px',
-                  border: 'none',
-                } as React.CSSProperties
-              }
-            >
-              <span
-                className={`material-symbols-rounded text-sm transition-transform duration-100 active:scale-125 ${
-                  isFav ? 'text-[var(--md-sys-color-error)]' : ''
-                }`}
-                style={
-                  isFav ? { fontVariationSettings: "'FILL' 1" } : undefined
-                }
-              >
-                favorite
-              </span>
-            </m3e-icon-button>
-          </div>
+          <InfoBookmarkFavoriteActions
+            isBookmarked={isBookmarked}
+            isFav={isFav}
+            onToggleBookmark={handleToggleBookmark}
+            onToggleFavorite={handleToggleFavorite}
+          />
         }
       />
     </div>

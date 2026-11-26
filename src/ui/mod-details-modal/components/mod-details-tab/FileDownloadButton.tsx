@@ -1,4 +1,5 @@
 import React, { useState } from 'react'
+import { useUiStyle } from '@/utils/ui-style'
 import type { GameBananaFile } from '../../types'
 
 export interface FileDownloadButtonProps {
@@ -15,6 +16,8 @@ export const FileDownloadButton: React.FC<FileDownloadButtonProps> = ({
   onCancelDownload,
 }) => {
   const [isHovered, setIsHovered] = useState(false)
+  const isHomeStyle = useUiStyle() === 'home'
+  const radiusPx = isHomeStyle ? '8px' : '12px'
   const prog = task?.progress ?? 0
   const isExtracting = task?.status === 'extracting'
   const isDownloading =
@@ -27,7 +30,7 @@ export const FileDownloadButton: React.FC<FileDownloadButtonProps> = ({
   const showCancel = isHovered && isDownloading && !isExtracting && Boolean(onCancelDownload)
 
   const commonTokens: React.CSSProperties = {
-    '--m3e-button-shape-round': '12px',
+    '--m3e-button-shape-round': radiusPx,
     '--m3e-button-icon-size': '14px',
     '--m3e-button-icon-label-space': '6px',
     '--m3e-button-leading-space': '12px',
@@ -36,7 +39,7 @@ export const FileDownloadButton: React.FC<FileDownloadButtonProps> = ({
     '--m3e-button-label-text-font-size': '12px',
     '--m3e-button-label-text-font-weight': '700',
     '--m3e-button-label-text-line-height': '1',
-    borderRadius: '12px',
+    borderRadius: radiusPx,
   }
 
   const buttonStyle: React.CSSProperties = (showCancel
@@ -110,7 +113,7 @@ export const FileDownloadButton: React.FC<FileDownloadButtonProps> = ({
           <>
             <m3e-circular-progress-indicator
               slot="icon"
-              variant="wavy"
+              variant={isHomeStyle ? 'flat' : 'wavy'}
               value={!isExtracting && prog > 1 ? prog : undefined}
               indeterminate={isExtracting || prog <= 1}
               title={isExtracting ? 'Extracting' : undefined}

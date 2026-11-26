@@ -1,6 +1,7 @@
 import React from 'react'
 import { Carousel, type CarouselAPI } from '@/ui/carousel/Carousel'
 import { useViewport } from '@/utils/hooks/use-viewport'
+import { useUiStyle } from '@/utils/ui-style'
 import {
   PLACEHOLDER_IMG,
   ModThumbnailStrip,
@@ -57,6 +58,7 @@ export const ModMediaCarousel: React.FC<ModMediaCarouselProps> = ({
   const hasMedia = effectiveMedia.length > 0
   const carouselApiRef = React.useRef<CarouselAPI | null>(null)
   const { isMobile } = useViewport()
+  const isHomeStyle = useUiStyle() === 'home'
 
   React.useEffect(() => {
     if (carouselApiRef.current && carouselApiRef.current.activeIndex !== activeIndex) {
@@ -85,29 +87,45 @@ export const ModMediaCarousel: React.FC<ModMediaCarouselProps> = ({
             {effectiveMedia.map((src, i) => (
               <div key={`${src}-${i}`} className="w-full h-full p-0.5 sm:p-1 relative">
                 <div
-                  className="m3-card w-full h-full rounded-[20px] sm:rounded-[24px] relative border overflow-hidden cursor-pointer shadow-sm transition-transform duration-300"
+                  className={`m3-card w-full h-full ${
+                    isHomeStyle
+                      ? 'rounded-xl'
+                      : 'rounded-[20px] sm:rounded-[24px] shadow-sm transition-transform duration-300'
+                  } relative border overflow-hidden cursor-pointer`}
                   style={{
                     backgroundColor: 'var(--md-sys-color-surface-container)',
                     borderColor: 'var(--md-sys-color-outline-variant)',
                   }}
                 >
-                  <div className="absolute inset-0 overflow-hidden rounded-[20px] sm:rounded-[24px] pointer-events-none z-0">
+                  <div
+                    className={`absolute inset-0 overflow-hidden ${
+                      isHomeStyle ? 'rounded-xl' : 'rounded-[20px] sm:rounded-[24px]'
+                    } pointer-events-none z-0`}
+                  >
                     <img
                       src={src}
                       alt={title}
                       loading="lazy"
                       decoding="async"
-                      className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 hover:scale-105"
+                      className={`absolute inset-0 w-full h-full object-cover ${
+                        isHomeStyle ? '' : 'transition-transform duration-500 hover:scale-105'
+                      }`}
                       onError={(e) => {
                         e.currentTarget.src = PLACEHOLDER_IMG
                       }}
                     />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/20 to-transparent" />
+                    {!isHomeStyle && (
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/20 to-transparent" />
+                    )}
                   </div>
 
                   {showCaption && title && (
-                    <div className="m3-card-content absolute inset-x-0 bottom-0 p-3 sm:p-5 flex flex-col justify-end pointer-events-none z-10">
-                      <h4 className="text-sm sm:text-base font-bold text-white drop-shadow-md truncate">
+                    <div
+                      className={`m3-card-content absolute inset-x-0 bottom-0 ${
+                        isHomeStyle ? 'bg-black/75 px-3 py-2' : 'p-3 sm:p-5'
+                      } flex flex-col justify-end pointer-events-none z-10`}
+                    >
+                      <h4 className="text-sm sm:text-base font-bold text-white truncate">
                         {title}
                       </h4>
                     </div>
@@ -117,9 +135,11 @@ export const ModMediaCarousel: React.FC<ModMediaCarouselProps> = ({
             ))}
           </Carousel>
         ) : (
-          <div className="w-full h-full p-1 sm:p-2 relative">
+          <div className={`w-full h-full ${isHomeStyle ? 'p-0.5' : 'p-1 sm:p-2'} relative`}>
             <div
-              className="m3-card w-full h-full rounded-[20px] sm:rounded-[24px] relative border overflow-hidden shadow-sm"
+              className={`m3-card w-full h-full ${
+                isHomeStyle ? 'rounded-xl' : 'rounded-[20px] sm:rounded-[24px] shadow-sm'
+              } relative border overflow-hidden`}
               style={{
                 backgroundColor: 'var(--md-sys-color-surface-container)',
                 borderColor: 'var(--md-sys-color-outline-variant)',
@@ -133,7 +153,9 @@ export const ModMediaCarousel: React.FC<ModMediaCarouselProps> = ({
                   e.currentTarget.src = PLACEHOLDER_IMG
                 }}
               />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-transparent to-transparent" />
+              {!isHomeStyle && (
+                <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-transparent to-transparent" />
+              )}
             </div>
           </div>
         )

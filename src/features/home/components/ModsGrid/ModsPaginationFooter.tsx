@@ -1,4 +1,5 @@
 import React from 'react'
+import { useUiStyle } from '@/utils/ui-style'
 
 interface ModsPaginationFooterProps {
   sentinelRef: React.Ref<HTMLDivElement>
@@ -14,6 +15,8 @@ export const ModsPaginationFooter: React.FC<ModsPaginationFooterProps> = ({
   isLoadingMore,
   hasMore,
 }) => {
+  const isHomeStyle = useUiStyle() === 'home'
+
   return (
     <div
       ref={sentinelRef}
@@ -23,14 +26,13 @@ export const ModsPaginationFooter: React.FC<ModsPaginationFooterProps> = ({
       {isLoadingMore ? (
         <div className="flex items-center gap-2 text-xs font-semibold text-[var(--md-sys-color-primary)]">
           <m3e-circular-progress-indicator
-            variant="wavy"
+            variant={isHomeStyle ? 'flat' : 'wavy'}
             indeterminate
             style={
               {
                 '--m3e-circular-wavy-progress-indicator-diameter': '32px',
+                '--m3e-circular-flat-progress-indicator-diameter': '32px',
                 '--m3e-circular-progress-indicator-thickness': '3.5px',
-                '--m3e-progress-indicator-color':
-                  'var(--md-sys-color-primary)',
               } as React.CSSProperties
             }
           />

@@ -18,9 +18,12 @@ export interface ModItem {
   thumbnail?: string
   icon?: string
   userPfp?: string
+  userPfpPath?: string
+  localUserPfp?: string
   engineIcon?: string
   engineName?: string
   engineId?: string
+  categoryId?: number
   categoryName?: string
   previewMedia?: string[]
   submittedAt?: number | string
@@ -30,13 +33,17 @@ export interface ModItem {
   updates?: unknown[]
   views?: number
   likes?: number
+  followers?: number
   downloads?: number
   isNsfw?: boolean
   isInstalled?: boolean
+  isExecutable?: boolean
   defaultEngineId?: string
+  defaultEngineName?: string
   originalEngineId?: string
   downloadedFileId?: string | number
   installedFileId?: string | number
+  fileName?: string
   files?: GameBananaFile[] | Record<string, GameBananaFile>
   downloadUrl?: string
   coverPath?: string
@@ -45,6 +52,9 @@ export interface ModItem {
   engineWarningMessage?: string
   visible?: boolean
   hidden?: boolean
+  source?: 'gamebanana' | 'gamejolt' | 'backstage' | string
+  sourceId?: string
+  sourceUrl?: string
 }
 
 export interface ModalViewProps {

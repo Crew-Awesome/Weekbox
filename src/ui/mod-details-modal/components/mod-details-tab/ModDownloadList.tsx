@@ -1,4 +1,5 @@
 import React from 'react'
+import { useUiStyle } from '@/utils/ui-style'
 import { formatFileSize, type ModItem, type GameBananaFile } from '../../types'
 import { FileDownloadButton } from './FileDownloadButton'
 
@@ -20,9 +21,10 @@ export const ModDownloadList: React.FC<ModDownloadListProps> = ({
   formatDate,
   onDownloadFile,
   onCancelDownload,
-  onManageFile,
+  onManageFile: _onManageFile,
   downloadTasks = {},
 }) => {
+  const isHomeStyle = useUiStyle() === 'home'
   const getFileTimestamp = (val?: number | string) => {
     if (!val) return 0
     if (typeof val === 'number') return val < 10_000_000_000 ? val * 1000 : val
@@ -67,10 +69,23 @@ export const ModDownloadList: React.FC<ModDownloadListProps> = ({
             const fileHasUpdate =
               isInstalled && installedTime > 0 && fileTime > installedTime + 60000
 
+            const fileIdStr = String(file._idRow)
+            const matchesDownloadedId =
+              displayCard.downloadedFileId !== undefined &&
+              String(displayCard.downloadedFileId) === fileIdStr
+            const matchesInstalledId =
+              displayCard.installedFileId !== undefined &&
+              String(displayCard.installedFileId) === fileIdStr
+            const matchesFileName =
+              Boolean(displayCard.fileName) &&
+              Boolean(file._sFile) &&
+              displayCard.fileName === file._sFile
+
             const isFileInstalled =
               (isInstalled &&
-                (String(displayCard.downloadedFileId) === String(file._idRow) ||
-                  String(displayCard.installedFileId) === String(file._idRow) ||
+                (matchesDownloadedId ||
+                  matchesInstalledId ||
+                  matchesFileName ||
                   files.length === 1)) ||
               isCompleted
 
@@ -143,7 +158,7 @@ export const ModDownloadList: React.FC<ModDownloadListProps> = ({
                               <>
                                 <m3e-circular-progress-indicator
                                   slot="icon"
-                                  variant="wavy"
+                                  variant={isHomeStyle ? 'flat' : 'wavy'}
                                   value={!isExtracting && prog && prog > 1 ? prog : undefined}
                                   indeterminate={isExtracting || !prog || prog <= 1}
                                   title={isExtracting ? 'Extracting' : undefined}
@@ -195,9 +210,9 @@ export const ModDownloadList: React.FC<ModDownloadListProps> = ({
                           </m3e-button>
                         )}
                         <m3e-button
-                          variant="filled"
-                          onClick={() => onManageFile?.(file)}
-                          className="text-xs font-bold rounded-[12px] overflow-hidden cursor-pointer"
+                          variant="tonal"
+                          disabled
+                          className="text-xs font-bold rounded-[12px] overflow-hidden cursor-default"
                           style={
                             {
                               '--m3e-button-shape-round': '12px',
@@ -209,17 +224,28 @@ export const ModDownloadList: React.FC<ModDownloadListProps> = ({
                               '--m3e-button-label-text-font-size': '12px',
                               '--m3e-button-label-text-font-weight': '700',
                               '--m3e-button-label-text-line-height': '1',
+                              '--m3e-button-tonal-container-color':
+                                'color-mix(in srgb, var(--md-sys-color-primary) 16%, transparent)',
+                              '--m3e-button-tonal-label-text-color':
+                                'var(--md-sys-color-primary)',
+                              '--m3e-button-disabled-container-color':
+                                'color-mix(in srgb, var(--md-sys-color-primary) 16%, transparent)',
+                              '--m3e-button-disabled-label-text-color':
+                                'var(--md-sys-color-primary)',
                               borderRadius: '12px',
                             } as React.CSSProperties
                           }
+                          title="Installed"
                         >
                           <span
                             slot="icon"
                             className="material-symbols-rounded text-sm shrink-0 leading-none flex items-center justify-center"
                           >
-                            play_arrow
+                            check_circle
                           </span>
-                          <span className="leading-none flex items-center">Play</span>
+                          <span className="leading-none flex items-center">
+                            Installed
+                          </span>
                         </m3e-button>
                       </div>
                     ) : onDownloadFile ? (

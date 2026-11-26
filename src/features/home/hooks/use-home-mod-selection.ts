@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useSearchParams } from 'react-router-dom'
-import { getModById, type GameBananaMod } from '@/services/gamebanana'
+import type { GameBananaMod } from '@/services/gamebanana'
+import { getProviderModDetails } from '@/services/providers'
 import type { ModItem } from '@/ui/mod-details-modal/types'
 import { mapToModItem } from '../utils'
 
@@ -35,15 +36,16 @@ export function useHomeModSelection({
   useEffect(() => {
     if (!currentModId) return
 
-    const modNum = Number(currentModId)
-    if (Number.isNaN(modNum)) return
-
     let isMounted = true
-    getModById(modNum).then((mod) => {
-      if (isMounted && mod) {
-        setSelectedModData(mapToModItem(mod))
-      }
-    })
+    getProviderModDetails(currentModId)
+      .then((mod) => {
+        if (isMounted && mod) {
+          setSelectedModData(mapToModItem(mod))
+        }
+      })
+      .catch((err) => {
+        console.warn('Failed to fetch mod details:', err)
+      })
 
     return () => {
       isMounted = false

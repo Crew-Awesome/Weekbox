@@ -11,14 +11,18 @@ import { SearchLoadingState } from './SearchBar/SearchLoadingState'
 import { SearchResultsList } from './SearchBar/SearchResultsList'
 import { RecentSearchesList } from './SearchBar/RecentSearchesList'
 
+import type { ModProviderId } from '@/services/providers'
+
 export interface HomeSearchBarProps {
   initialQuery?: string
+  provider?: ModProviderId
   onSelectMod: (mod: ModItem) => void
   onSearch?: (query: string) => void
 }
 
 export const HomeSearchBar: React.FC<HomeSearchBarProps> = ({
   initialQuery = '',
+  provider = 'gamebanana',
   onSelectMod,
   onSearch,
 }) => {
@@ -42,6 +46,7 @@ export const HomeSearchBar: React.FC<HomeSearchBarProps> = ({
     handleQueryChange,
   } = useGameBananaSearch({
     initialQuery,
+    provider,
     onOpenDropdown: () => {
       if (searchViewRef.current) {
         searchViewRef.current.open = true
@@ -115,22 +120,6 @@ export const HomeSearchBar: React.FC<HomeSearchBarProps> = ({
           {
             width: '100%',
             height: '46px',
-            '--m3e-search-bar-container-color':
-              'var(--md-sys-color-surface-container-high)',
-            '--m3e-search-bar-leading-icon-color':
-              'var(--md-sys-color-on-surface-variant)',
-            '--m3e-search-bar-trailing-icon-color':
-              'var(--md-sys-color-on-surface-variant)',
-            '--m3e-search-view-container-color':
-              'var(--md-sys-color-surface-container-high)',
-            '--m3e-search-view-contained-container-color':
-              'var(--md-sys-color-surface-container-high)',
-            '--m3e-search-view-divider-color':
-              'var(--md-sys-color-outline-variant)',
-            '--m3e-search-bar-container-height': '46px',
-            '--m3e-search-view-docked-header-container-height': '46px',
-            '--m3e-search-view-docked-container-shape': '24px',
-            '--m3e-search-view-contained-docked-bar-shape': '24px',
             borderRadius: '24px',
             border: '1px solid var(--md-sys-color-outline-variant)',
             boxShadow:
@@ -158,12 +147,7 @@ export const HomeSearchBar: React.FC<HomeSearchBarProps> = ({
         <m3e-overflow
           direction="vertical"
           className="w-full max-h-[380px] select-none"
-          style={
-            {
-              maxHeight: '380px',
-              '--m3e-overflow-inset': '4px',
-            } as React.CSSProperties
-          }
+          style={{ maxHeight: '380px' }}
         >
           <div className="flex flex-col p-2 gap-2 w-full pr-3">
             {isSearching ? (
@@ -175,8 +159,8 @@ export const HomeSearchBar: React.FC<HomeSearchBarProps> = ({
               />
             ) : hasSearched && cleanQuery ? (
               <div className="py-8 text-center text-xs text-[var(--md-sys-color-on-surface-variant)]">
-                No GameBanana mods found matching &quot;{cleanQuery}&quot;. Try
-                another title or mod ID.
+                No mods found matching &quot;{cleanQuery}&quot;. Try another
+                title, mod ID, or provider link.
               </div>
             ) : cleanQuery ? (
               <SearchLoadingState query={cleanQuery} />

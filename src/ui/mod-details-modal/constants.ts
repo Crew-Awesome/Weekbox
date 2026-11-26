@@ -32,6 +32,18 @@ export const ENGINE_CATEGORIES: Record<string, EngineCategory> = {
     icon: '/imgs/icons/categories/fpsplus.png',
     description: 'Classic high FPS rhythm fork optimized for ultra-smooth rendering.',
   },
+  pslice: {
+    id: 'pslice',
+    name: 'P-Slice Engine',
+    icon: '/imgs/icons/categories/pslice.png',
+    description: 'V-Slice mechanics and polish ported onto Psych Engine.',
+  },
+  psychonline: {
+    id: 'psychonline',
+    name: 'Psych Online',
+    icon: '/imgs/icons/categories/psychonline.png',
+    description: 'Multiplayer fork of Psych Engine.',
+  },
   exe: {
     id: 'exe',
     name: 'Standalone Game / EXE',
@@ -43,25 +55,35 @@ export const ENGINE_CATEGORIES: Record<string, EngineCategory> = {
 export const getSupportedEngineCategories = (): EngineCategory[] =>
   Object.values(ENGINE_CATEGORIES)
 
+const ENGINE_ID_ALIASES: Record<string, string> = {
+  executable: 'exe',
+  'v-slice': 'vslice',
+  base: 'vslice',
+  basegame: 'vslice',
+  'p-slice': 'pslice',
+  'psych-online': 'psychonline',
+}
+
+export function normalizeEngineCategoryId(engineId?: string): string {
+  const lower = String(engineId || '').trim().toLowerCase()
+  return ENGINE_ID_ALIASES[lower] || lower
+}
+
+export function findEngineCategory(
+  engineId?: string,
+  engineName?: string,
+): EngineCategory | undefined {
+  const normalizedId = normalizeEngineCategoryId(engineId)
+  const normalizedName = String(engineName || '').trim().toLowerCase()
+  return Object.values(ENGINE_CATEGORIES).find(
+    (c) =>
+      c.id.toLowerCase() === normalizedId ||
+      (normalizedName.length > 0 && c.name.toLowerCase() === normalizedName),
+  )
+}
+
 export const M3E_MENU_STYLE: React.CSSProperties = {
-  '--m3e-menu-container-color': 'var(--md-sys-color-surface-container)',
-  '--m3e-menu-container-shape': '16px',
   '--m3e-menu-container-min-width': '230px',
-  '--m3e-menu-item-color': 'var(--md-sys-color-on-surface)',
-  '--m3e-menu-item-selected-color': 'var(--md-sys-color-inverse-primary)',
-  '--m3e-menu-item-selected-container-color':
-    'color-mix(in srgb, var(--md-sys-color-inverse-primary) 16%, transparent)',
-  '--m3e-menu-item-selected-container-hover-color':
-    'color-mix(in srgb, var(--md-sys-color-inverse-primary) 24%, transparent)',
-  '--m3e-menu-item-selected-container-focus-color':
-    'color-mix(in srgb, var(--md-sys-color-inverse-primary) 24%, transparent)',
-  '--m3e-menu-item-selected-ripple-color':
-    'var(--md-sys-color-inverse-primary)',
-  '--m3e-menu-item-icon-size': '18px',
-  '--m3e-menu-item-icon-label-space': '8px',
-  '--m3e-menu-item-padding-start': '10px',
-  '--m3e-menu-item-padding-end': '10px',
-  '--m3e-menu-item-container-height': '38px',
   boxShadow:
     '0 12px 32px color-mix(in srgb, var(--md-sys-color-scrim) 25%, transparent)',
   border:
@@ -71,10 +93,6 @@ export const M3E_MENU_STYLE: React.CSSProperties = {
 
 export const M3E_ENGINE_TRIGGER_STYLE: React.CSSProperties = {
   '--m3e-button-outlined-container-shape': '18px',
-  '--m3e-button-outlined-outline-color':
-    'color-mix(in srgb, var(--md-sys-color-outline-variant) 60%, transparent)',
-  '--m3e-button-outlined-label-text-color':
-    'var(--md-sys-color-on-surface)',
   cursor: 'pointer',
 } as React.CSSProperties
 

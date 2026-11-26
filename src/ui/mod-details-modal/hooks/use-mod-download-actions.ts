@@ -48,10 +48,13 @@ export function useModDownloadActions({
     (explicitUrl?: unknown, explicitFileId?: unknown) => {
       if (!displayCard) return
 
-      const cleanUrl =
-        typeof explicitUrl === 'string' && explicitUrl.trim().startsWith('http')
-          ? explicitUrl.trim()
-          : undefined
+      const isPlayableUrl = (val: unknown): val is string =>
+        typeof val === 'string' &&
+        (val.trim().startsWith('http') || val.trim().startsWith('gamejolt-build://'))
+
+      const cleanUrl = isPlayableUrl(explicitUrl)
+        ? explicitUrl.trim()
+        : undefined
 
       const cleanFileId =
         typeof explicitFileId === 'string' && explicitFileId.trim().length > 0
@@ -66,11 +69,9 @@ export function useModDownloadActions({
           ? validFiles.find((f) => f._sDownloadUrl === cleanUrl)
           : validFiles[0]
 
-      const fallbackUrl =
-        typeof displayCard.downloadUrl === 'string' &&
-        displayCard.downloadUrl.trim().startsWith('http')
-          ? displayCard.downloadUrl.trim()
-          : ''
+      const fallbackUrl = isPlayableUrl(displayCard.downloadUrl)
+        ? displayCard.downloadUrl.trim()
+        : ''
 
       const finalUrl = cleanUrl || matchedFile?._sDownloadUrl || fallbackUrl
       const finalFileId =
@@ -92,9 +93,22 @@ export function useModDownloadActions({
               installedAt: record.installedAt,
               downloadedFileId: record.downloadedFileId,
               installedFileId: record.installedFileId,
+              fileName: record.fileName,
+              categoryId: record.categoryId,
+              categoryName: record.isExecutable
+                ? 'Executable Mods'
+                : record.categoryName,
               engineId: record.engineId,
               engineName: record.engineName,
               icon: record.icon,
+              isExecutable: record.isExecutable,
+              hasEngineWarning: record.hasEngineWarning,
+              engineWarningMessage: record.engineWarningMessage,
+              userPfp: record.userPfp,
+              userPfpPath: record.userPfpPath,
+              localUserPfp: record.localUserPfp,
+              credits: record.credits,
+              authors: record.authors,
             })
           }
         },

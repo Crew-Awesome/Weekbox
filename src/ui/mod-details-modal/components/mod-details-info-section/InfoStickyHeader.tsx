@@ -1,5 +1,6 @@
 import React from 'react'
 import { ModNavPills, type ModModalTab } from '../mod-nav-pills'
+import { InfoBookmarkFavoriteActions } from './InfoBookmarkFavoriteActions'
 import type { ModItem } from '../../types'
 
 interface InfoStickyHeaderProps {
@@ -27,74 +28,12 @@ export const InfoStickyHeader: React.FC<InfoStickyHeaderProps> = ({
 }) => {
   return (
     <div className="flex flex-col gap-1.5 w-full animate-in fade-in duration-150">
-      <div className="flex items-center justify-between gap-2 min-w-0">
-        <h2
-          className="text-sm sm:text-base font-bold text-[var(--md-sys-color-on-surface)] truncate min-w-0 flex-1 leading-tight"
-          title={displayCard.name}
-        >
-          {displayCard.name}
-        </h2>
-
-        <div className="flex items-center gap-1 shrink-0">
-          <m3e-icon-button
-            onClick={handleToggleBookmark}
-            title={isBookmarked ? 'Remove bookmark' : 'Bookmark mod'}
-            aria-label={isBookmarked ? 'Remove bookmark' : 'Bookmark mod'}
-            className={
-              isBookmarked
-                ? 'text-[var(--md-sys-color-tertiary)] border-none !border-0'
-                : 'text-[var(--md-sys-color-on-surface-variant)] hover:text-[var(--md-sys-color-tertiary)] border-none !border-0'
-            }
-            style={
-              {
-                '--m3e-icon-button-size': '32px',
-                border: 'none',
-              } as React.CSSProperties
-            }
-          >
-            <span
-              className={`material-symbols-rounded text-sm transition-transform active:scale-125 ${
-                isBookmarked ? 'text-[var(--md-sys-color-tertiary)]' : ''
-              }`}
-              style={
-                isBookmarked
-                  ? { fontVariationSettings: "'FILL' 1" }
-                  : undefined
-              }
-            >
-              bookmark
-            </span>
-          </m3e-icon-button>
-
-          <m3e-icon-button
-            onClick={handleToggleFavorite}
-            title={isFav ? 'Remove from favorites' : 'Add to favorites'}
-            aria-label={isFav ? 'Remove from favorites' : 'Add to favorites'}
-            className={
-              isFav
-                ? 'text-[var(--md-sys-color-error)] border-none !border-0'
-                : 'text-[var(--md-sys-color-on-surface-variant)] hover:text-[var(--md-sys-color-error)] border-none !border-0'
-            }
-            style={
-              {
-                '--m3e-icon-button-size': '32px',
-                border: 'none',
-              } as React.CSSProperties
-            }
-          >
-            <span
-              className={`material-symbols-rounded text-sm transition-transform active:scale-125 ${
-                isFav ? 'text-[var(--md-sys-color-error)]' : ''
-              }`}
-              style={
-                isFav ? { fontVariationSettings: "'FILL' 1" } : undefined
-              }
-            >
-              favorite
-            </span>
-          </m3e-icon-button>
-        </div>
-      </div>
+      <h2
+        className="text-sm sm:text-base font-bold text-[var(--md-sys-color-on-surface)] truncate min-w-0 leading-tight"
+        title={displayCard.name}
+      >
+        {displayCard.name}
+      </h2>
 
       <ModNavPills
         compact={true}
@@ -102,6 +41,15 @@ export const InfoStickyHeader: React.FC<InfoStickyHeaderProps> = ({
         onChangeTab={setActiveTab}
         contributorsCount={contributorsCount}
         filesCount={validFilesCount}
+        extraActions={
+          <InfoBookmarkFavoriteActions
+            isBookmarked={isBookmarked}
+            isFav={isFav}
+            onToggleBookmark={handleToggleBookmark}
+            onToggleFavorite={handleToggleFavorite}
+            sizePx="28px"
+          />
+        }
       />
     </div>
   )

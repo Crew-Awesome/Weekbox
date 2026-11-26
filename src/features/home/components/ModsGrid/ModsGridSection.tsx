@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useEffect, useMemo, useState } from 'react'
 import { Title } from '@/ui/title/Title'
 import type { ModItem } from '@/ui/mod-details-modal/types'
 import { useInfiniteScroll } from '@/utils'
@@ -7,6 +7,9 @@ import { ModsGridSkeleton } from './ModsGridSkeleton'
 import { ModsEmptyState } from './ModsEmptyState'
 import { ModsPaginationFooter } from './ModsPaginationFooter'
 import { ModGridCard } from './ModGridCard'
+
+const INITIAL_RENDER_BATCH = 12
+const INCREMENTAL_RENDER_BATCH = 8
 
 export interface ModsGridSectionProps {
   searchQuery: string
@@ -37,9 +40,49 @@ export const ModsGridSection: React.FC<ModsGridSectionProps> = ({
   isError = false,
   onRetry,
 }) => {
+  const listKey = `${searchQuery}:${filter}:${items[0]?.id ?? ''}`
+  const [renderedState, setRenderedState] = useState<{
+    listKey: string
+    count: number
+  }>(() => ({
+    listKey,
+    count: INITIAL_RENDER_BATCH,
+  }))
+
+  const effectiveVisibleCount =
+    renderedState.listKey === listKey
+      ? Math.min(items.length, renderedState.count)
+      : Math.min(items.length, INITIAL_RENDER_BATCH)
+
+  useEffect(() => {
+    if (effectiveVisibleCount >= items.length) return
+    const nextCount = Math.min(
+      items.length,
+      effectiveVisibleCount + INCREMENTAL_RENDER_BATCH,
+    )
+    if (typeof window.requestAnimationFrame === 'function') {
+      const rafId = window.requestAnimationFrame(() => {
+        setRenderedState({ listKey, count: nextCount })
+      })
+      return () => window.cancelAnimationFrame(rafId)
+    }
+    const timer = window.setTimeout(() => {
+      setRenderedState({ listKey, count: nextCount })
+    }, 0)
+    return () => window.clearTimeout(timer)
+  }, [effectiveVisibleCount, items.length, listKey])
+
+  const visibleItems = useMemo(
+    () => items.slice(0, effectiveVisibleCount),
+    [items, effectiveVisibleCount],
+  )
+
   const sentinelRef = useInfiniteScroll({
     hasMore,
-    isLoading: isLoadingMore || isInitialLoading,
+    isLoading:
+      isLoadingMore ||
+      isInitialLoading ||
+      effectiveVisibleCount < items.length,
     onLoadMore,
     rootMargin: '800px',
   })
@@ -75,7 +118,7 @@ export const ModsGridSection: React.FC<ModsGridSectionProps> = ({
       ) : (
         <div className="flex flex-col w-full pb-12">
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-3.5 sm:gap-4.5 lg:gap-5 w-full">
-            {items.map((mod) => (
+            {visibleItems.map((mod) => (
               <ModGridCard
                 key={`ripe-card-${mod.id}`}
                 mod={mod}

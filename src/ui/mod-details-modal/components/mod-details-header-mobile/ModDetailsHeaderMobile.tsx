@@ -3,7 +3,6 @@ import { host } from '@/core/host'
 import type { EngineCategory } from '../../constants'
 import type { ModItem } from '../../types'
 import { MobileEngineSelector } from './MobileEngineSelector'
-import { MobileVersionSelector } from './MobileVersionSelector'
 import { MobileDatePills } from './MobileDatePills'
 
 export interface ModDetailsHeaderMobileProps {
@@ -17,18 +16,18 @@ export interface ModDetailsHeaderMobileProps {
   isEngineDropdownOpen?: boolean
   setIsEngineDropdownOpen?: React.Dispatch<React.SetStateAction<boolean>>
   engineDropdownRef?: React.RefObject<HTMLDivElement | null>
-  handleSelectEngine: (cat: EngineCategory) => void
-  isExecutable: boolean
-  isMobilePlatform: boolean
-  isEngineInstalledOnDevice: boolean
-  handleInstallLatestEngine: () => void
-  isInstallingEngine: boolean
-  installedEngineVersions: string[]
-  isVersionDropdownOpen: boolean
-  setIsVersionDropdownOpen: React.Dispatch<React.SetStateAction<boolean>>
-  versionDropdownRef: React.RefObject<HTMLDivElement | null>
-  selectedVersion: string
-  handleSelectVersion: (ver: string) => void
+  handleSelectEngine: (cat: EngineCategory, version?: string) => void
+  isExecutable?: boolean
+  isMobilePlatform?: boolean
+  isEngineInstalledOnDevice?: boolean
+  handleInstallLatestEngine?: () => void
+  isInstallingEngine?: boolean
+  installedEngineVersions?: string[]
+  isVersionDropdownOpen?: boolean
+  setIsVersionDropdownOpen?: React.Dispatch<React.SetStateAction<boolean>>
+  versionDropdownRef?: React.RefObject<HTMLDivElement | null>
+  selectedVersion?: string
+  handleSelectVersion?: (ver: string) => void
   handleOpenFolder?: () => void
   onClose?: () => void
 }
@@ -43,17 +42,7 @@ export const ModDetailsHeaderMobile: React.FC<ModDetailsHeaderMobileProps> = ({
   isHeaderVisible,
   engineDropdownRef,
   handleSelectEngine,
-  isExecutable,
-  isMobilePlatform,
-  isEngineInstalledOnDevice,
-  handleInstallLatestEngine,
-  isInstallingEngine,
-  installedEngineVersions,
-  isVersionDropdownOpen,
-  setIsVersionDropdownOpen,
-  versionDropdownRef,
   selectedVersion,
-  handleSelectVersion,
   onClose,
 }) => {
   const rawId = useId()
@@ -87,22 +76,8 @@ export const ModDetailsHeaderMobile: React.FC<ModDetailsHeaderMobileProps> = ({
           isInstalled={isInstalled}
           engineDropdownRef={engineDropdownRef}
           mobileEngineMenuId={mobileEngineMenuId}
-          handleSelectEngine={handleSelectEngine}
-        />
-
-        <MobileVersionSelector
-          isExecutable={isExecutable}
-          isInstalled={isInstalled}
-          isMobilePlatform={isMobilePlatform}
-          isEngineInstalledOnDevice={isEngineInstalledOnDevice}
-          handleInstallLatestEngine={handleInstallLatestEngine}
-          isInstallingEngine={isInstallingEngine}
-          installedEngineVersions={installedEngineVersions}
-          isVersionDropdownOpen={isVersionDropdownOpen}
-          setIsVersionDropdownOpen={setIsVersionDropdownOpen}
-          versionDropdownRef={versionDropdownRef}
           selectedVersion={selectedVersion}
-          handleSelectVersion={handleSelectVersion}
+          handleSelectEngine={handleSelectEngine}
         />
       </div>
 

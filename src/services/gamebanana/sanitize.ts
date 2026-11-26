@@ -10,14 +10,18 @@ export function sanitizeHtml(dirtyHtml: string): string {
 }
 
 /**
- * Extracts plain text from an HTML string.
+ * Extracts plain text from an HTML string using an inert document parser
+ * so embedded tags (like img/iframe) never trigger network or image loads.
  */
 export function htmlToPlainText(html: string): string {
   if (!html) return ''
-  if (typeof document !== 'undefined') {
-    const tmp = document.createElement('div')
-    tmp.innerHTML = html
-    return tmp.textContent || tmp.innerText || ''
+  if (typeof DOMParser !== 'undefined') {
+    try {
+      const doc = new DOMParser().parseFromString(html, 'text/html')
+      return (doc.body?.textContent || '').replace(/\s+/g, ' ').trim()
+    } catch {
+      // Fallback to regex strip below
+    }
   }
-  return html.replace(/<[^>]*>?/gm, '').trim()
+  return html.replace(/<[^>]*>?/gm, ' ').replace(/\s+/g, ' ').trim()
 }

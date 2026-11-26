@@ -1,4 +1,5 @@
-import React, { useRef, useState, useEffect, useId } from 'react'
+import React, { useId } from 'react'
+import { useUiStyle } from '@/utils/ui-style'
 
 export type ModModalTab = 'description' | 'contributors' | 'details'
 
@@ -12,50 +13,79 @@ interface ModNavPillsProps {
   compact?: boolean
 }
 
+const NAV_TABS: Array<{
+  key: ModModalTab
+  icon: string
+  label: string
+}> = [
+  { key: 'description', icon: 'description', label: 'Description' },
+  { key: 'contributors', icon: 'group', label: 'Contributors' },
+  { key: 'details', icon: 'info', label: 'Details' },
+]
+
 /**
- * Connected M3E button group for switching between Description, Contributors, and Details tabs.
- * Automatically collapses to icon-only mode when container width is narrow.
+ * Connected M3E icon-only button group for switching between Description,
+ * Contributors, and Details tabs in compact mode.
  */
 export const ModNavPills: React.FC<ModNavPillsProps> = ({
   activeTab,
   onChangeTab,
-  contributorsCount,
-  filesCount,
   className = '',
   extraActions,
   compact = false,
 }) => {
-  const groupRef = useRef<HTMLDivElement>(null)
-  const [groupWidth, setGroupWidth] = useState<number>(400)
-
-  const rawId = useId()
-  const descId = `pills-desc-${rawId.replace(/:/g, '-')}`
-  const contribId = `pills-contrib-${rawId.replace(/:/g, '-')}`
-  const detailsId = `pills-details-${rawId.replace(/:/g, '-')}`
-
-  useEffect(() => {
-    const el = groupRef.current
-    if (!el) return
-
-    const observer = new ResizeObserver((entries) => {
-      for (const entry of entries) {
-        if (entry.contentRect.width > 0) {
-          setGroupWidth(entry.contentRect.width)
-        }
-      }
-    })
-
-    observer.observe(el)
-    return () => observer.disconnect()
-  }, [])
-
-  const isIconOnly = compact ? groupWidth < 180 : groupWidth < 255
+  const rawId = useId().replace(/:/g, '-')
+  const isHomeStyle = useUiStyle() === 'home'
 
   const buttonSize = compact ? 'extra-small' : 'small'
   const heightPx = compact ? '28px' : '32px'
   const iconSize = compact ? '15px' : '16px'
-  const fontSize = compact ? '11px' : '11.5px'
-  const paddingPx = isIconOnly ? '6px' : '8px'
+  const paddingPx = '6px'
+
+  if (isHomeStyle) {
+    return (
+      <div
+        className={`flex items-center flex-nowrap ${
+          compact ? 'gap-1.5 my-0.5' : 'gap-2 mt-1.5 mb-1'
+        } w-full min-w-0 ${className}`}
+      >
+        <div
+          className="flex flex-1 min-w-0 border-b gap-1"
+          style={{ borderColor: 'var(--md-sys-color-outline-variant)' }}
+        >
+          {NAV_TABS.map(({ key, icon, label }) => {
+            const isSelected = activeTab === key
+            return (
+              <button
+                key={key}
+                type="button"
+                onClick={() => onChangeTab(key)}
+                aria-label={label}
+                className="flex-1 min-w-0 py-1.5 px-2 flex items-center justify-center gap-1.5 text-xs font-semibold cursor-pointer border-b-2 transition-colors"
+                style={{
+                  borderColor: isSelected
+                    ? 'var(--md-sys-color-primary)'
+                    : 'transparent',
+                  color: isSelected
+                    ? 'var(--md-sys-color-primary)'
+                    : 'var(--md-sys-color-on-surface-variant)',
+                }}
+              >
+                <span className="material-symbols-rounded text-[15px] leading-none shrink-0">
+                  {icon}
+                </span>
+                {!compact && <span className="truncate">{label}</span>}
+              </button>
+            )
+          })}
+        </div>
+
+        {extraActions && (
+          <div className="shrink-0 flex items-center ml-1 pr-0.5">{extraActions}</div>
+        )}
+      </div>
+    )
+  }
 
   return (
     <div
@@ -63,7 +93,7 @@ export const ModNavPills: React.FC<ModNavPillsProps> = ({
         compact ? 'gap-1 my-0.5' : 'gap-1.5 mt-1.5 mb-1'
       } w-full min-w-0 ${className}`}
     >
-      <div ref={groupRef} className="flex-1 min-w-0">
+      <div className="flex-1 min-w-0">
         <m3e-button-group
           variant="connected"
           size={buttonSize}
@@ -78,17 +108,14 @@ export const ModNavPills: React.FC<ModNavPillsProps> = ({
               '--m3e-button-small-container-height': heightPx,
               '--m3e-button-leading-space': paddingPx,
               '--m3e-button-trailing-space': paddingPx,
-              '--m3e-button-extra-small-leading-space': isIconOnly ? '6px' : '8px',
-              '--m3e-button-extra-small-trailing-space': isIconOnly ? '6px' : '8px',
+              '--m3e-button-extra-small-leading-space': paddingPx,
+              '--m3e-button-extra-small-trailing-space': paddingPx,
               '--m3e-button-small-leading-space': paddingPx,
               '--m3e-button-small-trailing-space': paddingPx,
-              '--m3e-button-icon-label-space': '4px',
+              '--m3e-button-icon-label-space': '0px',
               '--m3e-button-icon-size': iconSize,
               '--m3e-button-extra-small-icon-size': '15px',
               '--m3e-button-small-icon-size': iconSize,
-              '--m3e-button-label-text-font-size': fontSize,
-              '--m3e-button-extra-small-label-text-font-size': '11px',
-              '--m3e-button-small-label-text-font-size': fontSize,
               '--m3e-button-selected-container-color': 'var(--md-sys-color-primary)',
               '--m3e-button-selected-label-text-color': 'var(--md-sys-color-on-primary)',
               '--m3e-button-selected-icon-color': 'var(--md-sys-color-on-primary)',
@@ -99,137 +126,38 @@ export const ModNavPills: React.FC<ModNavPillsProps> = ({
             } as React.CSSProperties
           }
         >
-          <m3e-button
-            id={descId}
-            variant="tonal"
-            shape="square"
-            toggle={true}
-            selected={activeTab === 'description' ? true : undefined}
-            size={buttonSize}
-            onClick={() => onChangeTab('description')}
-            style={{ flex: '1 1 0px', minWidth: 0, overflow: 'hidden' }}
-            aria-label="Description"
-          >
-            <span
-              slot="icon"
-              className="material-symbols-rounded shrink-0 leading-none"
-              style={{ fontSize: iconSize }}
-            >
-              description
-            </span>
-            {!isIconOnly && (
-              <span className="truncate min-w-0 font-medium tracking-tight">
-                Description
-              </span>
-            )}
-          </m3e-button>
-
-          <m3e-button
-            id={contribId}
-            variant="tonal"
-            shape="square"
-            toggle={true}
-            selected={activeTab === 'contributors' ? true : undefined}
-            size={buttonSize}
-            onClick={() => onChangeTab('contributors')}
-            style={{ flex: '1 1 0px', minWidth: 0, overflow: 'hidden' }}
-            aria-label="Contributors"
-          >
-            <span
-              slot="icon"
-              className="material-symbols-rounded shrink-0 leading-none"
-              style={{ fontSize: iconSize }}
-            >
-              group
-            </span>
-            {!isIconOnly && (
-              <span className="truncate min-w-0 font-medium tracking-tight">
-                Contributors
-              </span>
-            )}
-            {!isIconOnly && contributorsCount !== undefined && (
-              <span
-                className="ml-0.5 text-[9px] px-1 py-0 rounded-full font-bold shrink-0 transition-colors"
-                style={{
-                  color:
-                    activeTab === 'contributors'
-                      ? 'var(--md-sys-color-on-primary)'
-                      : 'var(--md-sys-color-on-surface-variant)',
-                  backgroundColor:
-                    activeTab === 'contributors'
-                      ? 'color-mix(in srgb, var(--md-sys-color-on-primary) 22%, transparent)'
-                      : 'color-mix(in srgb, var(--md-sys-color-on-surface-variant) 18%, transparent)',
-                }}
+          {NAV_TABS.map(({ key, icon, label }) => {
+            const buttonId = `pills-${key}-${rawId}`
+            return (
+              <m3e-button
+                key={key}
+                id={buttonId}
+                variant="tonal"
+                shape="square"
+                toggle={true}
+                selected={activeTab === key ? true : undefined}
+                size={buttonSize}
+                onClick={() => onChangeTab(key)}
+                style={{ flex: '1 1 0px', minWidth: 0, overflow: 'hidden' }}
+                aria-label={label}
               >
-                {contributorsCount}
-              </span>
-            )}
-          </m3e-button>
-
-          <m3e-button
-            id={detailsId}
-            variant="tonal"
-            shape="square"
-            toggle={true}
-            selected={activeTab === 'details' ? true : undefined}
-            size={buttonSize}
-            onClick={() => onChangeTab('details')}
-            style={
-              {
-                flex: '1 1 0px',
-                minWidth: 0,
-                overflow: 'hidden',
-                '--m3e-button-trailing-space': isIconOnly ? '5px' : '7px',
-                '--m3e-button-small-trailing-space': isIconOnly ? '5px' : '7px',
-                '--m3e-button-leading-space': isIconOnly ? '5px' : '7px',
-                '--m3e-button-small-leading-space': isIconOnly ? '5px' : '7px',
-              } as React.CSSProperties
-            }
-            aria-label="Details"
-          >
-            <span
-              slot="icon"
-              className="material-symbols-rounded shrink-0 leading-none"
-              style={{ fontSize: iconSize }}
-            >
-              info
-            </span>
-            {!isIconOnly && (
-              <span className="truncate min-w-0 font-medium tracking-tight">
-                Details
-              </span>
-            )}
-            {!isIconOnly && filesCount !== undefined && (
-              <span
-                className="ml-0.5 text-[9px] px-1 py-0 rounded-full font-bold shrink-0 transition-colors"
-                style={{
-                  color:
-                    activeTab === 'details'
-                      ? 'var(--md-sys-color-on-primary)'
-                      : 'var(--md-sys-color-on-surface-variant)',
-                  backgroundColor:
-                    activeTab === 'details'
-                      ? 'color-mix(in srgb, var(--md-sys-color-on-primary) 22%, transparent)'
-                      : 'color-mix(in srgb, var(--md-sys-color-on-surface-variant) 18%, transparent)',
-                }}
-              >
-                {filesCount}
-              </span>
-            )}
-          </m3e-button>
+                <span
+                  slot="icon"
+                  className="material-symbols-rounded shrink-0 leading-none"
+                  style={{ fontSize: iconSize }}
+                >
+                  {icon}
+                </span>
+              </m3e-button>
+            )
+          })}
         </m3e-button-group>
 
-        <m3e-tooltip for={descId} position="below">
-          Description
-        </m3e-tooltip>
-        <m3e-tooltip for={contribId} position="below">
-          {contributorsCount !== undefined
-            ? `Contributors (${contributorsCount})`
-            : 'Contributors'}
-        </m3e-tooltip>
-        <m3e-tooltip for={detailsId} position="below">
-          {filesCount !== undefined ? `Details (${filesCount})` : 'Details'}
-        </m3e-tooltip>
+        {NAV_TABS.map(({ key, label }) => (
+          <m3e-tooltip key={key} for={`pills-${key}-${rawId}`} position="below">
+            {label}
+          </m3e-tooltip>
+        ))}
       </div>
 
       {extraActions && (

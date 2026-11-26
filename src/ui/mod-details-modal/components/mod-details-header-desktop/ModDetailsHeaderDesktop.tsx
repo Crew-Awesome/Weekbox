@@ -1,9 +1,9 @@
 import React, { useId } from 'react'
 import { host } from '@/core/host'
+import { useUiStyle } from '@/utils/ui-style'
 import type { EngineCategory } from '../../constants'
 import type { ModItem } from '../../types'
 import { DesktopEngineSelector } from './DesktopEngineSelector'
-import { DesktopVersionSelector } from './DesktopVersionSelector'
 import { DesktopDatePills } from './DesktopDatePills'
 
 export interface ModDetailsHeaderDesktopProps {
@@ -20,16 +20,16 @@ export interface ModDetailsHeaderDesktopProps {
   isEngineDropdownOpen?: boolean
   setIsEngineDropdownOpen?: React.Dispatch<React.SetStateAction<boolean>>
   engineDropdownRef?: React.RefObject<HTMLDivElement | null>
-  handleSelectEngine: (cat: EngineCategory) => void
-  isExecutable: boolean
-  installedEngineVersions: string[]
-  isVersionDropdownOpen: boolean
-  setIsVersionDropdownOpen: React.Dispatch<React.SetStateAction<boolean>>
-  versionDropdownRef: React.RefObject<HTMLDivElement | null>
-  selectedVersion: string
-  handleSelectVersion: (ver: string) => void
-  handleInstallLatestEngine: () => void
-  isInstallingEngine: boolean
+  handleSelectEngine: (cat: EngineCategory, version?: string) => void
+  isExecutable?: boolean
+  installedEngineVersions?: string[]
+  isVersionDropdownOpen?: boolean
+  setIsVersionDropdownOpen?: React.Dispatch<React.SetStateAction<boolean>>
+  versionDropdownRef?: React.RefObject<HTMLDivElement | null>
+  selectedVersion?: string
+  handleSelectVersion?: (ver: string) => void
+  handleInstallLatestEngine?: () => void
+  isInstallingEngine?: boolean
   handleOpenFolder?: () => void
 }
 
@@ -42,24 +42,23 @@ export const ModDetailsHeaderDesktop: React.FC<ModDetailsHeaderDesktopProps> = (
   formatFullDate,
   engineDropdownRef,
   handleSelectEngine,
-  isExecutable,
-  installedEngineVersions,
-  isVersionDropdownOpen,
-  setIsVersionDropdownOpen,
-  versionDropdownRef,
   selectedVersion,
-  handleSelectVersion,
-  handleInstallLatestEngine,
-  isInstallingEngine,
 }) => {
   const rawId = useId()
   const submittedPillId = `hdr-sub-${rawId.replace(/:/g, '-')}`
   const updatedPillId = `hdr-upd-${rawId.replace(/:/g, '-')}`
   const installedPillId = `hdr-ins-${rawId.replace(/:/g, '-')}`
   const engineMenuId = `hdr-eng-menu-${rawId.replace(/:/g, '-')}`
+  const isHomeStyle = useUiStyle() === 'home'
 
   return (
-    <div className="relative z-30 flex items-center justify-between px-4 md:px-6 pt-2 pb-3 md:pt-3 md:pb-4 shrink-0 bg-[var(--md-sys-color-surface-container)] min-h-[56px] rounded-t-2xl pointer-events-auto">
+    <div
+      className={`relative z-30 flex items-center justify-between px-4 md:px-6 pt-2 pb-3 md:pt-3 md:pb-4 shrink-0 min-h-[56px] pointer-events-auto ${
+        isHomeStyle
+          ? 'bg-[var(--md-sys-color-surface)] border-b border-[var(--md-sys-color-outline-variant)]/50 rounded-t-xl'
+          : 'bg-[var(--md-sys-color-surface-container)] rounded-t-2xl'
+      }`}
+    >
       <div className="flex items-center gap-1.5 md:gap-2 shrink-0 z-10">
         <m3e-icon-button
           variant="tonal"
@@ -81,21 +80,8 @@ export const ModDetailsHeaderDesktop: React.FC<ModDetailsHeaderDesktopProps> = (
           isInstalled={isInstalled}
           engineDropdownRef={engineDropdownRef}
           engineMenuId={engineMenuId}
-          handleSelectEngine={handleSelectEngine}
-        />
-
-        <DesktopVersionSelector
-          isExecutable={isExecutable}
-          isInstalled={isInstalled}
-          installedEngineVersions={installedEngineVersions}
-          isVersionDropdownOpen={isVersionDropdownOpen}
-          setIsVersionDropdownOpen={setIsVersionDropdownOpen}
-          versionDropdownRef={versionDropdownRef}
           selectedVersion={selectedVersion}
-          handleSelectVersion={handleSelectVersion}
-          handleInstallLatestEngine={handleInstallLatestEngine}
-          isInstallingEngine={isInstallingEngine}
-          engineName={engineName}
+          handleSelectEngine={handleSelectEngine}
         />
       </div>
 

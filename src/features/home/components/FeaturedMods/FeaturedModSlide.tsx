@@ -1,11 +1,63 @@
 import React from 'react'
 import type { ModItem } from '@/ui/mod-details-modal/types'
+import { useUiStyle } from '@/utils/ui-style'
 
 interface FeaturedModSlideProps {
   item: ModItem
 }
 
 export const FeaturedModSlide: React.FC<FeaturedModSlideProps> = ({ item }) => {
+  const isHomeStyle = useUiStyle() === 'home'
+
+  if (isHomeStyle) {
+    return (
+      <div className="w-full h-full p-1 sm:p-2">
+        <div
+          className="m3-card w-full h-full rounded-xl relative border overflow-hidden cursor-pointer"
+          style={{
+            backgroundColor: 'var(--md-sys-color-surface-container)',
+            borderColor: 'var(--md-sys-color-outline-variant)',
+          }}
+        >
+          <img
+            src={item.image || item.img}
+            alt={item.title}
+            loading="lazy"
+            decoding="async"
+            className="absolute inset-0 w-full h-full object-cover"
+            onError={(e) => {
+              e.currentTarget.src = '/imgs/images/placeholder-mini.webp'
+            }}
+          />
+
+          {item.badge && (
+            <div className="m3-card-badge absolute top-3 left-3 z-10 bg-black/75 px-3 py-1 rounded-md pointer-events-auto flex items-center">
+              <span className="text-white text-xs font-medium">{item.badge}</span>
+            </div>
+          )}
+
+          <div className="m3-card-content absolute inset-x-0 bottom-0 bg-black/75 px-4 py-3.5 sm:px-6 sm:py-4 flex items-center gap-3 pointer-events-none z-10">
+            {item.icon && (
+              <img
+                src={item.icon}
+                alt="engine icon"
+                className="w-9 h-9 sm:w-11 sm:h-11 object-contain shrink-0"
+              />
+            )}
+            <div className="flex flex-col overflow-hidden min-w-0">
+              <h3 className="text-base sm:text-xl md:text-2xl font-bold text-white truncate leading-tight">
+                {item.title}
+              </h3>
+              <span className="text-xs sm:text-sm text-gray-200 font-medium truncate">
+                By {item.author}
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="w-full h-full p-1.5 sm:p-3 md:p-4">
       <div

@@ -56,20 +56,41 @@ export function useModInstallState({
             installedAt: record.installedAt,
             downloadedFileId: record.downloadedFileId,
             installedFileId: record.installedFileId,
+            fileName: record.fileName,
+          }
+          if (record.categoryId !== undefined) {
+            patch.categoryId = record.categoryId
+          }
+          if (record.categoryName || record.isExecutable) {
+            patch.categoryName = record.isExecutable
+              ? 'Executable Mods'
+              : record.categoryName
           }
           if (record.engineId) patch.engineId = record.engineId
           if (record.engineName) patch.engineName = record.engineName
           if (record.icon) patch.icon = record.icon
+          if (record.isExecutable !== undefined) {
+            patch.isExecutable = record.isExecutable
+          }
           if (record.hasEngineWarning !== undefined) {
             patch.hasEngineWarning = record.hasEngineWarning
-          }
-          if (record.engineWarningMessage) {
+            patch.engineWarningMessage = record.engineWarningMessage
+          } else if (record.engineWarningMessage) {
             patch.engineWarningMessage = record.engineWarningMessage
           }
           if (record.name) patch.name = record.name
           if (record.title) patch.title = record.title
           if (record.description !== undefined) {
             patch.description = record.description
+          }
+          if (record.userPfp) patch.userPfp = record.userPfp
+          if (record.userPfpPath) patch.userPfpPath = record.userPfpPath
+          if (record.localUserPfp) patch.localUserPfp = record.localUserPfp
+          if (record.credits && record.credits.length > 0) {
+            patch.credits = record.credits
+          }
+          if (record.authors && record.authors.length > 0) {
+            patch.authors = record.authors
           }
           void onUpdateMod(patch)
         }
@@ -121,7 +142,10 @@ export function useModInstallState({
   }, [isInstalled, localInstalledAt, validFiles, displayCard?.updatedAt])
 
   const isExecutable = Boolean(
-    installedRecord?.isExecutable || displayCard?.engineId === 'exe',
+    installedRecord?.isExecutable ||
+      displayCard?.isExecutable ||
+      displayCard?.engineId === 'exe' ||
+      displayCard?.engineId === 'executable',
   )
 
   return {

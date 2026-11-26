@@ -16,6 +16,7 @@ export function mapToModItem(mod: GameBananaMod): ModItem {
     engineCategory?.icon ||
     (mod.engineId ? getEngineIcon(mod.engineId) : undefined)
 
+  const cardThumb = mod.thumbnail
   const highResThumb = upgradeGameBananaImageUrl(mod.thumbnail)
   const highResPreviews =
     mod.previewMedia && mod.previewMedia.length > 0
@@ -24,13 +25,16 @@ export function mapToModItem(mod: GameBananaMod): ModItem {
 
   return {
     id: mod.id,
+    source: mod.source || 'gamebanana',
+    sourceId: mod.sourceId,
+    sourceUrl: mod.sourceUrl,
     name: mod.title,
     title: mod.title,
     description: mod.description,
     htmlBody: mod.htmlBody,
-    img: highResThumb,
-    image: highResThumb,
-    thumbnail: highResThumb,
+    img: cardThumb,
+    image: cardThumb,
+    thumbnail: cardThumb,
     author: mod.author,
     userPfp: mod.userPfp,
     authors: mod.authors?.map((name) => ({ name })) || [{ name: mod.author }],
@@ -39,14 +43,22 @@ export function mapToModItem(mod: GameBananaMod): ModItem {
     engineIcon: resolvedIcon,
     engineId: mod.engineId,
     engineName:
+      mod.engineName ||
       engineCategory?.name ||
       (mod.engineId && mod.engineId !== 'unknown'
         ? mod.engineId.toUpperCase()
         : 'Friday Night Funkin'),
-    badge: mod.__featuredLabel || 'Featured',
+    badge:
+      mod.__featuredLabel ||
+      (mod.source === 'gamejolt'
+        ? 'GameJolt'
+        : mod.source === 'backstage'
+          ? "Funkin' Backstage"
+          : 'Featured'),
     submittedAt: normalizeTimestamp(mod.submittedAt) ?? Date.now(),
     updatedAt: normalizeTimestamp(mod.updatedAt) ?? undefined,
     likes: mod.likes,
+    followers: mod.followers,
     views: mod.views,
     downloads: mod.downloads,
     isNsfw: mod.isNsfw,

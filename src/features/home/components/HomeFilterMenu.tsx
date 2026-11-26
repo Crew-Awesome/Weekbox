@@ -1,20 +1,22 @@
 import React, { useMemo, useState, useEffect } from 'react'
-import type { ModFilter } from '@/services/gamebanana'
+import type { ModProviderId } from '@/services/providers'
 import { FilterIcon } from '@/ui/icons/FilterIcon'
-import {
-  M3E_BUTTON_STYLE,
-  HomeFilterSubmenus,
-} from './HomeFilterSubmenus'
+import { M3E_BUTTON_STYLE } from './home-filter-constants'
+import { HomeFilterSubmenus } from './HomeFilterSubmenus'
 
 export interface HomeFilterMenuProps {
-  filter: ModFilter
-  onSelectFilter: (filter: ModFilter) => void
+  provider: ModProviderId
+  onSelectProvider: (provider: ModProviderId) => void
+  filter: string
+  onSelectFilter: (filter: string) => void
   engineFilter: string | string[]
   onSelectEngine: (engine: string | string[]) => void
   className?: string
 }
 
 export const HomeFilterMenu: React.FC<HomeFilterMenuProps> = ({
+  provider,
+  onSelectProvider,
   filter,
   onSelectFilter,
   engineFilter,
@@ -31,13 +33,20 @@ export const HomeFilterMenu: React.FC<HomeFilterMenuProps> = ({
     return engineFilter.toLowerCase() === 'all' ? [] : [engineFilter]
   }, [engineFilter])
 
+  const defaultSort =
+    provider === 'gamejolt' ? 'hot' : provider === 'backstage' ? 'activity' : 'ripe'
   const isAllEngines = selectedEngines.length === 0
-  const isFiltered = filter !== 'ripe' || !isAllEngines
+  const isFiltered =
+    provider !== 'gamebanana' || filter !== defaultSort || !isAllEngines
 
   const handleToggleEngine = (id: string) => {
     const isSelected = selectedEngines.some(
       (e) => e.toLowerCase() === id.toLowerCase(),
     )
+    if (provider === 'backstage') {
+      onSelectEngine(isSelected ? 'all' : [id])
+      return
+    }
     if (isSelected) {
       const next = selectedEngines.filter(
         (e) => e.toLowerCase() !== id.toLowerCase(),
@@ -192,6 +201,8 @@ export const HomeFilterMenu: React.FC<HomeFilterMenuProps> = ({
       )}
 
       <HomeFilterSubmenus
+        provider={provider}
+        onSelectProvider={onSelectProvider}
         filter={filter}
         onSelectFilter={onSelectFilter}
         selectedEngines={selectedEngines}

@@ -1,15 +1,24 @@
 import { useState, useRef, useCallback } from 'react'
 import type { ModItem } from '@/ui/mod-details-modal/types'
-import { getModById, getMods } from '@/services/gamebanana'
+import { getMods } from '@/services/gamebanana'
+import { getGameJoltMods } from '@/services/gamejolt'
+import { getBackstageMods } from '@/services/backstage'
+import {
+  getProviderModDetails,
+  parseProviderDirectInput,
+  type ModProviderId,
+} from '@/services/providers'
 import { mapToModItem } from '../utils'
 
 interface UseGameBananaSearchParams {
   initialQuery?: string
+  provider?: ModProviderId
   onOpenDropdown?: () => void
 }
 
 export function useGameBananaSearch({
   initialQuery = '',
+  provider = 'gamebanana',
   onOpenDropdown,
 }: UseGameBananaSearchParams) {
   const [query, setQuery] = useState(initialQuery)
@@ -55,22 +64,39 @@ export function useGameBananaSearch({
       onOpenDropdown?.()
 
       try {
-        const isNumeric = /^\d+$/.test(trimmed)
-        if (isNumeric) {
-          const singleMod = await getModById(Number(trimmed))
+        const directTarget = parseProviderDirectInput(trimmed)
+        if (directTarget) {
+          const targetKey =
+            directTarget.provider === 'gamebanana'
+              ? directTarget.id
+              : `${directTarget.provider}:${directTarget.id}`
+          const singleMod = await getProviderModDetails(targetKey)
           setSearchResults(singleMod ? [mapToModItem(singleMod)] : [])
+          return
+        }
+
+        if (provider === 'gamejolt') {
+          const { mods } = await getGameJoltMods({ query: trimmed, page: 1 })
+          setSearchResults(mods.slice(0, 15).map(mapToModItem))
+        } else if (provider === 'backstage') {
+          const { mods } = await getBackstageMods({
+            query: trimmed,
+            page: 1,
+            limit: 15,
+          })
+          setSearchResults(mods.map(mapToModItem))
         } else {
           const results = await getMods('ripe', 1, 15, null, trimmed)
           setSearchResults(results.map(mapToModItem))
         }
       } catch (err) {
-        console.error('GameBanana search failed:', err)
+        console.error(`${provider} search failed:`, err)
         setSearchResults([])
       } finally {
         setIsSearching(false)
       }
     },
-    [onOpenDropdown],
+    [onOpenDropdown, provider],
   )
 
   const handleQueryChange = useCallback(

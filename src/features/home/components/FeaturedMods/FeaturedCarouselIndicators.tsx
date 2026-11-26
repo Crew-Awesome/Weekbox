@@ -1,6 +1,7 @@
 import React from 'react'
 import type { CarouselAPI } from '@/ui/carousel/Carousel'
 import type { ModItem } from '@/ui/mod-details-modal/types'
+import { useUiStyle } from '@/utils/ui-style'
 
 interface FeaturedCarouselIndicatorsProps {
   api: CarouselAPI
@@ -10,6 +11,7 @@ interface FeaturedCarouselIndicatorsProps {
 export const FeaturedCarouselIndicators: React.FC<
   FeaturedCarouselIndicatorsProps
 > = ({ api, items }) => {
+  const isHomeStyle = useUiStyle() === 'home'
   const currentActiveMod = items[api.activeIndex]
   const activeLabel = currentActiveMod?.badge || 'Featured'
 
@@ -36,15 +38,23 @@ export const FeaturedCarouselIndicators: React.FC<
             <div
               key={`indicator-${item.id}-${item.absoluteIndex}`}
               onClick={() => api.goToLogicalIndex(item.absoluteIndex)}
-              className={`h-2.5 rounded-full overflow-hidden transition-all duration-300 cursor-pointer relative ${
+              className={`${
+                isHomeStyle ? 'h-2' : 'h-2.5'
+              } rounded-full overflow-hidden transition-all duration-300 cursor-pointer relative ${
                 isActive
-                  ? 'w-10 sm:w-14 shadow-sm'
-                  : 'w-2.5 opacity-60 hover:opacity-100'
+                  ? isHomeStyle
+                    ? 'w-7'
+                    : 'w-10 sm:w-14 shadow-sm'
+                  : isHomeStyle
+                    ? 'w-2 opacity-50 hover:opacity-90'
+                    : 'w-2.5 opacity-60 hover:opacity-100'
               }`}
               style={{
                 backgroundColor:
                   'var(--md-sys-color-surface-container-highest)',
-                border: '1px solid var(--md-sys-color-outline-variant)',
+                ...(isHomeStyle
+                  ? {}
+                  : { border: '1px solid var(--md-sys-color-outline-variant)' }),
               }}
             >
               {isActive && (

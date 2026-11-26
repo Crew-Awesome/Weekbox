@@ -16,6 +16,9 @@ export const ModGridCard: React.FC<ModGridCardProps> = ({
   onSelect,
   onToggleFavorite,
 }) => {
+  const isGameJolt =
+    mod.source === 'gamejolt' || String(mod.id).startsWith('gamejolt:')
+
   return (
     <Card
       title={mod.title || mod.name || ''}
@@ -30,20 +33,36 @@ export const ModGridCard: React.FC<ModGridCardProps> = ({
       isFavorite={isFavorite}
       author={mod.author}
       authorAvatar={mod.userPfp}
+      authorAvatarRelPath={mod.userPfpPath}
+      authorAvatarFullPath={mod.localUserPfp}
       onClick={() => onSelect(mod)}
     >
       <div className="flex items-center justify-between text-[11px] text-[var(--md-sys-color-on-surface-variant)] pt-1 px-0.5 border-t border-[var(--md-sys-color-outline-variant)]/25 mt-0.5">
-        <div
-          className="flex items-center gap-1.5 text-[var(--md-sys-color-on-surface-variant)]"
-          title={`${(mod.views || 0).toLocaleString()} views`}
-        >
-          <span className="material-symbols-rounded text-sm text-[var(--md-sys-color-on-surface-variant)]">
-            visibility
-          </span>
-          <span className="text-[var(--md-sys-color-on-surface-variant)] font-medium">
-            {formatCompactNumber(mod.views)}
-          </span>
-        </div>
+        {isGameJolt ? (
+          <div
+            className="flex items-center gap-1.5 text-[var(--md-sys-color-on-surface-variant)]"
+            title={`${(mod.followers || 0).toLocaleString()} followers`}
+          >
+            <span className="material-symbols-rounded text-sm text-[var(--md-sys-color-on-surface-variant)]">
+              group
+            </span>
+            <span className="text-[var(--md-sys-color-on-surface-variant)] font-medium">
+              {formatCompactNumber(mod.followers || 0)}
+            </span>
+          </div>
+        ) : (
+          <div
+            className="flex items-center gap-1.5 text-[var(--md-sys-color-on-surface-variant)]"
+            title={`${(mod.views || 0).toLocaleString()} views`}
+          >
+            <span className="material-symbols-rounded text-sm text-[var(--md-sys-color-on-surface-variant)]">
+              visibility
+            </span>
+            <span className="text-[var(--md-sys-color-on-surface-variant)] font-medium">
+              {formatCompactNumber(mod.views)}
+            </span>
+          </div>
+        )}
 
         <div
           role="button"
@@ -77,28 +96,32 @@ export const ModGridCard: React.FC<ModGridCardProps> = ({
           >
             favorite
           </span>
-          <span
-            className={`font-medium ${
-              isFavorite
-                ? 'text-red-500'
-                : 'text-[var(--md-sys-color-on-surface-variant)]'
-            }`}
-          >
-            {formatCompactNumber(mod.likes)}
-          </span>
+          {(!isGameJolt || mod.likes !== undefined) && (
+            <span
+              className={`font-medium ${
+                isFavorite
+                  ? 'text-red-500'
+                  : 'text-[var(--md-sys-color-on-surface-variant)]'
+              }`}
+            >
+              {formatCompactNumber(mod.likes)}
+            </span>
+          )}
         </div>
 
-        <div
-          className="flex items-center gap-1.5 text-[var(--md-sys-color-on-surface-variant)]"
-          title={`${(mod.downloads || 0).toLocaleString()} downloads`}
-        >
-          <span className="material-symbols-rounded text-sm text-[var(--md-sys-color-on-surface-variant)]">
-            download
-          </span>
-          <span className="text-[var(--md-sys-color-on-surface-variant)] font-medium">
-            {formatCompactNumber(mod.downloads)}
-          </span>
-        </div>
+        {!isGameJolt && (
+          <div
+            className="flex items-center gap-1.5 text-[var(--md-sys-color-on-surface-variant)]"
+            title={`${(mod.downloads || 0).toLocaleString()} downloads`}
+          >
+            <span className="material-symbols-rounded text-sm text-[var(--md-sys-color-on-surface-variant)]">
+              download
+            </span>
+            <span className="text-[var(--md-sys-color-on-surface-variant)] font-medium">
+              {formatCompactNumber(mod.downloads)}
+            </span>
+          </div>
+        )}
       </div>
     </Card>
   )

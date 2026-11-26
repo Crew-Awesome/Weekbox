@@ -1,40 +1,100 @@
-import { getTimeAgo, getEngineIcon, upgradeGameBananaImageUrl } from '../utils'
+import { http } from '../http'
+import { FNF_GAME_ID, GB_BASE_URL } from '../constants'
+import {
+  checkIsNsfw,
+  extractAuthors,
+  extractPreviewMedia,
+  extractThumbnail,
+  extractUserId,
+  extractUserPfp,
+  getEngineIcon,
+  getEngineId,
+  getTimeAgo,
+  isExcluded,
+  upgradeGameBananaImageUrl,
+} from '../utils'
 import { sanitizeHtml, htmlToPlainText } from '../sanitize'
-import type { GameBananaMod } from '../types'
-import type { FeaturedSchema, FeaturedModRaw } from './types'
-import { FNF_GAME_ID } from '../constants'
+import type { GameBananaMod, GameBananaRawRecord } from '../types'
+import type { GameBananaFeaturingEntry } from './types'
 import { getMods } from '../api/getMods'
 
-export const FEATURED_URL =
-  'https://raw.githubusercontent.com/Crew-Awesome/weekbox.featured/main/public/featured.json'
+export const GB_FEATURED_API_URL = `${GB_BASE_URL}/Util/List/Featured?_idGameRow=${FNF_GAME_ID}&_nPerpage=25`
+
+type FeaturedRawEntry = GameBananaRawRecord & {
+  _sModelName?: string
+  _sProfileUrl?: string
+  _aFeaturings?: GameBananaFeaturingEntry[]
+}
 
 function isMobile(): boolean {
   if (typeof window === 'undefined') return false
   return window.innerWidth < 768
 }
 
+export function computeFeaturedSignature(mods: GameBananaMod[]): string {
+  return mods
+    .map((m) => `${m.id}:${m.updatedAt ?? m.submittedAt ?? 0}:${m.__featuredLabel ?? ''}`)
+    .join('|')
+}
+
+function mapFeaturedRecord(raw: FeaturedRawEntry): GameBananaMod {
+  const engineId = getEngineId(raw)
+  const submittedAt = raw._tsDateAdded || 0
+  const updatedAt = raw._tsDateUpdated || raw._tsDateModified || submittedAt
+  const thumb = upgradeGameBananaImageUrl(extractThumbnail(raw))
+  const previews = extractPreviewMedia(raw).map((u) => upgradeGameBananaImageUrl(u))
+  const label = raw._aFeaturings?.[0]?._sTitle?.trim() || 'Featured'
+
+  return {
+    id: raw._idRow,
+    gameId: FNF_GAME_ID,
+    source: 'gamebanana',
+    sourceId: String(raw._idRow),
+    sourceUrl: raw._sProfileUrl || `https://gamebanana.com/mods/${raw._idRow}`,
+    title: raw._sName || 'Featured Mod',
+    description: htmlToPlainText(raw._sDescription || raw._sText || '') || label,
+    htmlBody: sanitizeHtml(raw._sText || raw._sDescription || label),
+    author: raw._aSubmitter?._sName || 'Unknown Creator',
+    userId: extractUserId(raw),
+    userPfp: extractUserPfp(raw),
+    authors: extractAuthors(raw._aCredits),
+    likes: raw._nLikeCount || 0,
+    views: raw._nViewCount || 0,
+    downloads: raw._nDownloadCount || 0,
+    submittedAt,
+    updatedAt,
+    timeAgo: getTimeAgo(submittedAt),
+    engineId,
+    engineIcon: getEngineIcon(engineId),
+    thumbnail: thumb,
+    previewMedia: previews.length > 0 ? previews : thumb ? [thumb] : [],
+    isNsfw: checkIsNsfw(raw),
+    categoryId: raw._aCategory?._idRow || raw._aSubCategory?._idRow || raw._aRootCategory?._idRow,
+    categoryName: raw._aCategory?._sName || raw._aSubCategory?._sName || raw._aRootCategory?._sName,
+    __featuredLabel: label,
+  }
+}
+
 /**
- * Service that fetches curated featured mods and backfills categories if needed.
+ * Fetches featured FNF mods directly from GameBanana's Featured API,
+ * backfilling with popular FNF mods if fewer than 4 entries are returned.
  */
 export class FeaturedService {
   private url: string
 
-  constructor(url: string = FEATURED_URL) {
+  constructor(url: string = GB_FEATURED_API_URL) {
     this.url = url
   }
 
   public async getCarousel(): Promise<GameBananaMod[]> {
     try {
-      const raw = await fetch(this.url)
-      if (!raw.ok) throw new Error(`GitHub HTTP error: ${raw.status}`)
+      const response = await http.fetchJson<{ _aRecords?: FeaturedRawEntry[] }>(this.url)
+      const records = Array.isArray(response?._aRecords) ? response._aRecords : []
 
-      const response = (await raw.json()) as unknown
+      let mods = records
+        .filter((r) => r && r._idRow && r._sModelName === 'Mod' && !isExcluded(r))
+        .map(mapFeaturedRecord)
 
-      if (!this.isSupported(response)) {
-        throw new Error('Unsupported featured schema')
-      }
-
-      let mods = this.flatten(response)
       if (isMobile()) {
         mods = mods.filter((m) => {
           const eid = String(m.engineId || '').toLowerCase()
@@ -43,135 +103,37 @@ export class FeaturedService {
         })
       }
 
-      const categoryLabels = Array.from(new Set(response.rankings.map((r) => r.label)))
-      const countsByLabel: Record<string, number> = {}
-      for (const m of mods) {
-        const label = m.__featuredLabel || 'Featured'
-        countsByLabel[label] = (countsByLabel[label] || 0) + 1
-      }
-
-      const needsBackfill = categoryLabels.some((lbl) => (countsByLabel[lbl] || 0) < 4)
-
-      if (needsBackfill) {
+      if (mods.length < 4) {
         try {
-          const candidateMods = await getMods('popular', 1, 30)
-          const validCandidates = candidateMods.filter((c) => {
-            const eid = String(c.engineId || '').toLowerCase()
-            const title = String(c.title || '').toLowerCase()
-            return eid !== 'executable' && eid !== '3827' && !title.endsWith('.exe')
-          })
-
-          const existingIds = new Set(mods.map((m) => m.id))
-          const enrichedMods: GameBananaMod[] = []
-
-          for (const label of categoryLabels) {
-            const currentForLabel = mods.filter((m) => m.__featuredLabel === label)
-            enrichedMods.push(...currentForLabel)
-            const deficit = 4 - currentForLabel.length
-            if (deficit > 0) {
-              let added = 0
-              for (const cand of validCandidates) {
-                if (!existingIds.has(cand.id)) {
-                  existingIds.add(cand.id)
-                  enrichedMods.push({
-                    ...cand,
-                    __isCommunityPick: true,
-                    __featuredLabel: label,
-                  })
-                  added++
-                  if (added >= deficit) break
-                }
+          const fallbackMods = await getMods('popular', 1, 20)
+          const existingIds = new Set(mods.map((m) => String(m.id)))
+          for (const cand of fallbackMods) {
+            if (isMobile()) {
+              const eid = String(cand.engineId || '').toLowerCase()
+              const title = String(cand.title || '').toLowerCase()
+              if (eid === 'executable' || eid === '3827' || title.endsWith('.exe')) {
+                continue
               }
             }
-          }
-          if (enrichedMods.length > 0) {
-            mods = enrichedMods
+            if (!existingIds.has(String(cand.id))) {
+              existingIds.add(String(cand.id))
+              mods.push({
+                ...cand,
+                __isCommunityPick: true,
+                __featuredLabel: cand.__featuredLabel || 'Popular',
+              })
+              if (mods.length >= 8) break
+            }
           }
         } catch (e) {
           console.warn('Could not backfill featured mods:', e)
         }
       }
 
-      if (mods.length === 0) throw new Error('No featured mods')
-
       return mods
     } catch (error) {
-      console.warn('FeaturedService error (static JSON failed):', error)
+      console.warn('GameBanana FeaturedService error:', error)
       return []
     }
-  }
-
-  private isSupported(featured: unknown): featured is FeaturedSchema {
-    if (!featured || typeof featured !== 'object') return false
-    const f = featured as Record<string, unknown>
-    return (
-      f.schemaVersion === 3 &&
-      typeof f.revision === 'string' &&
-      Array.isArray(f.rankings) &&
-      f.rankings.every((ranking) => {
-        if (!ranking || typeof ranking !== 'object') return false
-        const r = ranking as Record<string, unknown>
-        return (
-          Array.isArray(r.mods) &&
-          r.mods.every((mod) => {
-            if (!mod || typeof mod !== 'object') return false
-            const m = mod as Record<string, unknown>
-            const engine = m.engine as Record<string, unknown> | undefined
-            const category = m.category as Record<string, unknown> | undefined
-            return (
-              Number.isFinite(Number(m.id)) &&
-              typeof m.title === 'string' &&
-              typeof m.author === 'string' &&
-              typeof m.image === 'string' &&
-              typeof engine?.id === 'string' &&
-              typeof engine?.name === 'string' &&
-              typeof engine?.icon === 'string' &&
-              Number.isFinite(Number(category?.id)) &&
-              typeof category?.name === 'string'
-            )
-          })
-        )
-      })
-    )
-  }
-
-  private flatten(featured: FeaturedSchema): GameBananaMod[] {
-    if (!Array.isArray(featured?.rankings)) return []
-
-    return featured.rankings.flatMap((ranking) =>
-      ranking.mods.map((mod: FeaturedModRaw): GameBananaMod => {
-        const resolvedIcon =
-          getEngineIcon(mod.engine.id) ||
-          (mod.engine.icon?.startsWith('/')
-            ? mod.engine.icon
-            : `/imgs/icons/categories/${mod.engine.icon}`)
-
-        const highResImg = upgradeGameBananaImageUrl(mod.image)
-
-        return {
-          id: mod.id,
-          gameId: FNF_GAME_ID,
-          title: mod.title,
-          description: htmlToPlainText(mod.description || 'Featured Mod'),
-          htmlBody: sanitizeHtml(mod.description || 'Featured Mod'),
-          author: mod.author,
-          userId: 0,
-          userPfp: '',
-          authors: [mod.author],
-          likes: mod.likes || 0,
-          views: mod.views || 0,
-          downloads: mod.downloads || 0,
-          submittedAt: mod.publishedAt,
-          timeAgo: getTimeAgo(mod.publishedAt),
-          engineId: mod.engine.id,
-          engineIcon: resolvedIcon,
-          thumbnail: highResImg,
-          previewMedia: [highResImg],
-          isNsfw: false,
-          __featuredLabel: ranking.label,
-          __featuredCategoryId: mod.category.id,
-        }
-      }),
-    )
   }
 }

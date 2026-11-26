@@ -1,14 +1,33 @@
 import { useState, useEffect, useMemo } from 'react'
-import { getFeaturedMods, type GameBananaMod } from '@/services/gamebanana'
+import {
+  getFeaturedMods,
+  getCachedFeaturedMods,
+  FEATURED_UPDATED_EVENT,
+  type GameBananaMod,
+} from '@/services/gamebanana'
 import type { ModItem } from '@/ui/mod-details-modal/types'
 import { mapToModItem } from '../utils'
 
 export function useFeaturedMods() {
-  const [featuredList, setFeaturedList] = useState<GameBananaMod[]>([])
-  const [isFeaturedLoading, setIsFeaturedLoading] = useState(true)
+  const [featuredList, setFeaturedList] = useState<GameBananaMod[]>(
+    () => getCachedFeaturedMods() ?? [],
+  )
+  const [isFeaturedLoading, setIsFeaturedLoading] = useState(
+    () => !(getCachedFeaturedMods()?.length),
+  )
 
   useEffect(() => {
     let isMounted = true
+
+    const handleUpdated = (evt: Event) => {
+      const detail = (evt as CustomEvent<GameBananaMod[] | undefined>).detail
+      if (isMounted && Array.isArray(detail) && detail.length > 0) {
+        setFeaturedList(detail)
+        setIsFeaturedLoading(false)
+      }
+    }
+
+    window.addEventListener(FEATURED_UPDATED_EVENT, handleUpdated)
 
     getFeaturedMods()
       .then((mods) => {
@@ -26,6 +45,7 @@ export function useFeaturedMods() {
 
     return () => {
       isMounted = false
+      window.removeEventListener(FEATURED_UPDATED_EVENT, handleUpdated)
     }
   }, [])
 

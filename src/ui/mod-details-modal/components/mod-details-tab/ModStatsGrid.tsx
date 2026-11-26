@@ -14,6 +14,11 @@ export const ModStatsGrid: React.FC<ModStatsGridProps> = ({
   formatFullDate,
   updatesCount,
 }) => {
+  const isGameJolt =
+    displayCard.source === 'gamejolt' ||
+    String(displayCard.id).startsWith('gamejolt:')
+  const showFollowers = isGameJolt || displayCard.followers !== undefined
+
   return (
     <div className="flex flex-col gap-3">
       <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
@@ -34,22 +39,24 @@ export const ModStatsGrid: React.FC<ModStatsGridProps> = ({
           </span>
         </div>
 
-        <div className="flex flex-col p-3 rounded-xl bg-[var(--md-sys-color-surface-bright)]/60 border border-[var(--md-sys-color-outline-variant)]/20">
-          <div className="flex items-center gap-1.5 text-xs text-[var(--md-sys-color-on-surface-variant)] mb-1">
-            <span className="material-symbols-rounded text-sm text-[var(--md-sys-color-primary)]">
-              refresh
+        {!isGameJolt && (
+          <div className="flex flex-col p-3 rounded-xl bg-[var(--md-sys-color-surface-bright)]/60 border border-[var(--md-sys-color-outline-variant)]/20">
+            <div className="flex items-center gap-1.5 text-xs text-[var(--md-sys-color-on-surface-variant)] mb-1">
+              <span className="material-symbols-rounded text-sm text-[var(--md-sys-color-primary)]">
+                refresh
+              </span>
+              <span>Last Updated</span>
+            </div>
+            <span
+              className="text-sm font-semibold text-[var(--md-sys-color-on-surface)] truncate"
+              title={
+                formatFullDate ? formatFullDate(displayCard.updatedAt) : undefined
+              }
+            >
+              {displayCard.updatedAt ? formatDate(displayCard.updatedAt) : 'Never'}
             </span>
-            <span>Last Updated</span>
           </div>
-          <span
-            className="text-sm font-semibold text-[var(--md-sys-color-on-surface)] truncate"
-            title={
-              formatFullDate ? formatFullDate(displayCard.updatedAt) : undefined
-            }
-          >
-            {displayCard.updatedAt ? formatDate(displayCard.updatedAt) : 'Never'}
-          </span>
-        </div>
+        )}
 
         {displayCard.installedAt && (
           <div className="flex flex-col p-3 rounded-xl bg-[var(--md-sys-color-surface-bright)]/60 border border-[var(--md-sys-color-outline-variant)]/20">
@@ -72,31 +79,49 @@ export const ModStatsGrid: React.FC<ModStatsGridProps> = ({
           </div>
         )}
 
-        <div className="flex flex-col p-3 rounded-xl bg-[var(--md-sys-color-surface-bright)]/60 border border-[var(--md-sys-color-outline-variant)]/20">
-          <div className="flex items-center gap-1.5 text-xs text-[var(--md-sys-color-on-surface-variant)] mb-1">
-            <span className="material-symbols-rounded text-sm text-[var(--md-sys-color-primary)]">
-              layers
+        {!isGameJolt && (
+          <div className="flex flex-col p-3 rounded-xl bg-[var(--md-sys-color-surface-bright)]/60 border border-[var(--md-sys-color-outline-variant)]/20">
+            <div className="flex items-center gap-1.5 text-xs text-[var(--md-sys-color-on-surface-variant)] mb-1">
+              <span className="material-symbols-rounded text-sm text-[var(--md-sys-color-primary)]">
+                layers
+              </span>
+              <span>Updates</span>
+            </div>
+            <span className="text-sm font-semibold text-[var(--md-sys-color-on-surface)]">
+              {updatesCount} {updatesCount === 1 ? 'update' : 'updates'}
             </span>
-            <span>Updates</span>
           </div>
-          <span className="text-sm font-semibold text-[var(--md-sys-color-on-surface)]">
-            {updatesCount} {updatesCount === 1 ? 'update' : 'updates'}
-          </span>
-        </div>
+        )}
 
-        <div className="flex flex-col p-3 rounded-xl bg-[var(--md-sys-color-surface-bright)]/60 border border-[var(--md-sys-color-outline-variant)]/20">
-          <div className="flex items-center gap-1.5 text-xs text-[var(--md-sys-color-on-surface-variant)] mb-1">
-            <span className="material-symbols-rounded text-sm text-[var(--md-sys-color-primary)]">
-              visibility
+        {!isGameJolt && (
+          <div className="flex flex-col p-3 rounded-xl bg-[var(--md-sys-color-surface-bright)]/60 border border-[var(--md-sys-color-outline-variant)]/20">
+            <div className="flex items-center gap-1.5 text-xs text-[var(--md-sys-color-on-surface-variant)] mb-1">
+              <span className="material-symbols-rounded text-sm text-[var(--md-sys-color-primary)]">
+                visibility
+              </span>
+              <span>Views</span>
+            </div>
+            <span className="text-sm font-semibold text-[var(--md-sys-color-on-surface)]">
+              {displayCard.views !== undefined
+                ? Intl.NumberFormat().format(displayCard.views)
+                : 'N/A'}
             </span>
-            <span>Views</span>
           </div>
-          <span className="text-sm font-semibold text-[var(--md-sys-color-on-surface)]">
-            {displayCard.views !== undefined
-              ? Intl.NumberFormat().format(displayCard.views)
-              : 'N/A'}
-          </span>
-        </div>
+        )}
+
+        {showFollowers && (
+          <div className="flex flex-col p-3 rounded-xl bg-[var(--md-sys-color-surface-bright)]/60 border border-[var(--md-sys-color-outline-variant)]/20">
+            <div className="flex items-center gap-1.5 text-xs text-[var(--md-sys-color-on-surface-variant)] mb-1">
+              <span className="material-symbols-rounded text-sm text-[var(--md-sys-color-primary)]">
+                group
+              </span>
+              <span>Followers</span>
+            </div>
+            <span className="text-sm font-semibold text-[var(--md-sys-color-on-surface)]">
+              {Intl.NumberFormat().format(displayCard.followers ?? 0)}
+            </span>
+          </div>
+        )}
 
         <div className="flex flex-col p-3 rounded-xl bg-[var(--md-sys-color-surface-bright)]/60 border border-[var(--md-sys-color-outline-variant)]/20">
           <div className="flex items-center gap-1.5 text-xs text-[var(--md-sys-color-on-surface-variant)] mb-1">
@@ -108,23 +133,27 @@ export const ModStatsGrid: React.FC<ModStatsGridProps> = ({
           <span className="text-sm font-semibold text-[var(--md-sys-color-on-surface)]">
             {displayCard.likes !== undefined
               ? Intl.NumberFormat().format(displayCard.likes)
-              : 'N/A'}
+              : isGameJolt
+                ? '0'
+                : 'N/A'}
           </span>
         </div>
 
-        <div className="flex flex-col p-3 rounded-xl bg-[var(--md-sys-color-surface-bright)]/60 border border-[var(--md-sys-color-outline-variant)]/20">
-          <div className="flex items-center gap-1.5 text-xs text-[var(--md-sys-color-on-surface-variant)] mb-1">
-            <span className="material-symbols-rounded text-sm text-[var(--md-sys-color-primary)]">
-              download
+        {!isGameJolt && (
+          <div className="flex flex-col p-3 rounded-xl bg-[var(--md-sys-color-surface-bright)]/60 border border-[var(--md-sys-color-outline-variant)]/20">
+            <div className="flex items-center gap-1.5 text-xs text-[var(--md-sys-color-on-surface-variant)] mb-1">
+              <span className="material-symbols-rounded text-sm text-[var(--md-sys-color-primary)]">
+                download
+              </span>
+              <span>Downloads</span>
+            </div>
+            <span className="text-sm font-semibold text-[var(--md-sys-color-on-surface)]">
+              {displayCard.downloads !== undefined
+                ? Intl.NumberFormat().format(displayCard.downloads)
+                : 'N/A'}
             </span>
-            <span>Downloads</span>
           </div>
-          <span className="text-sm font-semibold text-[var(--md-sys-color-on-surface)]">
-            {displayCard.downloads !== undefined
-              ? Intl.NumberFormat().format(displayCard.downloads)
-              : 'N/A'}
-          </span>
-        </div>
+        )}
       </div>
     </div>
   )

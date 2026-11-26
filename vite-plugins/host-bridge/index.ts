@@ -2,7 +2,11 @@ import type { Plugin } from 'vite'
 import { readNeutralinoAuthInfo } from './utils.ts'
 import { createNeutralinoAuthMiddleware } from './middlewares/neutralino-auth.ts'
 import { createProxyImageMiddleware } from './middlewares/proxy-image.ts'
-import { createModCoversMiddleware } from './middlewares/mod-covers.ts'
+import { createProxyFetchMiddleware } from './middlewares/proxy-fetch.ts'
+import {
+  createModCoversMiddleware,
+  createModAvatarsMiddleware,
+} from './middlewares/mod-covers.ts'
 import { createProxyDownloadMiddleware } from './middlewares/proxy-download.ts'
 import { createDownloaderMiddleware } from './middlewares/downloader.ts'
 import { createExtractorMiddleware } from './middlewares/extractor.ts'
@@ -20,16 +24,20 @@ export function weekBoxHostPlugin(): Plugin {
     configureServer(server) {
       server.middlewares.use('/api/neutralino-auth', createNeutralinoAuthMiddleware())
       server.middlewares.use('/api/proxy-image', createProxyImageMiddleware())
+      server.middlewares.use('/api/proxy-fetch', createProxyFetchMiddleware())
 
       const modCoversMiddleware = createModCoversMiddleware()
+      const modAvatarsMiddleware = createModAvatarsMiddleware()
       server.middlewares.use('/mod-covers', modCoversMiddleware)
       server.middlewares.use('/api/mod-cover', modCoversMiddleware)
+      server.middlewares.use('/mod-avatars', modAvatarsMiddleware)
       server.middlewares.use((req, res, next) => {
-        if (
-          req.url &&
-          (req.url.includes('/mod-covers/') || req.url.startsWith('mod-covers/'))
-        ) {
+        if (!req.url) return next()
+        if (req.url.includes('/mod-covers/') || req.url.startsWith('mod-covers/')) {
           return modCoversMiddleware(req, res, next)
+        }
+        if (req.url.includes('/mod-avatars/') || req.url.startsWith('mod-avatars/')) {
+          return modAvatarsMiddleware(req, res, next)
         }
         next()
       })

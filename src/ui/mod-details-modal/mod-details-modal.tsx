@@ -2,6 +2,7 @@ import React, { useRef, useState, useEffect, useCallback, useMemo } from 'react'
 import { Modal } from '@/ui/modal/Modal'
 import { formatDate, formatFullDate } from '@/utils/formatters'
 import { useViewport } from '@/utils/hooks/use-viewport'
+import { useUiStyle } from '@/utils/ui-style'
 import { setActiveModalModId } from '@/core/mods'
 import { ENGINE_CATEGORIES } from './constants'
 import { ModDetailsView } from './mod-details-view'
@@ -124,6 +125,7 @@ export const ModDetailsModal: React.FC<ModDetailsModalProps> = ({
   }, [selectedCard, isCarouselHovered, mediaCount])
 
   const { width: viewportW, height: viewportH } = useViewport()
+  const isHomeStyle = useUiStyle() === 'home'
   const isDesktop = viewportW >= 1024 && viewportH >= 600
 
   const { desktopWidth, desktopHeight } = useMemo(() => {
@@ -146,20 +148,27 @@ export const ModDetailsModal: React.FC<ModDetailsModalProps> = ({
     return null
   }
 
+  const isExeCard = Boolean(
+    displayCard.isExecutable ||
+      displayCard.engineId === 'executable' ||
+      displayCard.engineId === 'exe',
+  )
   const engineInfo = Object.values(ENGINE_CATEGORIES).find(
     (c) =>
       c.id.toLowerCase() === String(displayCard.engineId || '').toLowerCase() ||
       c.name.toLowerCase() === String(displayCard.engineName || '').toLowerCase() ||
       c.name.toLowerCase() === String(displayCard.categoryName || '').toLowerCase(),
   )
-  const engineName =
-    (displayCard.engineName && displayCard.engineName !== 'Unknown Engine'
-      ? displayCard.engineName
-      : null) ||
-    engineInfo?.name ||
-    (displayCard.categoryName && !displayCard.categoryName.toLowerCase().includes('mod')
-      ? displayCard.categoryName
-      : 'Base Game')
+  const engineName = isExeCard
+    ? 'Executable Mods'
+    : (displayCard.engineName && displayCard.engineName !== 'Unknown Engine'
+        ? displayCard.engineName
+        : null) ||
+      engineInfo?.name ||
+      (displayCard.categoryName &&
+      !displayCard.categoryName.toLowerCase().includes('mod')
+        ? displayCard.categoryName
+        : 'Base Game')
 
   const scrollToIndex = (index: number) => {
     setActiveIndex(index)
@@ -184,11 +193,13 @@ export const ModDetailsModal: React.FC<ModDetailsModalProps> = ({
       isOpen={isOpen}
       onClose={onClose}
       hideDefaultBackground={true}
-      showCirclePattern={true}
+      showCirclePattern={!isHomeStyle}
       backdropImage={
-        displayCard.img ||
-        displayCard.image ||
-        (displayCard.previewMedia && displayCard.previewMedia[0])
+        isHomeStyle
+          ? undefined
+          : displayCard.img ||
+            displayCard.image ||
+            (displayCard.previewMedia && displayCard.previewMedia[0])
       }
       contentClassName={`flex flex-col flex-1 ${isDesktop ? 'overflow-hidden' : 'overflow-y-auto'} p-0`}
       hideCloseButtonMobile={true}
@@ -199,9 +210,13 @@ export const ModDetailsModal: React.FC<ModDetailsModalProps> = ({
       }}
       modalClassName={`flex flex-col ${
         isDesktop
-          ? 'aspect-[16/9] max-h-full h-full rounded-3xl bg-transparent'
-          : 'max-h-[92dvh] h-[92dvh] rounded-2xl bg-[var(--md-sys-color-surface-container)]'
-      } overflow-hidden shadow-none`}
+          ? isHomeStyle
+            ? 'aspect-[16/9] max-h-full h-full rounded-xl bg-[var(--md-sys-color-surface)] border border-[var(--md-sys-color-outline-variant)] shadow-xl'
+            : 'aspect-[16/9] max-h-full h-full rounded-3xl bg-transparent shadow-none'
+          : isHomeStyle
+            ? 'max-h-[92dvh] h-[92dvh] rounded-xl bg-[var(--md-sys-color-surface)] border border-[var(--md-sys-color-outline-variant)] shadow-xl'
+            : 'max-h-[92dvh] h-[92dvh] rounded-2xl bg-[var(--md-sys-color-surface-container)] shadow-none'
+      } overflow-hidden`}
     >
       <ModDetailsView
         onClose={onClose}
