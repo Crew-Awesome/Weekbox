@@ -1,4 +1,5 @@
 import React, { useEffect } from 'react'
+import { useUiStyle } from '@/utils/ui-style'
 import { M3eVideoPlayer } from './M3eVideoPlayer'
 
 interface NewsMediaModalProps {
@@ -14,6 +15,7 @@ export const NewsMediaModal: React.FC<NewsMediaModalProps> = ({
   media,
   onClose,
 }) => {
+  const isHomeStyle = useUiStyle() === 'home'
   useEffect(() => {
     if (!media) return
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -29,14 +31,20 @@ export const NewsMediaModal: React.FC<NewsMediaModalProps> = ({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 pt-[max(0.75rem,env(safe-area-inset-top,0px))] pb-[max(0.75rem,env(safe-area-inset-bottom,0px))] backdrop-blur-md animate-fade-in"
+      className={`fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 pt-[max(0.75rem,env(safe-area-inset-top,0px))] pb-[max(0.75rem,env(safe-area-inset-bottom,0px))] ${
+        isHomeStyle ? '' : 'backdrop-blur-md'
+      } animate-fade-in`}
       style={{
         backgroundColor: 'color-mix(in srgb, var(--md-sys-color-scrim) 80%, transparent)',
       }}
       onClick={onClose}
     >
       <div
-        className="relative max-w-4xl max-h-[92dvh] w-full flex items-center justify-center overflow-hidden rounded-[24px] sm:rounded-[28px] shadow-2xl"
+        className={`relative max-w-4xl max-h-[92dvh] w-full flex items-center justify-center overflow-hidden ${
+          isHomeStyle
+            ? 'rounded-xl shadow-lg border border-[var(--md-sys-color-outline-variant)]'
+            : 'rounded-[24px] sm:rounded-[28px] shadow-2xl'
+        }`}
         style={{
           backgroundColor: 'color-mix(in srgb, var(--md-sys-color-scrim) 40%, transparent)',
         }}
@@ -73,7 +81,9 @@ export const NewsMediaModal: React.FC<NewsMediaModalProps> = ({
               src={media.url}
               alt=""
               referrerPolicy="no-referrer"
-              className="w-full max-h-[85vh] object-contain rounded-[28px]"
+              className={`w-full max-h-[85vh] object-contain ${
+                isHomeStyle ? 'rounded-xl' : 'rounded-[28px]'
+              }`}
             />
           </div>
         )}

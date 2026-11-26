@@ -25,35 +25,10 @@ export const ENGINE_TRIGGER_STYLE = {
 } as React.CSSProperties
 
 export const ENGINE_MENU_STYLE = {
-  '--m3e-menu-container-color': 'var(--md-sys-color-surface-container)',
-  '--m3e-menu-container-shape': '16px',
   '--m3e-menu-container-min-width': '260px',
   '--m3e-menu-container-max-width': '320px',
-  '--m3e-menu-container-max-height': 'none',
-  '--m3e-menu-item-color': 'var(--md-sys-color-on-surface)',
-  '--m3e-menu-item-container-hover-color': 'var(--md-sys-color-on-surface)',
-  '--m3e-menu-item-container-focus-color': 'var(--md-sys-color-on-surface)',
-  '--m3e-menu-item-ripple-color': 'var(--md-sys-color-on-surface)',
-  '--m3e-menu-item-selected-color':
-    'var(--md-sys-color-inverse-primary)',
-  '--m3e-menu-item-selected-container-color':
-    'color-mix(in srgb, var(--md-sys-color-inverse-primary) 16%, transparent)',
-  '--m3e-menu-item-selected-container-hover-color':
-    'color-mix(in srgb, var(--md-sys-color-inverse-primary) 24%, transparent)',
-  '--m3e-menu-item-selected-container-focus-color':
-    'color-mix(in srgb, var(--md-sys-color-inverse-primary) 24%, transparent)',
-  '--m3e-menu-item-selected-ripple-color':
-    'var(--md-sys-color-inverse-primary)',
   '--m3e-menu-item-icon-size': '20px',
-  '--m3e-menu-item-icon-label-space': '8px',
-  '--m3e-menu-item-padding-start': '10px',
-  '--m3e-menu-item-padding-end': '10px',
-  '--m3e-menu-item-shape': '10px',
-  '--m3e-menu-item-first-child-shape': '12px',
-  '--m3e-menu-item-last-child-shape': '12px',
   '--m3e-menu-item-container-height': '40px',
-  '--m3e-menu-container-elevation':
-    '0 12px 32px color-mix(in srgb, var(--md-sys-color-scrim) 25%, transparent)',
   boxShadow:
     '0 12px 32px color-mix(in srgb, var(--md-sys-color-scrim) 25%, transparent)',
   border:
@@ -79,10 +54,7 @@ export const VERSION_TRIGGER_STYLE = {
 export const VERSION_MENU_STYLE = {
   ...ENGINE_MENU_STYLE,
   '--m3e-menu-container-min-width': 'min(270px, calc(100vw - 20px))',
-  '--m3e-menu-container-max-height': 'none',
   '--m3e-menu-item-container-height': '40px',
-  '--m3e-menu-item-padding-start': '10px',
-  '--m3e-menu-item-padding-end': '10px',
   maxWidth: 'calc(100vw - 16px)',
 } as React.CSSProperties
 
@@ -90,14 +62,10 @@ export const ACTIONS_MENU_STYLE = {
   ...ENGINE_MENU_STYLE,
   '--m3e-menu-container-min-width': '220px',
   '--m3e-menu-item-container-height': '38px',
-  '--m3e-menu-item-padding-start': '10px',
-  '--m3e-menu-item-padding-end': '10px',
   width: 'min(240px, calc(100vw - 24px))',
 } as React.CSSProperties
 
-export const ICON_BUTTON_STYLE = {
-  '--m3e-icon-button-icon-color': 'var(--md-sys-color-on-surface-variant)',
-} as React.CSSProperties
+export const ICON_BUTTON_STYLE = {} as React.CSSProperties
 
 export const DESCRIPTION_GROUP_STYLE = {
   display: 'flex',

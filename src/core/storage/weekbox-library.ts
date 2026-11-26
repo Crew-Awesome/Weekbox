@@ -5,29 +5,25 @@ import {
   DEFAULT_LIBRARY_DIRECTORIES,
   DEFAULT_LIBRARY_FILE_CONTENTS,
 } from './constants'
+import {
+  isAbsolutePath,
+  joinPaths,
+  resolveV2CompatibleLibraryPath,
+  syncV2ManifestLayout,
+} from './v2-storage-compat'
 import type { WeekBoxLibraryPaths, LibraryInitializeResult } from './types'
 
 export * from './constants'
 export * from './types'
+export { isAbsolutePath, joinPaths } from './v2-storage-compat'
 
 let cachedDefaultDataPath: string | null = null
 const ensuredLibraryCache = new Map<string, LibraryInitializeResult>()
+const inFlightLibraryInit = new Map<string, Promise<LibraryInitializeResult>>()
+let lastEnsuredLibrary: LibraryInitializeResult | null = null
 
-export function isAbsolutePath(p: string | null | undefined): boolean {
-  if (!p || typeof p !== 'string') return false
-  const clean = p.replace(/\\/g, '/').trim()
-  return /^[a-zA-Z]:\//i.test(clean) || clean.startsWith('/')
-}
-
-export function joinPaths(base: string, ...parts: string[]): string {
-  let result = base.replace(/[/\\]+$/, '')
-  for (const part of parts) {
-    const clean = part.replace(/^[/\\]+/, '').replace(/[/\\]+$/, '')
-    if (clean) {
-      result = `${result}/${clean}`
-    }
-  }
-  return result.replace(/\/+/g, '/')
+export function getCachedWeekBoxLibrary(): LibraryInitializeResult | null {
+  return lastEnsuredLibrary
 }
 
 export function getSavedCustomLibraryPath(): string | null {
@@ -116,22 +112,39 @@ export async function resolveActiveLibraryPath(): Promise<string> {
   if (custom && isAbsolutePath(custom)) {
     return custom.replace(/\\/g, '/')
   }
-  return await resolveDefaultLibraryPath()
+  const defaultPath = await resolveDefaultLibraryPath()
+  if (defaultPath && isAbsolutePath(defaultPath)) {
+    const dataRoot = defaultPath.slice(0, defaultPath.lastIndexOf('/'))
+    const compatible = await resolveV2CompatibleLibraryPath(dataRoot)
+    if (compatible && isAbsolutePath(compatible)) {
+      return compatible
+    }
+  }
+  return defaultPath
 }
 
 export function getWeekBoxLibraryPaths(basePath: string): WeekBoxLibraryPaths {
   return {
     root: basePath,
     settings: joinPaths(basePath, 'settings.json'),
+    configDir: joinPaths(basePath, 'config'),
+    configSettings: joinPaths(basePath, 'config/settings.json'),
+    stateDir: joinPaths(basePath, 'state'),
+    runtimeDir: joinPaths(basePath, 'runtime'),
     storageManifest: joinPaths(basePath, 'storage-manifest.json'),
     modsDir: joinPaths(basePath, 'mods'),
     enginesDir: joinPaths(basePath, 'engines'),
     dataDir: joinPaths(basePath, 'data'),
     modCoversDir: joinPaths(basePath, 'data/mod-covers'),
+    modAvatarsDir: joinPaths(basePath, 'data/mod-avatars'),
     bookmarks: joinPaths(basePath, 'data/bookmarks.json'),
+    customEngines: joinPaths(basePath, 'data/custom-engines.json'),
     engineUpdateState: joinPaths(basePath, 'data/engineupdatestate.json'),
+    v2EngineUpdateState: joinPaths(basePath, 'state/engine-updates.json'),
     playtimeDatabase: joinPaths(basePath, 'data/playtime.json'),
-    installedMods: joinPaths(basePath, 'data/installedmods.json'),
+    installedMods: joinPaths(basePath, 'data/installed-mods.json'),
+    legacyInstalledMods: joinPaths(basePath, 'data/installedmods.json'),
+    featuredCache: joinPaths(basePath, 'data/featured-mods.json'),
     dataSettings: joinPaths(basePath, 'data/settings.json'),
   }
 }
@@ -150,83 +163,104 @@ export async function ensureWeekBoxLibrary(
 
   const cached = ensuredLibraryCache.get(basePath)
   if (cached && isAbsolutePath(basePath)) {
+    lastEnsuredLibrary = cached
     return cached
   }
 
-  const paths = getWeekBoxLibraryPaths(basePath)
+  const existingFlight = inFlightLibraryInit.get(basePath)
+  if (existingFlight) {
+    return existingFlight
+  }
 
-  if (!isAbsolutePath(basePath) || basePath === WEEKBOX_LIBRARY_DIR_NAME || basePath === '.') {
-    console.warn(
-      '[WeekBox] Library base path is relative or not yet resolved to AppData. Skipping local directory creation.',
+  const initPromise = (async (): Promise<LibraryInitializeResult> => {
+    const paths = getWeekBoxLibraryPaths(basePath)
+
+    if (!isAbsolutePath(basePath) || basePath === WEEKBOX_LIBRARY_DIR_NAME || basePath === '.') {
+      console.warn(
+        '[WeekBox] Library base path is relative or not yet resolved to AppData. Skipping local directory creation.',
+      )
+      return {
+        basePath,
+        paths,
+        createdDirectories: [],
+        existingDirectories: [],
+        createdFiles: [],
+        existingFiles: [],
+      }
+    }
+
+    const createdDirectories: string[] = []
+    const existingDirectories: string[] = []
+    const createdFiles: string[] = []
+    const existingFiles: string[] = []
+
+    for (const relativeDir of DEFAULT_LIBRARY_DIRECTORIES) {
+      const fullDirPath = relativeDir
+        ? joinPaths(basePath, relativeDir)
+        : basePath
+      try {
+        const exists = await hostAdapter.fs.exists(fullDirPath)
+        if (!exists) {
+          await hostAdapter.fs.createDirectory(fullDirPath)
+          createdDirectories.push(fullDirPath)
+        } else {
+          existingDirectories.push(fullDirPath)
+        }
+      } catch (err) {
+        console.warn(
+          `[WeekBox] Directory check/creation warning for "${fullDirPath}":`,
+          err,
+        )
+      }
+    }
+
+    for (const [relativeFilePath, defaultData] of Object.entries(
+      DEFAULT_LIBRARY_FILE_CONTENTS,
+    )) {
+      const fullFilePath = joinPaths(basePath, relativeFilePath)
+      try {
+        const exists = await hostAdapter.fs.exists(fullFilePath)
+        if (!exists) {
+          const content = JSON.stringify(defaultData, null, 2)
+          await hostAdapter.fs.writeTextFile(fullFilePath, content)
+          createdFiles.push(fullFilePath)
+        } else {
+          existingFiles.push(fullFilePath)
+        }
+      } catch (err) {
+        console.error(
+          `[WeekBox] File creation failed for "${fullFilePath}":`,
+          err,
+        )
+      }
+    }
+
+    await syncV2ManifestLayout(
+      hostAdapter,
+      basePath,
+      paths.installedMods,
+      paths.legacyInstalledMods,
     )
-    return {
+
+    const result: LibraryInitializeResult = {
       basePath,
       paths,
-      createdDirectories: [],
-      existingDirectories: [],
-      createdFiles: [],
-      existingFiles: [],
+      createdDirectories,
+      existingDirectories,
+      createdFiles,
+      existingFiles,
     }
-  }
 
-  const createdDirectories: string[] = []
-  const existingDirectories: string[] = []
-  const createdFiles: string[] = []
-  const existingFiles: string[] = []
-
-  for (const relativeDir of DEFAULT_LIBRARY_DIRECTORIES) {
-    const fullDirPath = relativeDir
-      ? joinPaths(basePath, relativeDir)
-      : basePath
-    try {
-      const exists = await hostAdapter.fs.exists(fullDirPath)
-      if (!exists) {
-        await hostAdapter.fs.createDirectory(fullDirPath)
-        createdDirectories.push(fullDirPath)
-      } else {
-        existingDirectories.push(fullDirPath)
-      }
-    } catch (err) {
-      console.warn(
-        `[WeekBox] Directory check/creation warning for "${fullDirPath}":`,
-        err,
-      )
+    if (isAbsolutePath(basePath) && basePath !== WEEKBOX_LIBRARY_DIR_NAME) {
+      ensuredLibraryCache.set(basePath, result)
+      lastEnsuredLibrary = result
     }
-  }
 
-  for (const [relativeFilePath, defaultData] of Object.entries(
-    DEFAULT_LIBRARY_FILE_CONTENTS,
-  )) {
-    const fullFilePath = joinPaths(basePath, relativeFilePath)
-    try {
-      const exists = await hostAdapter.fs.exists(fullFilePath)
-      if (!exists) {
-        const content = JSON.stringify(defaultData, null, 2)
-        await hostAdapter.fs.writeTextFile(fullFilePath, content)
-        createdFiles.push(fullFilePath)
-      } else {
-        existingFiles.push(fullFilePath)
-      }
-    } catch (err) {
-      console.error(
-        `[WeekBox] File creation failed for "${fullFilePath}":`,
-        err,
-      )
-    }
-  }
+    return result
+  })().finally(() => {
+    inFlightLibraryInit.delete(basePath)
+  })
 
-  const result: LibraryInitializeResult = {
-    basePath,
-    paths,
-    createdDirectories,
-    existingDirectories,
-    createdFiles,
-    existingFiles,
-  }
-
-  if (isAbsolutePath(basePath) && basePath !== WEEKBOX_LIBRARY_DIR_NAME) {
-    ensuredLibraryCache.set(basePath, result)
-  }
-
-  return result
+  inFlightLibraryInit.set(basePath, initPromise)
+  return initPromise
 }

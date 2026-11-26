@@ -7,6 +7,7 @@ import {
 } from './mod-filesystem'
 import { downloadModArchive, extractModArchive } from './mod-downloader'
 import { getInstalledModById, registerInstalledMod } from './mod-registry'
+import { resolveProviderDownloadUrl } from '@/services/providers'
 import {
   verifyDownloadedArchive,
   cleanupInstallArtifacts,
@@ -127,11 +128,25 @@ export async function startModDownload(
     } catch {
     }
 
-    const ext = resolveArchiveExtension(fileName, downloadUrl)
-    tempArchivePath = joinPaths(modInstallDir, `.temp_archive_${fileId}${ext}`)
+    const resolvedDownloadUrl = await resolveProviderDownloadUrl(downloadUrl)
+    const lowerFileName = fileName.trim().toLowerCase()
+    const cleanUrlPath = resolvedDownloadUrl.split('?')[0].split('#')[0].trim()
+    const isDirectExecutable =
+      lowerFileName.endsWith('.exe') ||
+      cleanUrlPath.toLowerCase().endsWith('.exe')
+    const urlExeBase = cleanUrlPath.split('/').pop() || `${fileId}.exe`
+    const directExeName = (
+      lowerFileName.endsWith('.exe') ? fileName.trim() : urlExeBase
+    ).replace(/[<>:"/\\|?*]+/g, '_')
+    const ext = isDirectExecutable
+      ? '.exe'
+      : resolveArchiveExtension(fileName, resolvedDownloadUrl)
+    tempArchivePath = isDirectExecutable
+      ? joinPaths(modInstallDir, directExeName || `${fileId}.exe`)
+      : joinPaths(modInstallDir, `.temp_archive_${fileId}${ext}`)
 
     await downloadModArchive(
-      downloadUrl,
+      resolvedDownloadUrl,
       tempArchivePath,
       (details) => {
         if (abortController.signal.aborted) return
@@ -147,21 +162,23 @@ export async function startModDownload(
 
     await verifyDownloadedArchive(tempArchivePath, expectedSize)
 
-    reportExtractProgress(taskKey, mod.id, calloutId, modTitle, fileName)
+    if (!isDirectExecutable) {
+      reportExtractProgress(taskKey, mod.id, calloutId, modTitle, fileName)
 
-    await extractModArchive(tempArchivePath, modInstallDir, (extractUpdate) => {
-      reportExtractProgress(
-        taskKey,
-        mod.id,
-        calloutId,
-        modTitle,
-        fileName,
-        extractUpdate,
-      )
-    })
+      await extractModArchive(tempArchivePath, modInstallDir, (extractUpdate) => {
+        reportExtractProgress(
+          taskKey,
+          mod.id,
+          calloutId,
+          modTitle,
+          fileName,
+          extractUpdate,
+        )
+      })
 
-    if (abortController.signal.aborted) {
-      throw new DOMException('Download canceled', 'AbortError')
+      if (abortController.signal.aborted) {
+        throw new DOMException('Download canceled', 'AbortError')
+      }
     }
 
     const installedRecord = await buildInstalledModRecord({

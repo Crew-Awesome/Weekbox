@@ -1,4 +1,5 @@
 import React from 'react'
+import { useUiStyle } from '@/utils/ui-style'
 import type { TwitterNewsPost } from '@/services/twitter/types'
 import { NewsPostText } from './NewsPostText'
 import { NewsMediaGrid } from './NewsMediaGrid'
@@ -45,15 +46,18 @@ export const NewsPostCard: React.FC<NewsPostCardProps> = ({
   onSelectMedia,
 }) => {
   const [avatarError, setAvatarError] = React.useState(false)
+  const isHomeStyle = useUiStyle() === 'home'
   const formattedDate = formatDate(post.publishedAt)
 
   return (
     <m3e-card
       variant="outlined"
-      className="w-full text-start transition-all duration-300 hover:-translate-y-1 hover:shadow-xl"
+      className={`w-full text-start ${
+        isHomeStyle ? '' : 'transition-all duration-300 hover:-translate-y-1 hover:shadow-xl'
+      }`}
       style={
         {
-          '--m3e-card-container-shape': '24px',
+          '--m3e-card-container-shape': isHomeStyle ? '12px' : '24px',
           '--m3e-outlined-card-outline-color':
             'color-mix(in srgb, var(--md-sys-color-outline-variant) 65%, transparent)',
           '--m3e-outlined-card-container-color':

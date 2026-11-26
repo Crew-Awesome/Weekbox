@@ -27,6 +27,7 @@ import type {
 } from '../types'
 
 let cachedInstalledMods: InstalledModRecord[] | null = null
+let cachedBookmarkIds: Set<string> | null = null
 
 export function useInstalledMods() {
   const [mods, setMods] = useState<InstalledModRecord[]>(() => cachedInstalledMods ?? [])
@@ -47,7 +48,9 @@ export function useInstalledMods() {
   const [favoriteIds, setFavoriteIds] = useState<Set<string>>(() =>
     getFavoriteModIds(),
   )
-  const [bookmarkIds, setBookmarkIds] = useState<Set<string>>(() => new Set())
+  const [bookmarkIds, setBookmarkIds] = useState<Set<string>>(
+    () => cachedBookmarkIds ?? new Set(),
+  )
   const [selectedMod, setSelectedMod] = useState<ModItem | null>(null)
 
   useEffect(() => {
@@ -77,7 +80,7 @@ export function useInstalledMods() {
   }, [])
 
   useEffect(() => {
-    void fetchMods()
+    let cancelled = false
 
     const handleModsChanged = () => {
       void fetchMods()
@@ -89,17 +92,25 @@ export function useInstalledMods() {
 
     const handleBookmarksChanged = () => {
       void getBookmarkedMods().then((list) => {
-        setBookmarkIds(new Set(list.map((id) => String(id))))
+        if (cancelled) return
+        const nextSet = new Set(list.map((id) => String(id)))
+        cachedBookmarkIds = nextSet
+        setBookmarkIds(nextSet)
       })
     }
 
-    handleBookmarksChanged()
+    queueMicrotask(() => {
+      if (cancelled) return
+      void fetchMods()
+      handleBookmarksChanged()
+    })
 
     window.addEventListener(MODS_CHANGED_EVENT, handleModsChanged)
     window.addEventListener(FAVORITES_CHANGED_EVENT, handleFavoritesChanged)
     window.addEventListener(BOOKMARKS_CHANGED_EVENT, handleBookmarksChanged)
 
     return () => {
+      cancelled = true
       window.removeEventListener(MODS_CHANGED_EVENT, handleModsChanged)
       window.removeEventListener(FAVORITES_CHANGED_EVENT, handleFavoritesChanged)
       window.removeEventListener(BOOKMARKS_CHANGED_EVENT, handleBookmarksChanged)

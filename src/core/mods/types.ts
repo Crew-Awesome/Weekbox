@@ -1,4 +1,9 @@
-import type { ModItem, GameBananaFile } from '@/ui/mod-details-modal/types'
+import type {
+  ModItem,
+  GameBananaFile,
+  ModCreditGroup,
+  ModCreditAuthor,
+} from '@/ui/mod-details-modal/types'
 
 export type ModDownloadPhase =
   | 'download'
@@ -24,7 +29,7 @@ export interface InstalledModRecord {
   title?: string
   hidden?: boolean
   visible?: boolean
-  kind?: 'mod' | 'engine' | string
+  kind?: 'mod' | 'addon' | 'dependency' | 'engine' | string
   categoryId?: number
   source?: string
   sourceUrl?: string
@@ -32,15 +37,31 @@ export interface InstalledModRecord {
   engineLocked?: boolean
   engineId?: string
   engineName?: string
+  engineVersion?: string | null
   defaultEngineId?: string
   defaultEngineName?: string
   engineFolderName?: string
-  coverPath?: string
+  iconPath?: string | null
+  coverPath?: string | null
   localCoverPath?: string
+  coverFallback?: string | null
+  exePath?: string
+  tags?: string[]
+  lastPlayedAt?: number
+  gameBananaId?: string | number | null
+  gameBananaType?: string | null
+  providerSource?: string | null
+  providerId?: string | number | null
+  providerType?: string | null
+  providerUrl?: string | null
   description?: string
   htmlBody?: string
   author?: string
   userPfp?: string
+  userPfpPath?: string
+  localUserPfp?: string
+  authors?: ModCreditAuthor[]
+  credits?: ModCreditGroup[]
   image?: string
   thumbnail?: string
   previewMedia?: string[]
@@ -64,6 +85,7 @@ export interface InstalledModRecord {
   }
   views?: number
   likes?: number
+  followers?: number
   downloads?: number
 }
 

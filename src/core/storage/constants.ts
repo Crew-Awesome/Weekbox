@@ -15,15 +15,23 @@ export const WEEKBOX_CUSTOM_PATH_STORAGE_KEY = 'wbr:custom_library_path'
 export const WEEKBOX_LIBRARY_STRUCTURE = {
   root: '',
   settings: 'settings.json',
+  config: 'config',
+  configSettings: 'config/settings.json',
+  state: 'state',
+  runtime: 'runtime',
   storageManifest: 'storage-manifest.json',
   mods: 'mods',
   engines: 'engines',
   data: 'data',
   modCovers: 'data/mod-covers',
+  modAvatars: 'data/mod-avatars',
   bookmarks: 'data/bookmarks.json',
+  customEngines: 'data/custom-engines.json',
   engineUpdateState: 'data/engineupdatestate.json',
+  v2EngineUpdateState: 'state/engine-updates.json',
   playtime: 'data/playtime.json',
-  installedMods: 'data/installedmods.json',
+  installedMods: 'data/installed-mods.json',
+  legacyInstalledMods: 'data/installedmods.json',
   dataSettings: 'data/settings.json',
 } as const
 
@@ -32,10 +40,14 @@ export const WEEKBOX_LIBRARY_STRUCTURE = {
  */
 export const DEFAULT_LIBRARY_DIRECTORIES: readonly string[] = [
   '',
+  'config',
+  'state',
+  'runtime',
   'mods',
   'engines',
   'data',
   'data/mod-covers',
+  'data/mod-avatars',
 ] as const
 
 /**
@@ -45,15 +57,19 @@ export const DEFAULT_LIBRARY_DIRECTORIES: readonly string[] = [
 export const DEFAULT_LIBRARY_FILE_CONTENTS: Record<string, unknown> = {
   'settings.json': {
     version: '1.0.0',
-    theme: 'dark',
+    theme: 'system',
     language: 'en',
+    uiScale: 100,
+    uiStyle: 'default',
+    setupCompleted: false,
     autoUpdate: true,
+    registerProtocolLinks: true,
   },
   'storage-manifest.json': {
-    version: '1.0.0',
+    version: 2,
     name: 'WeekBoxLibrary',
     createdAt: new Date().toISOString(),
-    directories: ['mods', 'engines', 'data'],
+    directories: ['config', 'state', 'runtime', 'mods', 'engines', 'data'],
   },
   'data/bookmarks.json': [],
   'data/engineupdatestate.json': {
@@ -68,7 +84,6 @@ export const DEFAULT_LIBRARY_FILE_CONTENTS: Record<string, unknown> = {
     days: {},
     sessions: [],
   },
-  'data/installedmods.json': [],
   'data/settings.json': {
     version: '1.0.0',
     installedAt: new Date().toISOString(),

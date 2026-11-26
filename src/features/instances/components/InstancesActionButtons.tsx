@@ -1,14 +1,12 @@
 import React from 'react'
-import { formatFileSize } from '@/utils/formatters'
 import type {
   InstalledEngineVersion,
   GitHubReleaseAsset,
   EngineDownloadTask,
 } from '@/core/engines'
-import {
-  EngineInstallVisual,
-  type EngineInstallVisualPhase,
-} from './EngineInstallVisual'
+import type { EngineInstallVisualPhase } from './EngineInstallVisual'
+import { EngineRunningMorphTime } from './EngineRunningMorphTime'
+import { InstancesInstallMorphControl } from './InstancesInstallMorphControl'
 
 export interface InstancesActionButtonsProps {
   selectedVersion: string | null
@@ -60,86 +58,11 @@ export const InstancesActionButtons: React.FC<InstancesActionButtonsProps> = ({
           <span className="material-symbols-rounded text-base animate-spin">refresh</span>
           <span>Uninstalling...</span>
         </div>
-      ) : selectedTask &&
-      selectedTask.status !== 'completed' &&
-      selectedTask.status !== 'error' &&
-      !isInstallStarting ? (
-        <>
-          <span className="hidden sm:inline-flex">
-            <EngineInstallVisual
-              phase={busyPhase}
-              progress={smoothProgress}
-              size={42}
-              showRing={false}
-              tone="primary"
-            />
-          </span>
-
-          <div
-            role="status"
-            aria-live="polite"
-            className="inline-flex flex-col items-center justify-center w-24 min-[360px]:w-32 min-[400px]:w-40 sm:w-52 h-[38px] sm:h-[42px] px-2 sm:px-3.5 py-1 rounded-2xl shadow-sm overflow-hidden shrink-0"
-            style={{
-              backgroundColor:
-                selectedTask.status === 'canceling'
-                  ? 'var(--md-sys-color-error)'
-                  : 'var(--md-sys-color-primary)',
-              color:
-                selectedTask.status === 'canceling'
-                  ? 'var(--md-sys-color-on-error)'
-                  : 'var(--md-sys-color-on-primary)',
-            }}
-          >
-            <span className="text-xs sm:text-sm font-bold tracking-wide leading-tight truncate w-full text-center">
-              {busyLabel}
-            </span>
-            <span
-              className="text-[10px] font-mono leading-tight opacity-80 truncate w-full text-center"
-              title={busyDetail}
-            >
-              {busyDetail || '\u00A0'}
-            </span>
-          </div>
-
-          {selectedTask.status !== 'extracting' && (
-            <button
-              type="button"
-              onClick={() => {
-                if (selectedVersion) onCancelDownload(selectedVersion)
-              }}
-              disabled={selectedTask.status === 'canceling'}
-              className="inline-flex items-center justify-center w-9 h-9 min-[400px]:w-auto gap-1 sm:gap-1.5 px-0 min-[400px]:px-3.5 py-1.5 sm:py-2 rounded-xl text-xs font-bold transition cursor-pointer hover:bg-[var(--md-sys-color-error)]/20 text-[var(--md-sys-color-error)] border border-[var(--md-sys-color-error)]/40 disabled:opacity-50 disabled:cursor-default shrink-0"
-              title="Cancel"
-            >
-              <span className="material-symbols-rounded text-sm sm:text-base">close</span>
-              <span className="hidden min-[400px]:inline">
-                {selectedTask.status === 'canceling' ? 'Canceling...' : 'Cancel'}
-              </span>
-            </button>
-          )}
-        </>
-      ) : selectedInstalledVersion ? (
+      ) : selectedInstalledVersion &&
+      !(selectedTask && selectedTask.status !== 'completed' && selectedTask.status !== 'error') ? (
         <>
           {isEngineRunning && (
-            <div
-              className="hidden min-[400px]:inline-flex items-center gap-1.5 sm:gap-2 px-2 sm:px-3 py-1 sm:py-1.5 rounded-xl text-[11px] sm:text-xs font-bold border shrink-0 animate-in fade-in duration-300"
-              style={{
-                backgroundColor:
-                  'color-mix(in srgb, var(--md-sys-color-primary) 12%, transparent)',
-                color: 'var(--md-sys-color-primary)',
-                borderColor:
-                  'color-mix(in srgb, var(--md-sys-color-primary) 35%, transparent)',
-              }}
-              title="Engine is currently running"
-            >
-              <span className="relative flex h-2 w-2">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[var(--md-sys-color-primary)] opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-2 w-2 bg-[var(--md-sys-color-primary)]"></span>
-              </span>
-              <span>
-                <span className="hidden sm:inline">Running </span>({formattedSessionDuration || '00:00'})
-              </span>
-            </div>
+            <EngineRunningMorphTime duration={formattedSessionDuration} />
           )}
 
           {isEngineRunning && onStopEngine && (
@@ -206,23 +129,7 @@ export const InstancesActionButtons: React.FC<InstancesActionButtonsProps> = ({
         <>
           {isEngineRunning && (
             <>
-              <div
-                className="hidden min-[400px]:inline-flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-bold border shrink-0 animate-in fade-in duration-300"
-                style={{
-                  backgroundColor:
-                    'color-mix(in srgb, var(--md-sys-color-primary) 12%, transparent)',
-                  color: 'var(--md-sys-color-primary)',
-                  borderColor:
-                    'color-mix(in srgb, var(--md-sys-color-primary) 35%, transparent)',
-                }}
-                title="Engine is currently running"
-              >
-                <span className="relative flex h-2 w-2">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[var(--md-sys-color-primary)] opacity-75"></span>
-                  <span className="relative inline-flex rounded-full h-2 w-2 bg-[var(--md-sys-color-primary)]"></span>
-                </span>
-                <span>Running ({formattedSessionDuration || '00:00'})</span>
-              </div>
+              <EngineRunningMorphTime duration={formattedSessionDuration} />
 
               {onStopEngine && (
                 <button
@@ -239,32 +146,18 @@ export const InstancesActionButtons: React.FC<InstancesActionButtonsProps> = ({
             </>
           )}
 
-          <button
-            type="button"
-            onClick={onInstallSelected}
-            disabled={isInstallStarting || !recommendedAsset}
-            className="inline-flex items-center justify-center gap-1.5 sm:gap-2.5 px-3 sm:px-4 py-1.5 sm:py-2 rounded-xl text-xs sm:text-sm font-bold transition cursor-pointer hover:brightness-110 active:scale-95 shadow-sm disabled:opacity-50 disabled:cursor-default disabled:hover:brightness-100 shrink-0"
-            style={{
-              backgroundColor: 'var(--md-sys-color-primary)',
-              color: 'var(--md-sys-color-on-primary)',
-            }}
-          >
-            <EngineInstallVisual
-              phase={isInstallStarting ? 'starting' : 'idle'}
-              progress={0}
-              size={20}
-            />
-            <div className="flex flex-col items-start leading-tight">
-              <span className="text-xs sm:text-sm font-bold">
-                {isInstallStarting ? 'Starting...' : 'Install'}
-              </span>
-              {recommendedAsset && (
-                <span className="text-[9px] sm:text-[10px] font-mono font-normal opacity-85 leading-tight">
-                  {formatFileSize(recommendedAsset.size)}
-                </span>
-              )}
-            </div>
-          </button>
+          <InstancesInstallMorphControl
+            selectedVersion={selectedVersion}
+            selectedTask={selectedTask}
+            isInstallStarting={isInstallStarting}
+            recommendedAsset={recommendedAsset}
+            busyPhase={busyPhase}
+            busyLabel={busyLabel}
+            busyDetail={busyDetail}
+            smoothProgress={smoothProgress}
+            onInstallSelected={onInstallSelected}
+            onCancelDownload={onCancelDownload}
+          />
         </>
       )}
     </div>

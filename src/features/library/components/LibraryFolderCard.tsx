@@ -1,4 +1,5 @@
 import React from 'react'
+import { useUiStyle } from '@/utils/ui-style'
 import type { InstalledModRecord, ModProfile } from '@/core/mods'
 import { resolveModThumbnail } from '../utils'
 
@@ -35,6 +36,7 @@ export const LibraryFolderCard: React.FC<LibraryFolderCardProps> = ({
   }, [profileMods])
 
   const modCount = profile.modIds?.length ?? 0
+  const isHomeStyle = useUiStyle() === 'home'
 
   return (
     <div
@@ -44,14 +46,20 @@ export const LibraryFolderCard: React.FC<LibraryFolderCardProps> = ({
       onKeyDown={(e) => {
         if (e.key === 'Enter' || e.key === ' ') onClick()
       }}
-      className={`shrink-0 flex flex-col w-[170px] sm:w-[190px] rounded-2xl p-2.5 border transition-all duration-300 cursor-pointer shadow-sm relative group select-none ${
+      className={`shrink-0 flex flex-col w-[170px] sm:w-[190px] ${
+        isHomeStyle ? 'rounded-xl' : 'rounded-2xl shadow-sm'
+      } p-2.5 border transition-colors duration-200 cursor-pointer relative group select-none ${
         isActive
           ? 'bg-[var(--md-sys-color-primary-container)]/25 border-[var(--md-sys-color-primary)] ring-2 ring-[var(--md-sys-color-primary)]/40'
-          : 'bg-[var(--md-sys-color-surface-container)] hover:bg-[var(--md-sys-color-surface-container-high)] border-[var(--md-sys-color-outline-variant)]/30 hover:border-[var(--md-sys-color-primary)]/50'
+          : 'bg-[var(--md-sys-color-surface-container)] hover:bg-[var(--md-sys-color-surface-container-high)] border-[var(--md-sys-color-outline-variant)]/40 hover:border-[var(--md-sys-color-primary)]/50'
       }`}
       title={`Open folder: ${profile.name} (${modCount} mods)`}
     >
-      <div className="relative w-full h-[120px] sm:h-[130px] rounded-xl overflow-hidden bg-[var(--md-sys-color-scrim)]/25 flex items-center justify-center pt-5">
+      <div
+        className={`relative w-full h-[120px] sm:h-[130px] ${
+          isHomeStyle ? 'rounded-lg' : 'rounded-xl pt-5'
+        } overflow-hidden bg-[var(--md-sys-color-scrim)]/25 flex items-center justify-center`}
+      >
         {topMods.length === 0 ? (
           <div className="flex flex-col items-center justify-center gap-1.5 opacity-60">
             <span className="material-symbols-rounded text-3xl text-[var(--md-sys-color-primary)]">
@@ -61,6 +69,12 @@ export const LibraryFolderCard: React.FC<LibraryFolderCardProps> = ({
               Empty Collection
             </span>
           </div>
+        ) : isHomeStyle ? (
+          <img
+            src={resolveModThumbnail(topMods[0])}
+            alt=""
+            className="w-full h-full object-cover bg-[var(--md-sys-color-surface-container-highest)]"
+          />
         ) : (
           <div className="relative w-[110px] sm:w-[125px] h-[80px] sm:h-[90px] flex items-center justify-center">
             {topMods
@@ -97,7 +111,9 @@ export const LibraryFolderCard: React.FC<LibraryFolderCardProps> = ({
             e.stopPropagation()
             onDelete()
           }}
-          className="absolute top-2 right-2 opacity-0 group-hover:opacity-80 hover:opacity-100 text-[var(--md-sys-color-on-surface-variant)] hover:text-[var(--md-sys-color-error)] p-1.5 rounded-lg bg-[var(--md-sys-color-scrim)]/40 backdrop-blur-xs transition-all z-20"
+          className={`absolute top-2 right-2 opacity-0 group-hover:opacity-80 hover:opacity-100 text-[var(--md-sys-color-on-surface-variant)] hover:text-[var(--md-sys-color-error)] p-1.5 rounded-lg bg-[var(--md-sys-color-scrim)]/50 ${
+            isHomeStyle ? '' : 'backdrop-blur-xs'
+          } transition-all z-20`}
           title="Delete folder"
           aria-label="Delete folder"
         >

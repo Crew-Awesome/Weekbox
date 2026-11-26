@@ -9,6 +9,7 @@ import {
 import {
   fetchRunningProcesses,
   getEngineCandidateExes,
+  getExecutableTrackingId,
   detectEngineProcess,
   killEngineProcess,
   type RunningProcessItem,
@@ -18,6 +19,7 @@ import {
 export {
   fetchRunningProcesses,
   getEngineCandidateExes,
+  getExecutableTrackingId,
   detectEngineProcess,
   killEngineProcess,
   type RunningProcessItem,
@@ -121,8 +123,9 @@ if (typeof window !== 'undefined') {
 }
 
 export function useEngineProcessState(
-  engineId: EngineId,
+  engineId: EngineId | string,
   selectedVersion?: string,
+  candidateExes?: string[],
 ): EngineProcessInfo & {
   stopEngine: () => Promise<boolean>
   checkNow: () => Promise<void>
@@ -134,13 +137,22 @@ export function useEngineProcessState(
 
   const isMountedRef = useRef(true)
   const isCheckingRef = useRef(false)
+  const candidateExesKey = candidateExes ? candidateExes.join('|') : null
 
   const checkStatus = useCallback(async () => {
     if (!isMountedRef.current || isCheckingRef.current) return
     isCheckingRef.current = true
     try {
-      const versions = await getInstalledEngineVersions(engineId)
-      const res = await detectEngineProcess(engineId, versions)
+      const overrideList =
+        candidateExesKey !== null
+          ? candidateExesKey.split('|').filter(Boolean)
+          : undefined
+      const versions =
+        overrideList === undefined &&
+        !String(engineId).startsWith('exe:')
+          ? await getInstalledEngineVersions(engineId as EngineId)
+          : undefined
+      const res = await detectEngineProcess(engineId, versions, overrideList)
 
       if (!isMountedRef.current) return
 
@@ -170,11 +182,15 @@ export function useEngineProcessState(
     } finally {
       isCheckingRef.current = false
     }
-  }, [engineId, selectedVersion])
+  }, [engineId, selectedVersion, candidateExesKey])
 
   useEffect(() => {
     isMountedRef.current = true
-    void checkStatus()
+    queueMicrotask(() => {
+      if (isMountedRef.current) {
+        void checkStatus()
+      }
+    })
 
     const intervalId = window.setInterval(() => {
       void checkStatus()

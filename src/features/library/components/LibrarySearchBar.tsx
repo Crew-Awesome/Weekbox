@@ -104,22 +104,6 @@ export const LibrarySearchBar: React.FC<LibrarySearchBarProps> = ({
           {
             width: '100%',
             height: '46px',
-            '--m3e-search-bar-container-color':
-              'var(--md-sys-color-surface-container-high)',
-            '--m3e-search-bar-leading-icon-color':
-              'var(--md-sys-color-on-surface-variant)',
-            '--m3e-search-bar-trailing-icon-color':
-              'var(--md-sys-color-on-surface-variant)',
-            '--m3e-search-view-container-color':
-              'var(--md-sys-color-surface-container-high)',
-            '--m3e-search-view-contained-container-color':
-              'var(--md-sys-color-surface-container-high)',
-            '--m3e-search-view-divider-color':
-              'var(--md-sys-color-outline-variant)',
-            '--m3e-search-bar-container-height': '46px',
-            '--m3e-search-view-docked-header-container-height': '46px',
-            '--m3e-search-view-docked-container-shape': '24px',
-            '--m3e-search-view-contained-docked-bar-shape': '24px',
             borderRadius: '24px',
             border: '1px solid var(--md-sys-color-outline-variant)',
             boxShadow:
@@ -147,12 +131,7 @@ export const LibrarySearchBar: React.FC<LibrarySearchBarProps> = ({
         <m3e-overflow
           direction="vertical"
           className="w-full max-h-[380px] select-none"
-          style={
-            {
-              maxHeight: '380px',
-              '--m3e-overflow-inset': '4px',
-            } as React.CSSProperties
-          }
+          style={{ maxHeight: '380px' }}
         >
           <div className="flex flex-col p-2 gap-1.5 w-full pr-3">
             <span className="text-[11px] font-semibold tracking-wider uppercase px-2 py-1 text-[var(--md-sys-color-on-surface-variant)] opacity-75">

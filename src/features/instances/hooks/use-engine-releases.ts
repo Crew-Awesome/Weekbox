@@ -35,7 +35,13 @@ export function useEngineReleases(currentEngine: EngineDefinition | undefined) {
   )
 
   useEffect(() => {
-    loadReleases(false)
+    let cancelled = false
+    queueMicrotask(() => {
+      if (!cancelled) void loadReleases(false)
+    })
+    return () => {
+      cancelled = true
+    }
   }, [loadReleases])
 
   const compatibleReleases = useMemo(

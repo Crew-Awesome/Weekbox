@@ -22,10 +22,6 @@ export interface LibraryFiltersBarProps {
 }
 
 const M3E_BUTTON_STYLE: React.CSSProperties = {
-  '--m3e-button-outlined-container-shape': '16px',
-  '--m3e-button-outlined-outline-color':
-    'color-mix(in srgb, var(--md-sys-color-outline-variant) 60%, transparent)',
-  '--m3e-button-outlined-label-text-color': 'var(--md-sys-color-on-surface)',
   '--m3e-button-container-height': '46px',
   '--m3e-button-icon-size': '22px',
   '--m3e-button-icon-label-space': '8px',

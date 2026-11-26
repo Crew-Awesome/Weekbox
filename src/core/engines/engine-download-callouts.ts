@@ -50,11 +50,11 @@ export function showEngineDownloadToast(
     title: isExtracting
       ? `Installing ${def?.name || task.engineId} (${task.version})`
       : `Downloading ${def?.name || task.engineId} (${task.version})`,
-    progress: task.progress,
+    progress: isExtracting ? 99 : task.progress,
     downloaded: formatFileSize(task.downloaded),
     total: task.total ? formatFileSize(task.total) : 'Unknown',
     speed: isExtracting ? 'Extracting...' : task.speed,
-    status: 'downloading',
+    status: isExtracting ? 'extracting' : 'downloading',
     onCancel,
   })
 }
@@ -89,7 +89,7 @@ export function updateEngineExtractProgress(
     title: `Installing ${def?.name || engineId} (${version})`,
     progress: 99,
     speed,
-    status: 'downloading',
+    status: 'extracting',
   })
 }
 

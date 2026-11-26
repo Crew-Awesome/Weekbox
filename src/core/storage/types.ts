@@ -3,6 +3,14 @@ export interface WeekBoxLibraryPaths {
   root: string
   /** Root settings file (WeekBoxLibrary/settings.json) */
   settings: string
+  /** WeekBox v2 config directory (WeekBoxLibrary/config) */
+  configDir: string
+  /** WeekBox v2 settings file (WeekBoxLibrary/config/settings.json) */
+  configSettings: string
+  /** WeekBox v2 state directory (WeekBoxLibrary/state) */
+  stateDir: string
+  /** WeekBox v2 runtime directory (WeekBoxLibrary/runtime) */
+  runtimeDir: string
   /** Root storage manifest (WeekBoxLibrary/storage-manifest.json) */
   storageManifest: string
   /** Directory for downloaded/installed mods (WeekBoxLibrary/mods) */
@@ -13,14 +21,24 @@ export interface WeekBoxLibraryPaths {
   dataDir: string
   /** Directory for cached mod covers (WeekBoxLibrary/data/mod-covers) */
   modCoversDir: string
+  /** Directory for cached submitter and credit avatars (WeekBoxLibrary/data/mod-avatars) */
+  modAvatarsDir: string
   /** Bookmarked mods file (WeekBoxLibrary/data/bookmarks.json) */
   bookmarks: string
+  /** Custom engines registry file (WeekBoxLibrary/data/custom-engines.json) */
+  customEngines: string
   /** Engine update state file (WeekBoxLibrary/data/engineupdatestate.json) */
   engineUpdateState: string
+  /** WeekBox v2 engine update state file (WeekBoxLibrary/state/engine-updates.json) */
+  v2EngineUpdateState: string
   /** Playtime database file (WeekBoxLibrary/data/playtime.json) */
   playtimeDatabase: string
-  /** Installed mods manifest (WeekBoxLibrary/data/installedmods.json) */
+  /** Primary installed mods manifest (WeekBoxLibrary/data/installed-mods.json) */
   installedMods: string
+  /** Legacy installed mods manifest mirror (WeekBoxLibrary/data/installedmods.json) */
+  legacyInstalledMods: string
+  /** Cached featured mods JSON from GameBanana (WeekBoxLibrary/data/featured-mods.json) */
+  featuredCache: string
   /** Data settings file (WeekBoxLibrary/data/settings.json) */
   dataSettings: string
 }

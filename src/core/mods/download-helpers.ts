@@ -58,6 +58,12 @@ export async function cleanupInstallArtifacts(
   }
 }
 
+function isSupportedDownloadUrl(url: unknown): url is string {
+  if (typeof url !== 'string') return false
+  const clean = url.trim()
+  return clean.startsWith('http') || clean.startsWith('gamejolt-build://')
+}
+
 export function resolveTargetModFile(
   files: GameBananaFile[] | Record<string, GameBananaFile> | undefined,
   explicitFile?: GameBananaFile,
@@ -70,10 +76,9 @@ export function resolveTargetModFile(
   fileName: string
   expectedSize: number
 } | null {
-  const cleanExplicitUrl =
-    typeof explicitUrl === 'string' && explicitUrl.trim().startsWith('http')
-      ? explicitUrl.trim()
-      : undefined
+  const cleanExplicitUrl = isSupportedDownloadUrl(explicitUrl)
+    ? explicitUrl.trim()
+    : undefined
 
   const cleanExplicitFileId =
     typeof explicitFileId === 'string' && explicitFileId.trim().length > 0
@@ -175,6 +180,31 @@ export async function buildInstalledModRecord(params: {
       : 28367
   const matchedEngineCat = matchedEntry?.[1]
 
+  const authorAvatarUrls = mod.credits
+    ? mod.credits.map((g) => ({
+        ...g,
+        authors: (g.authors || []).map((a) => ({ ...a })),
+      }))
+    : undefined
+
+  const providerSource =
+    mod.source ||
+    (String(baseModId).startsWith('gamejolt:')
+      ? 'gamejolt'
+      : String(baseModId).startsWith('backstage:')
+        ? 'backstage'
+        : 'gamebanana')
+  const providerId =
+    mod.sourceId ||
+    String(baseModId).replace(/^(?:gamejolt|backstage):/i, '')
+  const resolvedSourceUrl =
+    mod.sourceUrl ||
+    (providerSource === 'gamejolt'
+      ? `https://gamejolt.com/games/${providerId}`
+      : providerSource === 'backstage'
+        ? `https://funkinbackstage.net/mods/${encodeURIComponent(providerId)}`
+        : `https://gamebanana.com/mods/${baseModId}`)
+
   const now = Date.now()
   return {
     id: compositeId,
@@ -185,8 +215,11 @@ export async function buildInstalledModRecord(params: {
     visible: true,
     kind: 'mod',
     categoryId: matchedCategoryId,
-    source: 'gamebanana',
-    sourceUrl: `https://gamebanana.com/mods/${baseModId}`,
+    source: providerSource,
+    providerSource,
+    providerId,
+    providerUrl: resolvedSourceUrl,
+    sourceUrl: resolvedSourceUrl,
     downloadUrl,
     engineLocked: false,
     engineId: finalEngineId,
@@ -197,6 +230,11 @@ export async function buildInstalledModRecord(params: {
     description: mod.description,
     htmlBody: mod.htmlBody,
     author: mod.author,
+    userPfp: mod.userPfp,
+    userPfpPath: mod.userPfpPath,
+    localUserPfp: mod.localUserPfp,
+    authors: mod.authors?.map((a) => ({ ...a })),
+    credits: authorAvatarUrls,
     image:
       (mod.image?.startsWith('http') ? mod.image : undefined) ||
       (mod.thumbnail?.startsWith('http') ? mod.thumbnail : undefined) ||
@@ -213,12 +251,16 @@ export async function buildInstalledModRecord(params: {
       mod.img,
     previewMedia: mod.previewMedia,
     icon: matchedEngineCat?.icon || mod.icon || mod.engineIcon,
-    categoryName: mod.categoryName,
+    categoryName: isExe
+      ? 'Executable Mods'
+      : matchedEngineCat?.name || mod.categoryName,
     installPath: modInstallDir,
     folderName,
     installedAt: now,
-    updatedAt: mod.updatedAt || now,
+    updatedAt: mod.updatedAt || (providerSource === 'gamejolt' ? undefined : now),
     submittedAt: mod.submittedAt,
+    likes: mod.likes,
+    followers: mod.followers,
     downloadedFileId: fileId,
     installedFileId: fileId,
     fileName,
@@ -229,7 +271,7 @@ export async function buildInstalledModRecord(params: {
     meta: {
       link: downloadUrl,
       downloadUrl,
-      sourceUrl: `https://gamebanana.com/mods/${baseModId}`,
+      sourceUrl: resolvedSourceUrl,
     },
   }
 }

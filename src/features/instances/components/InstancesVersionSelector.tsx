@@ -13,7 +13,6 @@ import {
   VERSION_MENU_STYLE,
   ACTIONS_MENU_STYLE,
   MENU_LIST_STYLE,
-  getVersionActionsMenuId,
   hideMenuById,
   getMenuHeight,
 } from '../constants'
@@ -168,8 +167,9 @@ export const InstancesVersionSelector: React.FC<InstancesVersionSelectorProps> =
                         <span
                           className="material-symbols-rounded"
                           style={{
-                            fontSize: '18px',
-                            color: isSelected ? 'var(--md-sys-color-inverse-primary)' : undefined,
+                            fontSize:
+                              !option.isActive && !option.installed ? '21px' : '18px',
+                            color: isSelected ? 'var(--md-sys-color-primary)' : undefined,
                           }}
                         >
                           {option.isActive
@@ -184,7 +184,7 @@ export const InstancesVersionSelector: React.FC<InstancesVersionSelectorProps> =
                       <span
                         className="text-sm font-semibold truncate"
                         style={{
-                          color: isSelected ? 'var(--md-sys-color-inverse-primary)' : undefined,
+                          color: isSelected ? 'var(--md-sys-color-primary)' : undefined,
                         }}
                       >
                         {option.version}
@@ -203,7 +203,7 @@ export const InstancesVersionSelector: React.FC<InstancesVersionSelectorProps> =
                       <span
                         slot="trailing-icon"
                         className="material-symbols-rounded"
-                        style={{ color: 'var(--md-sys-color-inverse-primary)' }}
+                        style={{ color: 'var(--md-sys-color-primary)' }}
                       >
                         check
                       </span>

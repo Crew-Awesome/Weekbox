@@ -23,7 +23,10 @@ export function useModProfiles() {
   }, [])
 
   useEffect(() => {
-    void syncProfiles()
+    let cancelled = false
+    queueMicrotask(() => {
+      if (!cancelled) void syncProfiles()
+    })
 
     const handleProfilesChanged = () => {
       setProfiles(getModProfilesSync())
@@ -31,6 +34,7 @@ export function useModProfiles() {
 
     window.addEventListener(PROFILES_CHANGED_EVENT, handleProfilesChanged)
     return () => {
+      cancelled = true
       window.removeEventListener(PROFILES_CHANGED_EVENT, handleProfilesChanged)
     }
   }, [syncProfiles])

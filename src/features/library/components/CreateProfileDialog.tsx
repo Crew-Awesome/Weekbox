@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { createPortal } from 'react-dom'
+import { useUiStyle } from '@/utils/ui-style'
 
 export interface CreateProfileDialogProps {
   isOpen: boolean
@@ -13,12 +14,15 @@ export const CreateProfileDialog: React.FC<CreateProfileDialogProps> = ({
   onCreate,
 }) => {
   const [name, setName] = useState('')
+  const [prevIsOpen, setPrevIsOpen] = useState(isOpen)
+  const isHomeStyle = useUiStyle() === 'home'
 
-  useEffect(() => {
+  if (prevIsOpen !== isOpen) {
+    setPrevIsOpen(isOpen)
     if (isOpen) {
       setName('')
     }
-  }, [isOpen])
+  }
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -48,15 +52,27 @@ export const CreateProfileDialog: React.FC<CreateProfileDialogProps> = ({
 
   return createPortal(
     <div
-      className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-[var(--md-sys-color-scrim)]/50 backdrop-blur-xs animate-in fade-in duration-200"
+      className={`fixed inset-0 z-[9999] flex items-center justify-center p-4 ${
+        isHomeStyle
+          ? 'bg-black/55'
+          : 'bg-[var(--md-sys-color-scrim)]/50 backdrop-blur-xs'
+      } animate-in fade-in duration-200`}
       onClick={onClose}
     >
       <div
-        className="relative flex flex-col w-full max-w-[min(460px,calc(100vw-32px))] bg-[var(--md-sys-color-surface-container-high)] text-[var(--md-sys-color-on-surface)] rounded-[24px] shadow-2xl border border-[var(--md-sys-color-outline-variant)]/30 p-5 sm:p-6 overflow-hidden animate-in zoom-in-95 duration-200"
+        className={`relative flex flex-col w-full max-w-[min(460px,calc(100vw-32px))] bg-[var(--md-sys-color-surface-container-high)] text-[var(--md-sys-color-on-surface)] ${
+          isHomeStyle
+            ? 'rounded-xl shadow-lg border border-[var(--md-sys-color-outline-variant)]'
+            : 'rounded-[24px] shadow-2xl border border-[var(--md-sys-color-outline-variant)]/30'
+        } p-5 sm:p-6 overflow-hidden animate-in zoom-in-95 duration-200`}
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center gap-3 mb-3">
-          <div className="w-10 h-10 rounded-2xl flex items-center justify-center bg-[var(--md-sys-color-primary-container)] text-[var(--md-sys-color-on-primary-container)]">
+          <div
+            className={`w-10 h-10 ${
+              isHomeStyle ? 'rounded-lg' : 'rounded-2xl'
+            } flex items-center justify-center bg-[var(--md-sys-color-primary-container)] text-[var(--md-sys-color-on-primary-container)]`}
+          >
             <span className="material-symbols-rounded text-xl">
               create_new_folder
             </span>

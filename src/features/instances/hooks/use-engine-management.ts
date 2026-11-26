@@ -98,24 +98,6 @@ export function useEngineManagement(initialEngineId: EngineId = 'psych') {
     useEngineDownloads(selectedEngineId)
 
   const latestReleaseTag = latestCompatibleRelease?.tagName ?? null
-  const selectedVersion = useMemo(() => {
-    if (versionSelection && versionSelection.engineId === selectedEngineId) {
-      return versionSelection.version
-    }
-    if (activeVersion) return activeVersion
-    if (latestReleaseTag) return latestReleaseTag
-    if (installedVersions.length > 0) return installedVersions[0].version
-    return null
-  }, [versionSelection, selectedEngineId, activeVersion, latestReleaseTag, installedVersions])
-
-  const selectVersion = useCallback(
-    (version: string) => {
-      setVersionSelection({ engineId: selectedEngineId, version })
-      persistSelectedVersion(selectedEngineId, version)
-    },
-    [selectedEngineId],
-  )
-
   const versionOptions = useMemo<EngineVersionOption[]>(() => {
     const options: EngineVersionOption[] = []
     const seen = new Set<string>()
@@ -151,6 +133,36 @@ export function useEngineManagement(initialEngineId: EngineId = 'psych') {
 
     return options
   }, [installedVersions, releases, compatibleReleases, activeVersion, platform])
+
+  const selectedVersion = useMemo(() => {
+    if (versionSelection && versionSelection.engineId === selectedEngineId) {
+      const canValidate = !isLoadingReleases && versionOptions.length > 0
+      const exists =
+        !canValidate ||
+        versionOptions.some((opt) => opt.version === versionSelection.version)
+      if (exists) return versionSelection.version
+    }
+    if (activeVersion) return activeVersion
+    if (latestReleaseTag) return latestReleaseTag
+    if (installedVersions.length > 0) return installedVersions[0].version
+    return null
+  }, [
+    versionSelection,
+    selectedEngineId,
+    isLoadingReleases,
+    versionOptions,
+    activeVersion,
+    latestReleaseTag,
+    installedVersions,
+  ])
+
+  const selectVersion = useCallback(
+    (version: string) => {
+      setVersionSelection({ engineId: selectedEngineId, version })
+      persistSelectedVersion(selectedEngineId, version)
+    },
+    [selectedEngineId],
+  )
 
   const {
     isUninstalling,
@@ -192,14 +204,6 @@ export function useEngineManagement(initialEngineId: EngineId = 'psych') {
       if (selectedVersion) persistSelectedVersion(selectedEngineId, selectedVersion)
     } catch {}
   }, [selectedEngineId, selectedVersion])
-
-  useEffect(() => {
-    if (isLoadingReleases || versionOptions.length === 0) return
-    if (versionSelection && versionSelection.engineId === selectedEngineId) {
-      const exists = versionOptions.some((opt) => opt.version === versionSelection.version)
-      if (!exists) setVersionSelection(null)
-    }
-  }, [isLoadingReleases, versionOptions, versionSelection, selectedEngineId])
 
   const selectedRelease = useMemo(
     () => (selectedVersion ? releases.find((r) => r.tagName === selectedVersion) : undefined),

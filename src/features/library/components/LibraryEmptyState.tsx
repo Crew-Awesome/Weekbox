@@ -67,35 +67,11 @@ export const LibraryEmptyState: React.FC<LibraryEmptyStateProps> = ({
 
   return (
     <div
-      className="flex-1 flex flex-col items-center justify-center p-8 sm:p-14 rounded-3xl border border-dashed text-center min-h-[340px] relative overflow-hidden"
+      className="flex-1 flex flex-col items-center justify-center p-8 sm:p-14 text-center min-h-[340px]"
       style={{
-        borderColor: 'color-mix(in srgb, var(--md-sys-color-outline-variant) 70%, transparent)',
         color: 'var(--md-sys-color-on-surface-variant)',
-        backgroundColor:
-          'color-mix(in srgb, var(--md-sys-color-surface-container-low) 60%, transparent)',
       }}
     >
-      <div
-        className="pointer-events-none absolute -bottom-10 -left-10 w-72 h-72 rounded-full opacity-15 blur-3xl"
-        style={{
-          background:
-            'radial-gradient(circle, var(--md-sys-color-primary) 0%, transparent 70%)',
-        }}
-      />
-
-      <div
-        className="w-16 h-16 rounded-3xl flex items-center justify-center mb-4 shadow-inner"
-        style={{
-          backgroundColor:
-            'color-mix(in srgb, var(--md-sys-color-primary-container) 80%, transparent)',
-          color: 'var(--md-sys-color-on-primary-container)',
-        }}
-      >
-        <span className="material-symbols-rounded text-3xl">
-          sports_esports
-        </span>
-      </div>
-
       <h3
         className="text-lg sm:text-xl font-bold tracking-tight"
         style={{ color: 'var(--md-sys-color-on-surface)' }}

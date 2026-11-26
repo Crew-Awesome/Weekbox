@@ -1,8 +1,6 @@
-import { useState, useEffect, useCallback, useMemo } from 'react'
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import {
   SUPPORTED_ENGINE_IDS,
-  getInstalledEngineVersions,
-  getActiveEngineVersion,
   scanLocalEnginesDirectory,
   getEngineUpdateState,
   ENGINES_CHANGED_EVENT,
@@ -21,6 +19,10 @@ export function useEngineInstalled(selectedEngineId: EngineId) {
     psychonline: 0,
     fpsplus: 0,
   })
+  const selectedEngineIdRef = useRef(selectedEngineId)
+  useEffect(() => {
+    selectedEngineIdRef.current = selectedEngineId
+  }, [selectedEngineId])
 
   const refreshAllInstalled = useCallback(async () => {
     try {
@@ -39,23 +41,28 @@ export function useEngineInstalled(selectedEngineId: EngineId) {
       }
       setAllInstalledCounts(counts)
 
-      const curRecord = state.engines[selectedEngineId]
+      const curRecord = state.engines[selectedEngineIdRef.current]
       setInstalledVersions(curRecord?.installedVersions || [])
-      setActiveVersion(curRecord?.activeVersion || null)
+      setActiveVersion(
+        curRecord?.activeVersion ||
+          curRecord?.installedVersions?.[0]?.version ||
+          null,
+      )
     } catch (err) {
       console.warn('[useEngineInstalled] Failed to refresh installed engines:', err)
     }
-  }, [selectedEngineId])
+  }, [])
 
   useEffect(() => {
     let mounted = true
     const init = async () => {
+      await refreshAllInstalled()
       await scanLocalEnginesDirectory()
       if (mounted) {
         await refreshAllInstalled()
       }
     }
-    init()
+    void init()
     return () => {
       mounted = false
     }
@@ -63,7 +70,7 @@ export function useEngineInstalled(selectedEngineId: EngineId) {
 
   useEffect(() => {
     const handler = () => {
-      refreshAllInstalled()
+      void refreshAllInstalled()
     }
     window.addEventListener(ENGINES_CHANGED_EVENT, handler)
     return () => {
@@ -73,15 +80,19 @@ export function useEngineInstalled(selectedEngineId: EngineId) {
 
   useEffect(() => {
     let mounted = true
-    const fetchInstalled = async () => {
-      const versions = await getInstalledEngineVersions(selectedEngineId)
-      const currentActive = await getActiveEngineVersion(selectedEngineId)
+    const fetchSelectedEngine = async () => {
+      const state = await getEngineUpdateState()
+      const curRecord = state.engines[selectedEngineId]
       if (mounted) {
-        setInstalledVersions(versions)
-        setActiveVersion(currentActive)
+        setInstalledVersions(curRecord?.installedVersions || [])
+        setActiveVersion(
+          curRecord?.activeVersion ||
+            curRecord?.installedVersions?.[0]?.version ||
+            null,
+        )
       }
     }
-    fetchInstalled()
+    void fetchSelectedEngine()
     return () => {
       mounted = false
     }

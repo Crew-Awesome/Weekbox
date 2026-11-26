@@ -3,8 +3,8 @@ import type { LibraryEngineSummary, LibrarySortOption } from '../types'
 import {
   M3E_MENU_STYLE,
   DIVIDER_STYLE,
-  LibraryCriteriaSubmenus,
-} from './LibraryCriteriaSubmenus'
+} from './library-criteria-constants'
+import { LibraryCriteriaSubmenus } from './LibraryCriteriaSubmenus'
 
 export interface LibraryCriteriaMenuProps {
   sortBy: LibrarySortOption

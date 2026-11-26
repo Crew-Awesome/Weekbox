@@ -6,6 +6,7 @@ const GITHUB_CACHE_PREFIX = 'wbr:gh_releases:'
 const CACHE_TTL_MS = 20 * 60 * 1000
 
 const memoryCache = new Map<string, GitHubCacheEntry>()
+const inFlightReleaseRequests = new Map<string, Promise<GitHubRelease[]>>()
 
 interface RawGitHubAsset {
   id: number
@@ -81,59 +82,72 @@ export async function fetchEngineReleases(
     }
   }
 
+  const requestKey = `${repo}:${forceRefresh ? '1' : '0'}`
+  const existingRequest = inFlightReleaseRequests.get(requestKey)
+  if (existingRequest) {
+    return existingRequest
+  }
+
   const url = `https://api.github.com/repos/${repo}/releases?per_page=30`
 
-  try {
-    const res = await fetch(url, {
-      headers: {
-        Accept: 'application/vnd.github.v3+json',
-      },
-    })
+  const requestPromise = (async () => {
+    try {
+      const res = await fetch(url, {
+        headers: {
+          Accept: 'application/vnd.github.v3+json',
+        },
+      })
 
-    if (!res.ok) {
-      if (res.status === 403) {
-        const mem = memoryCache.get(repo)
-        if (mem) {
-          console.warn(`[GitHub] Rate limited for ${repo}. Returning cached releases.`)
-          return mem.releases
+      if (!res.ok) {
+        if (res.status === 403) {
+          const mem = memoryCache.get(repo)
+          if (mem) {
+            console.warn(`[GitHub] Rate limited for ${repo}. Returning cached releases.`)
+            return mem.releases
+          }
+          throw new Error('GitHub API rate limit reached. Please wait before refreshing.')
         }
-        throw new Error('GitHub API rate limit reached. Please wait before refreshing.')
+        if (res.status === 404) {
+          throw new Error(`Repository ${repo} not found on GitHub.`)
+        }
+        throw new Error(`GitHub error (${res.status}): ${res.statusText}`)
       }
-      if (res.status === 404) {
-        throw new Error(`Repository ${repo} not found on GitHub.`)
+
+      const data = (await res.json()) as RawGitHubRelease[]
+      if (!Array.isArray(data)) {
+        throw new Error(`Invalid response structure from GitHub for ${repo}`)
       }
-      throw new Error(`GitHub error (${res.status}): ${res.statusText}`)
-    }
 
-    const data = (await res.json()) as RawGitHubRelease[]
-    if (!Array.isArray(data)) {
-      throw new Error(`Invalid response structure from GitHub for ${repo}`)
-    }
+      const parsedReleases = data
+        .filter((r) => !r.draft)
+        .map(parseRelease)
 
-    const parsedReleases = data
-      .filter((r) => !r.draft)
-      .map(parseRelease)
-
-    const entry: GitHubCacheEntry = {
-      timestamp: now,
-      releases: parsedReleases,
-    }
-    memoryCache.set(repo, entry)
-
-    if (typeof localStorage !== 'undefined') {
-      try {
-        localStorage.setItem(cacheKey, JSON.stringify(entry))
-      } catch {
+      const entry: GitHubCacheEntry = {
+        timestamp: now,
+        releases: parsedReleases,
       }
-    }
+      memoryCache.set(repo, entry)
 
-    return parsedReleases
-  } catch (err) {
-    const mem = memoryCache.get(repo)
-    if (mem && mem.releases.length > 0) {
-      console.warn(`[GitHub] Failed to fetch live releases for ${repo}, using cache:`, err)
-      return mem.releases
+      if (typeof localStorage !== 'undefined') {
+        try {
+          localStorage.setItem(cacheKey, JSON.stringify(entry))
+        } catch {
+        }
+      }
+
+      return parsedReleases
+    } catch (err) {
+      const mem = memoryCache.get(repo)
+      if (mem && mem.releases.length > 0) {
+        console.warn(`[GitHub] Failed to fetch live releases for ${repo}, using cache:`, err)
+        return mem.releases
+      }
+      throw err
     }
-    throw err
-  }
+  })().finally(() => {
+    inFlightReleaseRequests.delete(requestKey)
+  })
+
+  inFlightReleaseRequests.set(requestKey, requestPromise)
+  return requestPromise
 }

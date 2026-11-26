@@ -43,17 +43,18 @@ export function syncTaskCallout(task: ModDownloadTask): void {
     return
   }
 
+  const isExtracting = task.status === 'extracting'
+
   window.callout.download({
     id: calloutId,
-    title:
-      task.status === 'extracting'
-        ? `Installing ${task.modTitle}`
-        : `Downloading ${task.modTitle}`,
-    progress: task.progress,
+    title: isExtracting
+      ? `Installing ${task.modTitle}`
+      : `Downloading ${task.modTitle}`,
+    progress: isExtracting ? 99 : task.progress,
     downloaded: formatFileSize(task.downloaded),
     total: task.total > 0 ? formatFileSize(task.total) : 'Unknown',
-    speed: task.speed,
-    status: 'downloading',
+    speed: isExtracting ? 'Extracting...' : task.speed,
+    status: isExtracting ? 'extracting' : 'downloading',
     onCancel: () => {
       cancelModDownload(task.modId, task.fileId)
     },
@@ -166,9 +167,9 @@ export function reportExtractProgress(
       window.callout.updateDownload(calloutId, {
         title: `Installing ${modTitle}`,
         filename: extractUpdate?.currentFile || fileName,
-        progress: extractUpdate ? undefined : 99,
+        progress: 99,
         speed: 'Extracting...',
-        status: 'downloading',
+        status: 'extracting',
       })
     }
   }

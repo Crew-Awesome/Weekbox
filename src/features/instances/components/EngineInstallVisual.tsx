@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react'
 import { MORPH_SHAPES } from '@/ui/callout/constants'
+import { useUiStyle } from '@/utils/ui-style'
 
 export type EngineInstallVisualPhase =
   | 'idle'
@@ -27,6 +28,7 @@ export const EngineInstallVisual: React.FC<EngineInstallVisualProps> = ({
   tone = 'inherit',
 }) => {
   const [shapeIndex, setShapeIndex] = useState(0)
+  const isHomeStyle = useUiStyle() === 'home'
   const isCanceling = phase === 'canceling'
   const isProgressing =
     phase === 'downloading' || phase === 'extracting' || phase === 'canceling'
@@ -65,7 +67,7 @@ export const EngineInstallVisual: React.FC<EngineInstallVisualProps> = ({
   const shapeSize = showRing
     ? Math.round(size * SHAPE_RATIO)
     : Math.round(size * 0.88)
-  const iconSize = Math.round(size * 0.56)
+  const iconSize = Math.round(size * 0.88)
   const transition =
     'opacity 240ms ease, transform 320ms cubic-bezier(0.2, 0, 0, 1)'
 
@@ -80,12 +82,79 @@ export const EngineInstallVisual: React.FC<EngineInstallVisualProps> = ({
     inset: 0,
     display: 'block',
     '--m3e-circular-wavy-progress-indicator-diameter': `${size}px`,
+    '--m3e-circular-flat-progress-indicator-diameter': `${size}px`,
     '--m3e-circular-progress-indicator-thickness': '2.5px',
     '--m3e-circular-wavy-progress-indicator-amplitude': '1.5px',
     '--m3e-circular-wavy-progress-indicator-wavelength': '14px',
     '--m3e-progress-indicator-color': ringColor,
     '--m3e-progress-indicator-track-color': ringTrackColor,
   } as React.CSSProperties
+
+  if (isHomeStyle) {
+    return (
+      <span
+        aria-hidden="true"
+        className="relative inline-flex items-center justify-center shrink-0 pointer-events-none"
+        style={{ width: size, height: size }}
+      >
+        {phase === 'idle' && (
+          <span
+            className="material-symbols-rounded select-none leading-none flex items-center justify-center"
+            style={{
+              fontSize: `${iconSize}px`,
+              width: iconSize,
+              height: iconSize,
+              color: 'currentColor',
+            }}
+          >
+            cloud_download
+          </span>
+        )}
+
+        {isSpinning && (
+          <m3e-circular-progress-indicator
+            variant="flat"
+            indeterminate
+            style={
+              {
+                display: 'block',
+                '--m3e-circular-flat-progress-indicator-diameter': `${size}px`,
+                '--m3e-circular-progress-indicator-thickness': '2.5px',
+                '--m3e-progress-indicator-color': ringColor,
+                '--m3e-progress-indicator-track-color': 'transparent',
+              } as React.CSSProperties
+            }
+          />
+        )}
+
+        {isProgressing && (
+          <>
+            {showRing && (
+              <m3e-circular-progress-indicator
+                variant="flat"
+                value={clampedProgress}
+                max="100"
+                style={progressRingStyle}
+              />
+            )}
+            <span
+              className="font-mono font-bold leading-none select-none flex items-center justify-center"
+              style={{
+                fontSize: Math.max(9, Math.round(size * 0.28)),
+                color: isCanceling
+                  ? 'var(--md-sys-color-error)'
+                  : isPrimaryTone
+                    ? 'var(--md-sys-color-primary)'
+                    : 'currentColor',
+              }}
+            >
+              {clampedProgress}%
+            </span>
+          </>
+        )}
+      </span>
+    )
+  }
 
   return (
     <span

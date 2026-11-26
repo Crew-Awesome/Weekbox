@@ -33,7 +33,7 @@ export function toSafeModFolderName(
   modTitle?: string,
   instanceUuid?: string,
 ): string {
-  const baseId = extractBaseModId(modId)
+  const baseId = extractBaseModId(modId).replace(/[<>:"/\\|?*]+/g, '_')
   const engineFolder = toEngineFolderName(modTitle)
   const uuid = instanceUuid || generateModInstanceUuid()
   return `${engineFolder}--${baseId}--${uuid}`
@@ -64,17 +64,18 @@ export async function resolveModInstallDirectory(
 }> {
   const { paths } = await ensureWeekBoxLibrary()
   const baseId = extractBaseModId(modId)
+  const safeBaseId = baseId.replace(/[<>:"/\\|?*]+/g, '_')
   const engineFolderName = toEngineFolderName(modTitle)
   const uuid = generateModInstanceUuid()
 
   const folderName =
-    existingFolderName || `${engineFolderName}--${baseId}--${uuid}`
+    existingFolderName || `${engineFolderName}--${safeBaseId}--${uuid}`
 
   const folderParts = folderName.split('--')
   const compositeId =
     folderParts.length >= 3
       ? `${folderParts[1]}--${folderParts.slice(2).join('--')}`
-      : `${baseId}--${uuid}`
+      : `${safeBaseId}--${uuid}`
 
   const modInstallDir = joinPaths(paths.modsDir, folderName)
 
@@ -153,11 +154,48 @@ export async function detectModEngineFromFiles(
   let hasPolymodMeta = false
   let hasPackJson = false
   let hasCodenameMeta = false
+  let hasModContentDir = false
 
-  const scanLevel = async (dirPath: string, depth: number) => {
+  const MOD_CONTENT_DIRS = new Set([
+    'assets',
+    'mods',
+    'data',
+    'weeks',
+    'songs',
+    'images',
+    'stages',
+    'characters',
+    'scripts',
+    'shaders',
+    'custom_events',
+    'custom_notetypes',
+  ])
+
+  const SKIP_SCAN_SUBDIRS = new Set([
+    'songs',
+    'images',
+    'sounds',
+    'music',
+    'videos',
+    'fonts',
+    'shaders',
+    'stages',
+    'characters',
+    'weeks',
+    'custom_events',
+    'custom_notetypes',
+    'scripts',
+    'flas',
+    'temp',
+    'plugins',
+    '__macosx',
+  ])
+
+  const scanLevel = async (dirPath: string, depth: number): Promise<void> => {
     if (depth > 2) return
     try {
       const entries = await host.fs.readDirectory(dirPath)
+      const childDirs: string[] = []
       for (const entry of entries) {
         if (entry.name === '.' || entry.name === '..') continue
         const lower = entry.name.toLowerCase()
@@ -177,15 +215,48 @@ export async function detectModEngineFromFiles(
           } else if (lower === 'meta.xml' || lower === 'config.xml') {
             hasCodenameMeta = true
           }
-        } else if (depth < 2) {
-          await scanLevel(entry.path, depth + 1)
+        } else {
+          if (MOD_CONTENT_DIRS.has(lower)) {
+            hasModContentDir = true
+          }
+          if (depth < 2 && !SKIP_SCAN_SUBDIRS.has(lower)) {
+            childDirs.push(entry.path)
+          }
         }
+      }
+
+      if (hasExe || hasPolymodMeta || hasPackJson) {
+        return
+      }
+      if (childDirs.length > 0) {
+        await Promise.all(childDirs.map((child) => scanLevel(child, depth + 1)))
       }
     } catch {
     }
   }
 
   await scanLevel(modDir, 0)
+
+  if (hasExe) {
+    return { engineId: 'executable', isExecutable: true, hasEngineWarning: false }
+  }
+  if (hasPolymodMeta) {
+    return { engineId: 'vslice', isExecutable: false, hasEngineWarning: false }
+  }
+  if (hasPackJson) {
+    const resolvedPackEngine =
+      fallbackEngineId === 'pslice' || fallbackEngineId === 'psychonline'
+        ? fallbackEngineId
+        : 'psych'
+    return {
+      engineId: resolvedPackEngine,
+      isExecutable: false,
+      hasEngineWarning: false,
+    }
+  }
+  if (hasCodenameMeta && fallbackEngineId === 'codename') {
+    return { engineId: 'codename', isExecutable: false, hasEngineWarning: false }
+  }
 
   const isVsliceFallback =
     defaultId === 'vslice' ||
@@ -194,15 +265,6 @@ export async function detectModEngineFromFiles(
     fallbackEngineId === 'basegame'
 
   if (isVsliceFallback) {
-    if (hasPolymodMeta) {
-      return { engineId: 'vslice', isExecutable: false, hasEngineWarning: false }
-    }
-    if (hasPackJson) {
-      return { engineId: 'psych', isExecutable: false, hasEngineWarning: false }
-    }
-    if (hasExe) {
-      return { engineId: 'executable', isExecutable: true, hasEngineWarning: false }
-    }
     return {
       engineId: 'vslice',
       isExecutable: false,
@@ -211,23 +273,18 @@ export async function detectModEngineFromFiles(
     }
   }
 
-  if (hasExe) {
-    return { engineId: 'executable', isExecutable: true, hasEngineWarning: false }
-  }
-  if (hasPolymodMeta) {
-    return { engineId: 'vslice', isExecutable: false, hasEngineWarning: false }
-  }
-  if (hasCodenameMeta && fallbackEngineId === 'codename') {
-    return { engineId: 'codename', isExecutable: false, hasEngineWarning: false }
-  }
-  if (hasPackJson) {
-    return { engineId: 'psych', isExecutable: false, hasEngineWarning: false }
-  }
+  const isExeFallback = defaultId === 'exe' || defaultId === 'executable'
+  const shouldWarn =
+    isExeFallback ||
+    !fallbackEngineId ||
+    fallbackEngineId === 'unknown' ||
+    !hasModContentDir
 
   return {
     engineId: defaultId,
-    isExecutable: defaultId === 'exe' || defaultId === 'executable',
-    hasEngineWarning: false,
+    isExecutable: isExeFallback,
+    hasEngineWarning: shouldWarn,
+    engineWarningMessage: shouldWarn ? UNDETECTED_ENGINE_WARNING_MSG : undefined,
   }
 }
 

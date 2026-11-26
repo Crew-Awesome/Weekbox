@@ -90,6 +90,9 @@ export function useTwitterNews(): UseTwitterNewsResult {
   const sourcePagesRef = useRef<Map<string, { cursor?: string; page: number }>>(
     globalCachedSourcePages,
   )
+  const [hasRemoteCursors, setHasRemoteCursors] = useState<boolean>(() =>
+    [...globalCachedSourcePages.values()].some((p) => Boolean(p.cursor)),
+  )
 
   const toggleAccountVisibility = useCallback((username: string) => {
     if (!username) return
@@ -148,6 +151,9 @@ export function useTwitterNews(): UseTwitterNewsResult {
         setAllLoadedPosts(res.posts)
         setAvailableSources(res.availableSources)
         sourcePagesRef.current = res.sourcePages
+        setHasRemoteCursors(
+          [...res.sourcePages.values()].some((p) => Boolean(p.cursor)),
+        )
         globalCachedPosts = res.posts
         globalCachedAvailableSources = res.availableSources
         globalCachedSourcePages = res.sourcePages
@@ -175,7 +181,13 @@ export function useTwitterNews(): UseTwitterNewsResult {
   }, [])
 
   useEffect(() => {
-    void loadFeed(false)
+    let cancelled = false
+    queueMicrotask(() => {
+      if (!cancelled) void loadFeed(false)
+    })
+    return () => {
+      cancelled = true
+    }
   }, [loadFeed])
 
   const filteredPosts = useMemo(() => {
@@ -199,9 +211,7 @@ export function useTwitterNews(): UseTwitterNewsResult {
     [filteredPosts, visibleCount],
   )
 
-  const hasMore =
-    visiblePosts.length < filteredPosts.length ||
-    Boolean([...sourcePagesRef.current.values()].some((p) => Boolean(p.cursor)))
+  const hasMore = visiblePosts.length < filteredPosts.length || hasRemoteCursors
 
   const loadMore = useCallback(async () => {
     if (isLoadingMore) return
@@ -246,6 +256,9 @@ export function useTwitterNews(): UseTwitterNewsResult {
       for (const res of moreResults) {
         if (res.status === 'fulfilled') flattened.push(...res.value)
       }
+      setHasRemoteCursors(
+        [...sourcePagesRef.current.values()].some((p) => Boolean(p.cursor)),
+      )
 
       if (flattened.length > 0) {
         setAllLoadedPosts((prev) => {

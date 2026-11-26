@@ -1,7 +1,8 @@
-import React from 'react'
+import React, { useMemo } from 'react'
 import { Topbar } from '@/ui/topbar/Topbar'
-import { useEngineProcessState } from '@/core/engines'
+import { useEngineProcessState, type InstalledEngineVersion } from '@/core/engines'
 import { useEngineManagement } from './hooks/use-engine-management'
+import { useExecutableInstances } from './hooks/use-executable-instances'
 import { useBannerProgress } from './hooks/use-banner-progress'
 import { useInstancesViewState } from './hooks/use-instances-view-state'
 import { useSmoothProgress } from './hooks/use-smooth-progress'
@@ -50,6 +51,62 @@ export const InstancesView: React.FC = () => {
     setSelectedAsDefault,
   } = useEngineManagement('psych')
 
+  const {
+    executableMods,
+    isExecutableSelected,
+    selectedExecutableMod,
+    selectedExecutableId,
+    selectedExecutableDisplay,
+    selectedExecutableExeName,
+    isExecutableUninstalling,
+    selectExecutable,
+    clearExecutableSelection,
+    launchExecutable,
+    openExecutableFolder,
+    openExecutableSource,
+    uninstallExecutable,
+  } = useExecutableInstances()
+
+  const displayEngine =
+    isExecutableSelected && selectedExecutableDisplay
+      ? selectedExecutableDisplay
+      : currentEngine
+
+  const effectiveSelectedVersion = isExecutableSelected
+    ? selectedExecutableExeName || selectedExecutableDisplay?.name || 'Executable'
+    : selectedVersion
+
+  const syntheticExecutableVersion = useMemo<InstalledEngineVersion | undefined>(() => {
+    if (!isExecutableSelected || !selectedExecutableMod) return undefined
+    const verLabel =
+      selectedExecutableExeName ||
+      selectedExecutableMod.title ||
+      selectedExecutableMod.name ||
+      'Executable'
+    return {
+      version: verLabel,
+      tag: verLabel,
+      name: verLabel,
+      assetSize: selectedExecutableMod.fileSize,
+      installPath: selectedExecutableMod.installPath || '',
+      installedAt: selectedExecutableMod.installedAt || 0,
+      isDefault: true,
+    }
+  }, [isExecutableSelected, selectedExecutableMod, selectedExecutableExeName])
+
+  const effectiveInstalledVersion = isExecutableSelected
+    ? syntheticExecutableVersion
+    : selectedInstalledVersion
+
+  const effectiveActiveVersion = isExecutableSelected
+    ? effectiveSelectedVersion
+    : activeVersion
+
+  const effectiveTask = isExecutableSelected ? undefined : selectedTask
+  const effectiveIsUninstalling = isExecutableSelected
+    ? isExecutableUninstalling
+    : isUninstalling
+
   const { progress: bannerProgress, rootRef: instancesRootRef, bannerRef: bannerSectionRef } =
     useBannerProgress()
 
@@ -69,15 +126,17 @@ export const InstancesView: React.FC = () => {
     busyDetail,
   } = useInstancesViewState({
     selectedEngineId,
-    currentEngine,
-    selectedVersion,
+    currentEngine: displayEngine,
+    selectedVersion: effectiveSelectedVersion,
     selectedRelease,
-    selectedTask,
+    selectedTask: effectiveTask,
     platform,
+    isExecutableInstance: isExecutableSelected,
+    executableMod: selectedExecutableMod,
   })
 
   const handleInstallClick = () => {
-    if (isInstallStarting) return
+    if (isExecutableSelected || isInstallStarting) return
     if (selectedVersion) {
       triggerInstallRequest(selectedVersion)
     }
@@ -85,49 +144,70 @@ export const InstancesView: React.FC = () => {
   }
 
   const isBusy = Boolean(
-    selectedTask &&
-      (selectedTask.status === 'downloading' ||
-        selectedTask.status === 'extracting' ||
-        selectedTask.status === 'canceling'),
+    effectiveTask &&
+      (effectiveTask.status === 'downloading' ||
+        effectiveTask.status === 'extracting' ||
+        effectiveTask.status === 'canceling'),
   )
 
-  const rawProgress = isUninstalling
+  const rawProgress = effectiveIsUninstalling
     ? 100
-    : Math.max(0, Math.min(100, selectedTask?.progress || 0))
+    : Math.max(0, Math.min(100, effectiveTask?.progress || 0))
 
   const smoothProgress = useSmoothProgress(
     rawProgress,
-    isBusy || isUninstalling,
+    isBusy || effectiveIsUninstalling,
   )
+
+  const candidateExes = useMemo(() => {
+    if (!isExecutableSelected) return undefined
+    return selectedExecutableExeName ? [selectedExecutableExeName] : []
+  }, [isExecutableSelected, selectedExecutableExeName])
 
   const {
     isRunning: isEngineRunning,
     formattedSessionDuration,
     stopEngine,
-  } = useEngineProcessState(selectedEngineId, selectedVersion ?? undefined)
+  } = useEngineProcessState(
+    displayEngine.id,
+    effectiveSelectedVersion ?? undefined,
+    candidateExes,
+  )
+
+  const effectiveHasWarning = Boolean(
+    isExecutableSelected && selectedExecutableMod?.hasEngineWarning,
+  )
 
   return (
     <div
       ref={instancesRootRef}
       id="instances-root"
-      data-engine={selectedEngineId}
-      data-version={selectedVersion ?? ''}
+      data-engine={displayEngine.id}
+      data-version={effectiveSelectedVersion ?? ''}
       className="w-full min-h-full flex flex-col select-none"
     >
       <Topbar
         leading={
           <InstancesEngineMenu
-            currentEngine={currentEngine}
+            currentEngine={displayEngine}
             supportedEngines={supportedEngines}
             selectedEngineId={selectedEngineId}
             allInstalledCounts={allInstalledCounts}
-            onSelectEngine={selectEngine}
+            onSelectEngine={(engineId) => {
+              clearExecutableSelection()
+              selectEngine(engineId)
+            }}
+            isExecutableSelected={isExecutableSelected}
+            executableMods={executableMods}
+            selectedExecutableId={selectedExecutableId}
+            onSelectExecutable={selectExecutable}
+            currentHasWarning={effectiveHasWarning}
           />
         }
         autoHideOnScroll={false}
         underlay={
           <InstancesTopbarUnderlay
-            banner={currentEngine.banner}
+            banner={displayEngine.banner}
             progress={bannerProgress}
           />
         }
@@ -135,50 +215,63 @@ export const InstancesView: React.FC = () => {
 
       <div className="flex-1 flex flex-col gap-4 sm:gap-6 px-3 sm:px-8 pt-3 sm:pt-4 pb-8 sm:pb-12 md:pb-36 max-w-7xl mx-auto w-full min-w-0">
         <InstancesEngineBanner
-          engine={currentEngine}
+          engine={displayEngine}
           bannerProgress={bannerProgress}
           sectionRef={bannerSectionRef}
         />
 
         <InstancesEngineIdentity
-          engine={currentEngine}
+          engine={displayEngine}
           installedVersions={installedVersions}
           activeVersion={activeVersion}
           isLoadingReleases={isLoadingReleases}
           onRefreshReleases={refreshReleases}
-          onOpenFolder={() => void openFolder()}
+          onOpenFolder={() =>
+            isExecutableSelected
+              ? void openExecutableFolder()
+              : void openFolder()
+          }
           onOpenGitHub={openGitHub}
+          isExecutableInstance={isExecutableSelected}
+          hasWarning={effectiveHasWarning}
+          warningMessage={selectedExecutableMod?.engineWarningMessage}
+          executableExeName={selectedExecutableExeName}
+          executableFileSize={selectedExecutableMod?.fileSize}
+          sourceUrl={selectedExecutableMod?.sourceUrl}
+          onOpenSourceUrl={openExecutableSource}
           mobileVersionSelector={
-            <InstancesVersionSelector
-              currentEngine={currentEngine}
-              platform={platform}
-              selectedVersion={selectedVersion}
-              versionOptions={versionOptions}
-              tasksByVersion={tasksByVersion}
-              isLoadingReleases={isLoadingReleases}
-              smoothProgress={smoothProgress}
-              onSelectVersion={selectVersion}
-              onOpenFolder={(v) => void openFolder(v)}
-              onSetDefault={(v) => void setDefaultVersion(v)}
-              onDeleteVersion={deleteVersion}
-              onLaunchVersion={(v) => void launchVersion(v)}
-              menuId="instances-mobile-version-menu"
-              positionY="below"
-              positionX="start"
-              hideIcon={true}
-            />
+            isExecutableSelected ? undefined : (
+              <InstancesVersionSelector
+                currentEngine={currentEngine}
+                platform={platform}
+                selectedVersion={selectedVersion}
+                versionOptions={versionOptions}
+                tasksByVersion={tasksByVersion}
+                isLoadingReleases={isLoadingReleases}
+                smoothProgress={smoothProgress}
+                onSelectVersion={selectVersion}
+                onOpenFolder={(v) => void openFolder(v)}
+                onSetDefault={(v) => void setDefaultVersion(v)}
+                onDeleteVersion={deleteVersion}
+                onLaunchVersion={(v) => void launchVersion(v)}
+                menuId="instances-mobile-version-menu"
+                positionY="below"
+                positionX="start"
+                hideIcon={true}
+              />
+            )
           }
           mobileActionButtons={
             <InstancesActionButtons
-              selectedVersion={selectedVersion}
-              selectedInstalledVersion={selectedInstalledVersion}
-              selectedTask={selectedTask}
-              activeVersion={activeVersion}
-              isUninstalling={isUninstalling}
+              selectedVersion={effectiveSelectedVersion}
+              selectedInstalledVersion={effectiveInstalledVersion}
+              selectedTask={effectiveTask}
+              activeVersion={effectiveActiveVersion}
+              isUninstalling={effectiveIsUninstalling}
               isInstallStarting={isInstallStarting}
               isEngineRunning={isEngineRunning}
               formattedSessionDuration={formattedSessionDuration}
-              recommendedAsset={recommendedAsset}
+              recommendedAsset={isExecutableSelected ? undefined : recommendedAsset}
               busyPhase={busyPhase}
               busyLabel={busyLabel}
               busyDetail={busyDetail}
@@ -186,14 +279,22 @@ export const InstancesView: React.FC = () => {
               onCancelDownload={cancelDownload}
               onInstallSelected={handleInstallClick}
               onSetSelectedAsDefault={() => void setSelectedAsDefault()}
-              onLaunchSelected={launchSelectedVersion}
-              onUninstallSelected={uninstallSelectedVersion}
+              onLaunchSelected={
+                isExecutableSelected
+                  ? () => void launchExecutable()
+                  : launchSelectedVersion
+              }
+              onUninstallSelected={
+                isExecutableSelected
+                  ? uninstallExecutable
+                  : uninstallSelectedVersion
+              }
               onStopEngine={stopEngine}
             />
           }
         />
 
-        {releasesError && (
+        {!isExecutableSelected && releasesError && (
           <InstancesReleasesError
             error={releasesError}
             isLoading={isLoadingReleases}
@@ -202,9 +303,9 @@ export const InstancesView: React.FC = () => {
         )}
 
         <InstancesDocumentation
-          engine={currentEngine}
-          selectedVersion={selectedVersion}
-          selectedRelease={selectedRelease}
+          engine={displayEngine}
+          selectedVersion={effectiveSelectedVersion}
+          selectedRelease={isExecutableSelected ? undefined : selectedRelease}
           descriptionTab={descriptionTab}
           onTabChange={setDescriptionTab}
           isTranslationActive={isTranslationActive}
@@ -212,39 +313,55 @@ export const InstancesView: React.FC = () => {
           descriptionTitle={descriptionTitle}
           descriptionHtml={descriptionHtml}
           onMarkdownClick={handleMarkdownClick}
+          onlyGeneralDescription={isExecutableSelected}
         />
       </div>
 
       <InstancesActionFooter
-        currentEngine={currentEngine}
+        currentEngine={displayEngine}
+        engineDef={currentEngine}
+        isExecutableInstance={isExecutableSelected}
+        executableExeName={selectedExecutableExeName}
+        executableFileSize={selectedExecutableMod?.fileSize}
+        executableHasWarning={effectiveHasWarning}
         platform={platform}
-        selectedVersion={selectedVersion}
-        selectedInstalledVersion={selectedInstalledVersion}
-        selectedTask={selectedTask}
-        activeVersion={activeVersion}
+        selectedVersion={effectiveSelectedVersion}
+        selectedInstalledVersion={effectiveInstalledVersion}
+        selectedTask={effectiveTask}
+        activeVersion={effectiveActiveVersion}
         versionOptions={versionOptions}
         tasksByVersion={tasksByVersion}
         isLoadingReleases={isLoadingReleases}
-        isUninstalling={isUninstalling}
+        isUninstalling={effectiveIsUninstalling}
         isInstallStarting={isInstallStarting}
         isEngineRunning={isEngineRunning}
         formattedSessionDuration={formattedSessionDuration}
         onStopEngine={stopEngine}
-        recommendedAsset={recommendedAsset}
+        recommendedAsset={isExecutableSelected ? undefined : recommendedAsset}
         busyPhase={busyPhase}
         busyLabel={busyLabel}
         busyDetail={busyDetail}
         smoothProgress={smoothProgress}
         onSelectVersion={selectVersion}
-        onOpenFolder={(v) => void openFolder(v)}
+        onOpenFolder={(v) =>
+          isExecutableSelected
+            ? void openExecutableFolder()
+            : void openFolder(v)
+        }
         onSetDefault={(v) => void setDefaultVersion(v)}
         onDeleteVersion={deleteVersion}
         onLaunchVersion={(v) => void launchVersion(v)}
         onCancelDownload={cancelDownload}
         onInstallSelected={handleInstallClick}
         onSetSelectedAsDefault={() => void setSelectedAsDefault()}
-        onLaunchSelected={launchSelectedVersion}
-        onUninstallSelected={uninstallSelectedVersion}
+        onLaunchSelected={
+          isExecutableSelected
+            ? () => void launchExecutable()
+            : launchSelectedVersion
+        }
+        onUninstallSelected={
+          isExecutableSelected ? uninstallExecutable : uninstallSelectedVersion
+        }
       />
     </div>
   )

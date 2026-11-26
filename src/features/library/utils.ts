@@ -59,13 +59,22 @@ export function installedRecordToModItem(record: InstalledModRecord): ModItem {
     description: record.description || '',
     htmlBody: record.htmlBody,
     author: record.author || 'Unknown Author',
+    authors: record.authors,
+    credits: record.credits,
     userPfp: record.userPfp,
+    userPfpPath: record.userPfpPath,
+    localUserPfp: record.localUserPfp,
     image: remoteThumbnail,
     img: imgUrl,
     thumbnail: remoteThumbnail,
     icon: record.icon,
     engineId: record.engineId,
     engineName: record.engineName,
+    defaultEngineId: record.defaultEngineId,
+    defaultEngineName: record.defaultEngineName,
+    isExecutable: record.isExecutable,
+    hasEngineWarning: record.hasEngineWarning,
+    engineWarningMessage: record.engineWarningMessage,
     previewMedia:
       record.previewMedia && record.previewMedia.length > 0
         ? record.previewMedia
@@ -77,8 +86,10 @@ export function installedRecordToModItem(record: InstalledModRecord): ModItem {
     submittedAt: record.submittedAt,
     downloadedFileId: record.downloadedFileId,
     installedFileId: record.installedFileId,
+    fileName: record.fileName,
     downloadUrl: record.downloadUrl,
-    categoryName: record.categoryName,
+    categoryId: record.categoryId,
+    categoryName: record.isExecutable ? 'Executable Mods' : record.categoryName,
     views: record.views,
     likes: record.likes,
     downloads: record.downloads,
@@ -105,6 +116,15 @@ function matchesEngineFilter(m: InstalledModRecord, filterStr: string): boolean 
   const defId = (m.defaultEngineId || '').toLowerCase()
   const defName = (m.defaultEngineName || '').toLowerCase()
   const catName = (m.categoryName || '').toLowerCase()
+  const isExe = Boolean(m.isExecutable || eId === 'executable' || eId === 'exe')
+
+  if (filterLower === 'executable' || filterLower === 'exe') {
+    return isExe
+  }
+
+  if (isExe) {
+    return false
+  }
 
   if (isFilterVSlice) {
     if (

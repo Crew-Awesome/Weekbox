@@ -11,14 +11,20 @@ export interface UseEnginePlaytimeResult {
   formattedPlaytime: string
 }
 
-export function useEnginePlaytime(engineId: EngineId): UseEnginePlaytimeResult {
+export function useEnginePlaytime(
+  engineId: EngineId | string,
+): UseEnginePlaytimeResult {
+  const [prevEngineId, setPrevEngineId] = useState(engineId)
   const [playtimeSeconds, setPlaytimeSeconds] = useState<number>(() =>
     getEnginePlaytime(engineId),
   )
 
-  useEffect(() => {
+  if (prevEngineId !== engineId) {
+    setPrevEngineId(engineId)
     setPlaytimeSeconds(getEnginePlaytime(engineId))
+  }
 
+  useEffect(() => {
     const handlePlaytimeChange = (evt: Event) => {
       const custom = evt as CustomEvent<{ engineId: string; seconds: number }>
       if (custom.detail?.engineId === engineId) {

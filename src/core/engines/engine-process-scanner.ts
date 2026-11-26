@@ -93,10 +93,25 @@ export async function fetchRunningProcesses(): Promise<RunningProcessItem[]> {
   return inFlightProcessFetch
 }
 
+export function getExecutableTrackingId(modId: string | number): string {
+  return `exe:${String(modId)}`
+}
+
 export function getEngineCandidateExes(
   engineId: EngineId | string,
   installedVersions?: InstalledEngineVersion[],
+  candidateExesOverride?: string[],
 ): string[] {
+  if (candidateExesOverride !== undefined) {
+    return Array.from(
+      new Set(
+        candidateExesOverride
+          .map((item) => item.trim().toLowerCase())
+          .filter(Boolean),
+      ),
+    )
+  }
+
   const set = new Set<string>()
   const def = ENGINE_DEFINITIONS[engineId as EngineId]
   if (def?.defaultExeName) {
@@ -137,11 +152,18 @@ export function getEngineCandidateExes(
 export async function detectEngineProcess(
   engineId: EngineId | string,
   installedVersions?: InstalledEngineVersion[],
+  candidateExesOverride?: string[],
 ): Promise<{ isRunning: boolean; pid?: number; exeName?: string }> {
+  const candidates = getEngineCandidateExes(
+    engineId,
+    installedVersions,
+    candidateExesOverride,
+  )
+  if (candidates.length === 0) return { isRunning: false }
+
   const processes = await fetchRunningProcesses()
   if (processes.length === 0) return { isRunning: false }
 
-  const candidates = getEngineCandidateExes(engineId, installedVersions)
   for (const proc of processes) {
     const procLower = proc.name.toLowerCase()
     if (candidates.includes(procLower)) {

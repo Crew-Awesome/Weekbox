@@ -1,8 +1,8 @@
 import React from 'react'
-import type { EngineDefinition } from '@/core/engines'
+import type { InstanceDisplayDefinition } from '../hooks/use-executable-instances'
 
 export interface InstancesEngineBannerProps {
-  engine: EngineDefinition
+  engine: InstanceDisplayDefinition
   bannerProgress: number
   sectionRef?: React.Ref<HTMLElement>
 }

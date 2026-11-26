@@ -11,16 +11,7 @@ export interface NewsFilterMenuProps {
 }
 
 const M3E_MENU_STYLE: React.CSSProperties = {
-  '--m3e-menu-container-color': 'var(--md-sys-color-surface-container)',
-  '--m3e-menu-container-shape': '16px',
   '--m3e-menu-container-min-width': '230px',
-  '--m3e-menu-container-max-height': 'none',
-  '--m3e-menu-item-color': 'var(--md-sys-color-on-surface)',
-  '--m3e-menu-item-icon-size': '18px',
-  '--m3e-menu-item-icon-label-space': '8px',
-  '--m3e-menu-item-padding-start': '10px',
-  '--m3e-menu-item-padding-end': '10px',
-  '--m3e-menu-item-container-height': '38px',
   boxShadow:
     '0 12px 32px color-mix(in srgb, var(--md-sys-color-scrim) 20%, transparent)',
   border:
@@ -31,10 +22,6 @@ const M3E_MENU_STYLE: React.CSSProperties = {
 } as React.CSSProperties
 
 const M3E_BUTTON_STYLE: React.CSSProperties = {
-  '--m3e-button-outlined-container-shape': '16px',
-  '--m3e-button-outlined-outline-color':
-    'color-mix(in srgb, var(--md-sys-color-outline-variant) 60%, transparent)',
-  '--m3e-button-outlined-label-text-color': 'var(--md-sys-color-on-surface)',
   '--m3e-button-container-height': '40px',
   '--m3e-button-leading-space': '0px',
   '--m3e-button-trailing-space': '0px',

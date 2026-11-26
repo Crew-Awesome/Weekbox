@@ -2,8 +2,11 @@ import { initHost, callDevFsBridge } from '@/core/host'
 import { ensureWeekBoxLibrary, joinPaths } from '@/core/storage/weekbox-library'
 import {
   getInstalledEngineVersions,
+  sortInstalledVersionsDesc,
   launchEngineVersion,
-  trackEngineSession,
+  getExecutableTrackingId,
+  registerRunningEngineSession,
+  recordEngineLaunch,
   ENGINE_DEFINITIONS,
   type EngineId,
   type InstalledEngineVersion,
@@ -17,6 +20,8 @@ import {
   syncEngineMods,
   type LaunchableMod,
 } from './mod-junctions'
+import { detectModEngineFromFiles } from './mod-filesystem'
+import { getInstalledModById } from './mod-registry-scanner'
 import type { InstalledModRecord } from './types'
 import type { ModItem } from '@/ui/mod-details-modal/types'
 
@@ -57,7 +62,7 @@ export async function launchEngineWithAllMods(
     chosenVersion = versions.find((v) => v.version === version)
   }
   if (!chosenVersion) {
-    chosenVersion = versions.find((v) => v.isDefault) || versions[0]
+    chosenVersion = sortInstalledVersionsDesc(versions)[0]
   }
 
   if (!chosenVersion || !chosenVersion.installPath) {
@@ -103,30 +108,32 @@ export async function findModExecutable(
     )
   }
 
-  try {
-    const entries = await host.fs.readDirectory(dirPath)
-    for (const entry of entries) {
-      if (!entry.isDirectory && isExecutableCandidate(entry.name)) {
-        return entry.path
-      }
-    }
-    for (const entry of entries) {
-      if (entry.isDirectory && entry.name !== '.' && entry.name !== '..') {
-        try {
-          const subEntries = await host.fs.readDirectory(entry.path)
-          for (const sub of subEntries) {
-            if (!sub.isDirectory && isExecutableCandidate(sub.name)) {
-              return sub.path
-            }
-          }
-        } catch {
+  const scanDir = async (currentDir: string, depth: number): Promise<string | null> => {
+    if (depth > 3) return null
+    try {
+      const entries = await host.fs.readDirectory(currentDir)
+      for (const entry of entries) {
+        if (!entry.isDirectory && isExecutableCandidate(entry.name)) {
+          return entry.path
         }
       }
+      if (depth < 3) {
+        for (const entry of entries) {
+          if (entry.isDirectory && entry.name !== '.' && entry.name !== '..') {
+            const nested = await scanDir(entry.path, depth + 1)
+            if (nested) return nested
+          }
+        }
+      }
+    } catch (err) {
+      if (depth === 0) {
+        console.warn(`[WeekBox] Failed to scan for executable in ${dirPath}:`, err)
+      }
     }
-  } catch (err) {
-    console.warn(`[WeekBox] Failed to scan for executable in ${dirPath}:`, err)
+    return null
   }
-  return null
+
+  return scanDir(dirPath, 0)
 }
 
 export async function launchMod(
@@ -136,7 +143,20 @@ export async function launchMod(
   const host = initHost()
   const { paths } = await ensureWeekBoxLibrary()
 
-  const anyMod = mod as Partial<InstalledModRecord> & Partial<ModItem>
+  const rawMod = mod as Partial<InstalledModRecord> & Partial<ModItem>
+  const savedRecord =
+    rawMod.id !== undefined ? await getInstalledModById(rawMod.id) : null
+  const anyMod: Partial<InstalledModRecord> & Partial<ModItem> = savedRecord
+    ? {
+        ...rawMod,
+        ...savedRecord,
+        categoryId: savedRecord.categoryId ?? rawMod.categoryId,
+        categoryName: savedRecord.categoryName ?? rawMod.categoryName,
+        engineId: savedRecord.engineId ?? rawMod.engineId,
+        engineName: savedRecord.engineName ?? rawMod.engineName,
+        isExecutable: savedRecord.isExecutable ?? rawMod.isExecutable,
+      }
+    : rawMod
 
   const modInstallPath =
     anyMod.installPath ||
@@ -150,11 +170,24 @@ export async function launchMod(
     }
   }
 
-  const isExe = Boolean(
+  let isExe = Boolean(
     anyMod.isExecutable ||
       anyMod.engineId === 'executable' ||
       anyMod.engineId === 'exe',
   )
+
+  if (!isExe && !anyMod.engineLocked) {
+    try {
+      const detected = await detectModEngineFromFiles(
+        modInstallPath,
+        anyMod.engineId,
+      )
+      if (detected.isExecutable) {
+        isExe = true
+      }
+    } catch {
+    }
+  }
 
   if (isExe) {
     const exePath = await findModExecutable(modInstallPath)
@@ -174,10 +207,19 @@ export async function launchMod(
         lastSlash > 0 ? exePath.substring(0, lastSlash) : modInstallPath
       const formattedCwd = isWin ? exeDir.replace(/\//g, '\\') : exeDir
 
+      const exeFileName = exePath.split(/[/\\]/).pop() || 'game.exe'
+      const trackingId = getExecutableTrackingId(
+        anyMod.id ?? anyMod.folderName ?? exeFileName,
+      )
+      const label = anyMod.title || anyMod.name || exeFileName
+
       if (host.platform === 'desktop') {
         const proc = await host.process.spawn(formattedExe, { cwd: formattedCwd })
-        if (anyMod.defaultEngineId && anyMod.defaultEngineId in ENGINE_DEFINITIONS) {
-          trackEngineSession(anyMod.defaultEngineId as EngineId, proc.id ?? proc.pid)
+        const numericPid = Number(proc.pid ?? proc.id)
+        if (!Number.isNaN(numericPid) && numericPid > 0) {
+          registerRunningEngineSession(trackingId, numericPid, exeFileName, label)
+        } else {
+          recordEngineLaunch(trackingId, label)
         }
         return { success: true, isExecutable: true }
       } else {
@@ -190,8 +232,10 @@ export async function launchMod(
           cwd: formattedCwd,
         })
         if (bridgeRes?.ok) {
-          if (anyMod.defaultEngineId && anyMod.defaultEngineId in ENGINE_DEFINITIONS) {
-            trackEngineSession(anyMod.defaultEngineId as EngineId, bridgeRes.pid)
+          if (typeof bridgeRes.pid === 'number' && bridgeRes.pid > 0) {
+            registerRunningEngineSession(trackingId, bridgeRes.pid, exeFileName, label)
+          } else {
+            recordEngineLaunch(trackingId, label)
           }
           return { success: true, isExecutable: true }
         }
@@ -235,8 +279,7 @@ export async function launchMod(
     chosenVersion = installedVersions.find((v) => v.version === preferredVersion)
   }
   if (!chosenVersion) {
-    chosenVersion =
-      installedVersions.find((v) => v.isDefault) || installedVersions[0]
+    chosenVersion = sortInstalledVersionsDesc(installedVersions)[0]
   }
 
   const engineInstallPath = chosenVersion.installPath

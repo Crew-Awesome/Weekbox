@@ -1,5 +1,6 @@
 import React from 'react'
 import { Card } from '@/ui/card/Card'
+import { useUiStyle } from '@/utils/ui-style'
 import type { InstalledModRecord } from '@/core/mods'
 import { formatDate, formatFileSize, formatCompactNumber } from '@/utils/formatters'
 import { resolveModThumbnail } from '../utils'
@@ -32,6 +33,9 @@ export const LibraryModCard: React.FC<LibraryModCardProps> = ({
   const displayEngine = mod.engineName || mod.engineId || 'Default'
   const isInstalled = Boolean(mod.installPath)
   const isVisible = mod.visible !== false && !mod.hidden
+  const isHomeStyle = useUiStyle() === 'home'
+  const isGameJolt =
+    mod.source === 'gamejolt' || String(mod.id).startsWith('gamejolt:')
 
   return (
     <Card
@@ -49,6 +53,8 @@ export const LibraryModCard: React.FC<LibraryModCardProps> = ({
       isBookmarked={isBookmarked}
       author={mod.author}
       authorAvatar={mod.userPfp}
+      authorAvatarRelPath={mod.userPfpPath}
+      authorAvatarFullPath={mod.localUserPfp}
       onClick={() => onSelect(mod)}
     >
       <div className="flex flex-col gap-2 pt-1 border-t border-[var(--md-sys-color-outline-variant)]/25 mt-0.5">
@@ -73,17 +79,31 @@ export const LibraryModCard: React.FC<LibraryModCardProps> = ({
             </>
           ) : (
             <div className="flex items-center justify-between w-full text-[11px] text-[var(--md-sys-color-on-surface-variant)]">
-              <div
-                className="flex items-center gap-1.5 text-[var(--md-sys-color-on-surface-variant)]"
-                title={`${(mod.views || 0).toLocaleString()} views`}
-              >
-                <span className="material-symbols-rounded text-sm text-[var(--md-sys-color-on-surface-variant)]">
-                  visibility
-                </span>
-                <span className="text-[var(--md-sys-color-on-surface-variant)] font-medium">
-                  {formatCompactNumber(mod.views)}
-                </span>
-              </div>
+              {isGameJolt ? (
+                <div
+                  className="flex items-center gap-1.5 text-[var(--md-sys-color-on-surface-variant)]"
+                  title={`${(mod.followers || 0).toLocaleString()} followers`}
+                >
+                  <span className="material-symbols-rounded text-sm text-[var(--md-sys-color-on-surface-variant)]">
+                    group
+                  </span>
+                  <span className="text-[var(--md-sys-color-on-surface-variant)] font-medium">
+                    {formatCompactNumber(mod.followers || 0)}
+                  </span>
+                </div>
+              ) : (
+                <div
+                  className="flex items-center gap-1.5 text-[var(--md-sys-color-on-surface-variant)]"
+                  title={`${(mod.views || 0).toLocaleString()} views`}
+                >
+                  <span className="material-symbols-rounded text-sm text-[var(--md-sys-color-on-surface-variant)]">
+                    visibility
+                  </span>
+                  <span className="text-[var(--md-sys-color-on-surface-variant)] font-medium">
+                    {formatCompactNumber(mod.views)}
+                  </span>
+                </div>
+              )}
 
               <div
                 role="button"
@@ -117,28 +137,32 @@ export const LibraryModCard: React.FC<LibraryModCardProps> = ({
                 >
                   favorite
                 </span>
-                <span
-                  className={`font-medium ${
-                    isFavorite
-                      ? 'text-[var(--md-sys-color-error)]'
-                      : 'text-[var(--md-sys-color-on-surface-variant)]'
-                  }`}
-                >
-                  {formatCompactNumber(mod.likes)}
-                </span>
+                {(!isGameJolt || mod.likes !== undefined) && (
+                  <span
+                    className={`font-medium ${
+                      isFavorite
+                        ? 'text-[var(--md-sys-color-error)]'
+                        : 'text-[var(--md-sys-color-on-surface-variant)]'
+                    }`}
+                  >
+                    {formatCompactNumber(mod.likes)}
+                  </span>
+                )}
               </div>
 
-              <div
-                className="flex items-center gap-1.5 text-[var(--md-sys-color-on-surface-variant)]"
-                title={`${(mod.downloads || 0).toLocaleString()} downloads`}
-              >
-                <span className="material-symbols-rounded text-sm text-[var(--md-sys-color-on-surface-variant)]">
-                  download
-                </span>
-                <span className="text-[var(--md-sys-color-on-surface-variant)] font-medium">
-                  {formatCompactNumber(mod.downloads)}
-                </span>
-              </div>
+              {!isGameJolt && (
+                <div
+                  className="flex items-center gap-1.5 text-[var(--md-sys-color-on-surface-variant)]"
+                  title={`${(mod.downloads || 0).toLocaleString()} downloads`}
+                >
+                  <span className="material-symbols-rounded text-sm text-[var(--md-sys-color-on-surface-variant)]">
+                    download
+                  </span>
+                  <span className="text-[var(--md-sys-color-on-surface-variant)] font-medium">
+                    {formatCompactNumber(mod.downloads)}
+                  </span>
+                </div>
+              )}
             </div>
           )}
         </div>
@@ -154,7 +178,11 @@ export const LibraryModCard: React.FC<LibraryModCardProps> = ({
                 onSelect(mod)
               }
             }}
-            className="flex-1 flex items-center justify-center gap-1 px-3 py-1.5 rounded-xl text-xs font-bold transition-all duration-200 cursor-pointer shadow-sm active:scale-95 hover:opacity-90"
+            className={`flex-1 flex items-center justify-center gap-1 px-3 py-1.5 ${
+              isHomeStyle
+                ? 'rounded-lg'
+                : 'rounded-xl shadow-sm active:scale-95'
+            } text-xs font-bold transition-all duration-200 cursor-pointer hover:opacity-90`}
             style={{
               backgroundColor: isInstalled
                 ? 'var(--md-sys-color-primary)'
@@ -182,7 +210,9 @@ export const LibraryModCard: React.FC<LibraryModCardProps> = ({
                 e.stopPropagation()
                 onToggleVisibility(mod)
               }}
-              className={`p-1.5 rounded-xl transition-all duration-200 cursor-pointer border active:scale-90 ${
+              className={`p-1.5 ${
+                isHomeStyle ? 'rounded-lg' : 'rounded-xl active:scale-90'
+              } transition-all duration-200 cursor-pointer border ${
                 isVisible
                   ? 'text-[var(--md-sys-color-primary)] border-[var(--md-sys-color-primary)]/30 bg-[var(--md-sys-color-primary)]/10 hover:bg-[var(--md-sys-color-primary)]/20'
                   : 'text-[var(--md-sys-color-on-surface-variant)] opacity-50 hover:opacity-90'
@@ -217,7 +247,9 @@ export const LibraryModCard: React.FC<LibraryModCardProps> = ({
                 e.stopPropagation()
                 onOpenFolder(mod)
               }}
-              className="p-1.5 rounded-xl text-[var(--md-sys-color-on-surface-variant)] hover:text-[var(--md-sys-color-on-surface)] transition-all duration-200 cursor-pointer border hover:border-[var(--md-sys-color-outline-variant)]/60 active:scale-90"
+              className={`p-1.5 ${
+                isHomeStyle ? 'rounded-lg' : 'rounded-xl active:scale-90'
+              } text-[var(--md-sys-color-on-surface-variant)] hover:text-[var(--md-sys-color-on-surface)] transition-all duration-200 cursor-pointer border hover:border-[var(--md-sys-color-outline-variant)]/60`}
               style={{
                 backgroundColor:
                   'color-mix(in srgb, var(--md-sys-color-surface-container-high) 70%, transparent)',
@@ -238,7 +270,9 @@ export const LibraryModCard: React.FC<LibraryModCardProps> = ({
               e.stopPropagation()
               onToggleFavorite(mod.id)
             }}
-            className={`p-1.5 rounded-xl transition-all duration-200 cursor-pointer border active:scale-90 ${
+            className={`p-1.5 ${
+              isHomeStyle ? 'rounded-lg' : 'rounded-xl active:scale-90'
+            } transition-all duration-200 cursor-pointer border ${
               isFavorite
                 ? 'text-[var(--md-sys-color-error)] border-[var(--md-sys-color-error)]/30 bg-[var(--md-sys-color-error-container)]/30'
                 : 'text-[var(--md-sys-color-on-surface-variant)] hover:text-[var(--md-sys-color-error)] hover:border-[var(--md-sys-color-error)]/30'
@@ -272,7 +306,9 @@ export const LibraryModCard: React.FC<LibraryModCardProps> = ({
                 e.stopPropagation()
                 onUninstall(mod)
               }}
-              className="p-1.5 rounded-xl text-[var(--md-sys-color-on-surface-variant)] hover:text-[var(--md-sys-color-error)] hover:border-[var(--md-sys-color-error)]/30 hover:bg-[var(--md-sys-color-error)]/10 transition-all duration-200 cursor-pointer border active:scale-90"
+              className={`p-1.5 ${
+                isHomeStyle ? 'rounded-lg' : 'rounded-xl active:scale-90'
+              } text-[var(--md-sys-color-on-surface-variant)] hover:text-[var(--md-sys-color-error)] hover:border-[var(--md-sys-color-error)]/30 hover:bg-[var(--md-sys-color-error)]/10 transition-all duration-200 cursor-pointer border`}
               style={{
                 backgroundColor:
                   'color-mix(in srgb, var(--md-sys-color-surface-container-high) 70%, transparent)',

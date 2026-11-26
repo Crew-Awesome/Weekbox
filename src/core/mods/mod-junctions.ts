@@ -187,6 +187,7 @@ export async function syncEngineMods(
       single.installPath ||
       (single.folderName ? joinPaths(paths.modsDir, single.folderName) : null)
     const singleFolderName =
+      single.engineFolderName ||
       single.folderName ||
       (singleInstallPath && singleInstallPath.includes('/')
         ? singleInstallPath.substring(singleInstallPath.lastIndexOf('/') + 1)
@@ -228,9 +229,10 @@ export async function syncEngineMods(
     for (const record of allInstalled) {
       const folder = record.folderName || record.name
       if (!folder) continue
+      const linkFolderName = record.engineFolderName || folder
 
       const modPath = record.installPath || joinPaths(paths.modsDir, folder)
-      const linkPath = joinPaths(engineModsDir, folder)
+      const linkPath = joinPaths(engineModsDir, linkFolderName)
 
       const isVisible = record.visible !== false && !record.hidden
 
@@ -240,10 +242,13 @@ export async function syncEngineMods(
         }
       } else {
         await removeDirectoryJunction(linkPath)
-        if (record.name && record.name !== folder) {
+        if (record.folderName && record.folderName !== linkFolderName) {
+          await removeDirectoryJunction(joinPaths(engineModsDir, record.folderName))
+        }
+        if (record.name && record.name !== linkFolderName) {
           await removeDirectoryJunction(joinPaths(engineModsDir, record.name))
         }
-        if (record.title && record.title !== folder) {
+        if (record.title && record.title !== linkFolderName) {
           await removeDirectoryJunction(joinPaths(engineModsDir, record.title))
         }
       }

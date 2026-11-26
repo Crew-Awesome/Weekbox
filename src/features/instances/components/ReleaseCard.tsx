@@ -1,6 +1,8 @@
 import React from 'react'
 import { getRecommendedAsset } from '@/core/engines'
 import { formatDate, formatFileSize } from '@/utils/formatters'
+import { useSmoothProgress } from '@/utils/hooks/use-smooth-progress'
+import { useUiStyle } from '@/utils/ui-style'
 import type {
   EngineDownloadTask,
   GitHubRelease,
@@ -32,12 +34,24 @@ export const ReleaseCard: React.FC<ReleaseCardProps> = ({
   onDownload,
   onCancelDownload,
 }) => {
+  const isHomeStyle = useUiStyle() === 'home'
   const isDownloading = Boolean(
     task &&
       (task.status === 'downloading' ||
         task.status === 'extracting' ||
         task.status === 'canceling'),
   )
+
+  const smoothProgress = useSmoothProgress(task?.progress ?? 0, {
+    isActive: isDownloading,
+    maxRatePerSec: 68,
+    easing: 5.5,
+    smoothBackward: true,
+  })
+  const waveAmplitude =
+    smoothProgress >= 92
+      ? Math.max(0.4, 2.5 * (1 - (smoothProgress - 92) / 8)).toFixed(2)
+      : '2.5'
 
   const recommendedAsset = getRecommendedAsset(release.assets)
   const resolvedAssetId = selectedAssetId ?? recommendedAsset?.id
@@ -48,7 +62,9 @@ export const ReleaseCard: React.FC<ReleaseCardProps> = ({
 
   return (
     <div
-      className="w-full rounded-2xl border p-4 sm:p-5 transition-shadow duration-200"
+      className={`w-full ${
+        isHomeStyle ? 'rounded-xl' : 'rounded-2xl transition-shadow duration-200'
+      } border p-4 sm:p-5`}
       style={{
         backgroundColor: 'var(--md-sys-color-surface-container)',
         borderColor: isInstalled
@@ -205,13 +221,13 @@ export const ReleaseCard: React.FC<ReleaseCardProps> = ({
             <span style={{ color: 'var(--md-sys-color-primary)' }}>
               {task.status === 'extracting'
                 ? 'Processing'
-                : `${Math.round(task.progress)}% • ${task.speed}`}
+                : `${Math.round(smoothProgress)}% • ${task.speed}`}
             </span>
           </div>
 
           <m3e-linear-progress-indicator
-            variant="wavy"
-            value={Math.max(0, Math.min(100, Math.round(task.progress)))}
+            variant={isHomeStyle ? 'flat' : 'wavy'}
+            value={Math.round(smoothProgress * 10) / 10}
             max="100"
             mode={task.status === 'extracting' ? 'indeterminate' : 'determinate'}
             style={
@@ -219,9 +235,8 @@ export const ReleaseCard: React.FC<ReleaseCardProps> = ({
                 width: '100%',
                 display: 'block',
                 '--m3e-linear-progress-indicator-thickness': '4.5px',
-                '--m3e-linear-wavy-progress-indicator-amplitude': '2.5px',
+                '--m3e-linear-wavy-progress-indicator-amplitude': `${waveAmplitude}px`,
                 '--m3e-linear-wavy-progress-indicator-wavelength': '18px',
-                '--m3e-progress-indicator-color': 'var(--md-sys-color-primary)',
                 '--m3e-progress-indicator-track-color':
                   'color-mix(in srgb, var(--md-sys-color-outline-variant) 40%, transparent)',
               } as React.CSSProperties

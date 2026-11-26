@@ -50,71 +50,114 @@ export async function findEngineExecutable(
   return detectedExe
 }
 
-export async function scanLocalEnginesDirectory(): Promise<void> {
-  const host = initHost()
-  const { paths } = await ensureWeekBoxLibrary()
+let inFlightEngineScan: Promise<void> | null = null
 
-  try {
-    const rootExists = await host.fs.exists(paths.enginesDir)
-    if (!rootExists) {
-      await host.fs.createDirectory(paths.enginesDir)
-      return
-    }
+export function scanLocalEnginesDirectory(): Promise<void> {
+  if (inFlightEngineScan) return inFlightEngineScan
 
-    const state = await getEngineUpdateState()
-    const engineFolders = await host.fs.readDirectory(paths.enginesDir)
+  inFlightEngineScan = (async () => {
+    const host = initHost()
+    const { paths } = await ensureWeekBoxLibrary()
 
-    for (const engineFolder of engineFolders) {
-      if (!engineFolder.isDirectory) continue
-      const engineId = engineFolder.name as EngineId
-      const def = ENGINE_DEFINITIONS[engineId]
-      if (!def) continue
-
-      const versionFolders = await host.fs.readDirectory(engineFolder.path)
-      const engineRecord: EngineRecord = state.engines[engineId] || {
-        engineId,
-        installedVersions: [],
+    try {
+      const rootExists = await host.fs.exists(paths.enginesDir)
+      if (!rootExists) {
+        await host.fs.createDirectory(paths.enginesDir)
+        return
       }
 
-      for (const verFolder of versionFolders) {
-        if (!verFolder.isDirectory) continue
-        const version = verFolder.name
-        const already = engineRecord.installedVersions.find(
-          (v) => v.version === version,
-        )
+      const [state, engineFolders] = await Promise.all([
+        getEngineUpdateState(),
+        host.fs.readDirectory(paths.enginesDir),
+      ])
 
-        const exePath = await findEngineExecutable(
-          verFolder.path,
-          def.defaultExeName,
-        )
+      let hasChanges = false
 
-        if (!already) {
-          engineRecord.installedVersions.push({
-            version,
-            tag: version,
-            name: `${def.name} ${version}`,
-            installPath: verFolder.path,
-            executablePath: exePath || undefined,
-            installedAt: Date.now(),
-            isDefault: engineRecord.installedVersions.length === 0,
-          })
-        } else if (exePath && !already.executablePath) {
-          already.executablePath = exePath
+      const validEngineFolders = engineFolders.filter(
+        (folder) =>
+          folder.isDirectory && Boolean(ENGINE_DEFINITIONS[folder.name as EngineId]),
+      )
+
+      const scannedEngines = await Promise.all(
+        validEngineFolders.map(async (engineFolder) => {
+          const engineId = engineFolder.name as EngineId
+          const def = ENGINE_DEFINITIONS[engineId]!
+          const existingRecord = state.engines[engineId]
+          const versionFolders = (
+            await host.fs.readDirectory(engineFolder.path)
+          ).filter((v) => v.isDirectory)
+
+          const versionsWithExe = await Promise.all(
+            versionFolders.map(async (verFolder) => {
+              const already = existingRecord?.installedVersions.find(
+                (v) => v.version === verFolder.name,
+              )
+              if (already?.executablePath) {
+                return { version: verFolder.name, path: verFolder.path, exePath: already.executablePath }
+              }
+              const exePath = await findEngineExecutable(
+                verFolder.path,
+                def.defaultExeName,
+              )
+              return { version: verFolder.name, path: verFolder.path, exePath }
+            }),
+          )
+
+          return { engineId, def, versionsWithExe }
+        }),
+      )
+
+      for (const { engineId, def, versionsWithExe } of scannedEngines) {
+        const hadRecord = Boolean(state.engines[engineId])
+        const engineRecord: EngineRecord = state.engines[engineId] || {
+          engineId,
+          installedVersions: [],
+        }
+
+        for (const { version, path: verPath, exePath } of versionsWithExe) {
+          const already = engineRecord.installedVersions.find(
+            (v) => v.version === version,
+          )
+          if (!already) {
+            engineRecord.installedVersions.push({
+              version,
+              tag: version,
+              name: `${def.name} ${version}`,
+              installPath: verPath,
+              executablePath: exePath || undefined,
+              installedAt: Date.now(),
+              isDefault: engineRecord.installedVersions.length === 0,
+            })
+            hasChanges = true
+          } else if (exePath && !already.executablePath) {
+            already.executablePath = exePath
+            hasChanges = true
+          }
+        }
+
+        if (
+          !engineRecord.activeVersion &&
+          engineRecord.installedVersions.length > 0
+        ) {
+          engineRecord.activeVersion = engineRecord.installedVersions[0].version
+          hasChanges = true
+        }
+
+        if (!hadRecord && engineRecord.installedVersions.length > 0) {
+          state.engines[engineId] = engineRecord
+          hasChanges = true
         }
       }
 
-      if (
-        !engineRecord.activeVersion &&
-        engineRecord.installedVersions.length > 0
-      ) {
-        engineRecord.activeVersion = engineRecord.installedVersions[0].version
+      if (hasChanges) {
+        await saveEngineUpdateState(state)
       }
-
-      state.engines[engineId] = engineRecord
+    } catch (err) {
+      console.warn('[WeekBox] Local engines scan warning:', err)
     }
+  })().finally(() => {
+    inFlightEngineScan = null
+  })
 
-    await saveEngineUpdateState(state)
-  } catch (err) {
-    console.warn('[WeekBox] Local engines scan warning:', err)
-  }
+  return inFlightEngineScan
 }

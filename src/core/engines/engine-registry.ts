@@ -12,6 +12,24 @@ import type {
 
 export const ENGINES_CHANGED_EVENT = 'wb:engines-changed'
 
+let cachedEngineState: EngineUpdateStateData | null = null
+let inFlightStateRead: Promise<EngineUpdateStateData> | null = null
+
+function cloneEngineState(state: EngineUpdateStateData): EngineUpdateStateData {
+  const engines: EngineUpdateStateData['engines'] = {}
+  for (const [id, rec] of Object.entries(state.engines)) {
+    if (!rec) continue
+    engines[id as EngineId] = {
+      ...rec,
+      installedVersions: rec.installedVersions.map((v) => ({ ...v })),
+    }
+  }
+  return {
+    lastChecked: state.lastChecked,
+    engines,
+  }
+}
+
 function emitEnginesChanged(detail?: unknown): void {
   if (typeof window !== 'undefined') {
     window.dispatchEvent(new CustomEvent(ENGINES_CHANGED_EVENT, { detail }))
@@ -22,29 +40,78 @@ export function sanitizeVersionFolderName(version: string): string {
   return version.replace(/[^a-zA-Z0-9._-]/g, '_')
 }
 
+function parseVersionParts(raw?: string): number[] {
+  if (!raw) return []
+  const cleaned = raw.trim().replace(/^v/i, '').split(/[-+]/)[0] || ''
+  return cleaned
+    .split('.')
+    .map((part) => Number.parseInt(part.replace(/\D/g, ''), 10))
+    .filter((num) => !Number.isNaN(num))
+}
+
+/**
+ * Sorts installed engine versions from newest to oldest using semver segments,
+ * falling back to installation timestamp.
+ */
+export function sortInstalledVersionsDesc(
+  versions: InstalledEngineVersion[],
+): InstalledEngineVersion[] {
+  return [...versions].sort((a, b) => {
+    const partsA = parseVersionParts(a.version || a.tag)
+    const partsB = parseVersionParts(b.version || b.tag)
+    const maxLen = Math.max(partsA.length, partsB.length)
+    for (let i = 0; i < maxLen; i += 1) {
+      const valA = partsA[i] ?? 0
+      const valB = partsB[i] ?? 0
+      if (valA !== valB) return valB - valA
+    }
+    const timeDiff = (b.installedAt || 0) - (a.installedAt || 0)
+    if (timeDiff !== 0) return timeDiff
+    return String(b.version || '').localeCompare(String(a.version || ''))
+  })
+}
+
 export async function getEngineUpdateState(): Promise<EngineUpdateStateData> {
-  const host = initHost()
+  if (cachedEngineState) {
+    return cloneEngineState(cachedEngineState)
+  }
+
+  if (inFlightStateRead) {
+    return cloneEngineState(await inFlightStateRead)
+  }
+
+  inFlightStateRead = (async () => {
+    const host = initHost()
+    try {
+      const { paths } = await ensureWeekBoxLibrary()
+      const exists = await host.fs.exists(paths.engineUpdateState)
+      if (!exists) {
+        return { lastChecked: null, engines: {} }
+      }
+      const raw = await host.fs.readTextFile(paths.engineUpdateState)
+      if (!raw || !raw.trim()) {
+        return { lastChecked: null, engines: {} }
+      }
+      const parsed = JSON.parse(raw) as EngineUpdateStateData
+      if (!parsed || typeof parsed !== 'object') {
+        return { lastChecked: null, engines: {} }
+      }
+      return {
+        lastChecked: parsed.lastChecked || null,
+        engines: parsed.engines || {},
+      }
+    } catch (err) {
+      console.warn('[WeekBox] Failed to read engineupdatestate.json:', err)
+      return { lastChecked: null, engines: {} }
+    }
+  })()
+
   try {
-    const { paths } = await ensureWeekBoxLibrary()
-    const exists = await host.fs.exists(paths.engineUpdateState)
-    if (!exists) {
-      return { lastChecked: null, engines: {} }
-    }
-    const raw = await host.fs.readTextFile(paths.engineUpdateState)
-    if (!raw || !raw.trim()) {
-      return { lastChecked: null, engines: {} }
-    }
-    const parsed = JSON.parse(raw) as EngineUpdateStateData
-    if (!parsed || typeof parsed !== 'object') {
-      return { lastChecked: null, engines: {} }
-    }
-    return {
-      lastChecked: parsed.lastChecked || null,
-      engines: parsed.engines || {},
-    }
-  } catch (err) {
-    console.warn('[WeekBox] Failed to read engineupdatestate.json:', err)
-    return { lastChecked: null, engines: {} }
+    const resolved = await inFlightStateRead
+    cachedEngineState = cloneEngineState(resolved)
+    return cloneEngineState(resolved)
+  } finally {
+    inFlightStateRead = null
   }
 }
 
@@ -53,6 +120,7 @@ export async function saveEngineUpdateState(
 ): Promise<void> {
   const host = initHost()
   const { paths } = await ensureWeekBoxLibrary()
+  cachedEngineState = cloneEngineState(state)
   await host.fs.writeTextFile(
     paths.engineUpdateState,
     JSON.stringify(state, null, 2),

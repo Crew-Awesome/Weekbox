@@ -117,19 +117,20 @@ export function cancelEngineDownload(engineId: EngineId, version: string): void 
 
   const startProgress = task.progress
   const startTime = Date.now()
-  const duration = 600
+  const duration = 320
   const interval = setInterval(() => {
     const elapsed = Date.now() - startTime
-    const ratio = Math.max(0, 1 - elapsed / duration)
-    task.progress = startProgress * ratio
+    const linear = Math.max(0, 1 - elapsed / duration)
+    const easedRatio = linear * linear
+    task.progress = startProgress * easedRatio
     notifyListeners()
 
-    if (ratio <= 0) {
+    if (linear <= 0) {
       clearInterval(interval)
       tasksMap.delete(taskKey)
       notifyListeners()
     }
-  }, 25)
+  }, 20)
 }
 
 export async function startEngineDownload(

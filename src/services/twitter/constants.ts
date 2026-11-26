@@ -44,7 +44,7 @@ export const NEWS_HIDDEN_ACCOUNTS_KEY = 'weekbox_news_hidden_accounts_v1'
 export const NEWS_CACHED_POSTS_KEY = 'weekbox_news_cached_posts_v1'
 export const NEWS_SEEN_KEY = 'weekbox_news_seen_v1'
 export const NEWS_PAGE_SIZE = 12
-export const NEWS_SOURCE_CONCURRENCY = 2
+export const NEWS_SOURCE_CONCURRENCY = 4
 export const NEWS_SOURCE_MAX_ATTEMPTS = 3
 export const NEWS_SOURCE_RETRY_DELAY = 600
 

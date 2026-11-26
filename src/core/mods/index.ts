@@ -1,5 +1,6 @@
 export * from './types'
 export * from './mod-filesystem'
+export * from './mod-v2-compat'
 export * from './mod-downloader'
 export * from './mod-registry'
 export * from './download-manager'

@@ -38,19 +38,21 @@ export const LibraryProfileSidebar: React.FC<LibraryProfileSidebarProps> = ({
   const [isEditingName, setIsEditingName] = useState(false)
   const [editedName, setEditedName] = useState('')
   const [animOpen, setAnimOpen] = useState(false)
+  const [prevResetKey, setPrevResetKey] = useState(
+    () => `${profile?.id ?? ''}:${isOpen}`,
+  )
 
-  useEffect(() => {
+  const resetKey = `${profile?.id ?? ''}:${isOpen}`
+  if (prevResetKey !== resetKey) {
+    setPrevResetKey(resetKey)
     setIsAddMode(false)
     setIsEditingName(false)
     if (profile) setEditedName(profile.name)
-  }, [profile?.id, isOpen])
+  }
 
   useEffect(() => {
-    if (isOpen) {
-      const raf = requestAnimationFrame(() => setAnimOpen(true))
-      return () => cancelAnimationFrame(raf)
-    }
-    setAnimOpen(false)
+    const raf = requestAnimationFrame(() => setAnimOpen(isOpen))
+    return () => cancelAnimationFrame(raf)
   }, [isOpen])
 
   useEffect(() => {

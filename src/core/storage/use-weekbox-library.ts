@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import {
   ensureWeekBoxLibrary,
+  getCachedWeekBoxLibrary,
   resolveActiveLibraryPath,
   setSavedCustomLibraryPath,
 } from './weekbox-library'
@@ -8,10 +9,19 @@ import { WEEKBOX_LIBRARY_DIR_NAME } from './constants'
 import type { WeekBoxLibraryPaths, UseWeekBoxLibraryResult } from './types'
 
 export function useWeekBoxLibrary(): UseWeekBoxLibraryResult {
-  const [libraryPath, setLibraryPath] = useState<string | null>(null)
-  const [paths, setPaths] = useState<WeekBoxLibraryPaths | null>(null)
-  const [isInitialized, setIsInitialized] = useState<boolean>(false)
-  const [isLoading, setIsLoading] = useState<boolean>(true)
+  const initialLibrary = getCachedWeekBoxLibrary()
+  const [libraryPath, setLibraryPath] = useState<string | null>(
+    () => initialLibrary?.basePath ?? null,
+  )
+  const [paths, setPaths] = useState<WeekBoxLibraryPaths | null>(
+    () => initialLibrary?.paths ?? null,
+  )
+  const [isInitialized, setIsInitialized] = useState<boolean>(
+    () => Boolean(initialLibrary),
+  )
+  const [isLoading, setIsLoading] = useState<boolean>(
+    () => !initialLibrary,
+  )
   const [error, setError] = useState<Error | null>(null)
 
   const isInitializingRef = useRef(false)
@@ -42,6 +52,10 @@ export function useWeekBoxLibrary(): UseWeekBoxLibraryResult {
   }, [])
 
   useEffect(() => {
+    if (getCachedWeekBoxLibrary()) {
+      return
+    }
+
     let isCancelled = false
 
     const initLibrary = async () => {

@@ -182,7 +182,7 @@ export async function fetchTwitterNewsFeed(
     )
 
     if (i + NEWS_SOURCE_CONCURRENCY < sources.length && !signal?.aborted) {
-      await new Promise((resolve) => setTimeout(resolve, 150))
+      await new Promise((resolve) => setTimeout(resolve, 20))
     }
   }
 

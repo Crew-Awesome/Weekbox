@@ -1,6 +1,7 @@
 import React from 'react'
 import '../instances.css'
-import type { EngineDefinition, GitHubRelease } from '@/core/engines'
+import type { GitHubRelease } from '@/core/engines'
+import type { InstanceDisplayDefinition } from '../hooks/use-executable-instances'
 import {
   DESCRIPTION_GROUP_STYLE,
   DESCRIPTION_BUTTON_STYLE,
@@ -8,7 +9,7 @@ import {
 } from '../constants'
 
 export interface InstancesDocumentationProps {
-  engine: EngineDefinition
+  engine: InstanceDisplayDefinition
   selectedVersion: string | null
   selectedRelease?: GitHubRelease
   descriptionTab: 'general' | 'version'
@@ -18,6 +19,7 @@ export interface InstancesDocumentationProps {
   descriptionTitle: string
   descriptionHtml: string
   onMarkdownClick: (event: React.MouseEvent<HTMLDivElement>) => void
+  onlyGeneralDescription?: boolean
 }
 
 export const InstancesDocumentation: React.FC<InstancesDocumentationProps> = ({
@@ -29,7 +31,9 @@ export const InstancesDocumentation: React.FC<InstancesDocumentationProps> = ({
   descriptionTitle,
   descriptionHtml,
   onMarkdownClick,
+  onlyGeneralDescription = false,
 }) => {
+  const effectiveTab = onlyGeneralDescription ? 'general' : descriptionTab
   return (
     <article
       className="rounded-2xl sm:rounded-3xl border p-4 sm:p-7 min-w-0"
@@ -44,7 +48,7 @@ export const InstancesDocumentation: React.FC<InstancesDocumentationProps> = ({
             className="material-symbols-rounded text-[20px] shrink-0"
             style={{ color: 'var(--md-sys-color-primary)' }}
           >
-            {descriptionTab === 'general' ? 'menu_book' : 'notes'}
+            {effectiveTab === 'general' ? 'menu_book' : 'notes'}
           </span>
           <h2
             className="text-base sm:text-lg font-bold truncate"
@@ -54,7 +58,11 @@ export const InstancesDocumentation: React.FC<InstancesDocumentationProps> = ({
           </h2>
         </header>
 
-        <div className="flex items-center gap-2 w-full sm:w-auto">
+        <div
+          className={`flex items-center gap-2 ${
+            onlyGeneralDescription ? 'w-auto shrink-0' : 'w-full sm:w-auto'
+          }`}
+        >
           <m3e-icon-button
             variant="filled"
             size="small"
@@ -71,46 +79,48 @@ export const InstancesDocumentation: React.FC<InstancesDocumentationProps> = ({
             </span>
           </m3e-icon-button>
 
-          <m3e-button-group
-            variant="connected"
-            className="flex-1 min-w-0"
-            style={DESCRIPTION_GROUP_STYLE}
-          >
-            <m3e-button
-              variant="tonal"
-              shape="square"
-              toggle
-              selected={descriptionTab === 'general' ? true : undefined}
-              onClick={() => onTabChange('general')}
-              style={DESCRIPTION_BUTTON_STYLE}
+          {!onlyGeneralDescription && (
+            <m3e-button-group
+              variant="connected"
+              className="flex-1 min-w-0"
+              style={DESCRIPTION_GROUP_STYLE}
             >
-              <span
-                slot="icon"
-                className="material-symbols-rounded text-[16px] leading-none"
+              <m3e-button
+                variant="tonal"
+                shape="square"
+                toggle
+                selected={effectiveTab === 'general' ? true : undefined}
+                onClick={() => onTabChange('general')}
+                style={DESCRIPTION_BUTTON_STYLE}
               >
-                menu_book
-              </span>
-              <span className="truncate sm:hidden">General</span>
-              <span className="truncate hidden sm:inline">General description</span>
-            </m3e-button>
-            <m3e-button
-              variant="tonal"
-              shape="square"
-              toggle
-              selected={descriptionTab === 'version' ? true : undefined}
-              onClick={() => onTabChange('version')}
-              style={DESCRIPTION_BUTTON_STYLE}
-            >
-              <span
-                slot="icon"
-                className="material-symbols-rounded text-[16px] leading-none"
+                <span
+                  slot="icon"
+                  className="material-symbols-rounded text-[16px] leading-none"
+                >
+                  menu_book
+                </span>
+                <span className="truncate sm:hidden">General</span>
+                <span className="truncate hidden sm:inline">General description</span>
+              </m3e-button>
+              <m3e-button
+                variant="tonal"
+                shape="square"
+                toggle
+                selected={effectiveTab === 'version' ? true : undefined}
+                onClick={() => onTabChange('version')}
+                style={DESCRIPTION_BUTTON_STYLE}
               >
-                notes
-              </span>
-              <span className="truncate sm:hidden">Version</span>
-              <span className="truncate hidden sm:inline">Version description</span>
-            </m3e-button>
-          </m3e-button-group>
+                <span
+                  slot="icon"
+                  className="material-symbols-rounded text-[16px] leading-none"
+                >
+                  notes
+                </span>
+                <span className="truncate sm:hidden">Version</span>
+                <span className="truncate hidden sm:inline">Version description</span>
+              </m3e-button>
+            </m3e-button-group>
+          )}
         </div>
       </div>
 
@@ -136,12 +146,16 @@ export const InstancesDocumentation: React.FC<InstancesDocumentationProps> = ({
             className="text-sm font-semibold mt-1"
             style={{ color: 'var(--md-sys-color-on-surface)' }}
           >
-            No release notes available
+            {onlyGeneralDescription
+              ? 'No description available'
+              : 'No release notes available'}
           </p>
           <p className="text-xs mt-1">
-            {descriptionTab === 'version'
-              ? `The selected release (${selectedVersion ?? 'unknown'}) does not include a description.`
-              : 'No description is available for this engine.'}
+            {onlyGeneralDescription
+              ? 'No description is available for this executable mod.'
+              : effectiveTab === 'version'
+                ? `The selected release (${selectedVersion ?? 'unknown'}) does not include a description.`
+                : 'No description is available for this engine.'}
           </p>
         </div>
       )}

@@ -161,7 +161,6 @@ export const NewsView: React.FC = () => {
               indeterminate
               style={
                 {
-                  '--m3e-progress-indicator-color': 'var(--md-sys-color-primary)',
                   width: '36px',
                   height: '36px',
                 } as React.CSSProperties
