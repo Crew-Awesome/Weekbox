@@ -1,0 +1,177 @@
+# Development guide
+
+This guide covers setup, local development, frontend assets, release builds,
+and common fixes.
+
+Run all commands from the WeekBox project folder.
+
+## Quick start
+
+1. Install [Node.js](https://nodejs.org/en/download/). npm is included.
+2. Install the Neutralino CLI:
+
+   ```bash
+   npm install -g @neutralinojs/neu
+   ```
+
+3. Install the project dependencies:
+
+   ```bash
+   npm install
+   ```
+
+4. On Windows, install the pinned patched runtime:
+
+   ```bash
+   npm run runtime:setup
+   ```
+
+   WeekBox checks its hash before starting or building. Do not run `neu update`,
+   because it replaces the patched runtime. On macOS or Linux, install the
+   platform runtime with the normal Neutralino CLI if needed.
+
+5. Start WeekBox:
+
+   ```bash
+   npm run dev
+   ```
+
+`npm install` no longer updates Neutralino automatically. On Windows,
+`npm run dev` and `npm run build` stop if the patched runtime is missing or has
+been replaced. `npm run neu -- update` is also rejected. The pinned
+`6.10.11` runtime must be published in `wb-nl-bin` before `runtime:setup` can
+download it.
+
+## Commands
+
+| Command                 | Use it for                                               |
+| ----------------------- | -------------------------------------------------------- |
+| `npm run dev`           | Start WeekBox and watch frontend asset changes.          |
+| `npm run assets`        | Rebuild frontend assets after changes or updates.        |
+| `npm run runtime:setup` | Download the pinned patched Windows runtime.             |
+| `npm run build`         | Build frontend assets and release executables.           |
+| `npm run package:macos` | Assemble the macOS `.app` bundle from the release build. |
+| `npm run package:linux` | Assemble the Linux AppImage and `.deb` input folders.    |
+| `neu build`             | Build executables directly after `npm run assets`.       |
+
+`npm run dev` and `npm run build` already run `npm run assets`. You only need to
+run it separately when using another command or when you want to check the
+frontend build first.
+
+## Run from source
+
+```bash
+npm run dev
+```
+
+This builds the frontend, watches asset changes, and starts Neutralino.
+
+If you run Neutralino directly, build the frontend first. `neu run` does not
+bundle the frontend by itself:
+
+```bash
+npm run assets
+neu run
+```
+
+If `neu` is not available globally, use the project-local CLI:
+
+```bash
+npx @neutralinojs/neu run
+```
+
+Do not use `npx @neutralinojs/neu update` in the WeekBox checkout. It can
+replace the patched Windows runtime. Restore the runtime from `wb-nl-bin` if
+the integrity check reports a hash mismatch.
+
+## Rebuild frontend assets
+
+Run this after changing frontend files or updating dependencies when
+`npm run dev` is not already watching them:
+
+```bash
+npm run assets
+```
+
+## Build executables
+
+For a release build, use:
+
+```bash
+npm run build
+```
+
+This runs `npm run assets` and then `neu build`. To run those steps separately:
+
+```bash
+npm run assets
+neu build
+```
+
+Neutralino writes the generated executables to its `dist` directory.
+
+The release workflow packages the existing binaries into a macOS `.app`, `.dmg`,
+and `.pkg`, plus Linux AppImage and Debian packages. The macOS disk image and
+Linux AppImage/deb conversion require their native CI runners.
+
+## Troubleshooting
+
+### `node` or `npm` is not recognized
+
+Install Node.js from the [official download page](https://nodejs.org/en/download/),
+then close and reopen your terminal. Check the installation with:
+
+```bash
+node --version
+npm --version
+```
+
+### `neu` is not recognized
+
+Install the CLI and reopen your terminal:
+
+```bash
+npm install -g @neutralinojs/neu
+```
+
+The project scripts use the locked CLI package through `npx`, so you do not
+need a global install. Use `npm run dev` and `npm run build` so the runtime
+integrity check is applied.
+
+### The app reports a missing bundle file
+
+Build the frontend assets before starting Neutralino:
+
+```bash
+npm run assets
+npm run dev
+```
+
+Do not use `neu run` by itself unless the current asset bundle is up to date.
+
+### A build fails after changing files
+
+Run the asset build separately so the first error is easier to identify:
+
+```bash
+npm run assets
+npm run build
+```
+
+If dependencies are incomplete, run `npm install` and retry. If the runtime
+check fails on Windows, restore the patched binary from `wb-nl-bin` instead of
+running `neu update`.
+
+### Reporting a problem
+
+Include these details when reporting a reproducible problem:
+
+- operating system;
+- `node --version` output;
+- `npm --version` output;
+- the exact command that failed;
+- the full error message; and
+- whether `npm run assets` succeeds.
+
+Use the [bug report template](../.github/ISSUE_TEMPLATE/bug_report.md) to
+report it.

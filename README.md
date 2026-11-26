@@ -1,32 +1,80 @@
-# React + TypeScript + Vite
+# WeekBox
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+<p align="center">
+  <img src="./docs/brand/weekbox-banner.png" width="800" alt="WeekBox" />
+</p>
 
-Currently, two official plugins are available:
+<p align="center">
+  <a href="https://github.com/Crew-Awesome/Weekbox/blob/main/LICENSE"><img src="https://img.shields.io/github/license/Crew-Awesome/Weekbox?style=flat-square" alt="MIT License" /></a>
+  <a href="https://discord.gg/BEgEYjba5f"><img src="https://img.shields.io/badge/Discord-The%20Cellar-5865F2?logo=discord&logoColor=white&style=flat-square" alt="The Cellar Discord server" /></a>
+</p>
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+A Re-Imagined Original FNF Mod Launcher
 
-## React Compiler
+## What you can do
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+- Browse mods from GameBanana, Psych Online, Funkin' Backstage, and GameJolt.
+- Save mods to bookmarks and return to them from the Bookmarks view.
+- Install and organize mods and engines on your computer.
+- Enjoy a Comfortable experience playing your favorite FNF mods!
 
-## Expanding the Oxlint configuration
+## Community
 
-If you are developing a production application, we recommend enabling type-aware lint rules by installing `oxlint-tsgolint` and editing `.oxlintrc.json`:
+- [Discord Server](https://discord.gg/BEgEYjba5f)
+- [WeekBox on GameBanana](https://gamebanana.com/tools/23228)
+- [WeekBox Website](https://weekbox.immalloy.com/)
+- [Credits](./CREDITS.md)
 
-```json
-{
-  "$schema": "./node_modules/oxlint/configuration_schema.json",
-  "plugins": ["react", "typescript", "oxc"],
-  "options": {
-    "typeAware": true
-  },
-  "rules": {
-    "react/rules-of-hooks": "error",
-    "react/only-export-components": ["warn", { "allowConstantExport": true }]
-  }
-}
-```
+Want to work on WeekBox, translate it, or help in another way? Join the
+Discord server and DM **Malloy** or **Britex**.
 
-See the [Oxlint rules documentation](https://oxc.rs/docs/guide/usage/linter/rules) for the full list of rules and categories.
+## Screenshots
+
+<table>
+  <tr>
+    <td width="50%">
+      <img src="./docs/screenshots/home.png" alt="Home screen showing featured and discoverable FNF mods" /><br/>
+      <sub><b>Home</b>: browse mods.</sub>
+    </td>
+    <td width="50%">
+      <img src="./docs/screenshots/mod-details.png" alt="Mod details view with installation information" /><br/>
+      <sub><b>Mods</b>: mod details.</sub>
+    </td>
+  </tr>
+  <tr>
+    <td width="50%">
+      <img src="./docs/screenshots/engine-release-notes.png" alt="Engine release notes view" /><br/>
+      <sub><b>Engines</b>: read release notes and launch an engine.</sub>
+    </td>
+    <td width="50%">
+      <img src="./docs/screenshots/newsletter.png" alt="WeekBox newsletter post" /><br/>
+      <sub><b>Newsletter</b>: read WeekBox news and updates.</sub>
+    </td>
+  </tr>
+</table>
+
+## Documentation
+
+- [Development guide](./docs/DEVELOPMENT.md)
+- [Contributing](./CONTRIBUTING.md)
+- [Changelog](./CHANGELOG.md)
+- [Code of Conduct](./CODE_OF_CONDUCT.md)
+- [Bug report template](./.github/ISSUE_TEMPLATE/bug_report.md)
+- [Feature request template](./.github/ISSUE_TEMPLATE/feature_request.md)
+- [Pull request template](./.github/PULL_REQUEST_TEMPLATE.md)
+
+## Credits
+
+WeekBox is maintained by [ImMalloy](https://github.com/ImMalloy) and
+[Britex](https://github.com/expertyeti).
+
+The app uses [Neutralinojs](https://neutralino.js.org/). Mod listings and
+downloads come from [GameBanana](https://gamebanana.com/),
+[Psych Online](https://funkin.sniro.boo/mods),
+[Funkin' Backstage](https://funkinbackstage.net/), and
+[GameJolt](https://gamejolt.com/).
+See the [full credits](./CREDITS.md).
+
+## License
+
+[MIT](./LICENSE)

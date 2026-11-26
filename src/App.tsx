@@ -1,13 +1,21 @@
 import React, { useEffect, lazy, Suspense } from 'react'
-import { HashRouter, Routes,Route, Navigate, useLocation } from 'react-router-dom'
+import { HashRouter, Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom'
 import { initHost } from '@/core/host'
+import {
+  consumePendingDeepLinkTarget,
+  initWeekBoxDeepLinks,
+  WEEKBOX_DEEP_LINK_EVENT,
+  type WeekBoxDeepLinkTarget,
+} from '@/core/deep-links'
 import { useWeekBoxLibrary } from '@/core/storage/use-weekbox-library'
 import { syncActiveCallouts } from '@/core/mods'
 import { syncEngineActiveCallouts } from '@/core/engines/engine-download-manager'
 import { DialogProvider } from '@/ui/dialog/DialogProvider'
 import { CalloutProvider } from '@/ui/callout'
-import { LoadingProvider } from '@/core/loading'
+import { LoadingProvider, useLoading } from '@/core/loading'
+import { prefetchSecondaryViews } from '@/core/routes/prefetch'
 import { Sidebar } from '@/ui/sidebar/Sidebar'
+import { SetupOnboarding } from '@/features/setup/SetupOnboarding'
 
 const HomeView = lazy(() =>
   import('@/features/home/HomeView').then((m) => ({ default: m.HomeView })),
@@ -32,6 +40,7 @@ const TAB_CONFIGS = [
 const AppShell: React.FC = () => {
   const { isInitialized, libraryPath } = useWeekBoxLibrary()
   const location = useLocation()
+  const navigate = useNavigate()
 
   const normalizedPath =
     location.pathname === '/' ||
@@ -43,13 +52,17 @@ const AppShell: React.FC = () => {
     () => new Set([normalizedPath]),
   )
 
-  useEffect(() => {
+  if (!visitedTabs.has(normalizedPath)) {
     setVisitedTabs((prev) => {
       if (prev.has(normalizedPath)) return prev
       const next = new Set(prev)
       next.add(normalizedPath)
       return next
     })
+  }
+
+  useEffect(() => {
+    prefetchSecondaryViews(normalizedPath)
   }, [normalizedPath])
 
   useEffect(() => {
@@ -63,7 +76,34 @@ const AppShell: React.FC = () => {
       'Current Platform:',
       hostAdapter.platform,
     )
+    void initWeekBoxDeepLinks()
   }, [])
+
+  useEffect(() => {
+    const openTarget = (target: WeekBoxDeepLinkTarget | null) => {
+      if (!target) return
+      const params = new URLSearchParams()
+      if (target.provider !== 'gamebanana') {
+        params.set('provider', target.provider)
+      }
+      params.set('mod', target.modId)
+      navigate(`/home?${params.toString()}`)
+    }
+
+    const pending = consumePendingDeepLinkTarget()
+    if (pending) {
+      openTarget(pending)
+    }
+
+    const handleDeepLink = (ev: Event) => {
+      const customEv = ev as CustomEvent<WeekBoxDeepLinkTarget>
+      openTarget(consumePendingDeepLinkTarget() || customEv.detail)
+    }
+    window.addEventListener(WEEKBOX_DEEP_LINK_EVENT, handleDeepLink)
+    return () => {
+      window.removeEventListener(WEEKBOX_DEEP_LINK_EVENT, handleDeepLink)
+    }
+  }, [navigate])
 
   useEffect(() => {
     if (isInitialized && libraryPath) {
@@ -79,6 +119,7 @@ const AppShell: React.FC = () => {
         color: 'var(--md-sys-color-on-background)',
       }}
     >
+      <SetupOnboarding />
       <Sidebar />
 
       <main
@@ -117,13 +158,19 @@ const AppShell: React.FC = () => {
   )
 }
 
+const AppGate: React.FC = () => {
+  const { isAppReady } = useLoading()
+  if (!isAppReady) return null
+  return <AppShell />
+}
+
 export const App: React.FC = () => {
   return (
     <HashRouter>
       <LoadingProvider>
         <DialogProvider>
           <CalloutProvider>
-            <AppShell />
+            <AppGate />
           </CalloutProvider>
         </DialogProvider>
       </LoadingProvider>

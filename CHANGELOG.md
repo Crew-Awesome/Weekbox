@@ -1,0 +1,1477 @@
+# Changelog
+
+All notable changes to this project are documented in this file.
+
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
+and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+## [Unreleased]
+
+## [2.7.2] - 2026-11-21
+
+### Added
+
+- Added a Flatpak package for Linux.
+- Added a GameJolt filter for downloadable games.
+- Added clearer error messages and support reports.
+- Errors now appear in the console, even when WeekBox handles them.
+
+### Changed
+
+- Large mod libraries scroll more smoothly.
+- Library moves use a direct move when possible and verify files during transfers.
+- GameJolt search now uses GameJolt's search results.
+- News retries temporary errors and skips repeat tries for permanent ones.
+- Reorganized app code to make future fixes easier.
+- Sort menus now fit their buttons.
+- Updated translations and translated new error messages.
+
+### Fixed
+
+- Deleted mods now disappear from the Mod Manager right away.
+- Fixed removing mods and engine links on Windows.
+- Fixed file moves failing when Windows reports them late.
+- Fixed settings saves failing on some Windows PCs.
+- Kept the old settings file if a new save fails.
+- Fixed GameJolt filters and search notices getting out of sync.
+- Fixed the Backstage sort menu width.
+- Download rate limits now tell you to try again later.
+- Opening WeekBox twice now focuses the window that's already open.
+
+## [2.7.1] - 2026-11-16
+
+### Fixed
+
+- Fixed downloading Itch.io engine releases.
+
+## [2.7.0] - 2026-11-16
+
+// there goes almost 20 days of my life lol
+// expect issues thanks big changes!
+
+### Added
+
+- Added Funkin' Fest to News Feed.
+- Added Funkin' Backstage and GameJolt as providers for browsing, search, sorting, filters, mod details, profiles, and downloads.
+- reworked imports in mod settings for GameBanana, Psych Online, Funkin' Backstage, and GameJolt.
+- Added music for GameJolt in mod details.
+
+### Changed
+
+- Backstage WIP mods show progress badges on cards and in details.
+- Provider links offered as downloads open that provider's mod details.
+
+### Removed
+
+- Removed the Standalone Mods and Recently Played lists from the sidebar.
+
+### Fixed
+
+- Improved Itch.io detection with ItchLib release
+- Avoided false startup update-check failures on slower connections.
+
+## [2.6.4] - 2026-10-25
+
+### Added
+
+- Added FunkCon24 to the News feed.
+
+### Changed
+
+- Changed library folders to separate config, data, state, and runtime folders.
+
+### Fixed
+
+- Improved Google Drive downloads.
+- Fixed storage moves misidentifying empty libraries and restoring engine links.
+- Fixed duplicate WeekBox links.
+- Fixed stale Home and News updates.
+- Fixed News pagination, detail views, and media fallbacks.
+
+## [2.6.3] - 2026-10-22
+
+### Fixed
+
+- Fixed Mods sidebar double-click.
+- Fixed Engines sidebar double-click.
+- Fixed mod modal reopen race.
+
+## [2.6.2] - 2026-10-21
+
+### Added
+
+- Added quoted posts to News.
+- Added a "Load more" button for older posts. (incase they dont load)
+- Clicking Home now clears the active search.
+- Clicking Home now scrolls to the top.
+
+### Changed
+
+- News sources now load in small batches.
+- News shows each source as soon as it is ready.
+- News retries after errors.
+- News can now load older posts per account.
+- News controls are now on a side panel on wide screens.
+- WeekBox now uses a Custom Neutralino runtime.
+- More continuation on the Polish locale file. (Thank you Merssak!)
+
+### Fixed
+
+- News no longer shows reposts in the feed.
+- Fixed deeplinks opening a second window.
+- Fixed deeplinks moving or resizing the existing window.
+- Fixed GameBanana feeds getting stuck in endless loading. (Thanks Funkin Interviews!)
+- Fixed Home loading continuing after leaving the page.
+- Fixed a issue with the Polish locale file.
+
+## [2.6.1] - 2026-10-19
+
+### Added
+
+- Added the DirectMania account to the News feed.
+
+### Changed
+
+- Render News videos as thumbnails and play only the selected video in the native player.
+
+## [2.6.0] - 2026-10-18
+
+### Added
+
+- Added mod bookmarks and a dedicated Bookmarks page.
+- Added a Twitter News feed with account filtering, media previews, and infinite scrolling.
+- Added the WeekBox Team account to the News feed.
+
+## [2.5.11] - 2026-10-13
+
+### Fixed
+
+- Fixed Windows startup.
+
+### Added
+
+- Added secret poop button.
+
+## [2.5.10] - 2026-09-30
+
+### Added
+
+- Added GameBanana import to mod settings.
+
+### Changed
+
+- Redesigned the mod settings window. (Thank u Nasa6731)
+
+### Fixed
+
+- Fixed GameBanana covers for imports and downloads. (Thank u Korok)
+- Saved GameBanana details for local mods.
+
+## [2.5.9] - 2026-09-26
+
+### Changed
+
+- Updated the Chinese language names.
+
+### Fixed
+
+- Keep manually imported engines after restart.
+- Refresh expired Base Game download links during retries.
+- Show only available Itch uploads and retry temporary Itch.io failures.
+
+## [2.5.8] - 2026-09-26
+
+### Changed
+
+- Updated the Traditional Chinese translation and language flags.
+- Engine names are now translatable.
+- Made Recently Played and Standalone Mods lists vertically scrollable.
+- Loaded Standalone Mods faster during startup.
+
+### Fixed
+
+- Fixed duplicate sidebar scrollbars.
+
+## [2.5.7] - 2026-09-24
+
+### Added
+
+- Added Traditional Chinese (`zh-TW`) language support. (Not Translated Yet)
+
+### Changed
+
+- Updated the Simplified Chinese translation.
+
+### Fixed
+
+- Prompted before downloading a missing engine when launching a mod.
+- Preserved Mod Manager state while reopening, filtering, and sorting.
+- Kept sidebar dynamic mod entries current after launches, closes, and metadata changes.
+- Cleared the newsletter unread badge when no valid posts are available.
+
+## [2.5.6]
+
+### Added
+
+- Added a Recently Played section to the sidebar.
+- Added custom sidebar icons in mod identity settings.
+
+### Changed
+
+- Reworked storage moves into a Neutralino pure version with live progress.
+- Extended the French translation (LeaNimatics).
+- Extended the Spanish translation (ImMalloy).
+
+### Fixed
+
+- Fixed Windows startup registration erasing other startup applications.
+- Fixed downloaded mods being installed inside an unnecessary nested folder.
+
+## [2.5.5] - 2026-09-21
+
+### Changed
+
+- Updated the Chinese translation.
+- Added 墨玲Cynthia to the localization credits.
+
+### Fixed
+
+- Fixed an error shown when engine release versions fail to load.
+
+## [2.5.4] - 2026-09-21
+
+### Changed
+
+- Updated Indonesian translations.
+- Updated Gernan translations.
+
+### Fixed
+
+- Avoid a macOS crash by skipping boot window centering. (Thanks juniperwuniper123!)
+
+## [2.5.3] - 2026-09-18
+
+### Fixed
+
+- Protocol launches now center and show the primary WeekBox window
+- The What's New changelog no longer opens automatically at startup.
+
+## [2.5.2] - 2026-09-18
+
+(this release is for testing fixes)
+
+### Fixed
+
+- Protocol links now reach the running WeekBox instance
+
+## [2.5.1] - 2026-09-18
+
+### Changed
+
+- Revisions to the Spanish translation
+
+### Fixed
+
+- Protocols Now focuse on the main window
+
+## [2.5.0] - 2026-09-17
+
+This is the Last content update I will do in a long while :)
+- ImMalloy
+
+### Added
+
+- Added light mode and an accent hue picker.
+- Added a settings reset button and a current version and changelog view.
+- Added repository-based news and contributor credits.
+
+### Changed
+
+- Reworked settings and library cleanup into simpler flows.
+- Improved the light and dark themes across cards, loading screens, icons, and controls.
+- Improved engine downloads, imports, modal navigation, and update startup handling.
+
+### Fixed
+
+- Fixed themes resetting after hard refreshes.
+- Fixed What's New appearing on every startup.
+- Fixed WeekBox links opening a second instance instead of the running app.
+
+### Removed
+
+- Removed the Desktop notifications setting and the out-of-focus blur effect.
+- Removed the old website release refresh request and the news GitHub shortcut.
+
+## [2.4.1] - 2026-09-16
+
+### Changed
+
+- Updated WeekBox links to the new website.
+- Updated the release workflow to refresh downloads on the new website.
+
+### Removed
+
+- Removed automatic diagnostic reports.
+
+## [2.4.0] - 2026-09-15
+
+### Added
+
+- Added GameBanana author profiles.
+- Added user search.
+- Added mod timestamps.
+- Added paginated language selection and issue reports.
+- Added Polish.
+- Added Fedora packages for x86_64 and ARM64 Linux.
+
+### Changed
+
+- Download buttons now show installed copies.
+- Mod details now use tabs for descriptions, contributors, details, and requirements.
+- Improved search.
+- Browse feeds now load faster.
+- Featured cards now use their thumbnails as backgrounds.
+- Replaced spinners with hourglasses.
+- Dependencies now show by default.
+- Updated Latin American Spanish.
+- Localized the remaining text.
+- Synced all language files with English.
+- The app now refreshes after a language change.
+
+### Removed
+
+- Removed Spanish (Spain).
+- Removed the close-to-tray notification.
+
+### Fixed
+
+- WeekBox links no longer open a second window.
+- Existing dependencies become regular mods automatically.
+- Profile lists now show all visible FNF mods.
+- Dependencies now install in the `mods` folder.
+- Wayland windows now show the WeekBox icon.
+- Linux windows now open on Wayland, including NVIDIA.
+- Linux now supports closing to the tray and hiding on launch.
+- Fixed the invisible Linux tray icon.
+- Fixed a Linux crash when hiding or restoring the window.
+- Fixed macOS Itch.io DMG downloads.
+- Fixed News, Ripe, and engine release errors.
+
+## [2.3.4] - 2026-09-12
+
+### Changed
+
+- Discovery now keeps loading past the previous page limit.
+- Library settings can now safely delete all installed mods or engines.
+- Startup maintenance no longer blocks the app from opening.
+- Empty engine lists no longer show a dashed panel.
+- Settings are organized into clearer categories.
+
+### Added
+
+- Added a setting to turn desktop notifications on or off.
+- Added play and stop controls for installed engines in Engine Manager.
+
+### Fixed
+
+- macOS now stores WeekBox data inside its own folder under Application Support.
+
+## [2.3.3] - 2026-09-12
+
+### Changed
+
+- WeekBox starts with Windows by default and stays open when closed.
+- Engine settings now save between sessions.
+- Engine family editing now keeps the name and icon together.
+- Closing to the tray now shows a desktop notification.
+- Background downloads and engine updates now show desktop notifications.
+- Other/Misc now includes the extra and legacy GameBanana categories while excluding engine-specific mods.
+
+## [2.3.2] - 2026-09-11
+
+### Fixed
+
+- Repeated mod injection no longer reports an existing-link error.
+
+## [2.3.1] - 2026-09-11
+
+### Added
+
+- Added an in-app What's New window for new WeekBox releases.
+- Release notes now use the matching section from the Markdown changelog.
+
+### Changed
+
+- Custom engine imports now add configured mods automatically.
+- Existing custom-engine mods are matched instead of duplicated.
+- The engine picker hides custom families with no installed versions.
+- Removing a custom engine family now removes all of its versions together.
+- Removed the old manual engine-mod import action.
+
+### Fixed
+
+- Re-importing a deleted custom-engine version works again.
+- Empty custom engine families and missing versions are cleaned up on startup.
+- Leftover multipart engine and mod downloads are cleaned up on startup.
+- Windows no longer treats extensionless mod files as executables.
+
+## [2.3.0] - 2026-09-11
+
+### Added
+
+- Import engine folders as custom engine families.
+- Add imported versions to existing engine families.
+- Convert executable mods into custom engine installs.
+- Choose Mods or Addons folders during engine import.
+- Rename installed versions while keeping their original version.
+- Download engines in the background with a progress toast.
+- Browse GameBanana's Legacy Categories and Other/Misc Mod Folders.
+- Install the same mod more than once.
+- Pick custom engine icons from nearby `.ico` or image files.
+
+### Changed
+
+- Softened page, card, engine, modal, and sidebar transitions.
+- Built-in and custom engines now use the same manager and version picker.
+- Engine downloads now stage a replacement before changing the installed copy.
+- Legacy category warnings appear only when that category is selected.
+- Other/Misc Mod Folders leaves out P-Slice and FPS+ content.
+- Mods without a known engine now use a neutral missing-engine label.
+- Startup and modal screens use softer fades and transitions.
+- Finished the German locale entries.
+
+### Fixed
+
+- Failed engine redownloads no longer damage the installed version.
+- The engine download button now changes to Cancel while downloading.
+- Custom engine mods now go into their configured content folders.
+- Custom engine icons now show in the manager and download toast.
+- Engine names stay saved after restarting WeekBox.
+- Closing WeekBox on Windows now hides it in the tray; Quit still exits it.
+
+### Removed
+
+- Removed duplicate inline engine download progress text.
+- Removed the extra custom-engine content-folder hint.
+
+## [2.2.0] - 2026-09-10
+
+### Changed
+
+- Polished startup reveals, page transitions, modal motion, and focus handling.
+- Enlarged the Mod Manager.
+- Added an Engine Manager picker with engine rails, version controls, and reordering.
+- Added matching GitHub notes for automatically detected Itch releases.
+- Open nightly workflows and commit links inside the app.
+- Removed the duplicate engine list from the sidebar.
+- Remade the in-app Base Game warning.
+
+### Fixed
+
+- Prevented Neutralino reload actions from killing the app.
+
+## [2.1.18] - 2026-09-10
+
+### Added
+
+- Engines can be reordered and assigned preferred versions.
+
+### Changed
+
+- Storage moves use bulk operations and can resume.
+
+### Fixed
+
+- Startup loading stripes no longer end with a chopped stripe.
+- Removed broken GameBanana download links.
+- Mod details load when optional sources fail.
+
+## [2.1.17] - 2026-09-09
+
+### Added
+
+- Base Game warns when files are missing.
+
+### Changed
+
+- Simplified the startup screen.
+
+### Fixed
+
+- V-Slice downloads the current Itch.io release.
+- Mods are only marked executable if they contain an executable.
+- V-Slice now includes the Itch.io 0.8.6 version.
+- Google Drive folders are ignored as download links.
+- Engine lists recover better when GitHub is temporarily unavailable.
+
+## [2.1.16] - 2026-08-29
+
+### Fixed
+
+- Executable mods now stay standalone even when their category names another engine.
+
+## [2.1.15] - 2026-08-29
+
+### Added
+
+- Added a Chinese locale placeholder for translators.
+- Added an Oxlint check for classic cyclomatic complexity.
+
+### Changed
+
+- Low-view mods now count less until their like ratio has enough views behind it.
+- Added more French translations and updated Indonesian and Portuguese.
+- Split large download, storage, GameBanana, and UI functions into smaller functions.
+- Updates now keep Neutralino runtime flags when restarting the app on Windows, macOS, and Linux.
+
+### Fixed
+
+- RAR and RAR5 archives can now be checked with the full 7-Zip tools.
+- The Credits button now opens the right page.
+- GameBanana discovery now continues to the next page correctly.
+- Archive downloads no longer retry in a loop after an integrity check fails.
+- Nested archive installs no longer get stuck extracting forever.
+
+## [2.1.13] - 2026-08-14
+
+### Fixed
+
+- Fixed Mod Manager loading and error icons rendering as literal HTML text.
+- Fixed multipart downloads corrupting archives when a server ignored range requests.
+- Fixed archive extraction racing the temporary file handoff after download.
+- Fixed macOS storage setup selecting the app bundle or failing at the filesystem root.
+- Fixed engine removal retrying through the shared filesystem cleanup path.
+- Fixed packaged startup missing interface templates when the document-root URL was unavailable.
+
+## [2.1.12] - 2026-08-14
+
+### Fixed
+
+- Fixed valid archive downloads being rejected by the pre-extraction integrity check.
+- Fixed macOS and Linux startup using the application bundle or AppImage mount as storage.
+- Fixed startup accepting incomplete interface-template responses.
+
+## [2.1.11] - 2026-08-13
+
+### Fixed
+
+- **IMPORTANT: Existing WeekBox libraries are restored after upgrading from 2.1.10.**
+
+## [2.1.10] - 2026-08-13
+
+### Added
+
+- Added an unread count for new newsletter posts.
+- Added automatic sidebar collapse when window is too small.
+
+### Changed
+
+- Expanded Italian error translations.
+
+### Fixed
+
+- Fixed Windows opening duplicate WeekBox windows and failing to focus the existing window.
+- Fixed app updates treating `resources.neu` as a regular archive.
+- Fixed startup stalls caused by multiple interface resource requests; delayed resources now retry before WeekBox gives up.
+- Fixed downloads reaching extraction with incomplete files, HTML responses, or invalid archives.
+- Fixed transient file-handoff races after downloads and extraction complete.
+- Fixed storage moves failing when extracted files take time to become visible.
+- Fixed macOS startup repeatedly requesting Documents access and stalling while opening the library.
+- Added download and archive details to diagnostic reports and stopped expected download failures from being reported as app errors.
+
+### Removed
+
+- Removed automatic migration and legacy probing for the old `WeekBoxLibrary` storage location.
+
+## [2.1.9] - 2026-08-12
+
+### Fixed
+
+- Existing storage folders stay where they are when WeekBox starts.
+- You can choose any folder as the WeekBox storage folder.
+
+## [2.1.8] - 2026-08-12
+
+### Fixed
+
+- Fixed diagnostic reports hiding the failed files and reasons from storage migrations.
+- Fixed Discord diagnostic messages exceeding embed limits by storing full reports in Supabase and sending a compact summary.
+
+## [2.1.7] - 2026-08-11
+
+### Fixed
+
+- Fixed large library migrations stopping startup on one unreadable or locked file.
+- Fixed interrupted migrations by resuming staged copies and keeping the original library available for repair.
+- Fixed downloads reaching extraction after returning an HTML page, incomplete file, or invalid archive.
+- Fixed transient download failures leaving invalid temporary files behind.
+
+## [2.1.6] - 2026-08-11
+
+### Fixed
+
+- Fixed Windows storage migrations failing on staged or locked files.
+- Fixed startup storage checks failing after a partial migration copy.
+
+## [2.1.5] - 2026-08-11
+
+### Added
+
+- Added macOS app, disk image, and installer packages, plus Linux AppImage and Debian packages.
+
+### Changed
+
+- WeekBox now keeps settings, mods, and engines in one `WeekBoxLibrary` folder.
+- Older storage folders migrate to the new location with dated backups.
+- Startup now waits for library maintenance before opening the app.
+- Expanded Italian translations for storage and error messages.
+
+### Fixed
+
+- Fixed Linux bundled archive extraction when executable permissions or Steam's `LD_PRELOAD` interfered.
+- Fixed macOS RAR and 7z extraction fallback and archive error reporting.
+- Fixed Windows extraction moves that could fail while temporary files were still being released.
+- Fixed startup failures caused by missing or malformed interface templates.
+
+### Removed
+
+- Removed the delayed native storage mirror used during startup.
+
+## [2.1.4] - 2026-08-10
+
+### Added
+
+- Added a bundled archive-extraction fallback for 7z and LZMA downloads.
+- Added nightly build details with commit, workflow-run, and commit links.
+- Added GitHub issue and pull request templates.
+
+### Changed
+
+- Downloads now validate archive content, HTML responses, confirmation pages, and expected file sizes before extraction.
+- Downloads retry transient server failures and fall back from parallel to single-connection downloads.
+- Engine progress now detects remote sizes and displays human-readable units.
+- App-update checks now time out without blocking startup, and update prompts show release notes in the shared error layout.
+- Sidebar engine loading now times out when the engine catalog is unavailable.
+- Expanded Italian translations for settings, news, search, storage, network, and sidebar controls.
+- Bumped the project, installer, and Neutralino application version to 2.1.4.
+- Updated the README, contribution guide, code of conduct, and contribution templates.
+
+### Fixed
+
+- Fixed failed or truncated downloads, including HTML error pages and Google Drive confirmation pages, reaching archive extraction.
+- Fixed nightly Codename Engine downloads using stale run-specific artifact URLs.
+- Fixed encoded Windows download URLs being escaped incorrectly before curl runs.
+- Fixed extracted engines being rejected after a cached negative executable lookup.
+- Fixed the engine release-notes panel crashing because its translation helper was not imported.
+- Fixed Windows mod installations failing when folder entries moved concurrently or an install was already in progress.
+- Fixed storage, download-server, and archive failures being reported as generic errors instead of actionable messages.
+- Fixed diagnostic reports miscounting network interfaces with the current Neutralino response format.
+- Fixed missing Neutralino storage keys being logged as errors during cleanup.
+
+### Removed
+
+- Removed obsolete duplicate contribution guides from `docs/md`.
+
+## [2.1.3] - 2026-08-07
+
+### Fixed
+
+- Fixed the default storage location not being remembered after restart.
+- Fixed the safer-location message returning after a successful move.
+
+## [2.1.2] - 2026-08-07
+
+### Fixed
+
+- Fixed downloads that failed while temporary files were still being written.
+- Fixed incomplete parallel download parts being reported too early.
+
+## [2.1.1] - 2026-08-07
+
+### Added
+
+- WeekBox now stores files in a separate folder by default.
+- WeekBox can move old files from the app folder.
+
+### Changed
+
+- First setup uses the new folder unless you choose another one.
+- Storage moves now show better progress and handle existing folders.
+
+### Fixed
+
+- Fixed file moves.
+- Fixed moves into folders that already contain files.
+- Fixed nested storage folders and update dialogs.
+- Fixed developer tools opening when the app starts.
+
+## [2.1.0] - 2026-08-07
+
+### Added
+
+- Added native network requests for GameBanana, GitHub, news, and release notes.
+- Added more details to error reports.
+- Added a new loading screen with progress, artwork, version info, and engine update buttons.
+- Added a menu for choosing between mod download links.
+- Added engine release notes and clearer error reports.
+- Added more languages: French, Italian, Portuguese, Russian, Spanish (Spain), and Indonesian.
+- Added updates to the Home page, News page, Mod Manager, sidebar, search, carousel, menus, and popups.
+
+### Changed
+
+- Updated Neutralino to 6.9.0.
+- WeekBox now opens faster while background checks keep running.
+- Improved page layouts, cards, filters, sorting, search, and offline pages.
+- Improved engine updates, settings, popups, messages, and translations.
+- Improved ZIP, 7Z, and RAR downloads, progress bars, extraction, retries, and file cleanup.
+- Improved GameBanana, Google Drive, and MediaFire link and file-size checks.
+- Simplified the WeekBox link setting text in all languages.
+- Improved app updates and featured mods loading.
+
+### Fixed
+
+- Fixed featured mods not loading because native network requests were blocked.
+- Fixed Google Drive downloads falsely saying "quota exceeded."
+- Fixed large Google Drive downloads, confirmation pages, links, redirects, and cookies.
+- Fixed MediaFire links, downloads, extraction delays, and missing file sizes.
+- Fixed broken or incomplete archives, retries, temporary files, and Windows file errors.
+- Fixed engine updates, startup errors, the inspector, popups, carousel movement, sidebar layout, images, and memory problems.
+- Fixed language names, flags, search hints, and translated labels.
+- Fixed the Wine version setting not appearing or saving on macOS and Linux.
+
+### Removed
+
+- Removed unused helpers, old settings, duplicate menus, and old code paths.
+
+## [2.0.5] - 2026-08-05
+
+### Added
+
+- Added category-aware local mod and GameBanana imports.
+- Added 1.10-style multi-select mod filters and sorting.
+
+### Changed
+
+- Codename addons are no longer treated as playable mods.
+- Addon and dependency cards no longer show launch or switch controls.
+- Added placeholder artwork for mods without valid images.
+
+### Fixed
+
+- Fixed Codename addon classification and duplicate Executables filters.
+- Fixed local import modal sizing, metadata, covers, and settings controls.
+
+## [2.0.4] - 2026-08-04
+
+### Fixed
+
+- Fixed WeekBox update prompts being hidden behind the startup screen.
+- Fixed startup checking WeekBox updates when the setting is disabled.
+- Fixed WeekBox refusing to close after an update prompt was dismissed.
+
+## [2.0.3] - 2026-08-04
+
+### Added
+
+- Added a right-click menu with Copy, Paste, and Inspect.
+
+### Changed
+
+- Reports now include the full error and stack trace.
+- Reports are always on.
+- Reports work on all app versions.
+- Shared words are stored once.
+
+### Fixed
+
+- Reports now reach the webhook.
+- Download bars now use the known file size.
+- Fixed the Inspect action causing Neutralino token errors.
+
+## [2.0.2] - 2026-08-04
+
+### Fixed
+
+- Fixed WeekBox update checks getting stuck behind a browser preflight request.
+- Fixed stalled update requests so startup can continue when GitHub is unreachable.
+
+## [2.0.1] - 2026-08-04
+
+### Fixed
+
+- Fixed the developer inspector opening automatically when WeekBox starts.
+
+## [2.0.0] - 2026-08-04
+
+### Added
+
+- Added the News page and newsletter-style article pages.
+- Added news cards, article modals, and image-based colors.
+- Added German translations and improved English and Spanish translations.
+- Added a first-run language picker with country flags.
+- Added translated engine names, discovery labels, and best-of time ranges.
+- Added the public Credits page with crew groups, profile links, and avatars.
+- Added responsive Home and News grids.
+- Added animated card hover, color, and movement effects.
+- Added better featured-mod rotation and featured-card colors.
+- Added safer download, install, engine, and startup error details.
+
+### Changed
+
+- Changed the Home grid so cards fill rows correctly when the window is resized.
+- Changed the News grid to use the same card behavior as Home.
+- Changed the crew box to show three people at a time with fade transitions and dots.
+- Changed Settings so its Credits button opens the public Credits page in a browser.
+- Changed the app labels to use shorter names such as Mods, Engines, and Base Game.
+- Changed engine badges and card text to update when the language changes.
+- Changed Mod Settings tag labels and hints to use the selected language.
+- Changed internal modules to use direct imports and shared formatting code.
+- Changed the app layout, grid code, card code, and settings code into smaller modules.
+- Changed the development command to build frontend assets before Neutralino starts.
+- Changed the asset bundler to create its output folder when needed.
+- Changed Mod Manager to use a grid layout and a header button for local mods.
+- Changed engine labels to use a page-level tooltip so they are not clipped.
+- Changed downloads and updates to keep clearer file and error information.
+
+### Fixed
+
+- Fixed cards leaving empty spaces after resizing from large to small windows.
+- Fixed cards being placed in the wrong column after repeated resizes.
+- Fixed News cards not moving and fading smoothly.
+- Fixed card colors and text colors not matching the artwork.
+- Fixed translations staying in the old language after switching languages.
+- Fixed missing translations for engine names, discovery, and best-of labels.
+- Fixed the Mod Settings tag input showing an English-only placeholder.
+- Fixed missing or broken cover images and image loading states.
+- Fixed downloads, temporary files, retries, and archive extraction errors.
+- Fixed mod links that could remain after deleting a mod.
+- Fixed engine uninstall and update failures with clearer errors.
+- Fixed startup failures caused by missing storage folders or frontend bundles.
+- Fixed several old crashes caused by missing templates, unknown engines, or empty data.
+
+### Removed
+
+- Removed the old embedded Credits page from Settings.
+- Removed unused startup compatibility code and its maintenance passthrough.
+- Removed unused carousel, chip, loader, modal, and download-toast code.
+- Removed the duplicate Mod Manager template and old list-view code.
+- Removed the old in-grid local-mod card.
+- Removed unused startup debug tools and compatibility wrappers.
+- Removed the unused Psych Online banner image.
+- Removed duplicate legacy styles and scratch files.
+- Removed outdated engine and settings labels that were repeated in multiple places.
+
+## [1.10.0] - 2026-08-02
+
+### Changed
+
+- Home discovery cards now use compact engine/type icons, hover labels, and a tighter information layout.
+- Discovery periodically highlights a varied featured mod without removing it from the grid.
+- Featured cards blend artwork into a dominant-color surface with a restrained hover fade.
+- Mod Manager now stays grid-only, with local mod import available from the header plus button.
+- Mod Manager engine labels now render in a page-level tooltip so the manager window cannot clip them.
+- The asset bundler now creates its output directory directly with recursive filesystem support.
+
+### Removed
+
+- Removed unused startup compatibility code and the maintenance passthrough it replaced.
+- Removed unused carousel, chip, circle-loader, modal, and download-toast component implementations.
+- Removed the duplicate Mod Manager template, list-view code, and the old in-grid local-mod card.
+- Removed scratch archives/images and duplicate legacy stylesheet copies from the repository.
+
+## [1.9.2] - 2026-08-01
+
+### Fixed
+
+- Dependencies can be deleted without leaving broken links in the mods that used them.
+- Mod deletion no longer crashes if the Mod Manager cache has not loaded yet.
+- Startup modals no longer try to attach an empty template to the page.
+- Mods with an unknown engine no longer stop the Home page from loading.
+- Downloads retry empty server replies and HTTP 408 timeouts.
+- WeekBox waits longer for Windows to release finished downloads before moving them.
+
+## [1.9.1] - 2026-07-31
+
+### Fixed
+
+- Tag suggestions stay hidden when there are no matches.
+- Tags can contain spaces.
+- Codename mods can be managed unless that specific mod is running.
+- Addons and dependencies cannot be launched.
+- Addons and dependencies stay locked while their engine version is in use.
+- Used addons and dependencies keep safe launcher-only settings available.
+- Used addons and dependencies keep their folder identity while cosmetic details can change.
+- Addon and dependency cards no longer show launch or switch controls.
+- Cosmetic settings stay editable for every mod, including running ones.
+- Mod Settings groups Type, Engine, and Version together and greys locked file controls.
+
+## [1.9.0] - 2026-07-31
+
+### Fixed
+
+- Psych Online imports no longer stop WeekBox when folders cannot move.
+- Downloads retry temporary server errors and stop after a timeout.
+- Locked mod links retry before WeekBox gives up.
+- External downloads now keep useful file details for diagnostics.
+
+### Changed
+
+- Mods and dependencies are now together in one Mods page.
+- Mod Manager now supports tags and cleaner type filters.
+- Mod settings now has tags, a type picker, and a cleaner layout.
+- Mod settings can change type and edit tags.
+- You can include or exclude many mod types at once, and search by tag.
+- Filter menus keep their engine icons and close correctly when dismissed.
+- Tag suggestions stay hidden until you start typing.
+- Filter choices now only show types and engines that are installed.
+- Filter menus keep their include and exclude buttons visible.
+- Empty filter groups stay hidden.
+
+## [1.8.9] - 2026-07-31
+
+### Fixed
+
+- Mod installs no longer delete temp folders too early.
+- Downloads retry incomplete files and bad connections.
+- Mods can copy into Psych Online on non-NTFS drives.
+- Updates now reject files without a valid checksum.
+- Storage moves keep the old library if the copy fails.
+- Engine launch paths are escaped safely.
+- MediaFire links with special characters download properly.
+- Locked mod files retry before WeekBox gives up.
+- Error reports no longer repeat in the same app session.
+- Update windows can now be clicked over the engine window.
+
+## [1.8.8] - 2026-07-30
+
+### Fixed
+
+- Release notes and the Downloads page now update with the release build.
+- WeekBox updates work with Windows folders that have apostrophes.
+
+## [1.8.7] - 2026-07-30
+
+### Fixed
+
+- Downloads wait for Windows before moving the finished ZIP file.
+- Downloads use a new temp ZIP name every time.
+- GameBanana connection problems and storage problems no longer send error reports.
+- Error reports now skip empty stack-only errors.
+- Updates now check downloaded files before installing them.
+- GameBanana links are escaped safely before WeekBox runs curl.
+
+## [1.8.6] - 2026-07-30
+
+### Changed
+
+- WeekBox now asks you to update before opening when a new version is ready.
+- Diagnostic reports are now sent automatically when WeekBox has an unexpected error.
+
+### Fixed
+
+- If automatic updating fails, WeekBox shows a button to download the update manually.
+- Extracted mod folders with spaces at the end no longer fail on Windows.
+- Already installed engine versions no longer send an error report.
+- The Diagnostic Reporting setting and Privacy category were removed.
+
+## [1.8.5] - 2026-07-30
+
+### Fixed
+
+- GameBanana download timeouts do not send an error report anymore.
+
+## [1.8.4] - 2026-07-30
+
+### Fixed
+
+- Downloads try again if GameBanana is being slow or resets the connection.
+- Broken download parts are cleaned up instead of being installed.
+- WeekBox gives better messages for missing files and storage problems.
+- Mods with the same Psych Online folder do not stop WeekBox from opening.
+- Install errors no longer show your Windows username in reports.
+
+## [1.8.3] - 2026-07-30
+
+### Added
+
+- WeekBox can download ZIP files from GitHub Releases.
+- GameBanana links in mod descriptions can open the linked mod or tool in WeekBox.
+- Mod downloads can show a list when there is more than one file to choose from.
+- Mods downloaded inside Psych Online are added to WeekBox too.
+- Psych Online mods without cover art use a Psych Online banner.
+
+### Fixed
+
+- Downloads give better errors for bad links, no internet, timeouts, missing files, and Windows certificate problems.
+- Download reports are shorter and the same error is not sent again and again.
+- Error details now include the useful diagnostic report information.
+- Mods already installed no longer show as an unexpected error.
+- Deleting a mod no longer fails when an engine folder is not empty.
+- OneDrive only blocks downloads and installs, not WeekBox starting.
+- Mac archive files like `__MACOSX` and `.DS_Store` are removed when installing mods.
+- The Choose Download window works again after using it before.
+- Engine updates, engine uninstalling, and the Engine Manager work better.
+- WeekBox no longer crashes if an engine page changes while its button is updating.
+- Duplicate Psych Online mod folders no longer stop WeekBox from opening.
+
+## [1.8.2] - 2026-07-27
+
+### Added
+
+- WeekBox can use Wine on Linux and macOS to open Windows `.exe` games and mods.
+- WeekBox can open `.7z`, `.rar`, `.tar`, and `.zip` downloads without a separate archive app.
+- WeekBox supports more Google Drive downloads.
+- The startup screen shows what WeekBox is doing.
+- Linux and macOS Settings can choose which installed Wine version runs Windows `.exe` mods.
+
+### Changed
+
+- WeekBox starts more reliably on Linux.
+- WeekBox does not use old app files after an update.
+- The Mod Manager is taller.
+- The app code and styles were reorganized.
+- Building and running from source now use npm commands.
+
+### Fixed
+
+- WeekBox includes the Neutralino files it needs to start.
+- Linux download and archive commands work correctly.
+- WeekBox retries downloads after some connection errors.
+- WeekBox waits for downloaded files before trying to use them.
+- Diagnostic reports no longer fail because they are too long.
+- Mod files are moved one at a time to avoid Windows file errors.
+- Engine update data errors no longer stop an engine update.
+- Codename mods can launch on Linux again.
+- Mods cannot launch while their engine version is updating.
+- WeekBox closes the matching running engine before updating it.
+- WeekBox checks again before replacing an engine folder.
+- WeekBox gives a clearer message when Wine is missing on Linux or macOS.
+
+### Removed
+
+- ALE Psych has been removed from WeekBox.
+- Old ALE Psych installs are removed when WeekBox starts.
+- Mods that used ALE Psych are changed to Unassigned.
+
+## [1.8.1] - 2026-07-22
+
+### Added
+
+- Windows Setup now registers `weekbox://mod/<id>` links.
+- Portable Windows builds register `weekbox:` links after their first launch.
+
+### Changed
+
+- Windows Setup now clearly separates the program location from the library location.
+- Added an enabled-by-default setting for opening WeekBox links.
+
+### Fixed
+
+- Clicking a source icon while a mod is loading no longer reloads WeekBox.
+- Invalid Google Drive pages are no longer offered as downloads.
+- Missing download links now show a useful error instead of a native error.
+- Deep links also accept the accidental `weekbox://mod,<id>` format.
+- macOS archive extraction no longer assumes that the `7z` command is installed.
+- Windows extraction warnings no longer fail installs after files were successfully unpacked.
+- The WeekBox link setting is now only shown on Windows.
+
+## [1.8.0] - 2026-07-22
+
+### Added
+
+- Codename dependencies now use the engine's `addons` folder. WeekBox creates the folder when needed.
+- Download choices now show file dates.
+
+### Changed
+
+- Newer download files are shown first.
+- Download checks now run in the background and are cached.
+- Mod downloads use safer folder names and handle wrapped folders better.
+- Running mods and dependencies can open their settings in read-only mode. Their folder can still be opened.
+- Linux and macOS try other extractors when a download is not really a ZIP file.
+- Error messages and support reports are clearer.
+
+### Fixed
+
+- A converted Codename dependency is now moved from `mods` to `addons` correctly.
+- Executable mods now show as running on the first launch, even if Mod Manager refreshes.
+- ZIP files with mismatched Unicode filenames no longer fail when their files were extracted correctly.
+- Mods with Unicode names now install correctly.
+- Empty downloads now show the right error.
+- Bad downloads no longer look like WeekBox errors.
+- Mods with the same engine folder are detected before launch.
+- Running executable mods stay marked as running.
+- Running mods can be closed and restored more reliably.
+- Mod Manager buttons update after an engine closes.
+- Cancelling a download now stops its child processes too.
+- Failed folder creation is reported instead of being ignored.
+- The search box no longer crashes when its dropdown is missing.
+- Windows archive installs now check that files were really extracted.
+
+## [1.7.3] - 2026-07-21
+
+### Fixed
+
+- WeekBox now restores running engine and mod state after reopening or updating.
+- Recovered mods can now be closed from WeekBox.
+- Mod and dependency controls return to normal after their engine closes.
+- Engine Manager no longer allows a running engine version to be uninstalled.
+
+## [1.7.2] - 2026-07-21
+
+### Fixed
+
+- Running engines now lock their mods and dependencies from being changed or deleted.
+- Locked mod and dependency buttons now stay dark instead of brightening on hover.
+
+## [1.7.1] - 2026-07-21
+
+### Fixed
+
+- First-time storage setup no longer stops WeekBox from opening if it fails.
+- Error reports now show a proper stack trace when one is available.
+- macOS engines now run the correct app-bundle executable.
+- Mods now install in the right folder inside macOS app bundles.
+- Windows certificate-check download errors now show clearer help and are not reported as app errors.
+
+## [1.7.0] - 2026-07-21
+
+### Added
+
+- First-time setup now lets you choose where WeekBox saves its files.
+- WeekBox can send error reports to the developers if you allow it.
+- You can clean up leftover files from failed downloads in Settings.
+- V-Slice installs now support the macOS installer download.
+
+### Changed
+
+- Settings are now sorted into clearer sections.
+
+## [1.6.0] - 2026-07-21
+
+### Changed
+
+- Featured mods now load directly without a manifest file.
+- Mod Manager now has a search box and a filter and sort menu.
+- You can filter mods by executable, engine, or unassigned type.
+- Switching between mods and dependencies is faster.
+
+### Fixed
+
+- Updates no longer fail before downloading the new file.
+- Mod Manager search no longer reloads card images while typing.
+- Switching between Mods and Dependencies no longer reloads mod card images.
+
+## [1.5.8] - 2026-07-20
+
+### Fixed
+
+- ZIP extraction no longer fails when GNU tar is installed on Windows; falls back to PowerShell if needed.
+- The auto-updater now detects the correct system architecture instead of forcing 64-bit.
+- Updates no longer break when the archive contains subfolders.
+- Faster updates by downloading only the resources file when possible.
+- Extracting files on Windows drives (like D:) no longer confuses tar with a remote server.
+- Engine install errors no longer cause an unexpected error.
+
+### Changed
+
+- Local mods now use their chosen name. Duplicate names get a number.
+
+## [1.5.7] - 2026-07-20
+
+### Fixed
+
+- Mod covers now update on the card after you change them in the edit screen.
+
+## [1.5.6] - 2026-07-20
+
+### Fixed
+
+- Fixed the Windows updater failing with "Failed to fetch" when downloading an update.
+- The Mod Manager now keeps your scroll position when it refreshes.
+
+## [1.5.5] - 2026-07-20
+
+### Fixed
+
+- The update-check button no longer keeps the loading cursor after it finishes.
+
+## [1.5.4] - 2026-07-20
+
+### Fixed
+
+- Windows updates now update the app and the executable together, so you don't get stuck on an old version.
+
+## [1.5.3] - 2026-07-20
+
+### Changed
+
+- Bumped to 1.5.3 and rebuilt with the pinned toolchain.
+- The Windows installer is now built automatically in CI.
+
+## [1.5.2] - 2026-07-20
+
+### Fixed
+
+- Windows installs on other drives (like D:) no longer fail to extract.
+- The Mod Manager no longer shows "engine missing" right after you install an engine.
+- The Windows updater now backs up your app before updating, so a bad update can't break it.
+- Pinned the build toolchain so updates don't brick the app.
+
+## [1.5.1] - 2026-07-20
+
+### Fixed
+
+- WeekBox no longer runs out of memory when downloading large engines.
+
+## [1.5.0] - 2026-07-20
+
+### Added
+
+- A real Windows installer with a setup wizard and start menu shortcut.
+- WeekBox can now update itself on Windows.
+- A Discord button on the installer opens our server.
+
+### Changed
+
+- WeekBox now installs to AppData, so updates don't need admin rights.
+- The installer shows a mod manager screenshot and a banner.
+
+## [1.4.2] - 2026-07-20
+
+### Changed
+
+- Large mods extract faster.
+- The Mod Manager prepares in the background when WeekBox starts.
+- Mod covers load while a mod installs.
+- The Mod Manager shows mods while they download.
+- Home cards use a stronger cover color on hover.
+
+### Fixed
+
+- The Mod Manager no longer flashes when opened.
+- Mod covers stay ready when you reopen Mod Manager.
+- Mods without a cover now show a clear message.
+- Tool dependencies can now load their cover and use Reset.
+- Home card colors stay dark enough to read.
+- Home engine tags stay in sync while scrolling.
+
+## [1.4.1] - 2026-07-20
+
+### Added
+
+- You can use an existing WeekBox folder from another drive.
+- You can replace an old WeekBox folder when moving your library. The old one is kept as a backup.
+
+### Changed
+
+- Storage settings are easier to use and let you open the current folder.
+- WeekBox releases now build automatically after publishing.
+
+### Fixed
+
+- WeekBox accepts both ZIP types used by GitHub releases.
+- Startup errors now show useful details.
+- WeekBox no longer tries to move files when you pick its own folder.
+- A missing old Documents folder no longer stops WeekBox from starting.
+
+## [1.4.0] - 2026-07-19
+
+### Added
+
+- You can add mods from a folder on your computer.
+- Local mods can have their own name, cover, engine, and version.
+- Local mod details can be filled from a GameBanana ID or link.
+- Dependencies have their own list, cover, settings, and delete button.
+- Mod Settings can move a mod to Dependencies, or back.
+
+### Changed
+
+- The Mod Manager loads cards faster.
+- Mod and dependency covers are saved locally.
+- Mods without a cover get a local "NO IMAGE" image.
+- Psych Online now only uses the Latest version.
+
+### Fixed
+
+- Empty or fake engine folders are ignored and cleaned up.
+- Interrupted downloads and temp files are cleaned up on startup.
+- Unassigned mods no longer show a launch button.
+- Executable mods can't be assigned to an engine.
+- macOS now uses the correct mods folder for app bundles.
+
+## [1.3.2] - 2026-07-19
+
+### Added
+
+- Search suggestions and typo matching are better.
+- WeekBox hides broken downloads and supports more external links.
+- Engine errors now show the files found in a bad download.
+
+### Changed
+
+- Search shows GameBanana and Psych Online mods together more accurately.
+- Some app code was split into smaller files.
+- Updates support both old and future bundle formats.
+
+### Fixed
+
+- Fake or broken engine folders no longer show as installed.
+- Engine downloads work better when files are in extra folders.
+- Mod covers use a fallback image if the normal one fails.
+- Opening one dropdown now closes the others.
+
+## [1.3.1] - 2026-07-17
+
+### Added
+
+- The update window has a GitHub download button if auto-update fails.
+
+### Changed
+
+- WeekBox comes to the front when it starts, including after an update.
+
+### Fixed
+
+- Updates replace, clean up, retry, roll back, and restart more reliably.
+
+## [1.3.0] - 2026-07-17
+
+### Added
+
+- Psych Online mods from Sniro now appear with GameBanana search results.
+- MediaFire and Google Drive links can install GameBanana mods.
+- Settings are now saved in a file instead of browser storage.
+- WeekBox warns about cloud-synced folders that break downloads.
+- Sniro was added to the credits.
+
+### Changed
+
+- The Mod Manager loads and refreshes mods faster.
+- Updated mod cards, search tips, carousel, and Engine Manager styling.
+- Search handles engine submissions and Psych Online mods correctly.
+
+### Fixed
+
+- Updates now install before WeekBox restarts.
+- Moving storage keeps your files on all operating systems.
+- The Mod Manager no longer stalls loading some images.
+- Fixed search text and card labels overlapping.
+- Fixed opening engine downloads from mod details.
+
+## [1.2.3] - 2026-07-16
+
+### Fixed
+
+- Updates now restart WeekBox from the correct folder.
+- Nightly engine updates no longer ask again for the same build.
+
+## [1.2.2] - 2026-07-16
+
+### Fixed
+
+- Updates can download GitHub releases without browser errors.
+
+## [1.2.1] - 2026-07-16
+
+### Fixed
+
+- Engine versions now load before WeekBox filters them for your system.
+
+## [1.2.0] - 2026-07-16
+
+### Added
+
+- WeekBox can update itself from GitHub Releases.
+- Updates work on Windows, Linux, Intel Macs, and Apple Silicon Macs.
+- Settings has update options and a check-for-updates button.
+- WeekBox shows an update window when a new version is available.
+- Engine and mod install errors are easier to read and copy.
+
+### Changed
+
+- Engine installs show clearer progress and the real file name.
+- Engine lists only show versions for your operating system.
+- macOS engine apps stay as app bundles when installed.
+- Updates restore executable permissions on macOS and Linux.
+
+### Fixed
+
+- Fixed Windows archive extraction paths.
+- WeekBox avoids OneDrive folders that break engine downloads.
+- Missing engine folders no longer show confusing warnings.
+- Moving storage now restores installed mods correctly.
+- Bad engine downloads now show the files that were found.
+
+## [1.1.0] - 2026-07-16
+
+### Added
+
+- Choose faster multi-part or single-part downloads.
+- Move your WeekBox data, mods, and engines to another folder or drive.
+- Settings now has General, Downloads, Library & Storage, and Updates sections.
+- Search tips show mod names, GameBanana links, and mod IDs.
+- Unexpected errors are now reported in the console.
+- Developer tools can be opened when needed.
+
+### Changed
+
+- Large downloads skip the multi-part check when it's turned off.
+
+### Fixed
+
+- The Mod Manager now saves and refreshes engine and version choices.
+- Moving storage reconnects mods to their engines.
+- Fixed search dropdown styles on case-sensitive systems.
+
+## [1.0.0] - 2026-07-16
+
+### Added
+
+- First WeekBox release.
+- Downloads for Windows, Linux, and macOS.
+- Packages for x64, ARM64, ARMHF, and Universal Macs where available.
+
+[unreleased]: https://github.com/Crew-Awesome/Weekbox/compare/v2.7.2...HEAD
+[2.7.2]: https://github.com/Crew-Awesome/Weekbox/compare/v2.7.1...v2.7.2
+[2.7.1]: https://github.com/Crew-Awesome/Weekbox/compare/v2.7.0...v2.7.1
+[2.7.0]: https://github.com/Crew-Awesome/Weekbox/compare/v2.6.4...v2.7.0
+[2.6.4]: https://github.com/Crew-Awesome/Weekbox/compare/v2.6.3...v2.6.4
+[2.6.3]: https://github.com/Crew-Awesome/Weekbox/compare/v2.6.2...v2.6.3
+[2.6.2]: https://github.com/Crew-Awesome/Weekbox/compare/v2.6.1...v2.6.2
+[2.6.1]: https://github.com/Crew-Awesome/Weekbox/compare/v2.6.0...v2.6.1
+[2.6.0]: https://github.com/Crew-Awesome/Weekbox/compare/v2.5.11...v2.6.0
+[2.5.11]: https://github.com/Crew-Awesome/Weekbox/compare/v2.5.10...v2.5.11
+[2.5.10]: https://github.com/Crew-Awesome/Weekbox/compare/v2.5.9...v2.5.10
+[2.5.9]: https://github.com/Crew-Awesome/Weekbox/compare/v2.5.8...v2.5.9
+[2.5.8]: https://github.com/Crew-Awesome/Weekbox/compare/v2.5.7...v2.5.8
+[2.5.7]: https://github.com/Crew-Awesome/Weekbox/compare/v2.5.6...v2.5.7
+[2.5.6]: https://github.com/Crew-Awesome/Weekbox/compare/v2.5.5...v2.5.6
+[2.5.5]: https://github.com/Crew-Awesome/Weekbox/compare/v2.5.4...v2.5.5
+[2.5.4]: https://github.com/Crew-Awesome/Weekbox/compare/v2.5.3...v2.5.4
+[2.5.3]: https://github.com/Crew-Awesome/Weekbox/compare/v2.5.2...v2.5.3
+[2.5.2]: https://github.com/Crew-Awesome/Weekbox/compare/v2.5.1...v2.5.2
+[2.5.1]: https://github.com/Crew-Awesome/Weekbox/compare/v2.5.0...v2.5.1
+[2.5.0]: https://github.com/Crew-Awesome/Weekbox/compare/v2.4.1...v2.5.0
+[2.4.1]: https://github.com/Crew-Awesome/Weekbox/compare/v2.4.0...v2.4.1
+[2.4.0]: https://github.com/Crew-Awesome/Weekbox/compare/v2.3.4...v2.4.0
+[2.3.4]: https://github.com/Crew-Awesome/Weekbox/compare/v2.3.3...v2.3.4
+[2.3.3]: https://github.com/Crew-Awesome/Weekbox/compare/v2.3.2...v2.3.3
+[2.3.2]: https://github.com/Crew-Awesome/Weekbox/compare/v2.3.1...v2.3.2
+[2.3.1]: https://github.com/Crew-Awesome/Weekbox/compare/v2.3.0...v2.3.1
+[2.3.0]: https://github.com/Crew-Awesome/Weekbox/compare/v2.2.0...v2.3.0
+[2.2.0]: https://github.com/Crew-Awesome/Weekbox/compare/v2.1.18...v2.2.0
+[2.1.18]: https://github.com/Crew-Awesome/Weekbox/compare/v2.1.17...v2.1.18
+[2.1.17]: https://github.com/Crew-Awesome/Weekbox/compare/v2.1.16...v2.1.17
+[2.1.16]: https://github.com/Crew-Awesome/Weekbox/compare/v2.1.15...v2.1.16
+[2.1.15]: https://github.com/Crew-Awesome/Weekbox/compare/v2.1.14...v2.1.15
+[2.1.13]: https://github.com/Crew-Awesome/Weekbox/compare/v2.1.12...v2.1.13
+[2.1.12]: https://github.com/Crew-Awesome/Weekbox/compare/v2.1.11...v2.1.12
+[2.1.11]: https://github.com/Crew-Awesome/Weekbox/compare/v2.1.10...v2.1.11
+[2.1.10]: https://github.com/Crew-Awesome/Weekbox/compare/v2.1.9...v2.1.10
+[2.1.9]: https://github.com/Crew-Awesome/Weekbox/compare/v2.1.8...v2.1.9
+[2.1.8]: https://github.com/Crew-Awesome/Weekbox/compare/v2.1.7...v2.1.8
+[2.1.7]: https://github.com/Crew-Awesome/Weekbox/compare/v2.1.6...v2.1.7
+[2.1.6]: https://github.com/Crew-Awesome/Weekbox/compare/v2.1.5...v2.1.6
+[2.1.5]: https://github.com/Crew-Awesome/Weekbox/compare/v2.1.4...v2.1.5
+[2.1.4]: https://github.com/Crew-Awesome/Weekbox/compare/v2.1.3...v2.1.4
