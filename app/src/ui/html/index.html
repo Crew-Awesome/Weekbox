@@ -2098,6 +2098,32 @@
     </div>
   </section>
 </template>
+<template id="tpl-events">
+  <section class="events-view">
+    <header class="events-view__header">
+      <button class="events-view__refresh" type="button" data-events-refresh>
+        <i class="fa-solid fa-arrows-rotate" aria-hidden="true"></i>
+        <span data-i18n="common.refresh">Refresh</span>
+      </button>
+    </header>
+    <p class="events-view__status" data-events-status role="status" aria-live="polite"></p>
+    <div class="events-view__grid" data-events-grid aria-busy="true"></div>
+    <dialog class="events-dialog" data-events-dialog aria-labelledby="events-dialog-title" closedby="closerequest">
+      <img class="events-dialog__banner" data-events-banner alt="" aria-hidden="true" hidden>
+      <div class="events-dialog__header">
+        <div>
+          <h1 id="events-dialog-title" data-events-title></h1>
+        </div>
+        <button class="events-dialog__close" type="button" aria-label="Close" data-events-close data-i18n-attr="aria-label:common.close" autofocus>
+          <i class="fa-solid fa-xmark" aria-hidden="true"></i>
+        </button>
+      </div>
+      <p class="events-dialog__description" data-events-description></p>
+      <p class="events-dialog__status" data-events-modal-status role="status" aria-live="polite"></p>
+      <div class="events-dialog__grid" data-events-mods-grid aria-busy="true"></div>
+    </dialog>
+  </section>
+</template>
 <template id="tpl-news-modal">
   <div
     class="modal-overlay news-detail-modal"
@@ -2180,6 +2206,10 @@
           <i class="fa-solid fa-newspaper" aria-hidden="true"></i>
           <span data-i18n="nav.news">News</span>
           <b id="newsletter-unread" class="sidebar__unread-badge" hidden></b>
+        </button>
+        <button class="sidebar__btn" data-tab="events">
+          <i class="fa-solid fa-calendar-days" aria-hidden="true"></i>
+          <span data-i18n="nav.events">Events</span>
         </button>
         <button class="sidebar__btn" id="mod-manager-btn">
           <i class="fa-solid fa-folder-open" aria-hidden="true"></i>

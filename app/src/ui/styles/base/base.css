@@ -7,7 +7,16 @@
 :root.theme-switching *,
 :root.theme-switching *::before,
 :root.theme-switching *::after {
-  transition: none !important;
+  transition-property:
+    background-color,
+    border-color,
+    color,
+    fill,
+    stroke,
+    outline-color,
+    box-shadow !important;
+  transition-duration: 220ms !important;
+  transition-timing-function: cubic-bezier(0.16, 1, 0.3, 1) !important;
 }
 
 ::-webkit-scrollbar {
@@ -84,6 +93,56 @@ a {
 a:hover {
   text-decoration: underline;
   opacity: 0.8;
+}
+
+a:active {
+  opacity: 0.65;
+}
+
+:where(
+    button:not(:disabled),
+    input[type="button"]:not(:disabled),
+    input[type="submit"]:not(:disabled),
+    [role="button"]:not([aria-disabled="true"]),
+    summary
+  ) {
+  transition:
+    transform 150ms ease,
+    background-color 150ms ease,
+    border-color 150ms ease,
+    color 150ms ease,
+    box-shadow 150ms ease,
+    opacity 150ms ease;
+}
+
+:where(input:not([type="button"]):not([type="submit"]), select, textarea) {
+  transition:
+    background-color 150ms ease,
+    border-color 150ms ease,
+    color 150ms ease,
+    box-shadow 150ms ease;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  :where(
+      button:not(:disabled),
+      input[type="button"]:not(:disabled),
+      input[type="submit"]:not(:disabled),
+      [role="button"]:not([aria-disabled="true"]),
+      summary
+    ):hover {
+    transform: translateY(-1px);
+  }
+}
+
+:where(
+    button:not(:disabled),
+    input[type="button"]:not(:disabled),
+    input[type="submit"]:not(:disabled),
+    [role="button"]:not([aria-disabled="true"]),
+    summary
+  ):active {
+  transform: scale(0.985);
 }
 
 

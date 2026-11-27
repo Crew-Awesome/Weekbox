@@ -532,20 +532,6 @@
   }
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .storage-migration-panel,
-  .storage-migration-button,
-  .storage-migration-close {
-    transition: none;
-  }
-
-  .storage-migration-progress-track.is-indeterminate
-    .storage-migration-progress-fill {
-    animation: none;
-    width: 100%;
-  }
-}
-
 .error-overlay {
   position: fixed;
   inset: 0;
@@ -1772,10 +1758,8 @@
   }
 }
 
-@media (prefers-reduced-motion: no-preference) {
-  .library-delete-actions button:active:not(:disabled) {
-    transform: scale(0.96);
-  }
+.library-delete-actions button:active:not(:disabled) {
+  transform: scale(0.96);
 }
 
 .settings-reset-dialog {
@@ -1834,20 +1818,6 @@
   .library-delete-icon {
     display: block;
     padding: 16px 22px 0;
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .library-delete-overlay,
-  .library-delete-dialog,
-  .library-delete-actions button {
-    transition: none;
-  }
-
-  .library-delete-overlay.show .library-delete-dialog,
-  .library-delete-cancel:hover:not(:disabled),
-  .library-delete-confirm:hover:not(:disabled) {
-    transform: none;
   }
 }
 

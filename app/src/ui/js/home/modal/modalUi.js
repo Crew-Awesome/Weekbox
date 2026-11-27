@@ -160,7 +160,7 @@ function showModal(modalId = "mod-modal") {
   modalShowFrames.set(modal, frame);
 }
 
-function hideModal(modalId = "mod-modal") {
+function hideModal(modalId = "mod-modal", onHidden) {
   homeCarousel.startAutoSlide();
   const modal = document.getElementById(modalId);
   if (!modal) return;
@@ -176,6 +176,7 @@ function hideModal(modalId = "mod-modal") {
   const nextHideTimer = setTimeout(() => {
     modal.style.display = "none";
     modalHideTimers.delete(modal);
+    onHidden?.();
   }, 260);
   modalHideTimers.set(modal, nextHideTimer);
 }

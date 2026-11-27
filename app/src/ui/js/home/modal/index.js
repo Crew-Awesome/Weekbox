@@ -68,6 +68,7 @@ const modModal = {
   requestId: 0,
   activeModId: null,
   profileReturnModId: null,
+  onClosed: null,
   installWorkflow: new ModInstallWorkflow(),
 
   async init() {
@@ -78,8 +79,9 @@ const modModal = {
       );
     } catch {}
   },
-  async open(modId) {
+  async open(modId, { onClosed = null } = {}) {
     stopModalAudio();
+    this.onClosed = onClosed;
     const requestId = ++this.requestId;
     this.activeModId = modId;
     this.profileReturnModId = null;
@@ -151,12 +153,13 @@ const modModal = {
         this.installWithDependencies(data),
       );
   },
-  async openSubmission(submission) {
+  async openSubmission(submission, { onClosed = null } = {}) {
     stopModalAudio();
+    this.onClosed = onClosed;
     const requestId = ++this.requestId;
     this.profileReturnModId = null;
     if (submission.type !== "tool") {
-      await this.open(submission.id);
+      await this.open(submission.id, { onClosed });
       return;
     }
     if (!document.getElementById("mod-modal")) {
@@ -284,7 +287,9 @@ const modModal = {
     this.profileReturnModId = null;
     modModalCarousel.stopAutoPlay();
     stopModalAudio();
-    hideModal();
+    const onClosed = this.onClosed;
+    this.onClosed = null;
+    hideModal("mod-modal", onClosed);
     hideModal("mod-profile-modal");
   },
   async populateData(data, installedCount) {

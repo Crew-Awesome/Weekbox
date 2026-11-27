@@ -7,6 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.7.3] - 2026-11-27
+
+### Added
+
+- Added an Events tab.
+- Events show banners, dates, and status.
+- Event details show featured mods.
+- Unrevealed mods show as ???.
+
+### Changed
+
+- Supported mod links open in WeekBox.
+- Closing a mod returns to its event.
+- Event dialogs animate like mod dialogs.
+- Added hover and press effects to controls.
+- Theme changes now animate.
+
 ## [2.7.2] - 2026-11-21
 
 ### Added
@@ -1432,7 +1449,8 @@ This is the Last content update I will do in a long while :)
 - Downloads for Windows, Linux, and macOS.
 - Packages for x64, ARM64, ARMHF, and Universal Macs where available.
 
-[unreleased]: https://github.com/Crew-Awesome/Weekbox/compare/v2.7.2...HEAD
+[unreleased]: https://github.com/Crew-Awesome/Weekbox/compare/v2.7.3...HEAD
+[2.7.3]: https://github.com/Crew-Awesome/Weekbox/compare/v2.7.2...v2.7.3
 [2.7.2]: https://github.com/Crew-Awesome/Weekbox/compare/v2.7.1...v2.7.2
 [2.7.1]: https://github.com/Crew-Awesome/Weekbox/compare/v2.7.0...v2.7.1
 [2.7.0]: https://github.com/Crew-Awesome/Weekbox/compare/v2.6.4...v2.7.0

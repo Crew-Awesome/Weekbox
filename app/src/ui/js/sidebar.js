@@ -7,6 +7,7 @@ import { networkStatus } from "../../backend/core/system/network-status.service.
 import { appEvents } from "../../backend/core/routing/events.service.js";
 import { t } from "./i18n/index.js";
 import { homeView } from "./home/index.js";
+import { eventsView } from "./events/index.js";
 
 const SIDEBAR_WIDTH_KEY = "weekbox_sidebar_width";
 const SIDEBAR_COLLAPSED_KEY = "weekbox_sidebar_collapsed";
@@ -185,7 +186,7 @@ export const sidebar = {
     });
   },
   syncActive(viewId = router.currentViewId) {
-    if (!["home", "news"].includes(viewId)) return;
+    if (!["home", "news", "events"].includes(viewId)) return;
     const button = [...this.tabButtons].find(
       (candidate) => candidate.dataset.tab === viewId,
     );
