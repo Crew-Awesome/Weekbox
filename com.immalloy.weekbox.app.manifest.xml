@@ -57,6 +57,15 @@
         </screenshot>
     </screenshots>
     <releases>
+        <release version="2.7.3" date="2026-11-27">
+            <description>
+                <ul>
+                    <li>Browse community events in the new Events tab.</li>
+                    <li>View event details and featured mods.</li>
+                    <li>Open supported mod links in WeekBox.</li>
+                </ul>
+            </description>
+        </release>
         <release version="2.7.2" date="2026-11-21">
             <description>
                 <ul>
